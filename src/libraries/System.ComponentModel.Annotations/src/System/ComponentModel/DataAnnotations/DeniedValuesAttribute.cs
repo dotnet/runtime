@@ -43,9 +43,9 @@ namespace System.ComponentModel.DataAnnotations
         /// </remarks>
         public override bool IsValid(object? value)
         {
-            foreach (object? disallowed in Values)
+            foreach (object? denied in Values)
             {
-                if (disallowed is null ? value is null : disallowed.Equals(value))
+                if (denied is null ? value is null : denied.Equals(value))
                 {
                     return false;
                 }
