@@ -7,10 +7,16 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
+    /// <summary>
+    /// Provides methods for adding attributes in a snippet if the generator requires them, or leaving them out if the generator doesn't require them.
+    /// </summary>
     internal interface IComInterfaceAttributeProvider
     {
         public GeneratorKind Generator { get; }
 
+        /// <summary>
+        /// Returns the [VirtualMethodIndexAttribute] to be put into a snippet if Generator is <see cref="GeneratorKind.VTableIndexStubGenerator"/>, or an empty string if Generator is <see cref="GeneratorKind.ComInterfaceGenerator"/>.
+        /// </summary>
         public string VirtualMethodIndex(
             int index,
             bool? ImplicitThisParameter = null,
@@ -37,6 +43,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                     _ => throw new NotImplementedException()
                 };
 
+        /// <summary>
+        /// Returns the [UnmanagedObjectUnwrapper] to be put into a snippet if Generator is <see cref="GeneratorKind.VTableIndexStubGenerator"/>, or an empty string if Generator is <see cref="GeneratorKind.ComInterfaceGenerator"/>.
+        /// </summary>
         public string UnmanagedObjectUnwrapper(Type t) => Generator switch
         {
             GeneratorKind.VTableIndexStubGenerator => $"[global::System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapperAttribute<{t.FullName!.Replace('+', '.')}>]",
@@ -44,6 +53,9 @@ namespace ComInterfaceGenerator.Unit.Tests
             _ => throw new NotImplementedException(),
         };
 
+        /// <summary>
+        /// Returns the [ComInterfaceTypeAttribute] to be put into a snippet if Generator is <see cref="GeneratorKind.ComInterfaceGenerator"/>, or an empty string if Generator is <see cref="GeneratorKind.VTableIndexStubGenerator"/>.
+        /// </summary>
         public string GeneratedComInterface => Generator switch
         {
             GeneratorKind.VTableIndexStubGenerator => "",
