@@ -5217,33 +5217,43 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 // was never jitted (eg an exceptional path).
 //
 // Unlike regular patchpoints, partial compilation patchpoints
-// must always transitio.
+// must always transition.
 //
 HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 {
+    FCALL_CONTRACT;
+
     // BEGIN_PRESERVE_LAST_ERROR;
     DWORD dwLastError = ::GetLastError();
+    PerPatchpointInfo* ppInfo = NULL;
+    bool isNewMethod = false;
+    CONTEXT frameContext;
 
     // Patchpoint identity is the helper return address
     PCODE ip = (PCODE)_ReturnAddress();
+
+#if _DEBUG
+    // Friendly ID number
+    int ppId = 0;
+#endif
+
+    HELPER_METHOD_FRAME_BEGIN_0();
 
     // Fetch or setup patchpoint info for this patchpoint.
     EECodeInfo codeInfo(ip);
     MethodDesc* pMD = codeInfo.GetMethodDesc();
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
-    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
+    ppInfo = manager->GetPerPatchpointInfo(ip);
 
 #if _DEBUG
-    const int ppId = ppInfo->m_patchpointId;
+    ppId = ppInfo->m_patchpointId;
 #endif
 
     // See if we have an OSR method for this patchpoint.
-    bool isNewMethod = false;
     DWORD backoffs = 0;
 
-    // Set up frame so we can enable preemptive GC.
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    // Enable GC while we jit or wait for the continuation to be jitted.
     {
         GCX_PREEMP();
 
@@ -5309,8 +5319,6 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
         }
     }
 
-    HELPER_METHOD_FRAME_END();
-
     // If we get here, we have code to transition to...
     PCODE osrMethodCode = ppInfo->m_osrMethodCode;
     _ASSERTE(osrMethodCode != NULL);
@@ -5325,7 +5333,6 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 #endif
 
     // Find context for the original method
-    CONTEXT frameContext;
     frameContext.ContextFlags = CONTEXT_FULL;
     RtlCaptureContext(&frameContext);
 
@@ -5380,9 +5387,10 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     // Install new entry point as IP
     SetIP(&frameContext, osrMethodCode);
 
-    // Restore last error (since call below does not return)
-    // END_PRESERVE_LAST_ERROR;
+    // This method doesn't return normally so we have to manually restore things.
+    HELPER_METHOD_FRAME_END();
     ::SetLastError(dwLastError);
+    ENDFORBIDGC();
 
     // Transition!
     RtlRestoreContext(&frameContext, NULL);
