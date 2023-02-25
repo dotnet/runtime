@@ -438,6 +438,9 @@ public:
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             _Out_writes_ (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
     static uint32_t ThreadLocalOffset(void* p);
+
+    // MethodTable to `typeIndex` map. `typeIndex` is embedded in the code during codegen. During execution
+    // corresponding thread static data blocks are stored in `t_threadStaticBlocks` array at the `typeIndex`.
     static TypeIDMap g_threadStaticBlockTypeIDMap;
     FORCEINLINE static void InitTypeMap()
     {
