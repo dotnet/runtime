@@ -28,10 +28,11 @@ namespace AppHost.Bundle.Tests
         private readonly bool selfContained;
         private readonly TestApp compiledApp;
 
-        private AppWithSubDirs(bool selfContained)
-            : base(GetNewTestArtifactPath(AppName))
+        private AppWithSubDirs(bool selfContained, string location, string toDelete)
+            : base(location)
         {
             this.selfContained = selfContained;
+            DirectoryToDelete = toDelete;
 
             // Compile and write out the app to a sub-directory
             compiledApp = new TestApp(Path.Combine(Location, "compiled"), AppName);
@@ -40,10 +41,16 @@ namespace AppHost.Bundle.Tests
         }
 
         public static AppWithSubDirs CreateFrameworkDependent()
-            => new AppWithSubDirs(selfContained: false);
+            => Create(selfContained: false);
 
         public static AppWithSubDirs CreateSelfContained()
-            => new AppWithSubDirs(selfContained: true);
+            => Create(selfContained: true);
+
+        private static AppWithSubDirs Create(bool selfContained)
+        {
+            var (location, parentPath) = GetNewTestArtifactPath(AppName);
+            return new AppWithSubDirs(selfContained, location, parentPath);
+        }
 
         public string Bundle(BundleOptions options, Version? bundleVersion = null)
         {
