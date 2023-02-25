@@ -78,6 +78,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
                 assert(tree->IsHelperCall());
 
+                if (ISMETHOD("Test"))
+                {
+                    gtDispTree(tree);
+                    printf("");
+                }
+
                 // TODO: expand runtime lookups into:
                 //
                 // isNull ? helperCall : IND(fastpath)
