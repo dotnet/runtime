@@ -12,7 +12,7 @@ struct MyValueClass
     public string S4;
 };
 
-class T
+public class T
 {
     public static int Main()
     {

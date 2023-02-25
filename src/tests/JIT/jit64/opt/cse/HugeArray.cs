@@ -408,7 +408,7 @@ namespace CseTest
 
     public class Test_Main
     {
-        static int Main()
+        public static int Main()
         {
             int ret = 100;
             int[] ar = new int[500];

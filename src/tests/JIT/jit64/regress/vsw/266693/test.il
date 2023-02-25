@@ -13,7 +13,7 @@
 }
 .assembly 'test_266693' {}
 
-.class private auto ansi beforefieldinit Test_test
+.class public auto ansi beforefieldinit Test_test
        extends [mscorlib]System.Object
 {
   .field static int32 i

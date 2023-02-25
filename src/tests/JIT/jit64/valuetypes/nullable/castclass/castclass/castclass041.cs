@@ -5,7 +5,7 @@
 using System.Runtime.InteropServices;
 using System;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ(object o)
     {
@@ -17,7 +17,7 @@ internal class NullableTest
         return Helper.Compare((ImplementTwoInterfaceGen<int>?)(ValueType)o, Helper.Create(default(ImplementTwoInterfaceGen<int>)));
     }
 
-    private static int Main()
+    public static int Main()
     {
         ImplementTwoInterfaceGen<int>? s = Helper.Create(default(ImplementTwoInterfaceGen<int>));
 

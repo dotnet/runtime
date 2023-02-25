@@ -5,7 +5,7 @@
 using System.Runtime.InteropServices;
 using System;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ(ValueType o)
     {
@@ -17,7 +17,7 @@ internal class NullableTest
         return Helper.Compare((sbyte?)o, Helper.Create(default(sbyte)));
     }
 
-    private static int Main()
+    public static int Main()
     {
         sbyte? s = Helper.Create(default(sbyte));
 

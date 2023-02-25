@@ -38,7 +38,7 @@ namespace CseTest
     public class Test_Main
     {
 
-        static int Main()
+        public static int Main()
         {
             int ret = 100;
             class_s s = new class_s();

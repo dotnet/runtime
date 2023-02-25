@@ -12,7 +12,7 @@
 .assembly extern mscorlib{}
 .assembly 'zeroInit01_small_'{}
 
-.class private auto ansi beforefieldinit T
+.class public auto ansi beforefieldinit T
        extends [mscorlib]System.Object
 {
   .field public static int32 size_to_test

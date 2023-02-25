@@ -9,7 +9,7 @@ using System;
 using LocallocTesting;
 using System.Runtime.CompilerServices;
 
-internal class LocallocTest
+public class LocallocTest
 {
     // Create a non-inlined call that will be made from Main with some arguments,
     // so fixed-out-args platforms will need to move the outgoing argument space

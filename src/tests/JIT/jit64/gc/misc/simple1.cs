@@ -9,7 +9,7 @@ struct S
     public Object O;
 }
 
-class test
+public class test
 {
     public static int Main()
     {

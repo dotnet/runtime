@@ -17,7 +17,7 @@ namespace HFATest
         const float CONST_FLOAT32 = (float)77.0;
         const double CONST_FLOAT64 = (double)77.0;
 
-        static int Main()
+        public static int Main()
         {
 
             HFA01 hfa01;

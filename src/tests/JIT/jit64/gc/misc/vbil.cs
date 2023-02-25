@@ -8,7 +8,7 @@ class C
     public int y = 7;
 }
 
-class T
+public class T
 {
     public static bool GLOBAL = true;
 

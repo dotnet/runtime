@@ -26,7 +26,7 @@ inc, assignment, adding, double inc.
 
 
 
-internal class test
+public class test
 {
     public static int Main()
     {

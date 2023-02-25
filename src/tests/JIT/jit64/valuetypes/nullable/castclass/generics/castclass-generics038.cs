@@ -14,7 +14,7 @@
 using System.Runtime.InteropServices;
 using System;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ<T>(T o)
     {
@@ -26,7 +26,7 @@ internal class NullableTest
         return Helper.Compare((ImplementOneInterface?)(ValueType)(object)o, Helper.Create(default(ImplementOneInterface)));
     }
 
-    private static int Main()
+    public static int Main()
     {
         ImplementOneInterface? s = Helper.Create(default(ImplementOneInterface));
 

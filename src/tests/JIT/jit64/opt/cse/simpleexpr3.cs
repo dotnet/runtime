@@ -119,7 +119,7 @@ namespace CseTest
     public class Test_Main
     {
 
-        static int Main()
+        public static int Main()
         {
             int ret = 100;
             int d = return_int(false, -36);

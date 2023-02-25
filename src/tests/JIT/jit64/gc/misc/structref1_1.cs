@@ -84,7 +84,7 @@ struct S
     }
 }
 
-class Test_structref1_1
+public class Test_structref1_1
 {
     public static void c(ref S s1)
     {

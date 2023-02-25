@@ -4,7 +4,7 @@
 // Regression test for consecutive compare optimization.
 
 using System;
-internal class Foo
+public class Foo
 {
     public static int Main()
     {

@@ -7,7 +7,7 @@
 // stack offsets relative to FP. This is causing problems. This is likely due to the fact that we 
 // haven't yet set up the frame pointer register.
 
-class TEST
+public class TEST
 {
 
     public static int Main()

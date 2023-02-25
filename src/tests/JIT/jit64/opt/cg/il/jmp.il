@@ -13,6 +13,7 @@
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
 }
 
+.class public auto ansi jmp_ {
 .method public static int32 main() {
 .entrypoint
 .locals	()
@@ -21,6 +22,7 @@
 	newarr	[mscorlib]System.String
 	call	int32 _jmp::jmpTest1(class [mscorlib]System.String[])
 	ret
+}
 }
 
 .class public	_jmp	 {

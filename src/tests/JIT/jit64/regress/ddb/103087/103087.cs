@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-internal class Ddb103087
+public class Ddb103087
 {
     [Fact]
     public static int TestEntryPoint() => Run(new string[0]);

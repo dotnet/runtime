@@ -19,7 +19,7 @@ struct S
     public Object O11;
 }
 
-class Test_test3
+public class Test_test3
 {
     public static int Main()
     {

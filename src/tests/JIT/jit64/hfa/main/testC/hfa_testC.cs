@@ -17,7 +17,7 @@ namespace HFATest
         const double CONST_FLOAT64 = (double)77.0;
 #pragma warning restore 0414
 
-        static int Main()
+        public static int Main()
         {
 
             HFA01 hfa01;

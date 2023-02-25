@@ -14,7 +14,7 @@
 using System.Runtime.InteropServices;
 using System;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQGen<T>(T o)
     {
@@ -36,7 +36,7 @@ internal class NullableTest
         return ((ImplementTwoInterface?)o) == null;
     }
 
-    private static int Main()
+    public static int Main()
     {
         ImplementTwoInterface? s = null;
 

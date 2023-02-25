@@ -8,7 +8,7 @@
 // This can cause the loop to either become an infinite loop or to stop prematurely.
 
 using System;
-internal class LoopTests
+public class LoopTests
 {
     private static bool Test1()
     {
@@ -67,7 +67,7 @@ internal class LoopTests
         return true;
     }
 
-    private static int Main()
+    public static int Main()
     {
         int ret = 100;
 

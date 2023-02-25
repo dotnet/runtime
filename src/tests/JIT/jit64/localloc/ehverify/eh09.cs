@@ -8,7 +8,7 @@
 using System;
 using LocallocTesting;
 
-internal class LocallocTest
+public class LocallocTest
 {
     private static int s_locallocSize = 0;
     public static unsafe int Main()

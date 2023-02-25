@@ -14,7 +14,7 @@
 using System.Runtime.InteropServices;
 using System;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ<T>(T o)
     {
@@ -26,7 +26,7 @@ internal class NullableTest
         return Helper.Compare((ushort?)(ValueType)(object)o, Helper.Create(default(ushort)));
     }
 
-    private static int Main()
+    public static int Main()
     {
         ushort? s = Helper.Create(default(ushort));
 

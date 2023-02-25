@@ -13,6 +13,7 @@
 .assembly 'nonlocalexitincatch' {}
 
 
+.class public auto ansi nonlocalexitincatch {
 .method public static int32 Main()
 {
   .entrypoint
@@ -59,6 +60,7 @@
   callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
   
   ret
+}
 }
 
 

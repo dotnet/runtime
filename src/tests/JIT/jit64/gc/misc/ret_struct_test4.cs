@@ -14,7 +14,7 @@ struct MyValueClass
     public int i6;
 };
 
-class T
+public class T
 {
     public static int Main()
     {

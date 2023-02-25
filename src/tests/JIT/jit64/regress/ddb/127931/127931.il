@@ -21,7 +21,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi ILGEN_0xf64b7da3
+.class public auto ansi ILGEN_0xf64b7da3
        extends [mscorlib]System.Object
 {
   .method privatescope static int16  Method_0xcb0b0b48$PST06000001(uint32 Arg_0x2) cil managed
@@ -50,7 +50,7 @@
     IL_0038:  ret
   } // end of method ILGEN_0xf64b7da3::Method_0xcb0b0b48
 
-  .method privatescope static int32  Main$PST06000002() cil managed
+  .method public static int32  Main$PST06000002() cil managed
   {
     .entrypoint
     // Code size       11 (0xb)

@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 
-internal class Program
+public class Program
 {
-    private static int Main()
+    public static int Main()
     {
         Console.WriteLine("this test is designed to hang if jit cse doesnt honor volatile");
         if (TestCSE.Test()) return 100;

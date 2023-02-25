@@ -5,7 +5,7 @@
 using System.Runtime.InteropServices;
 using System;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ(object o)
     {
@@ -17,7 +17,7 @@ internal class NullableTest
         return Helper.Compare((NotEmptyStructGen<int>?)(ValueType)o, Helper.Create(default(NotEmptyStructGen<int>)));
     }
 
-    private static int Main()
+    public static int Main()
     {
         NotEmptyStructGen<int>? s = Helper.Create(default(NotEmptyStructGen<int>));
 

@@ -3,7 +3,7 @@
 
 using System;
 
-internal class OVFTest
+public class OVFTest
 {
     static public volatile bool rtv;
 
@@ -324,7 +324,7 @@ internal class OVFTest
         }
     }
 
-    private static int Main()
+    public static int Main()
     {
 #if OP_DIV
         const string op = "div.ovf";

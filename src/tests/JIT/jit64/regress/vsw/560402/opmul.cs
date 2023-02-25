@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-internal unsafe class Test
+public unsafe class Test
 {
     [Fact]
     public static int TestEntryPoint() => Run(new string[0]);

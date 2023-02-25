@@ -29,6 +29,7 @@
 
 
 
+.class public auto ansi test1 {
   .method public hidebysig static int32 Main() cil managed
   {
     .entrypoint
@@ -43,6 +44,7 @@
     call       void [System.Console]System.Console::WriteLine(string)
     ret
   }
+}
 
 
 

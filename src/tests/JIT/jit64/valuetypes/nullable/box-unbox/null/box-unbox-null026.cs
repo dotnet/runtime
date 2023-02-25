@@ -5,7 +5,7 @@
 using System.Runtime.InteropServices;
 using System;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQGen<T>(T o)
     {
@@ -27,7 +27,7 @@ internal class NullableTest
         return ((EmptyStructGen<int>?)o) == null;
     }
 
-    private static int Main()
+    public static int Main()
     {
         EmptyStructGen<int>? s = null;
 

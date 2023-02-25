@@ -6,9 +6,9 @@ extern alias Library2;
 
 using System;
 
-internal static class Use
+public static class Use
 {
-    private static int Main()
+    public static int Main()
     {
         int result = 100;
         Console.WriteLine(Library1.Library.Name);

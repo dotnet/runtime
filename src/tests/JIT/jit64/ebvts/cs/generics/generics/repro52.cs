@@ -29,7 +29,7 @@ internal class MPair<R, S> : MCell<R>
     public MPair(R r, S s) : base(r) { _s = s; }
 }
 
-internal class M
+public class M
 {
     public static int Main()
     {

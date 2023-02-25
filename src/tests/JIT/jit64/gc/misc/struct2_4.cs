@@ -81,7 +81,7 @@ struct S
     }
 }
 
-class Test_struct2_4
+public class Test_struct2_4
 {
     public static void c(S s1, S s2)
     {

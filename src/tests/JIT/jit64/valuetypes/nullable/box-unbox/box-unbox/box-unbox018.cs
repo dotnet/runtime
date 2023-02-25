@@ -14,7 +14,7 @@
 using System.Runtime.InteropServices;
 using System;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ(object o)
     {
@@ -26,7 +26,7 @@ internal class NullableTest
         return Helper.Compare((ByteE?)o, Helper.Create(default(ByteE)));
     }
 
-    private static int Main()
+    public static int Main()
     {
         ByteE? s = Helper.Create(default(ByteE));
 

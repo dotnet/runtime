@@ -3,7 +3,7 @@
 
 using System;
 
-class Program
+public class Program
 {
 
     private static TestUtil.TestLog testLog;
@@ -76,7 +76,7 @@ class Program
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         // start recording
         testLog.StartRecording();

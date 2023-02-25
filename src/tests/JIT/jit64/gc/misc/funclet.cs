@@ -5,7 +5,7 @@
 // The main purpose of this test is make sure that an object ref passed on the stack
 // out of a funclet works properly. The varargs is a bit extraneous.
 
-class test
+public class test
 {
     public static int Main()
     {

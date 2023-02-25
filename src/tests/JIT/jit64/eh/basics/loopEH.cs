@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-internal class Program
+public class Program
 {
-    private static int Main()
+    public static int Main()
     {
         return Test(null, null, null, 0, 1);
     }

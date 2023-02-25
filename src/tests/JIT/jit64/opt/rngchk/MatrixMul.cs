@@ -5,10 +5,10 @@ using System;
 
 namespace MatrixMul
 {
-    internal class Test
+    public class Test
     {
         //Test shall throw IndexOutOfRangeException if rangecheck is inserted properly
-        private static int Main()
+        public static int Main()
         {
             int retVal = 100;
             try

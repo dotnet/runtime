@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 namespace SimpleArray_01
 {
     public delegate void RngTest();
-    internal class Class1
+    public class Class1
     {
-        private static int Main()
+        public static int Main()
         {
             int retVal = 100;
             int testNum = 0;

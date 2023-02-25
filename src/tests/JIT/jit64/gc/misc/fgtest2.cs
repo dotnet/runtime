@@ -4,7 +4,7 @@
 
 using System;
 
-class T
+public class T
 {
     public static int x = 4;
 

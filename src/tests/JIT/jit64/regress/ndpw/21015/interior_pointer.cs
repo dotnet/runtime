@@ -26,7 +26,7 @@ internal struct T
     }
 }
 
-internal class Tester
+public class Tester
 {
     public static int Main()
     {

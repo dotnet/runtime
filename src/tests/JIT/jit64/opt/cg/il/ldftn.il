@@ -15,7 +15,7 @@
 	ret
 }
 
-.class Test
+.class public Test
 {
 .method public static int32 main()
 {

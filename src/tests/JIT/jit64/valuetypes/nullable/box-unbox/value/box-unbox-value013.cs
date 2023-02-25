@@ -14,7 +14,7 @@
 using System.Runtime.InteropServices;
 using System;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ(ValueType o)
     {
@@ -26,7 +26,7 @@ internal class NullableTest
         return Helper.Compare((decimal?)o, Helper.Create(default(decimal)));
     }
 
-    private static int Main()
+    public static int Main()
     {
         decimal? s = Helper.Create(default(decimal));
 

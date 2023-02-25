@@ -4,7 +4,7 @@
 using System;
 using System.Threading;
 
-internal class Test_objectusedonlyinhandler
+public class Test_objectusedonlyinhandler
 {
     public static int Main()
     {

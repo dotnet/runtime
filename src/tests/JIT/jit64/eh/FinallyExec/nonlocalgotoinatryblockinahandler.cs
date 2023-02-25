@@ -8,7 +8,7 @@
 
 using System;
 
-class simple
+public class simple
 {
     private static TestUtil.TestLog testLog;
 

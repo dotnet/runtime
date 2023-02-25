@@ -23,7 +23,7 @@ namespace CseTest
 
     public class TestClass
     {
-        static int Main()
+        public static int Main()
         {
             int a = returna(false);
             int c = returnc(false);

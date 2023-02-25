@@ -3,7 +3,7 @@
 
 // Bug: OSR bug causing bad GC pointers
 // a GC root becomes an interior pointer when added.
-internal class Repro
+public class Repro
 {
     private int[] _arr;
 
@@ -17,7 +17,7 @@ internal class Repro
         }
     }
 
-    private static int Main()
+    public static int Main()
     {
         new Repro().Bug();
         // will fail with an assert under GCSTRESS=4

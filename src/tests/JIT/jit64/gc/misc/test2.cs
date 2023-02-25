@@ -28,7 +28,7 @@ class C
     }
 }
 
-class Test_test2
+public class Test_test2
 {
     public static int Main()
     {

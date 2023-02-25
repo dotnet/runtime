@@ -5,7 +5,7 @@
 
 using System;
 
-class test
+public class test
 {
     private static TestUtil.TestLog testLog;
 

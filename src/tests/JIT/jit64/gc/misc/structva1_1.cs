@@ -85,7 +85,7 @@ struct S
     }
 }
 
-class Test_structva1_1
+public class Test_structva1_1
 {
     public static void c(params object[] pp)
     {

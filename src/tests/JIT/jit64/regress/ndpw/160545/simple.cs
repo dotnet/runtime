@@ -26,7 +26,7 @@ public struct T : IComparable
     }
 }
 
-internal class foo
+public class foo
 {
     public static int Main()
     {

@@ -17,6 +17,7 @@
     ret
 }
 
+.class public auto ansi exchange {
 .method public static int32 Main()
 {
 	.entrypoint
@@ -49,6 +50,7 @@
   end:
     ldc.i4 100
     ret
+}
 }
 
 

@@ -66,7 +66,7 @@ It may be useful to run these tests with constant prop off.
 
 
 
-internal class test
+public class test
 {
     public static int Main()
     {

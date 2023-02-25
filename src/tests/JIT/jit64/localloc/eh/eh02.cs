@@ -8,7 +8,7 @@
 using System;
 using LocallocTesting;
 
-internal class LocallocTest
+public class LocallocTest
 {
     public static unsafe int Main()
     {

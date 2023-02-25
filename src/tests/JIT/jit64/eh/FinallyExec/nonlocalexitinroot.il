@@ -13,6 +13,7 @@
 .assembly 'nonlocalexitinroot' {}
 
 
+.class public auto ansi nonlocalexitinroot {
 .method public static int32 Main()
 {
   .entrypoint
@@ -53,6 +54,7 @@
   callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
   
   ret
+}
 }
 
 

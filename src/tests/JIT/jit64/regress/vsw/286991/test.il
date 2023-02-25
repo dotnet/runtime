@@ -4,6 +4,7 @@
 .assembly extern mscorlib {}
 .assembly 'test_286991' {}
 
+.class public auto ansi test {
 .method public static int32 Main()
 {
 
@@ -14,6 +15,7 @@
 	ldc.i4 100
 	add
 	ret
+}
 }
 
 .method public static pinvokeimpl("msvcrt.dll" cdecl) 

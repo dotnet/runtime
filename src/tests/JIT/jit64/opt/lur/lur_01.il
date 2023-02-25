@@ -14,7 +14,7 @@
 // In the origial bug there was a fall through with the if.
 
 
-.class test extends [mscorlib]System.Object
+.class public test extends [mscorlib]System.Object
 {
 
 .method public static int32 main()

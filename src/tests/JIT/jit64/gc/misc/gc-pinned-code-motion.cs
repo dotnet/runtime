@@ -3,7 +3,7 @@
 
 //this is regression test for 307867 
 //this failed due to inlining under gcstress
-internal class TEST
+public class TEST
 {
     // prevent induction variable from being optimized away
     private volatile static int s_numLeft;
