@@ -13,6 +13,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 public class NullableTest
 {
@@ -26,7 +27,8 @@ public class NullableTest
         return Helper.Compare((byte?)o, Helper.Create(default(byte)));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         byte? s = Helper.Create(default(byte));
 

@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 public class NullableTest
 {
@@ -17,7 +18,8 @@ public class NullableTest
         return Helper.Compare((NestedStructGen<int>?)(ValueType)o, Helper.Create(default(NestedStructGen<int>)));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         NestedStructGen<int>? s = Helper.Create(default(NestedStructGen<int>));
 

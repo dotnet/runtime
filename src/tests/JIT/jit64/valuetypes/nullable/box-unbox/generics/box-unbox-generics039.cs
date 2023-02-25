@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 public class NullableTest
 {
@@ -17,7 +18,8 @@ public class NullableTest
         return Helper.Compare((ImplementTwoInterface?)(object)o, Helper.Create(default(ImplementTwoInterface)));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ImplementTwoInterface? s = Helper.Create(default(ImplementTwoInterface));
 

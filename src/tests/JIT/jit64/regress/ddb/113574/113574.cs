@@ -8,6 +8,7 @@
 // This can cause the loop to either become an infinite loop or to stop prematurely.
 
 using System;
+using Xunit;
 public class LoopTests
 {
     private static bool Test1()
@@ -67,7 +68,8 @@ public class LoopTests
         return true;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int ret = 100;
 

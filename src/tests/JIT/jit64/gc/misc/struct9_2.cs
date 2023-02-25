@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct Pad
 {
@@ -101,7 +102,8 @@ public class Test_struct9_2
         Console.WriteLine(s1.str);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S sM = new S("test");
         int i = 0;

@@ -7,10 +7,12 @@
 
 using System;
 using LocallocTesting;
+using Xunit;
 
 public class LocallocTest
 {
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         bool testPassed = true;
         ulong local1 = Global.INITIAL_VALUE;

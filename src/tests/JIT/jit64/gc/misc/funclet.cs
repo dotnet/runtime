@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 // The main purpose of this test is make sure that an object ref passed on the stack
 // out of a funclet works properly. The varargs is a bit extraneous.
 
 public class test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

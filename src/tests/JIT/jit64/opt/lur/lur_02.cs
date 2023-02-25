@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 /*********************************************
 
@@ -28,7 +29,8 @@ inc, assignment, adding, double inc.
 
 public class test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int failed_tests = 0;
 

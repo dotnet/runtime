@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 
 public unsafe class T
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (Bug() == "0") return 100;
 

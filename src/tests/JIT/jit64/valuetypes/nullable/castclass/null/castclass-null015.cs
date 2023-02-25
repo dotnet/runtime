@@ -13,6 +13,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 public class NullableTest
 {
@@ -36,7 +37,8 @@ public class NullableTest
         return ((UIntPtr?)(ValueType)o) == null;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         UIntPtr? s = null;
 

@@ -6,6 +6,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 2:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly '127931'
 {
   .ver 0:0:0:0
@@ -52,6 +53,9 @@
 
   .method public static int32  Main$PST06000002() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       11 (0xb)
     .maxstack  11

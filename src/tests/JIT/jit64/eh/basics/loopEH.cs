@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Test(null, null, null, 0, 1);
     }

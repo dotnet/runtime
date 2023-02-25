@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 public class NullableTest
 {
@@ -17,7 +18,8 @@ public class NullableTest
         return Helper.Compare((decimal?)(IComparable)o, Helper.Create(default(decimal)));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         decimal? s = Helper.Create(default(decimal));
 

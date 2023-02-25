@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 public class NullableTest
 {
@@ -27,7 +28,8 @@ public class NullableTest
         return ((NotEmptyStructA?)o) == null;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         NotEmptyStructA? s = null;
 

@@ -8,6 +8,7 @@
 using System;
 using LocallocTesting;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class LocallocTest
 {
@@ -20,7 +21,8 @@ public class LocallocTest
         return a + b + c + d + e + f + g + h + j + k + l + m;
     }
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         ulong local1 = Global.INITIAL_VALUE;
         ulong local2 = local1 + 1;

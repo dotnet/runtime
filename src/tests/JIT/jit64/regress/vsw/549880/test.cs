@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace RNG
 {
     public class Test
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return foo(10, 20, 30, 40, 50);
         }

@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 public class NullableTest
 {
@@ -17,7 +18,8 @@ public class NullableTest
         return Helper.Compare((ByteE?)(Enum)o, Helper.Create(default(ByteE)));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ByteE? s = Helper.Create(default(ByteE));
 

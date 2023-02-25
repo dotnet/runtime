@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct S
 {
@@ -30,7 +31,8 @@ class C
 
 public class Test_test2
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         test1();
         test2();

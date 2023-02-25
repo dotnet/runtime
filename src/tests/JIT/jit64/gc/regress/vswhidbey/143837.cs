@@ -3,13 +3,15 @@
 //
 
 using System;
+using Xunit;
 
 public class Test_143837
 {
     public static TestClass static_TestClass;
     public static DerivedClass static_DerivedClass;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (Test1() != 100) return 1;
 

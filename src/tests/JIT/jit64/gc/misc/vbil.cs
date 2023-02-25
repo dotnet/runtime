@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 class C
 {
     public int x = 5;
@@ -12,7 +13,8 @@ public class T
 {
     public static bool GLOBAL = true;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         C c = new C();
 

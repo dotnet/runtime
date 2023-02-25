@@ -26,6 +26,7 @@
 ////////////////////////////////////////////////////////////////
 
 using System;
+using Xunit;
 
 namespace AutoGen
 {
@@ -53,7 +54,8 @@ namespace AutoGen
         }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -7,6 +7,7 @@
 // LEAVE with an OPGOTO to the beginning of the cascading CATCHRET chain to unwind the stack...
 
 using System;
+using Xunit;
 
 public class simple
 {
@@ -26,7 +27,8 @@ public class simple
         // Create and initialize test log object
         testLog = new TestUtil.TestLog(expectedOut);
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();

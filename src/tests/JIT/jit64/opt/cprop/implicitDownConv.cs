@@ -3,11 +3,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
     private static int s_result = 100;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test(1L << 32);
         return s_result;

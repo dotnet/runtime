@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 internal struct T
 {
@@ -28,7 +29,8 @@ internal struct T
 
 public class Tester
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         T t1, t2;
 

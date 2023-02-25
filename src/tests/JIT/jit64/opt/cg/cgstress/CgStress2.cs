@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace CgTest
 {
@@ -9,7 +10,8 @@ namespace CgTest
     {
         public static string ActualResult;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             string ExpectedResult = "012345678910111213141516171819202122232425262728293031323334353637383940414243444" +
                 "54647484950515253545556575859606162636465666768697071727374757677787980818283848" +

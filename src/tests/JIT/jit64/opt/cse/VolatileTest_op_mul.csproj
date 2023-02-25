@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <!-- Issue https://github.com/dotnet/runtime/issues/50381 -->
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
   </PropertyGroup>

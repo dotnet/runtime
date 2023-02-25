@@ -13,6 +13,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 public class NullableTest
 {
@@ -26,7 +27,8 @@ public class NullableTest
         return Helper.Compare((NotEmptyStruct?)(ValueType)o, Helper.Create(default(NotEmptyStruct)));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         NotEmptyStruct? s = Helper.Create(default(NotEmptyStruct));
 

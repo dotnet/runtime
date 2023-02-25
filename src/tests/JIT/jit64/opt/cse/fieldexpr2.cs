@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 //((((((s.e*((s.a+(s.b*s.c))-(s.c*s.d)))-((s.f+(s.e*s.f))-(s.g*s.h)))+(s.e+((s.a+(s.b*s.c))-(s.c*s.d))))-(s.g+((s.f+(s.e*s.f))-(s.g*s.h))))+((s.a+((s.h+(s.f+s.g))-(s.p*s.q)))*(((s.a+s.b)+s.g)-((s.c+s.b)*s.k))))-(((s.b*s.b)+s.g)-((s.c+s.b)*s.k)))
 //permutations for  ((((((s.e*((s.a+(s.b*s.c))-(s.c*s.d)))-((s.f+(s.e*s.f))-(s.g*s.h)))+(s.e+((s.a+(s.b*s.c))-(s.c*s.d))))-(s.g+((s.f+(s.e*s.f))-(s.g*s.h))))+((s.a+((s.h+(s.f+s.g))-(s.p*s.q)))*(((s.a+s.b)+s.g)-((s.c+s.b)*s.k))))-(((s.b*s.b)+s.g)-((s.c+s.b)*s.k)))
 //((((((s.e*((s.a+(s.b*s.c))-(s.c*s.d)))-((s.f+(s.e*s.f))-(s.g*s.h)))+(s.e+((s.a+(s.b*s.c))-(s.c*s.d))))-(s.g+((s.f+(s.e*s.f))-(s.g*s.h))))+((s.a+((s.h+(s.f+s.g))-(s.p*s.q)))*(((s.a+s.b)+s.g)-((s.c+s.b)*s.k))))-(((s.b*s.b)+s.g)-((s.c+s.b)*s.k)))
@@ -355,7 +356,8 @@ namespace CseTest
     using System;
     public class Test_Main
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int ret = 100;
             class_s s = new class_s();

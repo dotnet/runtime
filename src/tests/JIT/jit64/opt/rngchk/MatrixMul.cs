@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace MatrixMul
 {
     public class Test
     {
         //Test shall throw IndexOutOfRangeException if rangecheck is inserted properly
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int retVal = 100;
             try

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class Test_test_noalloca
 {
@@ -10,7 +11,8 @@ public class Test_test_noalloca
     static int x = 25;
 #pragma warning restore 0414
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         String s1 = "a";
         String s2 = "b";
