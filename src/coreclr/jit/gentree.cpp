@@ -976,12 +976,12 @@ bool GenTree::IsMultiRegNode() const
         return AsMultiRegOp()->GetRegCount() > 1;
     }
 #endif
+#endif // FEATURE_MULTIREG_RET
 
     if (OperIs(GT_COPY, GT_RELOAD))
     {
         return true;
     }
-#endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
@@ -1027,12 +1027,12 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
         return AsMultiRegOp()->GetRegCount();
     }
 #endif
+#endif // FEATURE_MULTIREG_RET
 
     if (OperIs(GT_COPY, GT_RELOAD))
     {
         return AsCopyOrReload()->GetRegCount();
     }
-#endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
@@ -3045,6 +3045,7 @@ AGAIN:
                 switch (vecCon->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH)
                     case TYP_SIMD32:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimd32Val.u32[7]);
@@ -3053,6 +3054,7 @@ AGAIN:
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimd32Val.u32[4]);
                         FALLTHROUGH;
                     }
+#endif // TARGET_XARCH
 
                     case TYP_SIMD16:
                     {
@@ -7274,13 +7276,17 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
+#endif // TARGET_XARCH
+        {
             allBitsSet                                 = gtNewVconNode(type);
             allBitsSet->AsVecCon()->gtSimd32Val.i64[0] = -1;
             allBitsSet->AsVecCon()->gtSimd32Val.i64[1] = -1;
             allBitsSet->AsVecCon()->gtSimd32Val.i64[2] = -1;
             allBitsSet->AsVecCon()->gtSimd32Val.i64[3] = -1;
             break;
+        }
 #endif // FEATURE_SIMD
 
         default:
@@ -7315,7 +7321,9 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
+#endif // TARGET_XARCH
         {
             zero                          = gtNewVconNode(type);
             zero->AsVecCon()->gtSimd32Val = {};
@@ -7355,7 +7363,9 @@ GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = T
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
+#endif // TARGET_XARCH
         {
             GenTreeVecCon* vecCon = gtNewVconNode(type);
 
@@ -11559,6 +11569,7 @@ void Compiler::gtDispConst(GenTree* tree)
                     break;
                 }
 
+#if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 {
                     simd32_t simdVal = vecCon->gtSimd32Val;
@@ -11566,6 +11577,7 @@ void Compiler::gtDispConst(GenTree* tree)
                            simdVal.u64[2], simdVal.u64[3]);
                     break;
                 }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
                 default:
@@ -11707,7 +11719,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             fieldVarDsc->PrintVarReg();
                         }
 
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->AsLclVar()->IsLastUse(index))
+                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone &&
+                            tree->AsLclVarCommon()->IsLastUse(index))
                         {
                             printf(" (last use)");
                         }

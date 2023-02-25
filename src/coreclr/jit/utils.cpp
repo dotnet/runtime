@@ -249,12 +249,12 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #endif // FEATURE_SIMD
     assert((unsigned)reg < ArrLen(regNamesFloat));
 
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
     if (type == TYP_SIMD32)
     {
         return regNamesYMM[reg];
     }
-#endif // FEATURE_SIMD
+#endif // FEATURE_SIMD && TARGET_XARCH
 
     return regNamesFloat[reg];
 #endif

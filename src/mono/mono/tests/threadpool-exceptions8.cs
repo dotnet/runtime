@@ -70,7 +70,7 @@ public class Tests {
 			var d = new UnhandledExceptionEventHandler (helper.OnUnhandled);
 			AppDomain.CurrentDomain.UnhandledException += d;
 
-			// this is TaskToApm.Begin (..., callback) where the callback is helper.WhenCompleted
+			// this is TaskToAsyncResult.Begin (..., callback) where the callback is helper.WhenCompleted
 			Task.Delay (100).GetAwaiter().OnCompleted (helper.WhenCompleted);
 
 			var wasSet = helper.WaitForExn (10000); // wait upto 10 seconds for the task to throw
