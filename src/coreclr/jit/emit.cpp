@@ -1445,12 +1445,10 @@ void emitter::appendToCurIG(instrDesc* id)
 
 void emitter::emitDispInsAddr(BYTE* code)
 {
-#ifdef DEBUG
     if (emitComp->opts.disAddr)
     {
         printf(FMT_ADDR, DBG_ADDR(code));
     }
-#endif
 }
 
 void emitter::emitDispInsOffs(unsigned offs, bool doffs)
@@ -7076,9 +7074,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
         {
-#ifdef DEBUG
             size_t     curInstrAddr = (size_t)cp;
             instrDesc* curInstrDesc = id;
+#ifdef DEBUG
 
             if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
                 (id->idCodeSize() > 0))
@@ -7112,9 +7110,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             size_t insSize = emitIssue1Instr(ig, id, &cp);
             emitAdvanceInstrDesc(&id, insSize);
 
-#ifdef DEBUG
             // Print the alignment boundary
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (emitComp->opts.disAddr || emitComp->opts.disAlignment))
+            if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
+                (emitComp->opts.disAddr || emitComp->opts.disAlignment))
             {
                 size_t      afterInstrAddr   = (size_t)cp;
                 instruction curIns           = curInstrDesc->idIns();
@@ -7197,7 +7195,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     }
                 }
             }
-#endif // DEBUG
         }
 
 #ifdef DEBUG
@@ -8117,12 +8114,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
 
     for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext)
     {
-#ifdef DEBUG
         if (emitComp->opts.disAddr)
         {
             printf("; @" FMT_ADDR "\n", DBG_ADDR(dst));
         }
-#endif
 
         const char* labelFormat = "%-7s";
         char        label[64];

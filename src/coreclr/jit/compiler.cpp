@@ -2828,17 +2828,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
 
-    opts.disAsm      = false;
-    opts.disDiffable = false;
-    opts.dspDiffable = false;
+    opts.disAsm       = false;
+    opts.disDiffable  = false;
+    opts.dspDiffable  = false;
+    opts.disAlignment = false;
+    opts.disAddr      = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
     opts.varNames        = false;
     opts.dmpHex          = false;
     opts.disAsmSpilled   = false;
-    opts.disAddr         = false;
-    opts.disAlignment    = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -2939,17 +2939,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.dspDiffable = true;
         }
 
-        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
-        if (JitConfig.JitDasmWithAddress() != 0)
-        {
-            opts.disAddr = true;
-        }
-
-        if (JitConfig.JitDasmWithAlignmentBoundaries() != 0)
-        {
-            opts.disAlignment = true;
-        }
-
         if (JitConfig.JitLongAddress() != 0)
         {
             opts.compLongAddress = true;
@@ -3043,6 +3032,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.disAsm = true;
     }
 #endif // !DEBUG
+    // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
+    if (JitConfig.JitDasmWithAddress() != 0)
+    {
+        opts.disAddr = true;
+    }
+    if (JitConfig.JitDasmWithAlignmentBoundaries() != 0)
+    {
+        opts.disAlignment = true;
+    }
 
 //-------------------------------------------------------------------------
 
