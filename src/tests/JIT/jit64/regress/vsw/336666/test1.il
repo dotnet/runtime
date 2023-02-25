@@ -21,7 +21,6 @@
 }
 
 .assembly foo {}
-.module foo.exe
 
 
 // We inline the call chain foo()->Throw(). This causes the DFS reader

@@ -11,7 +11,6 @@
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
 .assembly test {}
-.module nonlocalexitincatch.exe
 
 
 .method public static int32 Main()

@@ -10,7 +10,6 @@
 }
 .assembly extern mscorlib {}
 .assembly test {}
-.module test.exe
 .assembly extern eh_common {}
 
 

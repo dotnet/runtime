@@ -10,7 +10,6 @@
 {
   .ver 0:0:0:0
 }
-.module rtc_shorteningconvert.exe
 // MVID: {FB8EB234-0641-4679-8147-BB7819EB64E7}
 .imagebase 0x00400000
 .file alignment 0x00000200

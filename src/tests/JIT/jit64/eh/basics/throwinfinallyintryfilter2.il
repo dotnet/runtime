@@ -11,7 +11,6 @@
 .assembly extern mscorlib {}
 .assembly test {}
 .assembly extern eh_common {}
-.module test.exe
 
 
 .method public static int32 Main()
