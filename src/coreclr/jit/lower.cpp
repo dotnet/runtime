@@ -369,10 +369,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
         {
             if (comp->opts.OptimizationEnabled() && node->OperIs(GT_AND))
             {
-                GenTree* replacementNode = TryLowerAndNegativeOne(node->AsOp());
-                if (replacementNode != nullptr)
+                GenTree* nextNode = nullptr;
+                if (TryLowerAndNegativeOne(node->AsOp(), &nextNode))
                 {
-                    return replacementNode->gtNext;
+                    return nextNode;
                 }
             }
 
@@ -7801,26 +7801,27 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 //
 // Arguments:
 //    node - GT_AND node of integral type
+//    nextNode - out parameter that represents the 'gtNext' of the given node if the transformation was successful
 //
 // Return Value:
-//    Returns the replacement node if one is created else nullptr indicating no replacement
-GenTree* Lowering::TryLowerAndNegativeOne(GenTreeOp* node)
+//    Returns the true if the transformation was successful; false if it was not.
+bool Lowering::TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode)
 {
     assert(node->OperIs(GT_AND));
 
     if (!varTypeIsIntegral(node))
-        return nullptr;
+        return false;
 
     if (node->gtSetFlags())
-        return nullptr;
+        return false;
 
     if (node->isContained())
-        return nullptr;
+        return false;
 
     GenTree* op2 = node->gtGetOp2();
 
     if (!op2->IsIntegralConst(-1))
-        return nullptr;
+        return false;
 
 #ifndef TARGET_64BIT
     assert(op2->TypeIs(TYP_INT));
@@ -7828,16 +7829,17 @@ GenTree* Lowering::TryLowerAndNegativeOne(GenTreeOp* node)
 
     LIR::Use use;
     if (!BlockRange().TryGetUse(node, &use))
-        return nullptr;
+        return false;
 
     GenTree* op1 = node->gtGetOp1();
 
+    *nextNode = node->gtNext;
     use.ReplaceWith(op1);
 
     BlockRange().Remove(op2);
     BlockRange().Remove(node);
 
-    return op1;
+    return true;
 }
 
 #if defined(FEATURE_HW_INTRINSICS)
