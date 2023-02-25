@@ -22,7 +22,6 @@ CONFIG_INTEGER(BreakOnDumpToken, W("BreakOnDumpToken"), 0xffffffff) // Breaks wh
                                                                     // particular token value.
 CONFIG_INTEGER(DebugBreakOnVerificationFailure, W("DebugBreakOnVerificationFailure"), 0) // Halts the jit on
                                                                                          // verification failure
-CONFIG_INTEGER(DiffableDasm, W("JitDiffableDasm"), 0)          // Make the disassembly diff-able
 CONFIG_INTEGER(JitDasmWithAddress, W("JitDasmWithAddress"), 0) // Print the process address next to each instruction of
                                                                // the disassembly
 CONFIG_INTEGER(DisplayLoopHoistStats, W("JitLoopHoistStats"), 0) // Display JIT loop hoisting statistics
@@ -79,9 +78,6 @@ CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, W("JitOptimizeStructHiddenBuffer")
 CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
                W("JitUnrollLoopMaxIterationCount"),
                DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT)
-
-// Print the alignment boundaries in disassembly.
-CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
 
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
@@ -190,7 +186,6 @@ CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, 
 
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
-CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
 CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDisasm and related info for methods
                                                              // from this semicolon-delimited list of assemblies.
 CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)     // Dump interleaved GC Info for any method disassembled.
@@ -255,16 +250,20 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 /// JIT Hardware Intrinsics
 ///
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
-                                                                           // intrinsic classes
+#endif                                                                     // defined(DEBUG)
 
-#else  // defined(DEBUG)
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Print codegen for given methods
+CONFIG_INTEGER(JitDisasmDiffable, W("JitDisasmDiffable"), 0) // Make the disassembly diff-able
+CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0)   // Prints all jitted methods to the console
+CONFIG_INTEGER(JitDisasmWithAlignmentBoundaries, W("JitDisasmWithAlignmentBoundaries"), 0) // Print the alignment
+                                                                                           // boundaries.
+CONFIG_STRING(JitStdOutFile, W("JitStdOutFile")) // If set, sends JIT's stdout output to this file.
 
-// JitDisasm is supported in Release too
-CONFIG_METHODSET(JitDisasm, W("JitDisasm"))
-#endif // !defined(DEBUG)
-
-CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0) // Prints all jitted methods to the console
-CONFIG_STRING(JitStdOutFile, W("JitStdOutFile"))           // If set, sends JIT's stdout output to this file.
+// These are supported for backward compatibility, to be removed:
+#ifdef DEBUG
+CONFIG_INTEGER(JitDiffableDasm, W("JitDiffableDasm"), 0)
+CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
+#endif
 
 CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
 

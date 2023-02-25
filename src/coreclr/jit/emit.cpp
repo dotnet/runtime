@@ -7076,9 +7076,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
         {
-#ifdef DEBUG
             size_t     curInstrAddr = (size_t)cp;
             instrDesc* curInstrDesc = id;
+#ifdef DEBUG
 
             if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
                 (id->idCodeSize() > 0))
@@ -7112,9 +7112,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             size_t insSize = emitIssue1Instr(ig, id, &cp);
             emitAdvanceInstrDesc(&id, insSize);
 
-#ifdef DEBUG
             // Print the alignment boundary
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (emitComp->opts.disAddr || emitComp->opts.disAlignment))
+            if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
+                (INDEBUG(emitComp->opts.disAddr ||) emitComp->opts.disAlignment))
             {
                 size_t      afterInstrAddr   = (size_t)cp;
                 instruction curIns           = curInstrDesc->idIns();
@@ -7197,7 +7197,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     }
                 }
             }
-#endif // DEBUG
         }
 
 #ifdef DEBUG
