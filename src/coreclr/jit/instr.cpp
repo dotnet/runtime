@@ -802,11 +802,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 
+#if defined(TARGET_XARCH)
                     case TYP_SIMD32:
                     {
                         simd32_t constValue = op->AsVecCon()->gtSimd32Val;
                         return OperandDesc(emit->emitSimd32Const(constValue));
                     }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
                     default:

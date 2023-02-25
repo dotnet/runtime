@@ -7963,7 +7963,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		char *ppdb_path;
 		GArray *pdb_checksum_hash_type = g_array_new (FALSE, TRUE, sizeof (char*));
 		GArray *pdb_checksum = g_array_new (FALSE, TRUE, sizeof (guint8*));
-		gboolean has_debug_info = get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
+		gboolean has_debug_info = mono_get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
 		if (!has_debug_info || ppdb_size > 0)
 		{
 			buffer_add_byte (buf, 0);
@@ -7988,6 +7988,22 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		g_array_free (pdb_checksum_hash_type, TRUE);
 		g_array_free (pdb_checksum, TRUE);
+		break;
+	}
+	case MDBGPROT_CMD_ASSEMBLY_HAS_DEBUG_INFO_LOADED: {
+		MonoImage* image = ass->image;
+		MonoDebugHandle* handle = mono_debug_get_handle (image);
+		if (!handle) {
+			buffer_add_byte (buf, 0);
+			return ERR_NONE;
+		}
+		MonoPPDBFile* ppdb = handle->ppdb;
+		if (ppdb) {
+			image = mono_ppdb_get_image (ppdb);
+			buffer_add_byte (buf, image->raw_data_len > 0);
+		} else {
+			buffer_add_byte (buf, 0);
+		}
 		break;
 	}
 	default:
