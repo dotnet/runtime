@@ -196,7 +196,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 handleForNullCheck->gtFlags |= GTF_IND_NONFAULTING;
 
                 GenTree* nullcheckOp = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
-                nullcheckOp->gtFlags |= (GTF_RELOP_JMP_USED);
+                nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
                 gtSetEvalOrder(nullcheckOp);
                 Statement* nullcheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp));
                 gtSetStmtInfo(nullcheckStmt);
@@ -204,20 +204,20 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fgInsertStmtAtEnd(nullcheckBb, nullcheckStmt);
 
                 BasicBlock* fastPathBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
-                fastPathBb->bbFlags |= (BBF_INTERNAL);
-                GenTree*   asgTree = gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(handleForNullCheck));
-                Statement* asgStmt = fgNewStmtFromTree(asgTree);
-                fgInsertStmtAtBeg(fastPathBb, asgStmt);
-                gtSetStmtInfo(asgStmt);
-                fgSetStmtSeq(asgStmt);
+                fastPathBb->bbFlags |= BBF_INTERNAL;
+                GenTree*   asgFastPathValue = gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(handleForNullCheck));
+                Statement* asgFastPathValueStmt = fgNewStmtFromTree(asgFastPathValue);
+                fgInsertStmtAtBeg(fastPathBb, asgFastPathValueStmt);
+                gtSetStmtInfo(asgFastPathValueStmt);
+                fgSetStmtSeq(asgFastPathValueStmt);
 
                 BasicBlock* fallbackBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
-                fallbackBb->bbFlags |= (BBF_INTERNAL);
-                GenTree*   asgTree2 = gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(call));
-                Statement* asgStmt2 = fgNewStmtFromTree(asgTree2);
-                fgInsertStmtAtBeg(fallbackBb, asgStmt2);
-                gtSetStmtInfo(asgStmt2);
-                fgSetStmtSeq(asgStmt2);
+                fallbackBb->bbFlags |= BBF_INTERNAL;
+                GenTree*   asgFallbackTree = gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(call));
+                Statement* asgFallbackStmt = fgNewStmtFromTree(asgFallbackTree);
+                fgInsertStmtAtBeg(fallbackBb, asgFallbackStmt);
+                gtSetStmtInfo(asgFallbackStmt);
+                fgSetStmtSeq(asgFallbackStmt);
 
                 // Replace ExpRuntimeLookup call with a local
                 call->ReplaceWith(gtNewLclvNode(rtLookupLclNum, call->TypeGet()), this);
@@ -246,7 +246,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
                 assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
-                // prevBb = helperCallBb;
+                prevBb = fastPathBb;
                 result = PhaseStatus::MODIFIED_EVERYTHING;
                 goto TRAVERSE_BLOCK_AGAIN;
             }
