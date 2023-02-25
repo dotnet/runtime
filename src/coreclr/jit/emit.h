@@ -38,7 +38,11 @@
 #define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
 #endif
 
-#define EMIT_BACKWARDS_NAVIGATION 0 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
+#ifdef TARGET_XARCH
+#define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
+#else
+#define EMIT_BACKWARDS_NAVIGATION 0
+#endif
 
 /*****************************************************************************/
 
@@ -2292,6 +2296,12 @@ private:
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
+#define EMIT_MAX_IG_INS_COUNT 256
+
+#if EMIT_BACKWARDS_NAVIGATION
+#define EMIT_MAX_PEEPHOLE_INS_COUNT 32 // The max number of previous instructions to navigate through for peepholes.
+#endif                                 // EMIT_BACKWARDS_NAVIGATION
+
     instrDesc* emitLastIns;
     insGroup*  emitLastInsIG;
 
@@ -2299,24 +2309,98 @@ private:
     unsigned emitLastInsFullSize;
 #endif // EMIT_BACKWARDS_NAVIGATION
 
+    // Check to see if the last instruction is available.
+    inline bool emitHasLastIns() const
+    {
+        return (emitLastIns != nullptr);
+    }
+
+    // Checks to see if we can cross between the two given IG boundaries.
+    //
+    // We have the following checks:
+    // 1. Looking backwards across an IG boundary can only be done if we're in an extension IG.
+    // 2. The IG of the previous instruction must have the same GC interrupt status as the current IG.
+    inline bool isInsIGSafeForPeepholeOptimization(insGroup* prevInsIG, insGroup* curInsIG) const
+    {
+        if (prevInsIG == curInsIG)
+        {
+            return true;
+        }
+        else
+        {
+            return (curInsIG->igFlags & IGF_EXTEND) &&
+                   ((prevInsIG->igFlags & IGF_NOGCINTERRUPT) == (curInsIG->igFlags & IGF_NOGCINTERRUPT));
+        }
+    }
+
     // Check if a peephole optimization involving emitLastIns is safe.
     //
     // We have the following checks:
     // 1. There must be a non-null emitLastIns to consult (thus, we have a known "last" instruction).
     // 2. `emitForceNewIG` is not set: this prevents peepholes from crossing nogc boundaries where
     //    the next instruction is forced to create a new IG.
-    // 3. Looking backwards across an IG boundary can only be done if we're in an extension IG.
-    // 4. The IG of the previous instruction must have the same GC interrupt status as the current IG.
-    //    This is related to #2; it disallows peephole when the previous IG is GC and the current is NOGC.
-    bool emitCanPeepholeLastIns()
+    bool emitCanPeepholeLastIns() const
     {
-        assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
+        assert(emitHasLastIns() == (emitLastInsIG != nullptr));
 
-        return (emitLastIns != nullptr) && !emitForceNewIG &&
-               ((emitCurIGinsCnt > 0) ||                     // we're not at the start of a new IG
-                ((emitCurIG->igFlags & IGF_EXTEND) != 0)) && //    or we are at the start of a new IG,
-                                                             //    and it's an extension IG
-               ((emitLastInsIG->igFlags & IGF_NOGCINTERRUPT) == (emitCurIG->igFlags & IGF_NOGCINTERRUPT));
+        return emitHasLastIns() && // there is an emitLastInstr
+               !emitForceNewIG &&  // and we're not about to start a new IG.
+               isInsIGSafeForPeepholeOptimization(emitLastInsIG, emitCurIG);
+    }
+
+    enum emitPeepholeResult
+    {
+        PEEPHOLE_CONTINUE,
+        PEEPHOLE_ABORT
+    };
+
+    // Visits the last emitted instructions.
+    // Must be safe to do - use emitCanPeepholeLastIns for checking.
+    // Action is a function type: instrDesc* -> emitPeepholeResult
+    template <typename Action>
+    void emitPeepholeIterateLastInstrs(Action action)
+    {
+        assert(emitCanPeepholeLastIns());
+
+#if EMIT_BACKWARDS_NAVIGATION
+        insGroup*  curInsIG;
+        instrDesc* id;
+
+        if (!emitGetLastIns(&curInsIG, &id))
+            return;
+
+        for (unsigned i = 0; i < EMIT_MAX_PEEPHOLE_INS_COUNT; i++)
+        {
+            assert(id != nullptr);
+
+            switch (action(id))
+            {
+                case PEEPHOLE_ABORT:
+                    return;
+                case PEEPHOLE_CONTINUE:
+                {
+                    insGroup* savedInsIG = curInsIG;
+                    if (emitPrevID(curInsIG, id))
+                    {
+                        if (isInsIGSafeForPeepholeOptimization(curInsIG, savedInsIG))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+                    return;
+                }
+
+                default:
+                    unreached();
+            }
+        }
+#else  // EMIT_BACKWARDS_NAVIGATION
+        action(emitLastIns);
+#endif // !EMIT_BACKWARDS_NAVIGATION
     }
 
 #ifdef TARGET_ARMARCH
