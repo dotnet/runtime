@@ -4846,6 +4846,9 @@ public:
         _ASSERTE(pMT != nullptr);
         _ASSERTE(pMT->IsByRefLike());
 
+        int repeat = 1; // TODO: VS fetch val arr repeat
+        UINT repeatSize = 0; // TODO: VS fetch actual repeat size
+
         ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
         for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {
@@ -4859,7 +4862,10 @@ public:
             }
             else if (pFD->IsByRef())
             {
-                Report(baseOffset + pFD->GetOffset());
+                for (int i = 0; i < repeat; i++)
+                {
+                    Report(baseOffset + (repeatSize * i) + pFD->GetOffset());
+                }
             }
         }
     }

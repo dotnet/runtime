@@ -1694,24 +1694,44 @@ MethodTableBuilder::BuildMethodTableThrowing(
         &pByValueClassCache, bmtMFDescs, bmtFP,
         &totalDeclaredFieldSize);
 
-    // TODO: VS detect valArr 
-    //if (!bmtGenericsInfo->fContainsGenericVariables &&
-    //    g_pValueArrayClass != NULL &&
-    //    g_pValueArrayClass->GetCl() == GetCl() &&
-    //    g_pValueArrayClass->GetModule() == bmtInternal->pType->GetModule())
-    //{
-    //    TypeHandle lengthMarker = bmtGenericsInfo->GetInstantiation()[1];
-    //    if (lengthMarker.IsArray())
-    //    {
-    //        DWORD rank = lengthMarker.GetRank();
-    //        if (rank > 1)
-    //        {
-    //            bmtFP->NumValueArrayElements = rank;
-    //            // there is no scenario when tearing a value array into pieces is desirable.
-    //            GetHalfBakedClass()->SetValueArrayFlag();
-    //        }
-    //    }
-    //}
+    if (IsValueClass())
+    {
+        const void* pVal;                  // The custom value.
+        ULONG       cbVal;                 // Size of the custom value.
+        HRESULT hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
+            WellKnownAttribute::InlineArrayAttribute,
+            &pVal, &cbVal);
+
+        if (hr != S_FALSE)
+        {
+            if (bmtEnumFields->dwNumInstanceFields != 1)
+            {
+                // TODO: diagnostics, must have one field.
+                BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
+            }
+
+            if (cbVal >= (sizeof(INT32) + 2))
+            {
+                INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);
+                if (repeat > 0)
+                {
+                    bmtFP->NumValueArrayElements = repeat;
+                    GetHalfBakedClass()->SetValueArrayFlag();
+                }
+                else
+                {
+                    // TODO: diagnostics, repeat must be > 0
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
+                }
+
+                if (HasExplicitFieldOffsetLayout())
+                {
+                    // TODO: diagnostics, must not have explicit offsets
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
+                }
+            }
+        }
+    }
 
     // Place regular static fields
     PlaceRegularStaticFields();
@@ -8342,8 +8362,9 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
         }
 
-        if (bmtFP->NumValueArrayElements > 0)
+        if (bmtFP->NumValueArrayElements > 1)
         {
+            // TODO: VS validate that size < FIELD_OFFSET_LAST_REAL_OFFSET
             dwNumInstanceFieldBytes *= bmtFP->NumValueArrayElements;
 
             if (pFieldDescList[0].IsByValue())
@@ -11529,7 +11550,7 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
         }
 
         DWORD repeat = 1;
-        if (bmtFP->NumValueArrayElements > 0)
+        if (bmtFP->NumValueArrayElements > 1)
         {
             _ASSERTE(bmtEnumFields->dwNumInstanceFields == 1);
             repeat = bmtFP->NumValueArrayElements;
