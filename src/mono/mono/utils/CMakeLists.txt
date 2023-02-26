@@ -1,3 +1,4 @@
+project(utils C)
 
 set(utils_win32_sources
     mono-os-semaphore-win32.c
@@ -230,7 +231,7 @@ else()
   message(FATAL_ERROR "")
 endif()
 
-addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
+set(utils_sources "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
 
 set(utils_sources
     ${utils_sources}
@@ -259,3 +260,11 @@ if(ENABLE_DTRACE)
 
     set(utils_sources "${utils_sources};${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h;../utils/dtrace.h")
 endif()
+
+add_library(utils_objects OBJECT ${utils_sources})
+target_link_libraries(utils_objects PRIVATE monoapi eglib_api)
+target_compile_definitions(utils_objects PRIVATE -DMONO_DLL_EXPORT)
+target_include_directories(utils_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)
+

@@ -3093,6 +3093,21 @@ EXTERN_C const IID IID_ISOSDacInterface13;
             LoaderHeapKind kind,
             VISITHEAP pCallback) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE GetDomainLoaderAllocator( 
+            CLRDATA_ADDRESS domainAddress,
+            CLRDATA_ADDRESS *pLoaderAllocator) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeapNames( 
+            int count,
+            const char **ppNames,
+            int *pNeeded) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeaps( 
+            CLRDATA_ADDRESS loaderAllocator,
+            int count,
+            CLRDATA_ADDRESS *pLoaderHeaps,
+            LoaderHeapKind *pKinds,
+            int *pNeeded) = 0;
     };
     
     

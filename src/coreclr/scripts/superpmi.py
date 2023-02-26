@@ -1482,6 +1482,19 @@ def format_pct(pct):
 def compute_and_format_pct(base, diff):
     return format_pct(compute_pct(base, diff))
 
+class DetailsSection:
+    def __init__(self, write_fh, summary_text):
+        self.write_fh = write_fh
+        self.summary_text = summary_text
+
+    def __enter__(self):
+        self.write_fh.write("\n<details>\n")
+        self.write_fh.write("<summary>{}</summary>\n".format(self.summary_text))
+        self.write_fh.write('<div style="margin-left:1em">\n\n')
+
+    def __exit__(self, *args):
+        self.write_fh.write("\n\n</div></details>\n")
+
 class SuperPMIReplayAsmDiffs:
     """ SuperPMI Replay AsmDiffs class
 
@@ -2037,26 +2050,23 @@ class SuperPMIReplayAsmDiffs:
                 if not any(has_diffs(diff_metrics[row]) for (_, _, diff_metrics, _, _, _) in asm_diffs):
                     return
 
-                write_fh.write("\n<details>\n")
                 sum_base = sum(int(base_metrics[row]["Diffed code bytes"]) for (_, base_metrics, _, _, _, _) in asm_diffs)
                 sum_diff = sum(int(diff_metrics[row]["Diffed code bytes"]) for (_, _, diff_metrics, _, _, _) in asm_diffs)
+                
+                with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
+                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
+                    write_fh.write("|---|--:|--:|\n")
+                    for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs:
+                        # Exclude this particular row?
+                        if not has_diffs(diff_metrics[row]):
+                            continue
 
-                write_fh.write("<summary>{} ({} bytes)</summary>\n\n".format(row, format_delta(sum_base, sum_diff)))
-                write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
-                write_fh.write("|---|--:|--:|\n")
-                for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs:
-                    # Exclude this particular row?
-                    if not has_diffs(diff_metrics[row]):
-                        continue
-
-                    write_fh.write("|{}|{:,d}|{}|\n".format(
-                        mch_file,
-                        int(base_metrics[row]["Diffed code bytes"]),
-                        format_delta(
+                        write_fh.write("|{}|{:,d}|{}|\n".format(
+                            mch_file,
                             int(base_metrics[row]["Diffed code bytes"]),
-                            int(diff_metrics[row]["Diffed code bytes"]))))
-
-                write_fh.write("\n\n</details>\n")
+                            format_delta(
+                                int(base_metrics[row]["Diffed code bytes"]),
+                                int(diff_metrics[row]["Diffed code bytes"]))))
 
             write_pivot_section("Overall")
             write_pivot_section("MinOpts")
@@ -2068,93 +2078,84 @@ class SuperPMIReplayAsmDiffs:
             write_fh.write("No diffs found.\n")
 
         # Next write a detailed section
-        write_fh.write("\n<details>\n")
-        write_fh.write("<summary>Details</summary>\n\n")
+        with DetailsSection(write_fh, "Details"):
+            if any_diffs:
+                write_fh.write("#### Improvements/regressions per collection\n\n")
+                write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
+                write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
 
-        if any_diffs:
-            write_fh.write("#### Improvements/regressions per collection\n\n")
-            write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
-            write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
+                def write_row(name, diffs):
+                    base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
+                    (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
+                    write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
+                        name,
+                        len(diffs),
+                        html_color("green", "{:,d}".format(num_improvements)),
+                        html_color("red", "{:,d}".format(num_regressions)),
+                        html_color("blue", "{:,d}".format(num_same)),
+                        html_color("green", "-{:,d}".format(byte_improvements)),
+                        html_color("red", "+{:,d}".format(byte_regressions))))
 
-            def write_row(name, diffs):
-                base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
-                (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
-                write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
+                for (mch_file, _, _, diffs, _, _) in asm_diffs:
+                    write_row(mch_file, diffs)
+
+                if len(asm_diffs) > 1:
+                    write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
+
+                write_fh.write("\n---\n\n")
+
+            write_fh.write("#### Context information\n\n")
+            write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
+            write_fh.write("|---|--:|--:|--:|--:|--:|\n")
+
+            rows = [(mch_file,
+                        int(diff_metrics["Overall"]["Successful compiles"]),
+                        int(diff_metrics["MinOpts"]["Successful compiles"]),
+                        int(diff_metrics["FullOpts"]["Successful compiles"]),
+                        int(base_metrics["Overall"]["Missing compiles"]),
+                        int(diff_metrics["Overall"]["Missing compiles"])) for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
+
+            def write_row(name, num_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff):
+                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
                     name,
-                    len(diffs),
-                    html_color("green", "{:,d}".format(num_improvements)),
-                    html_color("red", "{:,d}".format(num_regressions)),
-                    html_color("blue", "{:,d}".format(num_same)),
-                    html_color("green", "-{:,d}".format(byte_improvements)),
-                    html_color("red", "+{:,d}".format(byte_regressions))))
+                    num_contexts,
+                    num_minopts,
+                    num_fullopts,
+                    num_missed_base,
+                    num_missed_base / num_contexts * 100,
+                    num_missed_diff,
+                    num_missed_diff / num_contexts * 100))
+                        
+            for t in rows:
+                write_row(*t)
 
-            for (mch_file, _, _, diffs, _, _) in asm_diffs:
-                write_row(mch_file, diffs)
+            if len(rows) > 1:
+                def sum_row(index):
+                    return sum(r[index] for r in rows)
 
-            if len(asm_diffs) > 1:
-                write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
+                write_row("", sum_row(1), sum_row(2), sum_row(3), sum_row(4), sum_row(5))
 
-            write_fh.write("\n---\n\n")
+            write_fh.write("\n\n")
 
-        write_fh.write("#### Context information\n\n")
-        write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
-        write_fh.write("|---|--:|--:|--:|--:|--:|\n")
+            if any(has_diff for (_, _, _, has_diff, _, _) in asm_diffs):
+                write_fh.write("---\n\n")
+                write_fh.write("#### jit-analyze output\n")
 
-        rows = [(mch_file,
-                    int(diff_metrics["Overall"]["Successful compiles"]),
-                    int(diff_metrics["MinOpts"]["Successful compiles"]),
-                    int(diff_metrics["FullOpts"]["Successful compiles"]),
-                    int(base_metrics["Overall"]["Missing compiles"]),
-                    int(diff_metrics["Overall"]["Missing compiles"])) for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
+                for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file, _) in asm_diffs:
+                    if not has_diffs or jit_analyze_summary_file is None:
+                        continue
 
-        def write_row(name, num_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff):
-            write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
-                name,
-                num_contexts,
-                num_minopts,
-                num_fullopts,
-                num_missed_base,
-                num_missed_base / num_contexts * 100,
-                num_missed_diff,
-                num_missed_diff / num_contexts * 100))
-                    
-        for t in rows:
-            write_row(*t)
-
-        if len(rows) > 1:
-            def sum_row(index):
-                return sum(r[index] for r in rows)
-
-            write_row("", sum_row(1), sum_row(2), sum_row(3), sum_row(4), sum_row(5))
-
-        write_fh.write("\n\n")
-
-        if any(has_diff for (_, _, _, has_diff, _, _) in asm_diffs):
-            write_fh.write("---\n\n")
-            write_fh.write("#### jit-analyze output\n")
-
-            for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file, _) in asm_diffs:
-                if not has_diffs or jit_analyze_summary_file is None:
-                    continue
-
-                with open(jit_analyze_summary_file, "r") as read_fh:
-                    write_fh.write("""\
-
-<details>
-
-<summary>{0}</summary>
-
-To reproduce these diffs on Windows {1}:
+                    with open(jit_analyze_summary_file, "r") as read_fh:
+                        with DetailsSection(write_fh, mch_file):
+                            write_fh.write("""\
+To reproduce these diffs on Windows {0}:
 ```
-superpmi.py asmdiffs -target_os {2} -target_arch {3} -arch {1}
+superpmi.py asmdiffs -target_os {1} -target_arch {2} -arch {0}
 ```
 
-""".format(mch_file, self.coreclr_args.arch, self.coreclr_args.target_os, self.coreclr_args.target_arch))
+""".format(self.coreclr_args.arch, self.coreclr_args.target_os, self.coreclr_args.target_arch))
 
-                    shutil.copyfileobj(read_fh, write_fh)
-                    write_fh.write("\n</details>\n")
-
-        write_fh.write("\n</details>\n")
+                            shutil.copyfileobj(read_fh, write_fh)
 
     def write_example_diffs_to_markdown_summary(self, write_fh, asm_diffs):
         """ Write a section with example diffs to the markdown summary.
@@ -2173,59 +2174,48 @@ superpmi.py asmdiffs -target_os {2} -target_arch {3} -arch {1}
             write_fh.write("\nCould not find a git executable in PATH to create example diffs.\n\n")
             return
 
-        write_fh.write("\n<details>\n")
-        write_fh.write("<summary>Example diffs</summary>\n\n")
-        for (collection_name, _, _, _, _, examples_to_put_in_summary) in asm_diffs:
-            if not any(examples_to_put_in_summary):
-                continue
-
-            write_fh.write("<details>\n")
-            write_fh.write("<summary>{}</summary>\n".format(collection_name))
-
-            for (diff, base_dasm_path, diff_dasm_path) in examples_to_put_in_summary:
-                context_num = int(diff["Context"])
-                func_name = str(context_num) + ".dasm"
-
-                if not os.path.exists(base_dasm_path) or not os.path.exists(diff_dasm_path):
-                    write_fh.write("Did not find base/diff .dasm files for context {}; cannot display example diff\n\n".format(context_num))
+        with DetailsSection(write_fh, "Example diffs"):
+            for (collection_name, _, _, _, _, examples_to_put_in_summary) in asm_diffs:
+                if not any(examples_to_put_in_summary):
                     continue
 
-                with open(base_dasm_path) as f:
-                    first_line = f.readline().rstrip()
-                    if first_line and first_line.startswith("; Assembly listing for method "):
-                        func_name += " - " + first_line[len("; Assembly listing for method "):]
-                
-                git_diff_command = [ git_path, "diff", "--diff-algorithm=histogram", "--no-index", "--", base_dasm_path, diff_dasm_path ]
-                git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
-                (stdout, _) = git_diff_proc.communicate()
-                code = git_diff_proc.returncode
-                diff_lines = stdout.decode().splitlines()
-                diff_lines = diff_lines[4:] # Exclude patch header
+                with DetailsSection(write_fh, collection_name):
+                    for (diff, base_dasm_path, diff_dasm_path) in examples_to_put_in_summary:
+                        context_num = int(diff["Context"])
+                        func_name = str(context_num) + ".dasm"
 
-                write_fh.write("<details>\n")
-                base_size = int(diff["Base size"])
-                diff_size = int(diff["Diff size"])
-                write_fh.write("<summary>{} ({}) : {}</summary>\n\n".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name))
+                        if not os.path.exists(base_dasm_path) or not os.path.exists(diff_dasm_path):
+                            write_fh.write("Did not find base/diff .dasm files for context {}; cannot display example diff\n\n".format(context_num))
+                            continue
 
-                if code == 0 or len(diff_lines) <= 0:
-                    write_fh.write("No diffs found?\n\n")
-                else:
-                    write_fh.write("```diff\n")
-                    if len(diff_lines) > 250:
-                        diff_lines = diff_lines[:250]
-                        diff_lines.append("...")
+                        with open(base_dasm_path) as f:
+                            first_line = f.readline().rstrip()
+                            if first_line and first_line.startswith("; Assembly listing for method "):
+                                func_name += " - " + first_line[len("; Assembly listing for method "):]
+                        
+                        git_diff_command = [ git_path, "diff", "--diff-algorithm=histogram", "--no-index", "--", base_dasm_path, diff_dasm_path ]
+                        git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
+                        (stdout, _) = git_diff_proc.communicate()
+                        code = git_diff_proc.returncode
+                        diff_lines = stdout.decode().splitlines()
+                        diff_lines = diff_lines[4:] # Exclude patch header
 
-                    for line in diff_lines:
-                        write_fh.write(line)
-                        write_fh.write("\n")
+                        base_size = int(diff["Base size"])
+                        diff_size = int(diff["Diff size"])
+                        with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name)):
+                            if code == 0 or len(diff_lines) <= 0:
+                                write_fh.write("No diffs found?\n\n")
+                            else:
+                                write_fh.write("```diff\n")
+                                if len(diff_lines) > 250:
+                                    diff_lines = diff_lines[:250]
+                                    diff_lines.append("...")
 
-                    write_fh.write("```\n")
+                                for line in diff_lines:
+                                    write_fh.write(line)
+                                    write_fh.write("\n")
 
-                write_fh.write("</details>\n\n")
-
-            write_fh.write("</details>\n")
-
-        write_fh.write("</details>")
+                                write_fh.write("\n```\n")
 
     def pick_contexts_to_disassemble(self, diffs):
         """ Given information about diffs, pick the context numbers to create .dasm files for and examples to show diffs for.
@@ -2518,26 +2508,25 @@ class SuperPMIReplayThroughputDiff:
                 if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
                     return
 
-                write_fh.write("\n<details>\n")
                 pcts = [compute_pct(int(base_metrics[row]["Diff executed instructions"]), int(diff_metrics[row]["Diff executed instructions"])) for (_, base_metrics, diff_metrics) in tp_diffs]
                 min_pct_str = format_pct(min(pcts))
                 max_pct_str = format_pct(max(pcts))
                 if min_pct_str == max_pct_str:
-                    write_fh.write("<summary>{} ({})</summary>\n\n".format(row, min_pct_str))
+                    tp_summary = "{} ({})".format(row, min_pct_str)
                 else:
-                    write_fh.write("<summary>{} ({} to {})</summary>\n\n".format(row, min_pct_str, max_pct_str))
-                write_fh.write("|Collection|PDIFF|\n")
-                write_fh.write("|---|--:|\n")
-                for mch_file, base, diff in tp_diffs:
-                    base_instructions = int(base[row]["Diff executed instructions"])
-                    diff_instructions = int(diff[row]["Diff executed instructions"])
+                    tp_summary = "{} ({} to {})".format(row, min_pct_str, max_pct_str)
 
-                    if is_significant(row, base, diff):
-                        write_fh.write("|{}|{}|\n".format(
-                            mch_file,
-                            compute_and_format_pct(base_instructions, diff_instructions)))
+                with DetailsSection(write_fh, tp_summary):
+                    write_fh.write("|Collection|PDIFF|\n")
+                    write_fh.write("|---|--:|\n")
+                    for mch_file, base, diff in tp_diffs:
+                        base_instructions = int(base[row]["Diff executed instructions"])
+                        diff_instructions = int(diff[row]["Diff executed instructions"])
 
-                write_fh.write("\n\n</details>\n")
+                        if is_significant(row, base, diff):
+                            write_fh.write("|{}|{}|\n".format(
+                                mch_file,
+                                compute_and_format_pct(base_instructions, diff_instructions)))
 
             write_pivot_section("Overall")
             write_pivot_section("MinOpts")
@@ -2545,20 +2534,18 @@ class SuperPMIReplayThroughputDiff:
         else:
             write_fh.write("No significant throughput differences found\n")
 
-        write_fh.write("\n<details>\n")
-        write_fh.write("<summary>Details</summary>\n\n")
-        for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
-            write_fh.write("{} contexts:\n\n".format(disp))
-            write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
-            write_fh.write("|---|--:|--:|--:|\n")
-            for mch_file, base, diff in tp_diffs:
-                base_instructions = int(base[row]["Diff executed instructions"])
-                diff_instructions = int(diff[row]["Diff executed instructions"])
-                write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
-                    mch_file, base_instructions, diff_instructions,
-                    compute_and_format_pct(base_instructions, diff_instructions)))
-            write_fh.write("\n")
-        write_fh.write("\n</details>\n")
+        with DetailsSection(write_fh, "Details"):
+            for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
+                write_fh.write("{} contexts:\n\n".format(disp))
+                write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
+                write_fh.write("|---|--:|--:|--:|\n")
+                for mch_file, base, diff in tp_diffs:
+                    base_instructions = int(base[row]["Diff executed instructions"])
+                    diff_instructions = int(diff[row]["Diff executed instructions"])
+                    write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
+                        mch_file, base_instructions, diff_instructions,
+                        compute_and_format_pct(base_instructions, diff_instructions)))
+                write_fh.write("\n")
 
 ################################################################################
 # Argument handling helpers

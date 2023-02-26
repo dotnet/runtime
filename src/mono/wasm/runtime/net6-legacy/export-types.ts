@@ -111,10 +111,6 @@ export type MONOType = {
      */
     mono_wasm_load_config: (configFilePath: string) => Promise<void>;
     /**
-     * @deprecated Please use runMain instead
-     */
-    mono_load_runtime_and_bcl_args: Function;
-    /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
     mono_wasm_new_root_buffer: (capacity: number, name?: string) => WasmRootBuffer;

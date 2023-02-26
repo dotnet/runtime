@@ -641,8 +641,8 @@
   <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
          rpath so that the test can load its native library dependencies if there's any -->
-    <IlcRPath Condition="'$(TargetOS)' != 'osx'">$ORIGIN/..</IlcRPath>
-    <IlcRPath Condition="'$(TargetOS)' == 'osx'">@executable_path/..</IlcRPath>
+    <IlcRPath Condition="'$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true'">@executable_path/..</IlcRPath>
+    <IlcRPath Condition="'$(IlcRPath)' == ''">$ORIGIN/..</IlcRPath>
 
     <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only"
       Microsoft.NETCore.Native.targets expect IlcHostArch to be set but it doesn't have to -->

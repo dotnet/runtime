@@ -55,6 +55,7 @@
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'singlethread'">false</MonoWasmThreads>
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
     <MonoWasmThreadsNoUser Condition="'$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
+    <MonoEnableAssertMessages Condition="'$(MonoEnableAssertMessages)' == '' and '$(TargetsWasi)' == 'true'">true</MonoEnableAssertMessages>
   </PropertyGroup>
 
   <!-- default thread suspend for specific platforms -->
