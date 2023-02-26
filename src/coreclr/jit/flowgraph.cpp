@@ -63,7 +63,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
     // Current method doesn't have runtime lookups - bail out.
-    if (!doesMethodHaveExpRuntimeLookup() || !ISMETHOD("Test"))
+    if (!doesMethodHaveExpRuntimeLookup())
     {
         return result;
     }
@@ -198,7 +198,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
 
                 prevBb = block;
-                block  = fgSplitBlockAfterStatement(prevBb, prevStmt);
+                // TODO: use fgSplitBlockAfterStatement to be more precise
+                block  = fgSplitBlockAtBeginning(prevBb);
 
                 //
                 // prevBb(BBJ_NONE):
