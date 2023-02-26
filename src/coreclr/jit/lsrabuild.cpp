@@ -1597,13 +1597,13 @@ RefPosition* LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarI
                                                             GenTree*     node,
                                                             bool         isUse)
 {
-    RefPosition* restorePos = nullptr;
     if (lclVarInterval->isPartiallySpilled)
     {
         unsigned     varIndex            = lclVarInterval->getVarIndex(compiler);
         Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
         RefPosition* savePos             = upperVectorInterval->recentRefPosition;
-        restorePos = newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
+        RefPosition* restorePos =
+            newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
         lclVarInterval->isPartiallySpilled = false;
 
         if (isUse)
@@ -1621,8 +1621,13 @@ RefPosition* LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarI
 #ifdef TARGET_XARCH
         restorePos->regOptional = true;
 #endif
+#ifdef TARGET_ARM64
+        // Only needed for consecutive registers for now, which is only
+        // possible in TARGET_ARM64
+        return restorePos;
+#endif
     }
-    return restorePos;
+    return nullptr;
 }
 
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -3044,10 +3049,9 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 //    The node must not be contained, and must have been processed by buildRefPositionsForNode().
 //
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-RefPosition* LinearScan::BuildUse(GenTree*      operand,
-                                  regMaskTP     candidates,
-                                  int           multiRegIdx,
-                                  RefPosition** restoreRefPosition)
+RefPosition* LinearScan::BuildUse(GenTree*  operand,
+                                  regMaskTP candidates,
+                                  int multiRegIdx ARM64_ARG(RefPosition** restoreRefPosition))
 #else
 RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int multiRegIdx)
 #endif
@@ -3078,10 +3082,12 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         RefPosition* upperVectorRefPos = buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
+#ifdef TARGET_ARM64
         if (restoreRefPosition != nullptr)
         {
             *restoreRefPosition = upperVectorRefPos;
         }
+#endif // TARGET_ARM64
 #endif
     }
     else if (operand->IsMultiRegLclVar())
@@ -3096,10 +3102,12 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         RefPosition* upperVectorRefPos = buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
+#ifdef TARGET_ARM64
         if (restoreRefPosition != nullptr)
         {
             *restoreRefPosition = upperVectorRefPos;
         }
+#endif // TARGET_ARM64
 #endif
     }
     else

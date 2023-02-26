@@ -1870,10 +1870,9 @@ private:
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    RefPosition* BuildUse(GenTree*      operand,
-                          regMaskTP     candidates         = RBM_NONE,
-                          int           multiRegIdx        = 0,
-                          RefPosition** restoreRefPosition = nullptr);
+    RefPosition* BuildUse(GenTree*  operand,
+                          regMaskTP candidates  = RBM_NONE,
+                          int       multiRegIdx = 0 ARM64_ARG(RefPosition** restoreRefPosition = nullptr));
 #else
     RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
 #endif
