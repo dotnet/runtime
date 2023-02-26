@@ -677,6 +677,17 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is a value array type
+        /// </summary>
+        public bool IsValueArray
+        {
+            get
+            {
+                return (GetTypeFlags(TypeFlags.IsValueArray | TypeFlags.AttributeCacheComputed) & TypeFlags.IsValueArray) != 0;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this type implements <code>IDynamicInterfaceCastable</code>
         /// </summary>
         public bool IsIDynamicInterfaceCastable

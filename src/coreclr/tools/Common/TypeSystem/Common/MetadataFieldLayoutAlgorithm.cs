@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -358,27 +357,11 @@ namespace Internal.TypeSystem
                 layoutMetadata.Size,
                 out instanceByteSizeAndAlignment);
 
-            // TODO: VS adjust size
-            //if (type is InstantiatedType it)
-            //{
-            //    if (it.Name == "ValueArray`2" && it.Namespace == "System")
-            //    {
-            //        if (it.Instantiation[1] is ArrayType arr)
-            //        {
-            //            int repeat = arr.Rank;
-
-            //            if (!instanceSizeAndAlignment.Size.IsIndeterminate)
-            //            {
-            //                instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
-            //            }
-
-            //            if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
-            //            {
-            //                instanceByteSizeAndAlignment.Size = new LayoutInt(instanceByteSizeAndAlignment.Size.AsInt * repeat);
-            //            }
-            //        }
-            //    }
-            //}
+            // value array cannot have explicit layout
+            if(type.IsValueArray)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+            }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
@@ -768,28 +751,24 @@ namespace Internal.TypeSystem
                 classLayoutSize: 0,
                 byteCount: out instanceByteSizeAndAlignment);
 
-            // TODO: VS adjust size
-            //if (type is InstantiatedType it)
-            //{
-            //    if (it.Name == "ValueArray`2" && it.Namespace == "System")
-            //    {
-            //        if (it.Instantiation[1] is ArrayType arr)
-            //        {
-            //            int repeat = arr.Rank;
+            if (type.IsValueArray)
+            {
+                int repeat = type.GetValueArrayLength();
 
-            //            if (!instanceSizeAndAlignment.Size.IsIndeterminate)
-            //            {
-            //                instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
-            //            }
+                // UNDONE: VS validate resulting size.
+                // UNDONE: VS validate repeat > 0.
 
-            //            if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
-            //            {
-            //                instanceByteSizeAndAlignment.Size = new LayoutInt(instanceByteSizeAndAlignment.Size.AsInt * repeat);
-            //            }
-            //        }
-            //    }
-            //}
 
+                if (!instanceSizeAndAlignment.Size.IsIndeterminate)
+                {
+                    instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
+                }
+
+                if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
+                {
+                    instanceByteSizeAndAlignment.Size = new LayoutInt(instanceByteSizeAndAlignment.Size.AsInt * repeat);
+                }
+            }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {

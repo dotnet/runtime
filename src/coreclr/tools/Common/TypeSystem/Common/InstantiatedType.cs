@@ -106,6 +106,9 @@ namespace Internal.TypeSystem
                 if (_typeDef.IsByRefLike)
                     flags |= TypeFlags.IsByRefLike;
 
+                if (_typeDef.IsValueArray)
+                    flags |= TypeFlags.IsValueArray;
+
                 AddComputedIntrinsicFlag(ref flags);
             }
 

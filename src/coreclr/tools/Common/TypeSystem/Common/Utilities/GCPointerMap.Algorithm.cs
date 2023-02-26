@@ -31,18 +31,10 @@ namespace Internal.TypeSystem
             }
 
             int repeat = 1;
-
-            //TODO: VS compute repeat
-            //if (type is InstantiatedType it)
-            //{
-            //    if (it.Name == "ValueArray`2" && it.Namespace == "System")
-            //    {
-            //        if (it.Instantiation[1] is ArrayType arr)
-            //        {
-            //            repeat = arr.Rank;
-            //        }
-            //    }
-            //}
+            if (type.IsValueArray)
+            {
+                repeat = ((MetadataType)type).GetValueArrayLength();
+            }
 
             foreach (FieldDesc field in type.GetFields())
             {

@@ -2027,6 +2027,9 @@ namespace Internal.JitInterface
             if (type.IsIntrinsic)
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC_TYPE;
 
+            if (type.IsValueArray)
+                result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
+
             if (metadataType != null)
             {
                 if (metadataType.ContainsGCPointers)
@@ -2042,18 +2045,6 @@ namespace Internal.JitInterface
                 if (metadataType.IsAbstract)
                     result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             }
-
-            // TODO: VS disable struct promotion for valArr
-            //if (type is InstantiatedType it)
-            //{
-            //    if (it.Name == "ValueArray`2" && it.Namespace == "System")
-            //    {
-            //        if (it.Instantiation[1] is ArrayType arr && arr.Rank > 1)
-            //        {
-            //            result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
-            //        }
-            //    }
-            //}
 
 #if READYTORUN
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))

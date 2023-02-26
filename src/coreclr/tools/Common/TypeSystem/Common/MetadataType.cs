@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
@@ -90,6 +91,12 @@ namespace Internal.TypeSystem
         /// doesn't exist.
         /// </summary>
         public abstract MetadataType GetNestedType(string name);
+
+        public virtual int GetValueArrayLength()
+        {
+            Debug.Assert(this.IsValueArray);
+            return 1;
+        }
     }
 
     public struct ClassLayoutMetadata

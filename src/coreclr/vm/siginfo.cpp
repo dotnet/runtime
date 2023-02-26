@@ -4840,32 +4840,47 @@ public:
         WRAPPER_NO_CONTRACT;
     }
 
+    void Find(FieldDesc* pFD, SIZE_T baseOffset)
+    {
+        if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            if (pFieldMT->IsByRefLike())
+            {
+                Find(pFieldMT, baseOffset + pFD->GetOffset());
+            }
+        }
+        else if (pFD->IsByRef())
+        {
+            Report(baseOffset + pFD->GetOffset());
+        }
+    }
+
     void Find(PTR_MethodTable pMT, SIZE_T baseOffset)
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(pMT != nullptr);
         _ASSERTE(pMT->IsByRefLike());
 
-        int repeat = 1; // TODO: VS fetch val arr repeat
-        UINT repeatSize = 0; // TODO: VS fetch actual repeat size
-
+        bool isValArray = pMT->GetClass()->HasValueArrayFlagSet();
         ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
         for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {
-            if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+            if(isValArray)
             {
-                PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-                if (pFieldMT->IsByRefLike())
+                DWORD elementSize = pFD->GetSize();
+                DWORD totalSize = pMT->GetNumInstanceFieldBytes();
+                for (DWORD offset = 0; offset < totalSize; offset += elementSize)
                 {
-                    Find(pFieldMT, baseOffset + pFD->GetOffset());
+                    Find(pFD, baseOffset + offset);
                 }
+
+                // there is only one instance field
+                break;
             }
-            else if (pFD->IsByRef())
+            else
             {
-                for (int i = 0; i < repeat; i++)
-                {
-                    Report(baseOffset + (repeatSize * i) + pFD->GetOffset());
-                }
+                Find(pFD, baseOffset);
             }
         }
     }
