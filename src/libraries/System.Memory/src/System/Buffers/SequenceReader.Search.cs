@@ -132,7 +132,7 @@ namespace System.Buffers
                     // Found the delimiter. Move to it, slice, then move past it.
                     AdvanceCurrentSpan(index);
 
-                    sequence = Sequence.Slice(copy.Position, Position);
+                    sequence = _sequence.Slice(copy.Position, Position);
                     if (advancePastDelimiter)
                     {
                         Advance(1);
@@ -209,7 +209,7 @@ namespace System.Buffers
                         AdvanceCurrentSpan(index);
                     }
 
-                    sequence = Sequence.Slice(copy.Position, Position);
+                    sequence = _sequence.Slice(copy.Position, Position);
                     if (advancePastDelimiter)
                     {
                         Advance(1);
@@ -286,7 +286,7 @@ namespace System.Buffers
                         Advance(index);
                     }
 
-                    sequence = Sequence.Slice(copy.Position, Position);
+                    sequence = _sequence.Slice(copy.Position, Position);
                     if (advancePastDelimiter)
                     {
                         Advance(1);
@@ -387,7 +387,7 @@ namespace System.Buffers
                         AdvanceCurrentSpan(index);
                     }
 
-                    sequence = Sequence.Slice(copy.Position, Position);
+                    sequence = _sequence.Slice(copy.Position, Position);
                     if (advancePastDelimiter)
                     {
                         Advance(1);
@@ -481,7 +481,7 @@ namespace System.Buffers
                     // Probably a faster way to do this, potentially by avoiding the Advance in the previous TryReadTo call
                     if (advanced)
                     {
-                        sequence = copy.Sequence.Slice(copy.Consumed, Consumed - copy.Consumed);
+                        sequence = copy._sequence.Slice(copy.Consumed, Consumed - copy.Consumed);
                     }
 
                     if (advancePastDelimiter)
@@ -520,7 +520,7 @@ namespace System.Buffers
                 return false;
             }
 
-            sequence = Sequence.Slice(Position, count);
+            sequence = _sequence.Slice(Position, count);
             if (count != 0)
             {
                 Advance(count);
@@ -751,8 +751,8 @@ namespace System.Buffers
                 Consumed = Length;
                 CurrentSpan = default;
                 CurrentSpanIndex = 0;
-                _currentPosition = Sequence.End;
-                _nextPosition = default;
+                CurrentPosition = _sequence.End;
+                NextPosition = default;
                 _moreData = false;
             }
         }
@@ -809,7 +809,7 @@ namespace System.Buffers
             Debug.Assert(currentSpan.Length < next.Length);
 
             int fullLength = next.Length;
-            SequencePosition nextPosition = _nextPosition;
+            SequencePosition nextPosition = NextPosition;
 
             while (next.StartsWith(currentSpan))
             {
@@ -826,7 +826,7 @@ namespace System.Buffers
                 // Need to check the next segment
                 while (true)
                 {
-                    if (!Sequence.TryGet(ref nextPosition, out ReadOnlyMemory<T> nextSegment, advance: true))
+                    if (!_sequence.TryGet(ref nextPosition, out ReadOnlyMemory<T> nextSegment, advance: true))
                     {
                         // Nothing left
                         return false;

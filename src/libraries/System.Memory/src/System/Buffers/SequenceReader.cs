@@ -3,13 +3,26 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
     public ref partial struct SequenceReader<T> where T : unmanaged, IEquatable<T>
     {
-        private SequencePosition _currentPosition;
-        private SequencePosition _nextPosition;
+        // The data is essentially two SequencePositions, however the Start and End SequencePositions are deconstructed to improve packing.
+        private object? _currentObject;
+        private object? _nextObject;
+        private int _currentInteger;
+        private int _nextInteger;
+#if NET7_0_OR_GREATER
+        private readonly ref ReadOnlySequence<T> _sequence;
+        // The data is essentially a Span, however pointer and length are deconstructed to improve packing.
+        private ref T _spanPointer;
+        private int _spanLength;
+#else
+        private readonly ReadOnlySequence<T> _sequence;
+        private ReadOnlySpan<T> _currentSpan;
+#endif
         private bool _moreData;
         private readonly long _length;
 
@@ -17,15 +30,20 @@ namespace System.Buffers
         /// Create a <see cref="SequenceReader{T}"/> over the given <see cref="ReadOnlySequence{T}"/>.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET7_0_OR_GREATER
+        public SequenceReader(in ReadOnlySequence<T> sequence)
+#else
         public SequenceReader(ReadOnlySequence<T> sequence)
+#endif
         {
             CurrentSpanIndex = 0;
             Consumed = 0;
-            Sequence = sequence;
-            _currentPosition = sequence.Start;
+            _sequence = sequence;
+            CurrentPosition = sequence.Start;
             _length = -1;
 
-            sequence.GetFirstSpan(out ReadOnlySpan<T> first, out _nextPosition);
+            sequence.GetFirstSpan(out ReadOnlySpan<T> first, out SequencePosition nextPosition);
+            NextPosition = nextPosition;
             CurrentSpan = first;
             _moreData = first.Length > 0;
 
@@ -33,6 +51,26 @@ namespace System.Buffers
             {
                 _moreData = true;
                 GetNextSpan();
+            }
+        }
+
+        private SequencePosition CurrentPosition
+        {
+            readonly get => new(_currentObject, _currentInteger);
+            set
+            {
+                _currentObject = value._object;
+                _currentInteger = value._integer;
+            }
+        }
+
+        private SequencePosition NextPosition
+        {
+            readonly get => new(_nextObject, _nextInteger);
+            set
+            {
+                _nextObject = value._object;
+                _nextInteger = value._integer;
             }
         }
 
@@ -44,7 +82,7 @@ namespace System.Buffers
         /// <summary>
         /// The underlying <see cref="ReadOnlySequence{T}"/> for the reader.
         /// </summary>
-        public readonly ReadOnlySequence<T> Sequence { get; }
+        public readonly ReadOnlySequence<T> Sequence => _sequence;
 
         /// <summary>
         /// Gets the unread portion of the <see cref="Sequence"/>.
@@ -52,18 +90,30 @@ namespace System.Buffers
         /// <value>
         /// The unread portion of the <see cref="Sequence"/>.
         /// </value>
-        public readonly ReadOnlySequence<T> UnreadSequence => Sequence.Slice(Position);
+        public readonly ReadOnlySequence<T> UnreadSequence => _sequence.Slice(Position);
 
         /// <summary>
         /// The current position in the <see cref="Sequence"/>.
         /// </summary>
         public readonly SequencePosition Position
-            => Sequence.GetPosition(CurrentSpanIndex, _currentPosition);
+            => _sequence.GetPosition(CurrentSpanIndex, CurrentPosition);
 
         /// <summary>
         /// The current segment in the <see cref="Sequence"/> as a span.
         /// </summary>
-        public ReadOnlySpan<T> CurrentSpan { readonly get; private set; }
+#if NET7_0_OR_GREATER
+        public ReadOnlySpan<T> CurrentSpan
+        {
+            readonly get => MemoryMarshal.CreateReadOnlySpan(ref _spanPointer, _spanLength);
+            private set
+            {
+                _spanLength = value.Length;
+                _spanPointer = ref MemoryMarshal.GetReference(value);
+            }
+        }
+#else
+        public ReadOnlySpan<T> CurrentSpan { readonly get => _currentSpan; private set => _currentSpan = value; }
+#endif
 
         /// <summary>
         /// The index in the <see cref="CurrentSpan"/>.
@@ -99,7 +149,7 @@ namespace System.Buffers
                 if (_length < 0)
                 {
                     // Cast-away readonly to initialize lazy field
-                    Unsafe.AsRef(_length) = Sequence.Length;
+                    Unsafe.AsRef(_length) = _sequence.Length;
                 }
                 return _length;
             }
@@ -158,10 +208,10 @@ namespace System.Buffers
             else
             {
                 long remainingOffset = offset - (CurrentSpan.Length - CurrentSpanIndex);
-                SequencePosition nextPosition = _nextPosition;
+                SequencePosition nextPosition = NextPosition;
                 ReadOnlyMemory<T> currentMemory;
 
-                while (Sequence.TryGet(ref nextPosition, out currentMemory, advance: true))
+                while (_sequence.TryGet(ref nextPosition, out currentMemory, advance: true))
                 {
                     // Skip empty segment
                     if (currentMemory.Length > 0)
@@ -248,10 +298,10 @@ namespace System.Buffers
         {
             CurrentSpanIndex = 0;
             Consumed = 0;
-            _currentPosition = Sequence.Start;
-            _nextPosition = _currentPosition;
+            CurrentPosition = _sequence.Start;
+            SequencePosition nextPosition = CurrentPosition;
 
-            if (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<T> memory, advance: true))
+            if (_sequence.TryGet(ref nextPosition, out ReadOnlyMemory<T> memory, advance: true))
             {
                 _moreData = true;
 
@@ -272,6 +322,8 @@ namespace System.Buffers
                 _moreData = false;
                 CurrentSpan = default;
             }
+
+            NextPosition = nextPosition;
         }
 
         /// <summary>
@@ -279,26 +331,30 @@ namespace System.Buffers
         /// </summary>
         private void GetNextSpan()
         {
-            if (!Sequence.IsSingleSegment)
+            if (!_sequence.IsSingleSegment)
             {
-                SequencePosition previousNextPosition = _nextPosition;
-                while (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<T> memory, advance: true))
+                SequencePosition previousNextPosition = NextPosition;
+                SequencePosition nextPosition = NextPosition;
+                while (_sequence.TryGet(ref nextPosition, out ReadOnlyMemory<T> memory, advance: true))
                 {
-                    _currentPosition = previousNextPosition;
+                    CurrentPosition = previousNextPosition;
                     if (memory.Length > 0)
                     {
                         CurrentSpan = memory.Span;
                         CurrentSpanIndex = 0;
+                        NextPosition = nextPosition;
                         return;
                     }
                     else
                     {
                         CurrentSpan = default;
                         CurrentSpanIndex = 0;
-                        previousNextPosition = _nextPosition;
+                        previousNextPosition = nextPosition;
                     }
                 }
+                NextPosition = nextPosition;
             }
+
             _moreData = false;
         }
 
@@ -430,8 +486,8 @@ namespace System.Buffers
             firstSpan.CopyTo(destination);
             int copied = firstSpan.Length;
 
-            SequencePosition next = _nextPosition;
-            while (Sequence.TryGet(ref next, out ReadOnlyMemory<T> nextSegment, true))
+            SequencePosition next = NextPosition;
+            while (_sequence.TryGet(ref next, out ReadOnlyMemory<T> nextSegment, true))
             {
                 if (nextSegment.Length > 0)
                 {

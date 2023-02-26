@@ -12,8 +12,8 @@ namespace System
     /// </summary>
     public readonly struct SequencePosition : IEquatable<SequencePosition>
     {
-        private readonly object? _object;
-        private readonly int _integer;
+        internal readonly object? _object;
+        internal readonly int _integer;
 
         /// <summary>
         /// Creates new <see cref="SequencePosition"/>
