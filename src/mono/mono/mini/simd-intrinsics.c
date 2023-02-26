@@ -435,6 +435,12 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 }
 
 static gboolean
+type_is_simd_vector (MonoType *type)
+{
+	return type->type == MONO_TYPE_GENERICINST && m_class_is_simd_type (mono_class_from_mono_type_internal (type));
+}
+
+static gboolean
 is_hw_intrinsics_class (MonoClass *klass, const char *name, gboolean *is_64bit)
 {
 	const char *class_name = m_class_get_name (klass);
@@ -3060,8 +3066,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_TransposeOdd, OP_ARM64_TRN2},
 	{SN_UnzipEven, OP_ARM64_UZP1},
 	{SN_UnzipOdd, OP_ARM64_UZP2},
-	{SN_VectorTableLookup, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1},
-	{SN_VectorTableLookupExtension, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1},
+	{SN_VectorTableLookup},
+	{SN_VectorTableLookupExtension},
 	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
 	{SN_ZeroExtendWideningLower, OP_ARM64_UXTL},
 	{SN_ZeroExtendWideningUpper, OP_ARM64_UXTL2},
@@ -3365,6 +3371,14 @@ emit_arm64_intrinsics (
 			ret->sreg3 = scalar->dreg;
 			return ret;
 		}
+        case SN_VectorTableLookup:
+			if (!type_is_simd_vector (fsig->params [0]))
+				return NULL;
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
+        case SN_VectorTableLookupExtension:
+            if (!type_is_simd_vector (fsig->params [0]))
+				return NULL;
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1, 0, fsig, args);
 		default:
 			g_assert_not_reached ();
 		}
