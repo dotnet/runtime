@@ -11,6 +11,5 @@
     <Compile Include="Program.AdvSimd.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <ProjectReference Include="VectorTableLookup.RefOnly.csproj" Aliases="CoreLib"  OutputItemType="ReferencePath" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>
