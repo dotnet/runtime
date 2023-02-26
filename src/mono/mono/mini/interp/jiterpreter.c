@@ -720,6 +720,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_ADD_MUL_I4_IMM:
 		case MINT_ADD_MUL_I8_IMM:
 		case MINT_ARRAY_RANK:
+		case MINT_MONO_CMPXCHG_I4:
+		case MINT_MONO_CMPXCHG_I8:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
