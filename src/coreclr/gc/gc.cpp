@@ -16832,7 +16832,8 @@ found_fit:
     // (see also: object.cpp/Object::ValidateInner)
     // Make sure it will see cleaned up state to prevent triggering occasional verification failures.
     // And make sure the write happens before updating "allocated"
-    VolatileStore(((void**)allocated - 1), (void*)0);     //clear the sync block
+    ((void**)allocated)[-1] = 0;    // clear the sync block
+    VOLATILE_MEMORY_BARRIER();
 #endif //VERIFY_HEAP && _DEBUG
 
     uint8_t* old_alloc;
