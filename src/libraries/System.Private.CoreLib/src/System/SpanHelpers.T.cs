@@ -3350,7 +3350,7 @@ namespace System
                     while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
 
                     uint remaining = (uint)Unsafe.ByteOffset(ref current, ref end) / (uint)Unsafe.SizeOf<T>();
-                    if (remaining > 0)
+                    if (remaining > Vector256<T>.Count / 2)
                     {
                         uint mask = Vector256.Equals(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
 
@@ -3374,7 +3374,7 @@ namespace System
                     while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
 
                     uint remaining = (uint)Unsafe.ByteOffset(ref current, ref end) / (uint)Unsafe.SizeOf<T>();
-                    if (remaining > 0)
+                    if (remaining > Vector128<T>.Count / 2)
                     {
                         uint mask = Vector128.Equals(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
 
