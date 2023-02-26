@@ -62,15 +62,17 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
-    // Current method doesn't have runtime lookups - bail out.
     if (!doesMethodHaveExpRuntimeLookup())
     {
+        JITDUMP("Current method doesn't have runtime lookups - bail out.")
         return result;
     }
 
+    // Find all calls with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag
     for (BasicBlock* block : Blocks())
     {
     TRAVERSE_BLOCK_AGAIN:
+
         Statement* prevStmt = nullptr;
         for (Statement* const stmt : block->Statements())
         {
@@ -82,6 +84,10 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     continue;
                 }
                 assert(tree->IsHelperCall());
+
+                JITDUMP("Expanding runtime lookup for [%06d] in " FMT_BB ":\n", dspTreeID(tree), block->bbNum)
+                DISPTREE(tree)
+                JITDUMP("\n")
 
                 GenTreeCall* call = tree->AsCall();
                 call->ClearExpRuntimeLookup();
@@ -112,7 +118,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                         continue;
                     }
                 }
-
                 assert(signature != nullptr);
 
                 CORINFO_RUNTIME_LOOKUP runtimeLookup = {};
@@ -122,6 +127,10 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
 
                 const bool needsSizeCheck = runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK;
+                if (needsSizeCheck)
+                {
+                    JITDUMP("dynamic expansion, needs size check.\n")
+                }
 
                 assert(runtimeLookup.indirections != 0);
                 assert(runtimeLookup.testForNull);
@@ -131,13 +140,22 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 if (prevStmt == nullptr)
                 {
+                    JITDUMP("Splitting " FMT_BB " at the beginning.\n", prevBb->bbNum)
                     block = fgSplitBlockAtBeginning(prevBb);
                 }
                 else
                 {
+                    JITDUMP("Splitting " FMT_BB " after statement " FMT_STMT "\n", prevBb->bbNum, prevStmt->GetID())
                     block = fgSplitBlockAfterStatement(prevBb, prevStmt);
                 }
 
+                // We split a block, possibly, in the middle - we need to propagate some flags
+                prevBb->bbFlags =
+                    originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+                block->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT |
+                                                   BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
+
+                // Define a local for the result
                 const unsigned rtLookupLclNum   = lvaGrabTemp(true DEBUGARG("runtime lookup"));
                 lvaTable[rtLookupLclNum].lvType = TYP_I_IMPL;
                 GenTreeLclVar* rtLookupLcl      = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
@@ -198,22 +216,17 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     }
                 }
 
-                prevBb->bbFlags =
-                    originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-                block->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT |
-                                                   BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
-
                 // Non-dynamic expansion case (no size check):
                 //
                 // prevBb(BBJ_NONE):                    [weight: 1.0]
                 //     ...
                 //
                 // nullcheckBb(BBJ_COND):               [weight: 1.0]
-                //     if (fastPathValue == 0)
+                //     if (*fastPathValue == null)
                 //         goto fallbackBb;
                 //
                 // fastPathBb(BBJ_ALWAYS):              [weight: 0.8]
-                //     rtLookupLcl = fastPathValue;
+                //     rtLookupLcl = *fastPathValue;
                 //     goto block;
                 //
                 // fallbackBb(BBJ_NONE):                [weight: 0.2]
@@ -229,6 +242,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 GenTree* fastPathValue = gtNewOperNode(GT_IND, TYP_I_IMPL, gtCloneExpr(slotPtrTree));
                 fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
+
+                // Save dictionary slot to a local (to be used by fast path)
                 GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
 
                 GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
@@ -400,6 +415,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
             prevStmt = stmt;
         }
     }
+
+#ifdef DEBUG
+    if (verbose && (result == PhaseStatus::MODIFIED_EVERYTHING))
+    {
+        printf("\n*************** After fgExpandRuntimeLookups()\n");
+        fgDispBasicBlocks(true);
+    }
+#endif
 
     return result;
 }
