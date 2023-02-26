@@ -8364,8 +8364,12 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
 
         if (bmtFP->NumValueArrayElements > 1)
         {
-            // TODO: VS validate that size < FIELD_OFFSET_LAST_REAL_OFFSET
-            dwNumInstanceFieldBytes *= bmtFP->NumValueArrayElements;
+            INT64 extendedSize = (INT64)dwNumInstanceFieldBytes * (INT64)bmtFP->NumValueArrayElements;
+            if (extendedSize > FIELD_OFFSET_LAST_REAL_OFFSET) {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+            }
+
+            dwNumInstanceFieldBytes = (DWORD)extendedSize;
 
             if (pFieldDescList[0].IsByValue())
             {
