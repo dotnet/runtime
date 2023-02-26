@@ -4530,10 +4530,8 @@ mono_aot_can_dedup (MonoMethod *method)
 		!mini_is_gsharedvt_signature (mono_method_signature_internal (method)) &&
 		!mini_is_gsharedvt_klass (method->klass)) {
 		MonoGenericContext *context = mono_method_get_context (method);
-#ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 		if (context->method_inst && mini_is_gsharedvt_inst (context->method_inst))
 			return FALSE;
-#endif
 		/* No point in dedup-ing private instances */
 		if ((context->class_inst && inst_is_private (context->class_inst)) ||
 			(context->method_inst && inst_is_private (context->method_inst)))
