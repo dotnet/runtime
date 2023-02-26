@@ -27915,7 +27915,7 @@ BOOL gc_heap::loh_enque_pinned_plug (uint8_t* plug, size_t len)
 }
 
 inline
-BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit)
+BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit, bool end_p)
 {
     dprintf (1235, ("trying to fit %zd(%zd) between %p and %p (%zd)",
         size,
@@ -27924,7 +27924,11 @@ BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* allo
         alloc_limit,
         (alloc_limit - alloc_pointer)));
 
-    return ((alloc_pointer + 2* AlignQword (loh_padding_obj_size) +  size) <= alloc_limit);
+    // If it's at the end, we don't need to allocate the tail padding
+    size_t pad = 1 + (end_p ? 0 : 1);
+    pad *= AlignQword (loh_padding_obj_size);
+
+    return ((alloc_pointer + pad + size) <= alloc_limit);
 }
 
 uint8_t* gc_heap::loh_allocate_in_condemned (size_t size)
@@ -27938,7 +27942,8 @@ uint8_t* gc_heap::loh_allocate_in_condemned (size_t size)
 retry:
     {
         heap_segment* seg = generation_allocation_segment (gen);
-        if (!(loh_size_fit_p (size, generation_allocation_pointer (gen), generation_allocation_limit (gen))))
+        if (!(loh_size_fit_p (size, generation_allocation_pointer (gen), generation_allocation_limit (gen), 
+                              (generation_allocation_limit (gen) == heap_segment_plan_allocated (seg)))))
         {
             if ((!(loh_pinned_plug_que_empty_p()) &&
                  (generation_allocation_limit (gen) ==
@@ -27976,7 +27981,10 @@ retry:
                 }
                 else
                 {
-                    if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg)) &&
+                    if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg), true) &&
+                        // We are overestimating here by padding with 2 loh_padding_obj_size objects which we shouldn't need
+                        // to do if it's at the end of the region. However, grow_heap_segment is already overestimating by
+                        // a lot more - it would be worth fixing when we are in extreme low memory situations.
                         (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (loh_padding_obj_size)))))
                     {
                         dprintf (1235, ("growing seg from %p to %p\n", heap_segment_committed (seg),
