@@ -666,7 +666,8 @@ namespace System.Drawing.Tests
 
             using (FontFamily family = FontFamily.GenericMonospace)
             {
-                var logFont = new LOGFONT
+                IntPtr lpFaceName = Marshal.StringToCoTaskMemAuto(family.Name);
+                var logFont = new LOGFONT_Struct
                 {
                     lfFaceName = family.Name,
                     lfWeight = weight,
@@ -679,6 +680,8 @@ namespace System.Drawing.Tests
                 {
                     VerifyFont(font, family.Name, font.Size, fontStyle, GraphicsUnit.World, charSet, expectedGdiVerticalFont: false);
                 }
+
+                Marshal.FreeCoTaskMem(lpFaceName);
             }
         }
 
@@ -738,7 +741,7 @@ namespace System.Drawing.Tests
                 IntPtr hdc = graphics.GetHdc();
                 try
                 {
-                    var logFont = new LOGFONT();
+                    var logFont = new LOGFONT_Struct();
                     AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(in logFont));
                     AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(in logFont, hdc));
                 }
@@ -860,7 +863,7 @@ namespace System.Drawing.Tests
             using (FontFamily family = FontFamily.GenericMonospace)
             using (var font = new Font(family, 10, fontStyle, GraphicsUnit.Point, gdiCharSet, gdiVerticalFont))
             {
-                var logFont = new LOGFONT();
+                LOGFONT_Struct logFont = default;
                 font.ToLogFont(ref logFont);
 
                 Assert.Equal(-13, logFont.lfHeight);
@@ -932,7 +935,7 @@ namespace System.Drawing.Tests
             {
                 graphics.TextRenderingHint = textRenderingHint;
 
-                var logFont = new LOGFONT();
+                LOGFONT_Struct logFont = default;
                 font.ToLogFont(ref logFont, graphics);
 
                 Assert.Equal(-13, logFont.lfHeight);
@@ -948,7 +951,7 @@ namespace System.Drawing.Tests
                 Assert.Equal(0, logFont.lfClipPrecision);
                 Assert.Equal(0, logFont.lfQuality);
                 Assert.Equal(0, logFont.lfPitchAndFamily);
-                Assert.Equal(family.Name, logFont.lfFaceName);
+                Assert.Equal(family.Name, Marshal.PtrToStringAuto(logFont.lfFaceName, 32));
             }
         }
 
@@ -982,7 +985,7 @@ namespace System.Drawing.Tests
             using (FontFamily family = FontFamily.GenericMonospace)
             using (var font = new Font(family, 10))
             {
-                var fontStruct = new LOGFONT();
+                LOGFONT_Struct fontStruct = default;
                 AssertExtensions.Throws<ArgumentNullException>("graphics", () => font.ToLogFont(ref fontStruct, null));
             }
         }
@@ -1011,7 +1014,7 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                var fontStruct = new LOGFONT();
+                LOGFONT_Struct fontStruct = default;
                 Assert.Throws<ArgumentException>(() => font.ToLogFont(ref fontStruct, graphics));
             }
         }
@@ -1034,6 +1037,25 @@ namespace System.Drawing.Tests
             public byte lfPitchAndFamily;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             public string lfFaceName;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct LOGFONT_Struct
+        {
+            public int lfHeight;
+            public int lfWidth;
+            public int lfEscapement;
+            public int lfOrientation;
+            public int lfWeight;
+            public byte lfItalic;
+            public byte lfUnderline;
+            public byte lfStrikeOut;
+            public byte lfCharSet;
+            public byte lfOutPrecision;
+            public byte lfClipPrecision;
+            public byte lfQuality;
+            public byte lfPitchAndFamily;
+            public IntPtr lfFaceName;
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
