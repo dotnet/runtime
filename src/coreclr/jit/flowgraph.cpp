@@ -68,7 +68,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         return result;
     }
 
-    BasicBlock* prevBb = nullptr;
     for (BasicBlock* block : Blocks())
     {
     TRAVERSE_BLOCK_AGAIN:
@@ -87,6 +86,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 GenTreeCall* call = tree->AsCall();
                 call->ClearExpRuntimeLookup();
                 assert(call->gtArgs.CountArgs() == 2);
+                assert(!call->IsTailCall()); // We don't expect it here
 
                 // call(ctx, signature);
                 GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
@@ -135,25 +135,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 lvaTable[rtLookupLclNum].lvType = TYP_I_IMPL;
                 GenTreeLclVar* rtLookupLcl      = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
 
-                if (prevBb == nullptr)
-                {
-                    // We're going to emit a BB in front of fgFirstBB
-                    fgEnsureFirstBBisScratch();
-                    prevBb = fgFirstBB;
-                }
-
-                if (prevBb == block)
-                {
-                    // Unlikely event: current block is a scratch block
-                    continue;
-                }
-
-                if (prevStmt == nullptr)
-                {
-                    prevStmt = fgNewStmtFromTree(gtNewNothingNode());
-                    fgInsertStmtAtBeg(block, prevStmt);
-                }
-
                 // Save ctxTree to a local if it's complex
                 if (!ctxTree->OperIs(GT_LCL_VAR))
                 {
@@ -197,9 +178,15 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     }
                 }
 
-                prevBb = block;
-                // TODO: use fgSplitBlockAfterStatement to be more precise
-                block  = fgSplitBlockAtBeginning(prevBb);
+                BasicBlockFlags originalFlags = block->bbFlags;
+                BasicBlock*     prevBb        = block;
+                block                         = prevStmt == nullptr ? fgSplitBlockAtBeginning(prevBb)
+                                            : fgSplitBlockAfterStatement(prevBb, prevStmt);
+
+                prevBb->bbFlags =
+                    originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+                block->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT |
+                                                   BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
 
                 //
                 // prevBb(BBJ_NONE):
@@ -243,7 +230,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
 
                 // Fast-path basic block
-                BasicBlock* fastPathBb = fgNewBBafter(BBJ_NONE, nullcheckBb, true);
+                BasicBlock* fastPathBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
                 fastPathBb->bbFlags |= BBF_INTERNAL;
                 Statement* asgFastPathValueStmt =
                     fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone));
@@ -274,6 +261,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fgAddRefPred(block, fastPathBb);
                 fgAddRefPred(block, fallbackBb);
                 nullcheckBb->bbJumpDest = fastPathBb;
+                fastPathBb->bbJumpDest  = block;
                 fallbackBb->bbJumpDest  = block;
 
                 // Re-distribute weights
@@ -290,14 +278,13 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 // Scan current block again, the current call will be ignored because of ClearExpRuntimeLookup.
                 // We don't try to re-use expansions for the same lookups in the current block here - CSE is responsible
                 // for that
-                prevBb = fastPathBb;
                 result = PhaseStatus::MODIFIED_EVERYTHING;
                 goto TRAVERSE_BLOCK_AGAIN;
             }
             prevStmt = stmt;
         }
-        prevBb = block;
     }
+
     return result;
 }
 
