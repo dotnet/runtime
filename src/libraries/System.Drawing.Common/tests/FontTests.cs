@@ -645,6 +645,43 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [InlineData(FontStyle.Bold, int.MinValue, 0)]
+        [InlineData(FontStyle.Bold, -2147483099, 0)]
+        [InlineData(FontStyle.Regular, -2147483098, 0)]
+        [InlineData(FontStyle.Regular, -1, 0)]
+        [InlineData(FontStyle.Regular, 0, 0)]
+        [InlineData(FontStyle.Regular, 300, 0)]
+        [InlineData(FontStyle.Regular, 400, 0)]
+        [InlineData(FontStyle.Strikeout | FontStyle.Underline | FontStyle.Italic, 549, 1)]
+        [InlineData(FontStyle.Strikeout | FontStyle.Underline | FontStyle.Italic | FontStyle.Bold, 550, 1)]
+        [InlineData(FontStyle.Strikeout | FontStyle.Underline | FontStyle.Bold | FontStyle.Italic, int.MaxValue, 1)]
+        public void FromLogFontTyped_ValidLogFont_ReturnsExpected(FontStyle fontStyle, int weight, byte charSet)
+        {
+            // The boundary values of the weight that is considered Bold are different between Windows 7 and Windows 8.
+            if (PlatformDetection.IsWindows7 || PlatformDetection.IsWindows8x)
+            {
+                return;
+            }
+
+            using (FontFamily family = FontFamily.GenericMonospace)
+            {
+                var logFont = new LOGFONT
+                {
+                    lfFaceName = family.Name,
+                    lfWeight = weight,
+                    lfItalic = (fontStyle & FontStyle.Italic) != 0 ? (byte)1 : (byte)0,
+                    lfStrikeOut = (fontStyle & FontStyle.Strikeout) != 0 ? (byte)1 : (byte)0,
+                    lfUnderline = (fontStyle & FontStyle.Underline) != 0 ? (byte)1 : (byte)0,
+                    lfCharSet = charSet
+                };
+                using (Font font = Font.FromLogFont(in logFont))
+                {
+                    VerifyFont(font, family.Name, font.Size, fontStyle, GraphicsUnit.World, charSet, expectedGdiVerticalFont: false);
+                }
+            }
+        }
+
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromLogFont_NullLogFont_ThrowsArgumentNullException()
         {
@@ -684,6 +721,26 @@ namespace System.Drawing.Tests
                     var logFont = new LOGFONT();
                     AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(logFont));
                     AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(logFont, hdc));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void FromLogFontTyped_InvalidLogFont_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    var logFont = new LOGFONT();
+                    AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(in logFont));
+                    AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(in logFont, hdc));
                 }
                 finally
                 {
@@ -794,6 +851,35 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
+        [InlineData(FontStyle.Strikeout | FontStyle.Bold | FontStyle.Italic, 255, true, "@", 700)]
+        [InlineData(FontStyle.Regular, 0, false, "", 400)]
+        [InlineData(FontStyle.Regular, 10, false, "", 400)]
+        public void ToLogFontTyped_Invoke_ReturnsExpected(FontStyle fontStyle, byte gdiCharSet, bool gdiVerticalFont, string expectedNamePrefix, int expectedWeight)
+        {
+            using (FontFamily family = FontFamily.GenericMonospace)
+            using (var font = new Font(family, 10, fontStyle, GraphicsUnit.Point, gdiCharSet, gdiVerticalFont))
+            {
+                var logFont = new LOGFONT();
+                font.ToLogFont(ref logFont);
+
+                Assert.Equal(-13, logFont.lfHeight);
+                Assert.Equal(0, logFont.lfWidth);
+                Assert.Equal(0, logFont.lfEscapement);
+                Assert.Equal(0, logFont.lfOrientation);
+                Assert.Equal(expectedWeight, logFont.lfWeight);
+                Assert.Equal(font.Italic ? 1 : 0, logFont.lfItalic);
+                Assert.Equal(font.Underline ? 1 : 0, logFont.lfUnderline);
+                Assert.Equal(font.Strikeout ? 1 : 0, logFont.lfStrikeOut);
+                Assert.Equal(SystemFonts.DefaultFont.GdiCharSet <= 2 ? font.GdiCharSet : SystemFonts.DefaultFont.GdiCharSet, logFont.lfCharSet);
+                Assert.Equal(0, logFont.lfOutPrecision);
+                Assert.Equal(0, logFont.lfClipPrecision);
+                Assert.Equal(0, logFont.lfQuality);
+                Assert.Equal(0, logFont.lfPitchAndFamily);
+                Assert.Equal($"{expectedNamePrefix}{family.Name}", logFont.lfFaceName);
+            }
+        }
+
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(TextRenderingHint.SystemDefault)]
         [InlineData(TextRenderingHint.AntiAlias)]
@@ -812,6 +898,42 @@ namespace System.Drawing.Tests
 
                 var logFont = new LOGFONT();
                 font.ToLogFont(logFont, graphics);
+
+                Assert.Equal(-13, logFont.lfHeight);
+                Assert.Equal(0, logFont.lfWidth);
+                Assert.Equal(0, logFont.lfEscapement);
+                Assert.Equal(0, logFont.lfOrientation);
+                Assert.Equal(400, logFont.lfWeight);
+                Assert.Equal(0, logFont.lfItalic);
+                Assert.Equal(0, logFont.lfUnderline);
+                Assert.Equal(0, logFont.lfStrikeOut);
+                Assert.Equal(SystemFonts.DefaultFont.GdiCharSet <= 2 ? font.GdiCharSet : SystemFonts.DefaultFont.GdiCharSet, logFont.lfCharSet);
+                Assert.Equal(0, logFont.lfOutPrecision);
+                Assert.Equal(0, logFont.lfClipPrecision);
+                Assert.Equal(0, logFont.lfQuality);
+                Assert.Equal(0, logFont.lfPitchAndFamily);
+                Assert.Equal(family.Name, logFont.lfFaceName);
+            }
+        }
+
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [InlineData(TextRenderingHint.SystemDefault)]
+        [InlineData(TextRenderingHint.AntiAlias)]
+        [InlineData(TextRenderingHint.AntiAliasGridFit)]
+        [InlineData(TextRenderingHint.SingleBitPerPixel)]
+        [InlineData(TextRenderingHint.SingleBitPerPixelGridFit)]
+        [InlineData(TextRenderingHint.ClearTypeGridFit)]
+        public void ToLogFontTyped_InvokeGraphics_ReturnsExpected(TextRenderingHint textRenderingHint)
+        {
+            using (FontFamily family = FontFamily.GenericMonospace)
+            using (var font = new Font(family, 10))
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                graphics.TextRenderingHint = textRenderingHint;
+
+                var logFont = new LOGFONT();
+                font.ToLogFont(ref logFont, graphics);
 
                 Assert.Equal(-13, logFont.lfHeight);
                 Assert.Equal(0, logFont.lfWidth);
@@ -854,6 +976,17 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
+        public void ToLogFontTyped_NullGraphics_ThrowsArgumentNullException()
+        {
+            using (FontFamily family = FontFamily.GenericMonospace)
+            using (var font = new Font(family, 10))
+            {
+                var fontStruct = new LOGFONT();
+                AssertExtensions.Throws<ArgumentNullException>("graphics", () => font.ToLogFont(ref fontStruct, null));
+            }
+        }
+
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToLogFont_DisposedGraphics_ThrowsArgumentException()
         {
@@ -865,6 +998,21 @@ namespace System.Drawing.Tests
                 graphics.Dispose();
 
                 Assert.Throws<ArgumentException>(() => font.ToLogFont(new LOGFONT(), graphics));
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void ToLogFontTyped_DisposedGraphics_ThrowsArgumentException()
+        {
+            using (FontFamily family = FontFamily.GenericMonospace)
+            using (var font = new Font(family, 10))
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                var fontStruct = new LOGFONT();
+                Assert.Throws<ArgumentException>(() => font.ToLogFont(ref fontStruct, graphics));
             }
         }
 
