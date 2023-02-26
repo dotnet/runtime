@@ -61,7 +61,9 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 PhaseStatus Compiler::fgExpandRuntimeLookups()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
-    if (!doesMethodHaveExpRuntimeLookup())
+
+    // Current method doesn't have runtime lookups - bail out.
+    if (!doesMethodHaveExpRuntimeLookup() || !ISMETHOD("Test"))
     {
         return result;
     }
@@ -75,6 +77,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         {
             for (GenTree* const tree : stmt->TreeList())
             {
+                // We only need calls with IsExpRuntimeLookup() flag
                 if (!tree->IsCall() || !tree->AsCall()->IsExpRuntimeLookup())
                 {
                     continue;
@@ -85,6 +88,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 call->ClearExpRuntimeLookup();
                 assert(call->gtArgs.CountArgs() == 2);
 
+                // call(ctx, signature);
                 GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
                 GenTree* sigTree = call->gtArgs.GetArgByIndex(1)->GetNode();
 
@@ -95,12 +99,15 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
                 else
                 {
+                    // signature is not a constant (CSE'd?) - let's see if we can access it via VN
                     if (vnStore->IsVNConstant(sigTree->gtVNPair.GetLiberal()))
                     {
                         signature = (void*)vnStore->CoercedConstantValue<ssize_t>(sigTree->gtVNPair.GetLiberal());
                     }
                     else
                     {
+                        // Technically, it is possible (e.g. it was CSE'd and then VN was erased), but for Debug mode we
+                        // want to catch such cases as we really don't want to emit just a fallback call - it's too slow
                         assert(!"can't restore signature argument value");
                         continue;
                     }
@@ -114,18 +121,19 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     continue;
                 }
 
-                if (runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK)
+                const bool needsSizeCheck = runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK;
+                if (needsSizeCheck)
                 {
-                    // TODO: impelement dynamic expansion
+                    // TODO: implement dynamic expansion
                     continue;
                 }
 
                 assert(runtimeLookup.indirections != 0);
                 assert(runtimeLookup.testForNull);
 
-                unsigned rtLookupLclNum            = lvaGrabTemp(true DEBUGARG("runtime lookup"));
-                lvaGetDesc(rtLookupLclNum)->lvType = TYP_I_IMPL;
-                GenTreeLclVar* rtLookupLcl         = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
+                const unsigned rtLookupLclNum   = lvaGrabTemp(true DEBUGARG("runtime lookup"));
+                lvaTable[rtLookupLclNum].lvType = TYP_I_IMPL;
+                GenTreeLclVar* rtLookupLcl      = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
 
                 if (prevBb == nullptr)
                 {
@@ -146,11 +154,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     fgInsertStmtAtBeg(block, prevStmt);
                 }
 
+                // Save ctxTree to a local if it's complex
                 if (!ctxTree->OperIs(GT_LCL_VAR))
                 {
+                    // TODO: consider replacing fgMakeMultiUse here and below with statement inside nullcheckBb
                     fgMakeMultiUse(&ctxTree);
                 }
 
+                // Prepare slotPtr tree
                 GenTree* slotPtrTree = ctxTree;
                 GenTree* indOffTree  = nullptr;
                 for (WORD i = 0; i < runtimeLookup.indirections; i++)
@@ -160,12 +171,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                         indOffTree = fgMakeMultiUse(&slotPtrTree);
                     }
 
-                    // The last indirection could be subject to a size check (dynamic dictionary expansion)
-                    bool isLastIndirectionWithSizeCheck =
-                        ((i == runtimeLookup.indirections - 1) && (runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK));
-
                     if (i != 0)
                     {
+                        // The last indirection could be subject to a size check (dynamic dictionary expansion)
+                        bool isLastIndirectionWithSizeCheck = ((i == runtimeLookup.indirections - 1) &&
+                                                               (runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK));
+
                         slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
                         slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
                         if (!isLastIndirectionWithSizeCheck)
@@ -189,13 +200,34 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 prevBb = block;
                 block  = fgSplitBlockAfterStatement(prevBb, prevStmt);
 
+                //
+                // prevBb(BBJ_NONE):
+                //     ...
+                //
+                // nullcheckBb(BBJ_COND):
+                //     if (fastPathValue != 0)
+                //         goto fastPathBb;
+                //
+                // fallbackBb(BBJ_ALWAYS):
+                //     rtLookupLcl = HelperCall();
+                //     goto block;
+                //
+                // fastPathBb(BBJ_NONE):
+                //     rtLookupLcl = fastPathValue;
+                //
+                // block(...):
+                //     use(rtLookupLcl);
+                //
+
+                // null-check basic block
                 BasicBlock* nullcheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
                 nullcheckBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_JMP);
 
-                GenTree* handleForNullCheck = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-                handleForNullCheck->gtFlags |= GTF_IND_NONFAULTING;
+                GenTree* fastPathValue = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
+                fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
+                GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
 
-                GenTree* nullcheckOp = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
+                GenTree* nullcheckOp = gtNewOperNode(GT_NE, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
                 gtSetEvalOrder(nullcheckOp);
                 Statement* nullcheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp));
@@ -203,23 +235,31 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fgSetStmtSeq(nullcheckStmt);
                 fgInsertStmtAtEnd(nullcheckBb, nullcheckStmt);
 
-                BasicBlock* fastPathBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
+                BasicBlock* sizeCheckBb = nullptr;
+                if (needsSizeCheck)
+                {
+                    // TODO:
+                }
+
+                // Fast-path basic block
+                BasicBlock* fastPathBb = fgNewBBafter(BBJ_NONE, nullcheckBb, true);
                 fastPathBb->bbFlags |= BBF_INTERNAL;
-                GenTree*   asgFastPathValue = gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(handleForNullCheck));
-                Statement* asgFastPathValueStmt = fgNewStmtFromTree(asgFastPathValue);
+                Statement* asgFastPathValueStmt =
+                    fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone));
                 fgInsertStmtAtBeg(fastPathBb, asgFastPathValueStmt);
                 gtSetStmtInfo(asgFastPathValueStmt);
                 fgSetStmtSeq(asgFastPathValueStmt);
 
+                // Fallback basic block
                 BasicBlock* fallbackBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
                 fallbackBb->bbFlags |= BBF_INTERNAL;
-                GenTree*   asgFallbackTree = gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(call));
-                Statement* asgFallbackStmt = fgNewStmtFromTree(asgFallbackTree);
+                Statement* asgFallbackStmt =
+                    fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(call)));
                 fgInsertStmtAtBeg(fallbackBb, asgFallbackStmt);
                 gtSetStmtInfo(asgFallbackStmt);
                 fgSetStmtSeq(asgFallbackStmt);
 
-                // Replace ExpRuntimeLookup call with a local
+                // Replace call with rtLookupLclNum local
                 call->ReplaceWith(gtNewLclvNode(rtLookupLclNum, call->TypeGet()), this);
                 gtUpdateTreeAncestorsSideEffects(call);
                 gtSetStmtInfo(stmt);
@@ -234,7 +274,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fgAddRefPred(block, fallbackBb);
                 nullcheckBb->bbJumpDest = fastPathBb;
                 fallbackBb->bbJumpDest  = block;
-                fastPathBb->bbJumpDest  = block;
 
                 // Re-distribute weights
                 nullcheckBb->inheritWeight(prevBb);
@@ -242,10 +281,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
                 block->inheritWeight(prevBb);
 
+                // All blocks are expected to be in the same EH region
                 assert(BasicBlock::sameEHRegion(prevBb, block));
                 assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
                 assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
+                // Scan current block again, the current call will be ignored because of ClearExpRuntimeLookup.
+                // We don't try to re-use expansions for the same lookups in the current block here - CSE is responsible
+                // for that
                 prevBb = fastPathBb;
                 result = PhaseStatus::MODIFIED_EVERYTHING;
                 goto TRAVERSE_BLOCK_AGAIN;
