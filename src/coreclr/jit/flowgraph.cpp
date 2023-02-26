@@ -142,9 +142,10 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     fgMakeMultiUse(&ctxTree);
                 }
 
-                // Prepare slotPtr tree
-                GenTree* slotPtrTree = ctxTree;
-                GenTree* indOffTree  = nullptr;
+                // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
+                GenTree* slotPtrTree   = ctxTree;
+                GenTree* indOffTree    = nullptr;
+                GenTree* lastIndOfTree = nullptr;
                 for (WORD i = 0; i < runtimeLookup.indirections; i++)
                 {
                     if ((i == 1 && runtimeLookup.indirectFirstOffset) || (i == 2 && runtimeLookup.indirectSecondOffset))
@@ -152,11 +153,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                         indOffTree = fgMakeMultiUse(&slotPtrTree);
                     }
 
+                    // The last indirection could be subject to a size check (dynamic dictionary expansion)
+                    bool isLastIndirectionWithSizeCheck = ((i == runtimeLookup.indirections - 1) &&
+                        (runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK));
+
                     if (i != 0)
                     {
-                        // The last indirection could be subject to a size check (dynamic dictionary expansion)
-                        bool isLastIndirectionWithSizeCheck = ((i == runtimeLookup.indirections - 1) &&
-                                                               (runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK));
 
                         slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
                         slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
@@ -173,6 +175,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                     if (runtimeLookup.offsets[i] != 0)
                     {
+                        if (isLastIndirectionWithSizeCheck)
+                        {
+                            lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
+                        }
+
                         slotPtrTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree,
                                                     gtNewIconNode(runtimeLookup.offsets[i], TYP_I_IMPL));
                     }
@@ -188,22 +196,23 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 block->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT |
                                                    BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
 
+                // Non-dynamic expansion case (no size check):
                 //
-                // prevBb(BBJ_NONE):
+                // prevBb(BBJ_NONE):                    [weight: 1.0]
                 //     ...
                 //
-                // nullcheckBb(BBJ_COND):
-                //     if (fastPathValue != 0)
-                //         goto fastPathBb;
+                // nullcheckBb(BBJ_COND):               [weight: 1.0]
+                //     if (fastPathValue == 0)
+                //         goto fallbackBb;
                 //
-                // fallbackBb(BBJ_ALWAYS):
-                //     rtLookupLcl = HelperCall();
+                // fastPathBb(BBJ_ALWAYS):              [weight: 0.8]
+                //     rtLookupLcl = fastPathValue;
                 //     goto block;
                 //
-                // fastPathBb(BBJ_NONE):
-                //     rtLookupLcl = fastPathValue;
+                // fallbackBb(BBJ_NONE):                [weight: 0.2]
+                //     rtLookupLcl = HelperCall();
                 //
-                // block(...):
+                // block(...):                          [weight: 1.0]
                 //     use(rtLookupLcl);
                 //
 
@@ -215,7 +224,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
                 GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
 
-                GenTree* nullcheckOp = gtNewOperNode(GT_NE, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
+                GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
                 gtSetEvalOrder(nullcheckOp);
                 Statement* nullcheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp));
@@ -223,11 +232,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fgSetStmtSeq(nullcheckStmt);
                 fgInsertStmtAtEnd(nullcheckBb, nullcheckStmt);
 
-                BasicBlock* sizeCheckBb = nullptr;
-                if (needsSizeCheck)
-                {
-                    // TODO:
-                }
+                // Fallback basic block
+                BasicBlock* fallbackBb = fgNewBBafter(BBJ_NONE, nullcheckBb, true);
+                fallbackBb->bbFlags |= BBF_INTERNAL;
+                Statement* asgFallbackStmt =
+                    fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(call)));
+                fgInsertStmtAtBeg(fallbackBb, asgFallbackStmt);
+                gtSetStmtInfo(asgFallbackStmt);
+                fgSetStmtSeq(asgFallbackStmt);
 
                 // Fast-path basic block
                 BasicBlock* fastPathBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
@@ -238,14 +250,53 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 gtSetStmtInfo(asgFastPathValueStmt);
                 fgSetStmtSeq(asgFastPathValueStmt);
 
-                // Fallback basic block
-                BasicBlock* fallbackBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
-                fallbackBb->bbFlags |= BBF_INTERNAL;
-                Statement* asgFallbackStmt =
-                    fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(call)));
-                fgInsertStmtAtBeg(fallbackBb, asgFallbackStmt);
-                gtSetStmtInfo(asgFallbackStmt);
-                fgSetStmtSeq(asgFallbackStmt);
+                BasicBlock* sizeCheckBb = nullptr;
+                if (needsSizeCheck)
+                {
+                    // Dynamic expansion case (sizeCheckBb is added and some preds are changed):
+                    //
+                    // prevBb(BBJ_NONE):                    [weight: 1.0]
+                    //     ...
+                    //
+                    // nullcheckBb(BBJ_COND):               [weight: 1.0]
+                    //     if (fastPathValue == 0)
+                    //         goto fallbackBb;
+                    //
+                    // sizeCheckBb(BBJ_COND):               [weight: 0.8]
+                    //     if (fastPathValue == 0)
+                    //         goto fallbackBb;
+                    //
+                    // fastPathBb(BBJ_ALWAYS):              [weight: 0.64]
+                    //     rtLookupLcl = fastPathValue;
+                    //     goto block;
+                    //
+                    // fallbackBb(BBJ_NONE):                [weight: 0.36]
+                    //     rtLookupLcl = HelperCall();
+                    //
+                    // block(...):                          [weight: 1.0]
+                    //     use(rtLookupLcl);
+                    //
+
+                    sizeCheckBb = fgNewBBafter(BBJ_COND, nullcheckBb, true);
+                    sizeCheckBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_JMP);
+
+                    // sizeValue = dictionary[pRuntimeLookup->sizeOffset]
+                    GenTreeIntCon* sizeOffset = gtNewIconNode(runtimeLookup.sizeOffset, TYP_I_IMPL);
+                    assert(lastIndOfTree != nullptr);
+                    GenTree* sizeValueOffset = gtNewOperNode(GT_ADD, TYP_I_IMPL, lastIndOfTree, sizeOffset);
+                    GenTree* sizeValue = gtNewOperNode(GT_IND, TYP_I_IMPL, sizeValueOffset);
+                    sizeValue->gtFlags |= GTF_IND_NONFAULTING;
+
+                    // sizeCheck fails if sizeValue < pRuntimeLookup->offsets[i]
+                    GenTree* offsetValue = gtNewIconNode(runtimeLookup.offsets[runtimeLookup.indirections - 1], TYP_I_IMPL);
+                    GenTree* sizeCheck = gtNewOperNode(GT_LT, TYP_INT, sizeValue, offsetValue);
+                    sizeCheck->gtFlags |= GTF_RELOP_JMP_USED;
+                    gtSetEvalOrder(sizeCheck);
+                    Statement* sizeCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck));
+                    gtSetStmtInfo(sizeCheckStmt);
+                    fgSetStmtSeq(sizeCheckStmt);
+                    fgInsertStmtAtEnd(sizeCheckBb, sizeCheckStmt);
+                }
 
                 // Replace call with rtLookupLclNum local
                 call->ReplaceWith(gtNewLclvNode(rtLookupLclNum, call->TypeGet()), this);
@@ -255,25 +306,70 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 // Connect all new blocks together
                 fgAddRefPred(nullcheckBb, prevBb);
-                fgAddRefPred(fallbackBb, nullcheckBb);
-                fgAddRefPred(fastPathBb, nullcheckBb);
                 fgRemoveRefPred(block, prevBb);
                 fgAddRefPred(block, fastPathBb);
                 fgAddRefPred(block, fallbackBb);
-                nullcheckBb->bbJumpDest = fastPathBb;
+                nullcheckBb->bbJumpDest = fallbackBb;
                 fastPathBb->bbJumpDest  = block;
-                fallbackBb->bbJumpDest  = block;
 
-                // Re-distribute weights
+                if (needsSizeCheck)
+                {
+                    // nullcheckBb flows into sizeCheckBb in case of non-null
+                    fgAddRefPred(sizeCheckBb, nullcheckBb);
+
+                    // fallbackBb is reachable from either nullcheck or sizecheck
+                    fgAddRefPred(fallbackBb, nullcheckBb);
+                    fgAddRefPred(fallbackBb, sizeCheckBb);
+
+                    // fastPathBb is only reachable from successful sizeCheckBb
+                    fgAddRefPred(fastPathBb, sizeCheckBb);
+
+                    // sizeCheckBb fails - jump to fallbackBb
+                    sizeCheckBb->bbJumpDest = fallbackBb;
+                }
+                else
+                {
+                    // No size check, nullcheckBb jumps to fast path
+                    fgAddRefPred(fastPathBb, nullcheckBb);
+
+                    // fallbackBb is only reachable from nullcheckBb (jump destination)
+                    fgAddRefPred(fallbackBb, nullcheckBb);
+                }
+
+                // Re-distribute weights (see '[weight: X]' on the diagrams above)
+
+                // First, nullcheck and the last block are expected to just inherit prevBb weight
                 nullcheckBb->inheritWeight(prevBb);
-                fallbackBb->inheritWeightPercentage(nullcheckBb, 20); // TODO: Consider making it cold (0%)
-                fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
                 block->inheritWeight(prevBb);
+
+                if (needsSizeCheck)
+                {
+                    // 80% chance we pass nullcheck
+                    sizeCheckBb->inheritWeightPercentage(nullcheckBb, 80);
+
+                    // 64% (0.8 * 0.8) chance we pass both nullcheck and sizecheck
+                    fastPathBb->inheritWeightPercentage(sizeCheckBb, 80);
+
+                    // 100-64=36% chance we fail either nullcheck or sizecheck
+                    fallbackBb->inheritWeightPercentage(nullcheckBb, 36);
+                }
+                else
+                {
+                    // 80% chance we pass nullcheck
+                    fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
+
+                    // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
+                    fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
+                }
 
                 // All blocks are expected to be in the same EH region
                 assert(BasicBlock::sameEHRegion(prevBb, block));
                 assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
                 assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+                if (needsSizeCheck)
+                {
+                    assert(BasicBlock::sameEHRegion(prevBb, sizeCheckBb));
+                }
 
                 // Scan current block again, the current call will be ignored because of ClearExpRuntimeLookup.
                 // We don't try to re-use expansions for the same lookups in the current block here - CSE is responsible
