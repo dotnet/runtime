@@ -3349,15 +3349,17 @@ namespace System
                     }
                     while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
 
-                    nint remaining = Unsafe.ByteOffset(ref current, ref end) / Unsafe.SizeOf<T>();
+                    uint remaining = (uint)Unsafe.ByteOffset(ref current, ref end) / (uint)Unsafe.SizeOf<T>();
                     if (remaining > 0)
                     {
                         uint mask = Vector256.Equals(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
 
                         // The mask contains some elements that may be double-checked, so shift them away in order to get the correct pop-count.
-                        nint overlaps = Vector256<T>.Count - remaining;
+                        uint overlaps = (uint)Vector256<T>.Count - remaining;
                         mask >>= (int)overlaps;
                         count += BitOperations.PopCount(mask);
+
+                        return count;
                     }
                 }
                 else
@@ -3371,29 +3373,29 @@ namespace System
                     }
                     while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
 
-                    nint remaining = Unsafe.ByteOffset(ref current, ref end) / Unsafe.SizeOf<T>();
+                    uint remaining = (uint)Unsafe.ByteOffset(ref current, ref end) / (uint)Unsafe.SizeOf<T>();
                     if (remaining > 0)
                     {
                         uint mask = Vector128.Equals(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
 
                         // The mask contains some elements that may be double-checked, so shift them away in order to get the correct pop-count.
-                        nint overlaps = Vector128<T>.Count - remaining;
+                        uint overlaps = (uint)Vector128<T>.Count - remaining;
                         mask >>= (int)overlaps;
                         count += BitOperations.PopCount(mask);
+
+                        return count;
                     }
                 }
             }
-            else
-            {
-                while (Unsafe.IsAddressLessThan(ref current, ref end))
-                {
-                    if (current.Equals(value))
-                    {
-                        count++;
-                    }
 
-                    current = ref Unsafe.Add(ref current, 1);
+            while (Unsafe.IsAddressLessThan(ref current, ref end))
+            {
+                if (current.Equals(value))
+                {
+                    count++;
                 }
+
+                current = ref Unsafe.Add(ref current, 1);
             }
 
             return count;
