@@ -3351,7 +3351,7 @@ namespace System
 
                     if (Unsafe.IsAddressLessThan(ref current, ref Unsafe.Subtract(ref end, Vector128<T>.Count - 1)))
                     {
-                        count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), Vector128.Create(value)).ExtractMostSignificantBits());
+                        count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector.GetLower()).ExtractMostSignificantBits());
                         current = ref Unsafe.Add(ref current, Vector128<T>.Count);
                     }
                 }
