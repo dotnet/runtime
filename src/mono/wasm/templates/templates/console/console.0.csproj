@@ -6,8 +6,4 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WasmMainJSPath>main.mjs</WasmMainJSPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="main.mjs" />
-  </ItemGroup>
 </Project>

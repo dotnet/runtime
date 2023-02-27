@@ -349,7 +349,6 @@ namespace Wasm.Build.Tests
                 extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
             }
 
-            extraItems += "<WasmExtraFilesToDeploy Include='test-main.js' />";
             extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
 
             string projectContents = projectTemplate
