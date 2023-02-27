@@ -1919,7 +1919,7 @@ increase_descriptor_limit (void)
 		// Set our soft limit for file descriptors to be the same
 		// as the max limit.
 		limit.rlim_cur = limit.rlim_max;
-#ifdef TARGET_OSX
+#ifdef __APPLE__
 		// Based on compatibility note in setrlimit(2) manpage for OSX,
 		// trim the limit to OPEN_MAX.
 		if (limit.rlim_cur > OPEN_MAX)
