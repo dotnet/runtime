@@ -7,7 +7,6 @@
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
-  
   <ItemGroup>
     <Compile Include="Program.AdvSimd.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
