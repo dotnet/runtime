@@ -32,6 +32,11 @@
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
   </PropertyGroup>
 
+  <!-- trimming tests InvariantGlobalizationFalse require full ICU data -->
+  <PropertyGroup Condition="'$(TestTrimming)' == 'true'">
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
+  </PropertyGroup>
+
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
   <Import Project="$(MSBuildThisFileDirectory)wasm-provisioning.targets"
