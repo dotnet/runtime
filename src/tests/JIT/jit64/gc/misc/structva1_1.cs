@@ -88,7 +88,7 @@ struct S
 
 public class Test_structva1_1
 {
-    public static void c(params object[] pp)
+    private static void c(params object[] pp)
     {
         for (int i = 0; i < pp.GetLength(0); i++)
         {

@@ -88,7 +88,7 @@ struct S
 
 public class Test_struct9_2
 {
-    public static void c(ref S s1, ref int i)
+    private static void c(ref S s1, ref int i)
     {
         if (i < 10)
         {

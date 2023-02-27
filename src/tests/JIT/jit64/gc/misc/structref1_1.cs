@@ -87,7 +87,7 @@ struct S
 
 public class Test_structref1_1
 {
-    public static void c(ref S s1)
+    private static void c(ref S s1)
     {
         Console.WriteLine(s1.str);
     }

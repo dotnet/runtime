@@ -15,7 +15,7 @@ struct S
 
 public class Test_struct1_2
 {
-    public static void c(S s1)
+    private static void c(S s1)
     {
         Console.WriteLine(s1.str);
     }

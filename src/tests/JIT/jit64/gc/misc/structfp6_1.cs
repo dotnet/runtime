@@ -90,7 +90,7 @@ struct S
 
 public class Test_structfp6_1
 {
-    public static void c(S s1, float a1, S s2, double a2, S s3, S s4, S s5)
+    private static void c(S s1, float a1, S s2, double a2, S s3, S s4, S s5)
     {
         Console.WriteLine(s1.str + s2.str + s3.str + s4.str + s5.str);
     }

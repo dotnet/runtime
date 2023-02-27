@@ -88,7 +88,7 @@ struct S
 
 public class Test_structfp1_4
 {
-    public static void c(float f1, float f2, float f3, float f4, float f5, S s1)
+    private static void c(float f1, float f2, float f3, float f4, float f5, S s1)
     {
         Console.WriteLine(s1.str);
     }

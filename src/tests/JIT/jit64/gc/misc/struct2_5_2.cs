@@ -133,12 +133,12 @@ struct T
 
 public class Test_struct2_5_2
 {
-    public static void c(S s1, S s2)
+    private static void c(S s1, S s2)
     {
         Console.WriteLine(s1.str + s2.str);
     }
 
-    public static void d(T t1, T t2)
+    private static void d(T t1, T t2)
     {
         Console.WriteLine(t1.l1 + t2.l1);
     }

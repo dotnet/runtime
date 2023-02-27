@@ -30,7 +30,7 @@ public class test
 
     }
 
-    public static S foo(S s)
+    private static S foo(S s)
     {
         Console.WriteLine(s.O);
 

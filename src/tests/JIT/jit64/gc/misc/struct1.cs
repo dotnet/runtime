@@ -12,7 +12,7 @@ struct S
 
 public class Test_struct1
 {
-    public static void c(S s1)
+    private static void c(S s1)
     {
         GC.Collect();
         Console.WriteLine(s1.str);

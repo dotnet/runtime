@@ -42,7 +42,7 @@ public class Tester
         return 100;
     }
 
-    public static void bar(T t)
+    private static void bar(T t)
     {
         Console.WriteLine(t.TheString);
     }

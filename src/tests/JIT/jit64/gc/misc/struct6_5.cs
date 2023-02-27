@@ -134,7 +134,7 @@ struct S
 
 public class Test_struct6_5
 {
-    public static void c(S s1, S s2, S s3, S s4, S s5)
+    private static void c(S s1, S s2, S s3, S s4, S s5)
     {
         Console.WriteLine(s1.str + s2.str + s3.str + s4.str + s5.str);
     }

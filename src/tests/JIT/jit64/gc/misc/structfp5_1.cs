@@ -89,7 +89,7 @@ struct S
 
 public class Test_structfp5_1
 {
-    public static void c(int a1, float a2, double a3, S s1, S s2, S s3, S s4, double a4)
+    private static void c(int a1, float a2, double a3, S s1, S s2, S s3, S s4, double a4)
     {
         Console.WriteLine(s1.str + s2.str + s3.str + s4.str);
     }

@@ -89,7 +89,7 @@ struct S
 
 public class Test_structret6_1
 {
-    public static S c(S s1, S s2, S s3, S s4, S s5)
+    private static S c(S s1, S s2, S s3, S s4, S s5)
     {
         s1.str = s1.str + s2.str + s3.str + s4.str + s5.str;
         return s1;

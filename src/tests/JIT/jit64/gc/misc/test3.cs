@@ -43,7 +43,7 @@ public class Test_test3
         return (100);
     }
 
-    public static void test(S s)
+    private static void test(S s)
     {
         Console.WriteLine(s.O1);
         Console.WriteLine(s.O2);

@@ -31,7 +31,7 @@ namespace CGRecurse
             return retVal;
         }
 
-        public static void C()
+        private static void C()
         {
             ActualResult = (ActualResult + "C");
             if ((cntC == 2))

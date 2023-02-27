@@ -31,7 +31,7 @@ public class T
         return 100;
     }
 
-    public static MyValueClass foo()
+    private static MyValueClass foo()
     {
         MyValueClass mvcRetVal = new MyValueClass();
 

@@ -30,7 +30,7 @@ namespace CGRecurse
             return retVal;
         }
 
-        public static void C()
+        private static void C()
         {
             ActualResult = (ActualResult + "C");
             if ((cntA == 1))

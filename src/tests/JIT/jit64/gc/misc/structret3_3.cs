@@ -87,7 +87,7 @@ struct S
 
 public class Test_structret3_3
 {
-    public static S c(S s1, S s2, S s3)
+    private static S c(S s1, S s2, S s3)
     {
         S r;
         r = s1;
