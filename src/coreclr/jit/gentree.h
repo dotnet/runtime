@@ -1687,7 +1687,15 @@ public:
     {
 #if !defined(TARGET_64BIT)
         if (OperIs(GT_ADD_HI, GT_SUB_HI))
+        {
             return true;
+        }
+#endif
+#if defined(TARGET_ARM64)
+        if (OperIs(GT_CCMP))
+        {
+            return true;
+        }
 #endif
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
