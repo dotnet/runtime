@@ -622,6 +622,12 @@ namespace System
                         {
                             if (filter.RequiresStringComparison())
                             {
+                                if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
+                                {
+                                    Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
+                                    continue;
+                                }
+
                                 if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                     continue;
                             }
@@ -678,6 +684,12 @@ namespace System
                             {
                                 if (filter.RequiresStringComparison())
                                 {
+                                    if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
+                                    {
+                                        Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
+                                        continue;
+                                    }
+
                                     if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                         continue;
                                 }
@@ -781,6 +793,12 @@ namespace System
                     {
                         if (filter.RequiresStringComparison())
                         {
+                            if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
+                            {
+                                Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
+                                continue;
+                            }
+
                             if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                 continue;
                         }
@@ -904,6 +922,12 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
+                            if (!RuntimeFieldHandle.MatchesNameHash(runtimeFieldHandle, filter.GetHashToMatch()))
+                            {
+                                Debug.Assert(!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)));
+                                continue;
+                            }
+
                             if (!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)))
                                 continue;
                         }

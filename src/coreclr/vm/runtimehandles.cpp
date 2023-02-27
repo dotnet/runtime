@@ -896,7 +896,7 @@ FCIMPL1(Object *, RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer, Reflec
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
     FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
-
+    
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
     {
         MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
@@ -908,7 +908,7 @@ FCIMPL1(Object *, RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer, Reflec
         {
             TypeHandle typeHandle = fnPtr->GetRetAndArgTypes()[position];
             OBJECTREF refType = typeHandle.GetManagedClassObject();
-            gc.retVal->SetAt(position, refType);
+            gc.retVal->SetAt(position, refType);                
         }
     }
     HELPER_METHOD_FRAME_END();
@@ -933,7 +933,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClass
         FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
         unmanaged = (fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_UNMANAGED;
     }
-
+    
     FC_RETURN_BOOL(unmanaged);
 }
 FCIMPLEND
@@ -1722,6 +1722,14 @@ FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc *pMethod) {
 }
 FCIMPLEND
 
+FCIMPL2(FC_BOOL_RET, RuntimeMethodHandle::MatchesNameHash, MethodDesc * pMethod, ULONG hash)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(pMethod->MightHaveName(hash));
+}
+FCIMPLEND
+
 FCIMPL1(StringObject*, RuntimeMethodHandle::GetName, MethodDesc *pMethod) {
     CONTRACTL {
         FCALL_CHECK;
@@ -2151,7 +2159,7 @@ FCIMPL6(void, SignatureNative::GetSignature,
                 pMethod, declType.GetClassOrArrayInstantiation(), pMethod->LoadMethodInstantiation(), &typeContext);
         else
             SigTypeContext::InitTypeContext(declType, &typeContext);
-
+        
         MetaSig msig(pCorSig, cCorSig, pModule, &typeContext,
             (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
 
@@ -2723,6 +2731,14 @@ FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField) {
         FCThrow(kBadImageFormatException);
     }
     return szFieldName;
+}
+FCIMPLEND
+
+FCIMPL2(FC_BOOL_RET, RuntimeFieldHandle::MatchesNameHash, FieldDesc * pField, ULONG hash)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(pField->MightHaveName(hash));
 }
 FCIMPLEND
 

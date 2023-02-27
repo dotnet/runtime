@@ -1129,7 +1129,11 @@ MemberLoader::FindMethod(
         }
 
         if ((flags & FM_IgnoreName) != 0
-            || StrCompFunc(pszName, pCurDeclMD->GetNameThrowing()) == 0)
+            ||
+            (pCurDeclMD->MightHaveName(targetNameHash)
+            // This is done last since it is the most expensive of the IF statement.
+            && StrCompFunc(pszName, pCurDeclMD->GetNameThrowing()) == 0)
+           )
         {
             if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT))
             {
@@ -1292,7 +1296,7 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
                     continue;
                 }
 
-                if (StrCompFunc(pszName, pCurMD->GetNameOnNonArrayClass()) == 0)
+                if (pCurMD->MightHaveName(targetNameHash) && StrCompFunc(pszName, pCurMD->GetNameOnNonArrayClass()) == 0)
                 {
                     if (pRetMD != NULL)
                     {
@@ -1513,6 +1517,11 @@ MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSig
 
         // Check is valid FieldDesc, and not some random memory
         INDEBUGIMPL(pFD->GetApproxEnclosingMethodTable()->SanityCheck());
+
+        if (!pFD->MightHaveName(targetNameHash))
+        {
+            continue;
+        }
 
         IfFailThrow(pInternalImport->GetNameOfFieldDef(mdField, &szMemberName));
 
