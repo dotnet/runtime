@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for UnloadabilityIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <!-- This test leaves random number of WaitOrTimerCallbacks registered at the exit, which prevents unloading -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>

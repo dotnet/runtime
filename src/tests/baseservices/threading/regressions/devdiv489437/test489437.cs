@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 /*
  * Issue description:
@@ -21,7 +22,8 @@ Change description:
 
 public class Test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         SemaphoreSlim s = new SemaphoreSlim(initialCount: 1);
 
