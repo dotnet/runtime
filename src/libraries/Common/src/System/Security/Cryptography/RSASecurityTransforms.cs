@@ -405,10 +405,10 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
 
-                bool pssPadding = padding.Mode switch
+                Interop.AppleCrypto.PAL_SignatureAlgorithm signatureAlgorithm = padding.Mode switch
                 {
-                    RSASignaturePaddingMode.Pss => true,
-                    RSASignaturePaddingMode.Pkcs1 => false,
+                    RSASignaturePaddingMode.Pss => Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPss,
+                    RSASignaturePaddingMode.Pkcs1 => Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1,
                     _ => throw new CryptographicException(SR.Cryptography_InvalidPaddingMode)
                 };
 
@@ -421,40 +421,20 @@ namespace System.Security.Cryptography
 
                 int keySize = KeySize;
                 int rsaSize = RsaPaddingProcessor.BytesRequiredForBitCount(keySize);
-
-                if (!pssPadding)
-                {
-                    Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
+                Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
                         PalAlgorithmFromAlgorithmName(hashAlgorithm, out int expectedSize);
 
-                    if (hash.Length != expectedSize)
-                    {
-                        // Windows: NTE_BAD_DATA ("Bad Data.")
-                        // OpenSSL: RSA_R_INVALID_MESSAGE_LENGTH ("invalid message length")
-                        throw new CryptographicException(
-                            SR.Format(
-                                SR.Cryptography_BadHashSize_ForAlgorithm,
-                                hash.Length,
-                                expectedSize,
-                                hashAlgorithm.Name));
-                    }
-
-                    if (destination.Length < rsaSize)
-                    {
-                        bytesWritten = 0;
-                        return false;
-                    }
-
-                    return Interop.AppleCrypto.TryCreateSignature(
-                        keys.PrivateKey,
-                        hash,
-                        destination,
-                        palAlgId,
-                        Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1,
-                        out bytesWritten);
+                if (hash.Length != expectedSize)
+                {
+                    // Windows: NTE_BAD_DATA ("Bad Data.")
+                    // OpenSSL: RSA_R_INVALID_MESSAGE_LENGTH ("invalid message length")
+                    throw new CryptographicException(
+                        SR.Format(
+                            SR.Cryptography_BadHashSize_ForAlgorithm,
+                            hash.Length,
+                            expectedSize,
+                            hashAlgorithm.Name));
                 }
-
-                Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss);
 
                 if (destination.Length < rsaSize)
                 {
@@ -462,9 +442,25 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
+                // Apple's PSS implementation does not support PSS+MD5. In that case we will use raw RSA and manually
+                // pad it.
+                if (signatureAlgorithm != Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPss ||
+                    palAlgId != Interop.AppleCrypto.PAL_HashAlgorithm.Md5)
+                {
+                    return Interop.AppleCrypto.TryCreateSignature(
+                        keys.PrivateKey,
+                        hash,
+                        destination,
+                        palAlgId,
+                        signatureAlgorithm,
+                        out bytesWritten);
+                }
+
+                Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss && hashAlgorithm == HashAlgorithmName.MD5);
+
                 byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> buf = new Span<byte>(rented, 0, rsaSize);
-                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize);
+                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, KeySize);
 
                 try
                 {
@@ -496,19 +492,29 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
 
-                if (padding == RSASignaturePadding.Pkcs1)
+                Interop.AppleCrypto.PAL_HashAlgorithm palAlgId = PalAlgorithmFromAlgorithmName(hashAlgorithm, out _);
+                Interop.AppleCrypto.PAL_SignatureAlgorithm signatureAlgorithm = padding.Mode switch
                 {
-                    Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
-                        PalAlgorithmFromAlgorithmName(hashAlgorithm, out _);
+                    RSASignaturePaddingMode.Pss => Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPss,
+                    RSASignaturePaddingMode.Pkcs1 => Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1,
+                    _ => throw new CryptographicException(SR.Cryptography_InvalidPaddingMode)
+                };
+
+                // Apple's native implementation does not support RSA+PSS with MD5. We use raw RSA padding and perform
+                // the padding manually in that circumstance.
+                if (signatureAlgorithm != Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPss ||
+                    palAlgId != Interop.AppleCrypto.PAL_HashAlgorithm.Md5)
+                {
                     return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
                         hash,
                         signature,
                         palAlgId,
-                        Interop.AppleCrypto.PAL_SignatureAlgorithm.RsaPkcs1);
+                        signatureAlgorithm);
                 }
-                else if (padding.Mode == RSASignaturePaddingMode.Pss)
+                else
                 {
+                    Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss && hashAlgorithm == HashAlgorithmName.MD5);
                     SafeSecKeyRefHandle publicKey = GetKeys().PublicKey;
 
                     int keySize = KeySize;
@@ -548,8 +554,6 @@ namespace System.Security.Cryptography
                         CryptoPool.Return(rented, clearSize: 0);
                     }
                 }
-
-                throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
             }
 
             protected override void Dispose(bool disposing)
