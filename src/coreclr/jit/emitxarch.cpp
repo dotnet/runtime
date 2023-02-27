@@ -538,6 +538,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                     {
                         return PEEPHOLE_ABORT;
                     }
+                    break;
                 }
 
                 case INS_cdq:
@@ -546,6 +547,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                     {
                         return PEEPHOLE_ABORT;
                     }
+                    break;
                 }
 
                 default:
