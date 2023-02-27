@@ -90,7 +90,7 @@ namespace Microsoft.Interop
 
             if (_unmanagedType is PointerTypeInfo pointer)
             {
-                var rewriter = new NonBlittableElementsMarshalling.PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
+                var rewriter = new PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
                 assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
 
             }
