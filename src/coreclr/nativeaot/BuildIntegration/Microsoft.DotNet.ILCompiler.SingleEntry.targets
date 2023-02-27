@@ -2,24 +2,26 @@
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != '' and '$(NETCoreSdkPortableRuntimeIdentifier)' != ''">
     <!-- Define the name of the runtime specific compiler package to import -->
-    <_targetOSPkg>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_targetOSPkg>
-    <_indexOfHyphen>$(_targetOSPkg.IndexOf('-'))</_indexOfHyphen>
-    <_targetOS Condition="'$(_indexOfHyphen)' &gt; -1">$(_targetOSPkg.SubString(0, $(_indexOfHyphen)))</_targetOS>
-    <_targetOS Condition="'$(_indexOfHyphen)' == -1">$(_targetOSPkg)</_targetOS>
+    <_hostOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_hostOS>
+
+    <_targetOS>$(RuntimeIdentifier.SubString(0, $(RuntimeIdentifier.LastIndexOf('-'))))</_targetOS>
     <_indexOfPeriod>$(_targetOS.IndexOf('.'))</_indexOfPeriod>
     <_targetOS Condition="'$(_indexOfPeriod)' &gt; -1">$(_targetOS.SubString(0, $(_indexOfPeriod)))</_targetOS>
     <_targetOS Condition="$(_targetOS.StartsWith('win'))">win</_targetOS>
 
+    <!-- On non-Windows, determine _hostArchitecture from NETCoreSdkPortableRuntimeIdentifier -->
+    <_hostArchitecture Condition="'$(OS)' != 'Windows_NT'">$(NETCoreSdkPortableRuntimeIdentifier.SubString($([MSBuild]::Add($(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-')), 1))))</_hostArchitecture>
+    <!-- On Windows, default to host that matches OS architecture on Windows. It allows compilation using msbuild.exe that is x86 by default -->
+    <_hostArchitecture Condition="'$(OS)' == 'Windows_NT'">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostArchitecture>
+
     <!-- Determine _targetArchitecture from RuntimeIdentifier -->
     <_targetArchitecture>$(RuntimeIdentifier.SubString($([MSBuild]::Add($(RuntimeIdentifier.LastIndexOf('-')), 1))))</_targetArchitecture>
 
-    <RuntimeIlcPackageName>runtime.$(_targetOS)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
+    <_hostPackageName>runtime.$(_hostOS)-$(_hostArchitecture).Microsoft.DotNet.ILCompiler</_hostPackageName>
+    <_targetPackageName>runtime.$(_targetOSPkg)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</_targetPackageName>
 
-    <!-- Default to host that matches OS architecture on Windows. It allows compilation using msbuild.exe that is x86 by default -->
-    <IlcHostArch Condition="'$(OS)' == 'Windows_NT' and '$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
-    <!-- Default to host that matches SDK architecture on non-Windows -->
-    <IlcHostArch Condition="'$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
-    <IlcHostPackageName>runtime.$(_targetOSPkg)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
+    <!-- From this point onwards, we will treat linux-musl as linux -->
+    <_targetOS Condition="$(_targetOS.StartsWith('linux'))">linux</_targetOS>
 
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
   </PropertyGroup>
@@ -50,8 +52,8 @@
     <Error Condition="'@(ResolvedILCompilerPack)' == ''" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
 
     <PropertyGroup>
-      <IlcHostPackagePath Condition="'@(ResolvedILCompilerPack)' == '$(IlcHostPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
-      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == '$(RuntimeIlcPackageName)'">@(ResolvedTargetILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
+      <IlcHostPackagePath Condition="'@(ResolvedILCompilerPack)' == '$(_hostPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
+      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == '$(_targetPackageName)'">@(ResolvedTargetILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
       <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == ''">@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
     </PropertyGroup>
 
