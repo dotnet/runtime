@@ -1011,10 +1011,10 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
-    RefPosition* buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
-                                                    LsraLocation currentLoc,
-                                                    GenTree*     node,
-                                                    bool         isUse);
+    void buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                            LsraLocation currentLoc,
+                                            GenTree*     node,
+                                            bool         isUse);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
@@ -1869,14 +1869,7 @@ private:
     bool isCandidateMultiRegLclVar(GenTreeLclVar* lclNode);
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    RefPosition* BuildUse(GenTree*  operand,
-                          regMaskTP candidates  = RBM_NONE,
-                          int       multiRegIdx = 0 ARM64_ARG(RefPosition** restoreRefPosition = nullptr));
-#else
     RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
-#endif
-
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
     int BuildCastUses(GenTreeCast* cast, regMaskTP candidates);

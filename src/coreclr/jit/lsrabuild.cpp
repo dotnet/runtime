@@ -1589,13 +1589,10 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 //    isUse          - If the refPosition that is about to be created represents a use or not.
 //                   - If not, it would be the one at the end of the block.
 //
-// Returns:
-//  The refposition created for VectorRestore
-//
-RefPosition* LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
-                                                            LsraLocation currentLoc,
-                                                            GenTree*     node,
-                                                            bool         isUse)
+void LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                                    LsraLocation currentLoc,
+                                                    GenTree*     node,
+                                                    bool         isUse)
 {
     if (lclVarInterval->isPartiallySpilled)
     {
@@ -1621,13 +1618,7 @@ RefPosition* LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarI
 #ifdef TARGET_XARCH
         restorePos->regOptional = true;
 #endif
-#ifdef TARGET_ARM64
-        // Only needed for consecutive registers for now, which is only
-        // possible in TARGET_ARM64
-        return restorePos;
-#endif
     }
-    return nullptr;
 }
 
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -3040,7 +3031,6 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 //    operand             - The node of interest
 //    candidates          - The register candidates for the use
 //    multiRegIdx         - The index of the multireg def/use
-//    restoreRefPosition  - If there was any upperVector restore refposition created, return it.
 //
 // Return Value:
 //    The newly created use RefPosition
@@ -3048,13 +3038,10 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 // Notes:
 //    The node must not be contained, and must have been processed by buildRefPositionsForNode().
 //
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-RefPosition* LinearScan::BuildUse(GenTree*  operand,
-                                  regMaskTP candidates,
-                                  int multiRegIdx ARM64_ARG(RefPosition** restoreRefPosition))
-#else
+//#ifdef TARGET_ARM64
+// template <bool hasConsecutiveRegister>
+//#endif
 RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int multiRegIdx)
-#endif
 {
     assert(!operand->isContained());
     Interval* interval;
@@ -3081,13 +3068,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             UpdatePreferencesOfDyingLocal(interval);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        RefPosition* upperVectorRefPos = buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
-#ifdef TARGET_ARM64
-        if (restoreRefPosition != nullptr)
-        {
-            *restoreRefPosition = upperVectorRefPos;
-        }
-#endif // TARGET_ARM64
+        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
 #endif
     }
     else if (operand->IsMultiRegLclVar())
@@ -3101,13 +3082,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             VarSetOps::RemoveElemD(compiler, currentLiveVars, fieldVarDsc->lvVarIndex);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        RefPosition* upperVectorRefPos = buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
-#ifdef TARGET_ARM64
-        if (restoreRefPosition != nullptr)
-        {
-            *restoreRefPosition = upperVectorRefPos;
-        }
-#endif // TARGET_ARM64
+        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
 #endif
     }
     else
@@ -3546,7 +3521,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         defCandidates = allRegs(type);
     }
 #else
-    defCandidates = allRegs(type);
+    defCandidates  = allRegs(type);
 #endif // TARGET_X86
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);

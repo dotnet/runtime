@@ -1395,12 +1395,20 @@ int LinearScan::BuildConsecutiveRegisters(GenTree* treeNode, GenTree* rmwNode)
         NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
         for (GenTreeFieldList::Use& use : treeNode->AsFieldList()->Uses())
         {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            RefPosition* restoreRefPos = nullptr;
-            currRefPos                 = BuildUse(use.GetNode(), RBM_NONE, 0, &restoreRefPos);
-#else
-            currRefPos = BuildUse(use.GetNode());
-#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            RefPosition*        restoreRefPos = nullptr;
+            RefPositionIterator prevRefPos    = refPositions.backPosition();
+            currRefPos                        = BuildUse(use.GetNode(), RBM_NONE, 0);
+
+            // Check if restore Refpositions were created
+            RefPositionIterator tailRefPos = refPositions.backPosition();
+            assert(tailRefPos == currRefPos);
+            prevRefPos++;
+            if (prevRefPos != tailRefPos)
+            {
+                restoreRefPos = prevRefPos;
+                assert(restoreRefPos->refType == RefTypeUpperVectorRestore);
+            }
+
             currRefPos->needsConsecutive = true;
             currRefPos->regCount         = 0;
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
