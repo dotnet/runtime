@@ -103,7 +103,7 @@ extends:
           DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals 1es-windows-2022-open
+          demands: ImageOverride -equals windows.vs2022.amd64.open
 
         steps:
         - checkout: self

@@ -61,7 +61,7 @@ extends:
         timeoutInMinutes: 120
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals 1es-windows-2022-open
+          demands: ImageOverride -equals windows.vs2022.amd64.open
 
         steps:
         - checkout: self
