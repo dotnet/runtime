@@ -722,7 +722,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TestWatcherPath>$(ArtifactsDir)obj/coreclr/$(OSPlatformConfig)/test-watchdog/watchdog</TestWatcherPath>
+    <TestWatcherExe Condition="'$(TestWrapperTargetsWindows)' != 'true'">watchdog</TestWatcherExe>
+    <TestWatcherExe Condition="'$(TestWrapperTargetsWindows)' == 'true'">watchdog.exe</TestWatcherExe>
+
+    <TestWatcherPath>$(ArtifactsDir)obj/coreclr/$(OSPlatformConfig)/test-watchdog/$(TestWatcherExe)</TestWatcherPath>
     <TestWatcherPath>$([MSBuild]::NormalizePath($(TestWatcherPath)))</TestWatcherPath>
   </PropertyGroup>
 
