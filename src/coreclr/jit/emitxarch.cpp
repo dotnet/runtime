@@ -526,13 +526,30 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
             }
         }
 
-        // This is a special case for cdq/cdqe/cwde.
+        // This is a special case for cdq/cwde.
         // They always write to and sign-extend RAX.
         if (instrHasImplicitRegSingleDest(id->idIns()))
         {
-            if (reg == REG_RAX)
+            switch (id->idIns())
             {
-                return PEEPHOLE_ABORT;
+                case INS_cwde:
+                {
+                    if (reg == REG_RAX)
+                    {
+                        return PEEPHOLE_ABORT;
+                    }
+                }
+
+                case INS_cdq:
+                {
+                    if (reg == REG_RDX)
+                    {
+                        return PEEPHOLE_ABORT;
+                    }
+                }
+
+                default:
+                    break;
             }
         }
 
