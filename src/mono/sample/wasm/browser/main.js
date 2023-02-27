@@ -8,12 +8,26 @@ function sub(a, b) {
     return a - b;
 }
 
+let testError = true;
+let testRetry = true;
 try {
     const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig } = await dotnet
         .withConsoleForwarding()
         .withElementOnExit()
         .withModuleConfig({
             configSrc: "./mono-config.json",
+            locateFile: (url) => {
+                // we are testing that we can retry loading of the assembly
+                if (testRetry && url.indexOf('System.Private.Uri.dll') != -1) {
+                    testRetry = false;
+                    return url + "?testAbort=true";
+                }
+                if (testError && url.indexOf('System.Console.dll') != -1) {
+                    testError = false;
+                    return url + "?testError=true";
+                }
+                return url;
+            },
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');
