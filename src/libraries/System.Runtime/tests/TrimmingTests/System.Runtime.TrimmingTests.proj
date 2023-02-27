@@ -45,6 +45,9 @@
     <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
       <EnabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
+
+     <!-- InvariantGlobalizationFalse requires full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
