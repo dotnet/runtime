@@ -11313,43 +11313,11 @@ void Compiler::gtDispLclVarStructType(unsigned lclNum)
 #if defined(DEBUG) && defined(TARGET_ARM64)
 static const char* InsCflagsToString(insCflags flags)
 {
-    switch (flags)
-    {
-        case INS_FLAGS_NONE:
-            return "0";
-        case INS_FLAGS_V:
-            return "v";
-        case INS_FLAGS_C:
-            return "c";
-        case INS_FLAGS_CV:
-            return "cv";
-        case INS_FLAGS_Z:
-            return "z";
-        case INS_FLAGS_ZV:
-            return "zv";
-        case INS_FLAGS_ZC:
-            return "zc";
-        case INS_FLAGS_ZCV:
-            return "zcv";
-        case INS_FLAGS_N:
-            return "n";
-        case INS_FLAGS_NV:
-            return "nv";
-        case INS_FLAGS_NC:
-            return "nc";
-        case INS_FLAGS_NCV:
-            return "ncv";
-        case INS_FLAGS_NZ:
-            return "nz";
-        case INS_FLAGS_NZV:
-            return "nzv";
-        case INS_FLAGS_NZC:
-            return "nzc";
-        case INS_FLAGS_NZCV:
-            return "nzcv";
-        default:
-            return "?";
-    }
+    const static char* s_table[16] = {"0", "v",  "c",  "cv",  "z",  "zv",  "zc",  "zcv",
+                                       "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv"};
+    unsigned index = (unsigned)flags;
+    assert((0 <= index) && (index < ArrLen(s_table)));
+    return s_table[index];
 }
 #endif
 
