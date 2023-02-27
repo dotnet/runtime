@@ -11314,7 +11314,7 @@ void Compiler::gtDispLclVarStructType(unsigned lclNum)
 static const char* InsCflagsToString(insCflags flags)
 {
     const static char* s_table[16] = {"0", "v",  "c",  "cv",  "z",  "zv",  "zc",  "zcv",
-                                       "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv"};
+                                      "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv"};
     unsigned index = (unsigned)flags;
     assert((0 <= index) && (index < ArrLen(s_table)));
     return s_table[index];

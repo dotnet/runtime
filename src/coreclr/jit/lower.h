@@ -503,7 +503,10 @@ private:
 
     bool IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
     bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
-    bool IsRangeInvariantInRange(GenTree* rangeStart, GenTree* rangeEnd, GenTree* endExclusive) const;
+    bool IsRangeInvariantInRange(GenTree* rangeStart,
+                                 GenTree* rangeEnd,
+                                 GenTree* endExclusive,
+                                 GenTree* ignoreNode) const;
 
     // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
     // can be contained.

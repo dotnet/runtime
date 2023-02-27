@@ -242,6 +242,8 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree*
 //    rangeStart   - The first node.
 //    rangeEnd     - The last node.
 //    endExclusive - The exclusive end of the range to check invariance for.
+//    ignoreNode   - A node to ignore interference checks with, for example
+//                   because it will retain its relative order with 'node'.
 //
 // Returns:
 //    True if the range can be evaluated at any point between its current location
@@ -251,11 +253,15 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree*
 //    Note that the range is treated as a unit and no pairwise interference
 //    checks between nodes in the range are performed.
 //
-bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart, GenTree* rangeEnd, GenTree* endExclusive) const
+bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart,
+                                       GenTree* rangeEnd,
+                                       GenTree* endExclusive,
+                                       GenTree* ignoreNode) const
 {
     assert((rangeStart != nullptr) && (rangeEnd != nullptr));
 
-    if (rangeEnd->gtNext == endExclusive)
+    if ((rangeEnd->gtNext == endExclusive) ||
+        ((ignoreNode != nullptr) && (rangeEnd->gtNext == ignoreNode) && (rangeEnd->gtNext->gtNext == endExclusive)))
     {
         return true;
     }
@@ -283,6 +289,10 @@ bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart, GenTree* rangeEnd, G
     for (GenTree* cur = rangeEnd->gtNext; cur != endExclusive; cur = cur->gtNext)
     {
         assert((cur != nullptr) && "Expected first node to precede end node");
+        if (cur == ignoreNode)
+        {
+            continue;
+        }
 
         const bool strict = true;
         if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
@@ -3580,7 +3590,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
             flagsProducer = flagsProducer->gtPrev;
         }
 #endif
-        if (!IsRangeInvariantInRange(flagsProducer, condition->gtPrev, parent))
+        if (!IsRangeInvariantInRange(flagsProducer, condition->gtPrev, parent, condition))
         {
             return false;
         }
