@@ -33,6 +33,12 @@ inline bool emitter::instrHasImplicitRegPairDest(instruction ins)
     return (ins == INS_mulEAX) || (ins == INS_imulEAX) || (ins == INS_div) || (ins == INS_idiv);
 }
 
+/* static */
+inline bool emitter::instrHasImplicitRegSingleDest(instruction ins)
+{
+    return (ins == INS_cdq || ins == INS_cwde);
+}
+
 // Because we don't actually have support for encoding these 3-op
 // multiplies we fake it with special opcodes.  Make sure they are
 // contiguous.
