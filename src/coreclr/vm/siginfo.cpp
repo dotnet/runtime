@@ -4868,15 +4868,13 @@ public:
         {
             if(isValArray)
             {
+                _ASSERTE(pFD->GetOffset() == 0);
                 DWORD elementSize = pFD->GetSize();
                 DWORD totalSize = pMT->GetNumInstanceFieldBytes();
                 for (DWORD offset = 0; offset < totalSize; offset += elementSize)
                 {
                     Find(pFD, baseOffset + offset);
                 }
-
-                // there is only one instance field
-                break;
             }
             else
             {
