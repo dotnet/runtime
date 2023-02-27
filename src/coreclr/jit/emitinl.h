@@ -36,7 +36,7 @@ inline bool emitter::instrHasImplicitRegPairDest(instruction ins)
 /* static */
 inline bool emitter::instrHasImplicitRegSingleDest(instruction ins)
 {
-    return (ins == INS_cdq || ins == INS_cwde);
+    return (ins == INS_cdq) || (ins == INS_cwde);
 }
 
 // Because we don't actually have support for encoding these 3-op
