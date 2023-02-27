@@ -446,8 +446,8 @@ namespace System
         /// 3. Use UTC if all else fails.
         ///
         /// On WASI / Browser
-        /// 0. if TZDIR is not set, use TZ variable as id to embedded database.
-        /// 1. fall back to unix behavior if TZDIR is set.
+        /// 1. if TZDIR is not set, use TZ variable as id to embedded database.
+        /// 2. fall back to unix behavior if TZDIR is set.
         ///
         /// On all other platforms
         /// 1. Read the TZ environment variable.  If it is set, use it.
