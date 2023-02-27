@@ -82,11 +82,19 @@ namespace Microsoft.Interop
             }
 
             // <nativeIdentifier> = <convertToUnmanaged>;
-            yield return ExpressionStatement(
-                AssignmentExpression(
+            var assignment = AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(nativeIdentifier),
-                    convertToUnmanaged));
+                    convertToUnmanaged);
+
+
+            if (_unmanagedType is PointerTypeInfo pointer)
+            {
+                var rewriter = new NonBlittableElementsMarshalling.PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
+                assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
+
+            }
+            yield return ExpressionStatement(assignment);
         }
 
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context)
@@ -526,7 +534,7 @@ namespace Microsoft.Interop
             IMarshallingGenerator elementMarshaller,
             TypePositionInfo elementInfo,
             ExpressionSyntax numElementsExpression)
-            : base (unmanagedElementType, elementMarshaller, elementInfo)
+            : base(unmanagedElementType, elementMarshaller, elementInfo)
         {
             _marshallerTypeSyntax = marshallerTypeSyntax;
             _unmanagedType = unmanagedType;

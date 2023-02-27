@@ -396,7 +396,7 @@ namespace Microsoft.Interop
         /// This handles the case where the native type of a non-blittable managed type is a pointer,
         /// which are unsupported in generic type parameters.
         /// </summary>
-        private sealed class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
+        internal sealed class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
         {
             private readonly string _nativeIdentifier;
             private readonly PointerTypeSyntax _nativeType;

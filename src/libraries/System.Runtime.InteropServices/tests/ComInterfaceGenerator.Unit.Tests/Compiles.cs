@@ -53,6 +53,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<double>() };
             yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<IntPtr>() };
             yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<UIntPtr>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<byte[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<sbyte[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<short[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ushort[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<int[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<uint[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<long[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ulong[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<float[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<double[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<IntPtr[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<UIntPtr[]>() };
 
             // SafeHandles
             if (generator == GeneratorKind.VTableIndexStubGenerator)
@@ -130,43 +142,6 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             // Bidirectional
             CustomCollectionMarshallingCodeSnippets<CodeSnippets.Bidirectional> customCollectionMarshallingCodeSnippetsBidirectional = new(new(generator));
-            yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.CustomMarshallerReturnValueLength<int>() };
-            yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateful.CustomMarshallerReturnValueLength<int>() };
-        }
-
-        // Fold into SharedCodeSnippets as ComInterfaceGenerator fixes failures
-        public static IEnumerable<object[]> CodeSnippetsToCompile(GeneratorKind generator)
-        {
-            var codeSnippets = new CodeSnippets(generator);
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<byte[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<sbyte[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<short[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ushort[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<int[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<uint[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<long[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ulong[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<float[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<double[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<IntPtr[]>() };
-            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<UIntPtr[]>() };
-
-            var customStructMarshallingCodeSnippetsManagedToUnmanaged = new CustomStructMarshallingCodeSnippets<CodeSnippets.ManagedToUnmanaged>(new CodeSnippets.ManagedToUnmanaged(generator));
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateless.NativeToManagedOnlyOutParameter };
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateless.NativeToManagedFinallyOnlyOutParameter };
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateful.NativeToManagedFinallyOnlyOutParameter };
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateless.StackallocParametersAndModifiersNoRef };
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateful.StackallocParametersAndModifiersNoRef };
-
-            var customStructMarshallingCodeSnippetsUnmanagedToManaged = new CustomStructMarshallingCodeSnippets<CodeSnippets.UnmanagedToManaged>(new CodeSnippets.UnmanagedToManaged(generator));
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateful.NativeToManagedOnlyOutParameter };
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsUnmanagedToManaged.Stateless.NativeToManagedOnlyInParameter };
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsUnmanagedToManaged.Stateless.NativeToManagedFinallyOnlyInParameter };
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsUnmanagedToManaged.Stateful.NativeToManagedFinallyOnlyInParameter };
-            yield return new[] { ID(), customStructMarshallingCodeSnippetsUnmanagedToManaged.Stateful.NativeToManagedOnlyInParameter };
-
-            // Bidirectional
-            CustomCollectionMarshallingCodeSnippets<CodeSnippets.Bidirectional> customCollectionMarshallingCodeSnippetsBidirectional = new(new(generator));
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.DefaultMarshallerParametersAndModifiers<byte>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.DefaultMarshallerParametersAndModifiers<sbyte>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.DefaultMarshallerParametersAndModifiers<short>() };
@@ -181,6 +156,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.DefaultMarshallerParametersAndModifiers<UIntPtr>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.CustomMarshallerParametersAndModifiers<byte>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.CustomMarshallerParametersAndModifiers<sbyte>() };
+            yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.CustomMarshallerReturnValueLength<int>() };
+            yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateful.CustomMarshallerReturnValueLength<int>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.CustomMarshallerParametersAndModifiers<short>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.CustomMarshallerParametersAndModifiers<ushort>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateless.CustomMarshallerParametersAndModifiers<int>() };
@@ -220,6 +197,25 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateful.CustomMarshallerParametersAndModifiers<UIntPtr>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateful.NonBlittableElementParametersAndModifiers };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippetsBidirectional.Stateful.CustomElementMarshalling };
+        }
+
+        // Fold into SharedCodeSnippets as ComInterfaceGenerator fixes failures
+        public static IEnumerable<object[]> CodeSnippetsToCompile(GeneratorKind generator)
+        {
+            var customStructMarshallingCodeSnippetsManagedToUnmanaged = new CustomStructMarshallingCodeSnippets<CodeSnippets.ManagedToUnmanaged>(new CodeSnippets.ManagedToUnmanaged(generator));
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateless.NativeToManagedOnlyOutParameter };
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateless.NativeToManagedFinallyOnlyOutParameter };
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateful.NativeToManagedFinallyOnlyOutParameter };
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateless.StackallocParametersAndModifiersNoRef };
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateful.StackallocParametersAndModifiersNoRef };
+
+            var customStructMarshallingCodeSnippetsUnmanagedToManaged = new CustomStructMarshallingCodeSnippets<CodeSnippets.UnmanagedToManaged>(new CodeSnippets.UnmanagedToManaged(generator));
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsManagedToUnmanaged.Stateful.NativeToManagedOnlyOutParameter };
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsUnmanagedToManaged.Stateless.NativeToManagedOnlyInParameter };
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsUnmanagedToManaged.Stateless.NativeToManagedFinallyOnlyInParameter };
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsUnmanagedToManaged.Stateful.NativeToManagedFinallyOnlyInParameter };
+            yield return new[] { ID(), customStructMarshallingCodeSnippetsUnmanagedToManaged.Stateful.NativeToManagedOnlyInParameter };
+
         }
 
         // Fold into SharedCustomCollectionSnippets as ComInterfaceGenerator fixes failures
@@ -352,7 +348,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 // ComWrappersUnwrapper is inaccessible due to its protection level
                 "CS0122",
                 // Variable assigned to but never read
-                "CS0219");
+                "CS0219"
+                );
         }
 
         [Theory]
@@ -360,7 +357,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         [MemberData(nameof(CustomCollections), GeneratorKind.ComInterfaceGenerator)]
         public async Task ValidateComInterfaceSnippetsFailing(string id, string source)
         {
-            // These tests should fail, otherwise move them to the Shared___ tests.
+            // These tests should throw, otherwise move them to the Shared___ tests.
             try
             {
                 _ = id;
