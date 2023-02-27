@@ -3580,24 +3580,25 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
     if (condition->OperIs(GT_SETCC))
     {
         assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
-        GenTree* flagsProducer = condition->gtPrev;
+        GenTree* flagsDef = condition->gtPrev;
 #ifdef TARGET_ARM64
         // CCMP is a flag producing node that also consumes flags, so find the
         // "root" of the flags producers and move the entire range.
-        while (flagsProducer->OperIs(GT_CCMP))
+        // We limit this to 10 nodes look back to avoid quadratic behavior.
+        for (int i = 0; i < 10 && flagsDef->OperIs(GT_CCMP); i++)
         {
-            assert((flagsProducer->gtPrev != nullptr) && ((flagsProducer->gtPrev->gtFlags & GTF_SET_FLAGS) != 0));
-            flagsProducer = flagsProducer->gtPrev;
+            assert((flagsDef->gtPrev != nullptr) && ((flagsDef->gtPrev->gtFlags & GTF_SET_FLAGS) != 0));
+            flagsDef = flagsDef->gtPrev;
         }
 #endif
-        if (!IsRangeInvariantInRange(flagsProducer, condition->gtPrev, parent, condition))
+        if (!IsRangeInvariantInRange(flagsDef, condition->gtPrev, parent, condition))
         {
             return false;
         }
 
         *cond = condition->AsCC()->gtCondition;
 
-        LIR::Range range = BlockRange().Remove(flagsProducer, condition->gtPrev);
+        LIR::Range range = BlockRange().Remove(flagsDef, condition->gtPrev);
         BlockRange().InsertBefore(parent, std::move(range));
         BlockRange().Remove(condition);
         return true;
