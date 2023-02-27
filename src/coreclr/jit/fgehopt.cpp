@@ -1620,6 +1620,32 @@ void Compiler::fgAddFinallyTargetFlags()
     }
 }
 
+//------------------------------------------------------------------------
+// fgFixFinallyTargetFlags: Update BBF_FINALLY_TARGET bits after redirecting flow
+//
+// Arguments:
+//   pred - source of flow
+//   succ - original target of flow from pred
+//   newSucc - new target of flow from pred
+//
+void Compiler::fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, BasicBlock* newSucc)
+{
+    if (pred->isBBCallAlwaysPairTail())
+    {
+        assert(succ->bbFlags & BBF_FINALLY_TARGET);
+        newSucc->bbFlags |= BBF_FINALLY_TARGET;
+        succ->bbFlags &= ~BBF_FINALLY_TARGET;
+
+        for (BasicBlock* const pred : succ->PredBlocks())
+        {
+            if (pred->isBBCallAlwaysPairTail())
+            {
+                succ->bbFlags |= BBF_FINALLY_TARGET;
+                break;
+            }
+        }
+    }
+}
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 //------------------------------------------------------------------------

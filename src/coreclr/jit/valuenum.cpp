@@ -1694,11 +1694,13 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                     break;
                 }
 
+#if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 {
                     m_defs = new (alloc) Alloc<TYP_SIMD32>::Type[ChunkSize];
                     break;
                 }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
                 default:
@@ -1852,10 +1854,12 @@ ValueNum ValueNumStore::VNForSimd16Con(simd16_t cnsVal)
     return VnForConst(cnsVal, GetSimd16CnsMap(), TYP_SIMD16);
 }
 
+#if defined(TARGET_XARCH)
 ValueNum ValueNumStore::VNForSimd32Con(simd32_t cnsVal)
 {
     return VnForConst(cnsVal, GetSimd32CnsMap(), TYP_SIMD32);
 }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
@@ -1954,10 +1958,12 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
             return VNForSimd16Con({});
         }
 
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
             return VNForSimd32Con({});
         }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
         // These should be unreached.
@@ -2056,6 +2062,7 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
             return VNForSimd16Con(cnsVal);
         }
 
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
             simd32_t cnsVal;
@@ -2072,6 +2079,7 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
 
             return VNForSimd32Con(cnsVal);
         }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
         default:
@@ -2176,10 +2184,12 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
             return VNForSimd16Con(simd32Val.v128[0]);
         }
 
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
             return VNForSimd32Con(simd32Val);
         }
+#endif // TARGET_XARCH
 
         default:
         {
@@ -3354,6 +3364,7 @@ simd16_t ValueNumStore::GetConstantSimd16(ValueNum argVN)
     return ConstantValue<simd16_t>(argVN);
 }
 
+#if defined(TARGET_XARCH)
 // Given a simd32 constant value number return its value as a simd32.
 //
 simd32_t ValueNumStore::GetConstantSimd32(ValueNum argVN)
@@ -3363,6 +3374,7 @@ simd32_t ValueNumStore::GetConstantSimd32(ValueNum argVN)
 
     return ConstantValue<simd32_t>(argVN);
 }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 // Compute the proper value number when the VNFunc has all constant arguments
@@ -6373,6 +6385,7 @@ simd16_t GetConstantSimd16(ValueNumStore* vns, var_types baseType, ValueNum argV
     return BroadcastConstantToSimd<simd16_t>(vns, baseType, argVN);
 }
 
+#if defined(TARGET_XARCH)
 simd32_t GetConstantSimd32(ValueNumStore* vns, var_types baseType, ValueNum argVN)
 {
     assert(vns->IsVNConstant(argVN));
@@ -6384,6 +6397,7 @@ simd32_t GetConstantSimd32(ValueNumStore* vns, var_types baseType, ValueNum argV
 
     return BroadcastConstantToSimd<simd32_t>(vns, baseType, argVN);
 }
+#endif // TARGET_XARCH
 
 ValueNum EvaluateUnarySimd(
     ValueNumStore* vns, genTreeOps oper, bool scalar, var_types simdType, var_types baseType, ValueNum arg0VN)
@@ -6417,6 +6431,7 @@ ValueNum EvaluateUnarySimd(
             return vns->VNForSimd16Con(result);
         }
 
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
             simd32_t arg0 = GetConstantSimd32(vns, baseType, arg0VN);
@@ -6425,6 +6440,7 @@ ValueNum EvaluateUnarySimd(
             EvaluateUnarySimd<simd32_t>(oper, scalar, baseType, &result, arg0);
             return vns->VNForSimd32Con(result);
         }
+#endif // TARGET_XARCH
 
         default:
         {
@@ -6473,6 +6489,7 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
             return vns->VNForSimd16Con(result);
         }
 
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
             simd32_t arg0 = GetConstantSimd32(vns, baseType, arg0VN);
@@ -6482,6 +6499,7 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
             EvaluateBinarySimd<simd32_t>(oper, scalar, baseType, &result, arg0, arg1);
             return vns->VNForSimd32Con(result);
         }
+#endif // TARGET_XARCH
 
         default:
         {
@@ -6581,10 +6599,12 @@ ValueNum EvaluateSimdGetElement(ValueNumStore* vns, var_types type, var_types ba
             return EvaluateSimdGetElement<simd16_t>(vns, baseType, vns->GetConstantSimd16(arg0VN), arg1);
         }
 
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
             return EvaluateSimdGetElement<simd32_t>(vns, baseType, vns->GetConstantSimd32(arg0VN), arg1);
         }
+#endif // TARGET_XARCH
 
         default:
         {
@@ -8139,6 +8159,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 break;
             }
 
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
             {
                 simd32_t cnsVal = GetConstantSimd32(vn);
@@ -8146,6 +8167,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                        cnsVal.u64[2], cnsVal.u64[3]);
                 break;
             }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             // These should be unreached.
@@ -9641,9 +9663,11 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(tree->AsVecCon()->gtSimd16Val));
             break;
 
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
             tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(tree->AsVecCon()->gtSimd32Val));
             break;
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
         case TYP_FLOAT:
@@ -10091,8 +10115,8 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                         tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(val));
                         return true;
                     }
-#endif
-#endif
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
                     default:
                         assert(!varTypeIsSIMD(tree));
                         break;

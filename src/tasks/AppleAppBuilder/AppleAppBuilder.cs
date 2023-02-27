@@ -171,6 +171,11 @@ public class AppleAppBuilderTask : Task
     /// </summary>
     public bool UseNativeAOTRuntime { get; set; }
 
+    /// <summary>
+    /// Extra native dependencies to link into the app
+    /// </summary>
+    public string[] NativeDependencies { get; set; } = Array.Empty<string>();
+
     public void ValidateRuntimeSelection()
     {
         if (UseNativeAOTRuntime)
@@ -265,6 +270,11 @@ public class AppleAppBuilderTask : Task
             {
                 assemblerFilesToLink.Add(llvmObj);
             }
+        }
+
+        foreach (var nativeDependency in NativeDependencies)
+        {
+            assemblerFilesToLink.Add(nativeDependency);
         }
 
         if (!ForceInterpreter && (isDevice || ForceAOT) && (assemblerFiles.Count == 0 && !UseNativeAOTRuntime))
