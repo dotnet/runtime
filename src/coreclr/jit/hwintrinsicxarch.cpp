@@ -1259,7 +1259,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AVX512F_MoveMaskSpec, simdBaseJitType, simdSize,
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AVX512F_MoveMaskSpecial, simdBaseJitType, simdSize,
                                                    /* isSimdAsHWIntrinsic */ false);
             }
             break;
