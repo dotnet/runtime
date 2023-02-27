@@ -950,6 +950,8 @@ export const enum JiterpMember {
     SpanLength = 7,
     SpanData = 8,
     ArrayLength = 9,
+    BackwardBranchOffsets = 10,
+    BackwardBranchOffsetsCount = 11,
 }
 
 const memberOffsets : { [index: number] : number } = {};
@@ -995,6 +997,8 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
+    // Enable performing backward branches without exiting traces
+    noExitBackwardBranches: boolean;
     // Unwrap gsharedvt wrappers when compiling jitcalls if possible
     directJitCalls: boolean;
     eliminateNullChecks: boolean;
@@ -1022,6 +1026,7 @@ const optionNames : { [jsName: string] : string } = {
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
     "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
+    "noExitBackwardBranches": "jiterpreter-backward-branches-enabled",
     "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",

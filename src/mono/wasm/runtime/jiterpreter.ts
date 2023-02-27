@@ -5,7 +5,7 @@ import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
 import { Module } from "./imports";
 import {
-    getU16
+    getU16, getU32
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode, OpcodeInfo } from "./mintops";
@@ -14,7 +14,8 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, shortNameBase,
     counters, getRawCwrap, importDef,
-    JiterpreterOptions, getOptions, recordFailure
+    JiterpreterOptions, getOptions, recordFailure,
+    JiterpMember, getMemberOffset
 } from "./jiterpreter-support";
 import {
     generate_wasm_body
@@ -894,6 +895,18 @@ export function mono_interp_tier_prepare_jiterpreter (
     }
     const methodName = Module.UTF8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
+
+    const imethod = getU32(getMemberOffset(JiterpMember.Imethod) + <any>frame);
+    const backBranchCount = getU16(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
+    if (backBranchCount) {
+        const pBackBranches = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
+        console.log(`method ${info.name} has ${backBranchCount} backward branch target(s)`);
+        for (let i = 0; i < backBranchCount; i++) {
+            const backBranchOffset = getU16(pBackBranches + (2 * i));
+            console.log(`@0x${backBranchOffset.toString(16)}`);
+        }
+    }
+
     const fnPtr = generate_wasm(
         frame, methodName, ip, startOfBody, sizeOfBody, methodFullName
     );

@@ -8442,7 +8442,7 @@ add_patchpoint_data (TransformData *td, int patchpoint_data_index, int native_of
 
 // Generates the final code, after we are done with all the passes
 static void
-generate_compacted_code (TransformData *td)
+generate_compacted_code (InterpMethod *rtm, TransformData *td)
 {
 	guint16 *ip;
 	int size;
@@ -8467,6 +8467,24 @@ generate_compacted_code (TransformData *td)
 		InterpInst *ins = bb->first_ins;
 		bb->native_offset = GPTRDIFF_TO_INT (ip - td->new_code);
 		td->cbb = bb;
+
+#if HOST_BROWSER
+		if (bb->backwards_branch_target && rtm->contains_traces) {
+			if (!rtm->backward_branch_offsets) {
+				// Most methods in System.Runtime.Tests have 8 or fewer branch targets,
+				//  and many have more than 4, so this is a decent starting size
+				rtm->backward_branch_offsets_size = 8;
+				rtm->backward_branch_offsets = g_malloc0(sizeof(guint16) * rtm->backward_branch_offsets_size);
+			} else if (rtm->backward_branch_offsets_size <= rtm->backward_branch_offsets_count) {
+				// A different growth policy might be optimal, but in S.R.T. 16 (the first
+				//  growth from the starting 8) is enough for everything, so this is fine
+				rtm->backward_branch_offsets_size *= 2;
+				rtm->backward_branch_offsets = g_realloc(rtm->backward_branch_offsets, rtm->backward_branch_offsets_size);
+			}
+			rtm->backward_branch_offsets[rtm->backward_branch_offsets_count++] = ip - td->new_code;
+		}
+#endif
+
 		if (bb->patchpoint_data)
 			patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, bb->native_offset, bb->index);
 		if (bb->emit_patchpoint) {
@@ -10759,11 +10777,11 @@ retry:
 		interp_optimize_code (td);
 		interp_alloc_offsets (td);
 #if HOST_BROWSER
-		jiterp_insert_entry_points (td);
+		jiterp_insert_entry_points (rtm, td);
 #endif
 	}
 
-	generate_compacted_code (td);
+	generate_compacted_code (rtm, td);
 
 	if (td->total_locals_size >= G_MAXUINT16) {
 		if (td->disable_inlining) {
