@@ -4,5 +4,8 @@
     <TrimmingTestProjectsDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestDir)', 'projects'))</TrimmingTestProjectsDir>
     <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
+
+     <!-- InvariantGlobalizationFalse requires full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
 </Project>

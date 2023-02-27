@@ -47,10 +47,5 @@
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 
-  <PropertyGroup>
-     <!-- InvariantGlobalizationFalse requires full ICU data, force it -->
-    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
-  </PropertyGroup>
-
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
