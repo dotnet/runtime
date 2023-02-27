@@ -17,6 +17,9 @@ public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICanc
 {
     private CancellationTokenSource BuildTaskCancelled { get; } = new();
 
+    /// Must have DestinationFile metadata, which is the output filename
+    /// Could have RegisteredName, otherwise it would be the filename.
+    /// RegisteredName should be prefixed with namespace in form of unix like path. For example: "/usr/share/zoneinfo/"
     [Required]
     public ITaskItem[] FilesToBundle { get; set; } = default!;
 

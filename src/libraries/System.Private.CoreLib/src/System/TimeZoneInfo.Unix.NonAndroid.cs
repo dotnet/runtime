@@ -20,7 +20,7 @@ namespace System
 
 #if TARGET_WASI || TARGET_BROWSER
         // if TZDIR is set, then the embedded TZ data will be ignored and normal unix behavior will be used
-        private static readonly bool UseEmbeddedTzDatabase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable));
+        private static readonly bool UseEmbeddedTzDatabase = string.IsNullOrEmpty(Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable));
 #endif
 
         private static TimeZoneInfo GetLocalTimeZoneCore()
@@ -35,10 +35,13 @@ namespace System
             e = null;
 
             byte[]? rawData=null;
+            string timeZoneDirectory = GetTimeZoneDirectory();
+            string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
+
 #if TARGET_WASI || TARGET_BROWSER
             if (UseEmbeddedTzDatabase)
             {
-                if(!TryLoadEmbeddedTzFile(id, out rawData))
+                if(!TryLoadEmbeddedTzFile(timeZoneFilePath, out rawData))
                 {
                     e = new FileNotFoundException(id, "Embedded TZ data not found");
                     return TimeZoneInfoResult.TimeZoneNotFoundException;
@@ -56,8 +59,6 @@ namespace System
             }
 #endif
 
-            string timeZoneDirectory = GetTimeZoneDirectory();
-            string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
             try
             {
                 rawData = File.ReadAllBytes(timeZoneFilePath);
@@ -104,18 +105,19 @@ namespace System
         {
             try
             {
+                var fileName = Path.Combine(GetTimeZoneDirectory(), TimeZoneFileName);
 #if TARGET_WASI || TARGET_BROWSER
                 if (UseEmbeddedTzDatabase)
                 {
-                    if(!TryLoadEmbeddedTzFile(TimeZoneFileName, out var rawData))
+                    if(!TryLoadEmbeddedTzFile(fileName, out var rawData))
                     {
                         return Array.Empty<string>();
                     }
-                    using var reader = new StreamReader(new MemoryStream(rawData), Encoding.UTF8);
-                    return ParseTimeZoneIds(reader);
+                    using var blobReader = new StreamReader(new MemoryStream(rawData), Encoding.UTF8);
+                    return ParseTimeZoneIds(blobReader);
                 }
 #endif
-                using var reader = new StreamReader(Path.Combine(GetTimeZoneDirectory(), TimeZoneFileName), Encoding.UTF8);
+                using var reader = new StreamReader(fileName, Encoding.UTF8);
                 return ParseTimeZoneIds(reader);
             }
             catch (IOException) { }
@@ -485,17 +487,6 @@ namespace System
             {
                 return false;
             }
-#if TARGET_WASI || TARGET_BROWSER
-            if (UseEmbeddedTzDatabase)
-            {
-                if(!TryLoadEmbeddedTzFile(tzVariable, out rawData))
-                {
-                    return false;
-                }
-                id = tzVariable;
-                return true;
-            }
-#endif
 
             // Otherwise, use the path from the env var.  If it's not absolute, make it relative
             // to the system timezone directory
@@ -509,6 +500,19 @@ namespace System
             {
                 tzFilePath = tzVariable;
             }
+
+#if TARGET_WASI || TARGET_BROWSER
+            if (UseEmbeddedTzDatabase)
+            {
+                if(!TryLoadEmbeddedTzFile(tzFilePath, out rawData))
+                {
+                    return false;
+                }
+                id = tzVariable;
+                return true;
+            }
+#endif
+
             return TryLoadTzFile(tzFilePath, ref rawData, ref id);
         }
 

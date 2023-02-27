@@ -82,7 +82,7 @@
     <ItemGroup>
       <_WasmBundleTimezonesWithHashes Update="@(_WasmBundleTimezonesWithHashes)">
         <DestinationFile>$(WasiObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).o</DestinationFile>
-        <RegisteredName>$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
+        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
       </_WasmBundleTimezonesWithHashes>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->

@@ -100,7 +100,7 @@
       <_WasmBundleTimezonesWithHashes Update="@(_WasmBundleTimezonesWithHashes)">
         <DestinationFile>$(WasmObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).c</DestinationFile>
         <ObjectFile>$(WasmObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).o</ObjectFile>
-        <RegisteredName>$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
+        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
       </_WasmBundleTimezonesWithHashes>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
