@@ -755,18 +755,30 @@ namespace Internal.TypeSystem
             {
                 int repeat = type.GetValueArrayLength();
 
-                // UNDONE: VS validate resulting size.
-                // UNDONE: VS validate repeat > 0.
-
-
-                if (!instanceSizeAndAlignment.Size.IsIndeterminate)
+                if (repeat <= 0)
                 {
-                    instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
                 if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
                 {
-                    instanceByteSizeAndAlignment.Size = new LayoutInt(instanceByteSizeAndAlignment.Size.AsInt * repeat);
+                    long size = instanceByteSizeAndAlignment.Size.AsInt;
+                    size *= repeat;
+
+                    // matching the max size validation in MethodTableBuilder
+                    // see: FIELD_OFFSET_LAST_REAL_OFFSET
+                    const int maxSize = ((1 << 27) - 1) - 6;
+                    if (size > maxSize)
+                    {
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, type);
+                    }
+
+                    instanceByteSizeAndAlignment.Size = new LayoutInt((int)size);
+                }
+
+                if (!instanceSizeAndAlignment.Size.IsIndeterminate)
+                {
+                    instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
                 }
             }
 
