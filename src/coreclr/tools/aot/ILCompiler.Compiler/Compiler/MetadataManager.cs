@@ -53,6 +53,7 @@ namespace ILCompiler
         private readonly SortedSet<NonGCStaticsNode> _cctorContextsGenerated = new SortedSet<NonGCStaticsNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
+        private readonly SortedSet<TypeDesc> _typesWithNeccessaryEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _methodsGenerated = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
@@ -209,6 +210,10 @@ namespace ILCompiler
                 if (eetypeNode is ConstructedEETypeNode || eetypeNode is CanonicalEETypeNode)
                 {
                     _typesWithConstructedEETypesGenerated.Add(eetypeNode.Type);
+                }
+                else
+                {
+                    _typesWithNeccessaryEETypesGenerated.Add(eetypeNode.Type);
                 }
 
                 return;
@@ -763,6 +768,52 @@ namespace ILCompiler
         internal IEnumerable<NativeLayoutTemplateMethodSignatureVertexNode> GetTemplateMethodEntries()
         {
             return _templateMethodEntries;
+        }
+
+        private Dictionary<TypeDesc, TypeDesc> _canonToTemplate;
+
+        public TypeDesc GetTemplateTypeForCanonicalFormType(NodeFactory factory, TypeDesc type)
+        {
+            Debug.Assert(factory.MarkingComplete);
+            Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+
+            _canonToTemplate ??= BuildCanonToTemplateLookup(_typesWithConstructedEETypesGenerated);
+            return _canonToTemplate.TryGetValue(type, out TypeDesc result) ? result : type;
+        }
+
+        private Dictionary<TypeDesc, TypeDesc> _necessaryCanonToTemplate;
+
+        public TypeDesc GetTemplateTypeForNecessaryCanonicalFormType(NodeFactory factory, TypeDesc type)
+        {
+            Debug.Assert(factory.MarkingComplete);
+            Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+
+            _necessaryCanonToTemplate ??= BuildCanonToTemplateLookup(_typesWithNeccessaryEETypesGenerated);
+            return _necessaryCanonToTemplate.TryGetValue(type, out TypeDesc result) ? result : type;
+        }
+
+        private static Dictionary<TypeDesc, TypeDesc> BuildCanonToTemplateLookup(SortedSet<TypeDesc> e)
+        {
+            var canonTypeToConcreteType = new Dictionary<TypeDesc, List<TypeDesc>>();
+            foreach (TypeDesc constructedType in e)
+            {
+                TypeDesc canonType = constructedType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (constructedType != canonType)
+                {
+                    if (!canonTypeToConcreteType.TryGetValue(canonType, out List<TypeDesc> concreteList))
+                        canonTypeToConcreteType.Add(canonType, concreteList = new List<TypeDesc>());
+                    concreteList.Add(constructedType);
+                }
+            }
+
+            var canonToTemplate = new Dictionary<TypeDesc, TypeDesc>();
+            foreach ((TypeDesc canonType, List<TypeDesc> concreteTypes) in canonTypeToConcreteType)
+            {
+                concreteTypes.Sort(TypeSystemComparer.Instance);
+                canonToTemplate.Add(canonType, concreteTypes[0]);
+            }
+
+            return canonToTemplate;
         }
 
         public bool IsReflectionBlocked(TypeDesc type)

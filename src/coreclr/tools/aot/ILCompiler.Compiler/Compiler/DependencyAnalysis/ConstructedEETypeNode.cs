@@ -20,6 +20,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
 
+        public override ISymbolNode NodeForLinkage(NodeFactory factory) => this;
+
         protected override bool EmitVirtualSlotsAndInterfaces => true;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

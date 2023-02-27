@@ -20,6 +20,23 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsMdArray || factory.Target.Abi == TargetAbi.CppCodegen);
         }
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            if (factory.MetadataManager.GetTemplateTypeForNecessaryCanonicalFormType(factory, _type) != _type)
+                return true;
+
+            return base.ShouldSkipEmittingObjectNode(factory);
+        }
+
+        public override ISymbolNode NodeForLinkage(NodeFactory factory)
+        {
+            TypeDesc template = factory.MetadataManager.GetTemplateTypeForNecessaryCanonicalFormType(factory, _type);
+            if (template != _type)
+                return factory.NecessaryTypeSymbol(template);
+
+            return base.NodeForLinkage(factory);
+        }
+
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
             return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;

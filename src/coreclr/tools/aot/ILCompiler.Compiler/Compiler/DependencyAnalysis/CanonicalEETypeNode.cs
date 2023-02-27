@@ -29,7 +29,18 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         public override bool IsShareable => IsTypeNodeShareable(_type);
         protected override bool EmitVirtualSlotsAndInterfaces => true;
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
+
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+            => factory.MetadataManager.GetTemplateTypeForCanonicalFormType(factory, _type) != _type;
+
+        public override ISymbolNode NodeForLinkage(NodeFactory factory)
+        {
+            TypeDesc template = factory.MetadataManager.GetTemplateTypeForCanonicalFormType(factory, _type);
+            if (template != _type)
+                return factory.ConstructedTypeSymbol(template);
+
+            return this;
+        }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

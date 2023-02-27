@@ -805,6 +805,15 @@ namespace ILCompiler.DependencyAnalysis
         {
             _sb.Clear();
             AppendExternCPrefix(_sb);
+
+            while (target is ISymbolNodeWithLinkage targetWithLinkage)
+            {
+                ISymbolNode newTarget = targetWithLinkage.NodeForLinkage(_nodeFactory);
+                if (target == newTarget)
+                    break;
+                target = newTarget;
+            }
+
             target.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
             SymbolRefFlags flags = 0;

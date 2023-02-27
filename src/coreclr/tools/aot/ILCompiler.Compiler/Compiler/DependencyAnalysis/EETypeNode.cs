@@ -114,7 +114,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual ISymbolNode NodeForLinkage(NodeFactory factory)
         {
-            return factory.NecessaryTypeSymbol(_type);
+            if (ConstructedEETypeNode.CreationAllowed(_type))
+            {
+                IEETypeNode constructed = factory.ConstructedTypeSymbol(_type);
+                if (constructed.Marked)
+                    return constructed;
+            }
+
+            return this;
         }
 
         public TypeDesc Type => _type;
