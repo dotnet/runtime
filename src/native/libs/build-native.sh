@@ -55,8 +55,8 @@ if [[ "$__TargetOS" == browser ]]; then
     export CLR_CC=$(which emcc)
 elif [[ "$__TargetOS" == wasi ]]; then
     if [[ -z "$WASI_SDK_PATH" ]]; then
-        if [[ -d "$__RootBinDir"/obj/wasi-sdk/ ]]; then
-            export WASI_SDK_PATH="$__RootBinDir"/obj/wasi-sdk/
+        if [[ -d "$__RepoRootDir"/src/mono/wasi/wasi-sdk ]]; then
+            export WASI_SDK_PATH="$__RepoRootDir"/src/mono/wasi/wasi-sdk
         else
             echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
             exit 1
@@ -93,8 +93,8 @@ elif [[ "$__TargetOS" == linux-bionic && -z "$ROOTFS_DIR" ]]; then
     __CMakeArgs="-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none $__CMakeArgs"
 elif [[ "$__TargetOS" == iossimulator ]]; then
     # set default iOS simulator deployment target
-    # keep in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
     if [[ "$__TargetArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__TargetArch" == x86 ]]; then
@@ -102,41 +102,41 @@ elif [[ "$__TargetOS" == iossimulator ]]; then
     elif [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown iossimulator architecture $__TargetArch."
+        echo "Error: Unknown iOS Simulator architecture $__TargetArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == ios ]]; then
     # set default iOS device deployment target
-    # keep in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
     if [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     elif [[ "$__TargetArch" == arm ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
     else
-        echo "Error: Unknown ios architecture $__TargetArch."
+        echo "Error: Unknown iOS architecture $__TargetArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == tvossimulator ]]; then
     # set default tvOS simulator deployment target
-    # keep in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
     if [[ "$__TargetArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown tvossimulator architecture $__TargetArch."
+        echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == tvos ]]; then
     # set default tvOS device deployment target
-    # keep in sync with src/mono/Directory.Build.props
-    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
+    # keep in sync with the root Directory.Build.props
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
     if [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown tvos architecture $__TargetArch."
+        echo "Error: Unknown tvOS architecture $__TargetArch."
         exit 1
     fi
 fi

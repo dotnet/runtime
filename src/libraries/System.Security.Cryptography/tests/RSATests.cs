@@ -1125,6 +1125,37 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Theory]
+        [InlineData(1, 1)]
+        [InlineData(1024, 128)]
+        [InlineData(1025, 129)]
+        [InlineData(1031, 129)]
+        [InlineData(1032, 129)]
+        [InlineData(2048, 256)]
+        [InlineData(3072, 384)]
+        [InlineData(int.MaxValue, 268_435_456)]
+        public static void GetMaxOutputSize_IsModulusSizeToNearestByte(int keySize, int expectedMaxOutputSize)
+        {
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySizeGetDelegate = () => keySize;
+                Assert.Equal(expectedMaxOutputSize, rsa.GetMaxOutputSize());
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public static void GetMaxOutputSize_InvalidKeySizes(int keySize)
+        {
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySizeGetDelegate = () => keySize;
+                Assert.Throws<CryptographicException>(() => rsa.GetMaxOutputSize());
+            }
+        }
+
         private sealed class EmptyRSA : RSA
         {
             public override RSAParameters ExportParameters(bool includePrivateParameters) => throw new NotImplementedException();
@@ -1180,6 +1211,8 @@ namespace System.Security.Cryptography.Tests
             public TrySignHashFunc TrySignHashDelegate = null;
             public TryEncryptFunc TryEncryptDelegate = null;
             public TryDecryptFunc TryDecryptDelegate = null;
+            public Func<int> KeySizeGetDelegate = null;
+            public Action<int> KeySizeSetDelegate = null;
 
             public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) =>
                 EncryptDelegate(data, padding);
@@ -1263,6 +1296,22 @@ namespace System.Security.Cryptography.Tests
 
             public override RSAParameters ExportParameters(bool includePrivateParameters) => throw new NotImplementedException();
             public override void ImportParameters(RSAParameters parameters) => throw new NotImplementedException();
+
+            public override int KeySize
+            {
+                get => KeySizeGetDelegate is not null ? KeySizeGetDelegate() : base.KeySize;
+                set
+                {
+                    if (KeySizeSetDelegate is not null)
+                    {
+                        KeySizeSetDelegate(value);
+                    }
+                    else
+                    {
+                        base.KeySize = value;
+                    }
+                }
+            }
         }
     }
 }

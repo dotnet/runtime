@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private bool _disposed;
 
-        private ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object?>> _realizedServices;
+        private readonly ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object?>> _realizedServices;
 
         internal CallSiteFactory CallSiteFactory { get; }
 

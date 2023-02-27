@@ -15,6 +15,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	class CompilerGeneratedCodeAccessedViaReflection
@@ -41,9 +42,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2120", "<" + nameof (BaseIteratorWithCorrectDataflow) + ">", "MoveNext",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = Tool.Trimmer)]
 		[ExpectedWarning ("IL2120", "<" + nameof (BaseIteratorWithCorrectDataflow) + ">", "<t>",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = Tool.Trimmer)]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 		class IteratorStateMachines : BaseTypeWithIteratorStateMachines
 		{
@@ -54,11 +55,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			[ExpectedWarning ("IL3002", "--MethodWithRequires--",
-				ProducedBy = ProducedBy.Analyzer)]
+				ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3050", "--MethodWithRequires--",
-				ProducedBy = ProducedBy.Analyzer)]
+				ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL2119", "<" + nameof (IteratorCallsMethodWithRequires) + ">", "MoveNext", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			public static IEnumerable<int> IteratorCallsMethodWithRequires ()
 			{
 				yield return 0;
@@ -66,9 +67,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2119", "<" + nameof (IteratorWithCorrectDataflow) + ">", "MoveNext", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2119", "<t_IteratorWithCorrectDataflow>", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			public static IEnumerable<int> IteratorWithCorrectDataflow ()
 			{
 				var t_IteratorWithCorrectDataflow = GetAll ();
@@ -77,9 +78,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2119", "<" + nameof (IteratorWithIntegerDataflow) + ">", "MoveNext", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2119", "<types>", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			public static IEnumerable<int> IteratorWithIntegerDataflow ()
 			{
 				int integerLocal = 0;
@@ -89,9 +90,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2119", "<" + nameof (IteratorWithProblematicDataflow) + ">", "MoveNext", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2119", "<t_IteratorWithProblematicDataflow>", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true)]
 			public static IEnumerable<int> IteratorWithProblematicDataflow ()
 			{
@@ -101,16 +102,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2112", nameof (RUCTypeWithIterators) + "()", "--RUCTypeWithIterators--", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[RequiresUnreferencedCode ("--RUCTypeWithIterators--")]
 			class RUCTypeWithIterators
 			{
 				[ExpectedWarning ("IL2112", "<" + nameof (StaticIteratorCallsMethodWithRequires) + ">", "(Int32)", "--RUCTypeWithIterators--", CompilerGeneratedCode = true,
-					ProducedBy = ProducedBy.Trimmer)] // state machine ctor
+					ProducedBy = Tool.Trimmer)] // state machine ctor
 				[ExpectedWarning ("IL2112", nameof (StaticIteratorCallsMethodWithRequires) + "()", "--RUCTypeWithIterators--",
-					ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+					ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 				public static IEnumerable<int> StaticIteratorCallsMethodWithRequires ()
 				{
 					yield return 0;
@@ -118,11 +119,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				[ExpectedWarning ("IL2112", "<" + nameof (InstanceIteratorCallsMethodWithRequires) + ">", "(Int32)", "--RUCTypeWithIterators--", CompilerGeneratedCode = true,
-					ProducedBy = ProducedBy.Trimmer)] // state machine ctor
+					ProducedBy = Tool.Trimmer)] // state machine ctor
 				[ExpectedWarning ("IL2112", nameof (InstanceIteratorCallsMethodWithRequires) + "()",
-					ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+					ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 				public IEnumerable<int> InstanceIteratorCallsMethodWithRequires ()
 				{
 					yield return 0;
@@ -131,35 +132,35 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithProblematicDataflow) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorCallsMethodWithRequires) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithCorrectDataflow) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithIntegerDataflow) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (BaseIteratorWithCorrectDataflow) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators) + "()", "--RUCTypeWithIterators--")]
 			// Expect to see warnings about RUC on type, for all static state machine members.
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators.StaticIteratorCallsMethodWithRequires) + "()", "--RUCTypeWithIterators--")]
 			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithIterators.StaticIteratorCallsMethodWithRequires) + ">",
-				ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators.InstanceIteratorCallsMethodWithRequires) + "()")]
+				ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators.InstanceIteratorCallsMethodWithRequires) + "()", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithIterators.InstanceIteratorCallsMethodWithRequires) + ">", "(Int32)",
-				ProducedBy = ProducedBy.Trimmer)] // state machine ctor
+				ProducedBy = Tool.Trimmer)] // state machine ctor
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithCorrectDataflow) + ">", "<t_IteratorWithCorrectDataflow>",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithProblematicDataflow) + ">", "<t_IteratorWithProblematicDataflow>",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			// Technically the access to IteratorWithIntegerDataflow should warn about access to the integer
 			// field integerLocal, but our heuristics only warn if the field type satisfies the
 			// "IsTypeInterestingForDatafllow" check. This is likely good enough because in most cases the
 			// compiler-generated code will have other hoisted fields with types that _are_ interesting for dataflow.
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithIntegerDataflow) + ">", "<types>",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (BaseIteratorWithCorrectDataflow) + ">", "<t>",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			public static void Test (IteratorStateMachines test = null)
 			{
 				typeof (IteratorStateMachines).RequiresAll ();
@@ -175,8 +176,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 			public static async Task AsyncCallsMethodWithRequires ()
 			{
 				MethodWithRequires ();
@@ -196,15 +197,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncWithProblematicDataflow) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncCallsMethodWithRequires) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncWithCorrectDataflow) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncWithCorrectDataflow) + ">", "<t_AsyncWithCorrectDataflow>",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncWithProblematicDataflow) + ">", "<t_AsyncWithProblematicDataflow>",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			public static void Test ()
 			{
 				typeof (AsyncStateMachines).RequiresAll ();
@@ -219,8 +220,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 			public static async IAsyncEnumerable<int> AsyncIteratorCallsMethodWithRequires ()
 			{
 				yield return await MethodAsync ();
@@ -243,15 +244,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncIteratorWithProblematicDataflow) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncIteratorCallsMethodWithRequires) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncIteratorWithCorrectDataflow) + ">", "MoveNext",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncIteratorWithCorrectDataflow) + ">", "<t>",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (AsyncIteratorWithProblematicDataflow) + ">", "<t>",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			public static void Test ()
 			{
 				typeof (AsyncIteratorStateMachines).RequiresAll ();
@@ -271,10 +272,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				var lambda =
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 				[ExpectedWarning ("IL2119", "<" + nameof (LambdaCallsMethodWithRequires) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				() => MethodWithRequires ();
 				lambda ();
 			}
@@ -283,7 +284,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				var lambda =
 				[ExpectedWarning ("IL2119", "<" + nameof (LambdaWithCorrectDataflow) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				() => {
 					var t = GetAll ();
 					t.RequiresAll ();
@@ -292,12 +293,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2111", "<" + nameof (LambdaWithCorrectParameter) + ">",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			static void LambdaWithCorrectParameter ()
 			{
 				var lambda =
 				[ExpectedWarning ("IL2114", "<" + nameof (LambdaWithCorrectParameter) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				([DynamicallyAccessedMembersAttribute (DynamicallyAccessedMemberTypes.All)] Type t) => {
 					t.RequiresAll ();
 				};
@@ -308,7 +309,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				var lambda =
 				[ExpectedWarning ("IL2119", "<" + nameof (LambdaWithProblematicDataflow) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll))]
 				() => {
 					var t = GetWithPublicMethods ();
@@ -322,7 +323,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var t = GetWithPublicMethods ();
 				var lambda =
 				[ExpectedWarning ("IL2119", "<" + nameof (LambdaWithCapturedTypeToDAM) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll))]
 				() => {
 					t.RequiresAll ();
@@ -350,32 +351,32 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var lambda =
 				[ExpectedWarning ("IL2050")]
 				[ExpectedWarning ("IL2119", "<" + nameof (LambdaCallsPInvokeTakingObject) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				() => MethodTakingObject (null);
 				lambda ();
 			}
 
 			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLambdas--")]
 			class RUCTypeWithLambdas
 			{
-				[ExpectedWarning ("IL2112", nameof (MethodWithLambdas), "--RUCTypeWithLambdas--", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2112", nameof (MethodWithLambdas), "--RUCTypeWithLambdas--", ProducedBy = Tool.Trimmer)]
 				public void MethodWithLambdas ()
 				{
 					var lambda =
 					[ExpectedWarning ("IL2112", "<" + nameof (MethodWithLambdas) + ">", "--RUCTypeWithLambdas--",
-						ProducedBy = ProducedBy.Trimmer)]
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+						ProducedBy = Tool.Trimmer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 					() => MethodWithRequires ();
 
 					int i = 0;
 					var lambdaWithCapturedState =
 					[ExpectedWarning ("IL2112", "<" + nameof (MethodWithLambdas) + ">", "--RUCTypeWithLambdas--",
-						ProducedBy = ProducedBy.Trimmer)]
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+						ProducedBy = Tool.Trimmer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 					() => {
 						i++;
 						MethodWithRequires ();
@@ -387,23 +388,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaCallsPInvokeTakingObject) + ">",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaCallsMethodWithRequires) + ">",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithCorrectDataflow) + ">",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2111", "<" + nameof (LambdaWithCorrectParameter) + ">",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithProblematicDataflow) + ">",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (LambdaWithCapturedTypeToDAM) + ">",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--")]
-			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLambdas.MethodWithLambdas) + "()", "--RUCTypeWithLambdas--")]
+			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLambdas.MethodWithLambdas) + "()", "--RUCTypeWithLambdas--", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLambdas.MethodWithLambdas) + ">", "--RUCTypeWithLambdas--",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLambdas.MethodWithLambdas) + ">", "--RUCTypeWithLambdas--",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			public static void Test (Lambdas test = null)
 			{
 				typeof (Lambdas).RequiresAll ();
@@ -424,10 +425,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void LocalFunctionCallsMethodWithRequires ()
 			{
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
-				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 				[ExpectedWarning ("IL2119", "<" + nameof (LocalFunctionCallsMethodWithRequires) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				void LocalFunction () => MethodWithRequires ();
 				LocalFunction ();
 			}
@@ -435,7 +436,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void LocalFunctionWithCorrectDataflow ()
 			{
 				[ExpectedWarning ("IL2119", "<" + nameof (LocalFunctionWithCorrectDataflow) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				void LocalFunction ()
 				{
 					var t = GetAll ();
@@ -448,7 +449,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll))]
 				[ExpectedWarning ("IL2119", "<" + nameof (LocalFunctionWithProblematicDataflow) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				void LocalFunction ()
 				{
 					var t = GetWithPublicMethods ();
@@ -461,7 +462,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				var t = GetAll ();
 				[ExpectedWarning ("IL2119", "<" + nameof (LocalFunctionWithCapturedTypeToDAM) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				void LocalFunction ()
 				{
 					t.RequiresAll ();
@@ -487,37 +488,37 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				[ExpectedWarning ("IL2050")]
 				[ExpectedWarning ("IL2119", "<" + nameof (LocalFunctionCallsPInvokeTakingObject) + ">",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				void LocalFunction () => MethodTakingObject (null);
 				LocalFunction ();
 			}
 
 			[ExpectedWarning ("IL2112", nameof (RUCTypeWithLocalFunctions) + "()", CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[RequiresUnreferencedCode ("--RUCTypeWithLocalFunctions--")]
 			class RUCTypeWithLocalFunctions
 			{
 				[ExpectedWarning ("IL2112", nameof (MethodWithLocalFunctions), "--RUCTypeWithLocalFunctions--",
-					ProducedBy = ProducedBy.Trimmer)]
+					ProducedBy = Tool.Trimmer)]
 				public void MethodWithLocalFunctions ()
 				{
 					[ExpectedWarning ("IL2112", "<" + nameof (MethodWithLocalFunctions) + ">",
-						ProducedBy = ProducedBy.Trimmer)]
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+						ProducedBy = Tool.Trimmer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 					void LocalFunction () => MethodWithRequires ();
 
 					[ExpectedWarning ("IL2112", "<" + nameof (MethodWithLocalFunctions) + ">",
-						ProducedBy = ProducedBy.Trimmer)]
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+						ProducedBy = Tool.Trimmer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 					static void StaticLocalFunction () => MethodWithRequires ();
 
 					int i = 0;
 					[ExpectedWarning ("IL2112", "<" + nameof (MethodWithLocalFunctions) + ">",
-						ProducedBy = ProducedBy.Trimmer)]
-					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
-					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+						ProducedBy = Tool.Trimmer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 					void LocalFunctionWithCapturedState ()
 					{
 						i++;
@@ -531,24 +532,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionCallsPInvokeTakingObject),
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionCallsMethodWithRequires),
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionWithCorrectDataflow),
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionWithProblematicDataflow),
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionWithCapturedTypeToDAM),
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			// Expect RUC warnings for static, compiler-generated code warnings for instance.
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLocalFunctions) + "()", "--RUCTypeWithLocalFunctions--")]
 			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + ">", "LocalFunctionWithCapturedState",
-				ProducedBy = ProducedBy.Trimmer)] // displayclass ctor
+				ProducedBy = Tool.Trimmer)] // displayclass ctor
 			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + ">", "StaticLocalFunction",
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + ">", "LocalFunction",
-				ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + "()")]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + "()", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 			public static void Test (LocalFunctions test = null)
 			{
 				typeof (LocalFunctions).RequiresAll ();

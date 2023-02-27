@@ -32,13 +32,6 @@ namespace System.Text.Json.Serialization
         /// </returns>
         public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
 
-        internal override JsonParameterInfo CreateJsonParameterInfo()
-        {
-            Debug.Fail("We should never get here.");
-
-            throw new InvalidOperationException();
-        }
-
         internal sealed override Type? KeyType => null;
 
         internal sealed override Type? ElementType => null;

@@ -250,6 +250,15 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
+#ifndef TARGET_64BIT
+                    // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
+                    // handle contained relops efficiently after decomposition.
+                    if (varTypeIsLong(tree))
+                    {
+                        return false;
+                    }
+#endif
+
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
                         (op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
@@ -300,6 +309,15 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     {
                         return false;
                     }
+
+#ifndef TARGET_64BIT
+                    // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
+                    // handle contained relops efficiently after decomposition.
+                    if (varTypeIsLong(tree))
+                    {
+                        return false;
+                    }
+#endif
 
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
@@ -542,15 +560,6 @@ void OptIfConversionDsc::IfConvertDump()
 //
 bool OptIfConversionDsc::optIfConvert()
 {
-    // Don't optimise the block if it is inside a loop
-    // When inside a loop, branches are quicker than selects.
-    // Detect via the block weight as that will be high when inside a loop.
-    if ((m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT) &&
-        !m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
-    {
-        return false;
-    }
-
     // Does the block end by branching via a JTRUE after a compare?
     if (m_startBlock->bbJumpKind != BBJ_COND || m_startBlock->NumSucc() != 2)
     {
@@ -621,12 +630,6 @@ bool OptIfConversionDsc::optIfConvert()
     // Put a limit on the original source and destinations.
     if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_COST, 25))
     {
-#ifdef TARGET_XARCH
-        // xarch does not support containing relops in GT_SELECT nodes
-        // currently so only introduce GT_SELECT in stress.
-        JITDUMP("Skipping if-conversion on xarch\n");
-        return false;
-#else
         int thenCost = 0;
         int elseCost = 0;
 
@@ -657,7 +660,25 @@ bool OptIfConversionDsc::optIfConvert()
                     elseCost);
             return false;
         }
-#endif
+    }
+
+    if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
+    {
+        // Don't optimise the block if it is inside a loop
+        // When inside a loop, branches are quicker than selects.
+        // Detect via the block weight as that will be high when inside a loop.
+        if (m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT)
+        {
+            JITDUMP("Skipping if-conversion inside loop (via weight)\n");
+            return false;
+        }
+
+        // We may be inside an unnatural loop, so do the expensive check.
+        if (m_comp->optReachable(m_finalBlock, m_startBlock, nullptr))
+        {
+            JITDUMP("Skipping if-conversion inside loop (via FG walk)\n");
+            return false;
+        }
     }
 
     // Get the select node inputs.
@@ -673,16 +694,12 @@ bool OptIfConversionDsc::optIfConvert()
         }
         else
         {
-            // Invert the condition (to help matching condition codes back to CIL).
-            GenTree* revCond = m_comp->gtReverseCond(m_cond);
-            assert(m_cond == revCond); // Ensure `gtReverseCond` did not create a new node.
-
             // Duplicate the destination of the Then assignment.
             assert(m_thenOperation.node->gtGetOp1()->IsLocal());
-            selectFalseInput = m_comp->gtCloneExpr(m_thenOperation.node->gtGetOp1());
-            selectFalseInput->gtFlags &= GTF_EMPTY;
+            selectTrueInput = m_comp->gtCloneExpr(m_thenOperation.node->gtGetOp1());
+            selectTrueInput->gtFlags &= GTF_EMPTY;
 
-            selectTrueInput = m_thenOperation.node->gtGetOp2();
+            selectFalseInput = m_thenOperation.node->gtGetOp2();
         }
 
         // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
@@ -773,11 +790,9 @@ PhaseStatus Compiler::optIfConversion()
 
     // This phase does not repect SSA: assignments are deleted/moved.
     assert(!fgDomsComputed);
+    optReachableBitVecTraits = nullptr;
 
-    // Currently only enabled on arm64 and under debug on xarch, since we only
-    // do it under stress.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_ARM64) || (defined(TARGET_XARCH) && defined(DEBUG))
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
     while (block != nullptr)

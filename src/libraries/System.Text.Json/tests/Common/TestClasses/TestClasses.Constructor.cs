@@ -907,12 +907,14 @@ namespace System.Text.Json.Serialization.Tests
         public Point_3D_Struct Point3DStruct { get; }
         public ImmutableArray<int> ImmutableArray { get; }
         public int Int { get; }
+        public string String { get; }
 
-        public NullArgTester(Point_3D_Struct point3DStruct, ImmutableArray<int> immutableArray, int @int = 50)
+        public NullArgTester(Point_3D_Struct point3DStruct, ImmutableArray<int> immutableArray, int @int = 50, string @string = "defaultStr")
         {
             Point3DStruct = point3DStruct;
             ImmutableArray = immutableArray;
             Int = @int;
+            String = @string;
         }
     }
 
@@ -2057,7 +2059,7 @@ namespace System.Text.Json.Serialization.Tests
         public void Verify()
         {
             Assert.Equal(0, X);
-            Assert.Equal(0, Y); // We don't set parameter default value here.
+            Assert.Equal(5, Y); // We use the default parameter of the constructor.
         }
     }
     
@@ -2390,6 +2392,7 @@ namespace System.Text.Json.Serialization.Tests
         public StructWithFourArgs(int w, int x, int y, int z) => (W, X, Y, Z) = (w, x, y, z);
     }
 
+#if FIXED // https://github.com/dotnet/roslyn/issues/66900
     public record ClassWithManyConstructorParameters(
         int P000, int P001, int P002, int P003, int P004, int P005, int P006, int P007, int P008, int P009,
         int P010, int P011, int P012, int P013, int P014, int P015, int P016, int P017, int P018, int P019,
@@ -2597,4 +2600,5 @@ namespace System.Text.Json.Serialization.Tests
                 P990: 990, P991: 991, P992: 992, P993: 993, P994: 994, P995: 995, P996: 996, P997: 997, P998: 998, P999: 999);
         }
     }
+#endif
 }

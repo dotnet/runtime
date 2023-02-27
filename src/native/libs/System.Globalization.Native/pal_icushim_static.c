@@ -45,10 +45,10 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
     printf("[ICUDT] %s: %s\n", utrace_functionName(fnNumber), buf);
 }
 
+static int32_t load_icu_data(const void* pData);
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-
-static int32_t load_icu_data(const void* pData);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
 
@@ -64,7 +64,6 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
     return load_icu_data(pData);
 }
 
-
 /*
  * driver.c calls this to make sure this file is linked, otherwise
  * its not, meaning the EMSCRIPTEN_KEEPALIVE functions above
@@ -77,6 +76,13 @@ void mono_wasm_link_icu_shim(void)
 }
 
 #endif
+
+int32_t mono_wasi_load_icu_data(const void* pData);
+
+int32_t mono_wasi_load_icu_data(const void* pData)
+{
+    return load_icu_data(pData);
+}
 
 static int32_t load_icu_data(const void* pData)
 {
@@ -169,6 +175,14 @@ error:
 int32_t
 GlobalizationNative_LoadICUData(const char* path)
 {
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+    if (!path)
+    {
+        // fallback to icudt.dat in the app bundle root in case the path isn't set
+        path = GlobalizationNative_GetICUDataPathFallback();
+    }
+#endif
+
     const char *icu_data = cstdlib_load_icu_data(path);
 
     if (icu_data == NULL)

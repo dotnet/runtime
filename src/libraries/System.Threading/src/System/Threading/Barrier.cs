@@ -215,11 +215,8 @@ namespace System.Threading
         /// </remarks>
         public Barrier(int participantCount, Action<Barrier>? postPhaseAction)
         {
-            // the count must be non negative value
-            if (participantCount < 0 || participantCount > MAX_PARTICIPANTS)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount, SR.Barrier_ctor_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(participantCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(participantCount, MAX_PARTICIPANTS);
             _currentTotalCount = (int)participantCount;
             _postPhaseAction = postPhaseAction;
 
@@ -318,16 +315,8 @@ namespace System.Threading
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (participantCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
-                    SR.Barrier_AddParticipants_NonPositive_ArgumentOutOfRange);
-            }
-            else if (participantCount > MAX_PARTICIPANTS) //overflow
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount),
-                        SR.Barrier_AddParticipants_Overflow_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(participantCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(participantCount, MAX_PARTICIPANTS);
 
             // in case of this is called from the PHA
             if (_actionCallerID != 0 && Environment.CurrentManagedThreadId == _actionCallerID)
@@ -422,11 +411,7 @@ namespace System.Threading
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (participantCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
-                    SR.Barrier_RemoveParticipants_NonPositive_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(participantCount);
 
             // in case of this is called from the PHA
             if (_actionCallerID != 0 && Environment.CurrentManagedThreadId == _actionCallerID)

@@ -152,20 +152,20 @@ namespace System.Text.Json.Serialization.Tests
 
         private static IJsonTypeInfoResolver[] GetCombinedResolvers(IJsonTypeInfoResolver resolver)
         {
-            (Type combinedResolverType, FieldInfo underlyingResolverField) = s_combinedResolverMembers.Value;
+            (Type combinedResolverType, PropertyInfo underlyingResolverProperty) = s_combinedResolverMembers.Value;
             Assert.IsType(combinedResolverType, resolver);
-            return (IJsonTypeInfoResolver[])underlyingResolverField.GetValue(resolver);
+            return (IJsonTypeInfoResolver[])underlyingResolverProperty.GetValue(resolver);
         }
 
-        private static Lazy<(Type, FieldInfo)> s_combinedResolverMembers = new Lazy<(Type, FieldInfo)>
+        private static Lazy<(Type, PropertyInfo)> s_combinedResolverMembers = new Lazy<(Type, PropertyInfo)>
         (
             static () =>
             {
                 Type? combinedResolverType = typeof(JsonTypeInfoResolver).GetNestedType("CombiningJsonTypeInfoResolver", BindingFlags.NonPublic);
                 Assert.NotNull(combinedResolverType);
-                FieldInfo underlyingResolverField = combinedResolverType.GetField("_resolvers", BindingFlags.NonPublic | BindingFlags.Instance);
-                Assert.NotNull(underlyingResolverField);
-                return (combinedResolverType, underlyingResolverField);
+                PropertyInfo underlyingResolverProperty = combinedResolverType.GetProperty("Resolvers", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.NotNull(underlyingResolverProperty);
+                return (combinedResolverType, underlyingResolverProperty);
             }
         );
     }

@@ -27,7 +27,7 @@ namespace System.Text
         /// and writes the result to <paramref name="writer"/>.
         /// </summary>
         /// <param name="encoding">The <see cref="Encoding"/> which represents how the data in <paramref name="chars"/> should be encoded.</param>
-        /// <param name="chars">The <see cref="ReadOnlySequence{Char}"/> to encode to <see langword="byte"/>s.</param>
+        /// <param name="chars">The <see cref="ReadOnlySpan{Char}"/> to encode to <see langword="byte"/>s.</param>
         /// <param name="writer">The buffer to which the encoded bytes will be written.</param>
         /// <exception cref="EncoderFallbackException">Thrown if <paramref name="chars"/> contains data that cannot be encoded and <paramref name="encoding"/> is configured
         /// to throw an exception when such data is seen.</exception>
@@ -462,25 +462,32 @@ namespace System.Text
         {
             // Parameter null checks will be performed by the workhorse routine.
 
-            ReadOnlySequence<char> remainingChars = chars;
-            long totalBytesWritten = 0;
-            bool isFinalSegment;
-
-            do
+            if (chars.IsSingleSegment)
             {
-                // Process each segment individually. We need to run at least one iteration of the loop in case
-                // the Encoder has internal state.
+                Convert(encoder, chars.FirstSpan, writer, flush, out bytesUsed, out completed);
+            }
+            else
+            {
+                ReadOnlySequence<char> remainingChars = chars;
+                long totalBytesWritten = 0;
+                bool isFinalSegment;
 
-                remainingChars.GetFirstSpan(out ReadOnlySpan<char> firstSpan, out SequencePosition next);
-                isFinalSegment = remainingChars.IsSingleSegment;
+                do
+                {
+                    // Process each segment individually. We need to run at least one iteration of the loop in case
+                    // the Encoder has internal state.
 
-                Convert(encoder, firstSpan, writer, flush && isFinalSegment, out long bytesWrittenThisIteration, out completed);
+                    remainingChars.GetFirstSpan(out ReadOnlySpan<char> firstSpan, out SequencePosition next);
+                    isFinalSegment = remainingChars.IsSingleSegment;
 
-                totalBytesWritten += bytesWrittenThisIteration;
-                remainingChars = remainingChars.Slice(next);
-            } while (!isFinalSegment);
+                    Convert(encoder, firstSpan, writer, flush && isFinalSegment, out long bytesWrittenThisIteration, out completed);
 
-            bytesUsed = totalBytesWritten;
+                    totalBytesWritten += bytesWrittenThisIteration;
+                    remainingChars = remainingChars.Slice(next);
+                } while (!isFinalSegment);
+
+                bytesUsed = totalBytesWritten;
+            }
         }
 
         /// <summary>
@@ -549,25 +556,32 @@ namespace System.Text
         {
             // Parameter null checks will be performed by the workhorse routine.
 
-            ReadOnlySequence<byte> remainingBytes = bytes;
-            long totalCharsWritten = 0;
-            bool isFinalSegment;
-
-            do
+            if (bytes.IsSingleSegment)
             {
-                // Process each segment individually. We need to run at least one iteration of the loop in case
-                // the Decoder has internal state.
+                Convert(decoder, bytes.FirstSpan, writer, flush, out charsUsed, out completed);
+            }
+            else
+            {
+                ReadOnlySequence<byte> remainingBytes = bytes;
+                long totalCharsWritten = 0;
+                bool isFinalSegment;
 
-                remainingBytes.GetFirstSpan(out ReadOnlySpan<byte> firstSpan, out SequencePosition next);
-                isFinalSegment = remainingBytes.IsSingleSegment;
+                do
+                {
+                    // Process each segment individually. We need to run at least one iteration of the loop in case
+                    // the Decoder has internal state.
 
-                Convert(decoder, firstSpan, writer, flush && isFinalSegment, out long charsWrittenThisIteration, out completed);
+                    remainingBytes.GetFirstSpan(out ReadOnlySpan<byte> firstSpan, out SequencePosition next);
+                    isFinalSegment = remainingBytes.IsSingleSegment;
 
-                totalCharsWritten += charsWrittenThisIteration;
-                remainingBytes = remainingBytes.Slice(next);
-            } while (!isFinalSegment);
+                    Convert(decoder, firstSpan, writer, flush && isFinalSegment, out long charsWrittenThisIteration, out completed);
 
-            charsUsed = totalCharsWritten;
+                    totalCharsWritten += charsWrittenThisIteration;
+                    remainingBytes = remainingBytes.Slice(next);
+                } while (!isFinalSegment);
+
+                charsUsed = totalCharsWritten;
+            }
         }
     }
 }

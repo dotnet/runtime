@@ -487,6 +487,7 @@ void Compiler::fgSwitchToOptimized(const char* reason)
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
     opts.jitFlags->Set(JitFlags::JIT_FLAG_BBOPT);
 
@@ -3171,9 +3172,9 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
     BasicBlock* lastReachablePred = nullptr;
 
     // Check if we have unreachable preds
-    for (const flowList* predEdge : block->PredEdges())
+    for (const FlowEdge* predEdge : block->PredEdges())
     {
-        BasicBlock* predBlock = predEdge->getBlock();
+        BasicBlock* predBlock = predEdge->getSourceBlock();
         if (predBlock == block)
         {
             continue;

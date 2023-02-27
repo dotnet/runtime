@@ -790,6 +790,13 @@ check_prototype_definition(
     ${STATFS_INCLUDES}
     HAVE_NON_LEGACY_STATFS)
 
+check_prototype_definition(
+    ioctl
+    "int ioctl(int fd, int request, ...)"
+    0
+    "sys/ioctl.h"
+    HAVE_IOCTL_WITH_INT_REQUEST)
+
 check_c_source_compiles(
     "
     #include <stdlib.h>

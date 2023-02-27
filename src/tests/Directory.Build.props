@@ -74,7 +74,6 @@
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">coreclr</RuntimeFlavor>
 
     <RestoreDefaultOptimizationDataPackage Condition="'$(RestoreDefaultOptimizationDataPackage)' == ''">false</RestoreDefaultOptimizationDataPackage>
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
 
     <UsePartialNGENOptimization Condition="'$(UsePartialNGENOptimization)' == ''">false</UsePartialNGENOptimization>
 
@@ -142,6 +141,7 @@
     <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='loongarch64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='riscv64'">64</TargetBits>
   </PropertyGroup>
 
   <PropertyGroup>
