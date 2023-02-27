@@ -65,7 +65,7 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)">
     <PropertyGroup>
       <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
@@ -86,14 +86,14 @@
       </_WasmBundleTimezonesWithHashes>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
-    <EmitWasmBundleFiles 
+    <EmitWasmBundleObjectFiles 
       FilesToBundle="@(_WasmBundleTimezonesWithHashes)" 
       ClangExecutable="$(WasiClang)"
       BundleName="timezones"
       BundleFile="$(_WasmTimezonesBundleObjectFile)"
       RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
       >
-    </EmitWasmBundleFiles>
+    </EmitWasmBundleObjectFiles>
     <ItemGroup>
       <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), %(_WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
       <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), $(_WasmTimezonesBundleObjectFile)).Replace('\','/'))" />

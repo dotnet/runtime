@@ -13,15 +13,12 @@ using Microsoft.Build.Framework;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
-public class EmitWasmBundleFiles : Microsoft.Build.Utilities.Task, ICancelableTask
+public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICancelableTask
 {
     private CancellationTokenSource BuildTaskCancelled { get; } = new();
 
     [Required]
     public ITaskItem[] FilesToBundle { get; set; } = default!;
-
-    // if not provided the task will generate source files to disk
-    public string? ClangExecutable { get; set; }
 
     [Required]
     public string BundleName { get; set; } = default!;
@@ -34,16 +31,6 @@ public class EmitWasmBundleFiles : Microsoft.Build.Utilities.Task, ICancelableTa
 
     public override bool Execute()
     {
-        if (!string.IsNullOrEmpty(ClangExecutable) && !File.Exists(ClangExecutable))
-        {
-            Log.LogError($"Cannot find {nameof(ClangExecutable)}={ClangExecutable}");
-            return false;
-        }
-        // It would be ideal that this Task would always produce object files.
-        // We do it with clang by streaming code directly to clang input stream.
-        // For emcc it's not possible, so we need to write the code to disk first and then compile it in MSBuild.
-        Action<string, Action<Stream>> emitter = string.IsNullOrEmpty(ClangExecutable) ? WriteSource : Compile;
-
         // The DestinationFile (output filename) already includes a content hash. Grouping by this filename therefore
         // produces one group per file-content. We only want to emit one copy of each file-content, and one symbol for it.
         var filesToBundleByDestinationFileName = FilesToBundle.GroupBy(f => f.GetMetadata("DestinationFile")).ToList();
@@ -58,13 +45,32 @@ public class EmitWasmBundleFiles : Microsoft.Build.Utilities.Task, ICancelableTa
         var verbose = remainingDestinationFilesToBundle.Length > 1;
         var verboseCount = 0;
 
+        var filesToBundleByRegisteredName = FilesToBundle.GroupBy(file => {
+            var registeredName = file.GetMetadata("RegisteredName");
+            if(string.IsNullOrEmpty(registeredName))
+            {
+                registeredName = Path.GetFileName(file.ItemSpec);
+            }
+            return registeredName;
+        }).ToList();
+
+        var files = filesToBundleByRegisteredName.Select(group => {
+            var registeredFile = group.First();
+            var outputFile = registeredFile.GetMetadata("DestinationFile");
+            var registeredName = group.Key;
+            var symbolName = ToSafeSymbolName(outputFile);
+            return (registeredName, symbolName);
+        }).ToList();
+
+        Log.LogMessage(MessageImportance.Low, "Bundling {numFiles} files for {bundleName}", files.Count, BundleName);
+
         if (remainingDestinationFilesToBundle.Length > 0)
         {
             int allowedParallelism = Math.Max(Math.Min(remainingDestinationFilesToBundle.Length, Environment.ProcessorCount), 1);
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
-            Parallel.For(0, remainingDestinationFilesToBundle.Length, new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism, CancellationToken = BuildTaskCancelled.Token }, i =>
+            Parallel.For(0, remainingDestinationFilesToBundle.Length, new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism, CancellationToken = BuildTaskCancelled.Token }, (i, state) =>
             {
                 var group = remainingDestinationFilesToBundle[i];
 
@@ -87,38 +93,21 @@ public class EmitWasmBundleFiles : Microsoft.Build.Utilities.Task, ICancelableTa
 
                 Log.LogMessage(MessageImportance.Low, "Bundling {0} as {1}", inputFile, outputFile);
                 var symbolName = ToSafeSymbolName(outputFile);
-                emitter(outputFile, (codeStream) => {
+                if (!Emit(outputFile, (codeStream) => {
                     using var inputStream = File.OpenRead(inputFile);
                     BundleFileToCSource(symbolName, inputStream, codeStream);
-                });
+                }))
+                {
+                    state.Stop();
+                }
             });
         }
 
-        var filesToBundleByRegisteredName = FilesToBundle.GroupBy(file => {
-            var registeredName = file.GetMetadata("RegisteredName");
-            if(string.IsNullOrEmpty(registeredName))
-            {
-                registeredName = Path.GetFileName(file.ItemSpec);
-            }
-            return registeredName;
-        }).ToList();
-
-        var files = filesToBundleByRegisteredName.Select(group => {
-            var registeredFile = group.First();
-            var outputFile = registeredFile.GetMetadata("DestinationFile");
-            var registeredName = group.Key;
-            var symbolName = ToSafeSymbolName(outputFile);
-            return (registeredName, symbolName);
-        }).ToList();
-
-        Log.LogMessage(MessageImportance.High, "Bundling {2} objects into mono_wasm_register_{0}_bundle as {1}", BundleName, BundleFile, files.Count);
-        emitter(BundleFile, (inputStream) =>
+        return Emit(BundleFile, (inputStream) =>
         {
             using var outputUtf8Writer = new StreamWriter(inputStream, Utf8NoBom);
             GenerateRegisterBundledObjects($"mono_wasm_register_{BundleName}_bundle", RegistrationCallbackFunctionName, files, outputUtf8Writer);
-        });
-
-        return !Log.HasLoggedErrors;
+        }) && !Log.HasLoggedErrors;
     }
 
     public void Cancel()
@@ -156,29 +145,7 @@ public class EmitWasmBundleFiles : Microsoft.Build.Utilities.Task, ICancelableTa
         return lookup;
     }
 
-    public void WriteSource(string destinationFile, Action<Stream> inputProvider)
-    {
-        using (var fileStream = File.Create(destinationFile))
-        {
-            inputProvider(fileStream);
-        }
-    }
-
-    public void Compile(string destinationFile, Action<Stream> inputProvider)
-    {
-        if (Path.GetDirectoryName(destinationFile) is string destDir && !string.IsNullOrEmpty(destDir))
-            Directory.CreateDirectory(destDir);
-
-        (int exitCode, string output) = Utils.TryRunProcess(Log,
-                            ClangExecutable!,
-                            $"-xc -o \"{destinationFile}\" -c -",
-                            null, null, true, false, MessageImportance.Low, null,
-                            inputProvider);
-        if (exitCode != 0)
-        {
-            Log.LogError($"workload install failed with exit code {exitCode}: {output}");
-        }
-    }
+    public abstract bool Emit(string destinationFile, Action<Stream> inputProvider);
 
     public static void GenerateRegisterBundledObjects(string newFunctionName, string callbackFunctionName, ICollection<(string registeredName, string symbol)> files, StreamWriter outputUtf8Writer)
     {

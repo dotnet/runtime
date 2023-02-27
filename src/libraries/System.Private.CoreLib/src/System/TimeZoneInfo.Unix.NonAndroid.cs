@@ -20,7 +20,7 @@ namespace System
 
 #if TARGET_WASI || TARGET_BROWSER
         // if TZDIR is set, then the embedded TZ data will be ignored and normal unix behavior will be used
-        private static readonly bool UseEmbeddedTzDatabase = Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable) == null;
+        private static readonly bool UseEmbeddedTzDatabase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable));
 #endif
 
         private static TimeZoneInfo GetLocalTimeZoneCore()
@@ -38,7 +38,7 @@ namespace System
 #if TARGET_WASI || TARGET_BROWSER
             if (UseEmbeddedTzDatabase)
             {
-                if(!TryLoadEmbeddedTzFile(id, ref rawData))
+                if(!TryLoadEmbeddedTzFile(id, out rawData))
                 {
                     e = new FileNotFoundException(id, "Embedded TZ data not found");
                     return TimeZoneInfoResult.TimeZoneNotFoundException;
@@ -102,11 +102,12 @@ namespace System
         /// </remarks>
         private static IEnumerable<string> GetTimeZoneIds()
         {
+            try
+            {
 #if TARGET_WASI || TARGET_BROWSER
-                byte[]? rawData = null;
                 if (UseEmbeddedTzDatabase)
                 {
-                    if(!TryLoadEmbeddedTzFile(TimeZoneFileName, ref rawData))
+                    if(!TryLoadEmbeddedTzFile(TimeZoneFileName, out var rawData))
                     {
                         return Array.Empty<string>();
                     }
@@ -114,8 +115,6 @@ namespace System
                     return ParseTimeZoneIds(reader);
                 }
 #endif
-            try
-            {
                 using var reader = new StreamReader(Path.Combine(GetTimeZoneDirectory(), TimeZoneFileName), Encoding.UTF8);
                 return ParseTimeZoneIds(reader);
             }
@@ -422,7 +421,7 @@ namespace System
         }
 
 #if TARGET_WASI || TARGET_BROWSER
-        private static bool TryLoadEmbeddedTzFile(string name, [NotNullWhen(true)] ref byte[]? rawData)
+        private static bool TryLoadEmbeddedTzFile(string name, [NotNullWhen(true)] out byte[]? rawData)
         {
             IntPtr bytes = Interop.Sys.GetTimeZoneData(name, out int length);
             if(bytes == IntPtr.Zero)
@@ -489,7 +488,7 @@ namespace System
 #if TARGET_WASI || TARGET_BROWSER
             if (UseEmbeddedTzDatabase)
             {
-                if(!TryLoadEmbeddedTzFile(tzVariable, ref rawData))
+                if(!TryLoadEmbeddedTzFile(tzVariable, out rawData))
                 {
                     return false;
                 }
