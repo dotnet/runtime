@@ -4,7 +4,7 @@
 using System;
 using System.Threading;
 
-class BindHandleNull
+public class BindHandleNull
 {
     public static int Main()
     {

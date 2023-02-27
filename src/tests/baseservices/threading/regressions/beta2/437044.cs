@@ -4,7 +4,7 @@
 using System;
 using System.Threading;
 
-class Test
+public class Test
 {    
     static bool _fTestFailed = false;
     static bool _fTestDone = false;

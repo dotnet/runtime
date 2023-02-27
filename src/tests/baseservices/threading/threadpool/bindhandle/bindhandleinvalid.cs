@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
-class BindHandleInvalid
+public class BindHandleInvalid
 {
     public static int Main()
     {

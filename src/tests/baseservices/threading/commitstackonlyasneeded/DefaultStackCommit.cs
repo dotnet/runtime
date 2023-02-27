@@ -9,9 +9,9 @@ using System.Runtime.InteropServices;
 
 namespace StackCommitTest
 {
-    class DefaultStackCommit
+    public class DefaultStackCommit
     {
-        static int Main()
+        public static int Main()
         {
             int result = 1;
             bool commitEnabled = false;

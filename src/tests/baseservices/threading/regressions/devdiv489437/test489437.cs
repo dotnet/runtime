@@ -19,9 +19,9 @@ Change description:
   cancel the associated Task.
 */
 
-class Test
+public class Test
 {
-    static int Main()
+    public static int Main()
     {
         SemaphoreSlim s = new SemaphoreSlim(initialCount: 1);
 

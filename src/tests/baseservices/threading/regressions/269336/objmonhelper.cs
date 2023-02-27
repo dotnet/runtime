@@ -4,7 +4,7 @@
 using System;
 using System.Threading;
 
-class ObjMonHelper {
+public class ObjMonHelper {
 	const string FailMsg = @"Monitor.Enter appears to have mistaken a hash code in an object header for
 a valid lock owned by the current thread.";
 

@@ -10,7 +10,7 @@ using Microsoft.Win32.SafeHandles;
 /// <summary>
 /// Verifies passing an invalid handle (not overlapped) to BindHandle works as expected
 /// </summary>
-class BindHandle1
+public class BindHandle1
 {
     public static int Main()
     {
