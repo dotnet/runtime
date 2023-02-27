@@ -18,10 +18,10 @@ namespace System
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
         private const string TimeZoneEnvironmentVariable = "TZ";
 
-        #if TARGET_WASI || TARGET_BROWSER
+#if TARGET_WASI || TARGET_BROWSER
         // if TZDIR is set, then the embedded TZ data will be ignored and normal unix behavior will be used
         private static readonly bool UseEmbeddedTzDatabase = Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable) == null;
-        #endif
+#endif
 
         private static TimeZoneInfo GetLocalTimeZoneCore()
         {
