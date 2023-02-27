@@ -78,6 +78,9 @@
   <data name="dns_bad_ip_address" xml:space="preserve">
     <value>An invalid IP address was specified.</value>
   </data>
+  <data name="dns_bad_ip_network" xml:space="preserve">
+    <value>An invalid IPNetwork was specified.</value>
+  </data>
   <data name="net_container_add_cookie" xml:space="preserve">
     <value>An error occurred when adding a cookie to the container.</value>
   </data>
