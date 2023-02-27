@@ -527,7 +527,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         }
 
         // This is a special case for cdq/cwde.
-        // They always write to and sign-extend RAX.
+        // They always write to and sign-extend.
         if (instrHasImplicitRegSingleDest(id->idIns()))
         {
             switch (id->idIns())
