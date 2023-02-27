@@ -28,6 +28,7 @@ if ($buildWindowsContainers)
     exit $LASTEXITCODE
   }
 
+  $dockerFileName="libraries-sdk.windows.Dockerfile"
   $dockerFile="$dockerFilePrefix.windows.Dockerfile"
   
   # Collect the following artifacts to folder, that will be used as build context for the container,
@@ -49,8 +50,10 @@ if ($buildWindowsContainers)
                      -Destination $dockerContext\microsoft.netcore.app.runtime.win-x64
   Copy-Item -Recurse -Path $binArtifacts\testhost `
                      -Destination $dockerContext\testhost
-  Copy-Item -Recurse -Path $REPO_ROOT_DIR\eng\targetingpacks.targets `
+  Copy-Item          -Path $REPO_ROOT_DIR\eng\targetingpacks.targets `
                      -Destination $dockerContext\targetingpacks.targets
+  Copy-Item          -Path $dockerFile 
+                     -Destination $dockerContext\$dockerFileName
   
   # In case of non-CI builds, testhost may already contain Microsoft.AspNetCore.App (see build-local.ps1 in HttpStress):
   $testHostAspNetCorePath="$dockerContext\testhost\net$dotNetVersion-windows-$configuration-x64/shared/Microsoft.AspNetCore.App"
@@ -60,7 +63,7 @@ if ($buildWindowsContainers)
   
   docker build --tag $imageName `
     --build-arg CONFIGURATION=$configuration `
-    --file $dockerFile `
+    --file $dockerContext\$dockerFileName `
     $dockerContext
 }
 else
