@@ -2,10 +2,11 @@ name: DNMD
 
 on:
   push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
-  
+    paths:
+      - '!**.md'
+
 jobs:
   build:
     strategy:
