@@ -110,11 +110,11 @@
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
-      <__WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <__WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
-      <__WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
+      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
+      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
+      <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
     </ItemGroup>
-    <Delete Files="@(__WasmBundleTimezonesToDelete)" />
+    <Delete Files="@(_WasmBundleTimezonesToDelete)" />
   </Target>
 
   <Target Name="GenerateWasiPropsAndRspFiles">
