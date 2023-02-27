@@ -500,6 +500,7 @@ EMSCRIPTEN_KEEPALIVE
 void
 mono_wasm_gc_lock(void)
 {
+	MONO_ENTER_GC_UNSAFE;
 #ifndef DISABLE_THREADS
 	/* only the browser thread is allowed to take the GC lock */
 	g_assert (mono_threads_wasm_is_browser_thread ());
@@ -508,18 +509,21 @@ mono_wasm_gc_lock(void)
 #else
 	g_assert_not_reached ();
 #endif
+	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE
 void
 mono_wasm_gc_unlock(void)
 {
+	MONO_ENTER_GC_UNSAFE;
 #ifndef DISABLE_THREADS
 	release_gc_locks();
 	UNLOCK_GC;
 #else
 	g_assert_not_reached ();
 #endif
+	MONO_EXIT_GC_UNSAFE;
 }
 #endif /* HOST_BROWSER */
 
