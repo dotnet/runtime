@@ -665,20 +665,7 @@ namespace {@namespace}
             {
                 const string PropVarName = "properties";
 
-                List<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecList!;
-
-                if (typeGenerationSpec.CtorParamGenSpecArray != null)
-                {
-                    properties = properties
-                        .Where(prop => prop.DefaultIgnoreCondition != JsonIgnoreCondition.Always ||
-                                       typeGenerationSpec.CtorParamGenSpecArray.Any(
-                                           ctorPara => prop.ClrName.Equals(ctorPara.ParameterInfo.Name, StringComparison.OrdinalIgnoreCase)))
-                        .ToList();
-                }
-                else
-                {
-                    properties = properties.Where(prop => prop.DefaultIgnoreCondition != JsonIgnoreCondition.Always).ToList();
-                }
+                List<PropertyGenerationSpec> properties = GetPropertyGenerationSpecList(typeGenerationSpec);
 
                 int propCount = properties.Count;
 
@@ -785,6 +772,52 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
 
                 return sb.ToString();
             }
+
+            private static List<PropertyGenerationSpec> GetPropertyGenerationSpecList(TypeGenerationSpec typeGenerationSpec)
+            {
+                // If type has JsonExtensionData attribute, just return all the property generation spec.
+                if (typeGenerationSpec.ExtensionDataPropertyTypeSpec != null)
+                {
+                    return typeGenerationSpec.PropertyGenSpecList!;
+                }
+
+                // If type doesn't has JsonExtensionData attribute, we can ignore the property with JsonIgnore attribute.
+                var properties = new List<PropertyGenerationSpec>();
+                var noneIgnoreProperties = new HashSet<string>(
+                    typeGenerationSpec.PropertyGenSpecList!
+                        .Where(properties => properties.DefaultIgnoreCondition != JsonIgnoreCondition.Always)
+                        .Select(properties => properties.ClrName),
+                    StringComparer.OrdinalIgnoreCase);
+                var ctorNames = new HashSet<string>(
+                    typeGenerationSpec.CtorParamGenSpecArray?.Select(ctorPara => ctorPara.ParameterInfo.Name!) ?? Array.Empty<string>(),
+                    StringComparer.OrdinalIgnoreCase);
+
+                foreach (PropertyGenerationSpec propertyGenerationSpec in typeGenerationSpec.PropertyGenSpecList!)
+                {
+                    if (propertyGenerationSpec.DefaultIgnoreCondition != JsonIgnoreCondition.Always)
+                    {
+                        properties.Add(propertyGenerationSpec);
+                    }
+                    else
+                    {
+                        // If JsonIgnore property is belongs to constructor parameters, we keep it.
+                        if (typeGenerationSpec.CtorParamGenSpecArray != null && ctorNames.Contains(propertyGenerationSpec.ClrName))
+                        {
+                            properties.Add(propertyGenerationSpec);
+                            continue;
+                        }
+
+                        // If JsonIgnore property name equals other none-JsonIgnore property, we keep it.
+                        if (noneIgnoreProperties.Contains(propertyGenerationSpec.ClrName))
+                        {
+                            properties.Add(propertyGenerationSpec);
+                        }
+                    }
+                }
+
+                return properties;
+            }
+
 
             private
 #if !DEBUG
