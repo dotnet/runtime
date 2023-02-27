@@ -788,8 +788,10 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
                         .Where(properties => properties.DefaultIgnoreCondition != JsonIgnoreCondition.Always)
                         .Select(properties => properties.ClrName),
                     StringComparer.OrdinalIgnoreCase);
+
                 var ctorNames = new HashSet<string>(
-                    typeGenerationSpec.CtorParamGenSpecArray?.Select(ctorPara => ctorPara.ParameterInfo.Name!) ?? Array.Empty<string>(),
+                    typeGenerationSpec.CtorParamGenSpecArray?
+                        .Select(ctorPara => ctorPara.ParameterInfo.Name!) ?? Array.Empty<string>(),
                     StringComparer.OrdinalIgnoreCase);
 
                 foreach (PropertyGenerationSpec propertyGenerationSpec in typeGenerationSpec.PropertyGenSpecList!)
@@ -817,7 +819,6 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
 
                 return properties;
             }
-
 
             private
 #if !DEBUG
