@@ -6588,12 +6588,10 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						direct_call_target = symbol;
 						patch_info->type = MONO_PATCH_INFO_NONE;
 					} else if ((m_class_get_image (patch_info->data.method->klass) == acfg->image) && !got_only && is_direct_callable (acfg, method, patch_info)) {
-#if 0
-						// FIXME: Currently not used. It fails as some callees require initialization.
 						MonoCompile *callee_cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, cmethod);
 
-						// Don't compile inflated methods if we're doing dedup
-						if (acfg->aot_opts.dedup && !mono_aot_can_dedup (cmethod)) {
+						// Enable direct call transformation where caller's class requires no initialization
+						if (!m_class_has_static_refs (method->klass)) {
 							char *name = mono_aot_get_mangled_method_name (cmethod);
 							mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "DIRECT CALL: %s by %s", name, method ? mono_method_full_name (method, TRUE) : "");
 							g_free (name);
@@ -6603,7 +6601,6 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 							patch_info->type = MONO_PATCH_INFO_NONE;
 							acfg->stats.direct_calls ++;
 						}
-#endif
 					}
 
 					acfg->stats.all_calls ++;
