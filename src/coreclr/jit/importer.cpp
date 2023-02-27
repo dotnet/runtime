@@ -1743,7 +1743,9 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
 
    1. pLookup->indirections == CORINFO_USEHELPER : Call a helper passing it the
       instantiation-specific handle, and the tokens to lookup the handle.
-   2. pLookup->indirections != CORINFO_USEHELPER :
+   2. pLookup->indirections == CORINFO_USENULL : Pass null. Callee won't dereference
+      the context.
+   3. pLookup->indirections != CORINFO_USEHELPER or CORINFO_USENULL :
       2a. pLookup->testForNull == false : Dereference the instantiation-specific handle
           to get the handle.
       2b. pLookup->testForNull == true : Dereference the instantiation-specific handle.
@@ -1770,6 +1772,13 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 #endif
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
     }
+
+#ifdef FEATURE_READYTORUN
+    if (pRuntimeLookup->indirections == CORINFO_USENULL)
+    {
+        return gtNewIconNode(0, TYP_I_IMPL);
+    }
+#endif
 
     // Slot pointer
     GenTree* slotPtrTree = ctxTree;
