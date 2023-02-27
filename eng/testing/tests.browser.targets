@@ -234,17 +234,19 @@
       <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
                             Variant="net7"
-                            Version="$(PackageVersionForWorkloadManifests)" />
+                            Version="$(PackageVersionForWorkloadManifests)"
+                            Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
       <WorkloadIdForTesting Include="wasm-tools-net6"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
                             Variant="net6"
                             Version="$(PackageVersionForWorkloadManifests)"
-                            IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)" />
+                            IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
+                            Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
-      <WorkloadCombinationsToInstall Include="latest"   Variants="latest" />
-      <WorkloadCombinationsToInstall Include="net7"     Variants="net7" />
-      <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" />
+      <WorkloadCombinationsToInstall Include="latest"        Variants="latest" />
+      <WorkloadCombinationsToInstall Include="net7"          Variants="net7" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
+      <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
       <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
       <!--<WorkloadCombinationsToInstall Include="none" />-->
