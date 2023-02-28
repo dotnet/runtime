@@ -1,30 +1,32 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 
 namespace System.Net
 {
-    /// <devdoc>
-    ///   <para>
-    ///     Provides an Internet Protocol (IP) subnet/range in CIDR notation.
-    ///   </para>
-    /// </devdoc>
+    /// <summary>
+    /// Provides an Internet Protocol (IP) subnet/range in CIDR notation.
+    /// </summary>
     public readonly struct IPNetwork : IEquatable<IPNetwork>, ISpanFormattable, ISpanParsable<IPNetwork>
     {
         public IPAddress BaseAddress { get; private init; }
         public int PrefixLength { get; private init; }
 
+        /*
+         We can also add two more easy to implement properties:
+         * AddressCount - a lazily calculated property showing the amount of potential address this instance "Contains". 2^(128_OR_32 - PrefixLength)
+            * 2^128 is going to fit into BigInteger, which causes a concern for memory allocation, since for actually big integers BigInteger seems to allocate a byte array.
+            * We can just have a Nullable<BigInteger> backing field for the lazy property. But we should be fine with the increased byte size for IPNetwork type itself caused by that.
+         * Since BaseAddress represents the first address in the range, does it make sense to have a property that represents the last address?
+         */
+
         private const int bitsPerByte = 8;
         private const string
-            baseAddressParamName = "baseAddress",
-            prefixLengthParamName = "prefixLength";
+            baseAddressConstructorParamName = "baseAddress",
+            prefixLengthConstructorParamName = "prefixLength";
         public IPNetwork(IPAddress baseAddress, int prefixLength)
         {
             BaseAddress = baseAddress;
@@ -33,7 +35,7 @@ namespace System.Net
             var validationError = Validate();
             if (validationError.HasValue)
             {
-                throw validationError.Value.CtorExceptionFactoryMethod();
+                throw validationError.Value.ConstructorExceptionFactoryMethod();
             }
         }
 
@@ -45,6 +47,9 @@ namespace System.Net
             {
                 return false;
             }
+
+            // TODO: this can be made much easier and potentially more performant for IPv4 if IPAddress.PrivateAddress is made internal (currently private)
+            // to be discussed in the PR
 
             var expectedBytesCount = GetAddressFamilyByteLength(BaseAddress.AddressFamily);
             if (expectedBytesCount * bitsPerByte == PrefixLength)
@@ -82,9 +87,9 @@ namespace System.Net
                 }
                 else
                 {
-                    var shiftAmount = bitsPerByte - PrefixLength + processedBitsCount;
-                    baseAddressByte >>= shiftAmount;
-                    otherAddressByte >>= shiftAmount;
+                    var rightShiftAmount = bitsPerByte - (PrefixLength - processedBitsCount);
+                    baseAddressByte >>= rightShiftAmount;
+                    otherAddressByte >>= rightShiftAmount;
                     if (baseAddressByte == otherAddressByte)
                     {
                         return true;
@@ -103,7 +108,7 @@ namespace System.Net
         }
         public static IPNetwork Parse(ReadOnlySpan<char> s)
         {
-            if(TryParseInternal(s, out var result, out var error))
+            if (TryParseInternal(s, out var result, out var error))
             {
                 return result;
             }
@@ -128,14 +133,22 @@ namespace System.Net
         }
         #endregion
 
-        #region Private and Internal methods
-        internal static bool TryParseInternal(ReadOnlySpan<char> s, [MaybeNullWhen(false)] out IPNetwork result, [NotNullWhen(false)] out string? error)
+        #region Private methods
+        private static bool TryParseInternal(ReadOnlySpan<char> s, out IPNetwork result, [NotNullWhen(false)] out string? error)
         {
-            int slashExpectedStartingIndex = s.Length - 4;
-            if (s.Slice(slashExpectedStartingIndex).IndexOf('/') != -1)
+            const char separator = '/';
+            const int maxCharsCountAfterIpAddress = 4;
+
+            int separatorExpectedStartingIndex = s.Length - maxCharsCountAfterIpAddress;
+            int separatorIndex = s
+                .Slice(separatorExpectedStartingIndex)
+                .IndexOf(separator);
+            if (separatorIndex != -1)
             {
-                var ipAddressSpan = s.Slice(0, slashExpectedStartingIndex);
-                var prefixLengthSpan = s.Slice(slashExpectedStartingIndex + 1);
+                separatorIndex += separatorExpectedStartingIndex;
+
+                var ipAddressSpan = s.Slice(0, separatorIndex);
+                var prefixLengthSpan = s.Slice(separatorIndex + 1);
 
                 if (IPAddress.TryParse(ipAddressSpan, out var ipAddress) && int.TryParse(prefixLengthSpan, out var prefixLength))
                 {
@@ -164,14 +177,14 @@ namespace System.Net
         }
 
         private readonly record struct ValidationError(
-            Func<Exception> CtorExceptionFactoryMethod,
+            Func<Exception> ConstructorExceptionFactoryMethod,
             string ParseExceptionMessage);
 
         private static readonly ValidationError
-            _baseAddressIsNullError = new ValidationError(() => new ArgumentNullException(baseAddressParamName), string.Empty),
-            _baseAddressHasSetBitsInMaskError = new ValidationError(() => new ArgumentException(baseAddressParamName), SR.dns_bad_ip_network),
-            _prefixLengthLessThanZeroError = new ValidationError(() => new ArgumentOutOfRangeException(prefixLengthParamName), SR.dns_bad_ip_network),
-            _prefixLengthGreaterThanAllowedError = new ValidationError(() => new ArgumentOutOfRangeException(prefixLengthParamName), SR.dns_bad_ip_network);
+            _baseAddressIsNullError = new ValidationError(() => new ArgumentNullException(baseAddressConstructorParamName), string.Empty),
+            _baseAddressHasSetBitsInMaskError = new ValidationError(() => new ArgumentException(baseAddressConstructorParamName), SR.dns_bad_ip_network),
+            _prefixLengthLessThanZeroError = new ValidationError(() => new ArgumentOutOfRangeException(prefixLengthConstructorParamName), SR.dns_bad_ip_network),
+            _prefixLengthGreaterThanAllowedError = new ValidationError(() => new ArgumentOutOfRangeException(prefixLengthConstructorParamName), SR.dns_bad_ip_network);
 
         private ValidationError? Validate()
         {
@@ -190,7 +203,7 @@ namespace System.Net
                 return _prefixLengthGreaterThanAllowedError;
             }
 
-            if (!AreMaskBitsAfterPrefixUnset())
+            if (IsAnyMaskBitOnForBaseAddress())
             {
                 return _baseAddressHasSetBitsInMaskError;
             }
@@ -198,35 +211,35 @@ namespace System.Net
             return default;
         }
 
-        private bool AreMaskBitsAfterPrefixUnset()
+        /// <summary>
+        /// Method to determine whether any bit in <see cref="BaseAddress"/>'s variable/mask part is 1.
+        /// </summary>
+        private bool IsAnyMaskBitOnForBaseAddress()
         {
+            // TODO: same as with Contains method - this can be made much easier and potentially more performant for IPv4 if IPAddress.PrivateAddress is made internal (currently private)
+            // to be discussed in the PR
+
             Span<byte> addressBytes = stackalloc byte[GetAddressFamilyByteLength(BaseAddress.AddressFamily)];
             if (!BaseAddress.TryWriteBytes(addressBytes, out int bytesWritten))
             {
                 throw new UnreachableException();
             }
 
-            for (int bitsCount = bytesWritten * bitsPerByte, i = bytesWritten - 1; bitsCount >= 0; bitsCount -= bitsPerByte, i--)
+            var addressBitsCount = addressBytes.Length * bitsPerByte;
+
+            for (int addressBytesIndex = addressBytes.Length - 1, numberOfEndingBitsToBeOff = addressBitsCount - PrefixLength;
+                addressBytesIndex >= 0 && numberOfEndingBitsToBeOff > 0;
+                addressBytesIndex--, numberOfEndingBitsToBeOff -= bitsPerByte)
             {
-                var numberOfEndingBitsToBeUnset = bitsCount - PrefixLength;
-                byte segment = addressBytes[i];
-                if (numberOfEndingBitsToBeUnset > bitsPerByte)
-                {
-                    if (segment == 0)
-                        continue;
-
-                    return false;
-                }
-
-                if ((segment & (1 << numberOfEndingBitsToBeUnset)) == segment)
+                byte maskForByte = unchecked((byte)(byte.MaxValue << Math.Min(numberOfEndingBitsToBeOff, bitsPerByte)));
+                var addressByte = addressBytes[addressBytesIndex];
+                if ((addressByte & maskForByte) != addressByte)
                 {
                     return true;
                 }
-
-                return false;
             }
 
-            throw new UnreachableException();
+            return false;
         }
 
         private static int GetAddressFamilyByteLength(AddressFamily addressFamily)
@@ -302,12 +315,12 @@ namespace System.Net
         {
             return TryFormat(destination, out charsWritten);
         }
-        static IPNetwork IParsable<IPNetwork>.Parse(string s, IFormatProvider? provider)
+        static IPNetwork IParsable<IPNetwork>.Parse([NotNull] string s, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(s);
             return Parse(s);
         }
-        static bool IParsable<IPNetwork>.TryParse(string? s, IFormatProvider? provider, out IPNetwork result)
+        static bool IParsable<IPNetwork>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out IPNetwork result)
         {
             return TryParse(s, out result);
         }
