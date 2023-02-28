@@ -66,6 +66,10 @@
 #include "interp-intrins.h"
 #include "tiering.h"
 
+#ifdef INTERP_ENABLE_SIMD
+#include "interp-simd.h"
+#endif
+
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/aot-runtime.h>
@@ -5816,6 +5820,86 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 7;
 			goto call;
 		}
+#ifdef INTERP_ENABLE_SIMD
+		MINT_IN_CASE(MINT_SIMD_V128_LDC) {
+			memcpy (locals + ip [1], ip + 2, SIZEOF_V128);
+			ip += 10;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint8);
+			gint8 res_buffer [num_elements];
+			gint8 *args = (gint8*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint8);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint16);
+			gint16 res_buffer [num_elements];
+			gint16 *args = (gint16*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint16);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint32);
+			gint32 res_buffer [num_elements];
+			gint32 *args = (gint32*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint32);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint64);
+			gint64 res_buffer [num_elements];
+			gint64 *args = (gint64*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint64);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_P)
+			interp_simd_p_p_table [ip [3]] (locals + ip [1], locals + ip [2]);
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PP)
+			interp_simd_p_pp_table [ip [4]] (locals + ip [1], locals + ip [2], locals + ip [3]);
+			ip += 5;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PPP)
+			interp_simd_p_ppp_table [ip [5]] (locals + ip [1], locals + ip [2], locals + ip [3], locals + ip [4]);
+			ip += 6;
+			MINT_IN_BREAK;
+#else
+		MINT_IN_CASE(MINT_SIMD_V128_LDC)
+		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_P)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PP)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PPP)
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
+#endif
+
 		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
 			gpointer ptr = LOCAL_VAR (ip [2], gpointer);
 			int len = LOCAL_VAR (ip [3], gint32);
@@ -7829,6 +7913,8 @@ interp_parse_options (const char *options)
 				opt = INTERP_OPT_BBLOCKS;
 			else if (strncmp (arg, "tiering", 7) == 0)
 				opt = INTERP_OPT_TIERING;
+			else if (strncmp (arg, "simd", 7) == 0)
+				opt = INTERP_OPT_SIMD;
 			else if (strncmp (arg, "all", 3) == 0)
 				opt = ~INTERP_OPT_NONE;
 
