@@ -50,13 +50,6 @@ static int32_t load_icu_data(const void* pData);
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
-EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
-
-EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
-{
-    return GlobalizationNative_GetICUDTName(culture);
-}
-
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData);
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
