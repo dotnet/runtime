@@ -52,11 +52,11 @@ public class BuildPublishTests : BuildTestBase
         if (config == "Release")
         {
             // relinking in publish for Release config
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
         }
         else
         {
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
         }
     }
 
@@ -121,7 +121,7 @@ public class BuildPublishTests : BuildTestBase
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
         CheckNativeFileLinked(forPublish: false);
 
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
         CheckNativeFileLinked(forPublish: true);
 
         await BlazorRun(config, async (page) =>
@@ -181,7 +181,7 @@ public class BuildPublishTests : BuildTestBase
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
 
         // will relink
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
 
         // publish/wwwroot/_framework/blazor.boot.json
         string frameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true);

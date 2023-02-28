@@ -83,7 +83,7 @@ public class MiscTests : BuildTestBase
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
 
         // will aot
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
 
         // build again
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));

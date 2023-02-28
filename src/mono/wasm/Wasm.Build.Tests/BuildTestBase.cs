@@ -575,12 +575,12 @@ namespace Wasm.Build.Tests
 
             }
 
-            if (!options.ExpectRelinkDirWhenPublishing)
-            {
-                // Check that we linked only for publish
-                string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework, "wasm", "for-build");
+            string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework, "wasm", "for-build");
+            // Check that we linked only for publish
+            if (options.ExpectRelinkDirWhenPublishing)
+                Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is liokely a test authoring error");
+            else
                 Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets created when relinking during Build");
-            }
 
             return res;
         }
