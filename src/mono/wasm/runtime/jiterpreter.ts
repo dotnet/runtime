@@ -59,6 +59,8 @@ export const
     traceBackBranches = false,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
+    // Unproductive if we have backward branches enabled because it can stop us from jitting
+    //  nested loops
     abortAtJittedLoopBodies = true,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
@@ -928,7 +930,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
         return;
 
     console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
-    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated`);
+    const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100;
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated. ${counters.backBranchesEmitted} backward branches emitted (${backBranchHitRate.toFixed(1)}%)`);
     if (concise)
         return;
 

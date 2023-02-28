@@ -725,6 +725,8 @@ export const counters = {
     failures: 0,
     bytesGenerated: 0,
     nullChecksEliminated: 0,
+    backBranchesEmitted: 0,
+    backBranchesNotEmitted: 0,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)

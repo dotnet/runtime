@@ -328,7 +328,12 @@ export function generate_wasm_body (
                 // We don't want to abort before our trace is long enough though, since that
                 //  will result in decent trace candidates becoming nops which adds overhead
                 //  and leaves us in the interp.
-                if (abortAtJittedLoopBodies && (result >= builder.options.minimumTraceLength)) {
+                if (
+                    abortAtJittedLoopBodies &&
+                    (result >= builder.options.minimumTraceLength) &&
+                    // This is an unproductive heuristic if backward branches are on
+                    !builder.options.noExitBackwardBranches
+                ) {
                     if (!inBranchBlock || firstOpcodeInBlock) {
                         // Use mono_jiterp_trace_transfer to call the target trace recursively
                         // Ideally we would import the trace function to do a direct call instead
@@ -1159,6 +1164,10 @@ function invalidate_local_range (start: number, bytes: number) {
 function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.endBlock();
     // Create a new branch block that conditionally executes depending on the eip local
+    // FIXME: For methods containing backward branches, we will have one of these compares
+    //  at the top of the trace and pay the cost of it on every entry even though it will
+    //  always pass. If we never generate any backward branches during compilation, we should
+    //  patch it out
     builder.local("eip");
     builder.ip_const(ip);
     builder.appendU8(WasmOpcode.i32_eq);
@@ -2264,12 +2273,14 @@ function emit_branch (
                     builder.local("eip", WasmOpcode.set_local);
                     builder.appendU8(WasmOpcode.br);
                     builder.appendULeb(1);
+                    counters.backBranchesEmitted++;
                     return true;
                 } else {
                     if (traceBackBranches)
                         console.log(`back branch target 0x${destination.toString(16)} not found`);
                     // FIXME: Should there be a safepoint here?
                     append_bailout(builder, destination, displacement > 0 ? BailoutReason.Branch : BailoutReason.BackwardBranch);
+                    counters.backBranchesNotEmitted++;
                     return true;
                 }
             } else {
@@ -2358,11 +2369,13 @@ function emit_branch (
             //     branch dispatch block {
             // and we want to target the loop in order to jump to the top of it
             builder.appendULeb(2);
+            counters.backBranchesEmitted++;
         } else {
             if (traceBackBranches)
                 console.log(`back branch target 0x${destination.toString(16)} not found`);
             // We didn't find a loop to branch to, so bail out
             append_bailout(builder, destination, BailoutReason.BackwardBranch);
+            counters.backBranchesNotEmitted++;
         }
     } else {
         // Do a safepoint *before* changing our IP, if necessary
@@ -2837,8 +2850,7 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
 
     let elementGetter: WasmOpcode,
         elementSetter = WasmOpcode.i32_store,
-        elementSize: number,
-        isPointer = false;
+        elementSize: number;
 
     switch (opcode) {
         case MintOpcode.MINT_LDLEN: {
@@ -2879,7 +2891,6 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
         case MintOpcode.MINT_LDELEM_REF:
             elementSize = 4;
             elementGetter = WasmOpcode.i32_load;
-            isPointer = true;
             break;
         case MintOpcode.MINT_LDELEM_I1:
             elementSize = 1;
@@ -2950,12 +2961,7 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
             return false;
     }
 
-    if (isPointer) {
-        // Copy pointer from array element (stelem_ref is separate above)
-        append_ldloca(builder, valueOffset, 4, true);
-        append_getelema1(builder, ip, objectOffset, indexOffset, elementSize);
-        builder.callImport("copy_pointer");
-    } else if (isLoad) {
+    if (isLoad) {
         // Pre-load destination for the value at the end
         builder.local("pLocals");
 

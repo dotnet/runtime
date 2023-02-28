@@ -693,7 +693,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 				if (*inside_branch_block)
 					return TRACE_CONTINUE;
 				else
-					return TRACE_ABORT;
+					return mono_opt_jiterpreter_backward_branches_enabled ? TRACE_CONTINUE : TRACE_ABORT;
 			}
 
 			*inside_branch_block = TRUE;
@@ -731,6 +731,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			(opcode >= MINT_BRFALSE_I4) &&
 			(opcode <= MINT_BLT_UN_I8_IMM_SP)
 		) {
+			// FIXME: Detect negative displacement and abort appropriately
 			*inside_branch_block = TRUE;
 			return TRACE_CONTINUE;
 		}
