@@ -2756,8 +2756,7 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
 
     let elementGetter: WasmOpcode,
         elementSetter = WasmOpcode.i32_store,
-        elementSize: number,
-        isPointer = false;
+        elementSize: number;
 
     switch (opcode) {
         case MintOpcode.MINT_LDLEN: {
@@ -2798,7 +2797,6 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
         case MintOpcode.MINT_LDELEM_REF:
             elementSize = 4;
             elementGetter = WasmOpcode.i32_load;
-            isPointer = true;
             break;
         case MintOpcode.MINT_LDELEM_I1:
             elementSize = 1;
@@ -2869,12 +2867,7 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
             return false;
     }
 
-    if (isPointer) {
-        // Copy pointer from array element (stelem_ref is separate above)
-        append_ldloca(builder, valueOffset, 4, true);
-        append_getelema1(builder, ip, objectOffset, indexOffset, elementSize);
-        builder.callImport("copy_pointer");
-    } else if (isLoad) {
+    if (isLoad) {
         // Pre-load destination for the value at the end
         builder.local("pLocals");
 
