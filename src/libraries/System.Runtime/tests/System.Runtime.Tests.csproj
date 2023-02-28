@@ -7,6 +7,9 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+
+    <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
+    <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
   </PropertyGroup>
 
   <!-- 
