@@ -32,7 +32,7 @@ namespace System.Buffers
 
         private bool TryReadToSlow(out ReadOnlySpan<T> span, T delimiter, bool advancePastDelimiter)
         {
-            if (!TryReadToInternal(out ReadOnlySequence<T> sequence, delimiter, advancePastDelimiter, CurrentSpan.Length - CurrentSpanIndex))
+            if (!TryReadToInternal(out ReadOnlySequence<T> sequence, delimiter, advancePastDelimiter, CurrentSpanLength - _currentSpanIndex))
             {
                 span = default;
                 return false;
@@ -198,7 +198,7 @@ namespace System.Buffers
                 Advance(skip);
             ReadOnlySpan<T> remaining = UnreadSpan;
 
-            while (_moreData)
+            while (!End)
             {
                 int index = remaining.IndexOf(delimiter);
                 if (index != -1)
@@ -243,7 +243,7 @@ namespace System.Buffers
             ReadOnlySpan<T> remaining = UnreadSpan;
             bool priorEscape = false;
 
-            while (_moreData)
+            while (!End)
             {
                 int index = remaining.IndexOf(delimiter);
                 if (index != -1)
@@ -344,7 +344,7 @@ namespace System.Buffers
 
         private bool TryReadToAnySlow(out ReadOnlySpan<T> span, scoped ReadOnlySpan<T> delimiters, bool advancePastDelimiter)
         {
-            if (!TryReadToAnyInternal(out ReadOnlySequence<T> sequence, delimiters, advancePastDelimiter, CurrentSpan.Length - CurrentSpanIndex))
+            if (!TryReadToAnyInternal(out ReadOnlySequence<T> sequence, delimiters, advancePastDelimiter, CurrentSpanLength - _currentSpanIndex))
             {
                 span = default;
                 return false;
@@ -578,11 +578,11 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = CurrentSpanIndex; i < CurrentSpan.Length && CurrentSpan[i].Equals(value); i++)
+                for (i = _currentSpanIndex; i < CurrentSpanLength && Unsafe.Add(ref CurrentSpanStart, i).Equals(value); i++)
                 {
                 }
 
-                int advanced = i - CurrentSpanIndex;
+                int advanced = i - _currentSpanIndex;
                 if (advanced == 0)
                 {
                     // Didn't advance at all in this span, exit.
@@ -593,7 +593,7 @@ namespace System.Buffers
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
-            } while (CurrentSpanIndex == 0 && !End);
+            } while (_currentSpanIndex == 0 && !End);
 
             return Consumed - start;
         }
@@ -610,11 +610,11 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = CurrentSpanIndex; i < CurrentSpan.Length && values.IndexOf(CurrentSpan[i]) != -1; i++)
+                for (i = _currentSpanIndex; i < CurrentSpanLength && values.IndexOf(Unsafe.Add(ref CurrentSpanStart, i)) != -1; i++)
                 {
                 }
 
-                int advanced = i - CurrentSpanIndex;
+                int advanced = i - _currentSpanIndex;
                 if (advanced == 0)
                 {
                     // Didn't advance at all in this span, exit.
@@ -625,7 +625,7 @@ namespace System.Buffers
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
-            } while (CurrentSpanIndex == 0 && !End);
+            } while (_currentSpanIndex == 0 && !End);
 
             return Consumed - start;
         }
@@ -642,16 +642,16 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = CurrentSpanIndex; i < CurrentSpan.Length; i++)
+                for (i = _currentSpanIndex; i < CurrentSpanLength; i++)
                 {
-                    T value = CurrentSpan[i];
+                    T value = Unsafe.Add(ref CurrentSpanStart, i);
                     if (!value.Equals(value0) && !value.Equals(value1) && !value.Equals(value2) && !value.Equals(value3))
                     {
                         break;
                     }
                 }
 
-                int advanced = i - CurrentSpanIndex;
+                int advanced = i - _currentSpanIndex;
                 if (advanced == 0)
                 {
                     // Didn't advance at all in this span, exit.
@@ -662,7 +662,7 @@ namespace System.Buffers
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
-            } while (CurrentSpanIndex == 0 && !End);
+            } while (_currentSpanIndex == 0 && !End);
 
             return Consumed - start;
         }
@@ -679,16 +679,16 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = CurrentSpanIndex; i < CurrentSpan.Length; i++)
+                for (i = _currentSpanIndex; i < CurrentSpanLength; i++)
                 {
-                    T value = CurrentSpan[i];
+                    T value = Unsafe.Add(ref CurrentSpanStart, i);
                     if (!value.Equals(value0) && !value.Equals(value1) && !value.Equals(value2))
                     {
                         break;
                     }
                 }
 
-                int advanced = i - CurrentSpanIndex;
+                int advanced = i - _currentSpanIndex;
                 if (advanced == 0)
                 {
                     // Didn't advance at all in this span, exit.
@@ -699,7 +699,7 @@ namespace System.Buffers
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
-            } while (CurrentSpanIndex == 0 && !End);
+            } while (_currentSpanIndex == 0 && !End);
 
             return Consumed - start;
         }
@@ -716,16 +716,16 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = CurrentSpanIndex; i < CurrentSpan.Length; i++)
+                for (i = _currentSpanIndex; i < CurrentSpanLength; i++)
                 {
-                    T value = CurrentSpan[i];
+                    T value = Unsafe.Add(ref CurrentSpanStart, i);
                     if (!value.Equals(value0) && !value.Equals(value1))
                     {
                         break;
                     }
                 }
 
-                int advanced = i - CurrentSpanIndex;
+                int advanced = i - _currentSpanIndex;
                 if (advanced == 0)
                 {
                     // Didn't advance at all in this span, exit.
@@ -736,7 +736,7 @@ namespace System.Buffers
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
-            } while (CurrentSpanIndex == 0 && !End);
+            } while (_currentSpanIndex == 0 && !End);
 
             return Consumed - start;
         }
@@ -746,14 +746,13 @@ namespace System.Buffers
         /// </summary>
         public void AdvanceToEnd()
         {
-            if (_moreData)
+            if (!End)
             {
-                Consumed = Length;
-                CurrentSpan = default;
-                CurrentSpanIndex = 0;
+                _consumedAtStartOfCurrentSpan = Length;
+                WipeCurrentSpan();
+
                 _currentPosition = Sequence.End;
                 _nextPosition = default;
-                _moreData = false;
             }
         }
 
@@ -768,7 +767,7 @@ namespace System.Buffers
             if (End)
                 return false;
 
-            if (CurrentSpan[CurrentSpanIndex].Equals(next))
+            if (Unsafe.Add(ref CurrentSpanStart, _currentSpanIndex).Equals(next))
             {
                 if (advancePast)
                 {
