@@ -316,7 +316,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     // sizeCheck fails if sizeValue <= pRuntimeLookup->offsets[i]
                     GenTree* offsetValue =
                         gtNewIconNode(runtimeLookup.offsets[runtimeLookup.indirections - 1], TYP_I_IMPL);
-                    GenTree* sizeCheck = gtNewOperNode(GT_LE, TYP_INT, sizeValue, offsetValue);
+                    GenTree* sizeCheck = gtNewOperNode(GT_GT, TYP_INT, sizeValue, offsetValue);
                     sizeCheck->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                     gtSetEvalOrder(sizeCheck);
                     Statement* sizeCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck));
