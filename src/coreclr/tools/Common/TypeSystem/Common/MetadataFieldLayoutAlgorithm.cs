@@ -358,7 +358,7 @@ namespace Internal.TypeSystem
                 out instanceByteSizeAndAlignment);
 
             // value array cannot have explicit layout
-            if(type.IsValueArray)
+            if (type.IsValueArray)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
