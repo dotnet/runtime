@@ -238,7 +238,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 // null-check basic block
                 BasicBlock* nullcheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
-                nullcheckBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_JMP);
+                nullcheckBb->bbFlags |= BBF_INTERNAL;
 
                 GenTree* fastPathValue = gtNewOperNode(GT_IND, TYP_I_IMPL, gtCloneExpr(slotPtrTree));
                 fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
@@ -247,7 +247,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
 
                 GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
-                nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
+                nullcheckOp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                 gtSetEvalOrder(nullcheckOp);
                 Statement* nullcheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp));
                 gtSetStmtInfo(nullcheckStmt);
@@ -304,7 +304,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     //
 
                     sizeCheckBb = fgNewBBbefore(BBJ_COND, nullcheckBb, true);
-                    sizeCheckBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_JMP);
+                    sizeCheckBb->bbFlags |= BBF_INTERNAL;
 
                     // sizeValue = dictionary[pRuntimeLookup->sizeOffset]
                     GenTreeIntCon* sizeOffset = gtNewIconNode(runtimeLookup.sizeOffset, TYP_I_IMPL);
