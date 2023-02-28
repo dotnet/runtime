@@ -3650,7 +3650,7 @@ private:
 #endif //MULTIPLE_HEAPS
 
 #ifdef BACKGROUND_GC
-    PER_HEAP_FIELD_SINGLE_GC gc_history_per_heap bgc_data_per_heap;
+    PER_HEAP_FIELD_DIAG_ONLY gc_history_per_heap bgc_data_per_heap;
 
     struct gc_history
     {
