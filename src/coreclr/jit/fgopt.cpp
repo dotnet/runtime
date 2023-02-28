@@ -789,6 +789,20 @@ void Compiler::fgDfsReversePostorder()
         }
     }
 
+    // If there are still unvisited blocks (say isolated cycles), visit them too.
+    //
+    if (preorderIndex != fgBBcount + 1)
+    {
+        JITDUMP("DFS: flow graph has some isolated cycles, doing extra traversals\n");
+        for (BasicBlock* const block : Blocks())
+        {
+            if (!BlockSetOps::IsMember(this, visited, block->bbNum))
+            {
+                fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
+            }
+        }
+    }
+
     // After the DFS reverse postorder is completed, we must have visited all the basic blocks.
     noway_assert(preorderIndex == fgBBcount + 1);
     noway_assert(postorderIndex == fgBBcount + 1);
