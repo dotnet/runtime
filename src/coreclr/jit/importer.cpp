@@ -9663,7 +9663,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (lclTyp != TYP_STRUCT)
                 {
-                    assert(op1->OperIs(GT_FIELD, GT_IND));
+                    assert(op1->OperIs(GT_FIELD, GT_IND) ||
+                           (fieldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED));
 
                     if (prefixFlags & PREFIX_VOLATILE)
                     {
@@ -14250,6 +14251,13 @@ GenTree* Compiler::impThreadLocalFieldAccess(CORINFO_RESOLVED_TOKEN& token,
     int                             fieldOffset = pFieldInfo->offset;
 
     info.compCompHnd->getThreadLocalFieldInfo(fieldHandle, &threadLocalInfo);
+    printf("ThreadLocalInfo:\n");
+    printf("offsetOfMaxThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfMaxThreadStaticBlocks);
+    printf("offsetOfThreadLocalStoragePointer: 0x%04x\n", threadLocalInfo.offsetOfThreadLocalStoragePointer);
+    printf("offsetOfThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfThreadStaticBlocks);
+    printf("threadStaticBlockIndex: 0x%04x\n", threadLocalInfo.threadStaticBlockIndex);
+    printf("tlsIndex: 0x%04x\n", threadLocalInfo.tlsIndex);
+    printf("--------------------------------\n");
 
     // Thread Local Storage static field reference
     //
@@ -14288,15 +14296,19 @@ GenTree* Compiler::impThreadLocalFieldAccess(CORINFO_RESOLVED_TOKEN& token,
     {
         if (IdValue != 0)
         {
+#ifdef TARGET_64BIT
+            dllRef = gtNewIconNode(IdValue * 8, TYP_I_IMPL);
+#else
             dllRef = gtNewIconNode(IdValue * 4, TYP_I_IMPL);
+#endif
         }
     }
     else
     {
         dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_CONST_PTR, true);
 
-        // Next we multiply by 4
-        dllRef = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(4, TYP_I_IMPL));
+        // Next we multiply by 8
+        dllRef = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(8, TYP_I_IMPL));
     }
 
     // Mark this ICON as a TLS_HDL, codegen will use FS:[cns]
@@ -14341,7 +14353,7 @@ GenTree* Compiler::impThreadLocalFieldAccess(CORINFO_RESOLVED_TOKEN& token,
     // Value of typeThreadStaticBlockIndex
     GenTree* typeThreadStaticBlockIndexValue = gtNewIconNode(threadLocalInfo.threadStaticBlockIndex, TYP_I_IMPL);
     GenTree* typeThreadStaticBlockBase =
-        gtNewOperNode(GT_MUL, TYP_I_IMPL, typeThreadStaticBlockIndexValue, gtNewIconNode(4, TYP_I_IMPL));
+        gtNewOperNode(GT_MUL, TYP_I_IMPL, typeThreadStaticBlockIndexValue, gtNewIconNode(8, TYP_I_IMPL));
     GenTree* typeThreadStaticBlockRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, threadStaticBlocksValue, typeThreadStaticBlockBase);
     GenTree* typeThreadStaticBlockValueForFastPath =
@@ -14356,7 +14368,7 @@ GenTree* Compiler::impThreadLocalFieldAccess(CORINFO_RESOLVED_TOKEN& token,
         gtNewIndir(fieldType, gtNewOperNode(GT_ADD, TYP_I_IMPL, typeThreadStaticBlockValueForFastPath, offsetNode));
 
     GenTree* maxThreadStaticBlocksCond =
-        gtNewOperNode(GT_GE, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
+        gtNewOperNode(GT_GT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
     GenTree* threadStaticBlockNullCond =
         gtNewOperNode(GT_EQ, TYP_INT, typeThreadStaticBlockValueForCond,
                       gtNewIconNode(0, TYP_I_IMPL)); // TODO: should this be gtNewNull()?
