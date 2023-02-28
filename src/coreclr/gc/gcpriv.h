@@ -2615,7 +2615,7 @@ protected:
 
     PER_HEAP_METHOD mark* loh_oldest_pin();
 
-    PER_HEAP_METHOD BOOL loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit);
+    PER_HEAP_METHOD BOOL loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit, bool end_p);
 
     PER_HEAP_METHOD uint8_t* loh_allocate_in_condemned (size_t size);
 

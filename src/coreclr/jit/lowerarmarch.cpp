@@ -1085,8 +1085,6 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    assert(node->TypeGet() != TYP_SIMD32);
-
     if (node->TypeGet() == TYP_SIMD12)
     {
         // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact

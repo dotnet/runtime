@@ -349,7 +349,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\wasm\System.Net.WebSockets.Client.Wasm.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RunDisabledWasmTests)' != 'true'">
+  <ItemGroup Condition="('$(TargetOS)' == 'wasi' and '$(RunDisabledWasiTests)' != 'true') or ('$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true')" Label="Crypto tests">
     <!-- https://github.com/dotnet/runtime/issues/37669 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyModel\tests\Microsoft.Extensions.DependencyModel.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
