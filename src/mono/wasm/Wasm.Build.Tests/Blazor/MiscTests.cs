@@ -35,7 +35,7 @@ public class MiscTests : BuildTestBase
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         // build with -p:DeployOnBuild=true, and that will trigger a publish
-        (CommandResult res, _) = BuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
+        (CommandResult res, _) = BlazorBuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
 
         var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
 

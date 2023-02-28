@@ -544,7 +544,7 @@ namespace Wasm.Build.Tests
             if (options.WarnAsError)
                 extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-            var res = BuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
+            var res = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
             _testOutput.WriteLine($"BlazorBuild, options.tfm: {options.TargetFramework}");
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: false, targetFramework: options.TargetFramework);
             AssertBlazorBundle(options.Config,
@@ -557,7 +557,7 @@ namespace Wasm.Build.Tests
 
         protected (CommandResult, string) BlazorPublish(BlazorBuildOptions options, params string[] extraArgs)
         {
-            var res = BuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
+            var res = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: true, targetFramework: options.TargetFramework);
             AssertBlazorBundle(options.Config,
                                isPublish: true,
@@ -576,7 +576,7 @@ namespace Wasm.Build.Tests
             return res;
         }
 
-        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
+        protected (CommandResult, string) BlazorBuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
         {
             string label = publish ? "publish" : "build";
             _testOutput.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
