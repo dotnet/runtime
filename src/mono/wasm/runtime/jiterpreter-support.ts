@@ -60,6 +60,7 @@ export class WasmBuilder {
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;
     constantSlots: Array<number> = [];
+    backBranchOffsets: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
 
     constructor (constantSlotCount: number) {
@@ -91,6 +92,7 @@ export class WasmBuilder {
         this.constantSlots.length = this.options.useConstants ? constantSlotCount : 0;
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
+        this.backBranchOffsets.length = 0;
 
         this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
@@ -723,6 +725,8 @@ export const counters = {
     failures: 0,
     bytesGenerated: 0,
     nullChecksEliminated: 0,
+    backBranchesEmitted: 0,
+    backBranchesNotEmitted: 0,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -950,6 +954,8 @@ export const enum JiterpMember {
     SpanLength = 7,
     SpanData = 8,
     ArrayLength = 9,
+    BackwardBranchOffsets = 10,
+    BackwardBranchOffsetsCount = 11,
 }
 
 const memberOffsets : { [index: number] : number } = {};
@@ -995,6 +1001,8 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
+    // Enable performing backward branches without exiting traces
+    noExitBackwardBranches: boolean;
     // Unwrap gsharedvt wrappers when compiling jitcalls if possible
     directJitCalls: boolean;
     eliminateNullChecks: boolean;
@@ -1022,6 +1030,7 @@ const optionNames : { [jsName: string] : string } = {
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
     "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
+    "noExitBackwardBranches": "jiterpreter-backward-branches-enabled",
     "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",

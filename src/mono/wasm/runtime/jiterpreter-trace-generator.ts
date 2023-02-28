@@ -26,7 +26,7 @@ import {
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
     abortAtJittedLoopBodies, traceNullCheckOptimizations,
-    nullCheckCaching,
+    nullCheckCaching, traceBackBranches,
 
     mostRecentOptions,
 
@@ -116,9 +116,27 @@ function get_imethod_data (frame: NativePointer, index: number) {
     return getU32(dataOffset);
 }
 
+function is_backward_branch_target (
+    ip: MintOpcodePtr, startOfBody: MintOpcodePtr,
+    backwardBranchTable: Uint16Array | null
+) {
+    if (!backwardBranchTable)
+        return false;
+
+    for (let i = 0; i < backwardBranchTable.length; i++) {
+        const actualOffset = (backwardBranchTable[i] * 2) + <any>startOfBody;
+        if (actualOffset === ip)
+            return true;
+    }
+
+    return false;
+}
+
 export function generate_wasm_body (
     frame: NativePointer, traceName: string, ip: MintOpcodePtr,
-    endOfBody: MintOpcodePtr, builder: WasmBuilder, instrumentedTraceId: number
+    startOfBody: MintOpcodePtr, endOfBody: MintOpcodePtr,
+    builder: WasmBuilder, instrumentedTraceId: number,
+    backwardBranchTable: Uint16Array | null
 ) : number {
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, inBranchBlock = false,
@@ -138,6 +156,22 @@ export function generate_wasm_body (
     // (This shouldn't happen though!)
     builder.ip_const(ip);
     builder.local("eip", WasmOpcode.set_local);
+
+    // If a method contains backward branches we also need to wrap the whole trace in a loop
+    //  that we can jump to the top of in order to begin executing the trace again
+    // FIXME: It would be much more efficient to use br_table to dispatch to the appropriate
+    //  branch block somehow but the code generation is tough due to WASM's IR
+    if (backwardBranchTable) {
+        builder.block(WasmValtype.void, WasmOpcode.loop);
+    }
+
+    // We wrap all instructions in a 'branch block' that is used
+    //  when performing a branch and will be skipped over if the
+    //  current instruction pointer does not match. This means
+    //  that if ip points to a branch target we don't handle,
+    //  the trace will automatically bail out at the end after
+    //  skipping past all the branch targets
+    builder.block();
 
     while (ip) {
         if (ip >= endOfBody) {
@@ -161,32 +195,44 @@ export function generate_wasm_body (
 
         const opname = info[0];
         const _ip = ip;
+        const isBackBranchTarget = builder.options.noExitBackwardBranches &&
+            is_backward_branch_target(ip, startOfBody, backwardBranchTable),
+            isForwardBranchTarget = builder.branchTargets.has(ip),
+            needsEipCheck = isBackBranchTarget || isForwardBranchTarget ||
+                // If a method contains backward branches, we also need to check eip at the first insn
+                //  because a backward branch might target a point in the middle of the trace
+                (isFirstInstruction && backwardBranchTable),
+            needsFallthroughEipUpdate = needsEipCheck && !isFirstInstruction;
         let isDeadOpcode = false,
             skipDregInvalidation = false;
 
-        // We wrap all instructions in a 'branch block' that is used
-        //  when performing a branch and will be skipped over if the
-        //  current instruction pointer does not match. This means
-        //  that if ip points to a branch target we don't handle,
-        //  the trace will automatically bail out at the end after
-        //  skipping past all the branch targets
-        if (isFirstInstruction) {
-            isFirstInstruction = false;
-            // FIXME: If we allow entering into the middle of a trace, this needs
-            //  to become an if that checks the ip
-            builder.block();
-        } else if (builder.branchTargets.has(ip)) {
+        // We record the offset of each backward branch we encounter, so that later branch
+        //  opcodes know that it's available by branching to the top of the dispatch loop
+        if (isBackBranchTarget) {
+            if (traceBackBranches)
+                console.log(`${traceName} recording back branch target 0x${(<any>ip).toString(16)}`);
+            builder.backBranchOffsets.push(ip);
+        }
+
+        if (needsEipCheck) {
             // If execution runs past the end of the current branch block, ensure
             //  that the instruction pointer is updated appropriately. This will
             //  also guarantee that the branch target block's comparison will
             //  succeed so that execution continues.
-            builder.ip_const(rip);
-            builder.local("eip", WasmOpcode.set_local);
+            // We make sure above that this isn't done for the start of the trace,
+            //  otherwise loops will run forever and never terminate since after
+            //  branching to the top of the loop we would blow away eip
+            if (needsFallthroughEipUpdate) {
+                builder.ip_const(rip);
+                builder.local("eip", WasmOpcode.set_local);
+            }
             append_branch_target_block(builder, ip);
             inBranchBlock = true;
             firstOpcodeInBlock = true;
             eraseInferredState();
         }
+
+        isFirstInstruction = false;
 
         if (disabledOpcodes.indexOf(opcode) >= 0) {
             append_bailout(builder, ip, BailoutReason.Debugging);
@@ -282,7 +328,12 @@ export function generate_wasm_body (
                 // We don't want to abort before our trace is long enough though, since that
                 //  will result in decent trace candidates becoming nops which adds overhead
                 //  and leaves us in the interp.
-                if (abortAtJittedLoopBodies && (result >= builder.options.minimumTraceLength)) {
+                if (
+                    abortAtJittedLoopBodies &&
+                    (result >= builder.options.minimumTraceLength) &&
+                    // This is an unproductive heuristic if backward branches are on
+                    !builder.options.noExitBackwardBranches
+                ) {
                     if (!inBranchBlock || firstOpcodeInBlock) {
                         // Use mono_jiterp_trace_transfer to call the target trace recursively
                         // Ideally we would import the trace function to do a direct call instead
@@ -1111,9 +1162,12 @@ function invalidate_local_range (start: number, bytes: number) {
 }
 
 function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr) {
-    // End the current branch block, then create a new one that conditionally executes
-    //  if eip matches the offset of its first instruction.
     builder.endBlock();
+    // Create a new branch block that conditionally executes depending on the eip local
+    // FIXME: For methods containing backward branches, we will have one of these compares
+    //  at the top of the trace and pay the cost of it on every entry even though it will
+    //  always pass. If we never generate any backward branches during compilation, we should
+    //  patch it out
     builder.local("eip");
     builder.ip_const(ip);
     builder.appendU8(WasmOpcode.i32_eq);
@@ -2182,12 +2236,12 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
 }
 
 function emit_branch (
-    builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode, displacement?: number
+    builder: WasmBuilder, ip: MintOpcodePtr,
+    opcode: MintOpcode, displacement?: number
 ) : boolean {
     const info = OpcodeInfo[opcode];
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
-
     eraseInferredState();
 
     // If the branch is taken we bail out to allow the interpreter to do it.
@@ -2209,20 +2263,38 @@ function emit_branch (
             const destination = <any>ip + (displacement * 2);
 
             if (displacement <= 0) {
-                // FIXME: If the displacement is negative, perform BACK_BRANCH_PROFILE
-                append_bailout(builder, destination, displacement > 0 ? BailoutReason.Branch : BailoutReason.BackwardBranch);
+                if (builder.backBranchOffsets.indexOf(destination) >= 0) {
+                    // We found a backward branch target we can branch to, so we branch out
+                    //  to the top of the loop body
+                    // append_safepoint(builder, ip);
+                    if (traceBackBranches)
+                        console.log(`performing backward branch to 0x${destination.toString(16)}`);
+                    builder.ip_const(destination);
+                    builder.local("eip", WasmOpcode.set_local);
+                    builder.appendU8(WasmOpcode.br);
+                    builder.appendULeb(1);
+                    counters.backBranchesEmitted++;
+                    return true;
+                } else {
+                    if (traceBackBranches)
+                        console.log(`back branch target 0x${destination.toString(16)} not found`);
+                    // FIXME: Should there be a safepoint here?
+                    append_bailout(builder, destination, displacement > 0 ? BailoutReason.Branch : BailoutReason.BackwardBranch);
+                    counters.backBranchesNotEmitted++;
+                    return true;
+                }
+            } else {
+                // Simple branches are enabled and this is a forward branch. We
+                //  don't need to wrap things in a block here, we can just exit
+                //  the current branch block after updating eip
+                builder.ip_const(destination);
+                builder.local("eip", WasmOpcode.set_local);
+                builder.appendU8(WasmOpcode.br);
+                builder.appendULeb(0);
                 return true;
             }
-
-            // Simple branches are enabled and this is a forward branch. We
-            //  don't need to wrap things in a block here, we can just exit
-            //  the current branch block after updating eip
-            builder.ip_const(destination);
-            builder.local("eip", WasmOpcode.set_local);
-            builder.appendU8(WasmOpcode.br);
-            builder.appendULeb(0);
-            return true;
         }
+
         case MintOpcode.MINT_BRTRUE_I4_S:
         case MintOpcode.MINT_BRFALSE_I4_S:
         case MintOpcode.MINT_BRTRUE_I4_SP:
@@ -2251,6 +2323,7 @@ function emit_branch (
             }
             break;
         }
+
         default: {
             // relop branches already had the branch condition loaded by the caller,
             //  so we don't need to load anything. After the condition was loaded, we
@@ -2279,10 +2352,31 @@ function emit_branch (
     builder.appendULeb(0);
 
     if (displacement < 0) {
-        // This is a backwards branch, and right now we always bail out for those - so perform a
-        //  safepoint and then return. (This removes a safepoint check from all trace returns.)
-        append_safepoint(builder, ip);
-        append_bailout(builder, destination, BailoutReason.BackwardBranch);
+        if (isSafepoint)
+            append_safepoint(builder, ip);
+
+        if (builder.backBranchOffsets.indexOf(destination) >= 0) {
+            // We found a backwards branch target we can reach via our outer trace loop, so
+            //  we update eip and branch out to the top of the loop block
+            if (traceBackBranches)
+                console.log(`performing conditional backward branch to 0x${destination.toString(16)}`);
+            builder.ip_const(destination);
+            builder.local("eip", WasmOpcode.set_local);
+            builder.appendU8(WasmOpcode.br);
+            // break out 3 levels, because the current stack layout is
+            // loop {
+            //   branch target block {
+            //     branch dispatch block {
+            // and we want to target the loop in order to jump to the top of it
+            builder.appendULeb(2);
+            counters.backBranchesEmitted++;
+        } else {
+            if (traceBackBranches)
+                console.log(`back branch target 0x${destination.toString(16)} not found`);
+            // We didn't find a loop to branch to, so bail out
+            append_bailout(builder, destination, BailoutReason.BackwardBranch);
+            counters.backBranchesNotEmitted++;
+        }
     } else {
         // Do a safepoint *before* changing our IP, if necessary
         if (isSafepoint)
