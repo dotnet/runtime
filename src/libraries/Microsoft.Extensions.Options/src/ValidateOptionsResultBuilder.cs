@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Builds <see cref="ValidateOptionsResult"/> with support for multiple error messages.
     /// </summary>
-    [DebuggerDisplay("{_errors?.Count} errors")]
+    [DebuggerDisplay("{ErrorsCount} errors")]
     public class ValidateOptionsResultBuilder
     {
         private const string MemberSeparatorString = ", ";
@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Options
         /// Adds any validation errors carried by the <see cref="ValidateOptionsResult"/> instance to this instance.
         /// </summary>
         /// <param name="result">The instance to consume the errors from.</param>
-        public void AddResults(ValidateOptionsResult result)
+        public void AddResult(ValidateOptionsResult result)
         {
             ThrowHelper.ThrowIfNull(result);
 
@@ -113,9 +113,10 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public void Clear() => _errors?.Clear();
 
+        private int ErrorsCount => _errors is null ? 0 : _errors.Count;
+
         private List<string> Errors
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 _errors ??= new();

@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Options.Tests
             ValidateOptionsResultBuilder builder = new();
             Assert.True(EqualResults(ValidateOptionsResult.Success, builder.Build()));
 
-            builder.AddResult(null);
+            builder.AddResult((ValidationResult)null);
             Assert.True(EqualResults(ValidateOptionsResult.Success, builder.Build()));
 
             builder.AddResult(ValidationResult.Success);
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Options.Tests
             builder.AddResult(new ValidationResult(null, null));
             Assert.True(EqualResults(ValidateOptionsResult.Success, builder.Build()));
 
-            builder.AddResults(ValidateOptionsResult.Skip);
+            builder.AddResult(ValidateOptionsResult.Skip);
             Assert.True(EqualResults(ValidateOptionsResult.Success, builder.Build()));
 
             Assert.Throws<ArgumentNullException>(() => builder.AddError(null));
@@ -77,15 +77,15 @@ namespace Microsoft.Extensions.Options.Tests
             r = builder.Build();
             Assert.True(EqualResults(ValidateOptionsResult.Fail(errors), r), $"{r.FailureMessage} != {ValidateOptionsResult.Fail(errors).FailureMessage}");
 
-            Assert.Throws<ArgumentNullException>(() => builder.AddResults((ValidateOptionsResult)null));
+            Assert.Throws<ArgumentNullException>(() => builder.AddResult((ValidateOptionsResult)null));
 
             errors += "; Failure 8";
-            builder.AddResults(ValidateOptionsResult.Fail("Failure 8"));
+            builder.AddResult(ValidateOptionsResult.Fail("Failure 8"));
             r = builder.Build();
             Assert.True(EqualResults(ValidateOptionsResult.Fail(errors), r), $"{r.FailureMessage} != {ValidateOptionsResult.Fail(errors).FailureMessage}");
 
             errors += "; Failure 9; Failure 10";
-            builder.AddResults(ValidateOptionsResult.Fail(new List<string>() { "Failure 9", null, null, "Failure 10" }));
+            builder.AddResult(ValidateOptionsResult.Fail(new List<string>() { "Failure 9", null, null, "Failure 10" }));
             r = builder.Build();
             Assert.True(EqualResults(ValidateOptionsResult.Fail(errors), r), $"{r.FailureMessage} != {ValidateOptionsResult.Fail(errors).FailureMessage}");
 

@@ -303,7 +303,7 @@ namespace Microsoft.Extensions.Options
         public void AddError(string error, string? propertyName = null) { throw null; }
         public void AddResult(System.ComponentModel.DataAnnotations.ValidationResult? result) { throw null; }
         public void AddResults(System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult?>? results) { throw null; }
-        public void AddResults(ValidateOptionsResult result) { throw null; }
+        public void AddResult(ValidateOptionsResult result) { throw null; }
         public ValidateOptionsResult Build() { throw null; }
         public void Clear() { throw null; }
     }
