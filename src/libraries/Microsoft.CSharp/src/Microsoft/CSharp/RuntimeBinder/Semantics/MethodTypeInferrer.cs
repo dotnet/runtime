@@ -80,6 +80,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool Infer(
             ExpressionBinder binder,
             MethodSymbol pMethod,
@@ -227,6 +228,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool InferTypeArgs()
         {
             // SPEC: CType inference takes place in phases. Each phase will try to infer CType
@@ -249,6 +251,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void InferTypeArgsFirstPhase()
         {
             Debug.Assert(_pMethodFormalParameterTypes != null);
@@ -358,6 +361,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool InferTypeArgsSecondPhase()
         {
             // SPEC: The second phase proceeds as follows:
@@ -412,6 +416,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private NewInferenceResult DoSecondPhase()
         {
             // SPEC:  If no unfixed CType parameters exist then CType inference succeeds.
@@ -462,6 +467,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private NewInferenceResult FixNondependentParameters()
         {
             // SPEC:  Otherwise, if there exists one or more CType parameters Xi such that
@@ -504,6 +510,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private NewInferenceResult FixDependentParameters()
         {
             // SPEC:  All unfixed CType parameters Xi are fixed for which all of the following hold:
@@ -890,6 +897,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Lower-bound inferences
         //
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void LowerBoundInference(CType pSource, CType pDest)
         {
             // SPEC: A lower-bound inference from a CType U to a CType V is made as follows:
@@ -978,6 +986,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool LowerBoundArrayInference(CType pSource, CType pDest)
         {
             // SPEC:  Otherwise, if U is an array CType Ue[...] and V is either an array
@@ -1067,6 +1076,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool LowerBoundConstructedInference(CType pSource, CType pDest)
         {
             if (!(pDest is AggregateType pConstructedDest))
@@ -1130,6 +1140,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool LowerBoundClassInference(CType pSource, AggregateType pDest)
         {
             if (!pDest.IsClassType)
@@ -1172,6 +1183,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool LowerBoundInterfaceInference(CType pSource, AggregateType pDest)
         {
             if (!pDest.IsInterfaceType)
@@ -1218,6 +1230,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void LowerBoundTypeArgumentInference(
             AggregateType pSource, AggregateType pDest)
         {
@@ -1275,6 +1288,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Upper-bound inferences
         //
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void UpperBoundInference(CType pSource, CType pDest)
         {
             // SPEC: An upper-bound inference from a CType U to a CType V is made as follows:
@@ -1337,6 +1351,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool UpperBoundArrayInference(CType pSource, CType pDest)
         {
             // SPEC:  Otherwise, if V is an array CType Ve[...] and U is an array
@@ -1397,6 +1412,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool UpperBoundConstructedInference(CType pSource, CType pDest)
         {
             if (!(pSource is AggregateType pConstructedSource))
@@ -1453,6 +1469,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool UpperBoundClassInference(AggregateType pSource, CType pDest)
         {
             if (!pSource.IsClassType || !pDest.IsClassType)
@@ -1483,6 +1500,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool UpperBoundInterfaceInference(AggregateType pSource, CType pDest)
         {
             if (!pSource.IsInterfaceType)
@@ -1525,6 +1543,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void UpperBoundTypeArgumentInference(
             AggregateType pSource, AggregateType pDest)
         {
@@ -1583,6 +1602,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool Fix(int iParam)
         {
             Debug.Assert(IsUnfixed(iParam));

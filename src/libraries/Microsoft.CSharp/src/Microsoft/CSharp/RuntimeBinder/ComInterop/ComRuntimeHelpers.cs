@@ -165,6 +165,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return typeInfo;
         }
 
+        [RequiresDynamicCode("Calls System.Runtime.InteropServices.Marshal.PtrToStructure(nint, Type)")]
         internal static ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
         {
             IntPtr pAttrs;
@@ -186,6 +187,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
+        [RequiresDynamicCode("Calls System.Runtime.InteropServices.Marshal.PtrToStructure(nint, Type)")]
         internal static ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib)
         {
             IntPtr pAttrs;
@@ -208,6 +210,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
         {
             return new BoundDispEvent(rcw, sourceIid, dispid);
@@ -349,6 +352,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         internal static ModuleBuilder DynamicModule
         {
+            [RequiresDynamicCode("Calls System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(AssemblyName, AssemblyBuilderAccess)")]
             get
             {
                 if (s_dynamicModule != null)

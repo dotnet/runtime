@@ -57,6 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             public bool CanUseCurrentSymbol
             {
                 [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+                [RequiresDynamicCode(Binder.DynamicCodeWarning)]
                 get
                 {
                     // Make sure that whether we're seeing a ctor is consistent with the flag.

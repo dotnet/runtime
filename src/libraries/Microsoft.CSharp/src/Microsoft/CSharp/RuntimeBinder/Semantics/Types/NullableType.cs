@@ -26,6 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public override AggregateType GetAts() =>
             _ats ??= TypeManager.GetAggregate(TypeManager.GetNullable(), TypeArray.Allocate(UnderlyingType));
 
@@ -48,6 +49,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public override Type AssociatedSystemType
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get => typeof(Nullable<>).MakeGenericType(UnderlyingType.AssociatedSystemType);
         }
 

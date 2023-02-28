@@ -51,24 +51,29 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             new ExprBoundLambda(delegateType, argumentScope, expression);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ExprMethodInfo CreateMethodInfo(MethPropWithInst mwi) =>
             CreateMethodInfo(mwi.Meth(), mwi.GetType(), mwi.TypeArgs);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ExprMethodInfo CreateMethodInfo(MethodSymbol method, AggregateType methodType, TypeArray methodParameters) =>
             new ExprMethodInfo(
                 TypeManager.GetPredefAgg(method.IsConstructor() ? PredefinedType.PT_CONSTRUCTORINFO : PredefinedType.PT_METHODINFO).getThisType(),
                 method, methodType, methodParameters);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ExprPropertyInfo CreatePropertyInfo(PropertySymbol prop, AggregateType propertyType) =>
             new ExprPropertyInfo(TypeManager.GetPredefAgg(PredefinedType.PT_PROPERTYINFO).getThisType(), prop, propertyType);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ExprFieldInfo CreateFieldInfo(FieldSymbol field, AggregateType fieldType) =>
             new ExprFieldInfo(field, fieldType, TypeManager.GetPredefAgg(PredefinedType.PT_FIELDINFO).getThisType());
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ExprTypeOf CreateTypeOf(CType sourceType) =>
             new ExprTypeOf(TypeManager.GetPredefAgg(PredefinedType.PT_TYPE).getThisType(), sourceType);
 
@@ -80,6 +85,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprConcat CreateConcat(Expr first, Expr second) => new ExprConcat(first, second);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ExprConstant CreateStringConstant(string str) =>
             CreateConstant(TypeManager.GetPredefAgg(PredefinedType.PT_STRING).getThisType(), ConstVal.Get(str));
 
@@ -99,6 +105,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // This returns a null for reference types and an EXPRZEROINIT for all others.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static Expr CreateZeroInit(CType type)
         {
             Debug.Assert(type != null);
@@ -139,10 +146,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprConstant CreateConstant(CType type, ConstVal constVal) => new ExprConstant(type, constVal);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ExprConstant CreateIntegerConstant(int x) =>
             CreateConstant(TypeManager.GetPredefAgg(PredefinedType.PT_INT).getThisType(), ConstVal.Get(x));
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ExprConstant CreateBoolConstant(bool b) =>
             CreateConstant(TypeManager.GetPredefAgg(PredefinedType.PT_BOOL).getThisType(), ConstVal.Get(b));
 

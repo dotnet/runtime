@@ -43,6 +43,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static Expression Rewrite(ExprBinOp binOp, Expression[] listOfParameters)
         {
             ExpressionTreeCallRewriter rewriter = new ExpressionTreeCallRewriter(listOfParameters);
@@ -69,6 +70,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitSAVE(ExprBinOp pExpr)
         {
             // Saves should have a LHS that is a CALL to PM_EXPRESSION_PARAMETER
@@ -86,6 +88,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitCALL(ExprCall pExpr)
         {
             if (pExpr.PredefinedMethod == PREDEFMETH.PM_COUNT)
@@ -213,12 +216,14 @@ namespace Microsoft.CSharp.RuntimeBinder
         // ExpressionTreeRewriter has optimized away identity or up-cast conversions, leaving us with a bare parameter
         // access. Just get the expression for that parameter so the lambda produced can be p0 => p0
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitWRAP(ExprWrap pExpr) => new ExpressionExpr(GetExpression(pExpr));
 
         #region Generators
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateLambda(ExprCall pExpr)
         {
             // We always call Lambda(body, arrayinit) where the arrayinit
@@ -241,6 +246,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateCall(ExprCall pExpr)
         {
             // Our arguments are: object, methodinfo, parameters.
@@ -285,6 +291,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateArrayIndex(ExprCall pExpr)
         {
             // We have two possibilities here - we're either a single index array, in which
@@ -312,6 +319,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateConvert(ExprCall pExpr)
         {
             PREDEFMETH pm = pExpr.PredefinedMethod;
@@ -382,6 +390,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateProperty(ExprCall pExpr)
         {
             ExprList list = (ExprList)pExpr.OptionalArguments;
@@ -420,6 +429,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateField(ExprCall pExpr)
         {
             ExprList list = (ExprList)pExpr.OptionalArguments;
@@ -448,6 +458,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateInvoke(ExprCall pExpr)
         {
             ExprList list = (ExprList)pExpr.OptionalArguments;
@@ -460,6 +471,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateNew(ExprCall pExpr)
         {
             ExprList list = (ExprList)pExpr.OptionalArguments;
@@ -472,6 +484,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Expression GenerateConstantType(ExprCall pExpr)
         {
             ExprList list = (ExprList)pExpr.OptionalArguments;
@@ -483,6 +496,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateAssignment(ExprCall pExpr)
         {
             ExprList list = (ExprList)pExpr.OptionalArguments;
@@ -495,6 +509,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateBinaryOperator(ExprCall pExpr)
         {
             ExprList list = (ExprList)pExpr.OptionalArguments;
@@ -558,6 +573,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateUserDefinedBinaryOperator(ExprCall pExpr)
         {
             ExprList list = (ExprList)pExpr.OptionalArguments;
@@ -635,6 +651,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateUnaryOperator(ExprCall pExpr)
         {
             PREDEFMETH pm = pExpr.PredefinedMethod;
@@ -660,6 +677,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateUserDefinedUnaryOperator(ExprCall pExpr)
         {
             PREDEFMETH pm = pExpr.PredefinedMethod;
@@ -692,6 +710,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GetExpression(Expr pExpr)
         {
             if (pExpr is ExprWrap wrap)
@@ -885,6 +904,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression[] GetArgumentsFromArrayInit(ExprArrayInit arrinit)
         {
             List<Expression> expressions = new List<Expression>();

@@ -8,6 +8,8 @@ using System.Linq.Expressions;
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     // Note: we only need to support the operations used by ComBinder
+
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class ComMetaObject : DynamicMetaObject
     {
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]

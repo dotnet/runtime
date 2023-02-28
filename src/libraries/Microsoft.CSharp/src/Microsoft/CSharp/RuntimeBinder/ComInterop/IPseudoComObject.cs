@@ -10,6 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     internal interface IPseudoComObject
     {
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         DynamicMetaObject GetMetaObject(Expression expression);
     }
 }

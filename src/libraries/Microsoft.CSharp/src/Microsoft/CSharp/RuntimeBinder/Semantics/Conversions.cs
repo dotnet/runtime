@@ -25,6 +25,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             that typeDst.IsRefType() may still return false (when both are type parameters).
         ***************************************************************************************************/
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool FImpRefConv(CType typeSrc, CType typeDst) =>
             typeSrc.IsReferenceType && SymbolLoader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst);
 
@@ -73,6 +74,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             a reference type.
         ***************************************************************************************************/
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool FExpRefConv(CType typeSrc, CType typeDst)
         {
             Debug.Assert(typeSrc != null);
@@ -219,10 +221,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
               or Si and Ti must both be reference types.
         ***************************************************************************************************/
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool HasGenericDelegateExplicitReferenceConversion(CType source, CType target) =>
             target is AggregateType aggTarget && HasGenericDelegateExplicitReferenceConversion(source, aggTarget);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool HasGenericDelegateExplicitReferenceConversion(CType pSource, AggregateType pTarget)
         {
             if (!(pSource is AggregateType aggSrc) ||

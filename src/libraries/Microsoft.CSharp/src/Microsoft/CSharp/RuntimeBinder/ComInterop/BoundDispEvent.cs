@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class BoundDispEvent : DynamicObject
     {
         private readonly object _rcw;

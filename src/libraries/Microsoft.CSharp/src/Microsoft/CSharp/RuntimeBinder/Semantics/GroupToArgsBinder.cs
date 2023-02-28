@@ -88,6 +88,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // ----------------------------------------------------------------------------
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             public void Bind()
             {
                 Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
@@ -109,6 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private void LookForCandidates()
             {
                 bool fExpanded = false;
@@ -307,6 +309,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool GetResultOfBind()
             {
                 // We looked at all the evidence, and we come to render the verdict:
@@ -365,6 +368,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // that do not have a matching argument are optional parameters.
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool ReOrderArgsForNamedArguments()
             {
                 // First we need to find the method that we're actually trying to call.
@@ -394,6 +398,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             internal static bool ReOrderArgsForNamedArguments(
                 MethodOrPropertySymbol methprop, TypeArray pCurrentParameters, AggregateType pCurrentType, ExprMemberGroup pGroup, ArgInfos pArguments)
             {
@@ -484,6 +489,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             /////////////////////////////////////////////////////////////////////////////////
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private static Expr GenerateOptionalArgument(MethodOrPropertySymbol methprop, CType type, int index)
             {
                 CType pParamType = type;
@@ -662,6 +668,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // argument list match, or if we don't need to at all.
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool AddArgumentsForOptionalParameters()
             {
                 if (_pCurrentParameters.Count <= _pArguments.carg)
@@ -855,6 +862,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private Result DetermineCurrentTypeArgs()
             {
                 TypeArray typeArgs = _pGroup.TypeArgs;
@@ -906,6 +914,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool ArgumentsAreConvertible()
             {
                 bool containsErrorSym = false;
@@ -991,6 +1000,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private void UpdateArguments()
             {
                 // Parameter types might have changed as a result of
@@ -1070,6 +1080,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // ----------------------------------------------------------------------------
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private void ReportErrorsOnSuccess()
             {
                 // used for Methods and Indexers
@@ -1090,6 +1101,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private RuntimeBinderException ReportErrorsOnFailure()
             {
                 // First and foremost, report if the user specified a name more than once.

@@ -45,6 +45,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         #endregion
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static ComTypeLibDesc GetFromTypeLib(ComTypes.ITypeLib typeLib)
         {
             // check whether we have already loaded this type library

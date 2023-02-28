@@ -58,6 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public override Type AssociatedSystemType
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get =>
                 (IsMethodTypeParameter
                     ? ((MethodInfo)((MethodSymbol)OwningSymbol).AssociatedMemberInfo).GetGenericArguments()

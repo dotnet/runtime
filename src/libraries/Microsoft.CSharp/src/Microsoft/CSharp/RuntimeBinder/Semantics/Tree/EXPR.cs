@@ -42,6 +42,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public virtual object Object
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 Debug.Fail("Invalid Expr in GetObject");

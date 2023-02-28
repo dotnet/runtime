@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Globalization;
 using System.Linq.Expressions;
@@ -17,6 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public override string ToString() => $"<enum '{TypeName}'>";
 
+        [RequiresDynamicCode("Calls System.Runtime.InteropServices.Marshal.PtrToStructure(nint, Type)")]
         internal ComTypeEnumDesc(ComTypes.ITypeInfo typeInfo, ComTypeLibDesc typeLibDesc) :
             base(typeInfo, typeLibDesc)
         {

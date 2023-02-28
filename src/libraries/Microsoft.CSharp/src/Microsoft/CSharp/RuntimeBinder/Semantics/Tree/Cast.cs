@@ -24,6 +24,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public override object Object
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 Expr arg = Argument;

@@ -77,6 +77,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public AggregateType BaseClass
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 if (_baseType == null)
@@ -113,6 +114,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public IEnumerable<AggregateType> TypeHierarchy
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 if (IsInterfaceType)
@@ -137,13 +139,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private AggregateType BaseClassWithSuppressedMessage
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workarounds https://github.com/mono/linker/issues/1906. All usages are marked as unsafe.")]
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get => BaseClass;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workarounds https://github.com/mono/linker/issues/1906. All usages are marked as unsafe.")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static AggregateType GetPredefinedAggregateGetThisTypeWithSuppressedMessage()
         {
             return PredefinedTypes.GetPredefinedAggregate(PredefinedType.PT_OBJECT).getThisType();
@@ -158,6 +160,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool IsCollectionType
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 Type sysType = AssociatedSystemType;
@@ -184,6 +187,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public TypeArray WinRTCollectionIfacesAll
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 if (_winrtifacesAll == null)
@@ -303,10 +307,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public override Type AssociatedSystemType
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get => _associatedSystemType ??= CalculateAssociatedSystemType();
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Type CalculateAssociatedSystemType()
         {
             Type uninstantiatedType = OwningAggregate.AssociatedSystemType;
@@ -410,6 +416,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public override AggregateType GetAts() => this;
     }
 }

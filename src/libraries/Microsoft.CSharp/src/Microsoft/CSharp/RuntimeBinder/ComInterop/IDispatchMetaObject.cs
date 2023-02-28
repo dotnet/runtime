@@ -8,6 +8,8 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
+
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class IDispatchMetaObject : ComFallbackMetaObject
     {
         private readonly IDispatchComObject _self;

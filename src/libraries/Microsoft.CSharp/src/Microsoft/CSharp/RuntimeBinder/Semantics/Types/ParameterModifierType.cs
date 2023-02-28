@@ -31,6 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public override Type AssociatedSystemType
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get => ParameterType.AssociatedSystemType.MakeByRefType();
         }
 

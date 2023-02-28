@@ -277,6 +277,7 @@ LAgain:
         // Returns Left if m1 is better, Right if m2 is better, or Neither/Same
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private BetterType WhichMethodIsBetter(
             CandidateFunctionMember node1,
             CandidateFunctionMember node2,
@@ -395,6 +396,7 @@ LAgain:
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private BetterType WhichConversionIsBetter(CType argType, CType p1, CType p2)
         {
             Debug.Assert(argType != null);
@@ -479,6 +481,7 @@ LAgain:
         // Determine best method for overload resolution. Returns null if no best
         // method, in which case two tying methods are returned for error reporting.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private CandidateFunctionMember FindBestMethod(
             List<CandidateFunctionMember> list,
             CType pTypeThrough,

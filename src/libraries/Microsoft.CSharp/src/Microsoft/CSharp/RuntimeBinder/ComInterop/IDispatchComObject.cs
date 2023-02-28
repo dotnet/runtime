@@ -74,6 +74,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// just find and invoke the multicast delegate corresponding to the invoked
     /// dispid.
     ///  </summary>
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class IDispatchComObject : ComObject, IDynamicMetaObjectProvider
     {
         private ComTypeDesc _comTypeDesc;

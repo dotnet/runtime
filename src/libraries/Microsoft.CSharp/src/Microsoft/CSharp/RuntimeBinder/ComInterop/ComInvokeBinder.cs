@@ -110,6 +110,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             get { return EnsureVariable(ref _propertyPutDispId, typeof(int), "propertyPutDispId"); }
         }
 
+        [UnconditionalSuppressMessage("AOT", "IL3050: RequiresDynamicCodeAttribute",
+            Justification = "Cannot annotate a field, annotating the field uses instead")]
         private ParameterExpression ParamVariantsVariable => _paramVariants ??= Expression.Variable(VariantArray.GetStructType(_args.Length), "paramVariants");
 
         private static ParameterExpression EnsureVariable(ref ParameterExpression var, Type type, string name)
@@ -137,6 +139,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal DynamicMetaObject Invoke()
         {
             _keywordArgNames = _callInfo.ArgumentNames.ToArray();
@@ -181,6 +184,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression GenerateTryBlock()
         {
             //
@@ -386,6 +390,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// </summary>
         /// <returns></returns>
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expression MakeIDispatchInvokeTarget()
         {
             Debug.Assert(_varEnumSelector.VariantBuilders.Length == _totalExplicitArgs);

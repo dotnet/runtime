@@ -18,6 +18,7 @@ namespace System.Runtime.InteropServices
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public void AddHandler(int dispid, object func)
         {
             ComEventsMethod method = FindMethod(dispid) ?? AddMethod(dispid);

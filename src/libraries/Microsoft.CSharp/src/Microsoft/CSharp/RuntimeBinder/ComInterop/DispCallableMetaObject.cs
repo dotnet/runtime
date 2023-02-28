@@ -7,6 +7,8 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
+
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class DispCallableMetaObject : DynamicMetaObject
     {
         private readonly DispCallable _callable;

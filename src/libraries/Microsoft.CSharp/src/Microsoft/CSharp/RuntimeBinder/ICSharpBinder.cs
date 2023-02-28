@@ -18,9 +18,11 @@ namespace Microsoft.CSharp.RuntimeBinder
         bool IsBinderThatCanHaveRefReceiver { get; }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals);
 
         BindingFlag BindingFlags { get; }

@@ -20,6 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public virtual Type AssociatedSystemType
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get => throw Error.InternalCompilerError();
         }
 
@@ -127,6 +128,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public virtual AggregateType GetAts()
         {
             Debug.Fail("Bad type for AsAggregateType");

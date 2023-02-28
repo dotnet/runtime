@@ -67,6 +67,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
              * not implicitly.
              */
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             public bool Bind()
             {
                 // To test for a standard conversion, call canConvert(exprSrc, typeDest, STANDARDANDCONVERTTYPE.NOUDC) and
@@ -184,6 +185,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool bindExplicitConversionFromNub()
             {
                 Debug.Assert(_typeSrc != null);
@@ -223,6 +225,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool bindExplicitConversionFromArrayToIList()
             {
                 // 13.2.2
@@ -266,6 +269,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool bindExplicitConversionFromIListToArray(ArrayType arrayDest)
             {
                 // 13.2.2
@@ -307,6 +311,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool bindExplicitConversionFromArrayToArray(ArrayType arraySrc, ArrayType arrayDest)
             {
                 // 13.2.2
@@ -340,6 +345,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private bool bindExplicitConversionToArray(ArrayType arrayDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -407,6 +413,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             //   an implicit or explicit numeric conversion between the resulting types.
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private AggCastResult bindExplicitConversionFromEnumToAggregate(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -450,6 +457,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private AggCastResult bindExplicitConversionFromDecimalToEnum(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -492,6 +500,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private AggCastResult bindExplicitConversionFromEnumToDecimal(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -546,6 +555,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private AggCastResult bindExplicitConversionToEnum(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);
@@ -592,6 +602,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private AggCastResult bindExplicitConversionBetweenSimpleTypes(AggregateType aggTypeDest)
             {
                 // 13.2.1
@@ -661,6 +672,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private AggCastResult bindExplicitConversionBetweenAggregates(AggregateType aggTypeDest)
             {
                 // 13.2.3
@@ -731,6 +743,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private AggCastResult bindExplicitConversionToAggregate(AggregateType aggTypeDest)
             {
                 Debug.Assert(_typeSrc != null);

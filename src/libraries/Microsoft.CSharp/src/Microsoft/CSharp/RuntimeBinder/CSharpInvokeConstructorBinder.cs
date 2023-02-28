@@ -10,6 +10,7 @@ using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class CSharpInvokeConstructorBinder : DynamicMetaObjectBinder, ICSharpInvokeOrInvokeMemberBinder
     {
         public BindingFlag BindingFlags => 0;

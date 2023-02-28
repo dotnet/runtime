@@ -63,6 +63,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is called on a dynamically created type that doesn't contain trimming annotations.")]
+        [RequiresDynamicCode("Calls Microsoft.CSharp.RuntimeBinder.ComInterop.VariantArray.CreateCustomType(Int32)")]
         internal static Type GetStructType(int args)
         {
             Debug.Assert(args >= 0);
@@ -96,6 +97,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
+        [RequiresDynamicCode("Calls Microsoft.CSharp.RuntimeBinder.ComInterop.UnsafeMethods.DynamicModule")]
         private static Type CreateCustomType(int size)
         {
             TypeAttributes attrs = TypeAttributes.NotPublic | TypeAttributes.SequentialLayout;

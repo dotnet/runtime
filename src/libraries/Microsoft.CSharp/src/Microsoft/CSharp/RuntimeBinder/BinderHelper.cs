@@ -21,6 +21,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static MethodInfo s_SingleIsNaN;
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static DynamicMetaObject Bind(
                 ICSharpBinder action,
                 RuntimeBinder binder,

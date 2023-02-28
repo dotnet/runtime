@@ -81,6 +81,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         internal DynamicProperty[] Items
         {
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 if (results == null || results.Count == 0)
@@ -109,6 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static readonly ParameterExpression parameter = Expression.Parameter(typeof(object), "debug");
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static object TryEvalBinaryOperators<T1, T2>(
             T1 arg1,
             T2 arg2,
@@ -132,6 +134,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static object TryEvalUnaryOperators<T>(T obj, ExpressionType oper, Type accessibilityContext)
         {
             if (oper == ExpressionType.IsTrue || oper == ExpressionType.IsFalse)
@@ -153,6 +156,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static K TryEvalCast<T, K>(T obj, Type type, CSharpBinderFlags kind, Type accessibilityContext)
         {
             var site = CallSite<Func<CallSite, T, K>>.Create(Binder.Convert(kind, type, accessibilityContext));
@@ -230,6 +234,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="typeArguments">Generic type arguments if there are any.</param>
         /// <returns>Result of method invocation.</returns>
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static object TryEvalMethodVarArgs(
             object[] methodArgs,
             Type[] argTypes,
@@ -281,6 +286,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="isResultIndexed">Determines if COM binder should return a callable object.</param>
         /// <returns>Result of property invocation.</returns>
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static object TryGetMemberValue<T>(T obj, string propName, Type accessibilityContext, bool isResultIndexed)
         {
             // In most cases it's ok to use CSharpArgumentInfoFlags.None since target of property call is dynamic.
@@ -309,6 +315,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="accessibilityContext">Type that determines context in which method should be called.</param>
         /// <returns>Result of property invocation.</returns>
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static object TryGetMemberValueVarArgs(
             object[] propArgs,
             Type[] argTypes,
@@ -343,6 +350,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="accessibilityContext">Type that determines context in which method should be called.</param>
         /// <returns>Result of property invocation.</returns>
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static object TrySetMemberValue<TObject, TValue>(
             TObject obj,
             string propName,
@@ -375,6 +383,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="accessibilityContext">Type that determines context in which method should be called.</param>
         /// <returns>Result of property invocation.</returns>
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static object TrySetMemberValueVarArgs(
             object[] propArgs,
             Type[] argTypes,
@@ -432,6 +441,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 #endif
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static IList<KeyValuePair<string, object>> QueryDynamicObject(object obj)
         {
             IDynamicMetaObjectProvider ido = obj as IDynamicMetaObjectProvider;

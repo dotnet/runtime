@@ -10,9 +10,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class ExpressionTreeRewriter : ExprVisitorBase
     {
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ExprBinOp Rewrite(ExprBoundLambda expr) => new ExpressionTreeRewriter().VisitBoundLambda(expr);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr Dispatch(Expr expr)
         {
             Debug.Assert(expr != null);
@@ -28,6 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /////////////////////////////////////////////////////////////////////////////////
         // Statement types.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitASSIGNMENT(ExprAssignment assignment)
         {
             Debug.Assert(assignment != null);
@@ -67,12 +70,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitMULTIGET(ExprMultiGet pExpr)
         {
             return Visit(pExpr.OptionalMulti.Left);
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitMULTI(ExprMulti pExpr)
         {
             Expr rhs = Visit(pExpr.Operator);
@@ -84,6 +89,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Expression types.
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private ExprBinOp VisitBoundLambda(ExprBoundLambda anonmeth)
         {
             Debug.Assert(anonmeth != null);
@@ -108,6 +114,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitCONSTANT(ExprConstant expr)
         {
             Debug.Assert(expr != null);
@@ -115,6 +122,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitLOCAL(ExprLocal local)
         {
             Debug.Assert(local != null);
@@ -123,6 +131,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitFIELD(ExprField expr)
         {
             Debug.Assert(expr != null);
@@ -140,6 +149,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitUSERDEFINEDCONVERSION(ExprUserDefinedConversion expr)
         {
             Debug.Assert(expr != null);
@@ -147,6 +157,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitCAST(ExprCast pExpr)
         {
             Debug.Assert(pExpr != null);
@@ -181,6 +192,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitCONCAT(ExprConcat expr)
         {
             Debug.Assert(expr != null);
@@ -201,6 +213,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitBINOP(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
@@ -215,6 +228,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitUNARYOP(ExprUnaryOp pExpr)
         {
             Debug.Assert(pExpr != null);
@@ -229,6 +243,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitARRAYINDEX(ExprArrayIndex pExpr)
         {
             Debug.Assert(pExpr != null);
@@ -243,6 +258,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitCALL(ExprCall expr)
         {
             Debug.Assert(expr != null);
@@ -308,6 +324,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitPROP(ExprProperty expr)
         {
             Debug.Assert(expr != null);
@@ -332,6 +349,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitARRINIT(ExprArrayInit expr)
         {
             Debug.Assert(expr != null);
@@ -343,6 +361,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitZEROINIT(ExprZeroInit expr)
         {
             Debug.Assert(expr != null);
@@ -350,6 +369,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         protected override Expr VisitTYPEOF(ExprTypeOf expr)
         {
             Debug.Assert(expr != null);
@@ -357,6 +377,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateDelegateInvoke(ExprCall expr)
         {
             Debug.Assert(expr != null);
@@ -371,6 +392,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateBuiltInBinaryOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
@@ -472,6 +494,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateBuiltInUnaryOperator(ExprUnaryOp expr)
         {
             Debug.Assert(expr != null);
@@ -496,6 +519,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateUserDefinedBinaryOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
@@ -576,6 +600,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateUserDefinedUnaryOperator(ExprUnaryOp expr)
         {
             Debug.Assert(expr != null);
@@ -627,6 +652,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateUserDefinedComparisonOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
@@ -665,10 +691,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateConversion(Expr arg, CType CType, bool bChecked) =>
             GenerateConversionWithSource(Visit(arg), CType, bChecked || arg.isChecked());
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Expr GenerateConversionWithSource(Expr pTarget, CType pType, bool bChecked)
         {
             PREDEFMETH pdm = bChecked ? PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED : PREDEFMETH.PM_EXPRESSION_CONVERT;
@@ -677,6 +705,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateValueAccessConversion(Expr pArgument)
         {
             Debug.Assert(pArgument != null);
@@ -686,6 +715,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateUserDefinedConversion(Expr arg, CType type, MethWithInst method)
         {
             Expr target = Visit(arg);
@@ -693,6 +723,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Expr GenerateUserDefinedConversion(Expr arg, CType CType, Expr target, MethWithInst method)
         {
             // The user-defined explicit conversion from enum? to decimal or decimal? requires
@@ -736,6 +767,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateUserDefinedConversion(ExprUserDefinedConversion pExpr, Expr pArgument)
         {
             Expr pCastCall = pExpr.UserDefinedCall;
@@ -785,6 +817,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Expr GenerateParameter(string name, CType CType)
         {
             SymbolLoader.GetPredefindType(PredefinedType.PT_STRING);  // force an ensure state
@@ -794,12 +827,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static MethodSymbol GetPreDefMethod(PREDEFMETH pdm) => PredefinedMembers.GetMethod(pdm);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static ExprTypeOf CreateTypeOf(CType type) => ExprFactory.CreateTypeOf(type);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Expr CreateWraps(ExprBoundLambda anonmeth)
         {
             Expr sequence = null;
@@ -828,6 +864,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateConstructor(ExprCall expr)
         {
             Debug.Assert(expr != null);
@@ -839,6 +876,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateArgsList(Expr oldArgs)
         {
             Expr newArgs = null;
@@ -852,6 +890,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr GenerateIndexList(Expr oldIndices)
         {
             CType intType = SymbolLoader.GetPredefindType(PredefinedType.PT_INT);
@@ -873,6 +912,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Expr GenerateConstant(Expr expr)
         {
             EXPRFLAG flags = 0;
@@ -898,6 +938,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
@@ -914,6 +955,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1, Expr arg2)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
@@ -929,6 +971,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1, Expr arg2, Expr arg3)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
@@ -944,6 +987,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1, Expr arg2, Expr arg3, Expr arg4)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
@@ -959,6 +1003,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static ExprArrayInit GenerateParamsArray(Expr args, PredefinedType pt)
         {
             int parameterCount = ExpressionIterator.Count(args);
@@ -969,6 +1014,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static void FixLiftedUserDefinedBinaryOperators(ExprBinOp expr, ref Expr pp1, ref Expr pp2)
         {
             // If we have lifted T1 op T2 to T1? op T2?, and we have an expression T1 op T2? or T1? op T2 then

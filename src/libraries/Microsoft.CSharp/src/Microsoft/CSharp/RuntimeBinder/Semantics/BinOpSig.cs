@@ -76,6 +76,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 the predefined types. Returns true iff the predef types are found.
             ***************************************************************************************************/
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             public BinOpFullSig(BinOpSig bos)
             {
                 this.pt1 = bos.pt1;
