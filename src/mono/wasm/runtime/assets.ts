@@ -78,10 +78,8 @@ export async function mono_download_assets(): Promise<void> {
                         const response = await asset.pendingDownloadInternal!.response;
                         if (!headersOnly) {
                             asset.buffer = await response.arrayBuffer();
-                            ++actual_downloaded_assets_count;
-                        } else {
-                            ++actual_downloaded_assets_count;
                         }
+                        ++actual_downloaded_assets_count;
                         return { asset, buffer: asset.buffer };
                     };
                     promises_of_assets_with_buffer.push(waitForExternalData());
