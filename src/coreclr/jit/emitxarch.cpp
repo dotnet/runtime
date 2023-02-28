@@ -526,13 +526,13 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
             }
         }
 
-        // This is a special case for cdq/cwde.
-        // They always write to and sign-extend.
+        // This is a special case for cdq/cwde/cmpxchg.
         if (instrHasImplicitRegSingleDest(id->idIns()))
         {
             switch (id->idIns())
             {
                 case INS_cwde:
+                case INS_cmpxchg:
                 {
                     if (reg == REG_RAX)
                     {
