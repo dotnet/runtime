@@ -370,7 +370,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	const char *interp_opts = "";
 
     char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
-    if (strcmp(invariant_globalization, "true") != 0)
+    if (strcmp(invariant_globalization, "true") != 0 && strcmp(invariant_globalization, "1") != 0)
 	    load_icu_data();
 
 #ifdef DEBUG
