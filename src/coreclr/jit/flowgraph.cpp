@@ -184,6 +184,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     if ((i == 1 && runtimeLookup.indirectFirstOffset) || (i == 2 && runtimeLookup.indirectSecondOffset))
                     {
                         indOffTree = spillExpr(slotPtrTree);
+                        slotPtrTree = gtClone(indOffTree);
                     }
 
                     // The last indirection could be subject to a size check (dynamic dictionary expansion)
@@ -209,6 +210,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                         if (isLastIndirectionWithSizeCheck)
                         {
                             lastIndOfTree = spillExpr(slotPtrTree);
+                            slotPtrTree = gtClone(lastIndOfTree);
                         }
 
                         slotPtrTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree,
@@ -244,7 +246,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
 
                 // Save dictionary slot to a local (to be used by fast path)
-                GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
+                //GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
 
                 GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
@@ -271,7 +273,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 BasicBlock* fastPathBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
                 fastPathBb->bbFlags |= BBF_INTERNAL;
                 Statement* asgFastPathValueStmt =
-                    fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone));
+                    fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(fastPathValue)));
                 fgInsertStmtAtBeg(fastPathBb, asgFastPathValueStmt);
                 gtSetStmtInfo(asgFastPathValueStmt);
                 fgSetStmtSeq(asgFastPathValueStmt);
@@ -316,7 +318,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     // sizeCheck fails if sizeValue <= pRuntimeLookup->offsets[i]
                     GenTree* offsetValue =
                         gtNewIconNode(runtimeLookup.offsets[runtimeLookup.indirections - 1], TYP_I_IMPL);
-                    GenTree* sizeCheck = gtNewOperNode(GT_GT, TYP_INT, sizeValue, offsetValue);
+                    GenTree* sizeCheck = gtNewOperNode(GT_LE, TYP_INT, sizeValue, offsetValue);
                     sizeCheck->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                     gtSetEvalOrder(sizeCheck);
                     Statement* sizeCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck));
