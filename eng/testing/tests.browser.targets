@@ -135,6 +135,8 @@
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
+      <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName> 
+      <WasmMainHtmlPath>$(PublishDir)index.html</WasmMainHtmlPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
 
@@ -151,6 +153,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" />
+      <WasmExtraFilesToDeploy Include="$(WasmMainHtmlPath)" />
+
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" Condition="'$(BuildAOTTestsOnHelix)' == 'true'" />
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
 
@@ -169,6 +174,8 @@
               TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
+
+    <WriteLinesToFile File="$(WasmMainHtmlPath)" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='$(WasmMainJSFileName)'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" Overwrite="True" Condition="!Exists('$(WasmMainHtmlPath)')"/>
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">
@@ -227,17 +234,19 @@
       <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
                             Variant="net7"
-                            Version="$(PackageVersionForWorkloadManifests)" />
+                            Version="$(PackageVersionForWorkloadManifests)"
+                            Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
       <WorkloadIdForTesting Include="wasm-tools-net6"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
                             Variant="net6"
                             Version="$(PackageVersionForWorkloadManifests)"
-                            IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)" />
+                            IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
+                            Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
-      <WorkloadCombinationsToInstall Include="latest"   Variants="latest" />
-      <WorkloadCombinationsToInstall Include="net7"     Variants="net7" />
-      <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" />
+      <WorkloadCombinationsToInstall Include="latest"        Variants="latest" />
+      <WorkloadCombinationsToInstall Include="net7"          Variants="net7" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
+      <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
       <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
       <!--<WorkloadCombinationsToInstall Include="none" />-->

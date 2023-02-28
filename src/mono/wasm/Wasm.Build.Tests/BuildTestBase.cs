@@ -349,6 +349,8 @@ namespace Wasm.Build.Tests
                 extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
             }
 
+            extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
+
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
                                         .Replace("##EXTRA_ITEMS##", extraItems)
@@ -384,6 +386,8 @@ namespace Wasm.Build.Tests
                 File.Copy(Path.Combine(AppContext.BaseDirectory,
                                         options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
                             Path.Combine(_projectDir, "test-main.js"));
+
+                File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
             }
             else if (_projectDir is null)
             {
@@ -438,7 +442,8 @@ namespace Wasm.Build.Tests
                                          options.GlobalizationMode,
                                          options.PredefinedIcudt ?? "",
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
-                                         UseWebcil);
+                                         UseWebcil,
+                                         options.IsBrowserProject);
                 }
 
                 if (options.UseCache)
@@ -506,7 +511,15 @@ namespace Wasm.Build.Tests
                 extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
             if (UseWebcil)
                 extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>";
-            AddItemsPropertiesToProject(projectfile, extraProperties);
+
+            // TODO: Can be removed after updated templates propagate in.
+            string extraItems = string.Empty;
+            if (template == "wasmbrowser")
+                extraItems += "<WasmExtraFilesToDeploy Include=\"main.js\" />";
+            else
+                extraItems += "<WasmExtraFilesToDeploy Include=\"main.mjs\" />";
+
+            AddItemsPropertiesToProject(projectfile, extraProperties, extraItems);
 
             return projectfile;
         }
@@ -643,17 +656,22 @@ namespace Wasm.Build.Tests
                                                    GlobalizationMode? globalizationMode,
                                                    string predefinedIcudt = "",
                                                    bool dotnetWasmFromRuntimePack = true,
-                                                   bool useWebcil = true)
+                                                   bool useWebcil = true,
+                                                   bool isBrowserProject = true)
         {
-            AssertFilesExist(bundleDir, new []
+            var filesToExist = new List<string>()
             {
-                "index.html",
                 mainJS,
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
                 "dotnet.js"
-            });
+            };
+
+            if (isBrowserProject)
+                filesToExist.Add("index.html");
+
+            AssertFilesExist(bundleDir, filesToExist);
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
             AssertIcuAssets();
@@ -748,7 +766,7 @@ namespace Wasm.Build.Tests
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
             => AssertFilesExist(dir, filenames, label, expectToExist: false);
 
-        protected static void AssertFilesExist(string dir, string[] filenames, string? label = null, bool expectToExist=true)
+        protected static void AssertFilesExist(string dir, IEnumerable<string> filenames, string? label = null, bool expectToExist=true)
         {
             string prefix = label != null ? $"{label}: " : string.Empty;
             if (!Directory.Exists(dir))
@@ -1183,6 +1201,7 @@ namespace Wasm.Build.Tests
         string?             Label                     = null,
         string?             TargetFramework           = null,
         string?             MainJS                    = null,
+        bool                IsBrowserProject          = true,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 

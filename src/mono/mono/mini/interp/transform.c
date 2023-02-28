@@ -43,121 +43,6 @@ MonoInterpStats mono_interp_stats;
 
 #define DEBUG 0
 
-#if SIZEOF_VOID_P == 8
-#define MINT_NEG_P MINT_NEG_I8
-#define MINT_NOT_P MINT_NOT_I8
-
-#define MINT_NEG_FP MINT_NEG_R8
-
-#define MINT_ADD_P MINT_ADD_I8
-#define MINT_ADD_P_IMM MINT_ADD_I8_IMM
-#define MINT_SUB_P MINT_SUB_I8
-#define MINT_MUL_P MINT_MUL_I8
-#define MINT_DIV_P MINT_DIV_I8
-#define MINT_DIV_UN_P MINT_DIV_UN_I8
-#define MINT_REM_P MINT_REM_I8
-#define MINT_REM_UN_P MINT_REM_UN_I8
-#define MINT_AND_P MINT_AND_I8
-#define MINT_OR_P MINT_OR_I8
-#define MINT_XOR_P MINT_XOR_I8
-#define MINT_SHL_P MINT_SHL_I8
-#define MINT_SHR_P MINT_SHR_I8
-#define MINT_SHR_UN_P MINT_SHR_UN_I8
-
-#define MINT_CEQ_P MINT_CEQ_I8
-#define MINT_CNE_P MINT_CNE_I8
-#define MINT_CLT_P MINT_CLT_I8
-#define MINT_CLT_UN_P MINT_CLT_UN_I8
-#define MINT_CGT_P MINT_CGT_I8
-#define MINT_CGT_UN_P MINT_CGT_UN_I8
-#define MINT_CLE_P MINT_CLE_I8
-#define MINT_CLE_UN_P MINT_CLE_UN_I8
-#define MINT_CGE_P MINT_CGE_I8
-#define MINT_CGE_UN_P MINT_CGE_UN_I8
-
-#define MINT_ADD_FP MINT_ADD_R8
-#define MINT_SUB_FP MINT_SUB_R8
-#define MINT_MUL_FP MINT_MUL_R8
-#define MINT_DIV_FP MINT_DIV_R8
-#define MINT_REM_FP MINT_REM_R8
-
-#define MINT_CNE_FP MINT_CNE_R8
-#define MINT_CEQ_FP MINT_CEQ_R8
-#define MINT_CGT_FP MINT_CGT_R8
-#define MINT_CGE_FP MINT_CGE_R8
-#define MINT_CLT_FP MINT_CLT_R8
-#define MINT_CLE_FP MINT_CLE_R8
-
-#define MINT_CONV_OVF_U4_P MINT_CONV_OVF_U4_I8
-#else
-
-#define MINT_NEG_P MINT_NEG_I4
-#define MINT_NOT_P MINT_NOT_I4
-
-#define MINT_NEG_FP MINT_NEG_R4
-
-#define MINT_ADD_P MINT_ADD_I4
-#define MINT_ADD_P_IMM MINT_ADD_I4_IMM
-#define MINT_SUB_P MINT_SUB_I4
-#define MINT_MUL_P MINT_MUL_I4
-#define MINT_DIV_P MINT_DIV_I4
-#define MINT_DIV_UN_P MINT_DIV_UN_I4
-#define MINT_REM_P MINT_REM_I4
-#define MINT_REM_UN_P MINT_REM_UN_I4
-#define MINT_AND_P MINT_AND_I4
-#define MINT_OR_P MINT_OR_I4
-#define MINT_XOR_P MINT_XOR_I4
-#define MINT_SHL_P MINT_SHL_I4
-#define MINT_SHR_P MINT_SHR_I4
-#define MINT_SHR_UN_P MINT_SHR_UN_I4
-
-#define MINT_CEQ_P MINT_CEQ_I4
-#define MINT_CNE_P MINT_CNE_I4
-#define MINT_CLT_P MINT_CLT_I4
-#define MINT_CLT_UN_P MINT_CLT_UN_I4
-#define MINT_CGT_P MINT_CGT_I4
-#define MINT_CGT_UN_P MINT_CGT_UN_I4
-#define MINT_CLE_P MINT_CLE_I4
-#define MINT_CLE_UN_P MINT_CLE_UN_I4
-#define MINT_CGE_P MINT_CGE_I4
-#define MINT_CGE_UN_P MINT_CGE_UN_I4
-
-#define MINT_ADD_FP MINT_ADD_R4
-#define MINT_SUB_FP MINT_SUB_R4
-#define MINT_MUL_FP MINT_MUL_R4
-#define MINT_DIV_FP MINT_DIV_R4
-#define MINT_REM_FP MINT_REM_R4
-
-#define MINT_CNE_FP MINT_CNE_R4
-#define MINT_CEQ_FP MINT_CEQ_R4
-#define MINT_CGT_FP MINT_CGT_R4
-#define MINT_CGE_FP MINT_CGE_R4
-#define MINT_CLT_FP MINT_CLT_R4
-#define MINT_CLE_FP MINT_CLE_R4
-
-#define MINT_CONV_OVF_U4_P MINT_CONV_OVF_U4_I4
-#endif
-
-#if SIZEOF_VOID_P == 8
-#define MINT_MOV_P MINT_MOV_8
-#define MINT_LDNULL MINT_LDC_I8_0
-#define MINT_LDIND_I MINT_LDIND_I8
-#define MINT_STIND_I MINT_STIND_I8
-#define MINT_LDELEM_I MINT_LDELEM_I8
-#define MINT_STELEM_I MINT_STELEM_I8
-#define MINT_MUL_P_IMM MINT_MUL_I8_IMM
-#define MINT_ADD_MUL_P_IMM MINT_ADD_MUL_I8_IMM
-#else
-#define MINT_MOV_P MINT_MOV_4
-#define MINT_LDNULL MINT_LDC_I4_0
-#define MINT_LDIND_I MINT_LDIND_I4
-#define MINT_STIND_I MINT_STIND_I4
-#define MINT_LDELEM_I MINT_LDELEM_I4
-#define MINT_STELEM_I MINT_STELEM_I4
-#define MINT_MUL_P_IMM MINT_MUL_I4_IMM
-#define MINT_ADD_MUL_P_IMM MINT_ADD_MUL_I4_IMM
-#endif
-
 static const char *stack_type_string [] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
 
 static int stack_type [] = {
@@ -176,25 +61,6 @@ static int stack_type [] = {
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (intrinsic_klass, "System.Runtime.CompilerServices", "IntrinsicAttribute")
 
 static gboolean generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error);
-
-#define interp_ins_set_dreg(ins,dr) do { \
-	ins->dreg = dr; \
-} while (0)
-
-#define interp_ins_set_sreg(ins,s1) do { \
-	ins->sregs [0] = s1; \
-} while (0)
-
-#define interp_ins_set_sregs2(ins,s1,s2) do { \
-	ins->sregs [0] = s1; \
-	ins->sregs [1] = s2; \
-} while (0)
-
-#define interp_ins_set_sregs3(ins,s1,s2,s3) do { \
-	ins->sregs [0] = s1; \
-	ins->sregs [1] = s2; \
-	ins->sregs [2] = s3; \
-} while (0)
 
 static gboolean
 has_intrinsic_attribute (MonoMethod *method)
@@ -386,58 +252,6 @@ interp_last_ins (InterpBasicBlock *bb)
 			interp_generate_ipe_bad_fallthru (td);	\
 		}						\
 	} while (0)
-
-#if NO_UNALIGNED_ACCESS
-#define WRITE32(ip, v) \
-	do { \
-		* (ip) = * (guint16 *)(v); \
-		* ((ip) + 1) = * ((guint16 *)(v) + 1); \
-		(ip) += 2; \
-	} while (0)
-
-#define WRITE32_INS(ins, index, v) \
-	do { \
-		(ins)->data [index] = * (guint16 *)(v); \
-		(ins)->data [index + 1] = * ((guint16 *)(v) + 1); \
-	} while (0)
-
-#define WRITE64(ins, v) \
-	do { \
-		*((ins) + 0) = * ((guint16 *)(v) + 0); \
-		*((ins) + 1) = * ((guint16 *)(v) + 1); \
-		*((ins) + 2) = * ((guint16 *)(v) + 2); \
-		*((ins) + 3) = * ((guint16 *)(v) + 3); \
-	} while (0)
-
-#define WRITE64_INS(ins, index, v) \
-	do { \
-		(ins)->data [index] = * (guint16 *)(v); \
-		(ins)->data [index + 1] = * ((guint16 *)(v) + 1); \
-		(ins)->data [index + 2] = * ((guint16 *)(v) + 2); \
-		(ins)->data [index + 3] = * ((guint16 *)(v) + 3); \
-	} while (0)
-#else
-#define WRITE32(ip, v) \
-	do { \
-		* (guint32*)(ip) = * (guint32 *)(v); \
-		(ip) += 2; \
-	} while (0)
-#define WRITE32_INS(ins, index, v) \
-	do { \
-		* (guint32 *)(&(ins)->data [index]) = * (guint32 *)(v); \
-	} while (0)
-
-#define WRITE64(ip, v) \
-	do { \
-		* (guint64*)(ip) = * (guint64 *)(v); \
-		(ip) += 4; \
-	} while (0)
-#define WRITE64_INS(ins, index, v) \
-	do { \
-		* (guint64 *)(&(ins)->data [index]) = * (guint64 *)(v); \
-	} while (0)
-
-#endif
 
 static void
 realloc_stack (TransformData *td)
@@ -2070,6 +1884,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	else
 		klass_name_space = m_class_get_name_space (target_method->klass);
 	const char *klass_name = m_class_get_name (target_method->klass);
+
+#ifdef INTERP_ENABLE_SIMD
+	if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, target_method, csignature))
+		return TRUE;
+#endif
 
 	if (target_method->klass == mono_defaults.string_class) {
 		if (tm [0] == 'g') {
@@ -9156,6 +8975,70 @@ interp_fold_binop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue 
 }
 
 static void
+write_v128_element (gpointer v128_addr, LocalValue *val, int index, int el_size)
+{
+	gpointer el_addr = (gint8*)v128_addr + index * el_size;
+	g_assert ((gint8*)el_addr < ((gint8*)v128_addr + 16));
+	switch (el_size) {
+		case 1: *(gint8*)el_addr = (gint8)val->i; break;
+		case 2: *(gint16*)el_addr = (gint16)val->i; break;
+		case 4: *(gint32*)el_addr = val->i; break;
+		case 8: *(gint64*)el_addr = val->l; break;
+		default:
+			g_assert_not_reached ();
+	}
+}
+
+static InterpInst*
+interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *local_defs, InterpInst *ins)
+{
+	int *local_ref_count = td->local_ref_count;
+
+	int *args = ins->info.call_info->call_args;
+	int index = 0;
+	int var = args [index];
+	while (var != -1) {
+		LocalValue *val = &local_defs [var];
+		if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8)
+			return ins;
+		index++;
+		var = args [index];
+	}
+
+	// If we reached this point, it means that all args of the simd_create are constants
+	// We can replace the simd_create with simd_ldc
+	int el_size = 16 / index;
+	int dreg = ins->dreg;
+
+	ins = interp_insert_ins (td, ins, MINT_SIMD_V128_LDC);
+	interp_clear_ins (ins->prev);
+        interp_ins_set_dreg (ins, dreg);
+
+	gpointer v128_addr = &ins->data [0];
+
+	index = 0;
+	var = args [index];
+	while (var != -1) {
+		LocalValue *val = &local_defs [var];
+		write_v128_element (v128_addr, val, index, el_size);
+		val->ref_count--;
+		local_ref_count [var]--;
+		index++;
+		var = args [index];
+	}
+
+	if (td->verbose_level) {
+		g_print ("Fold simd create:\n\t");
+		dump_interp_inst (ins);
+	}
+
+	local_defs [dreg].ins = ins;
+	local_defs [dreg].type = LOCAL_VALUE_NONE;
+
+	return ins;
+}
+
+static void
 cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_defs)
 {
 	int *local_ref_count = td->local_ref_count;
@@ -9401,6 +9284,8 @@ retry:
 				ins = interp_fold_unop (td, local_defs, ins);
 			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_unop_cond_br (td, bb, local_defs, ins);
+			} else if (MINT_IS_SIMD_CREATE (opcode)) {
+				ins = interp_fold_simd_create (td, bb, local_defs, ins);
 			} else if (MINT_IS_BINOP (opcode)) {
 				gboolean folded;
 				ins = interp_fold_binop (td, local_defs, ins, &folded);
@@ -11065,4 +10950,8 @@ mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode)
 	return interp_insert_ins (td, prev_ins, opcode);
 }
 
+#endif
+
+#ifdef INTERP_ENABLE_SIMD
+#include "transform-simd.c"
 #endif
