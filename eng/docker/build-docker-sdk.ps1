@@ -52,7 +52,7 @@ if ($buildWindowsContainers)
                      -Destination $dockerContext\testhost
   Copy-Item          -Path $REPO_ROOT_DIR\eng\targetingpacks.targets `
                      -Destination $dockerContext\targetingpacks.targets
-  Copy-Item          -Path $dockerFile 
+  Copy-Item          -Path $dockerFile `
                      -Destination $dockerContext\$dockerFileName
   
   # In case of non-CI builds, testhost may already contain Microsoft.AspNetCore.App (see build-local.ps1 in HttpStress):
