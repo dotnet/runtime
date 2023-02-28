@@ -12,7 +12,6 @@ namespace System.Text.Json
     {
         /// <summary>IndexOfAny('"', '\', less than 32)</summary>
         /// <remarks>https://tools.ietf.org/html/rfc8259</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
         {
             // Borrowed and modified from SpanHelpers.Byte:
