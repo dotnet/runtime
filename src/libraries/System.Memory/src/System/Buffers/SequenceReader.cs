@@ -91,6 +91,7 @@ namespace System.Buffers
         private ref T CurrentSpanStart => ref Unsafe.AsRef(in current.GetPinnableReference());
         private void SetCurrentSpan(ReadOnlySpan<T> span)
         {
+            _consumedAtStartOfCurrentSpan += CurrentSpanLength; // account for previous
             _currentSpan = span;
             _currentSpanIndex = 0;
         }
