@@ -572,7 +572,16 @@ namespace Wasm.Build.Tests
 
                 // make sure this assembly gets skipped
                 Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Item1.Output);
+
             }
+
+            if (!options.ExpectRelinkDirWhenPublishing)
+            {
+                // Check that we linked only for publish
+                string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework, "wasm", "for-build");
+                Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets created when relinking during Build");
+            }
+
             return res;
         }
 
@@ -1211,7 +1220,8 @@ namespace Wasm.Build.Tests
         string Config,
         NativeFilesType ExpectedFileType,
         string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
-        bool WarnAsError = true
+        bool WarnAsError = true,
+        bool ExpectRelinkDirWhenPublishing=false
     );
 
     public enum GlobalizationMode
