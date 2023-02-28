@@ -417,9 +417,8 @@ namespace System.Xml
                 XmlQualifiedName attrQName;
                 for (int i = 0; i < _defaultAttributes.Count; i++)
                 {
-                    XmlSchemaAttribute schemaAttribute = (_defaultAttributes[i] as XmlSchemaAttribute)!;
+                    XmlSchemaAttribute schemaAttribute = (XmlSchemaAttribute)_defaultAttributes[i]!;
                     attrQName = schemaAttribute.QualifiedName;
-                    Debug.Assert(schemaAttribute != null);
                     attr = _document.CreateDefaultAttribute(GetDefaultPrefix(attrQName.Namespace), attrQName.Name, attrQName.Namespace);
                     SetDefaultAttributeSchemaInfo(schemaAttribute);
                     attr.XmlName = _document.AddAttrXmlName(attr.Prefix, attr.LocalName, attr.NamespaceURI, _attributeSchemaInfo);
@@ -474,7 +473,7 @@ namespace System.Xml
             return defaultPrefix;
         }
 
-        private object? GetNodeValue()
+        private string? GetNodeValue()
         {
             return _currentNode!.Value;
         }

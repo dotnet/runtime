@@ -12,136 +12,125 @@ namespace System.Text.Json.SourceGeneration.Tests
     internal sealed class StringSerializerWrapper : JsonSerializerWrapper
     {
         private readonly JsonSerializerContext _defaultContext;
-        private readonly Func<JsonSerializerOptions, JsonSerializerContext> _customContextCreator;
 
-        public StringSerializerWrapper(JsonSerializerContext defaultContext, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator)
+        public StringSerializerWrapper(JsonSerializerContext defaultContext)
         {
             _defaultContext = defaultContext ?? throw new ArgumentNullException(nameof(defaultContext));
-            _customContextCreator = customContextCreator ?? throw new ArgumentNullException(nameof(customContextCreator));
         }
+
+        public override JsonSerializerOptions DefaultOptions => _defaultContext.Options;
 
         public override Task<string> SerializeWrapper(object value, Type type, JsonSerializerOptions? options = null)
-        {
-            JsonSerializerContext context = GetJsonSerializerContext(options);
-            return Task.FromResult(JsonSerializer.Serialize(value, type, context));
-        }
+            => Task.FromResult(JsonSerializer.Serialize(value, type, GetOptions(options)));
 
         public override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions? options = null)
-        {
-            Type runtimeType = GetRuntimeType(value);
-
-            if (runtimeType != typeof(T))
-            {
-                return SerializeWrapper(value, runtimeType, options);
-            }
-
-            JsonSerializerContext context = GetJsonSerializerContext(options);
-            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)context.GetTypeInfo(typeof(T));
-            return Task.FromResult(JsonSerializer.Serialize(value, typeInfo));
-        }
+            => Task.FromResult(JsonSerializer.Serialize(value, GetOptions(options)));
 
         public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
-            => throw new NotImplementedException();
+            => Task.FromResult(JsonSerializer.Serialize(value, inputType, context));
 
         public override Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
-            => throw new NotImplementedException();
+            => Task.FromResult(JsonSerializer.Serialize(value, jsonTypeInfo));
+
+        public override Task<string> SerializeWrapper(object value, JsonTypeInfo jsonTypeInfo)
+            => Task.FromResult(JsonSerializer.Serialize(value, jsonTypeInfo));
 
         public override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions? options = null)
-        {
-            JsonSerializerContext context = GetJsonSerializerContext(options);
-            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)context.GetTypeInfo(typeof(T));
-            return Task.FromResult(JsonSerializer.Deserialize<T>(json, typeInfo));
-        }
+            => Task.FromResult(JsonSerializer.Deserialize<T>(json, GetOptions(options)));
 
         public override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions? options = null)
-        {
-            JsonSerializerContext context = GetJsonSerializerContext(options);
-            return Task.FromResult(JsonSerializer.Deserialize(json, type, context));
-        }
+            => Task.FromResult(JsonSerializer.Deserialize(json, type, GetOptions(options)));
 
         public override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
-            => throw new NotImplementedException();
+            => Task.FromResult(JsonSerializer.Deserialize(json, jsonTypeInfo));
+
+        public override Task<object> DeserializeWrapper(string json, JsonTypeInfo jsonTypeInfo)
+            => Task.FromResult(JsonSerializer.Deserialize(json, jsonTypeInfo));
 
         public override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
-            => throw new NotImplementedException();
+            => Task.FromResult(JsonSerializer.Deserialize(json, type, context));
 
-        private JsonSerializerContext GetJsonSerializerContext(JsonSerializerOptions? options)
-             => options is null ? _defaultContext : _customContextCreator(new JsonSerializerOptions(options));
-
-        private Type GetRuntimeType<TValue>(in TValue value)
+        private JsonSerializerOptions GetOptions(JsonSerializerOptions? options = null)
         {
-            if (typeof(TValue) == typeof(object) && value != null)
+            if (options is null)
             {
-                return value.GetType();
+                return _defaultContext.Options;
             }
 
-            return typeof(TValue);
+            if (options.TypeInfoResolver is null or DefaultJsonTypeInfoResolver { Modifiers.Count: 0 })
+            {
+                return new JsonSerializerOptions(options) { TypeInfoResolver = _defaultContext };
+            }
+
+            return options;
         }
     }
 
     internal sealed class AsyncStreamSerializerWrapper : StreamingJsonSerializerWrapper
     {
         private readonly JsonSerializerContext _defaultContext;
-        private readonly Func<JsonSerializerOptions, JsonSerializerContext> _customContextCreator;
 
+        public override JsonSerializerOptions DefaultOptions => _defaultContext.Options;
         public override bool IsAsyncSerializer => true;
 
-        public AsyncStreamSerializerWrapper(JsonSerializerContext defaultContext, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator)
+        public AsyncStreamSerializerWrapper(JsonSerializerContext defaultContext)
         {
             _defaultContext = defaultContext ?? throw new ArgumentNullException(nameof(defaultContext));
-            _customContextCreator = customContextCreator ?? throw new ArgumentNullException(nameof(customContextCreator));
         }
 
         public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null)
         {
-            JsonSerializerContext context = GetJsonSerializerContext(options);
-            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)context.GetTypeInfo(typeof(T));
-            return await JsonSerializer.DeserializeAsync<T>(utf8Json, typeInfo);
+            return await JsonSerializer.DeserializeAsync<T>(utf8Json, GetOptions(options));
         }
 
         public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null)
         {
-            JsonSerializerContext context = GetJsonSerializerContext(options);
+            return await JsonSerializer.DeserializeAsync(utf8Json, returnType, GetOptions(options));
+        }
+
+        public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo)
+        {
+            return await JsonSerializer.DeserializeAsync<T>(utf8Json, jsonTypeInfo);
+        }
+
+        public override async Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo)
+        {
+            return await JsonSerializer.DeserializeAsync(utf8Json, jsonTypeInfo);
+        }
+
+        public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context)
+        {
             return await JsonSerializer.DeserializeAsync(utf8Json, returnType, context);
         }
 
-        public override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo) => throw new NotImplementedException();
+        public override Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null)
+            => JsonSerializer.SerializeAsync<T>(stream, value, GetOptions(options));
 
-        public override async Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null)
+        public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions options = null)
+            => JsonSerializer.SerializeAsync(stream, value, inputType, GetOptions(options));
+
+        public override Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo)
+            => JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo);
+
+        public override Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo)
+            => JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo);
+
+        public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context)
+            => JsonSerializer.SerializeAsync(stream, value, inputType, context);
+
+        private JsonSerializerOptions GetOptions(JsonSerializerOptions? options = null)
         {
-            Type runtimeType = GetRuntimeType(value);
-            if (runtimeType != typeof(T))
+            if (options is null)
             {
-                await JsonSerializer.SerializeAsync(stream, value, runtimeType, options);
-                return;
+                return _defaultContext.Options;
             }
 
-            JsonSerializerContext context = GetJsonSerializerContext(options);
-            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)context.GetTypeInfo(typeof(T));
-            await JsonSerializer.SerializeAsync<T>(stream, value, typeInfo);
-        }
-
-        public override async Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions options = null)
-        {
-            JsonSerializerContext context = GetJsonSerializerContext(options);
-            await JsonSerializer.SerializeAsync(stream, value, inputType, context);
-        }
-
-        public override Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo) => throw new NotImplementedException();
-        public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context) => throw new NotImplementedException();
-        public override Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context) => throw new NotImplementedException();
-
-        private JsonSerializerContext GetJsonSerializerContext(JsonSerializerOptions? options)
-            => options is null ? _defaultContext : _customContextCreator(new JsonSerializerOptions(options));
-
-        private Type GetRuntimeType<TValue>(in TValue value)
-        {
-            if (typeof(TValue) == typeof(object) && value != null)
+            if (options.TypeInfoResolver is null or DefaultJsonTypeInfoResolver { Modifiers.Count: 0 })
             {
-                return value.GetType();
+                return new JsonSerializerOptions(options) { TypeInfoResolver = _defaultContext };
             }
 
-            return typeof(TValue);
+            return options;
         }
     }
 }

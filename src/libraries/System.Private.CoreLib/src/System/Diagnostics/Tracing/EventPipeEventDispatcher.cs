@@ -46,20 +46,23 @@ namespace System.Diagnostics.Tracing
 
         internal void SendCommand(EventListener eventListener, EventCommand command, bool enable, EventLevel level, EventKeywords matchAnyKeywords)
         {
-            if (command == EventCommand.Update && enable)
+            lock (EventListener.EventListenersLock)
             {
-                lock (m_dispatchControlLock)
+                if (command == EventCommand.Update && enable)
                 {
-                    // Add the new subscription.  This will overwrite an existing subscription for the listener if one exists.
-                    m_subscriptions[eventListener] = new EventListenerSubscription(matchAnyKeywords, level);
+                    lock (m_dispatchControlLock)
+                    {
+                        // Add the new subscription.  This will overwrite an existing subscription for the listener if one exists.
+                        m_subscriptions[eventListener] = new EventListenerSubscription(matchAnyKeywords, level);
 
-                    // Commit the configuration change.
-                    CommitDispatchConfiguration();
+                        // Commit the configuration change.
+                        CommitDispatchConfiguration();
+                    }
                 }
-            }
-            else if (command == EventCommand.Update && !enable)
-            {
-                RemoveEventListener(eventListener);
+                else if (command == EventCommand.Update && !enable)
+                {
+                    RemoveEventListener(eventListener);
+                }
             }
         }
 

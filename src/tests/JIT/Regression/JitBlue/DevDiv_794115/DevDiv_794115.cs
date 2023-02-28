@@ -4,9 +4,9 @@
 
 using System;
 
-class Repro
+public class Repro
 {
-    static int Main()
+    public static int Main()
     {
         // This testcase ensures that we correctly handle static field
         // reads of different size than the destination for mul

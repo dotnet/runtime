@@ -11,9 +11,6 @@ namespace System.Runtime.InteropServices
 
         private static IntPtr LoadLibraryHelper(string libraryName, int _ /*flags*/, ref LoadLibErrorTracker errorTracker)
         {
-            // do the Dos/Unix conversion
-            libraryName = libraryName.Replace('\\', '/');
-
             IntPtr ret = Interop.Sys.LoadLibrary(libraryName);
             if (ret == IntPtr.Zero)
             {
@@ -42,7 +39,7 @@ namespace System.Runtime.InteropServices
 
             public void Throw(string libraryName)
             {
-#if TARGET_OSX
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 throw new DllNotFoundException(SR.Format(SR.DllNotFound_Mac, libraryName, _errorMessage));
 #else
                 throw new DllNotFoundException(SR.Format(SR.DllNotFound_Linux, libraryName, _errorMessage));

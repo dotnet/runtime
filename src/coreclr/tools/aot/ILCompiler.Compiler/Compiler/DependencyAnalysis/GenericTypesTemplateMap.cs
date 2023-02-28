@@ -50,17 +50,10 @@ namespace ILCompiler.DependencyAnalysis
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
 
-            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithConstructedEETypes())
+            foreach (TypeDesc type in factory.MetadataManager.GetTypeTemplates())
             {
-                if (!IsEligibleToHaveATemplate(type))
-                    continue;
-
                 // Type's native layout info
                 NativeLayoutTemplateTypeLayoutVertexNode templateNode = factory.NativeLayout.TemplateTypeLayout(type);
-
-                // If this template isn't considered necessary, don't emit it.
-                if (!templateNode.Marked)
-                    continue;
                 Vertex nativeLayout = templateNode.SavedVertex;
 
                 // Hashtable Entry

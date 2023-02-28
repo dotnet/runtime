@@ -10,23 +10,34 @@ namespace System.Runtime.InteropServices
 {
     public static partial class NativeLibrary
     {
+        // Not a public API. We expose this so that it's possible to bypass the codepath that tries to read search path
+        // from custom attributes.
+        internal static bool TryLoad(string libraryName, Assembly assembly, DllImportSearchPath searchPath, out IntPtr handle)
+        {
+            handle = LoadLibraryByName(libraryName,
+                                assembly,
+                                searchPath,
+                                throwOnError: false);
+            return handle != IntPtr.Zero;
+        }
+
         internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
         {
             // First checks if a default dllImportSearchPathFlags was passed in, if so, use that value.
             // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
             // If so, use that value.
 
-            int searchPathFlags;
-            bool searchAssemblyDirectory;
-            if (searchPath.HasValue)
+            if (!searchPath.HasValue)
             {
-                searchPathFlags = (int)(searchPath.Value & ~DllImportSearchPath.AssemblyDirectory);
-                searchAssemblyDirectory = (searchPath.Value & DllImportSearchPath.AssemblyDirectory) != 0;
+                searchPath = GetDllImportSearchPath(assembly);
             }
-            else
-            {
-                GetDllImportSearchPathFlags(assembly, out searchPathFlags, out searchAssemblyDirectory);
-            }
+            return LoadLibraryByName(libraryName, assembly, searchPath.Value, throwOnError);
+        }
+
+        internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath searchPath, bool throwOnError)
+        {
+            int searchPathFlags = (int)(searchPath & ~DllImportSearchPath.AssemblyDirectory);
+            bool searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
 
             LoadLibErrorTracker errorTracker = default;
             IntPtr ret = LoadBySearch(assembly, searchAssemblyDirectory, searchPathFlags, ref errorTracker, libraryName);
@@ -38,20 +49,17 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 
-        internal static void GetDllImportSearchPathFlags(Assembly callingAssembly, out int searchPathFlags, out bool searchAssemblyDirectory)
+        internal static DllImportSearchPath GetDllImportSearchPath(Assembly callingAssembly)
         {
-            var searchPath = DllImportSearchPath.AssemblyDirectory;
-
             foreach (CustomAttributeData cad in callingAssembly.CustomAttributes)
             {
                 if (cad.AttributeType == typeof(DefaultDllImportSearchPathsAttribute))
                 {
-                    searchPath = (DllImportSearchPath)cad.ConstructorArguments[0].Value!;
+                    return (DllImportSearchPath)cad.ConstructorArguments[0].Value!;
                 }
             }
 
-            searchPathFlags = (int)(searchPath & ~DllImportSearchPath.AssemblyDirectory);
-            searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
+            return DllImportSearchPath.AssemblyDirectory;
         }
 
         internal static IntPtr LoadBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)

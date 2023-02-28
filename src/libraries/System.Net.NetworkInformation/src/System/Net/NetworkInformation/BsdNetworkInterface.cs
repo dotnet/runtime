@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable 8500 // taking address of managed types
+
 namespace System.Net.NetworkInformation
 {
     internal sealed class BsdNetworkInterface : UnixNetworkInterface
@@ -72,42 +74,42 @@ namespace System.Net.NetworkInformation
         [UnmanagedCallersOnly]
         private static unsafe void ProcessIpv4Address(void* pContext, byte* ifaceName, Interop.Sys.IpAddressInfo* ipAddr)
         {
-            ref Context context = ref Unsafe.As<byte, Context>(ref *(byte*)pContext);
+            Context* context = (Context*)pContext;
             try
             {
-                context.GetOrCreate(ifaceName, ipAddr->InterfaceIndex).ProcessIpv4Address(ipAddr);
+                context->GetOrCreate(ifaceName, ipAddr->InterfaceIndex).ProcessIpv4Address(ipAddr);
             }
             catch (Exception e)
             {
-                context.AddException(e);
+                context->AddException(e);
             }
         }
 
         [UnmanagedCallersOnly]
         private static unsafe void ProcessIpv6Address(void* pContext, byte* ifaceName, Interop.Sys.IpAddressInfo* ipAddr, uint* scopeId)
         {
-            ref Context context = ref Unsafe.As<byte, Context>(ref *(byte*)pContext);
+            Context* context = (Context*)pContext;
             try
             {
-                context.GetOrCreate(ifaceName, ipAddr->InterfaceIndex).ProcessIpv6Address(ipAddr, *scopeId);
+                context->GetOrCreate(ifaceName, ipAddr->InterfaceIndex).ProcessIpv6Address(ipAddr, *scopeId);
             }
             catch (Exception e)
             {
-                context.AddException(e);
+                context->AddException(e);
             }
         }
 
         [UnmanagedCallersOnly]
         private static unsafe void ProcessLinkLayerAddress(void* pContext, byte* ifaceName, Interop.Sys.LinkLayerAddressInfo* llAddr)
         {
-            ref Context context = ref Unsafe.As<byte, Context>(ref *(byte*)pContext);
+            Context* context = (Context*)pContext;
             try
             {
-                context.GetOrCreate(ifaceName, llAddr->InterfaceIndex).ProcessLinkLayerAddress(llAddr);
+                context->GetOrCreate(ifaceName, llAddr->InterfaceIndex).ProcessLinkLayerAddress(llAddr);
             }
             catch (Exception e)
             {
-                context.AddException(e);
+                context->AddException(e);
             }
         }
 
@@ -123,7 +125,7 @@ namespace System.Net.NetworkInformation
                 // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
                 // to propagate out, because they will not be catchable. Instead, we track all the exceptions
                 // that are thrown in these callbacks, and aggregate them at the end.
-                int result = Interop.Sys.EnumerateInterfaceAddresses(Unsafe.AsPointer(ref context), &ProcessIpv4Address, &ProcessIpv6Address, &ProcessLinkLayerAddress);
+                int result = Interop.Sys.EnumerateInterfaceAddresses(&context, &ProcessIpv4Address, &ProcessIpv6Address, &ProcessLinkLayerAddress);
                 if (context._exceptions != null)
                 {
                     throw new NetworkInformationException(SR.net_PInvokeError, new AggregateException(context._exceptions));

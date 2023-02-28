@@ -44,17 +44,20 @@ public:
     deps_resolver_t(
         const arguments_t& args,
         const fx_definition_vector_t& fx_definitions,
+        const pal::char_t* additional_deps_serialized,
+        const std::vector<pal::string_t>& shared_stores,
+        const std::vector<pal::string_t>& additional_probe_paths,
         const deps_json_t::rid_fallback_graph_t* root_framework_rid_fallback_graph,
         bool is_framework_dependent)
         : m_fx_definitions(fx_definitions)
         , m_app_dir(args.app_root)
         , m_host_mode(args.host_mode)
         , m_managed_app(args.managed_application)
-        , m_core_servicing(args.core_servicing)
         , m_is_framework_dependent(is_framework_dependent)
         , m_needs_file_existence_checks(false)
     {
         m_fx_deps.resize(m_fx_definitions.size());
+        pal::get_default_servicing_directory(&m_core_servicing);
 
         // Process from lowest (root) to highest (app) framework.
         // If we weren't explicitly given a rid fallback graph, that of
@@ -82,9 +85,9 @@ public:
             }
         }
 
-        resolve_additional_deps(args.additional_deps_serialized, root_framework_rid_fallback_graph);
+        resolve_additional_deps(additional_deps_serialized, root_framework_rid_fallback_graph);
 
-        setup_probe_config(args);
+        setup_probe_config(shared_stores, additional_probe_paths);
     }
 
     bool valid(pal::string_t* errors)
@@ -172,17 +175,18 @@ public:
 
 private:
     void setup_shared_store_probes(
-        const arguments_t& args);
+        const std::vector<pal::string_t>& shared_stores);
 
     void setup_probe_config(
-        const arguments_t& args);
+        const std::vector<pal::string_t>& shared_stores,
+        const std::vector<pal::string_t>& additional_probe_paths);
 
     void init_known_entry_path(
         const deps_entry_t& entry,
         const pal::string_t& path);
 
     void resolve_additional_deps(
-        const pal::string_t& additional_deps_serialized,
+        const pal::char_t* additional_deps_serialized,
         const deps_json_t::rid_fallback_graph_t* rid_fallback_graph);
 
     const deps_json_t& get_app_deps() const

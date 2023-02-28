@@ -643,7 +643,7 @@ namespace System.Formats.Tar
         }
 
         // Dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
-        private static Stream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
+        private static MemoryStream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
         {
             MemoryStream? dataStream = null;
 

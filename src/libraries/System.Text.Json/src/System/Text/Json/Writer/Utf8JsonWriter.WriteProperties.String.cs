@@ -36,6 +36,7 @@ namespace System.Text.Json
 
                 _currentDepth &= JsonConstants.RemoveFlagsBitMask;
                 _tokenType = JsonTokenType.PropertyName;
+                _commentAfterNoneOrPropertyName = false;
             }
         }
 
@@ -47,6 +48,7 @@ namespace System.Text.Json
 
             _currentDepth &= JsonConstants.RemoveFlagsBitMask;
             _tokenType = JsonTokenType.PropertyName;
+            _commentAfterNoneOrPropertyName = false;
         }
 
         /// <summary>
@@ -105,6 +107,7 @@ namespace System.Text.Json
             }
             _currentDepth &= JsonConstants.RemoveFlagsBitMask;
             _tokenType = JsonTokenType.PropertyName;
+            _commentAfterNoneOrPropertyName = false;
         }
 
         private void WriteStringEscapeProperty(scoped ReadOnlySpan<char> propertyName, int firstEscapeIndexProp)
@@ -253,6 +256,7 @@ namespace System.Text.Json
             }
             _currentDepth &= JsonConstants.RemoveFlagsBitMask;
             _tokenType = JsonTokenType.PropertyName;
+            _commentAfterNoneOrPropertyName = false;
         }
 
         private void WritePropertyNameUnescaped(ReadOnlySpan<byte> utf8PropertyName)
@@ -262,6 +266,7 @@ namespace System.Text.Json
 
             _currentDepth &= JsonConstants.RemoveFlagsBitMask;
             _tokenType = JsonTokenType.PropertyName;
+            _commentAfterNoneOrPropertyName = false;
         }
 
         private void WriteStringEscapeProperty(scoped ReadOnlySpan<byte> utf8PropertyName, int firstEscapeIndexProp)

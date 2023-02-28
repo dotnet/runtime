@@ -3,7 +3,5 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.GetObjectValue(System.Object)-&gt;object?:[T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute]</Target>
-    <Left>ref/net7.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net7.0/System.Private.CoreLib.dll</Right>
   </Suppression>
 </Suppressions>

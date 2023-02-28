@@ -8,7 +8,13 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 	{
 
 		[Fact]
-		public Task BaseProvidesInterfaceMethod ()
+		public Task OverrideInCopyAssembly ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task VarianceBasic ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

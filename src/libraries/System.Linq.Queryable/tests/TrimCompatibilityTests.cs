@@ -46,42 +46,6 @@ namespace System.Linq.Tests
         }
 
         /// <summary>
-        /// Verifies that all methods in CachedReflectionInfo that call MakeGenericMethod
-        /// call it on a method that doesn't contain any trimming annotations (i.e. DynamicallyAccessedMembers).
-        /// </summary>
-        /// <remarks>
-        /// This ensures it is safe to suppress IL2060:MakeGenericMethod warnings in the CachedReflectionInfo class.
-        /// </remarks>
-        [Fact]
-        public static void CachedReflectionInfoMethodsNoAnnotations()
-        {
-            IEnumerable<MethodInfo> methods =
-                typeof(Queryable).Assembly
-                    .GetType("System.Linq.CachedReflectionInfo")
-                    .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
-                    .Where(m => m.GetParameters().Length > 0);
-
-            // If you are adding a new method to this class, ensure the method meets these requirements
-            Assert.Equal(135, methods.Count());
-            foreach (MethodInfo method in methods)
-            {
-                ParameterInfo[] parameters = method.GetParameters();
-
-                Type[] args = new Type[parameters.Length];
-                for (int i = 0; i < args.Length; i++)
-                {
-                    args[i] = typeof(object);
-                }
-
-                MethodInfo resultMethodInfo = (MethodInfo)method.Invoke(null, args);
-                Assert.True(resultMethodInfo.IsConstructedGenericMethod);
-                MethodInfo originalGenericDefinition = resultMethodInfo.GetGenericMethodDefinition();
-
-                EnsureNoTrimAnnotations(originalGenericDefinition);
-            }
-        }
-
-        /// <summary>
         /// Verifies that all methods in Enumerable don't contain any trimming annotations (i.e. DynamicallyAccessedMembers).
         /// </summary>
         /// <remarks>

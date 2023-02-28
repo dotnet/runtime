@@ -8,7 +8,7 @@ namespace System.Text.RegularExpressions.Generator
 {
     internal static class DiagnosticDescriptors
     {
-        private const string Category = "GeneratedRegex";
+        private const string Category = "Performance";
 
         public static DiagnosticDescriptor InvalidGeneratedRegexAttribute { get; } = new DiagnosticDescriptor(
             id: "SYSLIB1040",

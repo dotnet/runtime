@@ -90,16 +90,9 @@ struct probe_config_t
 struct arguments_t
 {
     host_mode_t host_mode;
-    pal::string_t host_path;
     pal::string_t app_root;
     pal::string_t deps_path;
-    pal::string_t core_servicing;
-    std::vector<pal::string_t> probe_paths;
     pal::string_t managed_application;
-    std::vector<pal::string_t> global_shared_stores;
-    pal::string_t dotnet_shared_store;
-    std::vector<pal::string_t> env_shared_store;
-    pal::string_t additional_deps_serialized;
 
     int app_argc;
     const pal::char_t** app_argv;
@@ -110,21 +103,8 @@ struct arguments_t
     {
         if (trace::is_enabled())
         {
-            trace::verbose(_X("-- arguments_t: host_path='%s' app_root='%s' deps='%s' core_svc='%s' mgd_app='%s'"),
-                host_path.c_str(), app_root.c_str(), deps_path.c_str(), core_servicing.c_str(), managed_application.c_str());
-            for (const auto& probe : probe_paths)
-            {
-                trace::verbose(_X("-- arguments_t: probe dir: '%s'"), probe.c_str());
-            }
-            for (const auto& shared : env_shared_store)
-            {
-                trace::verbose(_X("-- arguments_t: env shared store: '%s'"), shared.c_str());
-            }
-            trace::verbose(_X("-- arguments_t: dotnet shared store: '%s'"), dotnet_shared_store.c_str());
-            for (const auto& global_shared : global_shared_stores)
-            {
-                trace::verbose(_X("-- arguments_t: global shared store: '%s'"), global_shared.c_str());
-            }
+            trace::verbose(_X("-- arguments_t: app_root='%s' deps='%s' mgd_app='%s'"),
+                app_root.c_str(), deps_path.c_str(), managed_application.c_str());
         }
     }
 };
@@ -135,12 +115,8 @@ bool parse_arguments(
     arguments_t& arg);
 bool init_arguments(
     const pal::string_t& managed_application_path,
-    const host_startup_info_t& host_info,
-    const pal::string_t& tfm,
     host_mode_t host_mode,
-    const pal::string_t& additional_deps_serialized,
     const pal::string_t& deps_file,
-    const std::vector<pal::string_t>& probe_paths,
     bool init_from_file_system,
     arguments_t& args);
 

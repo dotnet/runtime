@@ -63,6 +63,7 @@ add_dependencies(coreclrtraceptprovider generated_eventing_headers)
 find_library(LTTNG NAMES lttng-ust)
 
 target_link_libraries(coreclrtraceptprovider
+                      PRIVATE
                       ${LTTNG}
 )
 

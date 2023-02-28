@@ -651,8 +651,7 @@ namespace System
 
             if (frequency < MinBeepFrequency || frequency > MaxBeepFrequency)
                 throw new ArgumentOutOfRangeException(nameof(frequency), frequency, SR.Format(SR.ArgumentOutOfRange_BeepFrequency, MinBeepFrequency, MaxBeepFrequency));
-            if (duration <= 0)
-                throw new ArgumentOutOfRangeException(nameof(duration), duration, SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(duration);
 
             Interop.Kernel32.Beep(frequency, duration);
         }

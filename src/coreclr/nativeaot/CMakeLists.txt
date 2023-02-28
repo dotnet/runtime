@@ -23,18 +23,13 @@ if(MSVC)
 endif (MSVC)
 
 if(CLR_CMAKE_HOST_UNIX)
-  # Up for grabs to clean these warnings up
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-Wno-error)
-  endif()
-
-  add_compile_options(-fno-rtti)          # Native AOT runtime doesn't use RTTI
   add_compile_options(-fno-exceptions)    # Native AOT runtime doesn't use C++ exception handling
   add_compile_options(-nostdlib)
 
-  if(CLR_CMAKE_TARGET_OSX)
+  if(CLR_CMAKE_TARGET_APPLE)
     add_definitions(-D_XOPEN_SOURCE)
-  endif(CLR_CMAKE_TARGET_OSX)
+    add_definitions(-DFEATURE_OBJCMARSHAL)
+  endif(CLR_CMAKE_TARGET_APPLE)
 
   if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
     # Allow 16 byte compare-exchange

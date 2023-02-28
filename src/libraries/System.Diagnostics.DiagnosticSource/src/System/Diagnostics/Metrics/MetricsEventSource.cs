@@ -191,6 +191,14 @@ namespace System.Diagnostics.Metrics
             WriteEvent(15, runningSessionId);
         }
 
+        [Event(16, Keywords = Keywords.TimeSeriesValues)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
+        public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate)
+        {
+            WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate);
+        }
+
         /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
@@ -386,24 +394,19 @@ namespace System.Diagnostics.Metrics
                 {
                     return;
                 }
+
                 string[] specStrings = metricsSpecs.Split(s_instrumentSeparators, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string specString in specStrings)
                 {
-                    if (!MetricSpec.TryParse(specString, out MetricSpec spec))
+                    MetricSpec spec = MetricSpec.Parse(specString);
+                    Parent.Message($"Parsed metric: {spec}");
+                    if (spec.InstrumentName != null)
                     {
-                        Parent.Message($"Failed to parse metric spec: {specString}");
+                        _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
                     }
                     else
                     {
-                        Parent.Message($"Parsed metric: {spec}");
-                        if (spec.InstrumentName != null)
-                        {
-                            _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
-                        }
-                        else
-                        {
-                            _aggregationManager!.Include(spec.MeterName);
-                        }
+                        _aggregationManager!.Include(spec.MeterName);
                     }
                 }
             }
@@ -412,8 +415,16 @@ namespace System.Diagnostics.Metrics
             {
                 if (stats.AggregationStatistics is RateStatistics rateStats)
                 {
-                    Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
-                        rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                    if (rateStats.IsMonotonic)
+                    {
+                        Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                    }
+                    else
+                    {
+                        Log.UpDownCounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                    }
                 }
                 else if (stats.AggregationStatistics is LastValueStatistics lastValueStats)
                 {
@@ -431,7 +442,7 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < labels.Length; i++)
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", labels[i].Key, labels[i].Value);
+                    sb.Append(labels[i].Key).Append('=').Append(labels[i].Value);
                     if (i != labels.Length - 1)
                     {
                         sb.Append(',');
@@ -445,7 +456,7 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < quantiles.Length; i++)
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", quantiles[i].Quantile, quantiles[i].Value);
+                    sb.Append(quantiles[i].Quantile).Append('=').Append(quantiles[i].Value);
                     if (i != quantiles.Length - 1)
                     {
                         sb.Append(';');
@@ -467,20 +478,18 @@ namespace System.Diagnostics.Metrics
                 InstrumentName = instrumentName;
             }
 
-            public static bool TryParse(string text, out MetricSpec spec)
+            public static MetricSpec Parse(string text)
             {
                 int slashIdx = text.IndexOf(MeterInstrumentSeparator);
-                if (slashIdx == -1)
+                if (slashIdx < 0)
                 {
-                    spec = new MetricSpec(text.Trim(), null);
-                    return true;
+                    return new MetricSpec(text.Trim(), null);
                 }
                 else
                 {
-                    string meterName = text.Substring(0, slashIdx).Trim();
-                    string? instrumentName = text.Substring(slashIdx + 1).Trim();
-                    spec = new MetricSpec(meterName, instrumentName);
-                    return true;
+                    string meterName = text.AsSpan(0, slashIdx).Trim().ToString();
+                    string? instrumentName = text.AsSpan(slashIdx + 1).Trim().ToString();
+                    return new MetricSpec(meterName, instrumentName);
                 }
             }
 

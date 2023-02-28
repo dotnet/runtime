@@ -13,6 +13,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	class RequiresOnClass
@@ -38,6 +39,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			ReflectionAccessOnProperties.Test ();
 			KeepFieldOnAttribute ();
 			AttributeParametersAndProperties.Test ();
+			MembersOnClassWithRequires<int>.Test ();
 		}
 
 		[RequiresUnreferencedCode ("Message for --ClassWithRequires--")]
@@ -61,7 +63,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				// This warning doesn't get suppressed since the declaring type NestedClass is not annotated with Requires
 				[ExpectedWarning ("IL2026", "RequiresOnClass.RequiresOnMethod.MethodWithRequires()", "MethodWithRequires")]
-				[ExpectedWarning ("IL3050", "RequiresOnClass.RequiresOnMethod.MethodWithRequires()", "MethodWithRequires", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3050", "RequiresOnClass.RequiresOnMethod.MethodWithRequires()", "MethodWithRequires", ProducedBy = Tool.Analyzer)]
 				public static void CallMethodWithRequires () => RequiresOnMethod.MethodWithRequires ();
 			}
 
@@ -152,7 +154,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--", ProducedBy = Tool.Analyzer)]
 		static void TestStaticCctorRequires ()
 		{
 			_ = new StaticCtor ();
@@ -171,14 +173,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--")]
-		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = Tool.Analyzer)]
 		static void TestStaticCtorMarkingIsTriggeredByFieldAccessWrite ()
 		{
 			StaticCtorTriggeredByFieldAccess.field = 1;
 		}
 
 		[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--")]
-		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = Tool.Analyzer)]
 		static void TestStaticCtorMarkingTriggeredOnSecondAccessWrite ()
 		{
 			StaticCtorTriggeredByFieldAccess.field = 2;
@@ -206,7 +208,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--")]
-		[ExpectedWarning ("IL3050", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--", ProducedBy = Tool.Analyzer)]
 		static void TestStaticCtorMarkingIsTriggeredByFieldAccessRead ()
 		{
 			var _ = StaticCCtorTriggeredByFieldAccessRead.field;
@@ -226,7 +228,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()")]
-		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()", ProducedBy = Tool.Analyzer)]
 		static void TestStaticCtorTriggeredByCtorCall ()
 		{
 			new StaticCtorTriggeredByCtorCalls ();
@@ -240,7 +242,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "ClassWithInstanceField.ClassWithInstanceField()")]
-		[ExpectedWarning ("IL3050", "ClassWithInstanceField.ClassWithInstanceField()", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "ClassWithInstanceField.ClassWithInstanceField()", ProducedBy = Tool.Analyzer)]
 		static void TestInstanceFieldCallDontWarn ()
 		{
 			ClassWithInstanceField instance = new ClassWithInstanceField ();
@@ -257,7 +259,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "Calling the constructor is dangerous")]
-		[ExpectedWarning ("IL3050", "Calling the constructor is dangerous", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "Calling the constructor is dangerous", ProducedBy = Tool.Analyzer)]
 		static void TestInstanceFieldSuppression ()
 		{
 			_ = new ClassWithInstanceFieldWhichInitsDangerousClass ();
@@ -330,8 +332,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public virtual void Method () { }
 		}
 
-		[RequiresUnreferencedCode ("RUC")]
-		[RequiresDynamicCode ("RDC")]
+		[ExpectedWarning ("IL2109", nameof (BaseWithRequiresOnType))]
 		class DerivedWithoutRequiresOnType : BaseWithRequiresOnType
 		{
 			public override void Method () { }
@@ -382,14 +383,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", ProducedBy = Tool.Analyzer)]
 		static void TestRequiresInClassAccessedByStaticMethod ()
 		{
 			ClassWithRequires.StaticMethod ();
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--", ProducedBy = Tool.Analyzer)]
 		static void TestRequiresInClassAccessedByCctor ()
 		{
 			var classObject = new ClassWithRequires ();
@@ -401,12 +402,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", ProducedBy = Tool.Analyzer)]
 		// Although we suppress the warning from RequiresOnMethod.MethodWithRequires () we still get a warning because we call CallRequiresMethod() which is an static method on a type with RUC
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--", ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2026", "ClassWithRequires.Instance", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "ClassWithRequires.Instance", "--ClassWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "ClassWithRequires.Instance", "--ClassWithRequires--", ProducedBy = Tool.Analyzer)]
 		static void TestRequiresOnBaseButNotOnDerived ()
 		{
 			DerivedWithoutRequires.StaticMethodInInheritedClass ();
@@ -421,7 +422,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--", ProducedBy = Tool.Analyzer)]
 		static void TestRequiresOnDerivedButNotOnBase ()
 		{
 			DerivedWithRequires.StaticMethodInInheritedClass ();
@@ -431,9 +432,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--", ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--", ProducedBy = Tool.Analyzer)]
 		static void TestRequiresOnBaseAndDerived ()
 		{
 			DerivedWithRequires2.StaticMethodInInheritedClass ();
@@ -442,9 +443,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			DerivedWithRequires2.NestedClass.NestedStaticMethod ();
 		}
 
-		// TODO: Parameter signature differs between linker and analyzer
+		// TODO: Parameter signature differs between trimming tools and analyzer
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])")]
-		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])", ProducedBy = Tool.Analyzer)]
 		static void TestSuppressionsOnClass ()
 		{
 			ClassWithRequires.TestSuppressions (new[] { typeof (ClassWithRequires) });
@@ -485,19 +486,19 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public static int Property { get; set; }
 
 			// These should not be reported https://github.com/mono/linker/issues/2218
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			public static event EventHandler Event;
 		}
 
 		[ExpectedWarning ("IL2026", "MemberTypesWithRequires.field")]
-		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.field", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.field", ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Property.set")]
-		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.Property.set", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.Property.set", ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove")]
-		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.Event.remove", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Analyzer)]
 		static void TestOtherMemberTypesWithRequires ()
 		{
 			MemberTypesWithRequires.field = 1;
@@ -515,11 +516,23 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class ReflectionAccessOnMethod
 		{
+			[ExpectedWarning ("IL2026", "BaseWithRequiresOnType.Method()")]
+			[ExpectedWarning ("IL2026", "BaseWithRequiresOnType.Method()")]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
+			// ILLink skips warnings for base method overrides, assuming it is covered by RUC on the base method.
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnType.Method()", ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)")]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()")]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()")]
+			// ILLink skips warnings for interface overrides, assuming it is covered by RUC on the interface method.
+			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = Tool.Analyzer)]
+			// ILLink incorrectly skips warnings for derived method, under the assumption that
+			// it will be covered by the base method. But in this case the base method
+			// is unannotated (and the mismatch produces no warning because the derived
+			// type has RUC).
+			// https://github.com/dotnet/linker/issues/2533
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()", ProducedBy = Tool.Analyzer)]
 			static void TestDAMAccess ()
 			{
 				// Warns because BaseWithoutRequiresOnType.Method has Requires on the method
@@ -534,20 +547,22 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				// Warns because ImplementationWithRequiresOnType.Method is a static public method on a RUC type
 				typeof (ImplementationWithRequiresOnType).RequiresPublicMethods ();
 
-				// Doesn't warn since BaseWithRequiresOnType has no static methods
+				// Warns for instance method on BaseWithRequiresOnType
 				typeof (BaseWithRequiresOnType).RequiresPublicMethods ();
 
-				// Doesn't warn since DerivedWithoutRequiresOnType has no static methods
+				// Warns for instance method on base type
 				typeof (DerivedWithoutRequiresOnType).RequiresPublicMethods ();
 
 				// Doesn't warn since the type has no statics
 				typeof (DerivedWithRequiresOnTypeOverBaseWithNoRequires).RequiresPublicMethods ();
 			}
 
+			[ExpectedWarning ("IL2026", "BaseWithRequiresOnType.Method()")]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)")]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()")]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()")]
+			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)")]
 			static void TestDirectReflectionAccess ()
 			{
 				// Requires on the method itself
@@ -556,10 +571,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				// Requires on the method itself
 				typeof (InterfaceWithoutRequires).GetMethod (nameof (InterfaceWithoutRequires.Method));
 
-				// Warns because ImplementationWithRequiresOnType.Method is a static public method on a RUC type
+				// Warns for static and instance methods on ImplementationWithRequiresOnType
 				typeof (ImplementationWithRequiresOnType).GetMethod (nameof (ImplementationWithRequiresOnType.Method));
 
-				// Doesn't warn since Method is not static (so it doesn't matter that the type has RUC)
+				// Warns for instance Method on RUC type
 				typeof (BaseWithRequiresOnType).GetMethod (nameof (BaseWithRequiresOnType.Method));
 			}
 
@@ -582,7 +597,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor.DerivedWithoutRequires", "ReflectionAccessOnCtor.BaseWithRequires")]
 			class DerivedWithoutRequires : BaseWithRequires
 			{
-				[ExpectedWarning ("IL2026", "--BaseWithRequires--", ProducedBy = ProducedBy.Trimmer)] // The body has direct call to the base.ctor()
+				[ExpectedWarning ("IL2026", "--BaseWithRequires--", ProducedBy = Tool.Trimmer)] // The body has direct call to the base.ctor()
 				public DerivedWithoutRequires () { }
 			}
 
@@ -699,13 +714,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (DerivedWithRequires).GetField (nameof (DerivedWithRequires.DerivedStaticField));
 			}
 
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = Tool.Trimmer)]
 			[DynamicDependency (nameof (WithRequires.StaticField), typeof (WithRequires))]
 			[DynamicDependency (nameof (WithRequires.InstanceField), typeof (WithRequires))] // Doesn't warn
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithoutRequires))] // Doesn't warn
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = Tool.Trimmer)]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithRequires))]
 			static void TestDynamicDependencyAccess ()
 			{
@@ -721,13 +736,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 			[RequiresUnreferencedCode ("This class is dangerous")]
 			[RequiresDynamicCode ("This class is dangerous")]
-			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseField", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseField", ProducedBy = Tool.Trimmer)]
 			class DAMAnnotatedClass : BaseForDAMAnnotatedClass
 			{
-				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicField", ProducedBy = Tool.Trimmer)]
 				public static int publicField;
 
-				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privatefield", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privatefield", ProducedBy = Tool.Trimmer)]
 				static int privatefield;
 			}
 
@@ -739,7 +754,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			class DAMAnnotatedClassAccessedFromRUCScope
 			{
-				[ExpectedWarning ("IL2112", "DAMAnnotatedClassAccessedFromRUCScope.RUCMethod", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClassAccessedFromRUCScope.RUCMethod", ProducedBy = Tool.Trimmer)]
 				[RequiresUnreferencedCode ("--RUCMethod--")]
 				public static void RUCMethod () { }
 			}
@@ -774,18 +789,18 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				// These should be reported only in TestDirectReflectionAccess
 				// https://github.com/mono/linker/issues/2218
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				public static event EventHandler StaticEvent;
 			}
 
 			[ExpectedWarning ("IL2026", "StaticEvent.add")]
 			// https://github.com/mono/linker/issues/2218
-			[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Analyzer)]
 			static void TestDirectReflectionAccess ()
 			{
 				typeof (WithRequires).GetEvent (nameof (WithRequires.StaticEvent));
@@ -812,7 +827,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresDynamicCode ("--WithRequiresOnlyInstanceProperties--")]
 			class WithRequiresOnlyInstanceProperties
 			{
-				public int InstnaceProperty { get; set; }
+				public int InstanceProperty { get; set; }
 			}
 
 			[ExpectedWarning ("IL2109", "ReflectionAccessOnProperties.DerivedWithoutRequires", "ReflectionAccessOnProperties.WithRequires")]
@@ -828,6 +843,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int DerivedStaticProperty { get; set; }
 			}
 
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
@@ -836,6 +857,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.get")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.set")]
+			[ExpectedWarning ("IL2026", "WithRequiresOnlyInstanceProperties.InstanceProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequiresOnlyInstanceProperties.InstanceProperty.set")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set")]
 			static void TestDAMAccess ()
@@ -847,33 +870,43 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (DerivedWithRequires).RequiresPublicProperties ();
 			}
 
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get")]
 			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.get")]
 			[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.set")]
+			[ExpectedWarning ("IL2026", "WithRequiresOnlyInstanceProperties.InstanceProperty.get")]
+			[ExpectedWarning ("IL2026", "WithRequiresOnlyInstanceProperties.InstanceProperty.set")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get")]
 			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set")]
 			static void TestDirectReflectionAccess ()
 			{
 				typeof (WithRequires).GetProperty (nameof (WithRequires.StaticProperty));
-				typeof (WithRequires).GetProperty (nameof (WithRequires.InstanceProperty)); // Doesn't warn
+				typeof (WithRequires).GetProperty (nameof (WithRequires.InstanceProperty));
 				typeof (WithRequires).GetProperty ("PrivateStaticProperty", BindingFlags.NonPublic);
-				typeof (WithRequiresOnlyInstanceProperties).GetProperty (nameof (WithRequiresOnlyInstanceProperties.InstnaceProperty)); // Doesn't warn
+				typeof (WithRequiresOnlyInstanceProperties).GetProperty (nameof (WithRequiresOnlyInstanceProperties.InstanceProperty));
 				typeof (DerivedWithoutRequires).GetProperty (nameof (DerivedWithRequires.DerivedStaticProperty)); // Doesn't warn
 				typeof (DerivedWithRequires).GetProperty (nameof (DerivedWithRequires.DerivedStaticProperty));
 			}
 
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.get", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.InstanceProperty.set", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = Tool.Trimmer)]
 			[DynamicDependency (nameof (WithRequires.StaticProperty), typeof (WithRequires))]
 			[DynamicDependency (nameof (WithRequires.InstanceProperty), typeof (WithRequires))] // Doesn't warn
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithoutRequires))] // Doesn't warn
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = Tool.Trimmer)]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithRequires))]
 			static void TestDynamicDependencyAccess ()
 			{
@@ -889,21 +922,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			[RequiresUnreferencedCode ("This class is dangerous")]
 			[RequiresDynamicCode ("This class is dangerous")]
-			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.get", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.set", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.get", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.set", ProducedBy = Tool.Trimmer)]
 			class DAMAnnotatedClass : BaseForDAMAnnotatedClass
 			{
 				public static int publicProperty {
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.get", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.get", ProducedBy = Tool.Trimmer)]
 					get;
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.set", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.set", ProducedBy = Tool.Trimmer)]
 					set;
 				}
 
 				static int privateProperty {
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.get", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.get", ProducedBy = Tool.Trimmer)]
 					get;
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.set", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.set", ProducedBy = Tool.Trimmer)]
 					set;
 				}
 			}
@@ -939,7 +972,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[AttributeWithRequires (PropertyOnAttribute = 42)]
 		[ExpectedWarning ("IL2026", "AttributeWithRequires.AttributeWithRequires()")]
-		[ExpectedWarning ("IL3050", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL3050", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = Tool.Analyzer)]
 		static void KeepFieldOnAttribute () { }
 
 		public class AttributeParametersAndProperties
@@ -981,10 +1014,120 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026")]
-			[ExpectedWarning ("IL3050", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer)]
 			public static void Test ()
 			{
 				TestClass.Test ();
+			}
+		}
+
+		class RequiresOnCtorAttribute : Attribute
+		{
+			[RequiresUnreferencedCode ("--RequiresOnCtorAttribute--")]
+			public RequiresOnCtorAttribute ()
+			{
+			}
+		}
+
+		class MembersOnClassWithRequires<T>
+		{
+			public class RequiresAll<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] U>
+			{
+			}
+
+			[RequiresUnreferencedCode ("--ClassWithRequires--")]
+			public class ClassWithRequires
+			{
+				public static RequiresAll<T> field;
+
+				// https://github.com/dotnet/linker/issues/3142
+				// Instance fields get generic warnings but static fields don't.
+				[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
+				public RequiresAll<T> instanceField;
+
+				[RequiresOnCtor]
+				public static int fieldWithAttribute;
+
+				// https://github.com/dotnet/linker/issues/3140
+				// Instance fields get attribute warnings but static fields don't.
+				[ExpectedWarning ("IL2026", "--RequiresOnCtorAttribute--", ProducedBy = Tool.Trimmer)]
+				[RequiresOnCtor]
+				public int instanceFieldWithAttribute;
+
+				public static void GenericMethod<U> (RequiresAll<U> r) { }
+
+				public void GenericInstanceMethod<U> (RequiresAll<U> r) { }
+
+				[RequiresOnCtor]
+				public static void MethodWithAttribute () { }
+
+				[RequiresOnCtor]
+				public void InstanceMethodWithAttribute () { }
+
+				// NOTE: The enclosing RUC does not apply to nested types.
+				[ExpectedWarning ("IL2091")]
+				public class ClassWithWarning : RequiresAll<T>
+				{
+					[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
+					public ClassWithWarning ()
+					{
+					}
+				}
+
+				// NOTE: The enclosing RUC does not apply to nested types.
+				[ExpectedWarning ("IL2026", "--RequiresOnCtorAttribute--")]
+				[RequiresOnCtor]
+				public class ClassWithAttribute
+				{
+				}
+			}
+
+			// This warning should ideally be suppressed by the RUC on the type:
+			// https://github.com/dotnet/linker/issues/3142
+			[ExpectedWarning ("IL2091")]
+			[RequiresUnreferencedCode ("--GenericClassWithWarningWithRequires--")]
+			public class GenericClassWithWarningWithRequires<U> : RequiresAll<U>
+			{
+			}
+
+			// This warning should ideally be suppressed by the RUC on the type:
+			// https://github.com/dotnet/linker/issues/3142
+			[ExpectedWarning ("IL2091")]
+			[RequiresUnreferencedCode ("--ClassWithWarningWithRequires--")]
+			public class ClassWithWarningWithRequires : RequiresAll<T>
+			{
+			}
+
+			// https://github.com/dotnet/linker/issues/3142
+			[ExpectedWarning ("IL2091")]
+			[RequiresUnreferencedCode ("--GenericAnnotatedWithWarningWithRequires--")]
+			public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
+			{
+			}
+
+			[ExpectedWarning ("IL2026", "--ClassWithRequires--", "ClassWithRequires.field")]
+			[ExpectedWarning ("IL2026", "--ClassWithRequires--", "ClassWithRequires.fieldWithAttribute")]
+			[ExpectedWarning ("IL2026", "--ClassWithRequires--", "ClassWithRequires.GenericMethod")]
+			[ExpectedWarning ("IL2026", "--ClassWithRequires--", "ClassWithRequires.MethodWithAttribute")]
+			[ExpectedWarning ("IL2026", "--GenericClassWithWarningWithRequires--")]
+			[ExpectedWarning ("IL2026", "--ClassWithWarningWithRequires--")]
+			[ExpectedWarning ("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
+			[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer)]
+			public static void Test (ClassWithRequires inst = null)
+			{
+				var f = ClassWithRequires.field;
+				f = inst.instanceField;
+				int i = ClassWithRequires.fieldWithAttribute;
+				i = inst.instanceFieldWithAttribute;
+				ClassWithRequires.GenericMethod<int> (new ());
+				inst.GenericInstanceMethod<int> (new ());
+				ClassWithRequires.MethodWithAttribute ();
+				inst.InstanceMethodWithAttribute ();
+				var c = new ClassWithRequires.ClassWithWarning ();
+				var d = new ClassWithRequires.ClassWithAttribute ();
+				var g = new GenericClassWithWarningWithRequires<int> ();
+				var h = new ClassWithWarningWithRequires ();
+				var j = new GenericAnnotatedWithWarningWithRequires<int> ();
 			}
 		}
 	}

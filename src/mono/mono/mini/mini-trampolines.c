@@ -1286,7 +1286,7 @@ mono_create_jump_trampoline (MonoMethod *method, gboolean add_sync_wrapper, Mono
 	code = mono_create_specific_trampoline (m_method_get_mem_manager (method), method, MONO_TRAMPOLINE_JUMP, &code_size);
 	g_assert (code_size);
 
-	ji = (MonoJitInfo *)m_method_alloc0 (method, MONO_SIZEOF_JIT_INFO);
+	ji = mini_alloc_jinfo (jit_mm, MONO_SIZEOF_JIT_INFO);
 	ji->code_start = MINI_FTNPTR_TO_ADDR (code);
 	ji->code_size = code_size;
 	ji->d.method = method;

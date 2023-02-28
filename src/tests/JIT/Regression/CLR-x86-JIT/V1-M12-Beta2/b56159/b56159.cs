@@ -27,7 +27,7 @@ namespace Test
             }
             return;
         }
-        static int Main()
+        public static int Main()
         {
             bool b = false;
             Method1(ref b);

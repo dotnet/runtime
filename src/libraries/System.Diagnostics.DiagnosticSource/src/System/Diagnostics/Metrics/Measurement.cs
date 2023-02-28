@@ -9,9 +9,6 @@ namespace System.Diagnostics.Metrics
     /// Measurement stores one observed metrics value and its associated tags. This type is used by Observable instruments' Observe() method when reporting current measurements.
     /// with the associated tags.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public readonly struct Measurement<T> where T : struct
     {
         private readonly KeyValuePair<string, object?>[] _tags;

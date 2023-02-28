@@ -53,7 +53,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("ApplyUpdateReferencedAssembly")]
-        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPathㄨ")]
+        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPath\u3128")]
         public async Task DebugHotReloadMethodAddBreakpoint(string assembly_name)
         {
             int line = 30;
@@ -221,7 +221,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("ApplyUpdateReferencedAssembly")]
-        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPathㄨ")]
+        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPath\u3128")]
         public async Task DebugHotReloadMethodAddBreakpointUsingSDB(string assembly_name)
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, $"{assembly_name}.dll");

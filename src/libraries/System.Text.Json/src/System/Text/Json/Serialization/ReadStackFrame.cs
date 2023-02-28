@@ -62,7 +62,6 @@ namespace System.Text.Json
         public List<PropertyRef>? PropertyRefCache;
 
         // Holds relevant state when deserializing objects with parameterized constructors.
-        public int CtorArgumentStateIndex;
         public ArgumentState? CtorArgumentState;
 
         // Whether to use custom number handling.
@@ -144,7 +143,7 @@ namespace System.Text.Json
             {
                 Debug.Assert(RequiredPropertiesSet != null);
 
-                if (!RequiredPropertiesSet.AllBitsEqual(true))
+                if (!RequiredPropertiesSet.HasAllSet())
                 {
                     ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesSet);
                 }

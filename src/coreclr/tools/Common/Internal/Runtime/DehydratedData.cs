@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -59,6 +60,7 @@ namespace Internal.Runtime
             return 1 + numExtraBytes;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe byte* Decode(byte* pB, out int command, out int payload)
         {
             byte b = *pB;

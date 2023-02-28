@@ -33,6 +33,7 @@
 #define S_FALSE         _HRESULT_TYPEDEF_(0x00000001L)
 #define E_OUTOFMEMORY   _HRESULT_TYPEDEF_(0x8007000EL)
 #define E_NOTIMPL       _HRESULT_TYPEDEF_(0x80004001L)
+#define E_UNEXPECTED    _HRESULT_TYPEDEF_(0x8000FFFFL)
 
 // Declaring a handle dummy struct for HSTRING the same way DECLARE_HANDLE does.
 typedef struct HSTRING__{

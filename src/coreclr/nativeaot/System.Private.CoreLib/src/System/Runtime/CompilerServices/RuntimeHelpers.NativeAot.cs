@@ -94,22 +94,27 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
         }
 
-        [ThreadStatic]
-        private static int t_hashSeed;
-
         internal static int GetNewHashCode()
         {
-            int multiplier = Environment.CurrentManagedThreadId * 4 + 5;
-            // Every thread has its own generator for hash codes so that we won't get into a situation
-            // where two threads consistently give out the same hash codes.
-            // Choice of multiplier guarantees period of 2**32 - see Knuth Vol 2 p16 (3.2.1.2 Theorem A).
-            t_hashSeed = t_hashSeed * multiplier + 1;
-            return t_hashSeed;
+            return Random.Shared.Next();
         }
 
         public static unsafe int GetHashCode(object o)
         {
             return ObjectHeader.GetHashCode(o);
+        }
+
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
+        /// code to the object if it does not already have one.
+        /// </remarks>
+        internal static int TryGetHashCode(object o)
+        {
+            return ObjectHeader.TryGetHashCode(o);
         }
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
@@ -228,6 +233,9 @@ namespace System.Runtime.CompilerServices
         internal static unsafe MethodTable* GetMethodTable(this object obj)
             => obj.m_pEEType;
 
+        internal static unsafe ref MethodTable* GetMethodTableRef(this object obj)
+            => ref obj.m_pEEType;
+
         internal static unsafe EETypePtr GetEETypePtr(this object obj)
             => new EETypePtr(obj.m_pEEType);
 
@@ -264,8 +272,7 @@ namespace System.Runtime.CompilerServices
             if (type is not RuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
-            if (size < 0)
-                throw new ArgumentOutOfRangeException(nameof(size));
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             // We don't support unloading; the memory will never be freed.
             return (IntPtr)NativeMemory.Alloc((uint)size);

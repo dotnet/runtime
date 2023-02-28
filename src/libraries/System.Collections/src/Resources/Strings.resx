@@ -66,9 +66,6 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
   </data>
@@ -123,7 +120,7 @@
   <data name="Argument_ArrayTooLarge" xml:space="preserve">
     <value>The input array length must not exceed Int32.MaxValue / {0}. Otherwise BitArray.Length would exceed Int32.MaxValue.</value>
   </data>
-  <data name="Argument_InvalidArrayType" xml:space="preserve">
+  <data name="Argument_IncompatibleArrayType" xml:space="preserve">
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
   <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">

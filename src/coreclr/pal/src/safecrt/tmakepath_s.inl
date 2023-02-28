@@ -48,13 +48,13 @@ errno_t __cdecl _FUNC_NAME(_Out_writes_z_(_SIZE) _CHAR *_DEST, _In_opt_ size_t _
         } while (*p != 0);
 
         p--;
-        if (*p != _T('/') && *p != _T('\\'))
+        if (*p != '/')
         {
             if(++written >= _SIZE)
             {
                 goto error_return;
             }
-            *d++ = _T('\\');
+            *d++ = '/';
         }
     }
 

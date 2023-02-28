@@ -198,12 +198,6 @@ struct Agnostic_GetOSRInfo
     unsigned ilOffset;
 };
 
-struct Agnostic_GetFieldAddress
-{
-    DWORDLONG ppIndirection;
-    DWORDLONG fieldAddress;
-};
-
 struct Agnostic_GetStaticFieldCurrentClass
 {
     DWORDLONG classHandle;

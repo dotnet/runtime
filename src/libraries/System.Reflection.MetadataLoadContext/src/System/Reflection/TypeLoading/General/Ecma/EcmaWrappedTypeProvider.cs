@@ -1,22 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 
 namespace System.Reflection.TypeLoading.Ecma
 {
     //
-    // Common base type for an ISignatureTypeProvider that captures modified types and pinned types. Note that this only captures custom modifiers
+    // Base type for an ISignatureTypeProvider that captures pinned types. Note that this only captures custom modifiers
     // modifying the Type at the root of the Type expression tree. (This is all that the Reflection api will give you. They're shaped around
     // a broken understanding of custom modifiers.) Wrapped types appearing anywhere else must get peeled and thrown away before
     // passing it to a type factory method as these methods are completely unprepared to receive these ill-tempered Types.
     //
+    // This situation improved in 8.0 with support for function pointers that have embedded custom modifiers for its parameters.
+    // This base type is no longer used for FieldInfo, PropertyInfo and ParameterInfo to obtain custom modifiers.
+    // Instead, "modified types" are created which expose custom modifiers from the corresponding Type.
     internal abstract class EcmaWrappedTypeProvider : ISignatureTypeProvider<RoType, TypeContext>
     {
         private readonly EcmaModule _module;
-        private readonly ISignatureTypeProvider<RoType, TypeContext> _typeProvider;
+        private readonly EcmaModule _typeProvider;
 
         protected EcmaWrappedTypeProvider(EcmaModule module)
         {

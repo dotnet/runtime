@@ -1,23 +1,34 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <AssemblyName>illink</AssemblyName>
     <Description>IL Linker</Description>
-    <PackageId>Microsoft.NET.ILLink</PackageId>
-    <IsPackable>true</IsPackable>
-    <!-- Nuget issues a warning about missing <reference> items in the generated nuspec,
-         used for packages.config which we do not support. -->
-    <NoWarn>$(NoWarn);NU5131</NoWarn>
     <RootNamespace>Mono.Linker</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NET.ILLink</PackageId>
+    <!-- Disabling baseline validation since this is a brand new package.
+       Once this package has shipped a stable version, the following line
+       should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <ContractProject>$(MSBuildThisFileDirectory)ref\Mono.Linker.csproj</ContractProject>
+    <RollForward>Major</RollForward>
+    <UseAppHost>false</UseAppHost>
+    <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
+
+  <!-- The default pack logic will include the implementation assembly in lib.
+       This also adds the reference assembly under ref. -->
+  <Target Name="_AddReferenceAssemblyToPackage" DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(ResolvedMatchingContract)" PackagePath="ref\$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
@@ -30,8 +41,7 @@
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
     </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
-    <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
+    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" Publish="True" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,15 +66,6 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <!-- When publishing illink as a dependency of ILLink.Tasks, we want
-       to include files needed to run it as an application in the
-       publish output. See https://github.com/dotnet/sdk/issues/1675. -->
-  <Target Name="AddRuntimeDependenciesToContent" BeforeTargets="GetCopyToOutputDirectoryItems" DependsOnTargets="GenerateBuildDependencyFile;GenerateBuildRuntimeConfigurationFiles" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <ItemGroup>
-      <ContentWithTargetPath Include="$(ProjectDepsFilePath)" CopyToOutputDirectory="PreserveNewest" TargetPath="$(ProjectDepsFileName)" />
-      <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)" CopyToOutputDirectory="PreserveNewest" TargetPath="$(ProjectRuntimeConfigFileName)" />
-    </ItemGroup>
-  </Target>
   <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 
 </Project>

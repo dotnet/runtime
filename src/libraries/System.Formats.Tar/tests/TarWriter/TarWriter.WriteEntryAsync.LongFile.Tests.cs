@@ -20,7 +20,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteEntry_LongFileSizeAsync(TarEntryFormat entryFormat, long size, bool unseekableStream)
         {
             // Write archive with a 8 Gb long entry.
-            FileStream tarFile = File.Open(GetTestFilePath(), new FileStreamOptions { Access = FileAccess.ReadWrite, Mode = FileMode.Create, Options = FileOptions.DeleteOnClose });
+            await using FileStream tarFile = File.Open(GetTestFilePath(), new FileStreamOptions { Access = FileAccess.ReadWrite, Mode = FileMode.Create, Options = FileOptions.DeleteOnClose });
             Stream s = unseekableStream ? new WrappedStream(tarFile, tarFile.CanRead, tarFile.CanWrite, canSeek: false) : tarFile;
 
             await using (TarWriter writer = new(s, leaveOpen: true))

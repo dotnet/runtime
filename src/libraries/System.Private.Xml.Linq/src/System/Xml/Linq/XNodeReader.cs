@@ -557,10 +557,7 @@ namespace System.Xml.Linq
                 throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             XElement? e = GetElementInAttributeScope();
             if (e != null)
@@ -697,7 +694,7 @@ namespace System.Xml.Linq
             {
                 return;
             }
-            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             XElement? e = GetElementInAttributeScope();
             if (e != null)
             {
@@ -1071,9 +1068,9 @@ namespace System.Xml.Linq
             get { return _state == ReadState.Interactive; }
         }
 
-        private static XmlNameTable CreateNameTable()
+        private static NameTable CreateNameTable()
         {
-            XmlNameTable nameTable = new NameTable();
+            var nameTable = new NameTable();
             nameTable.Add(string.Empty);
             nameTable.Add(XNamespace.xmlnsPrefixNamespace);
             nameTable.Add(XNamespace.xmlPrefixNamespace);

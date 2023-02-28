@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -477,7 +478,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_shuffle_ps (__m128 a,  __m128 b, unsigned int control)
         ///   SHUFPS xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<float> Shuffle(Vector128<float> left, Vector128<float> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> Shuffle(Vector128<float> left, Vector128<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_sqrt_ps (__m128 a)

@@ -319,7 +319,7 @@ internal sealed class JObjectValueCreator
         var className = await _sdbAgent.GetTypeName(typeId, token);
         var numValues = retDebuggerCmdReader.ReadInt32();
 
-        if (className.IndexOf("System.Nullable<", StringComparison.Ordinal) == 0) //should we call something on debugger-agent to check???
+        if (className.StartsWith("System.Nullable<", StringComparison.Ordinal)) //should we call something on debugger-agent to check???
         {
             retDebuggerCmdReader.ReadByte(); //ignoring the boolean type
             var isNull = retDebuggerCmdReader.ReadInt32();

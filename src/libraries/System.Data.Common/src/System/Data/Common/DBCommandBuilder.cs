@@ -647,7 +647,7 @@ namespace System.Data.Common
 
         protected virtual DataTable? GetSchemaTable(DbCommand sourceCommand)
         {
-            using (IDataReader dataReader = sourceCommand.ExecuteReader(CommandBehavior.SchemaOnly | CommandBehavior.KeyInfo))
+            using (DbDataReader dataReader = sourceCommand.ExecuteReader(CommandBehavior.SchemaOnly | CommandBehavior.KeyInfo))
             {
                 return dataReader.GetSchemaTable();
             }

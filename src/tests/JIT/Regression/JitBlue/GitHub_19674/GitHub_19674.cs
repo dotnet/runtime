@@ -5,9 +5,9 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-static class GitHub_19674
+public static class GitHub_19674
 {
-    static int Main()
+    public static int Main()
     {
         int returnVal = 100;
         try

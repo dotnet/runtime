@@ -35,42 +35,34 @@ namespace Microsoft.Interop.JavaScript
             Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
             IMarshallingGeneratorFactory generatorFactory)
         {
+            Action<TypePositionInfo, string> extendedInvariantViolationsCallback = (info, details) =>
+                marshallingNotSupportedCallback(info, new MarshallingNotSupportedException(info, _context) { NotSupportedDetails = details });
             _signatureContext = signatureContext;
             ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSImportCodeContext(attributeData, innerContext);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new EmptyJSGenerator(), out var bindingFailures);
+
+            foreach (var failure in bindingFailures)
+            {
+                marshallingNotSupportedCallback(failure.Info, failure.Exception);
+            }
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
                 _context = new JSImportCodeContext(attributeData, innerContext);
-                _marshallers = new BoundGenerators(argTypes, CreateGenerator);
             }
 
             // validate task + span mix
             if (_marshallers.ManagedReturnMarshaller.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSTaskTypeInfo))
             {
-                BoundGenerator spanArg = _marshallers.AllMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
+                BoundGenerator spanArg = _marshallers.SignatureMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
                 if (spanArg != default)
                 {
                     marshallingNotSupportedCallback(spanArg.TypeInfo, new MarshallingNotSupportedException(spanArg.TypeInfo, _context)
                     {
                         NotSupportedDetails = SR.SpanAndTaskNotSupported
                     });
-                }
-            }
-
-
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p)
-            {
-                try
-                {
-                    return generatorFactory.Create(p, _context);
-                }
-                catch (MarshallingNotSupportedException e)
-                {
-                    marshallingNotSupportedCallback(p, e);
-                    return new EmptyJSGenerator();
                 }
             }
         }
@@ -80,7 +72,7 @@ namespace Microsoft.Interop.JavaScript
             StatementSyntax invoke = InvokeSyntax();
             GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context);
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
             var setupStatements = new List<StatementSyntax>();
             BindSyntax(setupStatements);
@@ -198,7 +190,7 @@ namespace Microsoft.Interop.JavaScript
                 IdentifierName(Constants.ArgumentReturn), IdentifierName("Initialize")))));
         }
 
-        private StatementSyntax InvokeSyntax()
+        private ExpressionStatementSyntax InvokeSyntax()
         {
             return ExpressionStatement(InvocationExpression(
                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, IdentifierName(Constants.JSFunctionSignatureGlobal), IdentifierName("InvokeJS")))
@@ -209,7 +201,7 @@ namespace Microsoft.Interop.JavaScript
 
         public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData()
         {
-            return _marshallers.GenerateTargetMethodSignatureData();
+            return _marshallers.GenerateTargetMethodSignatureData(_context);
         }
     }
 }

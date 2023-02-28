@@ -127,6 +127,95 @@ namespace System.Security.Cryptography.Cng.Tests
             RSACng_Ctor_UnusualKeysize(ExpectedKeySize, keyBlob, expected);
         }
 
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void RSACng_PlatformCryptoProvider_SignHash_Roundtrip()
+        {
+            CngKey key = null;
+
+            try
+            {
+                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
+                {
+                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                };
+
+                key = CngKey.Create(
+                    CngAlgorithm.Rsa,
+                    nameof(RSACng_PlatformCryptoProvider_SignHash_Roundtrip),
+                    cngCreationParameters);
+
+                using (RSACng rsaKey = new RSACng(key))
+                {
+                    byte[] data = new byte[] { 1, 2, 3 };
+                    byte[] signature = rsaKey.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    bool valid = rsaKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.True(valid, "valid signature");
+
+                    byte[] hash = SHA256.HashData(data);
+
+                    byte[] buffer = new byte[1];
+                    bool success = rsaKey.TrySignHash(hash, buffer, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1, out int bytesWritten);
+                    Assert.False(success, "buffer large enough");
+
+                    success = rsaKey.TrySignHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1, out bytesWritten);
+                    Assert.True(success, "buffer large enough");
+                    Assert.Equal(signature.Length, bytesWritten);
+
+                    valid = rsaKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.True(valid, "valid signature");
+                }
+            }
+            finally
+            {
+                key?.Delete();
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void RSACng_PlatformCryptoProvider_EncryptDecrypt_Roundtrip()
+        {
+            CngKey key = null;
+
+            try
+            {
+                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
+                {
+                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                };
+
+                key = CngKey.Create(
+                    CngAlgorithm.Rsa,
+                    nameof(RSACng_PlatformCryptoProvider_EncryptDecrypt_Roundtrip),
+                    cngCreationParameters);
+
+                using (RSACng pcpKey = new RSACng(key))
+                using (RSACng publicRsa = new RSACng())
+                {
+                    publicRsa.ImportParameters(pcpKey.ExportParameters(false));
+                    byte[] data = new byte[] { 1, 2, 3 };
+                    byte[] encrypted = publicRsa.Encrypt(data, RSAEncryptionPadding.Pkcs1);
+                    byte[] decrypted = pcpKey.Decrypt(encrypted, RSAEncryptionPadding.Pkcs1);
+                    Assert.Equal(data, decrypted);
+
+                    byte[] buffer = new byte[1];
+                    bool success = pcpKey.TryDecrypt(encrypted, buffer, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
+                    Assert.False(success, "buffer large enough");
+
+                    success = pcpKey.TryDecrypt(encrypted, decrypted, RSAEncryptionPadding.Pkcs1, out bytesWritten);
+                    Assert.True(success, "buffer large enough");
+                    Assert.Equal(decrypted.Length, bytesWritten);
+                }
+            }
+            finally
+            {
+                key?.Delete();
+            }
+        }
+
         private static void RSACng_Ctor_UnusualKeysize(
             int expectedKeySize,
             byte[] keyBlob,

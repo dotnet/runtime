@@ -92,7 +92,7 @@ Very similarly to generating the _ROOTFS_, cross-building for FreeBSD follows th
 
 ```bash
 export ROOTFS_DIR=/path/to/runtime/.tools/rootfs/x64
-./build.sh --subset clr --configuration Release --cross --os FreeBSD
+./build.sh --subset clr --configuration Release --cross --os freebsd
 ```
 
 #### Cross-Compiling CoreCLR for other VFP Configurations
@@ -130,12 +130,12 @@ However, you might find yourself needing to (re)build them because either you ma
 ./src/coreclr/build-runtime.sh -arm64 -hostarch x64 -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
 ```
 
-The output of running this command is placed in `artifacts/bin/coreclr/Linux.<target_arch>.<configuration>/<host_arch>`. For our example, it would be `artifacts/bin/coreclr/Linux.arm64.Release/x64`.
+The output of running this command is placed in `artifacts/bin/coreclr/linux.<target_arch>.<configuration>/<host_arch>`. For our example, it would be `artifacts/bin/coreclr/linux.arm64.Release/x64`.
 
 On Windows, you can build these cross-targeting diagnostic libraries with the `linuxdac` and `alpinedac` subsets from the root `build.cmd` script. That said, you can also use the `build-runtime.cmd` script, like with Linux. These builds also require you to pass the `-os` flag to specify the target OS. For example:
 
 ```cmd
-.\src\coreclr\build-runtime.cmd -arm64 -hostarch x64 -os Linux -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
+.\src\coreclr\build-runtime.cmd -arm64 -hostarch x64 -os linux -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1"
 ```
 
 If you're building the cross-components in powershell, you'll need to wrap `"-DCLR_CROSS_COMPONENTS_BUILD=1"` with single quotes (`'`) to ensure things are escaped correctly for CMD.
@@ -159,5 +159,5 @@ docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/cross
 Using Docker to cross-build for FreeBSD is very similar to any other Docker Linux build. You only need to use the appropriate image and pass `--os` as well to specify this is not an architecture(-only) build. For example, to make a FreeBSD x64 build:
 
 ```bash
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/x64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20220831130538-f13d79e ./build.sh --subset clr --cross --os FreeBSD
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime -e ROOTFS_DIR=/crossrootfs/x64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20220831130538-f13d79e ./build.sh --subset clr --cross --os freebsd
 ```

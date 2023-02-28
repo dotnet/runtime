@@ -62,6 +62,30 @@ namespace ILLink.RoslynAnalyzer.Tests.Warnings
 		}
 
 		[Fact]
+		public Task DetectRedundantSuppressionsTrimmedMembersTarget ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task ModuleSuppressionWithMemberScopeNullTarget ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task ModuleSuppressionWithModuleScopeNullTarget ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task ModuleSuppressionWithNullScopeNullTarget ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task SuppressWarningsInAssembly ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -93,6 +117,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Warnings
 
 		[Fact]
 		public Task SuppressWarningsUsingTargetViaXmlNetCore ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task TargettedModuleSuppressionWithUnmatchedScope ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

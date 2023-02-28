@@ -10,9 +10,9 @@ namespace System.Transactions.Oletx;
 
 internal sealed class OletxTransactionManager
 {
-    private IsolationLevel _isolationLevelProperty;
+    private readonly IsolationLevel _isolationLevelProperty;
 
-    private TimeSpan _timeoutProperty;
+    private readonly TimeSpan _timeoutProperty;
 
     private TransactionOptions _configuredTransactionOptions = default;
 
@@ -27,7 +27,7 @@ internal sealed class OletxTransactionManager
     internal static volatile bool ProcessingTmDown;
 
     internal ReaderWriterLock DtcTransactionManagerLock;
-    private DtcTransactionManager _dtcTransactionManager;
+    private readonly DtcTransactionManager _dtcTransactionManager;
     internal OletxInternalResourceManager InternalResourceManager;
 
     internal static DtcProxyShimFactory ProxyShimFactory = null!; // Late initialization
@@ -50,7 +50,7 @@ internal sealed class OletxTransactionManager
         }
     }
 
-    private string? _nodeNameField;
+    private readonly string? _nodeNameField;
 
     internal static void ShimNotificationCallback(object? state, bool timeout)
     {
@@ -485,15 +485,8 @@ internal sealed class OletxTransactionManager
         byte[] recoveryInformation,
         IEnlistmentNotificationInternal enlistmentNotification)
     {
-        if (recoveryInformation == null)
-        {
-            throw new ArgumentNullException(nameof(recoveryInformation));
-        }
-
-        if (enlistmentNotification == null)
-        {
-            throw new ArgumentNullException(nameof(enlistmentNotification));
-        }
+        ArgumentNullException.ThrowIfNull(recoveryInformation);
+        ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
         // Now go find the resource manager in the collection.
         OletxResourceManager oletxResourceManager = RegisterResourceManager(resourceManagerIdentifier);
@@ -689,7 +682,7 @@ internal sealed class OletxTransactionManager
 
 internal sealed class OletxInternalResourceManager
 {
-    private OletxTransactionManager _oletxTm;
+    private readonly OletxTransactionManager _oletxTm;
 
     internal Guid Identifier { get; }
 

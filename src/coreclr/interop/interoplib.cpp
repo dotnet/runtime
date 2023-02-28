@@ -46,7 +46,7 @@ namespace InteropLib
 
         void DestroyWrapperForObject(_In_ void* wrapperMaybe) noexcept
         {
-            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(static_cast<IUnknown*>(wrapperMaybe));
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknownWithQueryInterface(static_cast<IUnknown*>(wrapperMaybe));
 
             // A caller should not be destroying a wrapper without knowing if the wrapper is valid.
             _ASSERTE(wrapper != nullptr);
@@ -69,7 +69,7 @@ namespace InteropLib
             *object = nullptr;
 
             // Attempt to get the managed object wrapper.
-            ManagedObjectWrapper *mow = ManagedObjectWrapper::MapFromIUnknown(wrapper);
+            ManagedObjectWrapper *mow = ManagedObjectWrapper::MapFromIUnknownWithQueryInterface(wrapper);
             if (mow == nullptr)
                 return E_INVALIDARG;
 
@@ -79,7 +79,7 @@ namespace InteropLib
 
         HRESULT MarkComActivated(_In_ IUnknown* wrapperMaybe) noexcept
         {
-            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknownWithQueryInterface(wrapperMaybe);
             if (wrapper == nullptr)
                 return E_INVALIDARG;
 
@@ -89,7 +89,7 @@ namespace InteropLib
 
         HRESULT IsComActivated(_In_ IUnknown* wrapperMaybe) noexcept
         {
-            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknownWithQueryInterface(wrapperMaybe);
             if (wrapper == nullptr)
                 return E_INVALIDARG;
 
@@ -162,7 +162,7 @@ namespace InteropLib
 
             result->Context = wrapperContext->GetRuntimeContext();
             result->FromTrackerRuntime = (wrapperContext->GetReferenceTracker() != nullptr);
-            result->ManagedObjectWrapper = (ManagedObjectWrapper::MapFromIUnknown(external) != nullptr);
+            result->ManagedObjectWrapper = (ManagedObjectWrapper::MapFromIUnknownWithQueryInterface(external) != nullptr);
             return S_OK;
         }
 

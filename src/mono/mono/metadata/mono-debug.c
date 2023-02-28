@@ -1097,13 +1097,31 @@ mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *
 	bundled_symfiles = bsymfile;
 }
 
+static gboolean
+bsymfile_match (BundledSymfile *bsymfile, const char *assembly_name)
+{
+	if (!strcmp (bsymfile->aname, assembly_name))
+		return TRUE;
+#ifdef ENABLE_WEBCIL
+	const char *p = strstr (assembly_name, ".webcil");
+	/* if assembly_name ends with .webcil, check if aname matches, with a .dll extension instead */
+	if (p && *(p + strlen(".webcil")) == 0) {
+		size_t n = p - assembly_name;
+		if (!strncmp (bsymfile->aname, assembly_name, n)
+			&& !strcmp (bsymfile->aname + n, ".dll"))
+			return TRUE;
+	}
+#endif
+	return FALSE;
+}
+
 static MonoDebugHandle *
 open_symfile_from_bundle (MonoImage *image)
 {
 	BundledSymfile *bsymfile;
 
 	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
-		if (strcmp (bsymfile->aname, image->module_name))
+		if (!bsymfile_match (bsymfile, image->module_name))
 			continue;
 
 		return mono_debug_open_image (image, bsymfile->raw_contents, bsymfile->size);
@@ -1117,7 +1135,7 @@ mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
 {
 	BundledSymfile *bsymfile;
 	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
-		if (strcmp (bsymfile->aname, assembly_name))
+		if (!bsymfile_match (bsymfile, assembly_name))
 			continue;
 		*size = bsymfile->size;
 		return bsymfile->raw_contents;

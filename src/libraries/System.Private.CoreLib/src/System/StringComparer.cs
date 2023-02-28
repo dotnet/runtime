@@ -318,7 +318,7 @@ namespace System
 
             if (_ignoreCase)
             {
-                return string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+                return System.Globalization.Ordinal.CompareStringIgnoreCase(ref x.GetRawStringData(), x.Length, ref y.GetRawStringData(), y.Length);
             }
 
             return string.CompareOrdinal(x, y);
@@ -418,7 +418,25 @@ namespace System
         {
         }
 
-        public override int Compare(string? x, string? y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+        public override int Compare(string? x, string? y)
+        {
+            if (ReferenceEquals(x, y))
+            {
+                return 0;
+            }
+
+            if (x == null)
+            {
+                return -1;
+            }
+
+            if (y == null)
+            {
+                return 1;
+            }
+
+            return System.Globalization.Ordinal.CompareStringIgnoreCase(ref x.GetRawStringData(), x.Length, ref y.GetRawStringData(), y.Length);
+        }
 
         public override bool Equals(string? x, string? y)
         {

@@ -99,7 +99,11 @@ namespace System.IO
         public long PreallocationSize
         {
             get => _preallocationSize;
-            set => _preallocationSize = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                _preallocationSize = value;
+            }
         }
 
         /// <summary>
@@ -110,7 +114,11 @@ namespace System.IO
         public int BufferSize
         {
             get => _bufferSize;
-            set => _bufferSize = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                _bufferSize = value;
+            }
         }
 
         /// <summary>

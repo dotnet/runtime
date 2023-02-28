@@ -61,7 +61,6 @@ namespace System.Net
 
             uint statusCode;
             uint dataToWrite = (uint)size;
-            SafeLocalAllocHandle? bufferAsIntPtr = null;
             IntPtr pBufferAsIntPtr = IntPtr.Zero;
             bool sentHeaders = _httpContext.Response.SentHeaders;
             try
@@ -79,8 +78,7 @@ namespace System.Net
                         {
                             string chunkHeader = size.ToString("x", CultureInfo.InvariantCulture);
                             dataToWrite += (uint)(chunkHeader.Length + 4);
-                            bufferAsIntPtr = SafeLocalAllocHandle.LocalAlloc((int)dataToWrite);
-                            pBufferAsIntPtr = bufferAsIntPtr.DangerousGetHandle();
+                            pBufferAsIntPtr = (IntPtr)NativeMemory.Alloc(dataToWrite);
                             for (int i = 0; i < chunkHeader.Length; i++)
                             {
                                 Marshal.WriteByte(pBufferAsIntPtr, i, (byte)chunkHeader[i]);
@@ -113,7 +111,7 @@ namespace System.Net
                                     1,
                                     &dataChunk,
                                     null,
-                                    SafeLocalAllocHandle.Zero,
+                                    null,
                                     0,
                                     null,
                                     null);
@@ -130,13 +128,12 @@ namespace System.Net
             }
             finally
             {
-                // free unmanaged buffer
-                bufferAsIntPtr?.Close();
+                NativeMemory.Free((void*)pBufferAsIntPtr);
             }
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_HANDLE_EOF)
             {
-                Exception exception = new HttpListenerException((int)statusCode);
+                var exception = new HttpListenerException((int)statusCode);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
                 _closed = true;
                 _httpContext.Abort();
@@ -146,7 +143,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, (int)dataToWrite);
         }
 
-        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
+        private HttpResponseStreamAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
             if (_closed || (size == 0 && _leftToWrite != 0))
@@ -187,7 +184,7 @@ namespace System.Net
                             asyncResult.dataChunkCount,
                             asyncResult.pDataChunks,
                             &bytesSent,
-                            SafeLocalAllocHandle.Zero,
+                            null,
                             0,
                             asyncResult._pOverlapped,
                             null);
@@ -213,7 +210,7 @@ namespace System.Net
                 }
                 else
                 {
-                    Exception exception = new HttpListenerException((int)statusCode);
+                    var exception = new HttpListenerException((int)statusCode);
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
                     _closed = true;
                     _httpContext.Abort();
@@ -331,7 +328,7 @@ namespace System.Net
                                 pDataChunk != null ? (ushort)1 : (ushort)0,
                                 pDataChunk,
                                 null,
-                                SafeLocalAllocHandle.Zero,
+                                null,
                                 0,
                                 null,
                                 null);
@@ -356,9 +353,8 @@ namespace System.Net
             }
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_HANDLE_EOF)
             {
-                Exception exception = new HttpListenerException((int)statusCode);
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Error(this, exception.ToString());
+                var exception = new HttpListenerException((int)statusCode);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
                 _httpContext.Abort();
                 throw exception;
             }

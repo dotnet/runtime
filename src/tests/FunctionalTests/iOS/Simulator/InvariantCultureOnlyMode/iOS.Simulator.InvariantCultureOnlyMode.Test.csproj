@@ -6,7 +6,7 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">iOSSimulator</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <MainLibraryFileName>iOS.Simulator.InvariantCultureOnlyMode.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>

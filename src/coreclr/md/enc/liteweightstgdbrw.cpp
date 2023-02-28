@@ -650,10 +650,6 @@ CLiteWeightStgdbRW::GetPoolSaveSize(
         // Ask the storage system to add stream fixed overhead.
         IfFailGo(TiggerStorage::GetStreamSaveSize(szHeap, cbSize, &cbSize));
 
-        // Log the size info.
-        LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-            szHeap, cbStream, cbSize));
-
         // Give the size of the pool to the caller's total.
         *pcbSaveSize = cbSize;
     }
@@ -692,10 +688,6 @@ HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
 
     // Ask the storage system to add stream fixed overhead.
     IfFailGo(TiggerStorage::GetStreamSaveSize(szName, cbSize, &cbSize));
-
-    // Log the size info.
-    LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-        szName, cbStream, cbSize));
 
     // Give the size of the pool to the caller's total.
     *pcbSaveSize = cbHotSize + cbSize;

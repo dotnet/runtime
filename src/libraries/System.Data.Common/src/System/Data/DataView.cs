@@ -1151,7 +1151,7 @@ namespace System.Data
 
         #region ITypedList
 
-        string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[] listAccessors)
+        string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[]? listAccessors)
         {
             if (_table != null)
             {
@@ -1175,7 +1175,7 @@ namespace System.Data
             return string.Empty;
         }
 
-        PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
+        PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[]? listAccessors)
         {
             if (_table != null)
             {

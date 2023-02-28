@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
-class Runtime_39823
+public class Runtime_39823
 {
     struct IntsWrapped
     {

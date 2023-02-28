@@ -3227,6 +3227,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface12*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface13)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface13*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -7113,7 +7117,9 @@ CLRDataCreateInstance(REFIID iid,
     {
         return hr;
     }
-
+#ifdef LOGGING
+    InitializeLogging();
+#endif
     hr = pClrDataAccess->QueryInterface(iid, iface);
 
     pClrDataAccess->Release();

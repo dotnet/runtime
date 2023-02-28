@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -15,7 +15,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/Library.cs" })]
 	[SetupLinkerAction ("skip", "library")]
-	[SetupLinkerArgument ("-a", "test.exe")]
 	public static class StaticVirtualInterfaceMethodsInPreservedScope
 	{
 		[Kept]

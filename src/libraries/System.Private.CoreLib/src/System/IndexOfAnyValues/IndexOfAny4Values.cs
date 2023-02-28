@@ -6,6 +6,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable 8500 // address of managed types
+
 namespace System.Buffers
 {
     internal sealed class IndexOfAny4Values<T, TImpl> : IndexOfAnyValues<T>
@@ -21,25 +23,19 @@ namespace System.Buffers
             (_e0, _e1, _e2, _e3) = (values[0], values[1], values[2], values[3]);
         }
 
-        internal override T[] GetValues()
+        internal override unsafe T[] GetValues()
         {
             TImpl e0 = _e0, e1 = _e1, e2 = _e2, e3 = _e3;
-            return new[] { Unsafe.As<TImpl, T>(ref e0), Unsafe.As<TImpl, T>(ref e1), Unsafe.As<TImpl, T>(ref e2), Unsafe.As<TImpl, T>(ref e3) };
+            return new[] { *(T*)&e0, *(T*)&e1, *(T*)&e2, *(T*)&e3 };
         }
 
-#if MONO // Revert this once https://github.com/dotnet/runtime/pull/78015 is merged
-        internal override int IndexOfAny(ReadOnlySpan<T> span) =>
-            span.IndexOfAny(GetValues());
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal override unsafe bool ContainsCore(T value) =>
+            *(TImpl*)&value == _e0 ||
+            *(TImpl*)&value == _e1 ||
+            *(TImpl*)&value == _e2 ||
+            *(TImpl*)&value == _e3;
 
-        internal override int IndexOfAnyExcept(ReadOnlySpan<T> span) =>
-            span.IndexOfAnyExcept(GetValues());
-
-        internal override int LastIndexOfAny(ReadOnlySpan<T> span) =>
-            span.LastIndexOfAny(GetValues());
-
-        internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span) =>
-            span.LastIndexOfAnyExcept(GetValues());
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<T> span) =>
             SpanHelpers.IndexOfAnyValueType(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, _e3, span.Length);
@@ -55,6 +51,5 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span) =>
             SpanHelpers.LastIndexOfAnyExceptValueType(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, _e3, span.Length);
-#endif
     }
 }

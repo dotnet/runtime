@@ -96,8 +96,13 @@ namespace System.Net.Security
                     // Dispose the copy of the target cert.
                     chain.ChainElements[0].Certificate.Dispose();
 
-                    // Dispose the last cert, if we didn't include it.
-                    for (int i = count + 1; i < chain.ChainElements.Count; i++)
+                    // Dispose of the certificates that we do not need. If we are holding on to the root,
+                    // don't dispose of it.
+                    int stopDisposingChainPosition = root is null ?
+                        chain.ChainElements.Count :
+                        chain.ChainElements.Count - 1;
+
+                    for (int i = count + 1; i < stopDisposingChainPosition; i++)
                     {
                         chain.ChainElements[i].Certificate.Dispose();
                     }
@@ -109,12 +114,19 @@ namespace System.Net.Security
             // On Linux, AddRootCertificate will start a background download of an OCSP response,
             // unless this context was built "offline", or this came from the internal Create(X509Certificate2)
             ctx.SetNoOcspFetch(offline || noOcspFetch);
-            ctx.AddRootCertificate(root);
+
+            bool transferredOwnership = false;
+            ctx.AddRootCertificate(root, ref transferredOwnership);
+
+            if (!transferredOwnership)
+            {
+                root?.Dispose();
+            }
 
             return ctx;
         }
 
-        partial void AddRootCertificate(X509Certificate2? rootCertificate);
+        partial void AddRootCertificate(X509Certificate2? rootCertificate, ref bool transferredOwnership);
         partial void SetNoOcspFetch(bool noOcspFetch);
 
         internal SslStreamCertificateContext Duplicate()

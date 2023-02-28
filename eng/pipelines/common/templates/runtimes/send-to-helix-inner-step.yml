@@ -25,7 +25,7 @@ steps:
   - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --warnaserror false ${{ parameters.restoreParams }}
     displayName: Restore blob feed tasks (Unix)
     condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.restoreParams, '')) }})
-    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+    ${{ if eq(parameters.osGroup, 'freebsd') }}:
       env:
         # Arcade uses this SDK instead of trying to restore one.
         DotNetCoreSdkDir: /usr/local/dotnet

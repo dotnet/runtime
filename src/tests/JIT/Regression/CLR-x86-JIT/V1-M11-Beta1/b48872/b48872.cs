@@ -6,10 +6,10 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static uint m_u;
-        static int Main()
+        public static int Main()
         {
             bool[] ab = new bool[4];
             uint uu;

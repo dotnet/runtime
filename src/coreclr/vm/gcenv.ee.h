@@ -87,6 +87,8 @@ public:
     uint32_t GetCurrentProcessCpuCount();
 
     void DiagAddNewRegion(int generation, BYTE * rangeStart, BYTE * rangeEnd, BYTE * rangeEndReserved);
+
+    void LogErrorToHost(const char *message);
 };
 
 } // namespace standalone

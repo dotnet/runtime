@@ -2661,7 +2661,6 @@ namespace System.Tests
             yield return new object[] { null, "Foo }}{0}", new object[] { 1 }, "Foo }1" }; // Escaped closed curly braces
             yield return new object[] { null, "Foo {0} {{0}}", new object[] { 1 }, "Foo 1 {0}" }; // Escaped placeholder
 
-
             yield return new object[] { null, "Foo {0}", new object[] { null }, "Foo " }; // Values has null only
             yield return new object[] { null, "Foo {0} {1} {2}", new object[] { "Bar", null, "Baz" }, "Foo Bar  Baz" }; // Values has null
 
@@ -2669,6 +2668,29 @@ namespace System.Tests
 
             yield return new object[] { new CustomFormatter(), "{0}", new object[] { 1.2 }, "abc" }; // Custom format provider
             yield return new object[] { new CustomFormatter(), "{0:0}", new object[] { 1.2 }, "abc" }; // Custom format provider
+
+            // More arguments than needed
+            yield return new object[] { null, "{0}", new object[] { 1, 2 }, "1" };
+            yield return new object[] { null, "{0}", new object[] { 1, 2, 3 }, "1" };
+            yield return new object[] { null, "{0}", new object[] { 1, 2, 3, 4 }, "1" };
+            yield return new object[] { null, "{0}{1}", new object[] { 1, 2, 3 }, "12" };
+            yield return new object[] { null, "{0}{1}", new object[] { 1, 2, 3, 4 }, "12" };
+            yield return new object[] { null, "{0}{1}", new object[] { 1, 2, 3, 4, 5 }, "12" };
+            yield return new object[] { null, "{0}{1}{2}", new object[] { 1, 2, 3, 4 }, "123" };
+            yield return new object[] { null, "{0}{1}{2}", new object[] { 1, 2, 3, 4, 5 }, "123" };
+            yield return new object[] { null, "{0}{1}{2}", new object[] { 1, 2, 3, 4, 5, 6 }, "123" };
+            yield return new object[] { null, "{0}{1}{2}{3}", new object[] { 1, 2, 3, 4, 5 }, "1234" };
+            yield return new object[] { null, "{0}{1}{2}{3}", new object[] { 1, 2, 3, 4, 5, 6 }, "1234" };
+            yield return new object[] { null, "{0}{1}{2}{3}", new object[] { 1, 2, 3, 4, 5, 6, 7 }, "1234" };
+            yield return new object[] { null, "{0}{1}{2}{3}{4}", new object[] { 1, 2, 3, 4, 5, 6 }, "12345" };
+            yield return new object[] { null, "{0}{1}{2}{3}{4}", new object[] { 1, 2, 3, 4, 5, 6, 7 }, "12345" };
+            yield return new object[] { null, "{0}{1}{2}{3}{4}", new object[] { 1, 2, 3, 4, 5, 6, 7, 8 }, "12345" };
+
+            // Out of order
+            yield return new object[] { null, "{1}{0}", new object[] { 1, 2 }, "21" };
+            yield return new object[] { null, "{2}{1}{0}", new object[] { 1, 2, 3 }, "321" };
+            yield return new object[] { null, "{3}{2}{1}{0}", new object[] { 1, 2, 3, 4 }, "4321" };
+            yield return new object[] { null, "{4}{3}{2}{1}{0}", new object[] { 1, 2, 3, 4, 5 }, "54321" };
 
             // Longer inputs
             yield return new object[] { null, "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", new object[] { "zero", "one", "two", "three", "four" }, "0 = zero 1 = one 2 = two 3 = three 4 = four" };
@@ -2737,7 +2759,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Format_Invalid()
+        public static void Format_Invalid_ArgumentException()
         {
             var formatter = new TestFormatter();
             var obj1 = new object();
@@ -2751,9 +2773,9 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(null, obj1, obj2, obj3));
             AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(null, obj1, obj2, obj3, obj4));
 
-            AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(formatter, null, obj1));
-            AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(formatter, null, obj1, obj2));
-            AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(formatter, null, obj1, obj2, obj3));
+            AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(formatter, (string)null, obj1));
+            AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(formatter, (string)null, obj1, obj2));
+            AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(formatter, (string)null, obj1, obj2, obj3));
 
             // Args is null
             AssertExtensions.Throws<ArgumentNullException>("args", () => string.Format("", null));
@@ -2761,56 +2783,97 @@ namespace System.Tests
 
             // Args and format are null
             AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(null, (object[])null));
-            AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(formatter, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(formatter, (string)null, null));
+        }
 
-            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1)); // Format has value < 0
-            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1, obj2)); // Format has value < 0
-            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1, obj2, obj3)); // Format has value < 0
-            Assert.Throws<FormatException>(() => string.Format("{-1}", obj1, obj2, obj3, obj4)); // Format has value < 0
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1)); // Format has value < 0
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2)); // Format has value < 0
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2, obj3)); // Format has value < 0
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{-1}", obj1, obj2, obj3, obj4)); // Format has value < 0
+        public static IEnumerable<object[]> Format_Invalid_FormatExceptionFromFormat_MemberData()
+        {
+            var obj1 = new object();
+            var obj2 = new object();
+            var obj3 = new object();
+            var obj4 = new object();
 
-            Assert.Throws<FormatException>(() => string.Format("{1}", obj1)); // Format has value >= 1
-            Assert.Throws<FormatException>(() => string.Format("{2}", obj1, obj2)); // Format has value >= 2
-            Assert.Throws<FormatException>(() => string.Format("{3}", obj1, obj2, obj3)); // Format has value >= 3
-            Assert.Throws<FormatException>(() => string.Format("{4}", obj1, obj2, obj3, obj4)); // Format has value >= 4
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{1}", obj1)); // Format has value >= 1
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{2}", obj1, obj2)); // Format has value >= 2
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{3}", obj1, obj2, obj3)); // Format has value >= 3
-            Assert.Throws<FormatException>(() => string.Format(formatter, "{4}", obj1, obj2, obj3, obj4)); // Format has value >= 4
+            foreach (IFormatProvider provider in new[] { null, new TestFormatter() })
+            {
+                yield return new object[] { provider, "{-1}", new object[] { obj1 } }; // Format has value < 0
+                yield return new object[] { provider, "{-1}", new object[] { obj1, obj2 } }; // Format has value < 0
+                yield return new object[] { provider, "{-1}", new object[] { obj1, obj2, obj3 } }; // Format has value < 0
+                yield return new object[] { provider, "{-1}", new object[] { obj1, obj2, obj3, obj4 } }; // Format has value < 0
+                yield return new object[] { provider, "{", new object[] { "" } }; // Format has unescaped {
+                yield return new object[] { provider, "{a", new object[] { "" } }; // Format has unescaped {
+                yield return new object[] { provider, "}", new object[] { "" } }; // Format has unescaped }
+                yield return new object[] { provider, "}a", new object[] { "" } }; // Format has unescaped }
+                yield return new object[] { provider, "{0:}}", new object[] { "" } }; // Format has unescaped }
+                yield return new object[] { provider, "{\0", new object[] { "" } }; // Format has invalid character after {
+                yield return new object[] { provider, "{a", new object[] { "" } }; // Format has invalid character after {
+                yield return new object[] { provider, "{0     ", new object[] { "" } }; // Format with index and spaces is not closed
+                yield return new object[] { provider, "{1000000", new object[10] }; // Format has missing closing brace
+                yield return new object[] { provider, "{0,", new object[] { "" } }; // Format with comma is not closed
+                yield return new object[] { provider, "{0,   ", new object[] { "" } }; // Format with comma and spaces is not closed
+                yield return new object[] { provider, "{0,-", new object[] { "" } }; // Format with comma and minus sign is not closed
+                yield return new object[] { provider, "{0,-\0", new object[] { "" } }; // Format has invalid character after minus sign
+                yield return new object[] { provider, "{0,-a", new object[] { "" } }; // Format has invalid character after minus sign
+                yield return new object[] { provider, "{0,1000000", new string[10] }; // Format length is too long
+                yield return new object[] { provider, "{0:", new string[10] }; // Format with colon is not closed
+                yield return new object[] { provider, "{0:    ", new string[10] }; // Format with colon and spaces is not closed
+                yield return new object[] { provider, "{0:{", new string[10] }; // Format with custom format contains unescaped {
+                yield return new object[] { provider, "{0:{}", new string[10] }; // Format with custom format contains unescaped {
+            }
+        }
 
-            Assert.Throws<FormatException>(() => string.Format("{", "")); // Format has unescaped {
-            Assert.Throws<FormatException>(() => string.Format("{a", "")); // Format has unescaped {
+        public static IEnumerable<object[]> Format_Invalid_FormatExceptionFromArgs_MemberData()
+        {
+            var obj1 = new object();
+            var obj2 = new object();
+            var obj3 = new object();
+            var obj4 = new object();
 
-            Assert.Throws<FormatException>(() => string.Format("}", "")); // Format has unescaped }
-            Assert.Throws<FormatException>(() => string.Format("}a", "")); // Format has unescaped }
-            Assert.Throws<FormatException>(() => string.Format("{0:}}", "")); // Format has unescaped }
+            foreach (IFormatProvider provider in new[] { null, new TestFormatter() })
+            {
+                yield return new object[] { provider, "{1}", new object[] { obj1 } }; // Format has value >= 1
+                yield return new object[] { provider, "{2}", new object[] { obj1, obj2 } }; // Format has value >= 2
+                yield return new object[] { provider, "{3}", new object[] { obj1, obj2, obj3 } }; // Format has value >= 3
+                yield return new object[] { provider, "{4}", new object[] { obj1, obj2, obj3, obj4 } }; // Format has value >= 4
+            }
+        }
 
-            Assert.Throws<FormatException>(() => string.Format("{\0", "")); // Format has invalid character after {
-            Assert.Throws<FormatException>(() => string.Format("{a", "")); // Format has invalid character after {
+        [Theory]
+        [MemberData(nameof(Format_Invalid_FormatExceptionFromFormat_MemberData))]
+        [MemberData(nameof(Format_Invalid_FormatExceptionFromArgs_MemberData))]
+        [InlineData(null, "{10000000}", new object[] { null })]
+        [InlineData(null, "{0,10000000}", new string[] { null })]
+        public static void Format_Invalid_FormatExceptionFromFormatOrArgs(IFormatProvider provider, string format, object[] args)
+        {
+            if (provider is null)
+            {
+                Assert.Throws<FormatException>(() => string.Format(format, args));
+                switch (args.Length)
+                {
+                    case 1:
+                        Assert.Throws<FormatException>(() => string.Format(format, args[0]));
+                        break;
+                    case 2:
+                        Assert.Throws<FormatException>(() => string.Format(format, args[0], args[1]));
+                        break;
+                    case 3:
+                        Assert.Throws<FormatException>(() => string.Format(format, args[0], args[1], args[2]));
+                        break;
+                }
+            }
 
-            Assert.Throws<FormatException>(() => string.Format("{0     ", "")); // Format with index and spaces is not closed
-
-            Assert.Throws<FormatException>(() => string.Format("{1000000", new string[10])); // Format index is too long
-            Assert.Throws<FormatException>(() => string.Format("{10000000}", new string[10])); // Format index is too long
-
-            Assert.Throws<FormatException>(() => string.Format("{0,", "")); // Format with comma is not closed
-            Assert.Throws<FormatException>(() => string.Format("{0,   ", "")); // Format with comma and spaces is not closed
-            Assert.Throws<FormatException>(() => string.Format("{0,-", "")); // Format with comma and minus sign is not closed
-
-            Assert.Throws<FormatException>(() => string.Format("{0,-\0", "")); // Format has invalid character after minus sign
-            Assert.Throws<FormatException>(() => string.Format("{0,-a", "")); // Format has invalid character after minus sign
-
-            Assert.Throws<FormatException>(() => string.Format("{0,1000000", new string[10])); // Format length is too long
-            Assert.Throws<FormatException>(() => string.Format("{0,10000000}", new string[10])); // Format length is too long
-
-            Assert.Throws<FormatException>(() => string.Format("{0:", new string[10])); // Format with colon is not closed
-            Assert.Throws<FormatException>(() => string.Format("{0:    ", new string[10])); // Format with colon and spaces is not closed
-
-            Assert.Throws<FormatException>(() => string.Format("{0:{", new string[10])); // Format with custom format contains unescaped {
-            Assert.Throws<FormatException>(() => string.Format("{0:{}", new string[10])); // Format with custom format contains unescaped {
+            Assert.Throws<FormatException>(() => string.Format(provider, format, args));
+            switch (args.Length)
+            {
+                case 1:
+                    Assert.Throws<FormatException>(() => string.Format(provider, format, args[0]));
+                    break;
+                case 2:
+                    Assert.Throws<FormatException>(() => string.Format(provider, format, args[0], args[1]));
+                    break;
+                case 3:
+                    Assert.Throws<FormatException>(() => string.Format(provider, format, args[0], args[1], args[2]));
+                    break;
+            }
         }
 
         [ConditionalTheory]
@@ -3776,12 +3839,7 @@ namespace System.Tests
             Random rand = new Random(42);
             for (int length = 0; length < 32; length++)
             {
-                char[] a = new char[length];
-                for (int i = 0; i < length; i++)
-                {
-                    a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length - 1)];
-                }
-
+                char[] a = rand.GetItems<char>(s_whiteSpaceCharacters, length);
                 string s1 = new string(a);
                 bool result = string.IsNullOrWhiteSpace(s1);
                 Assert.True(result);
@@ -3810,11 +3868,7 @@ namespace System.Tests
             Random rand = new Random(42);
             for (int length = 0; length < 32; length++)
             {
-                char[] a = new char[length];
-                for (int i = 0; i < length; i++)
-                {
-                    a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length)];
-                }
+                char[] a = rand.GetItems<char>(s_whiteSpaceCharacters, length);
 
                 string s1 = new string(a);
                 bool result = string.IsNullOrWhiteSpace(s1);
@@ -3832,11 +3886,7 @@ namespace System.Tests
             Random rand = new Random(42);
             for (int length = 1; length < 32; length++)
             {
-                char[] a = new char[length];
-                for (int i = 0; i < length; i++)
-                {
-                    a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length)];
-                }
+                char[] a = rand.GetItems<char>(s_whiteSpaceCharacters, length);
                 var span = new Span<char>(a);
 
                 // first character is not a white-space character
@@ -5312,12 +5362,46 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> ToLower_Invariant_TestData()
+        {
+            yield return new object[] { "", "" };
+            yield return new object[] { "Ab", "ab" };
+            yield return new object[] { "H-/", "h-/" };
+            yield return new object[] { "Hello", "hello" };
+            yield return new object[] { "hElLo", "hello" };
+            yield return new object[] { "AbcdAbc", "abcdabc" };
+            yield return new object[] { "AbcdAbcd", "abcdabcd" };
+            yield return new object[] { "AbcdAbcd/", "abcdabcd/" };
+            yield return new object[] { "AbcdAbcd/-", "abcdabcd/-" };
+            yield return new object[] { "AbcdAbcd/-_", "abcdabcd/-_" };
+            yield return new object[] { "AbcdAbcd-bcdAbc", "abcdabcd-bcdabc" };
+            yield return new object[] { "AbcdAbcd-bcdAbcd", "abcdabcd-bcdabcd" };
+            yield return new object[] { "AbcdAbcd-bcdAbcdA", "abcdabcd-bcdabcda" };
+            yield return new object[] { "AbcdAbcd-bcdAbcdA/", "abcdabcd-bcdabcda/" };
+            // Non-ASCII char:
+            yield return new object[] { "\u0436", "\u0436" };
+            yield return new object[] { "H\u0436/", "h\u0436/" };
+            yield return new object[] { "Hell\u0436", "hell\u0436" };
+            yield return new object[] { "hEl\u0436o", "hel\u0436o" };
+            yield return new object[] { "AbcdAb\u0436", "abcdab\u0436" };
+            yield return new object[] { "Abcd\u0436bcd", "abcd\u0436bcd" };
+            yield return new object[] { "AbcdAbc\u0436/", "abcdabc\u0436/" };
+            yield return new object[] { "AbcdAbcd/\u0436", "abcdabcd/\u0436" };
+            yield return new object[] { "AbcdAbcd/-\u0436", "abcdabcd/-\u0436" };
+            yield return new object[] { "AbcdAbc\u0436d-bcdAbc", "abcdabc\u0436d-bcdabc" };
+            yield return new object[] { "AbcdAbcd-b\u0436dAbcd", "abcdabcd-b\u0436dabcd" };
+            yield return new object[] { "AbcdAbcd-bcd\u0436bcdA", "abcdabcd-bcd\u0436bcda" };
+            yield return new object[] { "AbcdAbcd-bcdAbc\u0436A/", "abcdabcd-bcdabc\u0436a/" };
+
+            yield return new object[]
+            {
+                "\u0410\u0411\u0412\u0413\u0414\u0415\u0401\u0416\u0417\u0418\u0419\u041A\u041B\u041C\u041D\u041E\u041F\u0420\u0421\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042C\u042B\u042A\u042D\u042E\u042F",
+                "\u0430\u0431\u0432\u0433\u0434\u0435\u0451\u0436\u0437\u0438\u0439\u043A\u043B\u043C\u043D\u043E\u043F\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449\u044C\u044B\u044A\u044D\u044E\u044F"
+            };
+        }
+
         [Theory]
-        [InlineData("hello", "hello")]
-        [InlineData("HELLO", "hello")]
-        [InlineData("hElLo", "hello")]
-        [InlineData("HeLlO", "hello")]
-        [InlineData("", "")]
+        [MemberData(nameof(ToLower_Invariant_TestData))]
         public static void ToLowerInvariant(string s, string expected)
         {
             Assert.Equal(expected, s.ToLowerInvariant());
@@ -5885,12 +5969,46 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> ToUpper_Invariant_TestData()
+        {
+            yield return new object[] { "", "" };
+            yield return new object[] { "Ab", "AB" };
+            yield return new object[] { "H-/", "H-/" };
+            yield return new object[] { "Hello", "HELLO" };
+            yield return new object[] { "hElLo", "HELLO" };
+            yield return new object[] { "AbcdAbc", "ABCDABC" };
+            yield return new object[] { "AbcdAbcd", "ABCDABCD" };
+            yield return new object[] { "AbcdAbcd/", "ABCDABCD/" };
+            yield return new object[] { "AbcdAbcd/-", "ABCDABCD/-" };
+            yield return new object[] { "AbcdAbcd/-_", "ABCDABCD/-_" };
+            yield return new object[] { "AbcdAbcd-bcdAbc", "ABCDABCD-BCDABC" };
+            yield return new object[] { "AbcdAbcd-bcdAbcd", "ABCDABCD-BCDABCD" };
+            yield return new object[] { "AbcdAbcd-bcdAbcdA", "ABCDABCD-BCDABCDA" };
+            yield return new object[] { "AbcdAbcd-bcdAbcdA/", "ABCDABCD-BCDABCDA/" };
+            // Non-ASCII char:
+            yield return new object[] { "\u0436", "\u0416" };
+            yield return new object[] { "H\u0436/", "H\u0416/" };
+            yield return new object[] { "Hell\u0436", "HELL\u0416" };
+            yield return new object[] { "hEl\u0436o", "HEL\u0416O" };
+            yield return new object[] { "AbcdAb\u0436", "ABCDAB\u0416" };
+            yield return new object[] { "Abcd\u0436bcd", "ABCD\u0416BCD" };
+            yield return new object[] { "AbcdAbc\u0436/", "ABCDABC\u0416/" };
+            yield return new object[] { "AbcdAbcd/\u0436", "ABCDABCD/\u0416" };
+            yield return new object[] { "AbcdAbcd/-\u0436", "ABCDABCD/-\u0416" };
+            yield return new object[] { "AbcdAbc\u0436d-bcdAbc", "ABCDABC\u0416D-BCDABC" };
+            yield return new object[] { "AbcdAbcd-b\u0436dAbcd", "ABCDABCD-B\u0416DABCD" };
+            yield return new object[] { "AbcdAbcd-bcd\u0436bcdA", "ABCDABCD-BCD\u0416BCDA" };
+            yield return new object[] { "AbcdAbcd-bcdAbc\u0436A/", "ABCDABCD-BCDABC\u0416A/" };
+
+            yield return new object[]
+            {
+                "\u0430\u0431\u0432\u0433\u0434\u0435\u0451\u0436\u0437\u0438\u0439\u043A\u043B\u043C\u043D\u043E\u043F\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449\u044C\u044B\u044A\u044D\u044E\u044F",
+                "\u0410\u0411\u0412\u0413\u0414\u0415\u0401\u0416\u0417\u0418\u0419\u041A\u041B\u041C\u041D\u041E\u041F\u0420\u0421\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042C\u042B\u042A\u042D\u042E\u042F"
+            };
+        }
+
         [Theory]
-        [InlineData("hello", "HELLO")]
-        [InlineData("HELLO", "HELLO")]
-        [InlineData("hElLo", "HELLO")]
-        [InlineData("HeLlO", "HELLO")]
-        [InlineData("", "")]
+        [MemberData(nameof(ToUpper_Invariant_TestData))]
         public static void ToUpperInvariant(string s, string expected)
         {
             Assert.Equal(expected, s.ToUpperInvariant());

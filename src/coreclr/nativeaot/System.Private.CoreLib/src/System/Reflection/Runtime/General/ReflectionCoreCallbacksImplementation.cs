@@ -32,8 +32,8 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly Load(AssemblyName assemblyRef, bool throwOnFileNotFound)
         {
-            if (assemblyRef == null)
-                throw new ArgumentNullException(nameof(assemblyRef));
+            ArgumentNullException.ThrowIfNull(assemblyRef);
+
             if (throwOnFileNotFound)
                 return RuntimeAssemblyInfo.GetRuntimeAssembly(assemblyRef.ToRuntimeAssemblyName());
             else
@@ -50,8 +50,7 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly Load(string assemblyPath)
         {
-            if (assemblyPath == null)
-                throw new ArgumentNullException(nameof(assemblyPath));
+            ArgumentNullException.ThrowIfNull(assemblyPath);
 
             return RuntimeAssemblyInfo.GetRuntimeAssemblyFromPath(assemblyPath);
         }
@@ -147,20 +146,20 @@ namespace System.Reflection.Runtime.General
 
         public sealed override EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e)
         {
-            return e.GetImplicitlyOverriddenBaseClassMember();
+            return e.GetImplicitlyOverriddenBaseClassMember(EventPolicies.Instance);
         }
 
         public sealed override MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m)
         {
-            return m.GetImplicitlyOverriddenBaseClassMember();
+            return m.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
         }
 
         public sealed override PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p)
         {
-            return p.GetImplicitlyOverriddenBaseClassMember();
+            return p.GetImplicitlyOverriddenBaseClassMember(PropertyPolicies.Instance);
         }
 
-        private static FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
+        private static RuntimeFieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
@@ -209,10 +208,8 @@ namespace System.Reflection.Runtime.General
 
         private static Delegate CreateDelegateWorker(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure, bool allowClosed)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (!(type is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -237,12 +234,9 @@ namespace System.Reflection.Runtime.General
         [RequiresUnreferencedCode("The target method might be removed")]
         public sealed override Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (!(type is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -263,14 +257,11 @@ namespace System.Reflection.Runtime.General
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
         public sealed override Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             if (!(type is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -367,10 +358,8 @@ namespace System.Reflection.Runtime.General
 
         public sealed override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset)
         {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-            if (flds == null)
-                throw new ArgumentNullException(nameof(flds));
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(flds);
             if (flds.Length == 0)
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
 
@@ -404,17 +393,46 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
-        public sealed override EnumInfo GetEnumInfo(Type type)
+        public sealed override EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(Type type)
         {
             RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
 
-            EnumInfo? info = runtimeType.GenericCache as EnumInfo;
+            EnumInfo<TUnderlyingValue>? info = runtimeType.GenericCache as EnumInfo<TUnderlyingValue>;
             if (info != null)
                 return info;
 
-            info = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle);
+            ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle, out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
+
+            // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
+            // That codepath would bring functionality to compare everything that was ever allocated in the program.
+            ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
+
+            // Only after we've sorted, create the underlying array.
+            var values = new TUnderlyingValue[unsortedValues.Length];
+            for (int i = 0; i < unsortedValues.Length; i++)
+                values[i] = (TUnderlyingValue)unsortedValues[i];
+
+            info = new EnumInfo<TUnderlyingValue>(RuntimeAugments.GetEnumUnderlyingType(runtimeType.TypeHandle), values, unsortedNames, isFlags);
             runtimeType.GenericCache = info;
             return info;
+        }
+
+        private class EnumUnderlyingTypeComparer : IComparer<object>
+        {
+            public static readonly EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
+
+            public int Compare(object? x, object? y)
+                => x switch
+                {
+                    int i => i.CompareTo((int)y!),
+                    uint ui => ui.CompareTo((uint)y!),
+                    byte b => b.CompareTo((byte)y!),
+                    ushort us => us.CompareTo((ushort)y!),
+                    short s => s.CompareTo((short)y!),
+                    sbyte sb => sb.CompareTo((sbyte)y!),
+                    long l => l.CompareTo((long)y!),
+                    _ => ((ulong)x!).CompareTo((ulong)y!),
+                };
         }
 
         public sealed override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)

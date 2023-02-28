@@ -1372,10 +1372,7 @@ namespace System
         /// Transforms a character into its hexadecimal representation.
         public static string HexEscape(char character)
         {
-            if (character > '\xff')
-            {
-                throw new ArgumentOutOfRangeException(nameof(character));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(character, '\xff');
 
             return string.Create(3, (byte)character, (Span<char> chars, byte b) =>
             {
@@ -1414,10 +1411,9 @@ namespace System
 
         public static char HexUnescape(string pattern, ref int index)
         {
-            if ((index < 0) || (index >= pattern.Length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, pattern.Length);
+
             if ((pattern[index] == '%')
                 && (pattern.Length - index >= 3))
             {
@@ -1797,7 +1793,7 @@ namespace System
 
         internal static string InternalEscapeString(string rawString) =>
             rawString is null ? string.Empty :
-            UriHelper.EscapeString(rawString, checkExistingEscaped: true, UriHelper.UnreservedReservedTable, '?', '#');
+            UriHelper.EscapeString(rawString, checkExistingEscaped: true, UriHelper.UnreservedReservedExceptQuestionMarkHash);
 
         //
         //  This method is called first to figure out the scheme or a simple file path
@@ -2359,7 +2355,7 @@ namespace System
                         flags |= Flags.E_HostNotCanonical;
                         if (NotAny(Flags.UserEscaped))
                         {
-                            host = UriHelper.EscapeString(host, checkExistingEscaped: !IsImplicitFile, UriHelper.UnreservedReservedTable, '?', '#');
+                            host = UriHelper.EscapeString(host, checkExistingEscaped: !IsImplicitFile, UriHelper.UnreservedReservedExceptQuestionMarkHash);
                         }
                         else
                         {
@@ -2656,7 +2652,7 @@ namespace System
                         case UriFormat.UriEscaped:
                             if (NotAny(Flags.UserEscaped))
                             {
-                                UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, '?', '#');
+                                UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, UriHelper.UnreservedReservedExceptQuestionMarkHash);
                             }
                             else
                             {
@@ -2802,7 +2798,7 @@ namespace System
                         {
                             UriHelper.EscapeString(
                                 str.AsSpan(offset, _info.Offset.Fragment - offset),
-                                ref dest, checkExistingEscaped: true, '#');
+                                ref dest, checkExistingEscaped: true, UriHelper.UnreservedReservedExceptHash);
 
                             goto AfterQuery;
                         }
@@ -2841,7 +2837,7 @@ namespace System
                         {
                             UriHelper.EscapeString(
                                 str.AsSpan(offset, _info.Offset.End - offset),
-                                ref dest, checkExistingEscaped: true);
+                                ref dest, checkExistingEscaped: true, UriHelper.UnreservedReserved);
 
                             goto AfterFragment;
                         }
@@ -3171,7 +3167,7 @@ namespace System
                 if (buildIriStringFromPath)
                 {
                     DebugAssertInCtor();
-                    _string += _originalUnicodeString.Substring(origIdx);
+                    _string = string.Concat(_string, _originalUnicodeString.AsSpan(origIdx));
                 }
 
                 string str = _string;
@@ -3840,15 +3836,14 @@ namespace System
             }
 
             // Then look up the syntax in a string-based table.
-            string str;
-            fixed (char* pSpan = span)
+#pragma warning disable CS8500 // takes address of managed type
+            ReadOnlySpan<char> tmpSpan = span; // avoid address exposing the span and impacting the other code in the method that uses it
+            string str = string.Create(tmpSpan.Length, (IntPtr)(&tmpSpan), (buffer, spanPtr) =>
             {
-                str = string.Create(span.Length, (ip: (IntPtr)pSpan, length: span.Length), (buffer, state) =>
-                {
-                    int charsWritten = new ReadOnlySpan<char>((char*)state.ip, state.length).ToLowerInvariant(buffer);
-                    Debug.Assert(charsWritten == buffer.Length);
-                });
-            }
+                int charsWritten = (*(ReadOnlySpan<char>*)spanPtr).ToLowerInvariant(buffer);
+                Debug.Assert(charsWritten == buffer.Length);
+            });
+#pragma warning restore CS8500
             syntax = UriParser.FindOrFetchAsUnknownV1Syntax(str);
             return ParsingError.None;
         }
@@ -3906,7 +3901,6 @@ namespace System
                 return idx;
             }
 
-            string? userInfoString = null;
             // Attempt to parse user info first
 
             if ((syntaxFlags & UriSyntaxFlags.MayHaveUserInfo) != 0)
@@ -3924,23 +3918,15 @@ namespace System
                         flags |= Flags.HasUserInfo;
 
                         // Iri'ze userinfo
-                        if (iriParsing)
+                        if (iriParsing && hostNotUnicodeNormalized)
                         {
-                            if (hostNotUnicodeNormalized)
-                            {
-                                // Normalize user info
-                                userInfoString = IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, UriComponents.UserInfo);
-                                newHost += userInfoString;
+                            // Normalize user info
+                            newHost += IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, UriComponents.UserInfo);
 
-                                if (newHost.Length > ushort.MaxValue)
-                                {
-                                    err = ParsingError.SizeLimit;
-                                    return idx;
-                                }
-                            }
-                            else
+                            if (newHost.Length > ushort.MaxValue)
                             {
-                                userInfoString = new string(pString, startInput, start - startInput + 1);
+                                err = ParsingError.SizeLimit;
+                                return idx;
                             }
                         }
                         ++start;
@@ -3957,7 +3943,7 @@ namespace System
 
                 if (hostNotUnicodeNormalized)
                 {
-                    newHost += new string(pString, start, end - start);
+                    newHost = string.Concat(newHost, new ReadOnlySpan<char>(pString + start, end - start));
                     flags |= Flags.HostUnicodeNormalized;
                     justNormalized = true;
                 }
@@ -3969,7 +3955,7 @@ namespace System
 
                 if (hostNotUnicodeNormalized)
                 {
-                    newHost += new string(pString, start, end - start);
+                    newHost = string.Concat(newHost, new ReadOnlySpan<char>(pString + start, end - start));
                     flags |= Flags.HostUnicodeNormalized;
                     justNormalized = true;
                 }
@@ -4009,7 +3995,7 @@ namespace System
                         flags |= Flags.UncHostType;
                         if (hostNotUnicodeNormalized)
                         {
-                            newHost += new string(pString, start, end - start);
+                            newHost = string.Concat(newHost, new ReadOnlySpan<char>(pString + start, end - start));
                             flags |= Flags.HostUnicodeNormalized;
                             justNormalized = true;
                         }
@@ -4083,7 +4069,7 @@ namespace System
 
                     if (hasUnicode && justNormalized)
                     {
-                        newHost += new string(pString, startPort, idx - startPort);
+                        newHost = string.Concat(newHost, new ReadOnlySpan<char>(pString + startPort, idx - startPort));
                     }
                 }
                 else
@@ -4452,7 +4438,7 @@ namespace System
 
                         UriHelper.EscapeString(
                             str.Slice(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path),
-                            ref dest, checkExistingEscaped: !IsImplicitFile, '?', '#');
+                            ref dest, checkExistingEscaped: !IsImplicitFile, UriHelper.UnreservedReservedExceptQuestionMarkHash);
                     }
                     else
                     {
@@ -4472,7 +4458,7 @@ namespace System
                     // CS8350 & CS8352: We can't pass `copy` and `dest` as arguments together as that could leak the scope of the above stackalloc
                     // As a workaround, re-create the Span in a way that avoids analysis
                     ReadOnlySpan<char> copySpan = MemoryMarshal.CreateReadOnlySpan(ref copy.GetPinnableReference(), copy.Length);
-                    UriHelper.EscapeString(copySpan, ref dest, checkExistingEscaped: true, '\\');
+                    UriHelper.EscapeString(copySpan, ref dest, checkExistingEscaped: true, UriHelper.UnreservedReserved);
                     start = dest.Length;
 
                     copy.Dispose();
@@ -4534,7 +4520,7 @@ namespace System
                     // CS8350 & CS8352: We can't pass `copy` and `dest` as arguments together as that could leak the scope of the above stackalloc
                     // As a workaround, re-create the Span in a way that avoids analysis
                     ReadOnlySpan<char> copySpan = MemoryMarshal.CreateReadOnlySpan(ref copy.GetPinnableReference(), copy.Length);
-                    UriHelper.EscapeString(copySpan, ref dest, checkExistingEscaped: !IsImplicitFile, '?', '#');
+                    UriHelper.EscapeString(copySpan, ref dest, checkExistingEscaped: !IsImplicitFile, UriHelper.UnreservedReservedExceptQuestionMarkHash);
                     start = dest.Length;
 
                     copy.Dispose();
@@ -5149,7 +5135,7 @@ namespace System
         [Obsolete("Uri.EscapeString has been deprecated. Use GetComponents() or Uri.EscapeDataString to escape a Uri component or a string.")]
         protected static string EscapeString(string? str) =>
             str is null ? string.Empty :
-            UriHelper.EscapeString(str, checkExistingEscaped: true, UriHelper.UnreservedReservedTable, '?', '#');
+            UriHelper.EscapeString(str, checkExistingEscaped: true, UriHelper.UnreservedReservedExceptQuestionMarkHash);
 
         //
         // CheckSecurity

@@ -279,9 +279,27 @@ private:
         //
         virtual void ChainFlow()
         {
-            assert(!compiler->fgComputePredsDone);
+            assert(compiler->fgPredsComputed);
+
+            // currBlock
+            compiler->fgRemoveRefPred(remainderBlock, currBlock);
+
+            if (checkBlock != currBlock)
+            {
+                compiler->fgAddRefPred(checkBlock, currBlock);
+            }
+
+            // checkBlock
             checkBlock->bbJumpDest = elseBlock;
-            thenBlock->bbJumpDest  = remainderBlock;
+            compiler->fgAddRefPred(elseBlock, checkBlock);
+            compiler->fgAddRefPred(thenBlock, checkBlock);
+
+            // thenBlock
+            thenBlock->bbJumpDest = remainderBlock;
+            compiler->fgAddRefPred(remainderBlock, thenBlock);
+
+            // elseBlock
+            compiler->fgAddRefPred(remainderBlock, elseBlock);
         }
 
         Compiler*    compiler;
@@ -747,7 +765,6 @@ private:
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
-
             InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
@@ -1002,8 +1019,10 @@ private:
             // Finally, rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
+            compiler->fgRemoveRefPred(checkBlock, coldBlock);
             coldBlock->bbJumpKind = BBJ_ALWAYS;
             coldBlock->bbJumpDest = elseBlock;
+            compiler->fgAddRefPred(elseBlock, coldBlock);
         }
 
         // When the current candidate hads sufficiently high likelihood, scan
@@ -1358,10 +1377,28 @@ private:
         //
         virtual void ChainFlow() override
         {
-            assert(!compiler->fgComputePredsDone);
-            checkBlock->bbJumpDest  = elseBlock;
+            assert(compiler->fgPredsComputed);
+
+            // currBlock
+            compiler->fgRemoveRefPred(remainderBlock, currBlock);
+            compiler->fgAddRefPred(checkBlock, currBlock);
+
+            // checkBlock
+            checkBlock->bbJumpDest = elseBlock;
+            compiler->fgAddRefPred(elseBlock, checkBlock);
+            compiler->fgAddRefPred(checkBlock2, checkBlock);
+
+            // checkBlock2
             checkBlock2->bbJumpDest = elseBlock;
-            thenBlock->bbJumpDest   = remainderBlock;
+            compiler->fgAddRefPred(elseBlock, checkBlock2);
+            compiler->fgAddRefPred(thenBlock, checkBlock2);
+
+            // thenBlock
+            thenBlock->bbJumpDest = remainderBlock;
+            compiler->fgAddRefPred(remainderBlock, thenBlock);
+
+            // elseBlock
+            compiler->fgAddRefPred(remainderBlock, elseBlock);
         }
 
     private:

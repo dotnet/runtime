@@ -10,7 +10,6 @@ parameters:
   platform: ''
   pool: ''
   runtimeVariant: ''
-  stagedBuild: false
   testGroup: ''
   timeoutInMinutes: ''
   variables: {}
@@ -27,7 +26,6 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 

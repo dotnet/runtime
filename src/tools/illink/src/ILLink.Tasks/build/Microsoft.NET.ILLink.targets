@@ -16,7 +16,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <PropertyGroup>
     <IntermediateLinkDir Condition=" '$(IntermediateLinkDir)' == '' ">$(IntermediateOutputPath)linked\</IntermediateLinkDir>
     <IntermediateLinkDir Condition=" !HasTrailingSlash('$(IntermediateLinkDir)') ">$(IntermediateLinkDir)\</IntermediateLinkDir>
-    <!-- Used to enable incremental build for the linker target. -->
+    <!-- Used to enable incremental build for the ILLink target. -->
     <_LinkSemaphore>$(IntermediateLinkDir)Link.semaphore</_LinkSemaphore>
   </PropertyGroup>
 
@@ -30,7 +30,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <!-- We disable features for trimmed apps here so that the feature
       switches can flow to the runtimeconfig.json. Features are disabled
       by default since they may require assemblies, types or members that
-      could be removed by the linker, causing a trimmed app to crash. -->
+      could be removed by the ILLink, causing a trimmed app to crash. -->
   <PropertyGroup Condition="'$(PublishTrimmed)' == 'true' And
                             $([MSBuild]::VersionGreaterThanOrEquals($(_TargetFrameworkVersionWithoutV), '6.0'))">
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
@@ -57,14 +57,14 @@ Copyright (c) .NET Foundation. All rights reserved.
     <SuppressTrimAnalysisWarnings Condition="'$(SuppressTrimAnalysisWarnings)' == ''">false</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
-  <!-- Suppress warnings produced by the linker or by the ILLink Roslyn analyzer. -->
+  <!-- Suppress warnings produced by the trimming or by the ILLink Roslyn analyzer. -->
   <PropertyGroup Condition="'$(SuppressTrimAnalysisWarnings)' == 'true'">
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --notrimwarn</_ExtraTrimmerArgs>
     <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == ''">false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <!-- Disable Redundant Warning Suppressions by default-->
-  <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true'">
+  <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true' And '$(PublishTrimmed)' == 'true'">
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
@@ -73,7 +73,7 @@ Copyright (c) .NET Foundation. All rights reserved.
                      ILLink
 
     Replace the files to be published with versions that have been
-    passed through the linker. Also prevent removed files from being
+    passed through ILLink. Also prevent removed files from being
     included in the generated deps.json.
     ============================================================
     -->
@@ -111,7 +111,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     ============================================================
                      _RunILLink
 
-    Execute the linker. This target runs incrementally, only executing
+    Execute ILLink. This target runs incrementally, only executing
     if the output semaphore file is out of date with respect to the inputs.
     ============================================================
     -->
@@ -178,7 +178,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     using global ILLink options, or per-assembly IsTrimmable and TrimMode metadata.
 
     Note that adding items to or removing items from ManagedAssemblyToLink is unsupported. To change
-    the set of inputs to the linker, instead use a different extension point to
+    the set of inputs to ILLink, instead use a different extension point to
     set PostprocessAssembly metadata on ResolvedFileToPublish.
    -->
    <Target Name="PrepareForILLink"
@@ -279,9 +279,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <ManagedAssemblyToLink Include="@(_TrimmableManagedAssemblyToLink)" IsTrimmable="true" />
     </ItemGroup>
 
-    <!-- Root the main assembly, whether or not it has IsTrimmable set. -->
+    <!-- Root the main assembly entry point. -->
     <ItemGroup>
-      <TrimmerRootAssembly Include="@(IntermediateAssembly)" />
+      <TrimmerRootAssembly Include="@(IntermediateAssembly)" RootMode="EntryPoint" />
     </ItemGroup>
 
     <!-- For .NET < 6, root and copy assemblies without IsTrimmable=true MSBuild metadata. -->
@@ -325,20 +325,20 @@ Copyright (c) .NET Foundation. All rights reserved.
     ============================================================
                      _ComputeManagedAssemblyToLink
 
-    Compute the set of inputs to the linker.
+    Compute the set of inputs to ILLink.
     ============================================================
     -->
   <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_ComputeManagedAssemblyToLink" DependsOnTargets="_ComputeAssembliesToPostprocessOnPublish">
 
-    <!-- NB: There should not be non-managed assemblies in this list, but we still give the linker a chance to
+    <!-- NB: There should not be non-managed assemblies in this list, but we still give the ILLink a chance to
          further refine this list. It currently drops C++/CLI assemblies in ComputeManageAssemblies. -->
     <ComputeManagedAssemblies Assemblies="@(ResolvedFileToPublish->WithMetadataValue('PostprocessAssembly', 'true'))">
       <Output TaskParameter="ManagedAssemblies" ItemName="ManagedAssemblyToLink" />
     </ComputeManagedAssemblies>
 
     <ItemGroup>
-      <!-- The linker implicitly picks up PDBs next to input assemblies. We will filter these out of the publish set. -->
+      <!-- ILLink implicitly picks up PDBs next to input assemblies. We will filter these out of the publish set. -->
       <__PDBToLink Include="@(ResolvedFileToPublish)" Exclude="@(ManagedAssemblyToLink->'%(RelativeDir)%(Filename).pdb')" />
       <_PDBToLink Include="@(ResolvedFileToPublish)" Exclude="@(__PDBToLink)" />
     </ItemGroup>

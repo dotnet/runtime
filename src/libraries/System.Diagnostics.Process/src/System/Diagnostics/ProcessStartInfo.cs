@@ -161,7 +161,7 @@ namespace System.Diagnostics
             get => _windowStyle;
             set
             {
-                if (!Enum.IsDefined(typeof(ProcessWindowStyle), value))
+                if (!Enum.IsDefined(value))
                 {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ProcessWindowStyle));
                 }

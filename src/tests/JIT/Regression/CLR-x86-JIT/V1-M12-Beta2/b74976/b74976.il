@@ -7,9 +7,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly a {}
-.class b {
-.method static int32 c() {
+.assembly 'b74976' {}
+.class public b {
+.method public static int32 c() {
 .entrypoint
 .maxstack 1
  ldc.i4.s 100

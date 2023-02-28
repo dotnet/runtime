@@ -10,10 +10,10 @@ namespace System.Text.RegularExpressions
     /// detailed information in the <see cref="Error"/> and <see cref="Offset"/> properties.
     /// </summary>
     [Serializable]
-#if REGEXGENERATOR
-    internal
-#else
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
     public
+#else
+    internal
 #endif
     sealed class RegexParseException : ArgumentException
     {

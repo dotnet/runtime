@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using ArmAes = System.Runtime.Intrinsics.Arm.Aes;
 using X86Aes = System.Runtime.Intrinsics.X86.Aes;
 
-class Runtime_34587
+public class Runtime_34587
 {
     public static int Main()
     {

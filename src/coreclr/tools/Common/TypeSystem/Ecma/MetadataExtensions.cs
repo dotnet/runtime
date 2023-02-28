@@ -122,7 +122,7 @@ namespace Internal.TypeSystem.Ecma
             return default(CustomAttributeHandle);
         }
 
-        private static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader,
+        public static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader,
             string attributeNamespace, string attributeName)
         {
             StringHandle namespaceHandle, nameHandle;
@@ -294,6 +294,21 @@ namespace Internal.TypeSystem.Ecma
         public static bool IsPublic(this MethodAttributes flags)
         {
             return (flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
+        }
+
+        public static unsafe byte* GetTypeNamePointer(this MetadataReader reader, TypeDefinitionHandle handle)
+        {
+            return reader.GetBlobReader(reader.GetTypeDefinition(handle).Name).CurrentPointer;
+        }
+
+        public static unsafe byte* GetTypeNamespacePointer(this MetadataReader reader, TypeDefinitionHandle handle)
+        {
+            return reader.GetBlobReader(reader.GetTypeDefinition(handle).Namespace).CurrentPointer;
+        }
+
+        public static unsafe byte* GetMethodNamePointer(this MetadataReader reader, MethodDefinitionHandle handle)
+        {
+            return reader.GetBlobReader(reader.GetMethodDefinition(handle).Name).CurrentPointer;
         }
     }
 }

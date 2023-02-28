@@ -80,7 +80,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private Option<bool> _includeReadyToRun { get; } =
             new("--includeReadyToRun", "Include ReadyToRun methods in the trace file");
         private Option<Verbosity> _verbosity { get; } =
-            new(new[] { "--verbose", "-v" }, () => Verbosity.normal, "Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic");
+            new(new[] { "--verbose" }, () => Verbosity.normal, "Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic");
         private Option<bool> _isSorted { get; } =
             new("--sorted", "Generate sorted output.");
         private Option<bool> _showTimestamp { get; } =

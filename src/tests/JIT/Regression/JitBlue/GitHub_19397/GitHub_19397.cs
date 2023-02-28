@@ -16,7 +16,7 @@ namespace GitHub_19397
         {
             return(0x0101010101010101L);
         }
-        static int Main()
+        public static int Main()
         {
             long value = getValue();
             Console.WriteLine($"Result is {value}");

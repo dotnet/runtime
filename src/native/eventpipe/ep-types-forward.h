@@ -186,10 +186,6 @@ typedef void (*EventPipeCallback)(
 	EventFilterDescriptor *filter_data,
 	void *callback_data);
 
-typedef void (*EventPipeCallbackDataFree)(
-	EventPipeCallback callback,
-	void *callback_data);
-
 typedef void (*EventPipeSessionSynchronousCallback)(
 	EventPipeProvider *provider,
 	uint32_t event_id,

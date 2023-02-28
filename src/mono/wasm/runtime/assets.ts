@@ -47,67 +47,83 @@ const skipInstantiateByAssetTypes: {
     "dotnetwasm": true,
 };
 
+export function get_preferred_icu_asset(): string | null {
+    if (!runtimeHelpers.config.assets)
+        return null;
+
+    // By setting <WasmIcuDataFileName> user can define what ICU source file they want to load.
+    // There is no need to check application's culture when <WasmIcuDataFileName> is set.
+    // If it was not set, then we have 3 "icu" assets in config and we should choose
+    // only one for loading, the one that matches the application's locale.
+    const icuAssets = runtimeHelpers.config.assets.filter(a => a["behavior"] == "icu");
+    if (icuAssets.length === 1)
+        return icuAssets[0].name;
+
+    // reads the browsers locale / the OS's locale
+    const preferredCulture = ENVIRONMENT_IS_WEB ? navigator.language : Intl.DateTimeFormat().resolvedOptions().locale;
+    const prefix = preferredCulture.split("-")[0];
+    const CJK = "icudt_CJK.dat";
+    const EFIGS = "icudt_EFIGS.dat";
+    const OTHERS = "icudt_no_CJK.dat";
+
+    // not all "fr-*", "it-*", "de-*", "es-*" are in EFIGS, only the one that is mostly used
+    if (prefix == "en" || ["fr", "fr-FR", "it", "it-IT", "de", "de-DE", "es", "es-ES"].includes(preferredCulture))
+        return EFIGS;
+    if (["zh", "ko", "ja"].includes(prefix))
+        return CJK;
+    return OTHERS;
+}
+
+export function shouldLoadIcuAsset(asset : AssetEntryInternal, preferredIcuAsset: string | null) : boolean{
+    return !(asset.behavior == "icu" && asset.name != preferredIcuAsset);
+}
+
 export function resolve_asset_path(behavior: AssetBehaviours) {
-    const asset: AssetEntry | undefined = runtimeHelpers.config.assets?.find(a => a.behavior == behavior);
+    const asset: AssetEntryInternal | undefined = runtimeHelpers.config.assets?.find(a => a.behavior == behavior);
     mono_assert(asset, () => `Can't find asset for ${behavior}`);
     if (!asset.resolvedUrl) {
         asset.resolvedUrl = resolve_path(asset, "");
     }
     return asset;
 }
-type AssetWithBuffer = {
-    asset: AssetEntryInternal,
-    buffer?: ArrayBuffer
-}
 export async function mono_download_assets(): Promise<void> {
+    const preferredIcuAsset = get_preferred_icu_asset();
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
+    runtimeHelpers.enableDownloadRetry = runtimeHelpers.config.enableDownloadRetry || runtimeHelpers.enableDownloadRetry;
     try {
-        const promises_of_assets_with_buffer: Promise<AssetWithBuffer>[] = [];
+        const promises_of_assets: Promise<AssetEntryInternal>[] = [];
         // start fetching and instantiating all assets in parallel
         for (const a of runtimeHelpers.config.assets!) {
             const asset: AssetEntryInternal = a;
-            if (!skipInstantiateByAssetTypes[asset.behavior]) {
+            mono_assert(typeof asset === "object", "asset must be object");
+            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
+            mono_assert(typeof asset.name === "string", "asset name must be string");
+            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
+            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                 expected_instantiated_assets_count++;
             }
-            if (!skipDownloadsByAssetTypes[asset.behavior]) {
-                const headersOnly = skipBufferByAssetTypes[asset.behavior];// `response.arrayBuffer()` can't be called twice. Some usecases are calling it on response in the instantiation.
+            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                 expected_downloaded_assets_count++;
-                if (asset.pendingDownload) {
-                    asset.pendingDownloadInternal = asset.pendingDownload;
-                    const waitForExternalData: () => Promise<AssetWithBuffer> = async () => {
-                        const response = await asset.pendingDownloadInternal!.response;
-                        ++actual_downloaded_assets_count;
-                        if (!headersOnly) {
-                            asset.buffer = await response.arrayBuffer();
-                        }
-                        return { asset, buffer: asset.buffer };
-                    };
-                    promises_of_assets_with_buffer.push(waitForExternalData());
-                } else {
-                    const waitForExternalData: () => Promise<AssetWithBuffer> = async () => {
-                        asset.buffer = await start_asset_download_with_retries(asset, !headersOnly);
-                        return { asset, buffer: asset.buffer };
-                    };
-                    promises_of_assets_with_buffer.push(waitForExternalData());
-                }
+                promises_of_assets.push(start_asset_download(asset));
             }
         }
         allDownloadsQueued.promise_control.resolve();
 
         const promises_of_asset_instantiation: Promise<void>[] = [];
-        for (const downloadPromise of promises_of_assets_with_buffer) {
+        for (const downloadPromise of promises_of_assets) {
             promises_of_asset_instantiation.push((async () => {
-                const assetWithBuffer = await downloadPromise;
-                const asset = assetWithBuffer.asset;
-                if (assetWithBuffer.buffer) {
+                const asset = await downloadPromise;
+                if (asset.buffer) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
                         const url = asset.pendingDownloadInternal!.url;
+                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
                         const data = new Uint8Array(asset.buffer!);
                         asset.pendingDownloadInternal = null as any; // GC
                         asset.pendingDownload = null as any; // GC
                         asset.buffer = null as any; // GC
-                        assetWithBuffer.buffer = null as any; // GC
 
                         await beforeOnRuntimeInitialized.promise;
                         // this is after onRuntimeInitialized
@@ -117,11 +133,15 @@ export async function mono_download_assets(): Promise<void> {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
                         mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                        if (!skipDownloadsByAssetTypes[asset.behavior]) {
+                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                             expected_downloaded_assets_count--;
                         }
-                        if (!skipInstantiateByAssetTypes[asset.behavior]) {
+                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                             expected_instantiated_assets_count--;
+                        }
+                    } else {
+                        if (skipBufferByAssetTypes[asset.behavior]) {
+                            ++actual_downloaded_assets_count;
                         }
                     }
                 }
@@ -147,10 +167,14 @@ export async function mono_download_assets(): Promise<void> {
 }
 
 // FIXME: Connection reset is probably the only good one for which we should retry
-export async function start_asset_download_with_retries(asset: AssetEntryInternal, downloadData: boolean): Promise<ArrayBuffer | undefined> {
+export async function start_asset_download(asset: AssetEntryInternal): Promise<AssetEntryInternal> {
     try {
-        return await start_asset_download_with_throttle(asset, downloadData);
+        return await start_asset_download_with_throttle(asset);
     } catch (err: any) {
+        if (!runtimeHelpers.enableDownloadRetry) {
+            // we will not re-try if disabled
+            throw err;
+        }
         if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
             // we will not re-try on shell
             throw err;
@@ -171,17 +195,17 @@ export async function start_asset_download_with_retries(asset: AssetEntryInterna
         // second attempt only after all first attempts are queued
         await allDownloadsQueued.promise;
         try {
-            return await start_asset_download_with_throttle(asset, downloadData);
+            return await start_asset_download_with_throttle(asset);
         } catch (err) {
             asset.pendingDownloadInternal = undefined;
             // third attempt after small delay
             await delay(100);
-            return await start_asset_download_with_throttle(asset, downloadData);
+            return await start_asset_download_with_throttle(asset);
         }
     }
 }
 
-async function start_asset_download_with_throttle(asset: AssetEntry, downloadData: boolean): Promise<ArrayBuffer | undefined> {
+async function start_asset_download_with_throttle(asset: AssetEntryInternal): Promise<AssetEntryInternal> {
     // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
     while (throttlingPromise) {
         await throttlingPromise.promise;
@@ -195,10 +219,16 @@ async function start_asset_download_with_throttle(asset: AssetEntry, downloadDat
         }
 
         const response = await start_asset_download_sources(asset);
-        if (!downloadData || !response) {
-            return undefined;
+        if (!response) {
+            return asset;
         }
-        return await response.arrayBuffer();
+        const skipBuffer = skipBufferByAssetTypes[asset.behavior];
+        if (skipBuffer) {
+            return asset;
+        }
+        asset.buffer = await response.arrayBuffer();
+        ++actual_downloaded_assets_count;
+        return asset;
     }
     finally {
         --parallel_count;
@@ -214,6 +244,12 @@ async function start_asset_download_with_throttle(asset: AssetEntry, downloadDat
 
 async function start_asset_download_sources(asset: AssetEntryInternal): Promise<Response | undefined> {
     // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
+    if (asset.pendingDownload) {
+        asset.pendingDownloadInternal = asset.pendingDownload;
+    }
+    if (asset.pendingDownloadInternal && asset.pendingDownloadInternal.response) {
+        return asset.pendingDownloadInternal.response;
+    }
     if (asset.buffer) {
         const buffer = asset.buffer;
         asset.buffer = null as any; // GC
@@ -227,12 +263,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
                 }
             }) as any
         };
-        ++actual_downloaded_assets_count;
         return asset.pendingDownloadInternal.response;
-    }
-    if (asset.pendingDownloadInternal && asset.pendingDownloadInternal.response) {
-        const response = await asset.pendingDownloadInternal.response;
-        return response;
     }
 
     const sourcesList = asset.loadRemote && runtimeHelpers.config.remoteSources ? runtimeHelpers.config.remoteSources : [""];
@@ -252,18 +283,13 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
                 console.debug(`MONO_WASM: Attempting to download '${attemptUrl}' for ${asset.name}`);
         }
         try {
-            const loadingResource = download_resource({
-                name: asset.name,
-                resolvedUrl: attemptUrl,
-                hash: asset.hash,
-                behavior: asset.behavior
-            });
+            asset.resolvedUrl = attemptUrl;
+            const loadingResource = download_resource(asset);
             asset.pendingDownloadInternal = loadingResource;
             response = await loadingResource.response;
             if (!response.ok) {
                 continue;// next source
             }
-            ++actual_downloaded_assets_count;
             return response;
         }
         catch (err) {
@@ -294,7 +320,7 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
                     : asset.name;
             }
             else if (asset.behavior === "resource") {
-                const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
+                const path = asset.culture && asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
                 attemptUrl = assemblyRootFolder
                     ? (assemblyRootFolder + "/" + path)
                     : path;
@@ -417,12 +443,15 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
             loaded_files.splice(index, 1);
         }
     }
+    else if (asset.behavior === "pdb") {
+        cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
+    }
     else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
             Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
-        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
+        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }
     endMeasure(mark, MeasuredBlock.instantiateAsset, asset.name);
     ++actual_instantiated_assets_count;
@@ -432,10 +461,10 @@ export async function instantiate_wasm_asset(
     pendingAsset: AssetEntryInternal,
     wasmModuleImports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback,
-) {
-    mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal, "Can't load dotnet.wasm");
+): Promise<void> {
+    mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal && pendingAsset.pendingDownloadInternal.response, "Can't load dotnet.wasm");
     const response = await pendingAsset.pendingDownloadInternal.response;
-    const contentType = response.headers ? response.headers.get("Content-Type") : undefined;
+    const contentType = response.headers && response.headers.get ? response.headers.get("Content-Type") : undefined;
     let compiledInstance: WebAssembly.Instance;
     let compiledModule: WebAssembly.Module;
     if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {

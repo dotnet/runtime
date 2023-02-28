@@ -146,9 +146,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // - MethodImpls ignored. (I didn't say it made sense, this is just how the desktop api we're porting behaves.)
         // - Implemented interfaces ignores. (I didn't say it made sense, this is just how the desktop api we're porting behaves.)
         //
-        public static M GetImplicitlyOverriddenBaseClassMember<M>(this M member) where M : MemberInfo
+        public static M GetImplicitlyOverriddenBaseClassMember<M>(this M member, MemberPolicies<M> policies) where M : MemberInfo
         {
-            MemberPolicies<M> policies = MemberPolicies<M>.Default;
             bool isVirtual;
             bool isNewSlot;
             policies.GetMemberAttributes(member, out _, out _, out isVirtual, out isNewSlot);
@@ -157,16 +156,16 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return null;
             }
             string name = member.Name;
-            TypeInfo typeInfo = member.DeclaringType.GetTypeInfo();
+            Type type = member.DeclaringType!;
             for (;;)
             {
-                Type? baseType = typeInfo.BaseType;
+                Type? baseType = type.BaseType;
                 if (baseType == null)
                 {
                     return null;
                 }
-                typeInfo = baseType.GetTypeInfo();
-                foreach (M candidate in policies.GetDeclaredMembers(typeInfo))
+                type = baseType;
+                foreach (M candidate in policies.GetDeclaredMembers(type))
                 {
                     if (candidate.Name != name)
                     {

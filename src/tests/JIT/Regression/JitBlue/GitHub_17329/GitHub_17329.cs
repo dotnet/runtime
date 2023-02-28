@@ -38,7 +38,7 @@ struct Point1
     }
 }
 
-class TestCase
+public class TestCase
 {
     static public long[] arr;
 
@@ -74,7 +74,7 @@ class TestCase
         return sum;
     }
 
-    static int Main()
+    public static int Main()
     { 
         long testResult = 0;
         int mainResult = 0;

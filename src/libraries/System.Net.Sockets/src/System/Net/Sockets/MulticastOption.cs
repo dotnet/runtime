@@ -25,10 +25,8 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(group);
 
-            if (interfaceIndex < 0 || interfaceIndex > 0x00FFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(interfaceIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(interfaceIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(interfaceIndex, 0x00FFFFFF);
 
             _group = group;
             _ifIndex = interfaceIndex;
@@ -71,10 +69,8 @@ namespace System.Net.Sockets
             get => _ifIndex;
             set
             {
-                if (value < 0 || value > 0x00FFFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x00FFFFFF);
 
                 _localAddress = null;
                 _ifIndex = value;
@@ -94,10 +90,8 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(group);
 
-            if (ifindex < 0 || ifindex > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(ifindex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(ifindex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(ifindex, 0x00000000FFFFFFFF);
 
             _group = group;
             InterfaceIndex = ifindex;
@@ -130,10 +124,8 @@ namespace System.Net.Sockets
             get => _interface;
             set
             {
-                if (value < 0 || value > 0x00000000FFFFFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x00000000FFFFFFFF);
 
                 _interface = value;
             }

@@ -6,9 +6,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-internal class My
+public class My
 {
-    private static int Main()
+    public static int Main()
     {
         My[] s = new My[0];
         IList<My> ls = (IList<My>)s;

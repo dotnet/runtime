@@ -211,8 +211,8 @@ namespace System.Text
                 {
                     // If arg is ISpanFormattable and the beginning doesn't need padding,
                     // try formatting it into the remaining current chunk.
-                    if (arg is ISpanFormattable spanFormattableArg &&
-                        (leftJustify || width == 0) &&
+                    if ((leftJustify || width == 0) &&
+                        arg is ISpanFormattable spanFormattableArg &&
                         spanFormattableArg.TryFormat(_chars.Slice(_pos), out int charsWritten, itemFormatSpan, provider))
                     {
                         _pos += charsWritten;

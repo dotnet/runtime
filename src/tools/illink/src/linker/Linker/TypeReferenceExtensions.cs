@@ -66,6 +66,7 @@ namespace Mono.Linker
 					break;
 				}
 
+				type = type.GetElementType ();
 				if (type.DeclaringType is not TypeReference declaringType)
 					break;
 

@@ -92,15 +92,9 @@ namespace System.Net
             {
                 CheckDisposed();
                 CheckSentHeaders();
-                if (value >= 0)
-                {
-                    _contentLength = value;
-                    _boundaryType = BoundaryType.ContentLength;
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                _contentLength = value;
+                _boundaryType = BoundaryType.ContentLength;
             }
         }
 

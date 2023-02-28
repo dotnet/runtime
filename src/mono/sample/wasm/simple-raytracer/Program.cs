@@ -6,16 +6,16 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-[StructLayout(LayoutKind.Sequential, Pack=1)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct Vec3f {
-  public float x, y, z;
+    public float x, y, z;
 
-  [MethodImpl(MethodImplOptions.AggressiveInlining)]
-  public Vec3f (float x, float y, float z = 0f) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Vec3f (float x, float y, float z = 0f) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
 }
 
 public delegate void SceneObjectReader<T> (ref T obj, out float radius, out Vec3f center);
@@ -35,93 +35,92 @@ public struct Sphere : ISceneObject {
 }
 
 public static unsafe class Raytrace {
-  public const int BytesPerPixel = 4,
-    width = 640, height = 480;
+    public const int BytesPerPixel = 4,
+      width = 640, height = 480;
 
-  private static byte[] FrameBuffer;
-  private static Sphere[] Scene;
+    private static byte[] FrameBuffer;
+    private static Sphere[] Scene;
 
-  // Convert a linear color value to a gamma-space int in [0, 255]
-  // Square root approximates gamma-correct rendering.
-  public static int l2gi (float v) {
-    // sqrt, clamp to [0, 1], then scale to [0, 255] and truncate to int
-    return (int)((MathF.Min(MathF.Max(MathF.Sqrt(v), 0.0f), 1.0f)) * 255.0f);
-  }
+    // Convert a linear color value to a gamma-space int in [0, 255]
+    // Square root approximates gamma-correct rendering.
+    public static int l2gi (float v) {
+        // sqrt, clamp to [0, 1], then scale to [0, 255] and truncate to int
+        return (int)((MathF.Min(MathF.Max(MathF.Sqrt(v), 0.0f), 1.0f)) * 255.0f);
+    }
 
-  [MethodImpl(MethodImplOptions.AggressiveInlining)]
-  public static void vecStore (float x, float y, float z, ref Vec3f ptr) {
-    ptr.x = x;
-    ptr.y = y;
-    ptr.z = z;
-  }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void vecStore (float x, float y, float z, ref Vec3f ptr) {
+        ptr.x = x;
+        ptr.y = y;
+        ptr.z = z;
+    }
 
-  [MethodImpl(MethodImplOptions.AggressiveInlining)]
-  public static void vecAdd (ref Vec3f a, ref Vec3f b, ref Vec3f ptr) {
-    ptr.x = a.x + b.x;
-    ptr.y = a.y + b.y;
-    ptr.z = a.z + b.z;
-  }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void vecAdd (ref Vec3f a, ref Vec3f b, ref Vec3f ptr) {
+        ptr.x = a.x + b.x;
+        ptr.y = a.y + b.y;
+        ptr.z = a.z + b.z;
+    }
 
-  [MethodImpl(MethodImplOptions.AggressiveInlining)]
-  public static void vecScale (ref Vec3f a, float scale, ref Vec3f ptr) {
-    ptr.x = a.x * scale;
-    ptr.y = a.y * scale;
-    ptr.z = a.z * scale;
-  }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void vecScale (ref Vec3f a, float scale, ref Vec3f ptr) {
+        ptr.x = a.x * scale;
+        ptr.y = a.y * scale;
+        ptr.z = a.z * scale;
+    }
 
-  [MethodImpl(MethodImplOptions.AggressiveInlining)]
-  public static void vecNormalize (ref Vec3f ptr) {
-    var x = ptr.x;
-    var y = ptr.y;
-    var z = ptr.z;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void vecNormalize (ref Vec3f ptr) {
+        var x = ptr.x;
+        var y = ptr.y;
+        var z = ptr.z;
 
-    float invLen = (1.0f / MathF.Sqrt((x * x) + (y * y) + (z * z)));
-    ptr.x *= invLen;
-    ptr.y *= invLen;
-    ptr.z *= invLen;
-  }
+        float invLen = (1.0f / MathF.Sqrt((x * x) + (y * y) + (z * z)));
+        ptr.x *= invLen;
+        ptr.y *= invLen;
+        ptr.z *= invLen;
+    }
 
-  [MethodImpl(MethodImplOptions.AggressiveInlining)]
-  public static float vecDot (ref Vec3f a, ref Vec3f b) {
-    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
-  }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float vecDot (ref Vec3f a, ref Vec3f b) {
+        return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
+    }
 
-  [MethodImpl(MethodImplOptions.AggressiveInlining)]
-  public static float vecNLDot (ref Vec3f a, ref Vec3f b) {
-    var value = vecDot(ref a, ref b);
-    if (value < 0)
-      return 0;
-    else
-      return value;
-  }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float vecNLDot (ref Vec3f a, ref Vec3f b) {
+        var value = vecDot(ref a, ref b);
+        if (value < 0)
+            return 0;
+        else
+            return value;
+    }
 
-  public static void sampleEnv (ref Vec3f dir, ref Vec3f ptr) {
-    var y = dir.y;
-    var amt = y * 0.5f + 0.5f;
-    var keep = 1.0f - amt;
-    vecStore(
-      keep * 0.1f + amt * 0.1f,
-      keep * 1.0f + amt * 0.1f,
-      keep * 0.1f + amt * 1.0f,
-      ref ptr
-    );
-  }
+    public static void sampleEnv (ref Vec3f dir, ref Vec3f ptr) {
+        var y = dir.y;
+        var amt = y * 0.5f + 0.5f;
+        var keep = 1.0f - amt;
+        vecStore(
+          keep * 0.1f + amt * 0.1f,
+          keep * 1.0f + amt * 0.1f,
+          keep * 0.1f + amt * 1.0f,
+          ref ptr
+        );
+    }
 
     public abstract class Intersector {
         public abstract void SetReader (Delegate d);
-        public abstract unsafe bool Intersect (ref Vec3f pos, ref Vec3f dir, void * obj, ref Vec3f intersection_normal);
+        public abstract unsafe bool Intersect (ref Vec3f pos, ref Vec3f dir, void* obj, ref Vec3f intersection_normal);
     }
 
     public class Intersector<T> : Intersector
-        where T : unmanaged, ISceneObject
-    {
+        where T : unmanaged, ISceneObject {
         public SceneObjectReader<T> Reader;
 
         public override void SetReader (Delegate d) {
             Reader = (SceneObjectReader<T>)d;
         }
 
-        public override bool Intersect (ref Vec3f pos, ref Vec3f dir, void * obj, ref Vec3f intersection_normal) {
+        public override bool Intersect (ref Vec3f pos, ref Vec3f dir, void* obj, ref Vec3f intersection_normal) {
             var so = Unsafe.AsRef<T>(obj);
             Reader(ref so, out var radius, out var center);
             return Intersect(ref pos, ref dir, radius, ref center, ref intersection_normal);
@@ -161,144 +160,143 @@ public static unsafe class Raytrace {
         }
     }
 
-  private static void renderPixel (int i, int j, ref Vec3f light, Intersector intersector) {
-    var fb = FrameBuffer;
-    var scene = Scene;
+    private static void renderPixel (int i, int j, ref Vec3f light, Intersector intersector) {
+        var fb = FrameBuffer;
+        var scene = Scene;
 
-    var x = (float)(i) / (float)(width) - 0.5f;
-    var y = 0.5f - (float)(j) / (float)(height);
-    Vec3f pos = new Vec3f(x, y),
-        dir = new Vec3f(x, y, -0.5f),
-        half = default, intersection_normal = default,
-        color = default;
-    vecNormalize(ref dir);
+        var x = (float)(i) / (float)(width) - 0.5f;
+        var y = 0.5f - (float)(j) / (float)(height);
+        Vec3f pos = new Vec3f(x, y),
+            dir = new Vec3f(x, y, -0.5f),
+            half = default, intersection_normal = default,
+            color = default;
+        vecNormalize(ref dir);
 
-    // Compute the half vector;
-    vecScale(ref dir, -1.0f, ref half);
-    vecAdd(ref half, ref light, ref half);
-    vecNormalize(ref half);
+        // Compute the half vector;
+        vecScale(ref dir, -1.0f, ref half);
+        vecAdd(ref half, ref light, ref half);
+        vecNormalize(ref half);
 
-    // Light accumulation
-    var r = 0.0f;
-    var g = 0.0f;
-    var b = 0.0f;
+        // Light accumulation
+        var r = 0.0f;
+        var g = 0.0f;
+        var b = 0.0f;
 
-    // Surface diffuse.
-    var dr = 0.7f;
-    var dg = 0.7f;
-    var db = 0.7f;
+        // Surface diffuse.
+        var dr = 0.7f;
+        var dg = 0.7f;
+        var db = 0.7f;
 
-    float hitZ = -999;
-    bool didHitZ = false;
-    for (int s = 0; s < scene.Length; s++) {
-        ref var sphere = ref scene[s];
+        float hitZ = -999;
+        bool didHitZ = false;
+        for (int s = 0; s < scene.Length; s++) {
+            ref var sphere = ref scene[s];
 
-        if (didHitZ && (hitZ > sphere.Center.z))
-            continue;
+            if (didHitZ && (hitZ > sphere.Center.z))
+                continue;
 
-        if (intersector.Intersect(ref pos, ref dir, Unsafe.AsPointer(ref sphere), ref intersection_normal)) {
-            sampleEnv(ref intersection_normal, ref color);
+            if (intersector.Intersect(ref pos, ref dir, Unsafe.AsPointer(ref sphere), ref intersection_normal)) {
+                sampleEnv(ref intersection_normal, ref color);
 
-            const float ambientScale = 0.2f;
-            r = dr * color.x * ambientScale;
-            g = dg * color.y * ambientScale;
-            b = db * color.z * ambientScale;
+                const float ambientScale = 0.2f;
+                r = dr * color.x * ambientScale;
+                g = dg * color.y * ambientScale;
+                b = db * color.z * ambientScale;
 
-            var diffuse = vecNLDot(ref intersection_normal, ref light);
-            var specular = vecNLDot(ref intersection_normal, ref half);
+                var diffuse = vecNLDot(ref intersection_normal, ref light);
+                var specular = vecNLDot(ref intersection_normal, ref half);
 
-            // Take it to the 64th power, manually.
-            specular *= specular;
-            specular *= specular;
-            specular *= specular;
-            specular *= specular;
-            specular *= specular;
-            specular *= specular;
+                // Take it to the 64th power, manually.
+                specular *= specular;
+                specular *= specular;
+                specular *= specular;
+                specular *= specular;
+                specular *= specular;
+                specular *= specular;
 
-            specular = specular * 0.6f;
+                specular = specular * 0.6f;
 
-            r += dr * (diffuse * sphere.Color.x) + specular;
-            g += dg * (diffuse * sphere.Color.y) + specular;
-            b += db * (diffuse * sphere.Color.z) + specular;
-            // FIXME: Compute z of intersection point and check that instead
-            hitZ = sphere.Center.z;
-            didHitZ = true;
+                r += dr * (diffuse * sphere.Color.x) + specular;
+                g += dg * (diffuse * sphere.Color.y) + specular;
+                b += db * (diffuse * sphere.Color.z) + specular;
+                // FIXME: Compute z of intersection point and check that instead
+                hitZ = sphere.Center.z;
+                didHitZ = true;
+            }
+        }
+
+        if (!didHitZ) {
+            sampleEnv(ref dir, ref color);
+            r = color.x;
+            g = color.y;
+            b = color.z;
+        }
+
+        var index = (i + (j * width)) * BytesPerPixel;
+
+        fb[index + 0] = (byte)l2gi(r);
+        fb[index + 1] = (byte)l2gi(g);
+        fb[index + 2] = (byte)l2gi(b);
+        fb[index + 3] = 255;
+    }
+
+    public static byte[] renderFrame () {
+        Vec3f light = default;
+        vecStore(20.0f, 20.0f, 15.0f, ref light);
+        vecNormalize(ref light);
+
+        var reader = (SceneObjectReader<Sphere>)Sphere.Read;
+        var tIntersector = typeof(Intersector<>).MakeGenericType(new[] { typeof(Sphere) });
+        var intersector = (Intersector)Activator.CreateInstance(tIntersector);
+        intersector.SetReader(reader);
+        for (int j = 0; j < height; j++) {
+            for (int i = 0; i < width; i++)
+                renderPixel(i, j, ref light, intersector);
+        }
+
+        return FrameBuffer;
+    }
+
+    public static void init () {
+        FrameBuffer = new byte[width * height * BytesPerPixel];
+        var rng = new Random(1);
+        const int count = 128;
+        Scene = new Sphere[count];
+        for (int i = 0; i < count; i++) {
+            Scene[i] = new Sphere {
+                Center = new Vec3f(
+                    (rng.NextSingle() * 8f) - 5.5f,
+                    (rng.NextSingle() * 8f) - 5.5f,
+                    (rng.NextSingle() * -8f) - 2f
+                ),
+                Color = new Vec3f(
+                    rng.NextSingle(),
+                    rng.NextSingle(),
+                    rng.NextSingle()
+                ),
+                Radius = (rng.NextSingle() * 0.85f) + 0.075f
+            };
         }
     }
-
-    if (!didHitZ) {
-        sampleEnv(ref dir, ref color);
-        r = color.x;
-        g = color.y;
-        b = color.z;
-    }
-
-    var index = (i + (j * width)) * BytesPerPixel;
-
-    fb[index + 0] = (byte)l2gi(r);
-    fb[index + 1] = (byte)l2gi(g);
-    fb[index + 2] = (byte)l2gi(b);
-    fb[index + 3] = 255;
-  }
-
-  public static byte[] renderFrame () {
-    Vec3f light = default;
-    vecStore(20.0f, 20.0f, 15.0f, ref light);
-    vecNormalize(ref light);
-
-    var reader = (SceneObjectReader<Sphere>)Sphere.Read;
-    var tIntersector = typeof(Intersector<>).MakeGenericType(new[] { typeof(Sphere) });
-    var intersector = (Intersector)Activator.CreateInstance(tIntersector);
-    intersector.SetReader(reader);
-    for (int j = 0; j < height; j++) {
-        for (int i = 0; i < width; i++)
-            renderPixel(i, j, ref light, intersector);
-    }
-
-    return FrameBuffer;
-  }
-
-  public static void init () {
-    FrameBuffer = new byte[width * height * BytesPerPixel];
-    var rng = new Random(1);
-    const int count = 128;
-    Scene = new Sphere[count];
-    for (int i = 0; i < count; i++) {
-        Scene[i] = new Sphere {
-            Center = new Vec3f(
-                (rng.NextSingle() * 8f) - 5.5f,
-                (rng.NextSingle() * 8f) - 5.5f,
-                (rng.NextSingle() * -8f) - 2f
-            ),
-            Color = new Vec3f(
-                rng.NextSingle(),
-                rng.NextSingle(),
-                rng.NextSingle()
-            ),
-            Radius = (rng.NextSingle() * 0.85f) + 0.075f
-        };
-    }
-  }
 }
 
 public static partial class Program {
-    public static void Main()
-    {
+    public static void Main () {
         Raytrace.init();
-        Console.WriteLine ("Hello, World!");
+        Console.WriteLine("Hello, World!");
     }
 
     [JSImport("renderCanvas", "main.js")]
-    static partial void RenderCanvas([JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> rgba);
+    static partial void RenderCanvas ([JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> rgba);
 
     [JSExport]
-    internal static void OnClick(){
+    internal static void OnClick () {
         var now = DateTime.UtcNow;
-        Console.WriteLine ("Rendering started");
+        Console.WriteLine("Rendering started");
 
         var bytes = Raytrace.renderFrame();
 
-        Console.WriteLine ("Rendering finished in "+ (DateTime.UtcNow - now).TotalMilliseconds+ " ms");
+        Console.WriteLine("Rendering finished in " + (DateTime.UtcNow - now).TotalMilliseconds + " ms");
         RenderCanvas(bytes);
     }
 }

@@ -97,6 +97,26 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, int32_t (*check_func)(EVP_PKE
         return false;
     }
 
+    // OpenSSL 1.x does not fail when importing a key with a zero modulus. It fails at key-usage time with an
+    // out-of-memory error. For RSA keys, check the modulus for zero and report an invalid key.
+    // OpenSSL 3 correctly fails with with an invalid modulus error.
+    if (algId == NID_rsaEncryption)
+    {
+        const RSA* rsa = EVP_PKEY_get0_RSA(key);
+
+        if (rsa != NULL)
+        {
+            const BIGNUM* modulus = NULL;
+            RSA_get0_key(rsa, &modulus, NULL, NULL);
+
+            if (modulus != NULL && BN_is_zero(modulus))
+            {
+                ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
+                return false;
+            }
+        }
+    }
+
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(key, NULL);
 
     if (ctx == NULL)

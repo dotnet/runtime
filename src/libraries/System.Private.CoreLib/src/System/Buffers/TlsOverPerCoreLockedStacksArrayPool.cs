@@ -105,9 +105,9 @@ namespace System.Buffers
                 // effectively infinite for empty arrays and we'll never allocate for rents and never store for returns.
                 return Array.Empty<T>();
             }
-            else if (minimumLength < 0)
+            else
             {
-                throw new ArgumentOutOfRangeException(nameof(minimumLength));
+                ArgumentOutOfRangeException.ThrowIfNegative(minimumLength);
             }
 
             buffer = GC.AllocateUninitializedArray<T>(minimumLength);
@@ -459,13 +459,18 @@ namespace System.Buffers
                             {
                                 trimCount++;
                             }
-                            if (Unsafe.SizeOf<T>() > StackModerateTypeSize)
+                            unsafe
                             {
-                                trimCount++;
-                            }
-                            if (Unsafe.SizeOf<T>() > StackLargeTypeSize)
-                            {
-                                trimCount++;
+#pragma warning disable 8500 // sizeof of managed types
+                                if (sizeof(T) > StackModerateTypeSize)
+                                {
+                                    trimCount++;
+                                }
+                                if (sizeof(T) > StackLargeTypeSize)
+                                {
+                                    trimCount++;
+                                }
+#pragma warning restore 8500
                             }
                             break;
 

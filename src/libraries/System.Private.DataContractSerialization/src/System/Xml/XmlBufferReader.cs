@@ -373,10 +373,18 @@ namespace System.Xml
             => BitConverter.IsLittleEndian ? ReadRawBytes<long>() : BinaryPrimitives.ReverseEndianness(ReadRawBytes<long>());
 
         public float ReadSingle()
-            => BinaryPrimitives.ReadSingleLittleEndian(GetBuffer(sizeof(float), out int offset).AsSpan(offset, sizeof(float)));
+        {
+            float f = BinaryPrimitives.ReadSingleLittleEndian(GetBuffer(sizeof(float), out int offset).AsSpan(offset, sizeof(float)));
+            Advance(sizeof(float));
+            return f;
+        }
 
         public double ReadDouble()
-            => BinaryPrimitives.ReadDoubleLittleEndian(GetBuffer(sizeof(double), out int offset).AsSpan(offset, sizeof(double)));
+        {
+            double d = BinaryPrimitives.ReadDoubleLittleEndian(GetBuffer(sizeof(double), out int offset).AsSpan(offset, sizeof(double)));
+            Advance(sizeof(double));
+            return d;
+        }
 
         public decimal ReadDecimal()
         {
@@ -927,18 +935,20 @@ namespace System.Xml
             return (sbyte)GetByte(offset);
         }
 
-        private T ReadRawBytes<T>() where T : unmanaged
+#pragma warning disable 8500 // sizeof of managed types
+        private unsafe T ReadRawBytes<T>() where T : unmanaged
         {
-            ReadOnlySpan<byte> buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset)
-                .AsSpan(offset, Unsafe.SizeOf<T>());
+            ReadOnlySpan<byte> buffer = GetBuffer(sizeof(T), out int offset)
+                .AsSpan(offset, sizeof(T));
             T value = MemoryMarshal.Read<T>(buffer);
 
-            Advance(Unsafe.SizeOf<T>());
+            Advance(sizeof(T));
             return value;
         }
 
-        private T ReadRawBytes<T>(int offset) where T : unmanaged
-            => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, Unsafe.SizeOf<T>()));
+        private unsafe T ReadRawBytes<T>(int offset) where T : unmanaged
+            => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, sizeof(T)));
+#pragma warning restore 8500
 
         public int GetInt16(int offset)
             => BitConverter.IsLittleEndian ? ReadRawBytes<short>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<short>(offset));

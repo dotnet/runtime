@@ -148,10 +148,6 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsVirtual)
                 return true;
 
-            // The hashtable is also used for reflection
-            if (!factory.MetadataManager.IsReflectionBlocked(method))
-                return true;
-
             // The rest of the entries are potentially only useful for the universal
             // canonical type loader.
             return factory.TypeSystemContext.SupportsUniversalCanon;

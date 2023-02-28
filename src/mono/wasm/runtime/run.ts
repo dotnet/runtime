@@ -145,8 +145,6 @@ function appendElementOnExit(exit_code: number) {
 }
 
 function logErrorOnExit(exit_code: number, reason?: any) {
-    jiterpreter_dump_stats(false);
-
     if (runtimeHelpers.config.logExitCode) {
         if (exit_code != 0 && reason) {
             if (reason instanceof Error)
@@ -171,5 +169,12 @@ function logErrorOnExit(exit_code: number, reason?: any) {
         } else {
             console.log("WASM EXIT " + exit_code);
         }
+    }
+
+    try {
+        jiterpreter_dump_stats(false);
+    } catch {
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
+        ;
     }
 }

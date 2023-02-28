@@ -382,7 +382,7 @@ namespace System.Linq.Tests
         [Fact]
         public void CultureOrder()
         {
-            string[] source = new[] { "Apple0", "Æble0", "Apple1", "Æble1", "Apple2", "Æble2" };
+            string[] source = new[] { "Apple0", "\u00C6ble0", "Apple1", "\u00C6ble1", "Apple2", "\u00C6ble2" };
 
             CultureInfo dk = new CultureInfo("da-DK");
             CultureInfo au = new CultureInfo("en-AU");
@@ -454,7 +454,7 @@ namespace System.Linq.Tests
         [Fact]
         public void CultureOrderElementAt()
         {
-            string[] source = new[] { "Apple0", "Æble0", "Apple1", "Æble1", "Apple2", "Æble2" };
+            string[] source = new[] { "Apple0", "\u00C6ble0", "Apple1", "\u00C6ble1", "Apple2", "\u00C6ble2" };
 
             CultureInfo dk = new CultureInfo("da-DK");
             CultureInfo au = new CultureInfo("en-AU");

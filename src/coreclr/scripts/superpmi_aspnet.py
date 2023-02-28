@@ -73,9 +73,9 @@ def determine_native_name(coreclr_args, base_lib_name, target_os):
         (str) : name of the native lib for this OS
     """
 
-    if target_os == "OSX":
+    if target_os == "osx":
         return "lib" + base_lib_name + ".dylib"
-    elif target_os == "Linux":
+    elif target_os == "linux":
         return "lib" + base_lib_name + ".so"
     elif target_os == "windows":
         return base_lib_name + ".dll"
@@ -97,14 +97,14 @@ def determine_benchmark_machine(coreclr_args):
 
     if coreclr_args.arch == "x64":
         if coreclr_args.host_os == "windows":
-#            return "aspnet-perf-win"
-            return "aspnet-citrine-win"
-        elif coreclr_args.host_os == "Linux":
+            return "aspnet-perf-win"
+#            return "aspnet-citrine-win"
+        elif coreclr_args.host_os == "linux":
             return "aspnet-perf-lin"
         else:
             raise RuntimeError("Invalid OS for x64.")
     elif coreclr_args.arch == "arm64":
-        if coreclr_args.host_os == "Linux":
+        if coreclr_args.host_os == "linux":
             return "aspnet-citrine-arm"
         else:
             raise RuntimeError("Invalid OS for arm64.")
@@ -151,7 +151,7 @@ def build_and_run(coreclr_args):
         print ("Executing in " + temp_location)
 
         # install dotnet 6.0
-        run_command([dotnet_install_script_path, "-Version", "6.0.4"], temp_location, _exit_on_fail=True)
+        run_command([dotnet_install_script_path, "-Version", "7.0.2"], temp_location, _exit_on_fail=True)
         os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
         os.environ['DOTNET_SKIP_FIRST_TIME_EXPERIENCE'] = '1'
         dotnet_path = path.join(source_directory, ".dotnet")
@@ -203,7 +203,8 @@ def build_and_run(coreclr_args):
             ("TieredPGO=1",),
             ("TieredPGO=1", "ReadyToRun=0"),
             ("ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
-            ("TieredPGO=1", "ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10")
+            ("TieredPGO=1", "ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
+            ("TC_PartialCompilation=1",)
             ]
 
         # runtime_options_list = [("TieredCompilation=0", )]
@@ -229,7 +230,7 @@ def build_and_run(coreclr_args):
             crank_arguments = ["--config", configFile,
                                "--profile", benchmark_machine,
                                "--scenario", scenario,
-                               "--application.framework", "net7.0",
+                               "--application.framework", "net8.0",
                                "--application.channel", "edge",
                                "--application.sdkVersion", "latest",
                                "--application.environmentVariables", "DOTNET_JitName=" + spminame,

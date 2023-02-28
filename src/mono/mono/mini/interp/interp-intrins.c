@@ -104,27 +104,6 @@ interp_intrins_math_divrem (guint32 a, guint32 b, guint32 *result)
 	return div;
 }
 
-MonoString*
-interp_intrins_u32_to_decstr (guint32 value, MonoArray *cache, MonoVTable *vtable)
-{
-	// Number.UInt32ToDecStr
-	int bufferLength = interp_intrins_count_digits (value);
-
-	if (bufferLength == 1)
-		return mono_array_get_fast (cache, MonoString*, value);
-
-	int size = (G_STRUCT_OFFSET (MonoString, chars) + (((size_t)bufferLength + 1) * 2));
-	MonoString* result = mono_gc_alloc_string (vtable, size, bufferLength);
-	mono_unichar2 *buffer = &result->chars [0];
-	mono_unichar2 *p = buffer + bufferLength;
-	do {
-		guint32 remainder;
-		value = interp_intrins_math_divrem (value, 10, &remainder);
-		*(--p) = (mono_unichar2)(remainder + '0');
-	} while (value != 0);
-	return result;
-}
-
 mono_u
 interp_intrins_widen_ascii_to_utf16 (guint8 *pAsciiBuffer, mono_unichar2 *pUtf16Buffer, mono_u elementCount)
 {

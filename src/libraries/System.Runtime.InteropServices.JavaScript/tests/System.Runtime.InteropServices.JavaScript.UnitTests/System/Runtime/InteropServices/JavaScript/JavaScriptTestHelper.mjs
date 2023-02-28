@@ -110,6 +110,10 @@ export function throw0fn() {
     throw new Error('throw-0-msg');
 }
 
+export function returnError() {
+    return new Error('this-is-error');
+}
+
 export function catch1toString(message, functionName) {
     const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
     const fn = JavaScriptTestHelper[functionName];

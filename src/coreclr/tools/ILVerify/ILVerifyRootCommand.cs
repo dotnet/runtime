@@ -33,7 +33,7 @@ namespace ILVerify
         public Option<bool> Statistics { get; } =
             new(new[] { "--statistics" }, "Print verification statistics");
         public Option<bool> Verbose { get; } =
-            new(new[] { "--verbose", "-v" }, "Verbose output");
+            new(new[] { "--verbose" }, "Verbose output");
         public Option<bool> Tokens { get; } =
             new(new[] { "--tokens", "-t" }, "Include metadata tokens in error messages");
 

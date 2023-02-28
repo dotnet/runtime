@@ -38,9 +38,9 @@ internal sealed class InstanceFieldTable
         return _singleton.GetOrCreateInstanceFields(inst).LookupOrAdd(new RuntimeTypeHandle (type), fielddef_token);
     }
 
-    private static InstanceFieldTable _singleton = new();
+    private static readonly InstanceFieldTable _singleton = new();
 
-    private ConditionalWeakTable<object, InstanceFields> _table;
+    private readonly ConditionalWeakTable<object, InstanceFields> _table;
 
     private InstanceFieldTable()
     {
@@ -52,8 +52,8 @@ internal sealed class InstanceFieldTable
 
     private sealed class InstanceFields
     {
-        private Dictionary<uint, FieldStore> _fields;
-        private object _lock;
+        private readonly Dictionary<uint, FieldStore> _fields;
+        private readonly object _lock;
 
         public InstanceFields()
         {
@@ -90,7 +90,7 @@ internal sealed class InstanceFieldTable
 internal sealed class FieldStore
 {
     // keep in sync with hot_reload-internals.h
-    private object? _loc;
+    private readonly object? _loc;
 
     private FieldStore (object? loc)
     {
@@ -100,7 +100,7 @@ internal sealed class FieldStore
     [RequiresUnreferencedCode("Hot reload required untrimmed apps")]
     public static FieldStore Create (RuntimeTypeHandle type)
     {
-        Type t = Type.GetTypeFromHandle(type) ?? throw new ArgumentException(nameof(type), "Type handle was null");
+        Type t = Type.GetTypeFromHandle(type) ?? throw new ArgumentException(SR.Arg_InvalidHandle, nameof(type));
         object? loc;
         if (t.IsPrimitive || t.IsValueType)
             loc = RuntimeHelpers.GetUninitializedObject(t);

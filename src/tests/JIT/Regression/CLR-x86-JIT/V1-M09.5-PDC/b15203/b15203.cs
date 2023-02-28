@@ -4,7 +4,7 @@
 
 using System;
 
-internal class BasicMath
+public class BasicMath
 {
     public static int Main()
     {

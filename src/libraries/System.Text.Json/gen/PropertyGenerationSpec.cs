@@ -14,9 +14,9 @@ namespace System.Text.Json.SourceGeneration
         /// from the <see cref="ClrName"/> because source code might be decorated
         /// with '@' for reserved keywords, e.g. public string @event { get; set; }
         /// </summary>
-        public string NameSpecifiedInSourceCode { get; init; }
+        public required string NameSpecifiedInSourceCode { get; init; }
 
-        public string ClrName { get; init; }
+        public required string ClrName { get; init; }
 
         /// <summary>
         /// Is this a property or a field?
@@ -31,11 +31,6 @@ namespace System.Text.Json.SourceGeneration
         public bool IsVirtual { get; init; }
 
         /// <summary>
-        /// The property has JsonRequiredAttribute.
-        /// </summary>
-        public bool IsRequired { get; init; }
-
-        /// <summary>
         /// The property name specified via JsonPropertyNameAttribute, if available.
         /// </summary>
         public string? JsonPropertyName { get; init; }
@@ -45,14 +40,24 @@ namespace System.Text.Json.SourceGeneration
         /// specified ahead-of-time via <see cref="JsonSourceGenerationOptionsAttribute"/>.
         /// Only used in fast-path serialization logic.
         /// </summary>
-        public string RuntimePropertyName { get; init; }
+        public required string RuntimePropertyName { get; init; }
 
-        public string PropertyNameVarName { get; init; }
+        public required string PropertyNameVarName { get; init; }
 
         /// <summary>
         /// Whether the property has a set method.
         /// </summary>
         public bool IsReadOnly { get; init; }
+
+        /// <summary>
+        /// Whether the property is marked `required`.
+        /// </summary>
+        public bool IsRequired { get; init; }
+
+        /// <summary>
+        /// The property is marked with JsonRequiredAttribute.
+        /// </summary>
+        public bool HasJsonRequiredAttribute { get; init; }
 
         /// <summary>
         /// Whether the property has an init-only set method.
@@ -103,12 +108,14 @@ namespace System.Text.Json.SourceGeneration
         /// <summary>
         /// Generation specification for the property's type.
         /// </summary>
-        public TypeGenerationSpec TypeGenerationSpec { get; init; }
+        public required TypeGenerationSpec TypeGenerationSpec { get; init; }
 
         /// <summary>
         /// Compilable name of the property's declaring type.
         /// </summary>
-        public string DeclaringTypeRef { get; init; }
+        public required string DeclaringTypeRef { get; init; }
+
+        public required Type DeclaringType { get; init; }
 
         /// <summary>
         /// Source code to instantiate design-time specified custom converter.

@@ -107,7 +107,7 @@ namespace System.Linq.Expressions.Compiler
             return mo.Expression is ParameterExpression pe && pe.IsByRef;
         }
 
-        private static Type MakeNewCustomDelegate(Type[] types)
+        private static System.Reflection.TypeInfo MakeNewCustomDelegate(Type[] types)
         {
             if (RuntimeFeature.IsDynamicCodeSupported)
             {

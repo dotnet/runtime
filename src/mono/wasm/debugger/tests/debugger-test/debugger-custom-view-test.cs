@@ -95,7 +95,7 @@ namespace DebuggerTests
             openWith.Add("bmp", "paint");
             openWith.Add("dib", "paint");
             var person1 = new Person { FirstName = "Anton", SurName="Mueller", Age = 44};
-            var person2 = new Person { FirstName = "Lisa", SurName="Müller", Age = 41};
+            var person2 = new Person { FirstName = "Lisa", SurName="M\u00FCller", Age = 41};
 
             Console.WriteLine("break here");
 

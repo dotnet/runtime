@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 // incorrect when a math intrinsic was used as an argument to a function with on-stack parameters (e.g. the call to
 // `M` on line 18).
 
-static class C
+public static class C
 {
     struct S
     {
@@ -29,7 +29,7 @@ static class C
         return 100;
     }
 
-    static int Main()
+    public static int Main()
     {
         return M(2.0);
     }

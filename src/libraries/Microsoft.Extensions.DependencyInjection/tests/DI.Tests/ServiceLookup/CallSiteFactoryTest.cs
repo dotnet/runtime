@@ -919,6 +919,84 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }, options);
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // RuntimeConfigurationOptions are not supported on .NET Framework (and neither is NativeAOT)
+        public void VerifyDynamicCodeNotSupportedChecks()
+        {
+            Func<Type, ServiceCallSite> CreateAotCompatibilityCallSiteFactory()
+            {
+                ServiceDescriptor[] descriptors = new[]
+                {
+                    new ServiceDescriptor(typeof(IFakeOpenGenericService<>), typeof(ClassWithNoConstraints<>), ServiceLifetime.Transient),
+                    new ServiceDescriptor(typeof(IServiceWithTwoGenerics<,>), typeof(ServiceWithTwoGenericsValid<,>), ServiceLifetime.Transient),
+
+                    new ServiceDescriptor(typeof(Struct1), new Struct1(1)),
+                    new ServiceDescriptor(typeof(Struct1), new Struct1(2)),
+                };
+
+                return GetCallSiteFactory(descriptors);
+            }
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                Func<Type, ServiceCallSite> callSiteFactory = CreateAotCompatibilityCallSiteFactory();
+
+                // Verify open generics throw when passing ValueTypes
+                Assert.Throws<InvalidOperationException>(() => callSiteFactory(typeof(IFakeOpenGenericService<Struct1>)));
+                Assert.Throws<InvalidOperationException>(() => callSiteFactory(typeof(IFakeOpenGenericService<int>)));
+                Assert.Throws<InvalidOperationException>(() => callSiteFactory(typeof(IServiceWithTwoGenerics<Class3, int>)));
+                Assert.Throws<InvalidOperationException>(() => callSiteFactory(typeof(IServiceWithTwoGenerics<int, Class3>)));
+
+                ServiceCallSite callSite = callSiteFactory(typeof(IFakeOpenGenericService<Class3>));
+                Assert.Equal(CallSiteKind.Constructor, callSite.Kind);
+                Assert.Equal(typeof(ClassWithNoConstraints<Class3>), callSite.ImplementationType);
+
+                callSite = callSiteFactory(typeof(IServiceWithTwoGenerics<Class3, Class3>));
+                Assert.Equal(CallSiteKind.Constructor, callSite.Kind);
+                Assert.Equal(typeof(ServiceWithTwoGenericsValid<Class3, Class3>), callSite.ImplementationType);
+
+                // Verify Enumerable services throw when passing ValueTypes
+                Assert.Throws<InvalidOperationException>(() => callSiteFactory(typeof(IEnumerable<Struct1>)));
+
+                callSite = callSiteFactory(typeof(Struct1));
+                Assert.Equal(CallSiteKind.Constant, callSite.Kind);
+                Assert.Equal(2, ((Struct1)callSite.Value).Value);
+            }, options);
+
+            // Verify the above scenarios work when IsDynamicCodeSupported is not set
+            Func<Type, ServiceCallSite> callSiteFactory = CreateAotCompatibilityCallSiteFactory();
+
+            // Open Generics
+            ServiceCallSite callSite = callSiteFactory(typeof(IFakeOpenGenericService<Struct1>));
+            Assert.Equal(CallSiteKind.Constructor, callSite.Kind);
+            Assert.Equal(typeof(ClassWithNoConstraints<Struct1>), callSite.ImplementationType);
+
+            callSite = callSiteFactory(typeof(IFakeOpenGenericService<int>));
+            Assert.Equal(CallSiteKind.Constructor, callSite.Kind);
+            Assert.Equal(typeof(ClassWithNoConstraints<int>), callSite.ImplementationType);
+
+            callSite = callSiteFactory(typeof(IServiceWithTwoGenerics<Class3, int>));
+            Assert.Equal(CallSiteKind.Constructor, callSite.Kind);
+            Assert.Equal(typeof(ServiceWithTwoGenericsValid<Class3, int>), callSite.ImplementationType);
+
+            callSite = callSiteFactory(typeof(IServiceWithTwoGenerics<int, Class3>));
+            Assert.Equal(CallSiteKind.Constructor, callSite.Kind);
+            Assert.Equal(typeof(ServiceWithTwoGenericsValid<int, Class3>), callSite.ImplementationType);
+
+            // Enumerable 
+            callSite = callSiteFactory(typeof(IEnumerable<Struct1>));
+            Assert.Equal(CallSiteKind.IEnumerable, callSite.Kind);
+            IEnumerableCallSite enumerableCallSite = (IEnumerableCallSite)callSite;
+            Assert.Equal(2, enumerableCallSite.ServiceCallSites.Length);
+            Assert.Equal(CallSiteKind.Constant, enumerableCallSite.ServiceCallSites[0].Kind);
+            Assert.Equal(1, ((Struct1)enumerableCallSite.ServiceCallSites[0].Value).Value);
+            Assert.Equal(CallSiteKind.Constant, enumerableCallSite.ServiceCallSites[1].Kind);
+            Assert.Equal(2, ((Struct1)enumerableCallSite.ServiceCallSites[1].Value).Value);
+        }
+
         private static Func<Type, ServiceCallSite> GetCallSiteFactory(params ServiceDescriptor[] descriptors)
         {
             var collection = new ServiceCollection();
@@ -944,12 +1022,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     c.GetParameters().Select(p => p.ParameterType),
                     parameterTypes));
 
-
         private class Class1 { public Class1(Class2 c2) { } }
         private class Class2 { public Class2(Class3 c3) { } }
         private class Class3 { }
         private class Class4 { public Class4(Class3 c3) { } }
         private class Class5 { public Class5(Class2 c2) { } }
+
+        private record struct Struct1(int Value) { }
 
         // Open generic
         private class ClassA { public ClassA(ClassB cb) { } }

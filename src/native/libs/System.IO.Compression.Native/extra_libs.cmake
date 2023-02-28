@@ -1,7 +1,7 @@
 
 macro(append_extra_compression_libs NativeLibsExtra)
   # TODO: remove the mono-style HOST_ variable checks once Mono is using eng/native/configureplatform.cmake to define the CLR_CMAKE_TARGET_ defines
-  if (CLR_CMAKE_TARGET_BROWSER OR HOST_BROWSER)
+  if (CLR_CMAKE_TARGET_BROWSER OR HOST_BROWSER OR CLR_CMAKE_TARGET_WASI OR HOST_WASI)
       # nothing special to link
   elseif (CLR_CMAKE_TARGET_ANDROID OR HOST_ANDROID)
       # need special case here since we want to link against libz.so but find_package() would resolve libz.a

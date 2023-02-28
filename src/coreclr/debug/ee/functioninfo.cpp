@@ -2266,7 +2266,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    LOG((LF_CORDB, LL_INFO1000000, "CMOM:mod:0x%x (%S)\n", pModule
+    LOG((LF_CORDB, LL_INFO1000000, "CMOM:mod:0x%x (%s)\n", pModule
         ,pModule->GetDebugName()));
 
     HASHFIND info;

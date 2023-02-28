@@ -78,7 +78,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 // Legacy: Why use "ByRef" for by ref parameters? What language is this?
                 // VB uses "ByRef" but it should precede (not follow) the parameter name.
                 // Why don't we just use "&"?
-                if (parameterTypeString.EndsWith("&"))
+                if (parameterTypeString.EndsWith('&'))
                 {
                     sb.Append(parameterTypeString, 0, parameterTypeString.Length - 1);
                     sb.Append(" ByRef");

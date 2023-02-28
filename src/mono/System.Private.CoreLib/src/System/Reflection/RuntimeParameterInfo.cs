@@ -256,7 +256,7 @@ namespace System.Reflection
                 {
                     return GetMetadataToken();
                 }
-                throw new ArgumentException("Can't produce MetadataToken for member of type " + MemberImpl.GetType());
+                throw new ArgumentException(SR.NoMetadataTokenAvailable);
             }
         }
 
@@ -303,7 +303,7 @@ namespace System.Reflection
         internal extern int GetMetadataToken();
 
         public override Type[] GetOptionalCustomModifiers() =>
-            MemberImpl is DynamicMethod.RTDynamicMethod ? Type.EmptyTypes : GetCustomModifiers(true);
+            MemberImpl is DynamicMethod ? Type.EmptyTypes : GetCustomModifiers(true);
 
         internal object[]? GetPseudoCustomAttributes()
         {
@@ -375,7 +375,7 @@ namespace System.Reflection
         }
 
         public override Type[] GetRequiredCustomModifiers() =>
-            MemberImpl is DynamicMethod.RTDynamicMethod ? Type.EmptyTypes : GetCustomModifiers(false);
+            MemberImpl is DynamicMethod ? Type.EmptyTypes : GetCustomModifiers(false);
 
         public override bool HasDefaultValue
         {

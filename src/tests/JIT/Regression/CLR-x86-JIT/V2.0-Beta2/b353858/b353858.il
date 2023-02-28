@@ -10,7 +10,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly q {}
+.assembly 'b353858' {}
 
 .method assembly static void CreateArrayOfVoid() noinlining
 {
@@ -22,7 +22,8 @@
 }
 
 
-.method assembly static int32  main() cil managed
+.class public auto ansi Test_b353858 extends [mscorlib] System.Object {
+.method public assembly static int32  main() cil managed
 {
   .entrypoint
   .maxstack  1
@@ -53,4 +54,5 @@ PASS:
 END:
 
   ret
+}
 }

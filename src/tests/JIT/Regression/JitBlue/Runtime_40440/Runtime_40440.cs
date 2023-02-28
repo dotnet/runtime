@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Security.Cryptography;
 
-class Runtime_40440
+public class Runtime_40440
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool UseArrayElementAsCallArgument<T>(T[,,] a, T b)

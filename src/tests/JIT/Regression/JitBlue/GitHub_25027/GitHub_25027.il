@@ -9,7 +9,7 @@
 .assembly GitHub_25027 {}
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit X
+.class public auto ansi beforefieldinit X
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

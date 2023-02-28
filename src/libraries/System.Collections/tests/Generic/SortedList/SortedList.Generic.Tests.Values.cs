@@ -9,6 +9,9 @@ namespace System.Collections.Tests
 {
     public class SortedList_Generic_Tests_Values : IList_Generic_Tests<string>
     {
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
         protected override bool DefaultValueAllowed => true;
         protected override bool DuplicateValuesAllowed => true;
         protected override bool IsReadOnly => true;
@@ -57,6 +60,7 @@ namespace System.Collections.Tests
         protected override bool NullAllowed => true;
         protected override bool DuplicateValuesAllowed => true;
         protected override bool IsReadOnly => true;
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override bool SupportsSerialization => false;
 

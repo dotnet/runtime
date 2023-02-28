@@ -9,7 +9,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public static class PathUtilities
 	{
-#if NET7_0
+#if NET8_0
+		public const string TFMDirectoryName = "net8.0";
+#elif NET7_0
 		public const string TFMDirectoryName = "net7.0";
 #elif NET6_0
 		public const string TFMDirectoryName = "net6.0";
@@ -18,14 +20,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #endif
 
 		public static string GetTestsSourceRootDirectory ([CallerFilePath] string? thisFile = null) =>
-			Path.GetFullPath ((string) AppContext.GetData ("Mono.Linker.Tests.NativeAotDir")!);
+			Path.GetFullPath((string)AppContext.GetData("Mono.Linker.Tests.LinkerTestDir")!);
 
 		public static string GetTestAssemblyPath (string assemblyName)
 		{
 			var artifactsBinDirectory = (string) AppContext.GetData ("Mono.Linker.Tests.ArtifactsBinDir")!;
-			var targetArch = (string) AppContext.GetData ("Mono.Linker.Tests.TargetArchitecture")!;
 			var configuration = (string) AppContext.GetData ("Mono.Linker.Tests.Configuration")!;
-			return Path.GetFullPath (Path.Combine (artifactsBinDirectory, assemblyName, targetArch, configuration, $"{assemblyName}.dll"));
+			return Path.GetFullPath(Path.Combine(artifactsBinDirectory, assemblyName, configuration, TFMDirectoryName, $"{assemblyName}.dll"));
 		}
 	}
 }

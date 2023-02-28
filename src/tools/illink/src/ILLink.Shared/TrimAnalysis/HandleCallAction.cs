@@ -19,13 +19,13 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 namespace ILLink.Shared.TrimAnalysis
 {
 	[StructLayout (LayoutKind.Auto)] // A good way to avoid CS0282, we don't really care about field order
-	partial struct HandleCallAction
+	internal partial struct HandleCallAction
 	{
-		static ValueSetLattice<SingleValue> MultiValueLattice => default;
+		private static ValueSetLattice<SingleValue> MultiValueLattice => default;
 
-		readonly DiagnosticContext _diagnosticContext;
-		readonly FlowAnnotations _annotations;
-		readonly RequireDynamicallyAccessedMembersAction _requireDynamicallyAccessedMembersAction;
+		private readonly DiagnosticContext _diagnosticContext;
+		private readonly FlowAnnotations _annotations;
+		private readonly RequireDynamicallyAccessedMembersAction _requireDynamicallyAccessedMembersAction;
 
 		public bool Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, IntrinsicId intrinsicId, out MultiValue methodReturnValue)
 		{
@@ -165,7 +165,7 @@ namespace ILLink.Shared.TrimAnalysis
 						break;
 					}
 
-					var targetValue = _annotations.GetMethodThisParameterValue (calledMethod, DynamicallyAccessedMemberTypesOverlay.Interfaces);
+					var targetValue = _annotations.GetMethodThisParameterValue (calledMethod, DynamicallyAccessedMemberTypes.Interfaces);
 					foreach (var value in instanceValue) {
 						foreach (var interfaceName in argumentValues[0]) {
 							if (interfaceName == NullValue.Instance) {
@@ -181,7 +181,7 @@ namespace ILLink.Shared.TrimAnalysis
 								_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 
 								// Interfaces is transitive, so the return values will always have at least Interfaces annotation
-								DynamicallyAccessedMemberTypes returnMemberTypes = DynamicallyAccessedMemberTypesOverlay.Interfaces;
+								DynamicallyAccessedMemberTypes returnMemberTypes = DynamicallyAccessedMemberTypes.Interfaces;
 
 								// Propagate All annotation across the call - All is a superset of Interfaces
 								if (value is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
@@ -1154,8 +1154,8 @@ namespace ILLink.Shared.TrimAnalysis
 			// Disable warnings for all unimplemented intrinsics. Some intrinsic methods have annotations, but analyzing them
 			// would produce unnecessary warnings even for cases that are intrinsically handled. So we disable handling these calls
 			// until a proper intrinsic handling is made
-			// NOTE: Currently this is done "for the analyzer" and it relies on linker/NativeAOT to not call HandleCallAction
-			// for intrinsics which linker/NativeAOT need special handling for or those which are not implemented here and only there.
+			// NOTE: Currently this is done "for the analyzer" and it relies on illink/NativeAOT to not call HandleCallAction
+			// for intrinsics which illink/NativeAOT need special handling for or those which are not implemented here and only there.
 			// Ideally we would run everything through HandleCallAction and it would return "false" for intrinsics it doesn't handle
 			// like it already does for Activator.CreateInstance<T> for example.
 			default:
@@ -1175,14 +1175,14 @@ namespace ILLink.Shared.TrimAnalysis
 				foreach (var uniqueValue in returnValue.Value) {
 					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
 						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
-							throw new InvalidOperationException ($"Internal linker error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
+							throw new InvalidOperationException ($"Internal ILLink error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
 					} else if (uniqueValue is SystemTypeValue) {
 						// SystemTypeValue can fulfill any requirement, so it's always valid
 						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
 					} else if (uniqueValue == NullValue.Instance) {
 						// NullValue can fulfill any requirements because reflection access to it will typically throw.
 					} else {
-						throw new InvalidOperationException ($"Internal linker error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
+						throw new InvalidOperationException ($"Internal ILLink error: in {GetContainingSymbolDisplayName ()} processing call to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
 					}
 				}
 			}
@@ -1197,7 +1197,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 		}
 
-		IEnumerable<MultiValue> ProcessGetMethodByName (TypeProxy type, string methodName, BindingFlags? bindingFlags)
+		private IEnumerable<MultiValue> ProcessGetMethodByName (TypeProxy type, string methodName, BindingFlags? bindingFlags)
 		{
 			bool foundAny = false;
 			foreach (var method in GetMethodsOnTypeHierarchy (type, methodName, bindingFlags)) {
@@ -1214,7 +1214,7 @@ namespace ILLink.Shared.TrimAnalysis
 				yield return NullValue.Instance;
 		}
 
-		bool AnalyzeGenericInstantiationTypeArray (in MultiValue arrayParam, in MethodProxy calledMethod, ImmutableArray<GenericParameterValue> genericParameters)
+		private bool AnalyzeGenericInstantiationTypeArray (in MultiValue arrayParam, in MethodProxy calledMethod, ImmutableArray<GenericParameterValue> genericParameters)
 		{
 			bool hasRequirements = false;
 			foreach (var genericParameter in genericParameters) {
@@ -1277,7 +1277,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 		}
 
-		void ValidateGenericMethodInstantiation (
+		private void ValidateGenericMethodInstantiation (
 			MethodProxy genericMethod,
 			in MultiValue genericParametersArray,
 			MethodProxy reflectionMethod)
@@ -1292,7 +1292,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 		}
 
-		ImmutableArray<GenericParameterValue> GetGenericParameterValues (ImmutableArray<GenericParameterProxy> genericParameters)
+		private ImmutableArray<GenericParameterValue> GetGenericParameterValues (ImmutableArray<GenericParameterProxy> genericParameters)
 		{
 			if (genericParameters.IsEmpty)
 				return ImmutableArray<GenericParameterValue>.Empty;
@@ -1304,7 +1304,7 @@ namespace ILLink.Shared.TrimAnalysis
 			return builder.ToImmutableArray ();
 		}
 
-		void ProcessCreateInstanceByName (MethodProxy calledMethod, IReadOnlyList<MultiValue> argumentValues)
+		private void ProcessCreateInstanceByName (MethodProxy calledMethod, IReadOnlyList<MultiValue> argumentValues)
 		{
 			BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 			bool parameterlessConstructor = true;
@@ -1332,8 +1332,8 @@ namespace ILLink.Shared.TrimAnalysis
 						if (typeNameValue is KnownStringValue typeNameStringValue) {
 							if (!TryResolveTypeNameForCreateInstanceAndMark (calledMethod, assemblyNameStringValue.Contents, typeNameStringValue.Contents, out TypeProxy resolvedType)) {
 								// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
-								// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
-								// but linker can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
+								// Note that we did find the assembly, so it's not a ILLink config problem, it's either intentional, or wrong versions of assemblies
+								// but ILLink can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
 								// might expect an exception to be thrown.
 								continue;
 							}

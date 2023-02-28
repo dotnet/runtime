@@ -15,7 +15,7 @@ namespace Test
 {
     using System;
 
-    class Obj
+    public class Obj
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -66,7 +66,7 @@ namespace Test
             return new float[4];
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

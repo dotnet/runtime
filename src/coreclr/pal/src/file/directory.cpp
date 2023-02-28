@@ -131,8 +131,6 @@ RemoveDirectoryHelper (
     BOOL  bRet = FALSE;
     *dwLastError = 0;
 
-    FILEDosToUnixPathA( lpPathName );
-
     if ( rmdir(lpPathName) != 0 )
     {
         TRACE("Removal of directory [%s] was unsuccessful, errno = %d.\n",
@@ -415,7 +413,6 @@ CreateDirectoryA(
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    FILEDosToUnixPathA( unixPathName );
     // Remove any trailing slashes at the end because mkdir might not
     // handle them appropriately on all platforms.
     pathLength = strlen(unixPathName);
@@ -509,7 +506,6 @@ SetCurrentDirectoryA(
     BOOL bRet = FALSE;
     DWORD dwLastError = 0;
     int result;
-    LPSTR unixPathName = NULL;
 
     PERF_ENTRY(SetCurrentDirectoryA);
     ENTRY("SetCurrentDirectoryA(lpPathName=%p (%s))\n",
@@ -525,17 +521,8 @@ SetCurrentDirectoryA(
         goto done;
     }
 
-    unixPathName = PAL__strdup(lpPathName);
-    if (unixPathName == NULL )
-    {
-        ERROR("PAL__strdup() failed\n");
-        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-    FILEDosToUnixPathA( unixPathName );
-
-    TRACE("Attempting to open Unix dir [%s]\n", unixPathName);
-    result = chdir(unixPathName);
+    TRACE("Attempting to open Unix dir [%s]\n", lpPathName);
+    result = chdir(lpPathName);
 
     if ( result == 0 )
     {
@@ -547,7 +534,7 @@ SetCurrentDirectoryA(
         {
             struct stat stat_data;
 
-            if ( stat( unixPathName, &stat_data) == 0 &&
+            if ( stat( lpPathName, &stat_data) == 0 &&
                  (stat_data.st_mode & S_IFMT) == S_IFREG )
             {
                 /* Not a directory, it is a file. */
@@ -555,7 +542,7 @@ SetCurrentDirectoryA(
             }
             else
             {
-                FILEGetProperNotFoundError( unixPathName, &dwLastError );
+                FILEGetProperNotFoundError( lpPathName, &dwLastError );
             }
             TRACE("chdir() failed, path was invalid.\n");
         }
@@ -571,11 +558,6 @@ done:
     if( dwLastError )
     {
         SetLastError(dwLastError);
-    }
-
-    if(unixPathName != NULL)
-    {
-        PAL_free( unixPathName );
     }
 
     LOGEXIT("SetCurrentDirectoryA returns BOOL %d\n", bRet);

@@ -11,6 +11,8 @@
 #ifndef _WEAKREFERENCENATIVE_H
 #define _WEAKREFERENCENATIVE_H
 
+#include "weakreference.h"
+
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
 class ComAwareWeakReferenceNative

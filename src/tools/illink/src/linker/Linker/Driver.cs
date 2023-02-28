@@ -152,7 +152,7 @@ namespace Mono.Linker
 						numBackslash /= 2;
 					}
 					if (numBackslash > 0)
-						argBuilder.Append (new String ('\\', numBackslash));
+						argBuilder.Append (new string ('\\', numBackslash));
 					if (cur < 0 || (!inquote && char.IsWhiteSpace ((char) cur)))
 						break;
 					if (copyChar)
@@ -639,10 +639,10 @@ namespace Mono.Linker
 								return -1;
 							}
 
-							AssemblyRootMode rmode = AssemblyRootMode.Default;
+							AssemblyRootMode rmode = AssemblyRootMode.AllMembers;
 							var rootMode = GetNextStringValue ();
 							if (rootMode != null) {
-								var parsed_rmode = ParseAssemblyRootsMode (rootMode);
+								var parsed_rmode = ParseAssemblyRootMode (rootMode);
 								if (parsed_rmode is null)
 									return -1;
 
@@ -843,7 +843,7 @@ namespace Mono.Linker
 
 		private static IEnumerable<int> ProcessWarningCodes (string value)
 		{
-			string Unquote (string arg)
+			static string Unquote (string arg)
 			{
 				if (arg.Length > 1 && arg[0] == '"' && arg[arg.Length - 1] == '"')
 					return arg.Substring (1, arg.Length - 2);
@@ -1115,11 +1115,9 @@ namespace Mono.Linker
 			return null;
 		}
 
-		AssemblyRootMode? ParseAssemblyRootsMode (string s)
+		AssemblyRootMode? ParseAssemblyRootMode (string s)
 		{
 			switch (s.ToLowerInvariant ()) {
-			case "default":
-				return AssemblyRootMode.Default;
 			case "all":
 				return AssemblyRootMode.AllMembers;
 			case "visible":
@@ -1369,7 +1367,7 @@ namespace Mono.Linker
 			Console.WriteLine ("  --ignore-substitutions     Skips reading embedded substitutions. Defaults to false");
 			Console.WriteLine ("  --strip-substitutions      Remove XML substitution resources for linked assemblies. Defaults to true");
 			Console.WriteLine ("  --used-attrs-only          Attribute usage is removed if the attribute type is not used. Defaults to false");
-			Console.WriteLine ("  --link-attributes FILE     Supplementary custom attribute definitions for attributes controlling the linker behavior.");
+			Console.WriteLine ("  --link-attributes FILE     Supplementary custom attribute definitions for attributes controlling the trimming behavior.");
 			Console.WriteLine ("  --ignore-link-attributes   Skips reading embedded attributes. Defaults to false");
 			Console.WriteLine ("  --strip-link-attributes    Remove XML link attributes resources for linked assemblies. Defaults to true");
 
@@ -1377,7 +1375,7 @@ namespace Mono.Linker
 			Console.WriteLine ("Analyzer");
 			Console.WriteLine ("  --dependencies-file FILE              Specify the dependencies output. Defaults to 'output/linker-dependencies.xml'");
 			Console.WriteLine ("                                        if 'xml' is file format, 'output/linker-dependencies.dgml if 'dgml' is file format");
-			Console.WriteLine ("  --dump-dependencies                   Dump dependencies for the linker analyzer tool");
+			Console.WriteLine ("  --dump-dependencies                   Dump dependencies for the ILLink analyzer tool");
 			Console.WriteLine ("  --dependencies-file-format FORMAT     Specify output file type. Defaults to 'xml'");
 			Console.WriteLine ("                                          xml: outputs an .xml file");
 			Console.WriteLine ("                                          dgml: outputs a .dgml file");
@@ -1395,7 +1393,7 @@ namespace Mono.Linker
 		static void About ()
 		{
 			Console.WriteLine ("For more information, visit the project Web site");
-			Console.WriteLine ("   https://github.com/dotnet/linker");
+			Console.WriteLine ("   https://github.com/dotnet/runtime/tree/main/src/tools/illink");
 		}
 
 		static Pipeline GetStandardPipeline ()

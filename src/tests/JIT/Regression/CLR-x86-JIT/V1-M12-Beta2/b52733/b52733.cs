@@ -5,14 +5,14 @@ namespace Test
 {
     using System;
 
-    internal struct AA
+    public struct AA
     {
         private static float[] s_af;
         private static bool s_b;
 
         private static float[] Method1() { return s_af = new float[5]; }
 
-        private static int Main()
+        public static int Main()
         {
             bool b = false;
             if (b)

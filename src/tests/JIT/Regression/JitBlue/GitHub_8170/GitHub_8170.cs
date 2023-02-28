@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 // unsigned long and `constant` is a 32- or 64-bit integer constant in the range [2,0x3fffffff]. These expressions
 // should never produce an overflow exception.
 
-static class C
+public static class C
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint M(ulong l)
@@ -15,7 +15,7 @@ static class C
         return (uint)(l % 10000000);
     }
 
-    static int Main()
+    public static int Main()
     {
         return M(ulong.MaxValue) == 9551615 ? 100 : 101;
     }

@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(data);
             ArgumentNullException.ThrowIfNull(padding);
 
-            byte[] ret = new byte[AsymmetricAlgorithmHelpers.BitsToBytes(KeySize)];
+            byte[] ret = new byte[GetMaxOutputSize()];
             int written = Encrypt(new ReadOnlySpan<byte>(data), ret.AsSpan(), padding);
 
             VerifyWritten(ret, written);
@@ -144,7 +144,7 @@ namespace System.Security.Cryptography
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(padding);
 
-            byte[] ret = new byte[AsymmetricAlgorithmHelpers.BitsToBytes(KeySize)];
+            byte[] ret = new byte[GetMaxOutputSize()];
 
             int written = SignHash(
                 new ReadOnlySpan<byte>(hash),
@@ -424,10 +424,7 @@ namespace System.Security.Cryptography
 
         private void ThrowIfDisposed()
         {
-            if (_lastKeySize < 0)
-            {
-                throw new ObjectDisposedException(nameof(RSA));
-            }
+            ObjectDisposedException.ThrowIf(_lastKeySize < 0, this);
         }
     }
 }

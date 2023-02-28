@@ -20,7 +20,7 @@ using System.Runtime.CompilerServices;
     public float w;
 }
 
-class X
+public class X
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static float P(int i)

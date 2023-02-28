@@ -257,7 +257,7 @@ HRESULT PESection::addSectReloc(unsigned offset, PESection *relativeTo,
         }
 
         memcpy(relocNew, m_relocStart, sizeof(PESectionReloc)*curLen);
-        delete m_relocStart;
+        delete[] m_relocStart;
         m_relocStart = relocNew;
         m_relocCur = &m_relocStart[curLen];
         m_relocEnd = &m_relocStart[newLen];
@@ -403,7 +403,7 @@ HRESULT PESection::cloneInstance(PESection *destination) {
     newSize = (INT32)(m_relocCur-m_relocStart);
 
     if (newSize>(destination->m_relocEnd - destination->m_relocStart)) {
-        delete destination->m_relocStart;
+        delete[] destination->m_relocStart;
 
         destination->m_relocStart = new (nothrow) PESectionReloc[newSize];
         if (destination->m_relocStart == NULL)

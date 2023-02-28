@@ -11,7 +11,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class My
+public class My
 {
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -30,7 +30,7 @@ class My
         return null;
     }
 
-    static int Main()
+    public static int Main()
     {
         Object o = new Object();
         foo(o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, bar(o), o);

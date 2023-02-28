@@ -59,12 +59,21 @@ typedef struct {
 	/* Protected by 'jit_code_hash_lock' */
 	MonoInternalHashTable jit_code_hash;
 	mono_mutex_t    jit_code_hash_lock;
+
+	/* Array of MonoJitInfo* */
+	GPtrArray *jit_infos;
 } MonoJitMemoryManager;
+
+static inline MonoJitMemoryManager*
+jit_mm_for_mm (MonoMemoryManager *mem_manager)
+{
+	return (MonoJitMemoryManager*)(mem_manager->runtime_info);
+}
 
 static inline MonoJitMemoryManager*
 get_default_jit_mm (void)
 {
-	return (MonoJitMemoryManager*)(mono_mem_manager_get_ambient ())->runtime_info;
+	return jit_mm_for_mm (mono_mem_manager_get_ambient ());
 }
 
 // FIXME: Review uses and change them to a more specific mem manager
@@ -611,6 +620,7 @@ void mono_jit_dump_cleanup (void);
 
 gpointer mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size);
 MonoException* mini_get_stack_overflow_ex (void);
+MonoJitInfo* mini_alloc_jinfo (MonoJitMemoryManager *jit_mm, int size);
 
 /*
  * Per-OS implementation functions.
@@ -707,5 +717,13 @@ void mini_register_sigterm_handler (void);
 		MONO_PROFILER_RAISE (jit_code_buffer, ((buf), (size), (MonoProfilerCodeBufferType)(type), (arg))); \
 	MONO_RESTORE_WARNING \
 	} while (0)
+
+typedef void (*MonoRuntimeInitCallback) (void);
+
+MONO_COMPONENT_API void
+mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);
+
+MONO_COMPONENT_API void
+mono_invoke_runtime_init_callback (void);
 
 #endif /* __MONO_MINI_RUNTIME_H__ */

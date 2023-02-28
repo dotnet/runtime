@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-class B
+public class B
 {
     public B z() => this;
     public bool T() => true;
@@ -24,7 +24,7 @@ class B
     public bool K(B b, int x) => J(b, x);
 }
 
-class X : B
+public class X : B
 {
     static int y = 0;
 

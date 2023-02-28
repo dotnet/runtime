@@ -7,7 +7,7 @@ using System;
 // and caller that had few args or locals passed in a constant for
 // that parameter.
 
-class B
+public class B
 {
     int X(
         int a01, int a02, int a03, int a04,

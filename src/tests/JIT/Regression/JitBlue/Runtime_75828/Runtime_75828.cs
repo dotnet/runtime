@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 // Verify that the Jit_Patchpoint helper inserted for OSR preserves last error
 
-class Runtime_75828
+public class Runtime_75828
 {
     public static int Main()
     {

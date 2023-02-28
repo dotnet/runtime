@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
-        private static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
+        private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
         [Fact]
         private void TestWindowApisUnix()
@@ -456,7 +456,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestPriorityClassUnix()
         {
             CreateDefaultProcess();
@@ -478,11 +478,11 @@ namespace System.Diagnostics.Tests
             }
             catch (Win32Exception ex)
             {
-                Assert.True(!PlatformDetection.IsSuperUser, $"Failed even though superuser {ex.ToString()}");
+                Assert.False(PlatformDetection.IsPrivilegedProcess, $"Failed even though superuser {ex.ToString()}");
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsUnixAndSuperUser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestBasePriorityOnUnix()
         {
             CreateDefaultProcess();
@@ -499,7 +499,7 @@ namespace System.Diagnostics.Tests
             }
             catch (Win32Exception ex)
             {
-                Assert.True(!PlatformDetection.IsSuperUser, $"Failed even though superuser {ex.ToString()}");
+                Assert.False(PlatformDetection.IsPrivilegedProcess, $"Failed even though superuser {ex.ToString()}");
             }
         }
 
@@ -596,8 +596,7 @@ namespace System.Diagnostics.Tests
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process doesn't have elevated privileges.
         /// </summary>
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
-        [OuterLoop("Needs sudo access")]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
@@ -656,7 +655,7 @@ namespace System.Diagnostics.Tests
 
         private static string GetCurrentRealUserName()
         {
-            string realUserName = geteuid() == 0 ?
+            string realUserName = Environment.IsPrivilegedProcess ?
                 Environment.GetEnvironmentVariable("SUDO_USER") :
                 Environment.UserName;
 
@@ -743,7 +742,6 @@ namespace System.Diagnostics.Tests
         /// Tests the ProcessWaitState reference count drops to zero.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // Test validates Unix implementation
         public async Task TestProcessWaitStateReferenceCount()
         {
             using (var exitedEventSemaphore = new SemaphoreSlim(0, 1))
@@ -833,7 +831,6 @@ namespace System.Diagnostics.Tests
             Assert.True(foundRecycled);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("/dev/stdin",  O_RDONLY)]
         [InlineData("/dev/stdout", O_WRONLY)]

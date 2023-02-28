@@ -32,11 +32,11 @@ namespace ILCompiler
         public Option<bool> Optimize { get; } =
             new(new[] { "--optimize", "-O" }, SR.EnableOptimizationsOption);
         public Option<bool> OptimizeDisabled { get; } =
-            new(new[] { "--optimize-disabled", "-Od" }, SR.DisableOptimizationsOption);
+            new(new[] { "--optimize-disabled", "--Od" }, SR.DisableOptimizationsOption);
         public Option<bool> OptimizeSpace { get; } =
-            new(new[] { "--optimize-space", "-Os" }, SR.OptimizeSpaceOption);
+            new(new[] { "--optimize-space", "--Os" }, SR.OptimizeSpaceOption);
         public Option<bool> OptimizeTime { get; } =
-            new(new[] { "--optimize-time", "-Ot" }, SR.OptimizeSpeedOption);
+            new(new[] { "--optimize-time", "--Ot" }, SR.OptimizeSpeedOption);
         public Option<bool> InputBubble { get; } =
             new(new[] { "--inputbubble" }, SR.InputBubbleOption);
         public Option<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =

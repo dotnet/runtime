@@ -47,7 +47,7 @@ public int Test(A a){
 
   //@csharp - Note that C# will not compile an illegal access of a.FldPrivInst
   //So there is no negative test here, it should be covered elsewhere and
-  //should throw a FielAccessException within the runtime.  (IL sources is
+  //should throw a FieldAccessException within the runtime.  (IL sources is
   //the most logical, only?, choice)
 
   //@csharp - C# Won't compile illegial family access from non-family members
@@ -63,7 +63,7 @@ public int Test(A a){
   //@csharp - C# Won't compile illegial family access from non-family members
 
   /////////////////////////////////
-  // Test instance a.Method access  
+  // Test instance a.Method access
   if(a.MethPubInst() != 100)
     mi_RetCode = 0;
 
@@ -100,7 +100,7 @@ private int FldPrivInst;
 protected int FldFamInst;          //Translates to "family"
 internal int FldAsmInst;           //Translates to "assembly"
 protected internal int FldFoaInst; //Translates to "famorassem"
-  
+
   //////////////////////////////
   // Static Fields
 public static int FldPubStat;

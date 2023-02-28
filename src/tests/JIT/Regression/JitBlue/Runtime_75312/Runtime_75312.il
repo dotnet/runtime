@@ -9,7 +9,7 @@
 .class public abstract auto ansi sealed beforefieldinit Runtime_75312
        extends [System.Runtime]System.Object
 {
-    .method private hidebysig static 
+    .method public hidebysig static 
         int32 Main () cil managed 
     {
         .entrypoint

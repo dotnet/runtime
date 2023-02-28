@@ -29,12 +29,10 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if ((uint)index >= (uint)_count)
-                {
-                    // For compat, throw an ArgumentOutOfRangeException instead of
-                    // the IndexOutOfRangeException that comes from the array's indexer.
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                // For compat, throw an ArgumentOutOfRangeException instead of
+                // the IndexOutOfRangeException that comes from the array's indexer.
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_count, nameof(index));
+
                 return _oids[index];
             }
         }

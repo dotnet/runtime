@@ -37,7 +37,7 @@ function initializeImportsAndExports(
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
 
-    // we want to have same instance of MONO, BINDING and Module in dotnet iffe
+    // we want to have same instance of MONO, BINDING and Module in dotnet iife
     set_imports_exports(imports, exports);
     set_legacy_exports(exports);
     init_polyfills(replacements);
@@ -45,7 +45,6 @@ function initializeImportsAndExports(
     // here we merge methods from the local objects into exported objects
     Object.assign(exports.mono, export_mono_api());
     Object.assign(exports.binding, export_binding_api());
-    Object.assign(exports.internal, export_internal());
     Object.assign(exports.internal, export_internal());
     const API = export_api();
     __linker_exports = export_linker();
@@ -133,19 +132,7 @@ function initializeImportsAndExports(
     list.registerRuntime(exportedRuntimeAPI);
 
     if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        // eslint-disable-next-line no-inner-declarations
-        async function workerInit(): Promise<DotnetModule> {
-            await mono_wasm_pthread_worker_init();
-
-            // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
-            // until we have our own fix for dotnet.worker.js file
-            // we also skip all emscripten startup event and configuration of worker's JS state
-            // note that emscripten events are not firing either
-
-            return exportedRuntimeAPI.Module;
-        }
-        // Emscripten pthread worker.js is ok with a Promise here.
-        return <any>workerInit();
+        return <any>mono_wasm_pthread_worker_init(module, exportedRuntimeAPI);
     }
 
     configure_emscripten_startup(module, exportedRuntimeAPI);

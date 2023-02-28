@@ -9,10 +9,12 @@
 
     <PublishingTestsRun>true</PublishingTestsRun>
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
+
+    <SkipWorkloadsTestingTargetsImport Condition="'$(SkipWorkloadsTestingTargetsImport)' == ''">true</SkipWorkloadsTestingTargetsImport>
   </PropertyGroup>
 
   <PropertyGroup>
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
+    <RunAOTCompilation Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">true</RunAOTCompilation>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -22,7 +24,7 @@
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
-    <!-- Suppress linker warnings as these are tests -->
+    <!-- Suppress trimming warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <NoWarn>$(NoWarn);IL2103;IL2105;IL2025;IL2111</NoWarn>
     <!-- Warns about missing Xamarin.iOS.dll -->
@@ -39,6 +41,17 @@
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
   </PropertyGroup>
 
+  <!-- When trimming non-exe projects, root the whole intermediate assembly.
+       The SDK settings root only the entry point by default. These targets are used not only for standard
+       console apps, but also for test projects without an entry point. -->
+  <Target Name="RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" Condition="'$(OutputType)' != 'Exe'">
+    <ItemGroup>
+      <TrimmerRootAssembly Condition="'%(Identity)' == '@(IntermediateAssembly)'">
+        <RootMode>all</RootMode>
+      </TrimmerRootAssembly>
+    </ItemGroup>
+  </Target>
+
   <PropertyGroup>
     <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">$(AdditionalXHarnessArguments) --expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>
@@ -47,13 +60,13 @@
     <DiagnosticPorts Condition="'$(DiagnosticStartupMode)' != ''">$(DiagnosticPorts),$(DiagnosticStartupMode)</DiagnosticPorts>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'android'">
     <!-- The -arg flag for xharness passes the arguments along to the instrumentation app -->
     <AdditionalXHarnessArguments Condition="'$(XUnitMethodName)' != ''">$(AdditionalXHarnessArguments) --arg=-m=$(XUnitMethodName)</AdditionalXHarnessArguments>
     <AdditionalXHarnessArguments Condition="'$(XUnitClassName)' != ''">$(AdditionalXHarnessArguments) --arg=-c=$(XUnitClassName)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">
     <!-- Pass the -m or -c flag along to the app bundle, note that due to the double hyphen this needs to be the last argument -->
     <AdditionalXHarnessArguments Condition="'$(XUnitMethodName)' != ''">$(AdditionalXHarnessArguments) -- -m=$(XUnitMethodName)</AdditionalXHarnessArguments>
     <AdditionalXHarnessArguments Condition="'$(XUnitClassName)' != ''">$(AdditionalXHarnessArguments) -- -c=$(XUnitClassName)</AdditionalXHarnessArguments>
@@ -64,11 +77,13 @@
   </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)tests.android.targets"
-          Condition="'$(TargetOS)' == 'Android'" />
+          Condition="'$(TargetOS)' == 'android'" />
   <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets"
           Condition="'$(TargetsAppleMobile)' == 'true'" />
-  <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets"
-          Condition="'$(TargetOS)' == 'Browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)tests.browser.targets"
+          Condition="'$(TargetOS)' == 'browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)tests.wasi.targets"
+          Condition="'$(TargetOS)' == 'wasi'" />
 
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
@@ -120,9 +135,9 @@
           AfterTargets="ComputeResolvedFilesToPublishList"
           Condition="'$(TestFramework)' == 'xunit'">
     <ItemGroup>
-      <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
-      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" />
-      <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
+      <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'android'" />
+      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'" />
+      <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'wasi'" />
 
       <!-- Remove runner files that already exist in ResolvedFileToPublish to avoid double publishing -->
       <_resolvedFilesToPublishToFileName Include="@(ResolvedFileToPublish -> '%(FileName)%(Extension)')" />
@@ -136,7 +151,7 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" Condition="'$(SkipWorkloadsTestingTargetsImport)' == 'true'" />
 
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"

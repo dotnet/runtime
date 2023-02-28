@@ -75,15 +75,13 @@ namespace DebuggerTests
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IOptionsMonitor<TestHarnessOptions> optionsAccessor, IWebHostEnvironment env, ILogger<TestHarnessProxy> logger, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IOptions<TestHarnessOptions> optionsContainer, IWebHostEnvironment env, ILogger<TestHarnessProxy> logger, ILoggerFactory loggerFactory)
         {
             this.Logger = logger;
             this._loggerFactory = loggerFactory;
+            TestHarnessOptions options = optionsContainer.Value;
 
             app.UseWebSockets();
-            app.UseStaticFiles();
-
-            TestHarnessOptions options = optionsAccessor.CurrentValue;
 
             var provider = new FileExtensionContentTypeProvider();
             provider.Mappings[".wasm"] = "application/wasm";
@@ -93,8 +91,20 @@ namespace DebuggerTests
                 FileProvider = new PhysicalFileProvider(options.AppPath),
                 ServeUnknownFileTypes = true, //Cuz .wasm is not a known file type :cry:
                 RequestPath = "",
-                ContentTypeProvider = provider
+                ContentTypeProvider = provider,
+                OnPrepareResponse = (context) => {
+                    if (options.WebServerUseCrossOriginPolicy)
+                    {
+                        context.Context.Response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
+                        context.Context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
+                    }
+                }
             });
+
+            if (options.WebServerUseCors)
+            {
+                app.UseCors("AnyCors");
+            }
 
             app.UseRouter(router =>
             {
@@ -135,7 +145,8 @@ namespace DebuggerTests
                                                 browserPort,
                                                 message_prefix,
                                                 _loggerFactory,
-                                                cts).ConfigureAwait(false);
+                                                cts,
+                                                locale: options.Locale).ConfigureAwait(false);
                         }
                         else if (host == WasmHost.Firefox)
                         {
@@ -147,7 +158,8 @@ namespace DebuggerTests
                                                 firefox_proxy_port,
                                                 message_prefix,
                                                 _loggerFactory,
-                                                cts).ConfigureAwait(false);
+                                                cts,
+                                                locale: options.Locale).ConfigureAwait(false);
                         }
                         Logger.LogDebug($"{message_prefix} TestHarnessStartup done");
                     }

@@ -261,7 +261,7 @@ namespace Runtime_45090
         }
     }
 
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void TestSkipAllocFrame(AllocFrame scenario)
@@ -269,7 +269,7 @@ namespace Runtime_45090
             scenario.VirtMethodEspBasedFrame();
         }
 
-        static int Main()
+        public static int Main()
         {
             TestSkipAllocFrame(new PushReg());
             TestSkipAllocFrame(new SubSp());

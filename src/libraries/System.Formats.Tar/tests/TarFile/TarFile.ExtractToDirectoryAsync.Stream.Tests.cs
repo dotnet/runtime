@@ -242,5 +242,32 @@ namespace System.Formats.Tar.Tests
 
             Assert.Equal(2, Directory.GetFileSystemEntries(destination.Path, "*", SearchOption.AllDirectories).Count());
         }
+
+        [Fact]
+        public async Task PaxNameCollision_DedupInExtendedAttributesAsync()
+        {
+            using TempDirectory root = new();
+
+            string sharedRootFolders = Path.Join(root.Path, "folder with spaces", new string('a', 100));
+            string path1 = Path.Join(sharedRootFolders, "entry 1 with spaces.txt");
+            string path2 = Path.Join(sharedRootFolders, "entry 2 with spaces.txt");
+
+            await using MemoryStream stream = new();
+            await using (TarWriter writer = new(stream, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                // Paths don't fit in the standard 'name' field, but they differ in the filename,
+                // which is fully stored as an extended attribute
+                PaxTarEntry entry1 = new(TarEntryType.RegularFile, path1);
+                await writer.WriteEntryAsync(entry1);
+                PaxTarEntry entry2 = new(TarEntryType.RegularFile, path2);
+                await writer.WriteEntryAsync(entry2);
+            }
+            stream.Position = 0;
+
+            await TarFile.ExtractToDirectoryAsync(stream, root.Path, overwriteFiles: true);
+
+            Assert.True(File.Exists(path1));
+            Assert.True(Path.Exists(path2));
+        }
     }
 }

@@ -82,7 +82,7 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 //
 static GenTreeVecCon* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
 {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     if (simdType == TYP_SIMD32)
     {
         simd32_t       simd32Val = {};
@@ -845,7 +845,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     {
         // check for fake "" first
         cnsLength = 0;
-        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"\")...\n", str)
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"\")...\n")
     }
     else
     {

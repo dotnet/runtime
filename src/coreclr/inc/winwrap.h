@@ -189,11 +189,17 @@
 
 //File and Directory Functions which need special handling for LongFile Names
 //Note only the functions which are currently used are defined
+#ifdef HOST_WINDOWS
 #define WszLoadLibrary         LoadLibraryExWrapper
 #define WszLoadLibraryEx       LoadLibraryExWrapper
 #define WszCreateFile          CreateFileWrapper
-#define WszGetFileAttributes   GetFileAttributesWrapper
 #define WszGetFileAttributesEx GetFileAttributesExWrapper
+#else // HOST_WINDOWS
+#define WszLoadLibrary         LoadLibraryW
+#define WszLoadLibraryEx       LoadLibraryExW
+#define WszCreateFile          CreateFileW
+#define WszGetFileAttributesEx GetFileAttributesExW
+#endif // HOST_WINDOWS
 
 //Can not use extended syntax
 #define WszGetFullPathName     GetFullPathNameW

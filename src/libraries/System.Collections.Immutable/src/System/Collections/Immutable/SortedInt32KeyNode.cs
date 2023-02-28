@@ -147,7 +147,7 @@ namespace System.Collections.Immutable
         {
             get
             {
-                foreach (var pair in this)
+                foreach (KeyValuePair<int, TValue> pair in this)
                 {
                     yield return pair.Value;
                 }
@@ -287,7 +287,7 @@ namespace System.Collections.Immutable
                 return tree;
             }
 
-            var right = tree._right;
+            SortedInt32KeyNode<TValue> right = tree._right;
             return right.Mutate(left: tree.Mutate(right: right._left!));
         }
 
@@ -306,7 +306,7 @@ namespace System.Collections.Immutable
                 return tree;
             }
 
-            var left = tree._left;
+            SortedInt32KeyNode<TValue> left = tree._left;
             return left.Mutate(right: tree.Mutate(left: left._right!));
         }
 
@@ -434,7 +434,7 @@ namespace System.Collections.Immutable
                 SortedInt32KeyNode<TValue> result = this;
                 if (key > _key)
                 {
-                    var newRight = _right!.SetOrAdd(key, value, valueComparer, overwriteExistingValue, out replacedExistingValue, out mutated);
+                    SortedInt32KeyNode<TValue> newRight = _right!.SetOrAdd(key, value, valueComparer, overwriteExistingValue, out replacedExistingValue, out mutated);
                     if (mutated)
                     {
                         result = this.Mutate(right: newRight);
@@ -442,7 +442,7 @@ namespace System.Collections.Immutable
                 }
                 else if (key < _key)
                 {
-                    var newLeft = _left!.SetOrAdd(key, value, valueComparer, overwriteExistingValue, out replacedExistingValue, out mutated);
+                    SortedInt32KeyNode<TValue> newLeft = _left!.SetOrAdd(key, value, valueComparer, overwriteExistingValue, out replacedExistingValue, out mutated);
                     if (mutated)
                     {
                         result = this.Mutate(left: newLeft);
@@ -512,19 +512,19 @@ namespace System.Collections.Immutable
                     {
                         // We have two children. Remove the next-highest node and replace
                         // this node with it.
-                        var successor = _right;
+                        SortedInt32KeyNode<TValue> successor = _right;
                         while (!successor._left!.IsEmpty)
                         {
                             successor = successor._left;
                         }
 
-                        var newRight = _right.Remove(successor._key, out _);
+                        SortedInt32KeyNode<TValue> newRight = _right.Remove(successor._key, out _);
                         result = successor.Mutate(left: _left, right: newRight);
                     }
                 }
                 else if (key < _key)
                 {
-                    var newLeft = _left.Remove(key, out mutated);
+                    SortedInt32KeyNode<TValue> newLeft = _left.Remove(key, out mutated);
                     if (mutated)
                     {
                         result = this.Mutate(left: newLeft);
@@ -532,7 +532,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
-                    var newRight = _right.Remove(key, out mutated);
+                    SortedInt32KeyNode<TValue> newRight = _right.Remove(key, out mutated);
                     if (mutated)
                     {
                         result = this.Mutate(right: newRight);

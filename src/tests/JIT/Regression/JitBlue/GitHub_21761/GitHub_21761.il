@@ -246,7 +246,7 @@ FAIL:
 // Non-zero SIMD constants are not supported so field by field initialization
 // should not be attempted.
 
-.class sequential sealed Wrapper extends [System.Runtime]System.ValueType
+.class public sequential sealed Wrapper extends [System.Runtime]System.ValueType
 {
     .field public valuetype [System.Numerics.Vectors]System.Numerics.Vector4 Value
 }
@@ -276,7 +276,7 @@ FAIL:
     ret
 }
 
-.method hidebysig static int32 Main() cil managed
+.method public hidebysig static int32 Main() cil managed
 {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

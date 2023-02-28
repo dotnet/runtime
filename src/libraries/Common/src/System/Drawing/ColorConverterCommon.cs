@@ -53,27 +53,17 @@ namespace System.Drawing
                 }
             }
 
-            // Nope. Parse the RGBA from the text.
-            //
-            string[] tokens = text.Split(sep);
-            int[] values = new int[tokens.Length];
-            for (int i = 0; i < values.Length; i++)
-            {
-                values[i] = unchecked(IntFromString(tokens[i], culture));
-            }
-
-            // We should now have a number of parsed integer values.
             // We support 1, 3, or 4 arguments:
-            //
             // 1 -- full ARGB encoded
             // 3 -- RGB
             // 4 -- ARGB
-            //
-            return values.Length switch
+            ReadOnlySpan<char> textSpan = text;
+            Span<Range> tokens = stackalloc Range[5];
+            return textSpan.Split(tokens, sep) switch
             {
-                1 => PossibleKnownColor(Color.FromArgb(values[0])),
-                3 => PossibleKnownColor(Color.FromArgb(values[0], values[1], values[2])),
-                4 => PossibleKnownColor(Color.FromArgb(values[0], values[1], values[2], values[3])),
+                1 => PossibleKnownColor(Color.FromArgb(IntFromString(textSpan[tokens[0]], culture))),
+                3 => PossibleKnownColor(Color.FromArgb(IntFromString(textSpan[tokens[0]], culture), IntFromString(textSpan[tokens[1]], culture), IntFromString(textSpan[tokens[2]], culture))),
+                4 => PossibleKnownColor(Color.FromArgb(IntFromString(textSpan[tokens[0]], culture), IntFromString(textSpan[tokens[1]], culture), IntFromString(textSpan[tokens[2]], culture), IntFromString(textSpan[tokens[3]], culture))),
                 _ => throw new ArgumentException(SR.Format(SR.InvalidColor, text)),
             };
         }
@@ -96,7 +86,7 @@ namespace System.Drawing
             return color;
         }
 
-        private static int IntFromString(string text, CultureInfo culture)
+        private static int IntFromString(ReadOnlySpan<char> text, CultureInfo culture)
         {
             text = text.Trim();
 
@@ -104,34 +94,23 @@ namespace System.Drawing
             {
                 if (text[0] == '#')
                 {
-                    return IntFromString(text.Substring(1), 16);
+                    return Convert.ToInt32(text.Slice(1).ToString(), 16);
                 }
-                else if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-                         || text.StartsWith("&h", StringComparison.OrdinalIgnoreCase))
+                else if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase) || text.StartsWith("&h", StringComparison.OrdinalIgnoreCase))
                 {
-                    return IntFromString(text.Substring(2), 16);
+                    return Convert.ToInt32(text.Slice(2).ToString(), 16);
                 }
                 else
                 {
                     Debug.Assert(culture != null);
                     var formatInfo = (NumberFormatInfo?)culture.GetFormat(typeof(NumberFormatInfo));
-                    return IntFromString(text, formatInfo);
+                    return int.Parse(text, provider: formatInfo);
                 }
             }
             catch (Exception e)
             {
-                throw new ArgumentException(SR.Format(SR.ConvertInvalidPrimitive, text, nameof(Int32)), e);
+                throw new ArgumentException(SR.Format(SR.ConvertInvalidPrimitive, text.ToString(), nameof(Int32)), e);
             }
-        }
-
-        private static int IntFromString(string value, int radix)
-        {
-            return Convert.ToInt32(value, radix);
-        }
-
-        private static int IntFromString(string value, NumberFormatInfo? formatInfo)
-        {
-            return int.Parse(value, NumberStyles.Integer, formatInfo);
         }
     }
 }

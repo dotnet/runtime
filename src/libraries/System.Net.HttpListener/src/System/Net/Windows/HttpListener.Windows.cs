@@ -674,7 +674,7 @@ namespace System.Net
 
         internal HttpListenerContext? HandleAuthentication(HttpListenerSession session, RequestContextBase memoryBlob, out bool stoleBlob)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HandleAuthentication() memoryBlob:0x" + ((IntPtr)memoryBlob.RequestBlob).ToString("x"));
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HandleAuthentication() memoryBlob:0x{(IntPtr)memoryBlob.RequestBlob:x}");
 
             string? challenge = null;
             stoleBlob = false;
@@ -1579,8 +1579,8 @@ namespace System.Net
                 httpResponse.pReason = (sbyte*)pReason;
                 httpResponse.ReasonLength = (ushort)byteReason.Length;
 
-                byte[] byteContentLength = Encoding.Default.GetBytes("0");
-                fixed (byte* pContentLength = &byteContentLength[0])
+                ReadOnlySpan<byte> byteContentLength = "0"u8;
+                fixed (byte* pContentLength = byteContentLength)
                 {
                     (&httpResponse.Headers.KnownHeaders)[(int)HttpResponseHeader.ContentLength].pRawValue = (sbyte*)pContentLength;
                     (&httpResponse.Headers.KnownHeaders)[(int)HttpResponseHeader.ContentLength].RawValueLength = (ushort)byteContentLength.Length;
@@ -1625,7 +1625,7 @@ namespace System.Net
                                 &httpResponse,
                                 null,
                                 &DataWritten,
-                                SafeLocalAllocHandle.Zero,
+                                null,
                                 0,
                                 null,
                                 null);

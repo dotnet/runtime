@@ -8,7 +8,7 @@ namespace DefaultNamespace
     //@ENDRENAME; Verify this renames
     using System;
 
-    class unsignedNegative
+    public class unsignedNegative
     {
         public static int Main()
         {

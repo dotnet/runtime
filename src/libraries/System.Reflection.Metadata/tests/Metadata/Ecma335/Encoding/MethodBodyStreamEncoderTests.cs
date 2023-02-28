@@ -251,6 +251,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             var brInfo = flowBuilder.Branches.Single();
             Assert.Equal(61, brInfo.ILOffset);
+            Assert.Equal(62, brInfo.OperandOffset);
             Assert.Equal(l1, brInfo.Label);
             Assert.Equal(ILOpCode.Br_s, brInfo.OpCode);
 
@@ -321,6 +322,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             var brInfo = flowBuilder.Branches.Single();
             Assert.Equal(62, brInfo.ILOffset);
+            Assert.Equal(63, brInfo.OperandOffset);
             Assert.Equal(l1, brInfo.Label);
             Assert.Equal(ILOpCode.Br_s, brInfo.OpCode);
 
@@ -489,13 +491,13 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             flowBuilder.MarkLabel(64, l64);
             flowBuilder.MarkLabel(255, l255);
 
-            flowBuilder.AddBranch(0, l255, ILOpCode.Bge);
-            flowBuilder.AddBranch(16, l0, ILOpCode.Bge_un_s); // blob boundary
-            flowBuilder.AddBranch(33, l255, ILOpCode.Ble);    // blob boundary
-            flowBuilder.AddBranch(38, l0, ILOpCode.Ble_un_s); // branches immediately next to each other
-            flowBuilder.AddBranch(40, l255, ILOpCode.Blt);    // branches immediately next to each other
-            flowBuilder.AddBranch(46, l64, ILOpCode.Blt_un_s);
-            flowBuilder.AddBranch(254, l0, ILOpCode.Brfalse); // long branch at the end
+            flowBuilder.AddBranch(1, l255, 4, 0, ILOpCode.Bge);
+            flowBuilder.AddBranch(17, l0, 1, 16, ILOpCode.Bge_un_s); // blob boundary
+            flowBuilder.AddBranch(34, l255, 4, 33, ILOpCode.Ble);    // blob boundary
+            flowBuilder.AddBranch(39, l0, 1, 38, ILOpCode.Ble_un_s); // branches immediately next to each other
+            flowBuilder.AddBranch(41, l255, 4, 40, ILOpCode.Blt);    // branches immediately next to each other
+            flowBuilder.AddBranch(47, l64, 1, 46, ILOpCode.Blt_un_s);
+            flowBuilder.AddBranch(255, l0, 4, 254, ILOpCode.Brfalse); // long branch at the end
 
             var dstBuilder = new BlobBuilder();
             var srcBuilder = new BlobBuilder(capacity: 17);

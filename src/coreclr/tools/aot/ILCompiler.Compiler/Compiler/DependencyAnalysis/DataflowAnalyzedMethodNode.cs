@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return "Dataflow analysis for " + factory.NameMangler.GetMangledMethodName(_methodIL.OwningMethod).ToString();
+            return "Dataflow analysis for " + _methodIL.OwningMethod.ToString();
         }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;

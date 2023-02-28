@@ -37,7 +37,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
-          - Linux_x64
+          - linux_x64
           - windows_x64
           jobParameters:
             buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
@@ -55,7 +55,7 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - Linux_x64
+          - linux_x64
           - windows_x64
           jobParameters:
             buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)

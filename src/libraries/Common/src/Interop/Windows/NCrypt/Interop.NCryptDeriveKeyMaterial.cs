@@ -140,7 +140,7 @@ internal static partial class Interop
                     out int keySize,
                     flags);
 
-                if (error != ErrorCode.ERROR_SUCCESS && error != ErrorCode.NTE_BUFFER_TOO_SMALL)
+                if (error != ErrorCode.ERROR_SUCCESS && !error.IsBufferTooSmall())
                 {
                     throw error.ToCryptographicException();
                 }
