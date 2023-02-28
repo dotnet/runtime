@@ -324,15 +324,37 @@ namespace ComInterfaceGenerator.Unit.Tests
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.ComInterfaceGenerator());
             Assert.Empty(generatorDiags.Where(IsValidGeneratorDiagnostic));
 
-            // There are valid warnings from the generator -- we don't want to check for compiler errors
-            if (generatorDiags.Length != 0)
-                return;
-
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp, "CS0105",
+            List<string> allowedDiagnostics = new()
+            {
+                // Duplicate 'using'
+                "CS0105",
                 // ComWrappersUnwrapper is inaccessible due to its protection level
                 "CS0122",
                 // Variable assigned to but never read
-                "CS0219");
+                "CS0219"
+            };
+            // There are valid warnings from the generator -- 
+            if (generatorDiags.Length != 0)
+            {
+                List<string> additionalDiags = new() {
+                    // No overload for 'ABI_Method' matches function pointer 'delegate* unmanaged<...>'
+                    "CS8757",
+                    // Cannot use 'parameterType' as a parameter type on a method attributed with 'UnmanagedCallersOnly'.
+                    "CS8894",
+                    // The out parameter 'paramName' must be assigned to before control leaves the current method
+                    "CS0177",
+                    // Cannot use 'ref', 'in', or 'out' in the signature of a method attributed with 'UnmanagedCallersOnly'.
+                    "CS8977",
+                    // The type 'SafeFileHandle' must be a non-nullable value type, along with all fields at any level of nesting,
+                    // in order to use it as parameter 'T' in the generic type or method 'ExceptionDefaultMarshaller<T>'
+                    "CS8377",
+                    // Argument N may not be passed with the 'in' keyword
+                    "CS1615"
+                };
+                allowedDiagnostics.AddRange(additionalDiags);
+            }
+
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp, allowedDiagnostics.ToArray());
         }
 
         private bool IsValidGeneratorDiagnostic(Diagnostic diag)
