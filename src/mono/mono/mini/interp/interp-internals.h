@@ -176,7 +176,7 @@ struct InterpMethod {
 #if HOST_BROWSER
 	unsigned int contains_traces : 1;
 	guint16 *backward_branch_offsets;
-	guint16 backward_branch_offsets_size, backward_branch_offsets_count;
+	unsigned int backward_branch_offsets_count;
 #endif
 #if PROFILE_INTERP
 	long calls;

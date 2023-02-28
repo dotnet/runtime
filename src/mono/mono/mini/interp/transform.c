@@ -8449,6 +8449,11 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 	int patchpoint_data_index = 0;
 	td->relocs = g_ptr_array_new ();
 	InterpBasicBlock *bb;
+#if HOST_BROWSER
+	#define BACKWARD_BRANCH_OFFSETS_SIZE 64
+	unsigned int backward_branch_offsets_count = 0;
+	guint16 backward_branch_offsets[BACKWARD_BRANCH_OFFSETS_SIZE] = { 0 };
+#endif
 
 	// This iteration could be avoided at the cost of less precise size result, following
 	// super instruction pass
@@ -8470,18 +8475,8 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 
 #if HOST_BROWSER
 		if (bb->backwards_branch_target && rtm->contains_traces) {
-			if (!rtm->backward_branch_offsets) {
-				// Most methods in System.Runtime.Tests have 8 or fewer branch targets,
-				//  and many have more than 4, so this is a decent starting size
-				rtm->backward_branch_offsets_size = 8;
-				rtm->backward_branch_offsets = g_malloc0(sizeof(guint16) * rtm->backward_branch_offsets_size);
-			} else if (rtm->backward_branch_offsets_size <= rtm->backward_branch_offsets_count) {
-				// A different growth policy might be optimal, but in S.R.T. 16 (the first
-				//  growth from the starting 8) is enough for everything, so this is fine
-				rtm->backward_branch_offsets_size *= 2;
-				rtm->backward_branch_offsets = g_realloc(rtm->backward_branch_offsets, rtm->backward_branch_offsets_size);
-			}
-			rtm->backward_branch_offsets[rtm->backward_branch_offsets_count++] = ip - td->new_code;
+			if (backward_branch_offsets_count < BACKWARD_BRANCH_OFFSETS_SIZE)
+				backward_branch_offsets[backward_branch_offsets_count++] = ip - td->new_code;
 		}
 #endif
 
@@ -8511,6 +8506,16 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 	handle_relocations (td);
 
 	g_ptr_array_free (td->relocs, TRUE);
+
+#if HOST_BROWSER
+	if (backward_branch_offsets_count > 0) {
+		rtm->backward_branch_offsets = mono_mem_manager_alloc(td->mem_manager, backward_branch_offsets_count * sizeof(guint16));
+		rtm->backward_branch_offsets_count = backward_branch_offsets_count;
+		memcpy(rtm->backward_branch_offsets, backward_branch_offsets, backward_branch_offsets_count * sizeof(guint16));
+	}
+
+	#undef BACKWARD_BRANCH_OFFSETS_SIZE
+#endif
 }
 
 static void

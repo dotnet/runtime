@@ -901,11 +901,29 @@ export function mono_interp_tier_prepare_jiterpreter (
     info.name = methodFullName || methodName;
 
     const imethod = getU32(getMemberOffset(JiterpMember.Imethod) + <any>frame);
-    const backBranchCount = getU16(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
+    const backBranchCount = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
     const pBackBranches = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
-    const backwardBranchTable = backBranchCount
+    let backwardBranchTable = backBranchCount
         ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount)
         : null;
+
+    // If we're compiling a trace that doesn't start at the beginning of a method,
+    //  it's possible all the backward branch targets precede it, so we won't want to
+    //  actually wrap it in a loop and have the eip check at the beginning.
+    if (backwardBranchTable && (ip !== startOfBody)) {
+        const threshold = (<any>ip - <any>startOfBody) / 2;
+        let foundReachableBranchTarget = false;
+        for (let i = 0; i < backwardBranchTable.length; i++) {
+            if (backwardBranchTable[i] > threshold) {
+                foundReachableBranchTarget = true;
+                break;
+            }
+        }
+        // We didn't find any backward branch targets we can reach from inside this trace,
+        //  so null out the table.
+        if (!foundReachableBranchTarget)
+            backwardBranchTable = null;
+    }
 
     const fnPtr = generate_wasm(
         frame, methodName, ip, startOfBody, sizeOfBody, methodFullName, backwardBranchTable
@@ -931,7 +949,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
 
     console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
     const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100;
-    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated. ${counters.backBranchesEmitted} backward branches emitted (${backBranchHitRate.toFixed(1)}%)`);
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated. ${counters.backBranchesEmitted} back-branches emitted (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%)`);
     if (concise)
         return;
 
