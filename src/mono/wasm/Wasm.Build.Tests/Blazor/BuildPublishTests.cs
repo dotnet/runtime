@@ -197,4 +197,43 @@ public class BuildPublishTests : BuildTestBase
 
         Assert.Contains("RazorClassLibrary.dll", lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public async Task BlazorBuildRunTest(string config)
+    {
+        string id = $"blazor_{config}_{Path.GetRandomFileName()}";
+        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+
+        new DotNetCommand(s_buildEnv, _testOutput)
+                .WithWorkingDirectory(_projectDir!)
+                .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
+                .EnsureSuccessful();
+
+        await BlazorRun(config);
+    }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+#if TEST_DEBUG_CONFIG_ALSO
+    [InlineData("Debug", false)]
+    [InlineData("Debug", true)]
+#endif
+    [InlineData("Release", false)]
+    [InlineData("Release", true)]
+    public async Task BlazorPublishRunTest(string config, bool aot)
+    {
+        string id = $"blazor_{config}_{Path.GetRandomFileName()}";
+        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        if (aot)
+            AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
+
+        new DotNetCommand(s_buildEnv, _testOutput)
+                .WithWorkingDirectory(_projectDir!)
+                .Execute($"publish -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
+                .EnsureSuccessful();
+
+        await BlazorRun(config);
+    }
+
 }
