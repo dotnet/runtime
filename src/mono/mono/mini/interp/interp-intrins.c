@@ -12,7 +12,7 @@
 static guint32
 rotate_left (guint32 value, int offset)
 {
-        return (value << offset) | (value >> (32 - offset));
+	return (value << offset) | (value >> (32 - offset));
 }
 
 void

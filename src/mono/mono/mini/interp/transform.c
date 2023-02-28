@@ -2543,6 +2543,23 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 
 				td->ip += 5;
 				return TRUE;
+			} else if (!strcmp (tm, "LeadingZeroCount")) {
+				if (arg_type == MONO_TYPE_U4 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 4))
+					*op = MINT_CLZ_I4;
+				else if (arg_type == MONO_TYPE_U8 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 8))
+					*op = MINT_CLZ_I8;
+			} else if (!strcmp (tm, "TrailingZeroCount")) {
+				if (arg_type == MONO_TYPE_U4 || arg_type == MONO_TYPE_I4 ||
+						((arg_type == MONO_TYPE_U || arg_type == MONO_TYPE_I) && SIZEOF_VOID_P == 4))
+					*op = MINT_CTZ_I4;
+				else if (arg_type == MONO_TYPE_U8 || arg_type == MONO_TYPE_I8 ||
+						((arg_type == MONO_TYPE_U || arg_type == MONO_TYPE_I) && SIZEOF_VOID_P == 8))
+					*op = MINT_CTZ_I8;
+			} else if (!strcmp (tm, "PopCount")) {
+				if (arg_type == MONO_TYPE_U4 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 4))
+					*op = MINT_POPCNT_I4;
+				else if (arg_type == MONO_TYPE_U8 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 8))
+					*op = MINT_POPCNT_I8;
 			}
 		}
 	} else if (in_corlib &&
