@@ -10,6 +10,8 @@
 
 #include <dnmd_interfaces.hpp>
 
+#include <cstdlib>
+
 namespace
 {
     class MDDispenserStateless final : IMetaDataDispenser

@@ -1,8 +1,9 @@
 #ifndef _SRC_INC_DNMD_HPP_
 #define _SRC_INC_DNMD_HPP_
 
-#include <memory>
 #include "dnmd.h"
+#include <memory>
+#include <cstdlib>
 
 struct mdhandle_deleter_t
 {

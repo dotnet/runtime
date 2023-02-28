@@ -12,12 +12,6 @@ set(HEADERS
 )
 
 if(NOT MSVC)
-  # Define for DNCP
-  add_compile_definitions(
-      DNCP_TYPEDEFS
-      DNCP_WINHDRS
-  )
-
   # Adds IID_* constants.
   list(APPEND SOURCES ./iids.cpp)
 endif()
@@ -47,13 +41,16 @@ target_link_libraries(dnmd_interfaces
   dncp)
 
 if(NOT MSVC)
-  target_link_libraries(dnmd_interfaces_static dncp_winhdrs)
-  target_link_libraries(dnmd_interfaces dncp_winhdrs)
+  target_link_libraries(dnmd_interfaces_static dncp::winhdrs)
+  target_link_libraries(dnmd_interfaces dncp::winhdrs)
 endif()
 
 if(APPLE)
   # Use ICU when running on macOS
   target_link_libraries(dnmd_interfaces icucore)
+elseif(UNIX)
+  # Use ICU when running on Linux
+  target_link_libraries(dnmd_interfaces icuuc)
 endif()
 
 set_target_properties(dnmd_interfaces_static PROPERTIES

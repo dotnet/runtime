@@ -96,6 +96,7 @@ namespace Regression.Performance
                     OperatingSystem.IsWindows() ? "regnative.dll"
                     : OperatingSystem.IsMacOS() ? "libregnative.dylib"
                     : "libregnative.so";
+                regnativePath = Path.Combine(AppContext.BaseDirectory, regnativePath);
             }
 
             var test = new Compare(regnativePath);

@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(CheckCCompilerFlag)
+
+include(CheckCXXCompilerFlag)
+
 #
 # Configure CMake for platforms
 #
@@ -21,6 +25,7 @@ elseif(APPLE)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   set(CMAKE_INSTALL_RPATH "@loader_path")
 else()
+  set(CMAKE_INSTALL_RPATH "$ORIGIN")
   add_compile_definitions(BUILD_UNIX=1)
 endif()
 
@@ -37,7 +42,14 @@ else()
   add_compile_options(-Wall -Werror) # All warnings and are errors.
   add_compile_options(-g) # enable debugging information.
 
-  add_compile_options(-Wno-pragma-pack) # cor.h controls pack pragmas via headers.
+  check_c_compiler_flag(-Wno-pragma-pack C_HAS_NO_PRAGMA_PACK)
+  if (C_HAS_NO_PRAGMA_PACK)
+    add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wno-pragma-pack>) # cor.h controls pack pragmas via headers.
+  endif()
+  check_cxx_compiler_flag(-Wno-pragma-pack CXX_HAS_NO_PRAGMA_PACK)
+  if (CXX_HAS_NO_PRAGMA_PACK)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-pragma-pack>) # cor.h controls pack pragmas via headers.
+  endif()
 endif()
 
 #

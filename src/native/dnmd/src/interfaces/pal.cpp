@@ -2,7 +2,7 @@
 #include <cstring>
 #include <cassert>
 
-#ifdef BUILD_MACOS
+#if defined(BUILD_MACOS) || defined(BUILD_UNIX)
 #include <unicode/ustring.h>
 #endif
 
@@ -27,10 +27,11 @@ HRESULT pal::ConvertUtf16ToUtf8(
         }
         return E_FAIL;
     }
-#elif defined(BUILD_MACOS)
+#elif defined(BUILD_MACOS) || defined(BUILD_UNIX)
     // Buffer lengths assume null terminator
     if (bufferLength > 0)
         bufferLength -= 1;
+
     UErrorCode err = U_ZERO_ERROR;
     (void)::u_strToUTF8(buffer, bufferLength, &length, (UChar const*)str, -1, &err);
     if (U_FAILURE(err))
@@ -78,10 +79,11 @@ HRESULT pal::ConvertUtf8ToUtf16(
         }
         return E_FAIL;
     }
-#elif defined(BUILD_MACOS)
+#elif defined(BUILD_MACOS) || defined(BUILD_UNIX)
     // Buffer lengths assume null terminator
     if (bufferLength > 0)
         bufferLength -= 1;
+
     UErrorCode err = U_ZERO_ERROR;
     (void)::u_strFromUTF8((UChar*)buffer, bufferLength, &length, str, -1, &err);
     if (U_FAILURE(err))
