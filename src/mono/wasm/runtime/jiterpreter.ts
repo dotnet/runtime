@@ -899,7 +899,9 @@ export function mono_interp_tier_prepare_jiterpreter (
     const imethod = getU32(getMemberOffset(JiterpMember.Imethod) + <any>frame);
     const backBranchCount = getU16(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
     const pBackBranches = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
-    const backwardBranchTable = backBranchCount ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount) : null;
+    const backwardBranchTable = backBranchCount
+        ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount)
+        : null;
 
     const fnPtr = generate_wasm(
         frame, methodName, ip, startOfBody, sizeOfBody, methodFullName, backwardBranchTable
