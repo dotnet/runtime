@@ -46346,7 +46346,6 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
 } while (false)
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-
 // Allocate small object with an alignment requirement of 8-bytes.
 Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags)
 {
