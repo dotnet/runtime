@@ -10869,16 +10869,19 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+
 #if defined(TARGET_XARCH)
         case NI_SSE_And:
         case NI_SSE2_And:
         case NI_AVX_And:
         case NI_AVX2_And:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_And:
+#endif
         {
-            if (node->GetOperandCount() != 2)
-            {
-                return node;
-            }
+            assert(node->GetOperandCount() == 2);
 
             GenTree*            op1      = node->Op(1);
             GenTree*            op2      = node->Op(2);
@@ -10903,29 +10906,32 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 return node;
             }
 
-            if ((inner_hw->GetOperandCount() != 2) || (!inner_hw->Op(2)->IsVectorAllBitsSet()))
-            {
-                return node;
-            }
-
             switch (inner_hw->GetHWIntrinsicId())
             {
+#if defined(TARGET_XARCH)
                 case NI_SSE_Xor:
                 case NI_SSE2_Xor:
                 case NI_AVX_Xor:
                 case NI_AVX2_Xor:
+#elif defined(TARGET_ARM64)
+                case NI_AdvSimd_Xor:
+#endif
+                    if ((!inner_hw->Op(2)->IsVectorAllBitsSet()))
+                    {
+                        return node;
+                    }
                     break;
                 default:
                     return node;
             }
 
-            var_types    hw_type     = node->TypeGet();
-            CorInfoType  hw_coretype = node->GetSimdBaseJitType();
-            unsigned int hw_simdsize = node->GetSimdSize();
+            var_types    simdType        = node->TypeGet();
+            CorInfoType  simdBaseJitType = node->GetSimdBaseJitType();
+            unsigned int simdSize        = node->GetSimdSize();
 
             lhs = inner_hw->Op(1);
 
-            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, hw_type, lhs, rhs, hw_coretype, hw_simdsize, true);
+            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, simdType, lhs, rhs, simdBaseJitType, simdSize, true);
 
             DEBUG_DESTROY_NODE(node);
 
@@ -11246,7 +11252,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // Should we try to replace integer multiplication with lea/add/shift sequences?
         bool mulShiftOpt = compCodeOpt() != SMALL_CODE;
 #else  // !TARGET_XARCH
-        bool mulShiftOpt = false;
+            bool mulShiftOpt = false;
 #endif // !TARGET_XARCH
 
         size_t abs_mult      = (mult >= 0) ? mult : -mult;
@@ -11610,9 +11616,9 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
 #if defined(TARGET_64BIT)
         bool canFold = (indSize == lclVarSize);
 #else // !TARGET_64BIT
-        // TODO: improve 32 bit targets handling for LONG returns if necessary, nowadays we do not support `BITCAST
-        // long<->double` there.
-        bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
+            // TODO: improve 32 bit targets handling for LONG returns if necessary, nowadays we do not support `BITCAST
+            // long<->double` there.
+            bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
 #endif
 
         // TODO: support `genReturnBB != nullptr`, it requires #11413 to avoid `Incompatible types for
@@ -14041,10 +14047,10 @@ void Compiler::fgSetOptions()
 
 #else // !TARGET_X86
 
-    if (compHndBBtabCount > 0)
-    {
-        codeGen->setFramePointerRequiredEH(true);
-    }
+        if (compHndBBtabCount > 0)
+        {
+            codeGen->setFramePointerRequiredEH(true);
+        }
 
 #endif // TARGET_X86
 
@@ -15287,27 +15293,27 @@ bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
     // On anything except windows X86 we have no faster mechanism available.
     return false;
 #else
-    // For R2R make sure we go through portable mechanism that the 'EE' side
-    // will properly turn into a runtime JIT.
-    if (opts.IsReadyToRun())
-    {
-        return false;
-    }
+        // For R2R make sure we go through portable mechanism that the 'EE' side
+        // will properly turn into a runtime JIT.
+        if (opts.IsReadyToRun())
+        {
+            return false;
+        }
 
-    // The JIT helper does not properly handle the case where localloc was used.
-    if (compLocallocUsed)
-    {
-        return false;
-    }
+        // The JIT helper does not properly handle the case where localloc was used.
+        if (compLocallocUsed)
+        {
+            return false;
+        }
 
-    // Delegate calls may go through VSD stub in rare cases. Those look at the
-    // call site so we cannot use the JIT helper.
-    if (call->IsDelegateInvoke())
-    {
-        return false;
-    }
+        // Delegate calls may go through VSD stub in rare cases. Those look at the
+        // call site so we cannot use the JIT helper.
+        if (call->IsDelegateInvoke())
+        {
+            return false;
+        }
 
-    return true;
+        return true;
 #endif
 }
 
