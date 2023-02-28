@@ -522,6 +522,10 @@ void BlockCountInstrumentor::RelocateProbes()
                 {
                     m_comp->fgRemoveRefPred(pred, block);
                     m_comp->fgAddRefPred(intermediary, block);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+                    m_comp->fgFixFinallyTargetFlags(pred, block, intermediary);
+#endif
                 }
             }
         }
@@ -1448,34 +1452,12 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         JITDUMP("Could not find " FMT_BB " -> " FMT_BB " edge to instrument\n", block->bbNum,
                                 target->bbNum);
 
-                        // If we're optimizing, assume this edge got folded away
-                        //
-                        if (m_comp->opts.IsInstrumentedOptimized())
-                        {
-                            JITDUMP(" -- assuming this edge was folded away by the importer\n");
+                        JITDUMP(" -- assuming this edge was folded away by the importer\n");
 
-                            // Placate the asserts below
-                            //
-                            instrumentedBlock = source;
-                            edgesIgnored++;
-                        }
-                        // If the source block is a partial compilation patchpoint
-                        // then the edge will have been removed.
+                        // Placate the asserts below
                         //
-                        else if ((block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT) ==
-                                 BBF_PARTIAL_COMPILATION_PATCHPOINT)
-                        {
-                            JITDUMP(" -- source block is partial compilation patchpoint\n");
-
-                            // Placate the asserts below
-                            //
-                            instrumentedBlock = source;
-                            edgesIgnored++;
-                        }
-                        else
-                        {
-                            assert(found);
-                        }
+                        instrumentedBlock = source;
+                        edgesIgnored++;
                     }
 
                     // Delete the critical edge probe

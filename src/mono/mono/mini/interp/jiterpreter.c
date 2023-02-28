@@ -8,15 +8,18 @@
 #endif
 #include "config.h"
 
+void jiterp_preserve_module (void);
+
+// NOTE: All code in this file needs to be guarded with HOST_BROWSER, since
+//  we don't run non-wasm tests for changes to this file!
+
+#if HOST_BROWSER
+
 #if 0
 #define jiterp_assert(b) g_assert(b)
 #else
 #define jiterp_assert(b)
 #endif
-
-void jiterp_preserve_module (void);
-
-#if HOST_BROWSER
 
 #include <emscripten.h>
 
@@ -299,19 +302,6 @@ mono_jiterp_cast_ref (
 	return 0;
 }
 
-EMSCRIPTEN_KEEPALIVE void*
-mono_jiterp_array_get_element_address_with_size_ref (MonoArray **array, int size, int index)
-{
-	// HACK: This does not need to be volatile because we know array is visible to
-	//  the GC and this is called from interp traces in gc unsafe mode
-	MonoArray* _array = *array;
-	if (!_array)
-		return NULL;
-	if (index >= mono_array_length_internal(_array))
-		return NULL;
-	return mono_array_addr_with_size_fast (_array, size, index);
-}
-
 EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_localloc (gpointer *destination, gint32 len, InterpFrame *frame)
 {
@@ -481,6 +471,7 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 #define JITERP_MEMBER_RMETHOD 6
 #define JITERP_MEMBER_SPAN_LENGTH 7
 #define JITERP_MEMBER_SPAN_DATA 8
+#define JITERP_MEMBER_ARRAY_LENGTH 9
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -490,6 +481,8 @@ mono_jiterp_get_member_offset (int member) {
 			return MONO_STRUCT_OFFSET (MonoVTable, initialized);
 		case JITERP_MEMBER_ARRAY_DATA:
 			return MONO_STRUCT_OFFSET (MonoArray, vector);
+		case JITERP_MEMBER_ARRAY_LENGTH:
+			return MONO_STRUCT_OFFSET (MonoArray, max_length);
 		case JITERP_MEMBER_STRING_LENGTH:
 			return MONO_STRUCT_OFFSET (MonoString, length);
 		case JITERP_MEMBER_STRING_DATA:
@@ -727,6 +720,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_ADD_MUL_I4_IMM:
 		case MINT_ADD_MUL_I8_IMM:
 		case MINT_ARRAY_RANK:
+		case MINT_MONO_CMPXCHG_I4:
+		case MINT_MONO_CMPXCHG_I8:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
@@ -1226,6 +1221,26 @@ mono_jiterp_math_tan (double value)
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_stelem_ref (
+	MonoArray *o, gint32 aindex, MonoObject *ref
+) {
+	if (!o)
+		return 0;
+	if (aindex >= mono_array_length_internal (o))
+		return 0;
+
+	if (ref) {
+		// FIXME push/pop LMF
+		gboolean isinst = mono_jiterp_isinst (ref, m_class_get_element_class (mono_object_class (o)));
+		if (!isinst)
+			return 0;
+	}
+
+	mono_array_setref_fast ((MonoArray *) o, aindex, ref);
+	return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_trace_transfer (
 	int displacement, JiterpreterThunk trace, void *frame, void *pLocals
 ) {
@@ -1248,7 +1263,7 @@ mono_jiterp_trace_transfer (
 
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
-#endif
+#endif // HOST_BROWSER
 
 void jiterp_preserve_module () {
 }

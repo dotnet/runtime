@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
 
             public SharedTestStateBase()
-                : base(GetBaseDir("dependencyResolution"), "dependencyResolution")
+                : base(GetBaseDir("dependencyResolution"))
             {
                 BuiltDotnetPath = Path.Combine(TestArtifactsPath, "sharedFrameworkPublish");
                 RepoDirectories = new RepoDirectoriesProvider(builtDotnet: BuiltDotnetPath);

@@ -169,7 +169,7 @@
 
     <ItemGroup>
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
-
+      <_WasmCommonCFlags Include="-DINVARIANT_GLOBALIZATION=1" Condition="'$(InvariantGlobalization)' == 'true'"/>
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <!--<_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />-->
       <!--<_EmccCFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />-->
@@ -226,9 +226,9 @@
       <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
 
       <_WasmPInvokeModules Include="libSystem.Native" />
+      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
         <!-- FIXME: wasi -->
       <!--<_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />-->
-      <!--<_WasmPInvokeModules Include="libSystem.Globalization.Native" />-->
     </ItemGroup>
 
     <PropertyGroup>
@@ -280,6 +280,9 @@
           Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')" />
       <_WasmNativeFileForLinking Condition="'$(_WasmEHLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
+
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++.a" />
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++abi.a" />
     </ItemGroup>
   </Target>
 

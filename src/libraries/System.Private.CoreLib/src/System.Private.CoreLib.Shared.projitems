@@ -1374,8 +1374,8 @@
     <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs">
       <Link>Common\System\Threading\OpenExistingResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs">
+      <Link>Common\System\Threading\Tasks\TaskToAsyncResult.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsMobileLike)' != 'true' and '$(FeatureNativeAot)' != 'true'">

@@ -17,13 +17,8 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 
 public class WasmAppBuilder : WasmAppBuilderBaseTask
 {
-    [NotNull]
-    [Required]
-    public string? MainJS { get; set; }
-
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
-    public string? MainHTMLPath { get; set; }
     public bool IncludeThreadsWorker {get; set; }
     public int PThreadPoolSize {get; set; }
     public bool UseWebcil { get; set; }
@@ -123,10 +118,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         if (!base.ValidateArguments())
             return false;
 
-        if (!File.Exists(MainJS))
-            throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
-        if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
-            throw new LogAsErrorException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
+        if (!InvariantGlobalization && (IcuDataFileNames == null || IcuDataFileNames.Length == 0))
+            throw new LogAsErrorException($"{nameof(IcuDataFileNames)} property shouldn't be empty when {nameof(InvariantGlobalization)}=false");
 
         if (Assemblies.Length == 0)
         {
@@ -195,25 +188,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 return false;
         }
 
-        var mainFileName=Path.GetFileName(MainJS);
-        Log.LogMessage(MessageImportance.Low, $"MainJS path: '{MainJS}', fileName : '{mainFileName}', destination: '{Path.Combine(AppDir, mainFileName)}'");
-        FileCopyChecked(MainJS!, Path.Combine(AppDir, mainFileName), string.Empty);
-
-        string indexHtmlPath = Path.Combine(AppDir, "index.html");
-        if (string.IsNullOrEmpty(MainHTMLPath))
-        {
-            if (!File.Exists(indexHtmlPath))
-            {
-                var html = @"<html><body><script type=""module"" src=""" + mainFileName + @"""></script></body></html>";
-                File.WriteAllText(indexHtmlPath, html);
-            }
-        }
-        else
-        {
-            FileCopyChecked(MainHTMLPath, Path.Combine(AppDir, indexHtmlPath), "html");
-            //var html = @"<html><body><script type=""module"" src=""" + mainFileName + @"""></script></body></html>";
-            //File.WriteAllText(indexHtmlPath, html);
-        }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");
         if (!File.Exists(packageJsonPath))
@@ -308,7 +282,19 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         }
 
         if (!InvariantGlobalization)
-            config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
+        {
+            bool loadRemote = RemoteSources?.Length > 0;
+            foreach (var idfn in IcuDataFileNames)
+            {
+                if (!File.Exists(idfn))
+                {
+                    Log.LogError($"Expected the file defined as ICU resource: {idfn} to exist but it does not.");
+                    return false;
+                }
+                config.Assets.Add(new IcuData(Path.GetFileName(idfn)) { LoadRemote = loadRemote });
+            }
+        }
+
 
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
         config.Assets.Add(new WasmEntry ("dotnet.wasm") );
