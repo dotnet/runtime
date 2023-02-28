@@ -334,63 +334,16 @@ namespace Microsoft.Win32
 
             subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
 
-            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
-            if (key != null)
+            int ret = Interop.Advapi32.RegDeleteTree(_hkey, subkey);
+
+            if (ret == Interop.Errors.ERROR_FILE_NOT_FOUND)
             {
-                using (key)
+                if (throwOnMissingSubKey)
                 {
-                    if (key.SubKeyCount > 0)
-                    {
-                        string[] keys = key.GetSubKeyNames();
-
-                        for (int i = 0; i < keys.Length; i++)
-                        {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
-                    }
+                    throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
                 }
-
-                DeleteSubKeyTreeCore(subkey);
             }
-            else if (throwOnMissingSubKey)
-            {
-                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        /// <summary>
-        /// An internal version which does no security checks or argument checking.  Skipping the
-        /// security checks should give us a slight perf gain on large trees.
-        /// </summary>
-        private void DeleteSubKeyTreeInternal(string subkey)
-        {
-            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
-            if (key != null)
-            {
-                using (key)
-                {
-                    if (key.SubKeyCount > 0)
-                    {
-                        string[] keys = key.GetSubKeyNames();
-                        for (int i = 0; i < keys.Length; i++)
-                        {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
-                    }
-                }
-
-                DeleteSubKeyTreeCore(subkey);
-            }
-            else
-            {
-                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        private void DeleteSubKeyTreeCore(string subkey)
-        {
-            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
-            if (ret != 0)
+            else if (ret != 0)
             {
                 Win32Error(ret, null);
             }
