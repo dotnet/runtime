@@ -427,27 +427,29 @@ extends:
           scenarios:
             - WasmTestOnBrowser
 
-    # Node JS smoke tests
-    
-    - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-      parameters:
-        platforms:
-          - NodeJS_wasm
-        shouldRunSmokeOnly: true
-        alwaysRun: ${{ variables.isRollingBuild }}
-        extraBuildArgs: /p:Scenario=WasmTestOnNodeJS
-        scenarios:
-          - WasmTestOnNodeJS
-    
-    - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-      parameters:
-        platforms:
-          - NodeJS_wasm_win
-        shouldRunSmokeOnly: true
-        alwaysRun: ${{ variables.isRollingBuild }}
-        extraBuildArgs: /p:Scenario=WasmTestOnNodeJS
-        scenarios:
-          - WasmTestOnNodeJS
+      # Node JS smoke tests
+      
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          nameSuffix: '_NodeJS_Smoke'
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:Scenario=WasmTestOnNodeJS
+          scenarios:
+            - WasmTestOnNodeJS
+      
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm_win
+          nameSuffix: '_NodeJS_Smoke'
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:Scenario=WasmTestOnNodeJS
+          scenarios:
+            - WasmTestOnNodeJS
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
