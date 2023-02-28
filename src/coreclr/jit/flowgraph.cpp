@@ -313,11 +313,11 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     GenTree* sizeValue       = gtNewOperNode(GT_IND, TYP_I_IMPL, sizeValueOffset);
                     sizeValue->gtFlags |= GTF_IND_NONFAULTING;
 
-                    // sizeCheck fails if sizeValue <= pRuntimeLookup->offsets[i]
+                    // sizeCheck fails if sizeValue < pRuntimeLookup->offsets[i]
                     GenTree* offsetValue =
                         gtNewIconNode(runtimeLookup.offsets[runtimeLookup.indirections - 1], TYP_I_IMPL);
-                    GenTree* sizeCheck = gtNewOperNode(GT_LE, TYP_INT, sizeValue, offsetValue);
-                    sizeCheck->gtFlags |= GTF_RELOP_JMP_USED;
+                    GenTree* sizeCheck = gtNewOperNode(GT_LT, TYP_INT, sizeValue, offsetValue);
+                    sizeCheck->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                     gtSetEvalOrder(sizeCheck);
                     Statement* sizeCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck));
                     gtSetStmtInfo(sizeCheckStmt);
