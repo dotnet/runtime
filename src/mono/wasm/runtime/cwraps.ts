@@ -46,7 +46,6 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_string_get_utf8", "number", ["number"]],
     [true, "mono_wasm_string_from_utf16_ref", "void", ["number", "number", "number"]],
     [true, "mono_wasm_get_obj_type", "number", ["number"]],
-    [true, "mono_wasm_array_length", "number", ["number"]],
     [true, "mono_wasm_array_length_ref", "number", ["number"]],
     [true, "mono_wasm_array_get", "number", ["number", "number"]],
     [true, "mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
@@ -164,7 +163,6 @@ export interface t_Cwraps {
      */
     mono_wasm_string_get_utf8(str: MonoString): CharPtr;
     mono_wasm_string_from_utf16_ref(str: CharPtr, len: number, result: MonoObjectRef): void;
-    mono_wasm_array_length(array: MonoArray): number;
 
     mono_wasm_array_length_ref(array: MonoObjectRef): number;
     mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
