@@ -98,7 +98,7 @@ namespace System.Collections.Frozen
                 ChooseImplementationOptimizedForConstruction(uniqueValues!, sourceIsCopy));
         }
 
-        /// <summary>Extracts from the source either an existing <see cref="FrozenSet{T}"/> instance or a <see cref="HashSet{T}"/> containing the values and the specified <paramref name="comparer"/>.</summary>
+        /// <summary>Extracts from the source either an existing <see cref="FrozenDictionary{TKey,TValue}"/> instance or a <see cref="Dictionary{TKey,TValue}"/> containing the values and the specified <paramref name="comparer"/>.</summary>
         /// <returns>true if <paramref name="uniqueValues"/> is a copy of the original source; false if it's either null or the original source.</returns>
         private static bool GetUniqueValues<TKey, TValue>(
             IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey>? comparer,
