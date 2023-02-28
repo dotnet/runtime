@@ -30,12 +30,15 @@ inline bool emitter::instrIsExtendedReg3opImul(instruction ins)
 /* static */
 inline bool emitter::instrHasImplicitRegPairDest(instruction ins)
 {
-    return (ins == INS_mulEAX) || (ins == INS_imulEAX) || (ins == INS_div) || (ins == INS_idiv);
+    // These instructions use RAX and RDX.
+    return (ins == INS_mulEAX) || (ins == INS_imulEAX) || (ins == INS_div) || (ins == INS_idiv) || (ins == INS_cmpxchg);
 }
 
 /* static */
 inline bool emitter::instrHasImplicitRegSingleDest(instruction ins)
 {
+    // 'cdq' uses RDX.
+    // 'cwde' uses RAX.
     return (ins == INS_cdq) || (ins == INS_cwde);
 }
 
