@@ -193,35 +193,6 @@ GlobalizationNative_LoadICUData(const char* path)
     return GlobalizationNative_LoadICU();
 }
 
-const char* GlobalizationNative_GetICUDTName(const char* culture)
-{
-    // Based on https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-
-    // Use full one if culture is null or empty
-    if (!culture || strlen(culture) < 2)
-        return "icudt.dat";
-
-    // CJK: starts with "ja", "ko" or "zh"
-    if (!strncasecmp("ja", culture, 2) ||
-        !strncasecmp("ko", culture, 2) ||
-        !strncasecmp("zh", culture, 2))
-        return "icudt_CJK.dat"; // contains "en" as well.
-
-    // EFIGS
-    const char* efigsCultures[15] = {
-        "en-US", "fr-FR", "es-ES", "it-IT", "de-DE",
-        "en_US", "fr_FR", "es_ES", "it_IT", "de_DE",
-        "en",    "fr",    "es",    "it",    "de"
-    };
-
-    for (int i = 0; i < 15; i++)
-        if (!strcasecmp(culture, efigsCultures[i]))
-            return "icudt_EFIGS.dat";
-
-    // full except CJK cultures
-    return "icudt_no_CJK.dat";
-}
-
 int32_t GlobalizationNative_LoadICU(void)
 {
 #if !defined(LOCAL_BUILD)
