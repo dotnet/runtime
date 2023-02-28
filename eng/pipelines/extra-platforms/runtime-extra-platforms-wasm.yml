@@ -200,6 +200,8 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
+        - wasi_wasm
+        - wasi_wasm_win
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 

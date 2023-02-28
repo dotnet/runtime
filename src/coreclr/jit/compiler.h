@@ -2414,6 +2414,9 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
+    GenTreeCC* gtNewCC(genTreeOps oper, var_types type, GenCondition cond);
+    GenTreeOpCC* gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2);
+
     GenTreeColon* gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
@@ -4375,11 +4378,10 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
-    unsigned     fgBBNumMin;       // The min bbNum that has been assigned to basic blocks
-    unsigned     fgBBNumMax;       // The max bbNum that has been assigned to basic blocks
-    unsigned     fgDomBBcount;     // # of BBs for which we have dominator and reachability information
-    BasicBlock** fgBBInvPostOrder; // The flow graph stored in an array sorted in topological order, needed to compute
-                                   // dominance. Indexed by block number. Size: fgBBNumMax + 1.
+    unsigned     fgBBNumMin;           // The min bbNum that has been assigned to basic blocks
+    unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
+    unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
+    BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -4629,6 +4631,8 @@ public:
     void fgClearAllFinallyTargetBits();
 
     void fgAddFinallyTargetFlags();
+
+    void fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, BasicBlock* newBlock);
 
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     PhaseStatus fgTailMergeThrows();
@@ -5188,10 +5192,11 @@ protected:
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
-    void fgDfsInvPostOrder(); // In order to compute dominance using fgIntersectDom, the flow graph nodes must be
-                              // processed in topological sort, this function takes care of that.
-
-    void fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, unsigned* count);
+    void fgDfsReversePostorder();
+    void fgDfsReversePostorderHelper(BasicBlock* block,
+                                     BlockSet&   visited,
+                                     unsigned&   preorderIndex,
+                                     unsigned&   reversePostorderIndex);
 
     BlockSet_ValRet_T fgDomFindStartNodes(); // Computes which basic blocks don't have incoming edges in the flow graph.
                                              // Returns this as a set.
@@ -6136,6 +6141,9 @@ protected:
     // Records the set of "side effects" of all loops: fields (object instance and static)
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();
+
+    // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars).
+    void optComputeInterestingVarSets();
 
 #ifdef DEBUG
     bool optAnyChildNotRemoved(unsigned loopNum);
@@ -7632,7 +7640,7 @@ public:
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
-#error("Unknown target architecture for FEATURE_SIMD")
+#error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
@@ -8505,8 +8513,10 @@ private:
                     return NO_CLASS_HANDLE;
                 }
 
+#if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                     break;
+#endif // TARGET_XARCH
 
                 default:
                     unreached();
@@ -8609,8 +8619,10 @@ private:
                 return m_simdHandleCache->SIMDVector3Handle;
             case TYP_SIMD16:
                 return m_simdHandleCache->CanonicalSimd16Handle;
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
                 return m_simdHandleCache->CanonicalSimd32Handle;
+#endif // TARGET_XARCH
             default:
                 unreached();
         }
@@ -8853,10 +8865,12 @@ public:
         {
             simdType = TYP_SIMD16;
         }
+#if defined(TARGET_XARCH)
         else if (size == 32)
         {
             simdType = TYP_SIMD32;
         }
+#endif // TARGET_XARCH
         else
         {
             noway_assert(!"Unexpected size for SIMD type");

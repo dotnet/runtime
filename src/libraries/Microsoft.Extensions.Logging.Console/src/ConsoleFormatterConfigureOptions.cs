@@ -16,34 +16,16 @@ namespace Microsoft.Extensions.Logging
     /// Doesn't use ConfigurationBinder in order to allow ConfigurationBinder, and all its dependencies,
     /// to be trimmed. This improves app size and startup.
     /// </remarks>
-    [UnsupportedOSPlatform("browser")]
     internal sealed class ConsoleFormatterConfigureOptions : IConfigureOptions<ConsoleFormatterOptions>
     {
         private readonly IConfiguration _configuration;
 
+        [UnsupportedOSPlatform("browser")]
         public ConsoleFormatterConfigureOptions(ILoggerProviderConfiguration<ConsoleLoggerProvider> providerConfiguration)
         {
             _configuration = providerConfiguration.GetFormatterOptionsSection();
         }
 
-        public void Configure(ConsoleFormatterOptions options) => Bind(_configuration, options);
-
-        public static void Bind(IConfiguration configuration, ConsoleFormatterOptions options)
-        {
-            if (ConsoleLoggerConfigureOptions.ParseBool(configuration, "IncludeScopes", out bool includeScopes))
-            {
-                options.IncludeScopes = includeScopes;
-            }
-
-            if (configuration["TimestampFormat"] is string timestampFormat)
-            {
-                options.TimestampFormat = timestampFormat;
-            }
-
-            if (ConsoleLoggerConfigureOptions.ParseBool(configuration, "UseUtcTimestamp", out bool useUtcTimestamp))
-            {
-                options.UseUtcTimestamp = useUtcTimestamp;
-            }
-        }
+        public void Configure(ConsoleFormatterOptions options) => options.Configure(_configuration);
     }
 }

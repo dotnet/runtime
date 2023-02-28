@@ -3,7 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigError, MonoConfigInternal } from "./types";
+import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -32,7 +32,6 @@ import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
-let isCustomStartup = false;
 export const dotnetReady = createPromiseController<any>();
 export const afterConfigLoaded = createPromiseController<MonoConfig>();
 export const afterInstantiateWasm = createPromiseController<void>();
@@ -58,8 +57,6 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     const userpostRun: (() => void)[] = !module.postRun ? [] : typeof module.postRun === "function" ? [module.postRun] : module.postRun as any;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     const userOnRuntimeInitialized: () => void = module.onRuntimeInitialized ? module.onRuntimeInitialized : () => { };
-    // when assets don't contain DLLs it means this is Blazor or another custom startup
-    isCustomStartup = !module.configSrc && (!module.config || !module.config.assets || module.config.assets.findIndex(a => a.behavior === "assembly") == -1); // like blazor
 
     // execution order == [0] ==
     // - default or user Module.instantiateWasm (will start downloading dotnet.wasm)
@@ -156,11 +153,11 @@ function preInit(userPreInit: (() => void)[]) {
     (async () => {
         try {
             await mono_wasm_pre_init_essential_async();
-            if (!isCustomStartup) {
-                // - download Module.config from configSrc
-                // - start download assets like DLLs
-                await mono_wasm_pre_init_full();
-            }
+
+            // - download Module.config from configSrc
+            // - start download assets like DLLs
+            await mono_wasm_pre_init_full();
+
             endMeasure(mark, MeasuredBlock.preInit);
         } catch (err) {
             abort_startup(err, true);
@@ -234,11 +231,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
     // signal this stage, this will allow pending assets to allocate memory
     beforeOnRuntimeInitialized.promise_control.resolve();
     try {
-        if (!isCustomStartup) {
-            await wait_for_all_assets();
-            // load runtime
-            await mono_wasm_before_user_runtime_initialized();
-        }
+        await wait_for_all_assets();
+        // load runtime
+        await mono_wasm_before_user_runtime_initialized();
+
         if (config.runtimeOptions) {
             mono_wasm_set_runtime_options(config.runtimeOptions);
         }
@@ -698,15 +694,4 @@ export async function mono_wasm_pthread_worker_init(module: DotnetModule, export
 
     await afterPreInit.promise;
     return exportedAPI.Module;
-}
-
-/**
-* @deprecated
-*/
-export async function mono_load_runtime_and_bcl_args(cfg?: MonoConfig | MonoConfigError | undefined): Promise<void> {
-    config = Module.config = runtimeHelpers.config = Object.assign(runtimeHelpers.config || {}, cfg || {}) as any;
-    await mono_download_assets();
-    if (!isCustomStartup) {
-        await wait_for_all_assets();
-    }
 }

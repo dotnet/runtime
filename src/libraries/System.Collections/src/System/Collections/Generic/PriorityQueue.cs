@@ -961,9 +961,11 @@ namespace System.Collections.Generic
             /// <returns>An <see cref="Enumerator"/> for the <see cref="UnorderedItems"/>.</returns>
             public Enumerator GetEnumerator() => new Enumerator(_queue);
 
-            IEnumerator<(TElement Element, TPriority Priority)> IEnumerable<(TElement Element, TPriority Priority)>.GetEnumerator() => GetEnumerator();
+            IEnumerator<(TElement Element, TPriority Priority)> IEnumerable<(TElement Element, TPriority Priority)>.GetEnumerator() =>
+                _queue.Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<(TElement Element, TPriority Priority)>() :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<(TElement Element, TPriority Priority)>)this).GetEnumerator();
         }
     }
 }

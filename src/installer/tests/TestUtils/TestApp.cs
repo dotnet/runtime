@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             LoadAssets();
         }
 
-        public TestApp(TestApp source)
+        private TestApp(TestApp source)
             : base(source)
         {
             AssemblyName = source.AssemblyName;
@@ -34,8 +34,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static TestApp CreateEmpty(string name)
         {
-            string location = GetNewTestArtifactPath(name);
-            return new TestApp(location);
+            var (location, parentPath) = GetNewTestArtifactPath(name);
+            return new TestApp(location)
+            {
+                DirectoryToDelete = parentPath
+            };
         }
 
         public TestApp Copy()

@@ -13,16 +13,16 @@ namespace System.Reflection
     internal sealed unsafe class RuntimePropertyInfo : PropertyInfo
     {
         #region Private Data Members
-        private int m_token;
+        private readonly int m_token;
         private string? m_name;
-        private void* m_utf8name;
-        private PropertyAttributes m_flags;
-        private RuntimeTypeCache m_reflectedTypeCache;
-        private RuntimeMethodInfo? m_getterMethod;
-        private RuntimeMethodInfo? m_setterMethod;
-        private MethodInfo[]? m_otherMethod;
-        private RuntimeType m_declaringType;
-        private BindingFlags m_bindingFlags;
+        private readonly void* m_utf8name;
+        private readonly PropertyAttributes m_flags;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
+        private readonly RuntimeMethodInfo? m_getterMethod;
+        private readonly RuntimeMethodInfo? m_setterMethod;
+        private readonly MethodInfo[]? m_otherMethod;
+        private readonly RuntimeType m_declaringType;
+        private readonly BindingFlags m_bindingFlags;
         private Signature? m_signature;
         private ParameterInfo[]? m_parameters;
         #endregion

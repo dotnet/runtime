@@ -284,6 +284,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new GVMDependenciesNode(method);
             });
 
+            _gvmImpls = new NodeCache<MethodDesc, GenericVirtualMethodImplNode>(method =>
+            {
+                return new GenericVirtualMethodImplNode(method);
+            });
+
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
@@ -376,6 +381,11 @@ namespace ILCompiler.DependencyAnalysis
             _dataflowAnalyzedMethods = new NodeCache<MethodILKey, DataflowAnalyzedMethodNode>((MethodILKey il) =>
             {
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
+            });
+
+            _dataflowAnalyzedTypeDefinitions = new NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode>((TypeDesc type) =>
+            {
+                return new DataflowAnalyzedTypeDefinitionNode(type);
             });
 
             _dynamicDependencyAttributesOnEntities = new NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode>((TypeSystemEntity entity) =>
@@ -709,6 +719,13 @@ namespace ILCompiler.DependencyAnalysis
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
         }
 
+        private NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode> _dataflowAnalyzedTypeDefinitions;
+
+        public DataflowAnalyzedTypeDefinitionNode DataflowAnalyzedTypeDefinition(TypeDesc type)
+        {
+            return _dataflowAnalyzedTypeDefinitions.GetOrAdd(type);
+        }
+
         private NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode> _dynamicDependencyAttributesOnEntities;
 
         public DynamicDependencyAttributesOnEntityNode DynamicDependencyAttributesOnEntity(TypeSystemEntity entity)
@@ -929,6 +946,12 @@ namespace ILCompiler.DependencyAnalysis
         public GVMDependenciesNode GVMDependencies(MethodDesc method)
         {
             return _gvmDependenciesNode.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, GenericVirtualMethodImplNode> _gvmImpls;
+        public GenericVirtualMethodImplNode GenericVirtualMethodImpl(MethodDesc method)
+        {
+            return _gvmImpls.GetOrAdd(method);
         }
 
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;

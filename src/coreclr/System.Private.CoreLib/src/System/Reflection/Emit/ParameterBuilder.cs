@@ -77,7 +77,7 @@ namespace System.Reflection.Emit
         private readonly string? _name;
         private readonly int _position;
         private readonly ParameterAttributes _attributes;
-        private RuntimeMethodBuilder _methodBuilder;
-        private int _token;
+        private readonly RuntimeMethodBuilder _methodBuilder;
+        private readonly int _token;
     }
 }

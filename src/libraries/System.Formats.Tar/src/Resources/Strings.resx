@@ -174,9 +174,6 @@
   <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
     <value>The process cannot access the file because it is being used by another process.</value>
   </data>
-  <data name="IO_StreamDisposed" xml:space="preserve">
-    <value>Cannot access a disposed stream.</value>
-  </data>
   <data name="IO_StreamNotEmpty" xml:space="preserve">
     <value>The stream is not empty.</value>
   </data>

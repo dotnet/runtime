@@ -464,6 +464,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         None,
         Nop,
         BitCast,
+        NarrowCast,
 #ifdef FEATURE_HW_INTRINSICS
         GetElement,
         WithElement,
@@ -1138,6 +1139,7 @@ private:
         unsigned             lclNum      = val.LclNum();
         LclVarDsc*           varDsc      = m_compiler->lvaGetDesc(lclNum);
         GenTreeLclVarCommon* lclNode     = nullptr;
+        bool                 isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir);
 
         switch (transform)
         {
@@ -1244,6 +1246,16 @@ private:
                 lclNode = indir->AsLclVarCommon();
                 break;
 
+            case IndirTransform::NarrowCast:
+                assert(varTypeIsIntegral(indir));
+                assert(varTypeIsIntegral(varDsc));
+                assert(genTypeSize(varDsc) >= genTypeSize(indir));
+                assert(!isDef);
+
+                lclNode    = BashToLclVar(indir->gtGetOp1(), lclNum);
+                *val.Use() = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
+                break;
+
             case IndirTransform::LclFld:
                 indir->ChangeOper(GT_LCL_FLD);
                 indir->AsLclFld()->SetLclNum(lclNum);
@@ -1266,7 +1278,7 @@ private:
 
         GenTreeFlags lclNodeFlags = GTF_EMPTY;
 
-        if (user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
+        if (isDef)
         {
             lclNodeFlags |= (GTF_VAR_DEF | GTF_DONT_CSE);
 
@@ -1364,6 +1376,12 @@ private:
                 }
             }
 #endif // FEATURE_HW_INTRINSICS
+
+            // Turn this into a narrow-cast if we can.
+            if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
+            {
+                return IndirTransform::NarrowCast;
+            }
 
             // Turn this into a bitcast if we can.
             if ((genTypeSize(indir) == genTypeSize(varDsc)) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
