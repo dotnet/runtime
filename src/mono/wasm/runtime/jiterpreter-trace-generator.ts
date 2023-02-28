@@ -26,7 +26,7 @@ import {
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
     abortAtJittedLoopBodies, traceNullCheckOptimizations,
-    nullCheckCaching,
+    nullCheckCaching, traceBackBranches,
 
     mostRecentOptions,
 
@@ -162,7 +162,6 @@ export function generate_wasm_body (
     // FIXME: It would be much more efficient to use br_table to dispatch to the appropriate
     //  branch block somehow but the code generation is tough due to WASM's IR
     if (backwardBranchTable) {
-        console.log(`${traceName} loop created`);
         builder.block(WasmValtype.void, WasmOpcode.loop);
     }
 
@@ -210,7 +209,8 @@ export function generate_wasm_body (
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
         if (isBackBranchTarget) {
-            console.log(`${traceName} recording back branch target 0x${(<any>ip).toString(16)}`);
+            if (traceBackBranches)
+                console.log(`${traceName} recording back branch target 0x${(<any>ip).toString(16)}`);
             builder.backBranchOffsets.push(ip);
         }
 
@@ -2257,15 +2257,17 @@ function emit_branch (
                 if (builder.backBranchOffsets.indexOf(destination) >= 0) {
                     // We found a backward branch target we can branch to, so we branch out
                     //  to the top of the loop body
-                    append_safepoint(builder, ip);
-                    console.log(`performing backward branch to 0x${destination.toString(16)}`);
+                    // append_safepoint(builder, ip);
+                    if (traceBackBranches)
+                        console.log(`performing backward branch to 0x${destination.toString(16)}`);
                     builder.ip_const(destination);
                     builder.local("eip", WasmOpcode.set_local);
                     builder.appendU8(WasmOpcode.br);
                     builder.appendULeb(1);
                     return true;
                 } else {
-                    console.log(`back branch target 0x${destination.toString(16)} not found`);
+                    if (traceBackBranches)
+                        console.log(`back branch target 0x${destination.toString(16)} not found`);
                     // FIXME: Should there be a safepoint here?
                     append_bailout(builder, destination, displacement > 0 ? BailoutReason.Branch : BailoutReason.BackwardBranch);
                     return true;
@@ -2339,13 +2341,14 @@ function emit_branch (
     builder.appendULeb(0);
 
     if (displacement < 0) {
-        // All backwards branches start with a safepoint
-        // FIXME: Is this right? Should it be conditional?
-        append_safepoint(builder, ip);
+        if (isSafepoint)
+            append_safepoint(builder, ip);
+
         if (builder.backBranchOffsets.indexOf(destination) >= 0) {
             // We found a backwards branch target we can reach via our outer trace loop, so
             //  we update eip and branch out to the top of the loop block
-            console.log(`performing conditional backward branch to 0x${destination.toString(16)}`);
+            if (traceBackBranches)
+                console.log(`performing conditional backward branch to 0x${destination.toString(16)}`);
             builder.ip_const(destination);
             builder.local("eip", WasmOpcode.set_local);
             builder.appendU8(WasmOpcode.br);
@@ -2356,7 +2359,8 @@ function emit_branch (
             // and we want to target the loop in order to jump to the top of it
             builder.appendULeb(2);
         } else {
-            console.log(`back branch target 0x${destination.toString(16)} not found`);
+            if (traceBackBranches)
+                console.log(`back branch target 0x${destination.toString(16)} not found`);
             // We didn't find a loop to branch to, so bail out
             append_bailout(builder, destination, BailoutReason.BackwardBranch);
         }
