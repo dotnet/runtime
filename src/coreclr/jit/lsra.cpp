@@ -733,7 +733,12 @@ LinearScan::LinearScan(Compiler* theCompiler)
             availableRegs[i] = &availableDoubleRegs;
         }
 #ifdef FEATURE_SIMD
+#if defined(TARGET_XARCH)
         else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD32))
+#else
+        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD16))
+#endif // TARGET_XARCH
+
         {
             availableRegs[i] = &availableDoubleRegs;
         }
@@ -1595,8 +1600,12 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
+#endif // TARGET_XARCH
+        {
             return !varDsc->lvPromoted;
+        }
 #endif // FEATURE_SIMD
 
         case TYP_STRUCT:

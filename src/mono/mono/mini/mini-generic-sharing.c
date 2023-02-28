@@ -4859,4 +4859,10 @@ mini_method_to_shared (MonoMethod *method)
 	return NULL;
 }
 
+gboolean
+mini_is_gsharedvt_inst (MonoGenericInst *inst)
+{
+	return FALSE;
+}
+
 #endif /* !MONO_ARCH_GSHAREDVT_SUPPORTED */

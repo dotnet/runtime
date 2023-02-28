@@ -247,6 +247,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="--feature:System.Linq.Expressions.CanCompileToIL=false" />
       <IlcArg Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
       <IlcArg Include="--feature:System.Linq.Expressions.CanCreateArbitraryDelegates=false" />
+
+      <!-- The managed debugging support in libraries is unused - trim it -->
+      <IlcArg Condition="'$(IlcKeepManagedDebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
