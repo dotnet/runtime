@@ -58,11 +58,18 @@
 // If a field does not fit any of the above category, such as fgn_maxgen_percent which is only updated by an API, 
 // it will be marked as PER_HEAP_FIELD/PER_HEAP_ISOLATED_FIELD.
 // 
-// A couple of notes -
-// 
+// A few notes -
+//
+// + within the section of a particular category of fields I use the following policy to list them -
+//   I group the ones that are for the same purpose together, ie, without empty lines inbetween them.
+//   I list the common ones first, ie, they apply regardless of defines. Then I list the defines in the order of
+//       #ifdef MULTIPLE_HEAPS
+//       #ifdef BACKGROUND_GC
+//       #ifdef USE_REGIONS
+//       other defines checks
+//
 // + some of the fields are used by both regions and segments share. When that's the case, the annotation
-// is based on regions. So for segments they may or may not apply. Segments code is only in maintainence mode and
-// we are not investing actively in it.
+// is based on regions. So for segments they may or may not apply (segments code is in maintainence mode only).
 // 
 // + some fields are used by the GC and WB but not by the allocator, in which case I will indicate them as such.
 #ifdef MULTIPLE_HEAPS
@@ -3213,8 +3220,6 @@ private:
 #endif //MULTIPLE_HEAPS
 
 #ifdef BACKGROUND_GC
-    PER_HEAP_FIELD_SINGLE_GC gc_history_per_heap bgc_data_per_heap;
-
     PER_HEAP_FIELD_SINGLE_GC VOLATILE(bgc_state) current_bgc_state;
 
     PER_HEAP_FIELD_SINGLE_GC size_t     bgc_begin_loh_size;
@@ -3645,6 +3650,8 @@ private:
 #endif //MULTIPLE_HEAPS
 
 #ifdef BACKGROUND_GC
+    PER_HEAP_FIELD_SINGLE_GC gc_history_per_heap bgc_data_per_heap;
+
     struct gc_history
     {
         size_t gc_index;
@@ -3664,7 +3671,7 @@ private:
         uint8_t* fgc_lowest;
         uint8_t* g_highest;
         uint8_t* g_lowest;
-};
+    };
 
 #define max_history_count 64
     PER_HEAP_FIELD_DIAG_ONLY int gchist_index_per_heap;
