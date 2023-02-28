@@ -51,7 +51,7 @@
     IL_0038:  ret
   } // end of method ILGEN_0xf64b7da3::Method_0xcb0b0b48
 
-  .method public static int32  Main$PST06000002() cil managed
+  .method public static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
