@@ -95,6 +95,7 @@ namespace System.Net
         public static bool CheckCertificateRevocationList { get; set; }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static EncryptionPolicy EncryptionPolicy { get; } = EncryptionPolicy.RequireEncryption;
 
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]

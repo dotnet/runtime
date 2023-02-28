@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.FileProviders
             FileSystemWatcher? watcher;
 #if NETCOREAPP
             //  For browser/iOS/tvOS we will proactively fallback to polling since FileSystemWatcher is not supported.
-            if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsOSPlatform("WASI") || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
             {
                 UsePollingFileWatcher = true;
                 UseActivePolling = true;

@@ -250,7 +250,7 @@ namespace System.Diagnostics
             string? processName = s_processName;
             if (processName is null)
             {
-                if (OperatingSystem.IsBrowser()) // Process isn't supported on Browser
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsOSPlatform("WASI")) // Process isn't supported on Browser, or Wasi
                 {
                     s_processName = processName = string.Empty;
                 }

@@ -8,6 +8,7 @@
 
 Commonly Used Types:
 System.Net.Http.IHttpClientFactory</PackageDescription>
+    <UnsupportedOSPlatforms>wasi</UnsupportedOSPlatforms>
   </PropertyGroup>
 
   <ItemGroup>

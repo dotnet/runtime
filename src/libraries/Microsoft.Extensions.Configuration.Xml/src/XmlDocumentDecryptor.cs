@@ -92,6 +92,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <param name="document">The document.</param>
         /// <returns>An XmlReader which can read the document.</returns>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         protected virtual XmlReader DecryptDocumentAndCreateXmlReader(XmlDocument document)
         {
             // Perform the actual decryption step, updating the XmlDocument in-place.

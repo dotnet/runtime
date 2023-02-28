@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <UnsupportedOSPlatforms>wasi</UnsupportedOSPlatforms>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\IWebProxyScript.cs" />

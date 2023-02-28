@@ -8,6 +8,7 @@ Commonly Used Types:
 System.Net.Http.Json.HttpClientJsonExtensions
 System.Net.Http.Json.HttpContentJsonExtensions
 System.Net.Http.Json.JsonContent</PackageDescription>
+    <UnsupportedOSPlatforms>wasi</UnsupportedOSPlatforms>
   </PropertyGroup>
 
   <ItemGroup>

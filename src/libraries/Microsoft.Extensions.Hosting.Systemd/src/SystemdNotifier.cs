@@ -8,6 +8,7 @@ using System.Runtime.Versioning;
 namespace Microsoft.Extensions.Hosting.Systemd
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     public class SystemdNotifier : ISystemdNotifier
     {
         private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";

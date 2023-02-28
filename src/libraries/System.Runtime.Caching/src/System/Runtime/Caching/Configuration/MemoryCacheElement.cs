@@ -10,6 +10,7 @@ namespace System.Runtime.Caching.Configuration
 {
 #if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
 #endif
     internal sealed class MemoryCacheElement : ConfigurationElement
     {

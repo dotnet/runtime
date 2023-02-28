@@ -9,6 +9,7 @@ namespace System.Runtime.Caching.Configuration
 {
 #if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
 #endif
     [ConfigurationCollection(typeof(MemoryCacheElement),
     CollectionType = ConfigurationElementCollectionType.AddRemoveClearMap)]

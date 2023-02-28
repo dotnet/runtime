@@ -19,6 +19,7 @@ namespace System.Security.Authentication.ExtendedProtection
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(InstanceDescriptor))
