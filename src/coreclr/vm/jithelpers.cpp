@@ -1800,18 +1800,28 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
     ENDFORBIDGC();
     void* staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
 
+    HANDLE currentThread = GetCurrentThread();
+    DWORD threadID = GetThreadId(currentThread);        
     if (t_threadStaticBlocks == nullptr)
     {
-        HANDLE currentThread = GetCurrentThread();
-        DWORD threadID = GetThreadId(currentThread);
-        printf("Initializing t_threadStaticBlocks for Thread# %d\n", threadID);
-        t_threadStaticBlocks = (void **) new (nothrow) PTR_BYTE[100 * sizeof(void *)];
+        t_threadStaticBlocks = (void **) new (nothrow) PTR_BYTE[100 * sizeof(PTR_BYTE)];
+        printf("*** [Thread# %d] Initializing t_threadStaticBlocks: 0x%zx @ 0x%zx\n", threadID, (size_t)(t_threadStaticBlocks), (size_t)(&t_threadStaticBlocks));
+        memset(t_threadStaticBlocks, 0, 100 * sizeof(PTR_BYTE));
+        t_maxThreadStaticBlocks = 0;
     }
-    //_ASSERTE(staticBlockIndex != 0);
-    void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
-    //_ASSERTE(currentEntry == nullptr);
-    t_threadStaticBlocks[staticBlockIndex] = staticBlock;
-    t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+    else if (staticBlockIndex < 100)
+    {
+        printf("*** [Thread# %d] Saving t_threadStaticBlocks[%u] @ 0x%zx = 0x%zx\n", threadID, staticBlockIndex, (size_t)(&(t_threadStaticBlocks[staticBlockIndex])), (size_t)(staticBlock));
+        //_ASSERTE(staticBlockIndex != 0);
+        void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
+        //_ASSERTE(currentEntry == nullptr);
+        t_threadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+    }
+    else
+    {
+        printf("*** [Thread# %d] Skipped t_threadStaticBlocks[%u] = 0x%zx\n", threadID, staticBlockIndex, (size_t)(staticBlock));
+    }
 
     return staticBlock;
 }
