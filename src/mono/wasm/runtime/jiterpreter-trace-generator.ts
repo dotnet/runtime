@@ -116,9 +116,27 @@ function get_imethod_data (frame: NativePointer, index: number) {
     return getU32(dataOffset);
 }
 
+function is_backward_branch_target (
+    ip: MintOpcodePtr, startOfBody: MintOpcodePtr,
+    backwardBranchTable: Uint16Array | null
+) {
+    if (!backwardBranchTable)
+        return false;
+
+    for (let i = 0; i < backwardBranchTable.length; i++) {
+        const actualOffset = backwardBranchTable[i] + <any>startOfBody;
+        if (actualOffset === ip)
+            return true;
+    }
+
+    return false;
+}
+
 export function generate_wasm_body (
     frame: NativePointer, traceName: string, ip: MintOpcodePtr,
-    endOfBody: MintOpcodePtr, builder: WasmBuilder, instrumentedTraceId: number
+    startOfBody: MintOpcodePtr, endOfBody: MintOpcodePtr,
+    builder: WasmBuilder, instrumentedTraceId: number,
+    backwardBranchTable: Uint16Array | null
 ) : number {
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, inBranchBlock = false,
@@ -161,8 +179,32 @@ export function generate_wasm_body (
 
         const opname = info[0];
         const _ip = ip;
+        const isBackBranchTarget = builder.options.noExitBackwardBranches &&
+            is_backward_branch_target(ip, startOfBody, backwardBranchTable);
         let isDeadOpcode = false,
             skipDregInvalidation = false;
+
+        // Each back-branch target causes us to push a loop onto the wasm block stack,
+        //  and doing a br or br_if targeting the loop will branch us to the top of it
+        // We need to do this before pushing branch blocks, so that branch blocks will
+        //  always be at level 0 (or level 1 from inside a conditional/bailout block)
+        // Doing that means that to perform a backward branch we would br to (1|2)+depth
+        if (isBackBranchTarget) {
+            // We need to end the current branch target block first.
+            if (!isFirstInstruction) {
+                // Update instruction pointer before doing branch block fallthrough
+                //  (see below)
+                builder.ip_const(rip);
+                builder.local("eip", WasmOpcode.set_local);
+                builder.endBlock();
+            }
+
+            console.log(`${traceName}: starting backward branch block at ${ip}`);
+            builder.block(WasmValtype.void, WasmOpcode.loop);
+            // We insert each new back branch target at the front of the array
+            //  so that an indexOf gives us the br target value
+            builder.backBranchOffsets.unshift(ip);
+        }
 
         // We wrap all instructions in a 'branch block' that is used
         //  when performing a branch and will be skipped over if the
@@ -175,13 +217,16 @@ export function generate_wasm_body (
             // FIXME: If we allow entering into the middle of a trace, this needs
             //  to become an if that checks the ip
             builder.block();
-        } else if (builder.branchTargets.has(ip)) {
+        } else if (builder.branchTargets.has(ip) || isBackBranchTarget) {
             // If execution runs past the end of the current branch block, ensure
             //  that the instruction pointer is updated appropriately. This will
             //  also guarantee that the branch target block's comparison will
             //  succeed so that execution continues.
-            builder.ip_const(rip);
-            builder.local("eip", WasmOpcode.set_local);
+            if (!isBackBranchTarget) {
+                builder.ip_const(rip);
+                builder.local("eip", WasmOpcode.set_local);
+                builder.endBlock();
+            }
             append_branch_target_block(builder, ip);
             inBranchBlock = true;
             firstOpcodeInBlock = true;
@@ -1111,9 +1156,7 @@ function invalidate_local_range (start: number, bytes: number) {
 }
 
 function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr) {
-    // End the current branch block, then create a new one that conditionally executes
-    //  if eip matches the offset of its first instruction.
-    builder.endBlock();
+    // Create a new branch block that conditionally executes depending on the eip local
     builder.local("eip");
     builder.ip_const(ip);
     builder.appendU8(WasmOpcode.i32_eq);
@@ -2182,12 +2225,12 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
 }
 
 function emit_branch (
-    builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode, displacement?: number
+    builder: WasmBuilder, ip: MintOpcodePtr,
+    opcode: MintOpcode, displacement?: number
 ) : boolean {
     const info = OpcodeInfo[opcode];
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
-
     eraseInferredState();
 
     // If the branch is taken we bail out to allow the interpreter to do it.
@@ -2209,20 +2252,34 @@ function emit_branch (
             const destination = <any>ip + (displacement * 2);
 
             if (displacement <= 0) {
-                // FIXME: If the displacement is negative, perform BACK_BRANCH_PROFILE
-                append_bailout(builder, destination, displacement > 0 ? BailoutReason.Branch : BailoutReason.BackwardBranch);
+                const bbDepth = builder.options.noExitBackwardBranches ? builder.backBranchOffsets.indexOf(destination) : 0;
+                if (bbDepth >= 0) {
+                    // We found a backward branch target loop on the stack so we can branch to it
+                    //  instead of bailing out.
+                    append_safepoint(builder, ip);
+                    console.log(`performing backward branch to ${destination} via br of depth ${bbDepth + 1}`);
+                    builder.ip_const(destination);
+                    builder.local("eip", WasmOpcode.set_local);
+                    builder.appendU8(WasmOpcode.br);
+                    builder.appendULeb(bbDepth + 1);
+                    break;
+                } else {
+                    // FIXME: Should there be a safepoint here?
+                    append_bailout(builder, destination, displacement > 0 ? BailoutReason.Branch : BailoutReason.BackwardBranch);
+                    return true;
+                }
+            } else {
+                // Simple branches are enabled and this is a forward branch. We
+                //  don't need to wrap things in a block here, we can just exit
+                //  the current branch block after updating eip
+                builder.ip_const(destination);
+                builder.local("eip", WasmOpcode.set_local);
+                builder.appendU8(WasmOpcode.br);
+                builder.appendULeb(0);
                 return true;
             }
-
-            // Simple branches are enabled and this is a forward branch. We
-            //  don't need to wrap things in a block here, we can just exit
-            //  the current branch block after updating eip
-            builder.ip_const(destination);
-            builder.local("eip", WasmOpcode.set_local);
-            builder.appendU8(WasmOpcode.br);
-            builder.appendULeb(0);
-            return true;
         }
+
         case MintOpcode.MINT_BRTRUE_I4_S:
         case MintOpcode.MINT_BRFALSE_I4_S:
         case MintOpcode.MINT_BRTRUE_I4_SP:
@@ -2279,10 +2336,23 @@ function emit_branch (
     builder.appendULeb(0);
 
     if (displacement < 0) {
-        // This is a backwards branch, and right now we always bail out for those - so perform a
-        //  safepoint and then return. (This removes a safepoint check from all trace returns.)
+        // All backwards branches start with a safepoint
         append_safepoint(builder, ip);
-        append_bailout(builder, destination, BailoutReason.BackwardBranch);
+        const bbDepth = builder.options.noExitBackwardBranches ? builder.backBranchOffsets.indexOf(destination) : 0;
+
+        if (bbDepth >= 0) {
+            // We found a loop to branch to and targetBranchDepth specifies the nesting level to
+            //  branch to it. Updating eip isn't strictly necessary but we're doing it to be safe
+            //  and make the code easier to analyze when debugging
+            console.log(`performing conditional backward branch to ${destination} via br of depth ${bbDepth + 1}`);
+            builder.ip_const(destination);
+            builder.local("eip", WasmOpcode.set_local);
+            builder.appendU8(WasmOpcode.br);
+            builder.appendULeb(bbDepth + 2);
+        } else {
+            // We didn't find a loop to branch to, so bail out
+            append_bailout(builder, destination, BailoutReason.BackwardBranch);
+        }
     } else {
         // Do a safepoint *before* changing our IP, if necessary
         if (isSafepoint)

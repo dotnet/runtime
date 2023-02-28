@@ -575,7 +575,7 @@ function assert_not_null (
 function generate_wasm (
     frame: NativePointer, methodName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
-    methodFullName: string | undefined
+    methodFullName: string | undefined, backwardBranchTable: Uint16Array | null
 ) : number {
     // Pre-allocate a decent number of constant slots - this adds fixed size bloat
     //  to the trace but will make the actual pointer constants in the trace smaller
@@ -695,8 +695,8 @@ function generate_wasm (
         //  to using global constants and figuring out how many constant slots we need in advance
         //  since a long trace might need many slots and that bloats the header.
         const opcodes_processed = generate_wasm_body(
-            frame, traceName, ip, endOfBody, builder,
-            instrumentedTraceId
+            frame, traceName, ip, startOfBody, endOfBody,
+            builder, instrumentedTraceId, backwardBranchTable
         );
         const keep = (opcodes_processed >= mostRecentOptions.minimumTraceLength);
 
@@ -898,17 +898,11 @@ export function mono_interp_tier_prepare_jiterpreter (
 
     const imethod = getU32(getMemberOffset(JiterpMember.Imethod) + <any>frame);
     const backBranchCount = getU16(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
-    if (backBranchCount) {
-        const pBackBranches = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
-        console.log(`method ${info.name} has ${backBranchCount} backward branch target(s)`);
-        for (let i = 0; i < backBranchCount; i++) {
-            const backBranchOffset = getU16(pBackBranches + (2 * i));
-            console.log(`@0x${backBranchOffset.toString(16)}`);
-        }
-    }
+    const pBackBranches = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
+    const backwardBranchTable = backBranchCount ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount) : null;
 
     const fnPtr = generate_wasm(
-        frame, methodName, ip, startOfBody, sizeOfBody, methodFullName
+        frame, methodName, ip, startOfBody, sizeOfBody, methodFullName, backwardBranchTable
     );
 
     if (fnPtr) {

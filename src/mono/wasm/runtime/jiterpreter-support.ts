@@ -60,6 +60,7 @@ export class WasmBuilder {
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;
     constantSlots: Array<number> = [];
+    backBranchOffsets: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
 
     constructor (constantSlotCount: number) {
@@ -91,6 +92,7 @@ export class WasmBuilder {
         this.constantSlots.length = this.options.useConstants ? constantSlotCount : 0;
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
+        this.backBranchOffsets.length = 0;
 
         this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
