@@ -677,6 +677,116 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 }
 #endif // TARGET_64BIT
 
+bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
+{
+    // Only allow GPRs.
+    // If not a valid register, then return false.
+    if (!genIsValidIntReg(reg1))
+        return false;
+
+    if (!genIsValidIntReg(reg2))
+        return false;
+
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    bool result = false;
+
+    //instInfo
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        switch (id->idIns())
+        {
+            case INS_seta:
+            case INS_setae:
+            case INS_setb:
+            case INS_setbe:
+            case INS_sete:
+            case INS_setg:
+            case INS_setge:
+            case INS_setl:
+            case INS_setle:
+            case INS_setne:
+            case INS_setno:
+            case INS_setnp:
+            case INS_setns:
+            case INS_seto:
+            case INS_setp:
+            case INS_sets:
+
+            case INS_tail_i_jmp:
+            case INS_i_jmp:
+            case INS_jmp:
+            case INS_jo:
+            case INS_jno:
+            case INS_jb:
+            case INS_jae:
+            case INS_je:
+            case INS_jne:
+            case INS_jbe:
+            case INS_ja:
+            case INS_js:
+            case INS_jns:
+            case INS_jp:
+            case INS_jnp:
+            case INS_jl:
+            case INS_jge:
+            case INS_jle:
+            case INS_jg:
+
+            case INS_l_jmp:
+            case INS_l_jo:
+            case INS_l_jno:
+            case INS_l_jb: 
+            case INS_l_jae:
+            case INS_l_je: 
+            case INS_l_jne:
+            case INS_l_jbe:
+            case INS_l_ja: 
+            case INS_l_js: 
+            case INS_l_jns:
+            case INS_l_jp: 
+            case INS_l_jnp:
+            case INS_l_jl: 
+            case INS_l_jge:
+            case INS_l_jle:
+            case INS_l_jg: 
+                return PEEPHOLE_CONTINUE;
+
+            case INS_mov:
+            case INS_movsx:
+            case INS_movzx:
+            {
+                if ((id->idReg1() == reg1) || (id->idReg1() == reg2))
+                {
+                    return PEEPHOLE_ABORT;
+                }
+
+                return PEEPHOLE_CONTINUE;
+            }
+
+            case INS_cmp:
+            {
+                if ((id->idReg1() == reg1) && (id->idReg2() == reg2))
+                {
+                    result = (size == id->idOpSize());
+                    return PEEPHOLE_ABORT;
+                }
+
+                return PEEPHOLE_ABORT;
+            }
+
+            default:
+                return PEEPHOLE_ABORT;
+        }
+    });
+
+    return result;
+}
+
 //------------------------------------------------------------------------
 // AreFlagsSetToZeroCmp: Checks if the previous instruction set the SZ, and optionally OC, flags to
 //                       the same values as if there were a compare to 0
