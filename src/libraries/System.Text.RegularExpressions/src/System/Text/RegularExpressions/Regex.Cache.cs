@@ -112,7 +112,7 @@ namespace System.Text.RegularExpressions
         {
             // Does not delegate to GetOrAdd(..., RegexOptions, ...) in order to avoid having
             // a statically-reachable path to the 'new Regex(..., RegexOptions, ...)', which
-            // will force the Regex compiler to be reachable and thus rooted for the linker.
+            // will force the Regex compiler to be reachable and thus rooted for trimming.
 
             Regex.ValidatePattern(pattern);
 

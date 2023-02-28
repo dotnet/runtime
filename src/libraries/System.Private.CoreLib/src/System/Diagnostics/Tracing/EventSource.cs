@@ -5548,7 +5548,7 @@ namespace System.Diagnostics.Tracing
 
             // Write out the maps
 
-            // Scoping the call to enum GetFields to a local function to limit the linker suppression
+            // Scoping the call to enum GetFields to a local function to limit the trimming suppressions
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimmer does not trim enums")]
             static FieldInfo[] GetEnumFields(Type localEnumType)

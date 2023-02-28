@@ -52,7 +52,7 @@ internal static partial class Interop
             return bindingHandle;
         }
 
-        private static int s_cacheSize = GetCacheSize();
+        private static readonly int s_cacheSize = GetCacheSize();
 
         private static volatile int s_disableTlsResume = -1;
 

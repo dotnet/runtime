@@ -187,8 +187,12 @@ jobs:
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:
       - Windows.11.Arm64.Open
 
-    # Browser/WASI WebAssembly
-    - ${{ if in(parameters.platform, 'browser_wasm', 'wasi_wasm') }}:
+    # WASI
+    - ${{ if eq(parameters.platform, 'wasi_wasm') }}:
+      - (Ubuntu.2004.Amd64)Ubuntu.2004.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-wasm-amd64
+
+    # Browser WebAssembly
+    - ${{ if eq(parameters.platform, 'browser_wasm') }}:
       - Ubuntu.1804.Amd64.Open
 
     # Browser WebAssembly Firefox

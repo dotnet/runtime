@@ -13,6 +13,6 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 		/// This property can override that by setting only the platforms
 		/// which are expected to keep the target.
 		/// </summary>
-		public ProducedBy By { get; set; } = ProducedBy.TrimmerAnalyzerAndNativeAot;
+		public Tool By { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
 	}
 }

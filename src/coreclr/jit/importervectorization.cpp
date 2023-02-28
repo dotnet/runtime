@@ -82,7 +82,7 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 //
 static GenTreeVecCon* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
 {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     if (simdType == TYP_SIMD32)
     {
         simd32_t       simd32Val = {};

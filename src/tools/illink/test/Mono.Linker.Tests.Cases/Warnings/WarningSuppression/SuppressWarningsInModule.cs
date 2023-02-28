@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 #endif
 	[SkipKeptItemsValidation]
 	[LogDoesNotContain ("TriggerUnrecognizedPattern()")]
-	[LogContains ("warning IL2108: Invalid scope 'invalidScope' used in 'UnconditionalSuppressMessageAttribute'")]
+	[LogContains ("warning IL2108:.*Invalid scope 'invalidScope' used in 'UnconditionalSuppressMessageAttribute'", regexMatch: true)]
 	public class SuppressWarningsInModule
 	{
 		[ExpectedWarning ("IL2026", "TriggerUnrecognizedPattern()")]

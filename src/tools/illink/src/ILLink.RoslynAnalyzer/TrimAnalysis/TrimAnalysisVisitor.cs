@@ -28,7 +28,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		// Limit tracking array values to 32 values for performance reasons.
 		// There are many arrays much longer than 32 elements in .NET,
-		// but the interesting ones for the linker are nearly always less than 32 elements.
+		// but the interesting ones for the ILLink are nearly always less than 32 elements.
 		const int MaxTrackedArrayValues = 32;
 
 		public TrimAnalysisVisitor (
@@ -248,7 +248,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// - The return here is also technically problematic, the return value is an instance of a known type,
 			//   but currently we return empty (since the .ctor is declared as returning void).
 			//   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
-			//   to noise). Linker has the same problem currently: https://github.com/dotnet/linker/issues/1952
+			//   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
 			var diagnosticContext = DiagnosticContext.CreateDisabled ();
 			var handleCallAction = new HandleCallAction (diagnosticContext, Method, operation);

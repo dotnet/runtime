@@ -117,7 +117,7 @@ namespace System.Text.Json.Serialization
             return false;
         }
 
-        // This method takes an unannotated string which makes linker reflection analysis lose track of the type we are
+        // This method takes an unannotated string which makes trimming reflection analysis lose track of the type we are
         // looking for. This indirection allows the removal of the type if it is not used in the calling application.
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
             Justification = "This method exists to allow for 'weak references' to the Stack and Queue types. If those types are used in the app, " +
