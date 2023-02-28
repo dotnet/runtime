@@ -6591,7 +6591,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						MonoCompile *callee_cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, cmethod);
 
 						// Enable direct call transformation where caller's class requires no initialization and callee can specialize
-						if (!m_class_has_static_refs (method->klass) && mono_aot_can_specialize (cmethod)) {
+						if (!m_class_has_cctor (method->klass) && mono_aot_can_specialize (cmethod)) {
 							char *name = mono_aot_get_mangled_method_name (cmethod);
 							mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "DIRECT CALL: %s by %s", name, method ? mono_method_full_name (method, TRUE) : "");
 							g_free (name);
