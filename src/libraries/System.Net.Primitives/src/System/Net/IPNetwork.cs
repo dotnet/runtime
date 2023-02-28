@@ -23,6 +23,7 @@ namespace System.Net
          * Since BaseAddress represents the first address in the range, does it make sense to have a property that represents the last address?
          */
 
+        private const char addressAndPrefixLengthSeparator = '/';
         private const int bitsPerByte = 8;
         private const string
             baseAddressConstructorParamName = "baseAddress",
@@ -74,27 +75,19 @@ namespace System.Net
                 var baseAddressByte = baseAddressBytes[i];
                 var otherAddressByte = otherAddressBytes[i];
 
-                if (processedBitsCount + bitsPerByte <= PrefixLength)
+                var rightShiftAmount = Math.Max(0, bitsPerByte - (PrefixLength - processedBitsCount));
+                if (rightShiftAmount != 0)
                 {
-                    if (baseAddressByte == otherAddressByte)
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    var rightShiftAmount = bitsPerByte - (PrefixLength - processedBitsCount);
                     baseAddressByte >>= rightShiftAmount;
                     otherAddressByte >>= rightShiftAmount;
-                    if (baseAddressByte == otherAddressByte)
-                    {
-                        return true;
-                    }
                 }
+
+                if (baseAddressByte == otherAddressByte)
+                {
+                    continue;
+                }
+
+                return false;
             }
 
             return true;
@@ -136,13 +129,20 @@ namespace System.Net
         #region Private methods
         private static bool TryParseInternal(ReadOnlySpan<char> s, out IPNetwork result, [NotNullWhen(false)] out string? error)
         {
-            const char separator = '/';
             const int maxCharsCountAfterIpAddress = 4;
+            const int minCharsRequired = 4;
+
+            if (s.Length < minCharsRequired)
+            {
+                error = SR.dns_bad_ip_network;
+                result = default;
+                return false;
+            }
 
             int separatorExpectedStartingIndex = s.Length - maxCharsCountAfterIpAddress;
             int separatorIndex = s
                 .Slice(separatorExpectedStartingIndex)
-                .IndexOf(separator);
+                .IndexOf(addressAndPrefixLengthSeparator);
             if (separatorIndex != -1)
             {
                 separatorIndex += separatorExpectedStartingIndex;
@@ -254,7 +254,7 @@ namespace System.Net
         #region Formatting (public)
         public override string ToString()
         {
-            return $"{BaseAddress}/{PrefixLength}";
+            return $"{BaseAddress}{addressAndPrefixLengthSeparator}{PrefixLength}";
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten)
@@ -264,6 +264,13 @@ namespace System.Net
                 charsWritten = 0;
                 return false;
             }
+
+            if (destination.Length < charsWritten + 2)
+            {
+                return false;
+            }
+
+            destination[charsWritten++] = addressAndPrefixLengthSeparator;
 
             if (!PrefixLength.TryFormat(destination.Slice(charsWritten), out var prefixLengthCharsWritten))
             {
