@@ -2912,10 +2912,8 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             }
         }
     }
-
     assignPhysReg(availablePhysRegRecord, currentInterval);
     refPosition->registerAssignment = foundRegBit;
-
     return foundReg;
 }
 
@@ -5348,7 +5346,7 @@ void LinearScan::allocateRegisters()
                 setIntervalAsSplit(currentInterval);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_MOVE_REG, currentInterval, assignedRegister));
             }
-            else if (((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0))
+            else if ((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
             {
 #ifdef TARGET_ARM64
                 if (hasConsecutiveRegister && currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())

@@ -3038,9 +3038,6 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 // Notes:
 //    The node must not be contained, and must have been processed by buildRefPositionsForNode().
 //
-//#ifdef TARGET_ARM64
-// template <bool hasConsecutiveRegister>
-//#endif
 RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int multiRegIdx)
 {
     assert(!operand->isContained());
