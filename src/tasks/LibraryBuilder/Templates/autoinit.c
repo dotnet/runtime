@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include <stdint.h>
 #include <stdio.h>
 #include <mono/jit/jit.h>
@@ -15,7 +18,7 @@ void keep_init()
     appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
     appctx_keys[2] = "System.TimeZoneInfo.LocalDateTimeOffset";
 
-	const char* appctx_values[3];
+    const char* appctx_values[3];
     appctx_values[0] = "RUNTIME_IDENTIFIER";
     appctx_values[1] = "APP_CONTEXT_BASE_DIRECTORY";
     appctx_values[2] = "System.TimeZoneInfo.LocalDateTimeOffset";

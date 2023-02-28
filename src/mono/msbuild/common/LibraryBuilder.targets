@@ -3,7 +3,7 @@
              AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
 
   <Target Name="_BuildNativeLibrary"
-          Condition="'$(RunAOTCompilation)' == 'true'">
+          Condition="'$(_IsLibraryMode)' == 'true' and '$(RunAOTCompilation)' == 'true'">
 
     <PropertyGroup>
       <_IsSharedLibrary>false</_IsSharedLibrary>

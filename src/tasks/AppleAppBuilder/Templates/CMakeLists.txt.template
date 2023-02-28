@@ -69,6 +69,12 @@ endif()
 target_link_libraries(
     %ProjectName%
     PRIVATE
+    "-framework Foundation"
+    "-framework Security"
+    "-framework UIKit"
+    "-lz"
+    "-lc++"
+    "-liconv"
     %NativeLibrariesToLink%
 %APP_LINKER_ARGS%
 )

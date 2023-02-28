@@ -6,12 +6,6 @@ using System.Runtime.InteropServices;
 
 public static class Program
 {
-    [UnmanagedCallersOnly(EntryPoint="SayHello")]
-    public static void SayHello()
-    {
-        Console.WriteLine("Called from native!  Hello!");
-    }
-
     public static int Main()
     {
         Console.WriteLine("Hello, Android!"); // logcat

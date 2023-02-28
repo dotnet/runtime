@@ -25,36 +25,15 @@
       <_AotModuleTablePath>$(AndroidAppBundleDir)\modules.c</_AotModuleTablePath>
     </PropertyGroup>
 
-    <!-- 
-      LibraryBuilder takes the approach of accepting items to help what is being linked
-      as opposed to figuring it out in the task.
-    -->
-
-    <!-- common linker arguments for app and library builds -->
-    <ItemGroup>
-      <_CommonLinkerArgs Include="libz.so" />
-      <_CommonLinkerArgs Include="log" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_LoadICU" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLatestJapaneseEra" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_ChangeCase" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_CloseSortHandle" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocales" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleInfoInt" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleTimeFormat" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_ToUnicode" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_NormalizeString" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetTimeZoneDisplayName" />
-    </ItemGroup>
-
     <PropertyGroup>
       <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <!-- add all non stub libs first -->
-      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
-      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
-      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
+      <!-- if RuntimeComponents is empty, exclude -static.a and include -stub-static.a instead -->
+      <!-- if RuntimeComponents is *, we're ok because all -static.a is included -->
+      <!-- if RuntimeComponents is a list, add to items and only pull in -static.a -->
 
       <_UsedComponents 
         Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
@@ -204,9 +183,9 @@ mono_thread_interruption_request_flag;" />
       a list of direct pinvokes otherwise the runtime will crash
     -->
     <ItemGroup>
-      <_DirectPInvokeLibs Include="libSystem.Native" />
-      <_DirectPInvokeLibs Include="libSystem.IO.Compression.Native" />
-      <_DirectPInvokeLibs Include="libSystem.Security.Cryptography.Native.Android" />
+      <DirectPInvokes Include="libSystem.Native" />
+      <DirectPInvokes Include="libSystem.IO.Compression.Native" />
+      <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -217,7 +196,8 @@ mono_thread_interruption_request_flag;" />
         AotModulesTablePath="$(_AotModuleTablePath)"
         Assemblies="@(_AotInputAssemblies)"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
-        DirectPInvokes="@(_DirectPInvokeLibs)"
+        DirectPInvokes="@(DirectPInvokes)"
+        DirectPInvokeLists="@(DirectPInvokeLists)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         LLVMPath="$(MonoAotCrossDir)"
@@ -244,16 +224,13 @@ mono_thread_interruption_request_flag;" />
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_NativeDependencies Include="$(LibraryOutputPath)" />
     </ItemGroup>
-    <ItemGroup>
-      <_ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
-    </ItemGroup>
 
     <AndroidAppBuilderTask
         AppDir="$(AndroidAppDir)"
         Assemblies="@(_AndroidAssembliesInternal)"
         DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
-        ExtraLinkerArguments="@(_ExtraAppLinkerArgs)"
+        ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"

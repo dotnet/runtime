@@ -36,5 +36,7 @@ target_link_libraries(
     %LIBRARY_NAME%
     PUBLIC
     aot_library
+    libz.so
+    log
     %LIBRARY_LINKER_ARGS%
 )

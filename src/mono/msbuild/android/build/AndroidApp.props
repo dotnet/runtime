@@ -5,7 +5,6 @@
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
     <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
-    <_NativeLibraryTarget Condition="'$(_IsLibraryMode)' == 'true'">_BuildNativeLibrary;</_NativeLibraryTarget>
 
     <AndroidBuildAppAfterThisTarget Condition="'$(AndroidBuildAppAfterThisTarget)' == ''">Publish</AndroidBuildAppAfterThisTarget>
     <AndroidBuildAppDependsOn>
@@ -14,7 +13,7 @@
         _AndroidResolveReferences;
         _AndroidPrepareProfiledAot;
         _AndroidAotCompileApp;
-        $(_NativeLibraryTarget)
+        _BuildNativeLibrary;
         _AndroidGenerateAppBundle;
         _AfterAndroidBuildApp
     </AndroidBuildAppDependsOn>

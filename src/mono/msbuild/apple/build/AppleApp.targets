@@ -6,8 +6,8 @@
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
     <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
+    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
     <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AppleGenerateAppBundle>
   </PropertyGroup>
 
@@ -29,24 +29,9 @@
       <_AotModuleTablePath>$(AppleAppBundleDir)\modules.m</_AotModuleTablePath>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <_TargetsDevice Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">true</_TargetsDevice>
-    </PropertyGroup>
-
-    <!-- 
-      LibraryBuilder takes the approach of accepting items to help what is being linked
-      as opposed to figuring it out in the task.
-    -->
-
     <!-- common linker arguments for app and library builds -->
     <ItemGroup>
-      <_CommonLinkerArgs Include="-framework Foundation" />
       <_CommonLinkerArgs Condition="'$(TargetOS)' != 'tvos'" Include="-framework GSS" />
-      <_CommonLinkerArgs Include="-framework Security" />
-      <_CommonLinkerArgs Include="-framework UIKit" />
-      <_CommonLinkerArgs Include="-lz" />
-      <_CommonLinkerArgs Include="-lc++" />
-      <_CommonLinkerArgs Include="-liconv" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -236,7 +221,7 @@ _monovm_runtimeconfig_initialize;" />
          and produce an app bundle (with xcode project) -->
 
     <ItemGroup>
-      <_ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
+      <ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
@@ -249,7 +234,7 @@ _monovm_runtimeconfig_initialize;" />
       DevTeamProvisioning="$(DevTeamProvisioning)"
       DiagnosticPorts="$(DiagnosticPorts)"
       EnableAppSandbox="$(EnableAppSandbox)"
-      ExtraLinkerArguments="@(_ExtraAppLinkerArgs)"
+      ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
       ForceAOT="$(RunAOTCompilation)"
       ForceInterpreter="$(MonoForceInterpreter)"
       GenerateCMakeProject="$(GenerateCMakeProject)"
