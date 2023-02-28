@@ -13,5 +13,6 @@ internal class StartupHook
 
         // A small operation involving NewtonSoft.Json to ensure the assembly is loaded properly
         var t = typeof(Newtonsoft.Json.JsonReader);
+        System.Diagnostics.Trace.WriteLine(t);
     }
 }
