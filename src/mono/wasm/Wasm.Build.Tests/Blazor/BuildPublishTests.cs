@@ -82,12 +82,23 @@ public class BuildPublishTests : BuildTestBase
     //}
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public async Task WithDllImportInMainAssembly(string config)
+    [InlineData("Debug", /*build*/true, /*publish*/false)]
+    [InlineData("Debug", /*build*/false, /*publish*/true)]
+    [InlineData("Debug", /*build*/true, /*publish*/true)]
+    [InlineData("Release", /*build*/true, /*publish*/false)]
+    [InlineData("Release", /*build*/false, /*publish*/true)]
+    [InlineData("Release", /*build*/true, /*publish*/true)]
+    public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
-        string id = $"blz_dllimp_{config}";
+        string id = $"blz_dllimp_{config}_";
+        if (build && publish)
+            id += "build_then_publish";
+        else if (build)
+            id += "build";
+        else
+            id += "publish";
+
         string projectFile = CreateProjectWithNativeReference(id);
         string nativeSource = @"
             #include <stdio.h>
@@ -118,18 +129,29 @@ public class BuildPublishTests : BuildTestBase
             outputText = $"{result}";
         """);
 
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-        CheckNativeFileLinked(forPublish: false);
+        if (build)
+        {
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+            CheckNativeFileLinked(forPublish: false);
+        }
 
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
-        CheckNativeFileLinked(forPublish: true);
+        if (publish)
+        {
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
+            CheckNativeFileLinked(forPublish: true);
+        }
 
-        await BlazorRun(config, async (page) =>
+        if (publish)
+            await BlazorRunForPublishWithWebServer(config, TestDllImport);
+        else
+            await BlazorRunForBuildWithDotnetRun(config, TestDllImport);
+
+        async Task TestDllImport(IPage page)
         {
             await page.Locator("text=\"cpp_add\"").ClickAsync();
             var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
             Assert.Equal("Output: 22", txt);
-        });
+        }
 
         void CheckNativeFileLinked(bool forPublish)
         {
@@ -211,14 +233,12 @@ public class BuildPublishTests : BuildTestBase
                 .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
                 .EnsureSuccessful();
 
-        await BlazorRun(config);
+        await BlazorRunForBuildWithDotnetRun(config);
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-#if TEST_DEBUG_CONFIG_ALSO
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
-#endif
     [InlineData("Release", false)]
     [InlineData("Release", true)]
     public async Task BlazorPublishRunTest(string config, bool aot)
@@ -233,7 +253,7 @@ public class BuildPublishTests : BuildTestBase
                 .Execute($"publish -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
                 .EnsureSuccessful();
 
-        await BlazorRun(config);
+        await BlazorRunForPublishWithWebServer(config);
     }
 
 }

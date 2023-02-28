@@ -932,13 +932,22 @@ namespace Wasm.Build.Tests
             File.WriteAllText(counterRazorPath, oldContent + additionalCode);
         }
 
-        public async Task BlazorRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
+        public Task BlazorRunForBuildWithDotnetRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
+            => BlazorRunTest($"run -c {config} {extraArgs}", _projectDir!, test);
+
+
+        public Task BlazorRunForPublishWithWebServer(string config, Func<IPage, Task>? test=null, string extraArgs="")
+            => BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files {extraArgs}",
+                             Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(config, forPublish: true), "..")),
+                             test);
+
+        public async Task BlazorRunTest(string runArgs, string workingDirectory, Func<IPage, Task>? test=null)
         {
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!);
+                                        .WithWorkingDirectory(workingDirectory);
 
             await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, $"run -c {config} {extraArgs}", onConsoleMessage: OnConsoleMessage);
+            var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage);
 
             await page.Locator("text=Counter").ClickAsync();
             var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
