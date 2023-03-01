@@ -4231,18 +4231,19 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     // Some cultures uses space in the quoted string.  E.g. Spanish has long date format as:
                     // "dddd, dd' de 'MMMM' de 'yyyy".  When inner spaces flag is set, we should skip whitespaces if there is space
                     // in the quoted string.
-                    string quotedStr = enquotedString.ToString();
+                    ReadOnlySpan<char> quotedSpan = enquotedString.AsSpan();
 
-                    for (int i = 0; i < quotedStr.Length; i++)
+                    for (int i = 0; i < quotedSpan.Length; i++)
                     {
-                        if (quotedStr[i] == ' ' && parseInfo.fAllowInnerWhite)
+                        if (quotedSpan[i] == ' ' && parseInfo.fAllowInnerWhite)
                         {
                             str.SkipWhiteSpaces();
                         }
-                        else if (!str.Match(quotedStr[i]))
+                        else if (!str.Match(quotedSpan[i]))
                         {
                             // Can not find the matching quoted string.
                             result.SetBadDateTimeFailure();
+                            enquotedString.Dispose();
                             return false;
                         }
                     }
@@ -4253,14 +4254,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     // with this issue.
                     if ((result.flags & ParseFlags.CaptureOffset) != 0)
                     {
-                        if (((result.flags & ParseFlags.Rfc1123Pattern) != 0 && quotedStr == GMTName) ||
-                            ((result.flags & ParseFlags.UtcSortPattern) != 0 && quotedStr == ZuluName))
+                        if (((result.flags & ParseFlags.Rfc1123Pattern) != 0 && quotedSpan.SequenceEqual(GMTName)) ||
+                            ((result.flags & ParseFlags.UtcSortPattern) != 0 && quotedSpan.SequenceEqual(ZuluName)))
                         {
                             result.flags |= ParseFlags.TimeZoneUsed;
                             result.timeZoneOffset = TimeSpan.Zero;
                         }
                     }
-
+                    enquotedString.Dispose();
                     break;
                 case '%':
                     // Skip this so we can get to the next pattern character.
