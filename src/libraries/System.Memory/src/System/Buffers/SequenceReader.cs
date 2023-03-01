@@ -26,19 +26,28 @@ namespace System.Buffers
         public SequenceReader(ReadOnlySequence<T> sequence)
         {
             _sequence = sequence;
-            _length = -1;
 
-            var position = _sequence.Start;
+            var position = sequence.Start;
             _currentPositionObject = position.GetObject();
             _currentPositionInteger = position.GetInteger();
-            _sequence.GetFirstSpan(out _currentSpan, out position);
+            sequence.GetFirstSpan(out _currentSpan, out position);
             _nextPositionObject = position.GetObject();
             _nextPositionInteger = position.GetInteger();
             _currentSpanIndex = 0;
             _consumedAtStartOfCurrentSpan = 0;
-            if (_currentSpan.IsEmpty && !_sequence.IsSingleSegment)
-            {   // edge-case; multi-segment with zero-length as first
-                GetNextSpan();
+
+            if (sequence.IsSingleSegment)
+            {
+                _length = _currentSpan.Length;
+            }
+            else
+            {
+                _length = -1; // computed on-demand
+                if (_currentSpan.IsEmpty)
+                {
+                    // edge-case; multi-segment with zero-length as first
+                    GetNextSpan();
+                }
             }
         }
 
@@ -266,9 +275,10 @@ namespace System.Buffers
         private bool GetNextSpan()
         {
             _consumedAtStartOfCurrentSpan += _currentSpan.Length; // track consumed length
+            SequencePosition position;
             if (!_sequence.IsSingleSegment)
             {
-                SequencePosition position = new(_nextPositionObject, _nextPositionInteger);
+                position = new(_nextPositionObject, _nextPositionInteger);
 
                 while (_sequence.TryGetBuffer(position, out var memory, out var next))
                 {
@@ -285,8 +295,16 @@ namespace System.Buffers
                     position = next;
                 }
             }
+
+            // at EOF
+            position = _sequence.End;
+            _currentPositionObject = position.GetObject();
+            _currentPositionInteger = position.GetInteger();
+            _nextPositionObject = default;
+            _nextPositionInteger = default;
             _currentSpan = default;
             _currentSpanIndex = 0;
+            Unsafe.AsRef(in _length) = _consumedAtStartOfCurrentSpan; // since we know it, avoid later cost if Length accessed
             return false;
         }
 
