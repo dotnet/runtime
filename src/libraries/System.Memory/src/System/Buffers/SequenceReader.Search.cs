@@ -645,7 +645,7 @@ namespace System.Buffers
                 var unread = UnreadSpan; // eat the slice to avoid bounds checks
                 for (i = 0; i < unread.Length; i++)
                 {
-                    T value = unread[i];
+                    ref readonly T value = ref unread[i];
                     if (!value.Equals(value0) && !value.Equals(value1) && !value.Equals(value2) && !value.Equals(value3))
                     {
                         break;
@@ -682,7 +682,7 @@ namespace System.Buffers
                 var unread = UnreadSpan; // eat the slice to avoid bounds checks
                 for (i = 0; i < unread.Length; i++)
                 {
-                    T value = unread[i];
+                    ref readonly T value = ref unread[i];
                     if (!value.Equals(value0) && !value.Equals(value1) && !value.Equals(value2))
                     {
                         break;
@@ -719,7 +719,7 @@ namespace System.Buffers
                 var unread = UnreadSpan; // eat the slice to avoid bounds checks
                 for (i = 0; i < unread.Length; i++)
                 {
-                    T value = unread[i];
+                    ref readonly T value = ref unread[i];
                     if (!value.Equals(value0) && !value.Equals(value1))
                     {
                         break;
