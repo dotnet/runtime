@@ -178,7 +178,6 @@
 
   <!-- _portableOS is the the portable OS corresponding to the the target platform. -->
   <PropertyGroup Label="CalculatePortableOS">
-    <_portableOS>$(__PortableOS)</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == ''">$(TargetOS.ToLowerInvariant())</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'windows'">win</_portableOS>
 
