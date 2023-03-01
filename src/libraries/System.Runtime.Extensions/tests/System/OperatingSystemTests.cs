@@ -198,7 +198,7 @@ namespace System.Tests
                 OperatingSystem.IsMacOS(),
                 OperatingSystem.IsTvOS(),
                 OperatingSystem.IsWatchOS(),
-                OperatingSystem.IsWindows()
+                OperatingSystem.IsWindows(),
                 OperatingSystem.IsWasi(),
             };
 
