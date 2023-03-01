@@ -113,6 +113,21 @@ namespace System.Formats.Tar
         internal void InitializeExtendedAttributesWithExisting(IEnumerable<KeyValuePair<string, string>> existing)
         {
             Debug.Assert(_ea == null);
+            foreach (KeyValuePair<string, string> kvp in existing)
+            {
+                if (kvp.Key.IndexOf('=') != -1)
+                {
+                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, '='));
+                }
+                if (kvp.Key.IndexOf('\n') != -1)
+                {
+                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, "\\n"));
+                }
+                if (kvp.Value.IndexOf('\n') != -1)
+                {
+                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, kvp.Key, "\\n"));
+                }
+            }
             _ea = new Dictionary<string, string>(existing);
         }
 
