@@ -138,7 +138,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     continue;
                 }
 
-                auto debugInfo = nextStmt->GetDebugInfo();
+                auto debugInfo = stmt->GetDebugInfo();
 
                 assert(runtimeLookup.indirections != 0);
                 assert(runtimeLookup.testForNull);
