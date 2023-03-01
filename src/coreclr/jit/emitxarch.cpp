@@ -706,9 +706,144 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 }
 #endif // TARGET_64BIT
 
+    
+bool emitter::emitIsInstructionResettingFlags(instrDesc* id)
+{
+    return (CodeGenInterface::instInfo[id->idIns()] & (Resets_OF | Resets_SF | Resets_AF | Resets_PF | Resets_CF));
+}
+
 bool emitter::emitIsInstructionWritingToReg(instrDesc* id, regNumber reg)
 {
-    // TODO:
+    switch ((ID_OPS)emitFmtToOps[id->idInsFmt()])
+    {
+        // This is conservative.
+        case ID_OP_CALL:
+            return true;
+
+        default:
+            break;
+    }
+
+    // This is a special case for idiv, div, imul, and mul.
+    // They always write to RAX and RDX.
+    if (instrHasImplicitRegPairDest(id->idIns()))
+    {
+        if (reg == REG_RAX || reg == REG_RDX)
+        {
+            return true;
+        }
+    }
+
+#ifdef TARGET_64BIT
+    // This is a special case for cdq/cwde/cmpxchg.
+    if (instrHasImplicitRegSingleDest(id->idIns()))
+    {
+        switch (id->idIns())
+        {
+            case INS_cwde:
+            case INS_cmpxchg:
+            {
+                if (reg == REG_RAX)
+                {
+                    return PEEPHOLE_ABORT;
+                }
+                break;
+            }
+
+            case INS_cdq:
+            {
+                if (reg == REG_RDX)
+                {
+                    return PEEPHOLE_ABORT;
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+#endif // TARGET_64BIT
+
+    switch (id->idInsFmt())
+    {
+        case IF_RWR:
+        case IF_RRW:
+
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RRW_RRW:
+        case IF_RRW_RRW_CNS:
+
+        case IF_RWR_RRD_RRD:
+        case IF_RWR_RRD_RRD_CNS:
+
+        case IF_RWR_RRD_RRD_RRD:
+
+        case IF_RWR_MRD:
+        case IF_RRW_MRD:
+        case IF_RRW_MRD_CNS:
+
+        case IF_RWR_RRD_MRD:
+        case IF_RWR_MRD_CNS:
+        case IF_RWR_RRD_MRD_CNS:
+        case IF_RWR_RRD_MRD_RRD:
+        case IF_RWR_MRD_OFF:
+
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RRW_SRD_CNS:
+
+        case IF_RWR_RRD_SRD:
+        case IF_RWR_SRD_CNS:
+        case IF_RWR_RRD_SRD_CNS:
+        case IF_RWR_RRD_SRD_RRD:
+
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RRW_ARD_CNS:
+
+        case IF_RWR_RRD_ARD:
+        case IF_RWR_ARD_CNS:
+        case IF_RWR_ARD_RRD:
+        case IF_RWR_RRD_ARD_CNS:
+        case IF_RWR_RRD_ARD_RRD:
+        {
+            if (id->idReg1() != reg)
+            {
+                switch (id->idInsFmt())
+                {
+                    // Handles instructions who write to two registers.
+                    case IF_RRW_RRW:
+                    case IF_RRW_RRW_CNS:
+                    {
+                        if (id->idReg2() == reg)
+                        {
+                            return true;
+                        }
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                return PEEPHOLE_CONTINUE;
+            }
+
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+
     return false;
 }
 
@@ -735,84 +870,18 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
     emitPeepholeIterateLastInstrs(
         [&](instrDesc* id)
         {
+            if (emitIsInstructionWritingToReg(id, reg1) || emitIsInstructionWritingToReg(id, reg2))
+            {
+                return PEEPHOLE_ABORT;
+            }
+
+            if (emitIsInstructionResettingFlags(id))
+            {
+                return PEEPHOLE_ABORT;
+            }
+
             switch (id->idIns())
             {
-                case INS_seta:
-                case INS_setae:
-                case INS_setb:
-                case INS_setbe:
-                case INS_sete:
-                case INS_setg:
-                case INS_setge:
-                case INS_setl:
-                case INS_setle:
-                case INS_setne:
-                case INS_setno:
-                case INS_setnp:
-                case INS_setns:
-                case INS_seto:
-                case INS_setp:
-                case INS_sets:
-                {
-                    if ((id->idReg1() == reg1) || (id->idReg1() == reg2))
-                    {
-                        return PEEPHOLE_ABORT;
-                    }
-
-                    return PEEPHOLE_CONTINUE;
-                }
-
-                case INS_mov:
-                case INS_movsx:
-                case INS_movzx:
-                {
-                    if ((id->idReg1() == reg1) || (id->idReg1() == reg2))
-                    {
-                        return PEEPHOLE_ABORT;
-                    }
-
-                    return PEEPHOLE_CONTINUE;
-                }
-
-                case INS_tail_i_jmp:
-                case INS_i_jmp:
-                case INS_jmp:
-                case INS_jo:
-                case INS_jno:
-                case INS_jb:
-                case INS_jae:
-                case INS_je:
-                case INS_jne:
-                case INS_jbe:
-                case INS_ja:
-                case INS_js:
-                case INS_jns:
-                case INS_jp:
-                case INS_jnp:
-                case INS_jl:
-                case INS_jge:
-                case INS_jle:
-                case INS_jg:
-
-                case INS_l_jmp:
-                case INS_l_jo:
-                case INS_l_jno:
-                case INS_l_jb:
-                case INS_l_jae:
-                case INS_l_je:
-                case INS_l_jne:
-                case INS_l_jbe:
-                case INS_l_ja:
-                case INS_l_js:
-                case INS_l_jns:
-                case INS_l_jp:
-                case INS_l_jnp:
-                case INS_l_jl:
-                case INS_l_jge:
-                case INS_l_jle:
-                case INS_l_jg:
-                    return PEEPHOLE_CONTINUE;
-
                 case INS_cmp:
                 {
                     if ((id->idReg1() == reg1) && (id->idReg2() == reg2))
@@ -821,13 +890,13 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
                         return PEEPHOLE_ABORT;
                     }
 
-                    return PEEPHOLE_ABORT;
+                    return PEEPHOLE_CONTINUE;
                 }
 
                 default:
-                    return PEEPHOLE_ABORT;
+                    return PEEPHOLE_CONTINUE;
             }
-        });
+    });
 
     return result;
 }

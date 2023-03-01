@@ -2081,6 +2081,7 @@ private:
 
 #ifdef TARGET_XARCH
     bool emitIsInstructionWritingToReg(instrDesc* id, regNumber reg);
+    bool emitIsInstructionResettingFlags(instrDesc* id);
 #endif // TARGET_XARCH
 
     /************************************************************************/
