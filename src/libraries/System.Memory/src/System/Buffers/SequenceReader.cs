@@ -265,10 +265,9 @@ namespace System.Buffers
         /// </summary>
         private bool GetNextSpan()
         {
+            _consumedAtStartOfCurrentSpan += _currentSpan.Length; // track consumed length
             if (!_sequence.IsSingleSegment)
             {
-                _consumedAtStartOfCurrentSpan += _currentSpan.Length; // account for previous
-
                 SequencePosition position = new(_nextPositionObject, _nextPositionInteger);
 
                 while (_sequence.TryGetBuffer(position, out var memory, out var next))
