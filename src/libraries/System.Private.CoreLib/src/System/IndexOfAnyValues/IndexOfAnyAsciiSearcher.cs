@@ -1,21 +1,22 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable 8500 // sizeof of managed types
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
 namespace System.Buffers
 {
     internal static class IndexOfAnyAsciiSearcher
     {
-        internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported;
+        internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
 
         internal static unsafe void ComputeBitmap256(ReadOnlySpan<byte> values, out Vector128<byte> bitmap0, out Vector128<byte> bitmap1, out BitVector256 lookup)
         {
@@ -131,8 +132,8 @@ namespace System.Buffers
                 Vector128<byte> bitmap = default;
                 if (TryComputeBitmap(asciiValues, (byte*)&bitmap, out bool needleContainsZero))
                 {
-                    index = Ssse3.IsSupported && needleContainsZero
-                        ? IndexOfAnyVectorized<TNegator, Ssse3HandleZeroInNeedle>(ref searchSpace, searchSpaceLength, bitmap)
+                    index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
+                        ? IndexOfAnyVectorized<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, bitmap)
                         : IndexOfAnyVectorized<TNegator, Default>(ref searchSpace, searchSpaceLength, bitmap);
                     return true;
                 }
@@ -153,8 +154,8 @@ namespace System.Buffers
                 Vector128<byte> bitmap = default;
                 if (TryComputeBitmap(asciiValues, (byte*)&bitmap, out bool needleContainsZero))
                 {
-                    index = Ssse3.IsSupported && needleContainsZero
-                        ? LastIndexOfAnyVectorized<TNegator, Ssse3HandleZeroInNeedle>(ref searchSpace, searchSpaceLength, bitmap)
+                    index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
+                        ? LastIndexOfAnyVectorized<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, bitmap)
                         : LastIndexOfAnyVectorized<TNegator, Default>(ref searchSpace, searchSpaceLength, bitmap);
                     return true;
                 }
@@ -812,26 +813,29 @@ namespace System.Buffers
             where TOptimizations : struct, IOptimizations
         {
             // Pack two vectors of characters into bytes. While the type is Vector128<short>, these are really UInt16 characters.
-            // X86: Downcast every character using saturation.
+            // X86 and WASM: Downcast every character using saturation.
             // - Values <= 32767 result in min(value, 255).
             // - Values  > 32767 result in 0. Because of this we must do more work to handle needles that contain 0.
             // ARM64: Do narrowing saturation over unsigned values.
             // - All values result in min(value, 255)
-            Vector128<byte> source = Sse2.IsSupported
-                ? Sse2.PackUnsignedSaturate(source0, source1)
-                : AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0.AsUInt16()), source1.AsUInt16());
+            Vector128<byte> source =
+                Sse2.IsSupported ? Sse2.PackUnsignedSaturate(source0, source1) :
+                AdvSimd.IsSupported ? AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0.AsUInt16()), source1.AsUInt16()) :
+                default; // TODO: Replace with PackedSimd.Narrow
 
             Vector128<byte> result = IndexOfAnyLookupCore(source, bitmapLookup);
 
-            // On X86, PackUnsignedSaturate resulted in values becoming 0 for inputs above 32767.
+            // On X86 and WASM, the packing/narrowing above resulted in values becoming 0 for inputs above 32767.
             // Any value above 32767 would therefore match against 0. If 0 is present in the needle, we must clear the false positives.
-            // In both cases, we can correct the result by clearing any bits that matched with a non-ascii source character.
+            // We can correct the result by clearing any bits that matched with a non-ascii source character.
             if (TOptimizations.NeedleContainsZero)
             {
-                Debug.Assert(Sse2.IsSupported);
+                Debug.Assert(Sse2.IsSupported || PackedSimd.IsSupported);
                 Vector128<short> ascii0 = Vector128.LessThan(source0.AsUInt16(), Vector128.Create((ushort)128)).AsInt16();
                 Vector128<short> ascii1 = Vector128.LessThan(source1.AsUInt16(), Vector128.Create((ushort)128)).AsInt16();
-                Vector128<byte> ascii = Sse2.PackSignedSaturate(ascii0, ascii1).AsByte();
+                Vector128<byte> ascii = Sse2.IsSupported
+                    ? Sse2.PackSignedSaturate(ascii0, ascii1).AsByte()
+                    : default; // TODO: Replace with PackedSimd.Narrow
                 result &= ascii;
             }
 
@@ -850,15 +854,22 @@ namespace System.Buffers
             // On ARM, we have an instruction for an arithmetic right shift of 1-byte signed values.
             // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
             // This is how we exclude non-ASCII values from results on ARM.
-            // On X86, use a 4-byte value shift with AND 15 to emulate a 1-byte value logical shift.
+            // On X86 and WASM, use a 4-byte value shift with AND 15 to emulate a 1-byte value logical shift.
             Vector128<byte> highNibbles = AdvSimd.IsSupported
                 ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
-                : Sse2.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector128.Create((byte)0xF);
+                : (source.AsInt32() >>> 4).AsByte() & Vector128.Create((byte)0xF);
 
             // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
             // Lookup the rows via the lower nibble and the column via the higher nibble.
+            // TODO: Are WASM engines smart enough to figure out that indices are already [0, 15] due to the 'AND 0xF' above, and generate an optimal shuffle?
             Vector128<byte> bitMask = Shuffle(bitmapLookup, lowNibbles);
-            Vector128<byte> bitPositions = Shuffle(Vector128.Create(0x8040201008040201).AsByte(), highNibbles);
+
+            // On WASM, we still have to handle values outside the ASCII range.
+            // For values above 127, the high nibble will be above 7. We construct the positions vector for the shuffle such that those values map to 0.
+            // This is similar to how we use Ssse3's Shuffle characteristics on X86 to transform values above 127 to 0 by not masking the low nibbles above.
+            Vector128<byte> bitPositions = PackedSimd.IsSupported
+                ? Shuffle(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles)
+                : Shuffle(Vector128.Create(0x8040201008040201).AsByte(), highNibbles);
 
             Vector128<byte> result = bitMask & bitPositions;
             return result;
@@ -943,9 +954,10 @@ namespace System.Buffers
         private static Vector128<byte> Shuffle(Vector128<byte> vector, Vector128<byte> indices)
         {
             // We're not using Vector128.Shuffle as the caller already accounts for and relies on differences in behavior between platforms.
-            return Ssse3.IsSupported
-                ? Ssse3.Shuffle(vector, indices)
-                : AdvSimd.Arm64.VectorTableLookup(vector, indices);
+            return
+                Ssse3.IsSupported ? Ssse3.Shuffle(vector, indices) :
+                AdvSimd.Arm64.IsSupported ? AdvSimd.Arm64.VectorTableLookup(vector, indices) :
+                PackedSimd.Swizzle(vector, indices);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -957,7 +969,6 @@ namespace System.Buffers
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector128<byte> result)
             where TNegator : struct, INegator
@@ -972,7 +983,6 @@ namespace System.Buffers
             }
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(T));
         }
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
@@ -1013,7 +1023,6 @@ namespace System.Buffers
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector256<byte> result)
             where TNegator : struct, INegator
@@ -1034,7 +1043,6 @@ namespace System.Buffers
             }
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(T));
         }
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
@@ -1117,7 +1125,7 @@ namespace System.Buffers
             static abstract bool NeedleContainsZero { get; }
         }
 
-        internal readonly struct Ssse3HandleZeroInNeedle : IOptimizations
+        internal readonly struct Ssse3AndWasmHandleZeroInNeedle : IOptimizations
         {
             public static bool NeedleContainsZero => true;
         }
