@@ -100,14 +100,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData("key", "value")]
-        [InlineData("key    ", "value    ")]
-        [InlineData("    key", "    value")]
-        [InlineData("    key   ", "    value    ")]
-        [InlineData("    key spaced   ", "    value spaced    ")]
-        [InlineData("many sla/s\\hes", "/////////////\\\\\\///////////")]
-        [InlineData("key", "va=lue")]
-        [InlineData("key", "=")]
+        [MemberData(nameof(GetPaxExtendedAttributesRoundtripTestData))]
         public void PaxExtendedAttribute_Roundtrips(string key, string value)
         {
             var stream = new MemoryStream();
