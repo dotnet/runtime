@@ -2273,9 +2273,9 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 // TryLowerAndToCCMP : Lower an and of two conditions into test + CCMP + SETCC nodes.
 //
 // Arguments:
-//    node - pointer to the node
+//    tree - pointer to the node
 //
-GenTree* Lowering::TryLowerAndToCCMP(GenTree* tree)
+GenTree* Lowering::TryLowerAndToCCMP(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_AND));
 
@@ -2287,12 +2287,23 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTree* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    if (!op1->OperIsCompare() && !op1->OperIs(GT_SETCC))
+    // Find out whether op2 is eligible to be converted to a conditional
+    // compare. It must be a normal integral relop; for example, we cannot
+    // conditionally perform a floating point comparison and there is no "ctst"
+    // instruction that would allow us to conditionally implement
+    // TEST_EQ/TEST_NE.
+    //
+    if (!op2->OperIsCmpCompare() || !varTypeIsIntegral(op2->gtGetOp1()))
     {
         return nullptr;
     }
 
-    if (!op2->OperIsCmpCompare() || !varTypeIsIntegral(op2->gtGetOp1()))
+    // For op1 we can allow more arbitrary operations that set the condition
+    // flags; the final transformation into the flags def is done by
+    // TryLowerConditionToFlagsNode below, but we have a quick early out here
+    // too.
+    //
+    if (!op1->OperIsCompare() && !op1->OperIs(GT_SETCC))
     {
         return nullptr;
     }
@@ -2323,7 +2334,7 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTree* tree)
     GenTreeCCMP* ccmp = op2->AsCCMP();
     ccmp->gtCondition = cond1;
     // If the first comparison fails, set the condition flags to something that
-    // makes the second one fail.
+    // makes the second one fail as well so that the overall AND failed.
     ccmp->gtFlagsVal = TruthifyingFlags(GenCondition::Reverse(cond2));
     ContainCheckConditionalCompare(ccmp);
 
