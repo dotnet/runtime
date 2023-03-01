@@ -1218,13 +1218,6 @@ mono_wasm_try_unbox_primitive_and_get_type_ref (MonoObject **objRef, void *resul
 	return retval;
 }
 
-// FIXME: Ref
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_array_length (MonoArray *array)
-{
-	return mono_array_length (array);
-}
-
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_array_length_ref (MonoArray **array)
 {

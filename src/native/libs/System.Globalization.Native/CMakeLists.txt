@@ -105,6 +105,7 @@ if (GEN_SHARED_LIB)
     )
 
     target_link_libraries(System.Globalization.Native
+        PRIVATE
         dl
         ${FOUNDATION}
     )
@@ -149,9 +150,6 @@ if(CLR_CMAKE_TARGET_WIN32)
             ${NATIVEGLOBALIZATION_SOURCES}
         )
         target_compile_options(System.Globalization.Native.Aot.GuardCF PRIVATE /GL-)
-
-        target_link_libraries(System.Globalization.Native.Aot ${__LinkLibraries})
-        target_link_libraries(System.Globalization.Native.Aot.GuardCF ${__LinkLibraries})
 
         install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
         install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)

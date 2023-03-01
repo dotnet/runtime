@@ -168,7 +168,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private static bool IsProducedByNativeAOT (CustomAttribute attr)
 		{
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
-			return producedBy is null ? true : ((ProducedBy) producedBy).HasFlag (ProducedBy.NativeAot);
+			return producedBy is null ? true : ((Tool) producedBy).HasFlag (Tool.NativeAot);
 		}
 
 		private static IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
@@ -209,7 +209,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							if ((bool) attr.ConstructorArguments[1].Value)
 								matchedMessages = loggedMessages.Where (m => Regex.IsMatch (m.ToString (), expectedMessage)).ToList ();
 							else
-								matchedMessages = loggedMessages.Where (m => MessageTextContains (m.ToString (), expectedMessage)).ToList (); ;
+								matchedMessages = loggedMessages.Where (m => MessageTextContains (m.ToString (), expectedMessage)).ToList ();
 							Assert.True (
 								matchedMessages.Count > 0,
 								$"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
@@ -405,7 +405,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				var actualOriginToken = new AssemblyQualifiedToken (origin.Value.MemberDefinition);
 				var expectedOriginToken = new AssemblyQualifiedToken (expectedOriginMember);
-				if (actualOriginToken.Equals(expectedOriginToken))
+				if (actualOriginToken.Equals (expectedOriginToken))
 					return true;
 
 				var actualMember = origin.Value.MemberDefinition;
@@ -434,10 +434,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			static bool MessageTextContains (string message, string value)
 			{
-				// This is a workaround for different formatting of methods between ilc and linker/analyzer
+				// This is a workaround for different formatting of methods between ilc and illink/analyzer
 				// Sometimes they're written with a space after comma and sometimes without
 				//    Method(String,String)   - ilc
-				//    Method(String, String)  - linker/analyzer
+				//    Method(String, String)  - illink/analyzer
 				return message.Contains (value) || message.Contains (NameUtils.ConvertSignatureToIlcFormat (value));
 			}
 		}

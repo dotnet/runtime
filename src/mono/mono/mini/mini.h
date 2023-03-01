@@ -1679,9 +1679,6 @@ typedef struct {
 
 	MonoProfilerCallInstrumentationFlags prof_flags;
 	gboolean prof_coverage;
-
-	/* For deduplication */
-	gboolean skip;
 } MonoCompile;
 
 #define MONO_CFG_PROFILE(cfg, flag) \
@@ -1705,7 +1702,6 @@ typedef enum {
 
 typedef enum {
 	MONO_CFG_USES_SIMD_INTRINSICS = 1 << 0,
-	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1
 } MonoSimdIntrinsicsFlags;
 
 typedef struct {
@@ -2938,11 +2934,13 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
+int mini_primitive_type_size (MonoTypeEnum type);
+MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
+
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
-void        mono_simd_simplify_indirection (MonoCompile *cfg);
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
 MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);

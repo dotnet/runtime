@@ -1708,6 +1708,16 @@ mono_dummy_jit_icall_val (gpointer val)
 {
 }
 
+/* Dummy icall place holder function representing runtime init call. */
+/* When used, function will be replaced with a direct icall to a custom */
+/* runtime init function called from start of native-to-managed wrapper. */
+/* This function should never end up being called. */
+void
+mono_dummy_runtime_init_callback (void)
+{
+	g_assert (!"Runtime incorrectly configured to support runtime init callback from native-to-managed wrapper.");
+}
+
 void
 mini_init_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, MonoGSharedMethodInfo *info)
 {
