@@ -16,15 +16,14 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">$(DefineConstants);TARGET_MACCATALYST</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'tvos'">$(DefineConstants);TARGET_TVOS</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <!--<DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>-->
     <!-- ILLinker settings -->
     <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'wasi'">
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.mobile.xml" Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'" />
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'browser'">
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.mobile.xml" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <ILLinkSuppressionsXmls Include="$(ILLinkDirectory)ILLink.Suppressions.Mobile.LibraryBuild.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
