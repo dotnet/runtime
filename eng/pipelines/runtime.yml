@@ -415,8 +415,8 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:Scenario=RunSmokeTestsOnlyForNodeJs
-          extraHelixArgs: /p:Scenario=RunSmokeTestsOnlyForNodeJs
+          extraBuildArgs: /p:RunSmokeTestsOnlyForNodeJs=true
+          extraHelixArgs: /p:RunSmokeTestsOnlyForNodeJs=true
           scenarios:
             - normal
             - WasmTestOnBrowser
@@ -427,8 +427,8 @@ extends:
           platforms:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:Scenario=RunSmokeTestsOnlyForNodeJs
-          extraHelixArgs: /p:Scenario=RunSmokeTestsOnlyForNodeJs
+          extraBuildArgs: /p:RunSmokeTestsOnlyForNodeJs=true
+          extraHelixArgs: /p:RunSmokeTestsOnlyForNodeJs=true
           scenarios:
             - WasmTestOnBrowser
             - WasmTestOnNodeJs
