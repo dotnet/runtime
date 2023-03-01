@@ -228,11 +228,7 @@ public class BuildPublishTests : BuildTestBase
         string id = $"blazor_{config}_{Path.GetRandomFileName()}";
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
-        new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
-                .EnsureSuccessful();
-
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
         await BlazorRunForBuildWithDotnetRun(config);
     }
 
@@ -248,11 +244,7 @@ public class BuildPublishTests : BuildTestBase
         if (aot)
             AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
-        new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .Execute($"publish -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
-                .EnsureSuccessful();
-
+        BlazorPublish(new BlazorBuildOptions(id, config, aot ? NativeFilesType.AOT : NativeFilesType.Relinked));
         await BlazorRunForPublishWithWebServer(config);
     }
 
