@@ -665,12 +665,13 @@ export function generate_wasm_body (
                 break;
             }
 
-            case MintOpcode.MINT_ARRAY_RANK: {
+            case MintOpcode.MINT_ARRAY_RANK:
+            case MintOpcode.MINT_ARRAY_ELEMENT_SIZE: {
                 builder.block();
                 // dest, src
                 append_ldloca(builder, getArgU16(ip, 1), 4, true);
                 append_ldloca(builder, getArgU16(ip, 2), 0);
-                builder.callImport("array_rank");
+                builder.callImport(opcode === MintOpcode.MINT_ARRAY_RANK ? "array_rank" : "a_elesize");
                 // If the array was null we will bail out, otherwise continue
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
@@ -725,6 +726,21 @@ export function generate_wasm_body (
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.UnboxFailed);
+                builder.endBlock();
+                break;
+            }
+
+            case MintOpcode.MINT_NEWSTR: {
+                builder.block();
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                builder.callImport("newstr");
+                // If the newstr operation succeeded, continue, otherwise bailout
+                // Note that this assumes the newstr operation will fail again when the interpreter does it
+                //  (the only reason for a newstr to fail I can think of is an out-of-memory condition)
+                builder.appendU8(WasmOpcode.br_if);
+                builder.appendULeb(0);
+                append_bailout(builder, ip, BailoutReason.AllocFailed);
                 builder.endBlock();
                 break;
             }
