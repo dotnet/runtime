@@ -578,7 +578,7 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                ReadOnlySpan<T> unread = UnreadSpan; // eat the slice to avoid bounds checks
                 for (i = 0; i < unread.Length && unread[i].Equals(value); i++)
                 {
                 }
@@ -610,7 +610,7 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                ReadOnlySpan<T> unread = UnreadSpan; // eat the slice to avoid bounds checks
                 for (i = 0; i < unread.Length && values.IndexOf(unread[i]) != -1; i++)
                 {
                 }
@@ -642,7 +642,7 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                ReadOnlySpan<T> unread = UnreadSpan; // eat the slice to avoid bounds checks
                 for (i = 0; i < unread.Length; i++)
                 {
                     ref readonly T value = ref unread[i];
@@ -679,7 +679,7 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                ReadOnlySpan<T> unread = UnreadSpan; // eat the slice to avoid bounds checks
                 for (i = 0; i < unread.Length; i++)
                 {
                     ref readonly T value = ref unread[i];
@@ -716,7 +716,7 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                ReadOnlySpan<T> unread = UnreadSpan; // eat the slice to avoid bounds checks
                 for (i = 0; i < unread.Length; i++)
                 {
                     ref readonly T value = ref unread[i];
@@ -752,7 +752,7 @@ namespace System.Buffers
                 _currentSpanIndex = 0;
                 _currentSpan = default;
 
-                var position = _sequence.End;
+                SequencePosition position = _sequence.End;
                 _currentPositionObject = position.GetObject();
                 _currentPositionInteger = position.GetInteger();
                 // and mimic default(Position) for next
@@ -830,7 +830,7 @@ namespace System.Buffers
                 // Need to check the next segment
                 while (true)
                 {
-                    if (!_sequence.TryGetBuffer(position, out var nextSegment, out var nextPosition))
+                    if (!_sequence.TryGetBuffer(position, out ReadOnlyMemory<T> nextSegment, out SequencePosition nextPosition))
                     {
                         // Nothing left
                         return false;
