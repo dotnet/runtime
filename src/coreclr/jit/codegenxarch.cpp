@@ -1305,6 +1305,22 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForJTrue: Produce code for a GT_JTRUE node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+    inst_RV_RV(INS_test, reg, reg, genActualType(op));
+    inst_JMP(EJ_jne, compiler->compCurBB->bbJumpDest);
+}
+
+//------------------------------------------------------------------------
 // JumpKindToCmov:
 //   Convert an emitJumpKind to the corresponding cmov instruction.
 //
@@ -1834,6 +1850,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_BT:
             genConsumeOperands(treeNode->AsOp());
             genCodeForCompare(treeNode->AsOp());
+            break;
+
+        case GT_JTRUE:
+            genCodeForJTrue(treeNode->AsOp());
             break;
 
         case GT_JCC:
