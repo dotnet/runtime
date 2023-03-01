@@ -2504,6 +2504,42 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		// and always return false for IsDynamicCodeCompiled
 		if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
 			*op = MINT_LDC_I4_0;
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+	} else if (in_corlib &&
+			!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29) &&
+			(!strcmp (klass_name, "Lzcnt")
+#if defined(TARGET_AMD64)
+			|| (!strcmp (klass_name, "X64") &&
+			m_class_get_nested_in (target_method->klass) &&
+			!strcmp (m_class_get_name (m_class_get_nested_in (target_method->klass)), "Lzcnt"))
+#endif
+			)) {
+		if (!strcmp (tm, "get_IsSupported")) {
+			*op = MINT_LDC_I4_1;
+		} else if (!strcmp (tm, "LeadingZeroCount")) {
+			if (csignature->params [0]->type == MONO_TYPE_U4)
+				*op = MINT_CLZ_I4;
+			else if (csignature->params [0]->type == MONO_TYPE_U8)
+				*op = MINT_CLZ_I8;
+		}
+#elif defined(TARGET_WASM)
+	} else if (in_corlib &&
+			!strncmp ("System.Runtime.Intrinsics.Wasm", klass_name_space, 30) &&
+			!strcmp (klass_name, "WasmBase")) {
+		if (!strcmp (tm, "get_IsSupported")) {
+			*op = MINT_LDC_I4_1;
+		} else if (!strcmp (tm, "LeadingZeroCount")) {
+			if (csignature->params [0]->type == MONO_TYPE_U4 || csignature->params [0]->type == MONO_TYPE_I4)
+				*op = MINT_CLZ_I4;
+			else if (csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8)
+				*op = MINT_CLZ_I8;
+		} else if (!strcmp (tm, "TrailingZeroCount")) {
+			if (csignature->params [0]->type == MONO_TYPE_U4 || csignature->params [0]->type == MONO_TYPE_I4)
+				*op = MINT_CTZ_I4;
+			else if (csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8)
+				*op = MINT_CTZ_I8;
+		}
+#endif
 	} else if (in_corlib &&
 			(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
 			!strncmp ("System.Runtime.Intrinsics.PackedSimd", klass_name_space, 36) ||
