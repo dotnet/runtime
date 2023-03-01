@@ -72,18 +72,28 @@ namespace
             trace::verbose(_X("}"));
         }
     }
+
+    bool deps_file_exists(pal::string_t& deps_path)
+    {
+        if (bundle::info_t::config_t::probe(deps_path) || pal::realpath(&deps_path, /*skip_error_logging*/ true))
+            return true;
+
+        trace::verbose(_X("Dependencies manifest does not exist at [%s]"), deps_path.c_str());
+        return false;
+    }
 }
 
-deps_json_t::rid_fallback_graph_t deps_json_t::get_rid_fallback_graph(pal::string_t& deps_path)
+deps_json_t::rid_fallback_graph_t deps_json_t::get_rid_fallback_graph(const pal::string_t& deps_path)
 {
     rid_fallback_graph_t rid_fallback_graph;
-
     trace::verbose(_X("Getting RID fallback graph for deps file... %s"), deps_path.c_str());
-    if (!bundle::info_t::config_t::probe(deps_path) && !pal::realpath(&deps_path, true))
+
+    pal::string_t deps_path_local = deps_path;
+    if (!deps_file_exists(deps_path_local))
         return rid_fallback_graph;
 
     json_parser_t json;
-    if (!json.parse_file(deps_path))
+    if (!json.parse_file(deps_path_local))
         return rid_fallback_graph;
 
     populate_rid_fallback_graph(json.document(), rid_fallback_graph);
@@ -449,17 +459,16 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 void deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
     m_deps_file = deps_path;
-    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::realpath(&m_deps_file, true);
+    m_file_exists = deps_file_exists(m_deps_file);
 
-    json_parser_t json;
     if (!m_file_exists)
     {
-        // If file doesn't exist, then assume parsed.
-        trace::verbose(_X("Could not locate the dependencies manifest file [%s]. Some libraries may fail to resolve."), deps_path.c_str());
+        // Not existing is valid
         m_valid = true;
         return;
     }
 
+    json_parser_t json;
     if (!json.parse_file(m_deps_file))
         return;
 
