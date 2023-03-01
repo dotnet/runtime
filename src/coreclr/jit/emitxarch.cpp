@@ -832,7 +832,7 @@ bool emitter::emitIsInstructionWritingToReg(instrDesc* id, regNumber reg)
                         break;
                 }
 
-                return PEEPHOLE_CONTINUE;
+                return false;
             }
 
             return true;
