@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Options
@@ -44,9 +43,10 @@ namespace Microsoft.Extensions.Options
         {
             if (result?.ErrorMessage is not null)
             {
-                Errors.Add(result.MemberNames.Any() ?
-                           $"{string.Join(MemberSeparatorString, result.MemberNames)}: {result.ErrorMessage}" :
-                           result.ErrorMessage);
+                string joinedMembers = string.Join(MemberSeparatorString, result.MemberNames);
+                Errors.Add(joinedMembers.Length != 0
+                    ? $"{joinedMembers}: {result.ErrorMessage}"
+                    : result.ErrorMessage);
             }
         }
 
