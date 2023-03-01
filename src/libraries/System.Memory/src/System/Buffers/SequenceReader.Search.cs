@@ -32,7 +32,7 @@ namespace System.Buffers
 
         private bool TryReadToSlow(out ReadOnlySpan<T> span, T delimiter, bool advancePastDelimiter)
         {
-            if (!TryReadToInternal(out ReadOnlySequence<T> sequence, delimiter, advancePastDelimiter, CurrentSpanLength - _currentSpanIndex))
+            if (!TryReadToInternal(out ReadOnlySequence<T> sequence, delimiter, advancePastDelimiter, _currentSpan.Length - _currentSpanIndex))
             {
                 span = default;
                 return false;
@@ -132,7 +132,7 @@ namespace System.Buffers
                     // Found the delimiter. Move to it, slice, then move past it.
                     AdvanceCurrentSpan(index);
 
-                    sequence = Sequence.Slice(copy.Position, Position);
+                    sequence = _sequence.Slice(copy.Position, Position);
                     if (advancePastDelimiter)
                     {
                         Advance(1);
@@ -209,7 +209,7 @@ namespace System.Buffers
                         AdvanceCurrentSpan(index);
                     }
 
-                    sequence = Sequence.Slice(copy.Position, Position);
+                    sequence = _sequence.Slice(copy.Position, Position);
                     if (advancePastDelimiter)
                     {
                         Advance(1);
@@ -286,7 +286,7 @@ namespace System.Buffers
                         Advance(index);
                     }
 
-                    sequence = Sequence.Slice(copy.Position, Position);
+                    sequence = _sequence.Slice(copy.Position, Position);
                     if (advancePastDelimiter)
                     {
                         Advance(1);
@@ -344,7 +344,7 @@ namespace System.Buffers
 
         private bool TryReadToAnySlow(out ReadOnlySpan<T> span, scoped ReadOnlySpan<T> delimiters, bool advancePastDelimiter)
         {
-            if (!TryReadToAnyInternal(out ReadOnlySequence<T> sequence, delimiters, advancePastDelimiter, CurrentSpanLength - _currentSpanIndex))
+            if (!TryReadToAnyInternal(out ReadOnlySequence<T> sequence, delimiters, advancePastDelimiter, _currentSpan.Length - _currentSpanIndex))
             {
                 span = default;
                 return false;
@@ -387,7 +387,7 @@ namespace System.Buffers
                         AdvanceCurrentSpan(index);
                     }
 
-                    sequence = Sequence.Slice(copy.Position, Position);
+                    sequence = _sequence.Slice(copy.Position, Position);
                     if (advancePastDelimiter)
                     {
                         Advance(1);
@@ -481,7 +481,7 @@ namespace System.Buffers
                     // Probably a faster way to do this, potentially by avoiding the Advance in the previous TryReadTo call
                     if (advanced)
                     {
-                        sequence = copy.Sequence.Slice(copy.Consumed, Consumed - copy.Consumed);
+                        sequence = copy._sequence.Slice(copy.Consumed, Consumed - copy.Consumed);
                     }
 
                     if (advancePastDelimiter)
@@ -520,7 +520,7 @@ namespace System.Buffers
                 return false;
             }
 
-            sequence = Sequence.Slice(Position, count);
+            sequence = _sequence.Slice(Position, count);
             if (count != 0)
             {
                 Advance(count);
@@ -578,18 +578,18 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = _currentSpanIndex; i < CurrentSpanLength && Unsafe.Add(ref CurrentSpanStart, i).Equals(value); i++)
+                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                for (i = 0; i < unread.Length && unread[i].Equals(value); i++)
                 {
                 }
 
-                int advanced = i - _currentSpanIndex;
-                if (advanced == 0)
+                if (i == 0)
                 {
                     // Didn't advance at all in this span, exit.
                     break;
                 }
 
-                AdvanceCurrentSpan(advanced);
+                AdvanceCurrentSpan(i);
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
@@ -610,18 +610,18 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = _currentSpanIndex; i < CurrentSpanLength && values.IndexOf(Unsafe.Add(ref CurrentSpanStart, i)) != -1; i++)
+                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                for (i = 0; i < unread.Length && values.IndexOf(unread[i]) != -1; i++)
                 {
                 }
 
-                int advanced = i - _currentSpanIndex;
-                if (advanced == 0)
+                if (i == 0)
                 {
                     // Didn't advance at all in this span, exit.
                     break;
                 }
 
-                AdvanceCurrentSpan(advanced);
+                AdvanceCurrentSpan(i);
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
@@ -642,23 +642,23 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = _currentSpanIndex; i < CurrentSpanLength; i++)
+                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                for (i = 0; i < unread.Length; i++)
                 {
-                    T value = Unsafe.Add(ref CurrentSpanStart, i);
+                    T value = unread[i];
                     if (!value.Equals(value0) && !value.Equals(value1) && !value.Equals(value2) && !value.Equals(value3))
                     {
                         break;
                     }
                 }
 
-                int advanced = i - _currentSpanIndex;
-                if (advanced == 0)
+                if (i == 0)
                 {
                     // Didn't advance at all in this span, exit.
                     break;
                 }
 
-                AdvanceCurrentSpan(advanced);
+                AdvanceCurrentSpan(i);
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
@@ -679,23 +679,23 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = _currentSpanIndex; i < CurrentSpanLength; i++)
+                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                for (i = 0; i < unread.Length; i++)
                 {
-                    T value = Unsafe.Add(ref CurrentSpanStart, i);
+                    T value = unread[i];
                     if (!value.Equals(value0) && !value.Equals(value1) && !value.Equals(value2))
                     {
                         break;
                     }
                 }
 
-                int advanced = i - _currentSpanIndex;
-                if (advanced == 0)
+                if (i == 0)
                 {
                     // Didn't advance at all in this span, exit.
                     break;
                 }
 
-                AdvanceCurrentSpan(advanced);
+                AdvanceCurrentSpan(i);
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
@@ -716,23 +716,23 @@ namespace System.Buffers
             {
                 // Advance past all matches in the current span
                 int i;
-                for (i = _currentSpanIndex; i < CurrentSpanLength; i++)
+                var unread = UnreadSpan; // eat the slice to avoid bounds checks
+                for (i = 0; i < unread.Length; i++)
                 {
-                    T value = Unsafe.Add(ref CurrentSpanStart, i);
+                    T value = unread[i];
                     if (!value.Equals(value0) && !value.Equals(value1))
                     {
                         break;
                     }
                 }
 
-                int advanced = i - _currentSpanIndex;
-                if (advanced == 0)
+                if (i == 0)
                 {
                     // Didn't advance at all in this span, exit.
                     break;
                 }
 
-                AdvanceCurrentSpan(advanced);
+                AdvanceCurrentSpan(i);
 
                 // If we're at position 0 after advancing and not at the End,
                 // we're in a new span and should continue the loop.
@@ -749,10 +749,12 @@ namespace System.Buffers
             if (!End)
             {
                 _consumedAtStartOfCurrentSpan = Length;
-                WipeCurrentSpan();
+                _currentSpanIndex = 0;
+                _currentSpan = default;
 
-                _currentPosition = Sequence.End;
-                _nextPosition = default;
+                var position = _sequence.End;
+                _currentPositionObject = position.GetObject();
+                _currentPositionInteger = position.GetInteger();
             }
         }
 
@@ -767,7 +769,7 @@ namespace System.Buffers
             if (End)
                 return false;
 
-            if (Unsafe.Add(ref CurrentSpanStart, _currentSpanIndex).Equals(next))
+            if (_currentSpan[_currentSpanIndex].Equals(next))
             {
                 if (advancePast)
                 {
@@ -808,38 +810,46 @@ namespace System.Buffers
             Debug.Assert(currentSpan.Length < next.Length);
 
             int fullLength = next.Length;
-            SequencePosition nextPosition = _nextPosition;
-
-            while (next.StartsWith(currentSpan))
+            SequencePosition position = new(_currentPositionObject, _currentPositionInteger);
+            if (_sequence.TryGetBuffer(position, out var nextSegment, out var nextPosition))
             {
-                if (next.Length == currentSpan.Length)
-                {
-                    // Fully matched
-                    if (advancePast)
-                    {
-                        Advance(fullLength);
-                    }
-                    return true;
-                }
+                // no-op removed by compiler; we don't need the first segment, but we
+                // also don't want the compiler creating a hidden local for a discard
+                // (we use this same local *later*)
+                _ = nextSegment; // suppress IDE0059
 
-                // Need to check the next segment
-                while (true)
+                position = nextPosition;
+                while (next.StartsWith(currentSpan))
                 {
-                    if (!Sequence.TryGet(ref nextPosition, out ReadOnlyMemory<T> nextSegment, advance: true))
+                    if (next.Length == currentSpan.Length)
                     {
-                        // Nothing left
-                        return false;
-                    }
-
-                    if (nextSegment.Length > 0)
-                    {
-                        next = next.Slice(currentSpan.Length);
-                        currentSpan = nextSegment.Span;
-                        if (currentSpan.Length > next.Length)
+                        // Fully matched
+                        if (advancePast)
                         {
-                            currentSpan = currentSpan.Slice(0, next.Length);
+                            Advance(fullLength);
                         }
-                        break;
+                        return true;
+                    }
+
+                    // Need to check the next segment
+                    while (true)
+                    {
+                        if (!_sequence.TryGetBuffer(position, out nextSegment, out nextPosition))
+                        {
+                            // Nothing left
+                            return false;
+                        }
+                        position = nextPosition;
+                        if (nextSegment.Length > 0)
+                        {
+                            next = next.Slice(currentSpan.Length);
+                            currentSpan = nextSegment.Span;
+                            if (currentSpan.Length > next.Length)
+                            {
+                                currentSpan = currentSpan.Slice(0, next.Length);
+                            }
+                            break;
+                        }
                     }
                 }
             }
