@@ -677,6 +677,12 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 }
 #endif // TARGET_64BIT
 
+bool emitter::emitIsInstructionWritingToReg(instrDesc* id, regNumber reg)
+{
+    // TODO:
+    return false;
+}
+
 bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
 {
     // Only allow GPRs.
