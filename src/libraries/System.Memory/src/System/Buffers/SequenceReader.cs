@@ -63,13 +63,6 @@ namespace System.Buffers
         /// </summary>
         public readonly ReadOnlySpan<T> CurrentSpan => _currentSpan;
 
-        private void SetCurrentSpan(ReadOnlySpan<T> span)
-        {
-            _consumedAtStartOfCurrentSpan += _currentSpan.Length; // account for previous
-            _currentSpan = span;
-            _currentSpanIndex = 0;
-        }
-
         /// <summary>
         /// The index in the <see cref="CurrentSpan"/>.
         /// </summary>
