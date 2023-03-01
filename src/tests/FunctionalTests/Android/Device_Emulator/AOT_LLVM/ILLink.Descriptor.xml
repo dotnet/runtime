@@ -1,0 +1,8 @@
+<!-- xunit 2.x version is not under development. We make xunit trimming compatible in methods which ILLink cannot track by providing XML descriptor to keep the dependencies -->
+<linker>
+  <assembly fullname="Android.Device_Emulator.Aot_Llvm.Test">
+    <type fullname="Program">
+      <method name="SayHello" />
+    </type>
+  </assembly>
+</linker>

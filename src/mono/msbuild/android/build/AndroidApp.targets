@@ -3,9 +3,9 @@
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <AndroidGenerateAppBundle Condition="'$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
-    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>
-    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
+    <AndroidGenerateAppBundle >true</AndroidGenerateAppBundle>
+    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
+    <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>
   </PropertyGroup>
 
   <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />

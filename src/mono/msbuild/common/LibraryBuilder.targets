@@ -19,7 +19,6 @@
       Assemblies="@(AppAssembliesInternal)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
-      ExtraSymbolsToExport="@(_RuntimeSymbolsToKeep)"
       IsSharedLibrary="$(_IsSharedLibrary)"
       Name="$(AssemblyName)"
       MonoRuntimeHeaders="$(_MonoHeaderPath)"

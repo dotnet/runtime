@@ -54,12 +54,6 @@ public class LibraryBuilderTask : AppBuilderTask
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// Additional symbols for the library to retain outside of what was specified via
-    /// [UnmanagedCallersOnly]
-    /// </summary>
-    public string[] ExtraSymbolsToExport { get; set; } = Array.Empty<string>();
-
-    /// <summary>
     /// Determines if the library is static or shared
     /// </summary>
     public bool IsSharedLibrary
@@ -127,8 +121,8 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
     {
-        List<string> exportedSymbols = new List<string>(ExtraSymbolsToExport);
-        bool hasExports = (exportedSymbols.Count > 0);
+        List<string> exportedSymbols = new List<string>();
+        bool hasExports = false;
 
         foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
         {
@@ -165,7 +159,7 @@ public class LibraryBuilderTask : AppBuilderTask
             WriteLinkerScriptFile(MobileSymbolFileName, exportedSymbols);
             WriteLinkerScriptArg(MobileSymbolFileName, linkerArgs);
         }
-        else if (hasExports && ExtraSymbolsToExport.Length > 0)
+        else if (hasExports && exportedSymbols.Count > 0)
         {
             File.WriteAllText(
                 MobileSymbolFileName,
