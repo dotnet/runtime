@@ -150,7 +150,7 @@ public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICanc
 
     public abstract bool Emit(string destinationFile, Action<Stream> inputProvider);
 
-    public static void GenerateRegisterBundledObjects(string newFunctionName, string callbackFunctionName, ICollection<(string registeredName, string symbol)> files, StreamWriter outputUtf8Writer)
+    public static void GenerateRegisteredBundledObjects(string newFunctionName, string callbackFunctionName, ICollection<(string registeredName, string symbol)> files, StreamWriter outputUtf8Writer)
     {
         outputUtf8Writer.WriteLine($"int {callbackFunctionName}(const char* name, const unsigned char* data, unsigned int size);");
         outputUtf8Writer.WriteLine();
