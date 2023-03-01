@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause, mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint } from "./debug";
 
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
+import { mono_wasm_load_icu_data } from "./icu";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
 import { mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, mono_wasm_invoke_import } from "./invoke-js";
 import { mono_interp_tier_prepare_jiterpreter } from "./jiterpreter";
@@ -93,7 +93,6 @@ export function export_linker(): any {
 
         //  pal_icushim_static.c
         mono_wasm_load_icu_data,
-        mono_wasm_get_icudt_name,
 
         // threading exports, if threading is enabled
         ...mono_wasm_threads_exports,

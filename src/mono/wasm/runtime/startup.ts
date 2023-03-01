@@ -484,10 +484,14 @@ async function instantiate_wasm_module(
 async function _apply_configuration_from_args() {
     try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        mono_wasm_setenv("TZ", tz || "UTC");
+        if (tz) mono_wasm_setenv("TZ", tz);
     } catch {
-        mono_wasm_setenv("TZ", "UTC");
+        console.info("MONO_WASM: failed to detect timezone, will fallback to UTC");
     }
+
+    // create /usr/share folder which is SpecialFolder.CommonApplicationData
+    Module["FS_createPath"]("/", "usr", true, true);
+    Module["FS_createPath"]("/", "usr/share", true, true);
 
     for (const k in config.environmentVariables) {
         const v = config.environmentVariables![k];

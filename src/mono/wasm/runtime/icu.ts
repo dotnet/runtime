@@ -16,14 +16,6 @@ export function mono_wasm_load_icu_data(offset: VoidPtr): boolean {
     return ok;
 }
 
-// Get icudt.dat exact filename that matches given culture, examples:
-//   "ja" -> "icudt_CJK.dat"
-//   "en_US" (or "en-US" or just "en") -> "icudt_EFIGS.dat"
-// etc, see "mono_wasm_get_icudt_name" implementation in pal_icushim_static.c
-export function mono_wasm_get_icudt_name(culture: string): string {
-    return cwraps.mono_wasm_get_icudt_name(culture);
-}
-
 // Performs setup for globalization.
 // @globalizationMode is one of "icu", "invariant", or "auto".
 // "auto" will use "icu" if any ICU data archives have been loaded,

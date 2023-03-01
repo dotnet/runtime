@@ -8261,13 +8261,18 @@ add_patchpoint_data (TransformData *td, int patchpoint_data_index, int native_of
 
 // Generates the final code, after we are done with all the passes
 static void
-generate_compacted_code (TransformData *td)
+generate_compacted_code (InterpMethod *rtm, TransformData *td)
 {
 	guint16 *ip;
 	int size;
 	int patchpoint_data_index = 0;
 	td->relocs = g_ptr_array_new ();
 	InterpBasicBlock *bb;
+#if HOST_BROWSER
+	#define BACKWARD_BRANCH_OFFSETS_SIZE 64
+	unsigned int backward_branch_offsets_count = 0;
+	guint16 backward_branch_offsets[BACKWARD_BRANCH_OFFSETS_SIZE] = { 0 };
+#endif
 
 	// This iteration could be avoided at the cost of less precise size result, following
 	// super instruction pass
@@ -8286,6 +8291,14 @@ generate_compacted_code (TransformData *td)
 		InterpInst *ins = bb->first_ins;
 		bb->native_offset = GPTRDIFF_TO_INT (ip - td->new_code);
 		td->cbb = bb;
+
+#if HOST_BROWSER
+		if (bb->backwards_branch_target && rtm->contains_traces) {
+			if (backward_branch_offsets_count < BACKWARD_BRANCH_OFFSETS_SIZE)
+				backward_branch_offsets[backward_branch_offsets_count++] = ip - td->new_code;
+		}
+#endif
+
 		if (bb->patchpoint_data)
 			patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, bb->native_offset, bb->index);
 		if (bb->emit_patchpoint) {
@@ -8312,6 +8325,16 @@ generate_compacted_code (TransformData *td)
 	handle_relocations (td);
 
 	g_ptr_array_free (td->relocs, TRUE);
+
+#if HOST_BROWSER
+	if (backward_branch_offsets_count > 0) {
+		rtm->backward_branch_offsets = mono_mem_manager_alloc(td->mem_manager, backward_branch_offsets_count * sizeof(guint16));
+		rtm->backward_branch_offsets_count = backward_branch_offsets_count;
+		memcpy(rtm->backward_branch_offsets, backward_branch_offsets, backward_branch_offsets_count * sizeof(guint16));
+	}
+
+	#undef BACKWARD_BRANCH_OFFSETS_SIZE
+#endif
 }
 
 static void
@@ -10644,11 +10667,11 @@ retry:
 		interp_optimize_code (td);
 		interp_alloc_offsets (td);
 #if HOST_BROWSER
-		jiterp_insert_entry_points (td);
+		jiterp_insert_entry_points (rtm, td);
 #endif
 	}
 
-	generate_compacted_code (td);
+	generate_compacted_code (rtm, td);
 
 	if (td->total_locals_size >= G_MAXUINT16) {
 		if (td->disable_inlining) {
