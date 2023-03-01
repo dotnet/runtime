@@ -99,9 +99,6 @@ size_t loh_size_threshold = LARGE_OBJECT_SIZE;
 int compact_ratio = 0;
 #endif //GC_CONFIG_DRIVEN
 
-// See comments in reset_memory.
-BOOL reset_mm_p = TRUE;
-
 #ifdef FEATURE_SVR_GC
 bool g_built_with_svr_gc = true;
 #else
@@ -2256,6 +2253,8 @@ size_t      gc_heap::current_total_committed = 0;
 size_t      gc_heap::committed_by_oh[recorded_committed_bucket_counts];
 
 size_t      gc_heap::current_total_committed_bookkeeping = 0;
+
+BOOL        gc_heap::reset_mm_p = TRUE;
 
 #ifdef FEATURE_EVENT_TRACE
 bool gc_heap::informational_event_enabled_p = false;
@@ -14055,6 +14054,8 @@ gc_heap::init_semi_shared()
         conserve_mem_setting = 9;
 
     dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
+
+    reset_mm_p = TRUE;
 
     ret = 1;
 
@@ -32569,14 +32570,6 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address)
         return tree;
 }
 
-#ifdef FEATURE_BASICFREEZE
-bool gc_heap::frozen_object_p (Object* obj)
-{
-    heap_segment* seg = seg_mapping_table_segment_of ((uint8_t*)obj);
-    return heap_segment_read_only_p (seg);
-}
-#endif // FEATURE_BASICFREEZE
-
 void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 {
     uint8_t* old_address = *pold_address;
@@ -42069,7 +42062,7 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
     return obj;
 }
 
-void reset_memory (uint8_t* o, size_t sizeo)
+void gc_heap::reset_memory (uint8_t* o, size_t sizeo)
 {
     if (gc_heap::use_large_pages_p)
         return;
@@ -46362,7 +46355,6 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
 } while (false)
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-
 // Allocate small object with an alignment requirement of 8-bytes.
 Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags)
 {
@@ -49079,7 +49071,7 @@ inline void testGCShadow(Object** ptr)
         {
 #ifdef FEATURE_BASICFREEZE
             // Write barriers for stores of references to frozen objects may be optimized away.
-            if (!gc_heap::frozen_object_p(*ptr))
+            if (!g_theGCHeap->IsInFrozenSegment (*ptr))
 #endif // FEATURE_BASICFREEZE
             {
                 _ASSERTE(!"Pointer updated without using write barrier");

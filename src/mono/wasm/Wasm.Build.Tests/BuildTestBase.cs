@@ -662,7 +662,6 @@ namespace Wasm.Build.Tests
             var filesToExist = new List<string>()
             {
                 mainJS,
-                "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
                 "dotnet.js"
