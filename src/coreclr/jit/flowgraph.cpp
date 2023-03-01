@@ -132,6 +132,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     JITDUMP("dynamic expansion, needs size check.\n")
                 }
 
+                if (block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP)
+                {
+                    // Test
+                    continue;
+                }
+
+                auto debugInfo = nextStmt->GetDebugInfo();
+
                 assert(runtimeLookup.indirections != 0);
                 assert(runtimeLookup.testForNull);
 
@@ -169,6 +177,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     unsigned const tmpNum   = lvaGrabTemp(false DEBUGARG("spilling expr"));
                     lvaTable[tmpNum].lvType = expr->TypeGet();
                     Statement* asgStmt      = fgNewStmtAtEnd(prevBb, gtNewTempAssign(tmpNum, expr));
+                    asgStmt->SetDebugInfo(debugInfo);
                     gtSetStmtInfo(asgStmt);
                     fgSetStmtSeq(asgStmt);
                     return gtNewLclvNode(tmpNum, expr->TypeGet());
@@ -252,6 +261,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 nullcheckOp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                 gtSetEvalOrder(nullcheckOp);
                 Statement* nullcheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp));
+                nullcheckStmt->SetDebugInfo(debugInfo);
                 gtSetStmtInfo(nullcheckStmt);
                 fgSetStmtSeq(nullcheckStmt);
                 fgInsertStmtAtEnd(nullcheckBb, nullcheckStmt);
@@ -262,8 +272,9 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 GenTreeCall* fallbackCall = gtCloneExpr(call)->AsCall();
                 assert(ctxTree->OperIs(GT_LCL_VAR));
-                fallbackCall->gtArgs.GetArgByIndex(0)->SetLateNode(gtClone(ctxTree));
+                //fallbackCall->gtArgs.GetArgByIndex(0)->SetLateNode(gtClone(ctxTree));
                 Statement* asgFallbackStmt = fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), fallbackCall));
+                asgFallbackStmt->SetDebugInfo(debugInfo);
                 fgInsertStmtAtBeg(fallbackBb, asgFallbackStmt);
                 gtSetStmtInfo(asgFallbackStmt);
                 fgSetStmtSeq(asgFallbackStmt);
@@ -274,6 +285,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fastPathBb->bbFlags |= BBF_INTERNAL;
                 Statement* asgFastPathValueStmt =
                     fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(fastPathValue)));
+                asgFastPathValueStmt->SetDebugInfo(debugInfo);
                 fgInsertStmtAtBeg(fastPathBb, asgFastPathValueStmt);
                 gtSetStmtInfo(asgFastPathValueStmt);
                 fgSetStmtSeq(asgFastPathValueStmt);
@@ -322,6 +334,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     sizeCheck->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                     gtSetEvalOrder(sizeCheck);
                     Statement* sizeCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck));
+                    sizeCheckStmt->SetDebugInfo(debugInfo);
                     gtSetStmtInfo(sizeCheckStmt);
                     fgSetStmtSeq(sizeCheckStmt);
                     fgInsertStmtAtEnd(sizeCheckBb, sizeCheckStmt);
@@ -418,13 +431,19 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         }
     }
 
-#ifdef DEBUG
-    if (verbose && (result == PhaseStatus::MODIFIED_EVERYTHING))
+    if (result == PhaseStatus::MODIFIED_EVERYTHING)
     {
-        printf("\n*************** After fgExpandRuntimeLookups()\n");
-        fgDispBasicBlocks(true);
-    }
+        fgReorderBlocks(/* useProfileData */ false);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\n*************** After fgExpandRuntimeLookups()\n");
+            fgDispBasicBlocks(true);
+        }
 #endif
+    }
 
     return result;
 }

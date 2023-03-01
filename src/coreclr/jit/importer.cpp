@@ -1872,10 +1872,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark1"));
 
-    // Extract the handle
-    GenTree* handleForNullCheck = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-    handleForNullCheck->gtFlags |= GTF_IND_NONFAULTING;
-
     // Call the helper
     // - Setup argNode with the pointer to the signature returned by the lookup
     assert(pRuntimeLookup->signature != nullptr);
