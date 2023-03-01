@@ -434,6 +434,11 @@ namespace Internal.TypeSystem
                 layoutMetadata.Size,
                 out instanceByteSizeAndAlignment);
 
+            if (type.IsValueArray)
+            {
+                AdjustForValueArray(type, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+            }
+
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
@@ -447,6 +452,37 @@ namespace Internal.TypeSystem
             computedLayout.LayoutAbiStable = layoutAbiStable;
 
             return computedLayout;
+        }
+
+        private static void AdjustForValueArray(MetadataType type, ref SizeAndAlignment instanceByteSizeAndAlignment, ref SizeAndAlignment instanceSizeAndAlignment)
+        {
+            int repeat = type.GetValueArrayLength();
+
+            if (repeat <= 0)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+            }
+
+            if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
+            {
+                long size = instanceByteSizeAndAlignment.Size.AsInt;
+                size *= repeat;
+
+                // matching the max size validation in MethodTableBuilder
+                // see: FIELD_OFFSET_LAST_REAL_OFFSET
+                const int maxSize = ((1 << 27) - 1) - 6;
+                if (size > maxSize)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, type);
+                }
+
+                instanceByteSizeAndAlignment.Size = new LayoutInt((int)size);
+            }
+
+            if (!instanceSizeAndAlignment.Size.IsIndeterminate)
+            {
+                instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
+            }
         }
 
         protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8, bool requiresAlignedBase)
@@ -753,33 +789,7 @@ namespace Internal.TypeSystem
 
             if (type.IsValueArray)
             {
-                int repeat = type.GetValueArrayLength();
-
-                if (repeat <= 0)
-                {
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                }
-
-                if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
-                {
-                    long size = instanceByteSizeAndAlignment.Size.AsInt;
-                    size *= repeat;
-
-                    // matching the max size validation in MethodTableBuilder
-                    // see: FIELD_OFFSET_LAST_REAL_OFFSET
-                    const int maxSize = ((1 << 27) - 1) - 6;
-                    if (size > maxSize)
-                    {
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, type);
-                    }
-
-                    instanceByteSizeAndAlignment.Size = new LayoutInt((int)size);
-                }
-
-                if (!instanceSizeAndAlignment.Size.IsIndeterminate)
-                {
-                    instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
-                }
+                AdjustForValueArray(type, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout

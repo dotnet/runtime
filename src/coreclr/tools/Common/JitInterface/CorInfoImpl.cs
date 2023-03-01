@@ -2246,6 +2246,7 @@ namespace Internal.JitInterface
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
+            bool isValueArray = type.IsValueArray;
 
             foreach (var field in type.GetFields())
             {
@@ -2286,6 +2287,21 @@ namespace Internal.JitInterface
                 else
                 {
                     result += MarkGcField(fieldGcPtrs, gcType);
+                }
+
+                if (isValueArray)
+                {
+                    Debug.Assert(field.Offset.AsInt == 0);
+                    int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;
+                    int elementLayoutSize = fieldType.GetElementSize().AsInt / PointerSize;
+                    for (int offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                    {
+                        Buffer.MemoryCopy(gcPtrs, gcPtrs + offset, elementLayoutSize, elementLayoutSize);
+                        result += elementLayoutSize;
+                    }
+
+                    // value array has only one element field
+                    break;
                 }
             }
             return result;
