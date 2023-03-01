@@ -18,6 +18,7 @@ endif()
 set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_WASICC_FLAGS})
 
 target_link_libraries(dotnet
+    PRIVATE
     ${CMAKE_SYSROOT}/lib/wasm32-wasi/libc++.a
     ${CMAKE_SYSROOT}/lib/wasm32-wasi/libc++abi.a
     ${ICU_LIB_DIR}/libicudata.a
@@ -30,6 +31,7 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmono-ee-interp.a
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
+    ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
 )
@@ -39,7 +41,7 @@ set_target_properties(dotnet PROPERTIES
     LINK_FLAGS "@${NATIVE_BIN_DIR}/src/wasi-default.rsp @${NATIVE_BIN_DIR}/src/wasi-link.rsp ${CONFIGURATION_LINK_FLAGS} "
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
-set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}${CMAKE_CXX_FLAGS}")  
+set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}${CMAKE_CXX_FLAGS}")
 
 #TODOWASI wasm-opt
 

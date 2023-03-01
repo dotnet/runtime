@@ -18,7 +18,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void BuildWithSIMD_NoAOT_ShouldRelink(BuildArgs buildArgs, RunHost host, string id)
+        public void BuildWithSIMD_NoAOT_ShouldNotRelink(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"sim_with_workload_no_aot";
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -29,7 +29,7 @@ namespace Wasm.Build.Tests
                                     new BuildProjectOptions(
                                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
                                         Publish: false,
-                                        DotnetWasmFromRuntimePack: false));
+                                        DotnetWasmFromRuntimePack: true));
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out _))
             {

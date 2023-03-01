@@ -68,6 +68,7 @@ void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 char *mono_method_full_name (MonoMethod *method, int signature);
+extern void mono_wasm_register_timezones_bundle();
 
 static void mono_wasm_init_finalizer_thread (void);
 
@@ -537,6 +538,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
+	mono_wasm_register_timezones_bundle();
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
@@ -1216,13 +1218,6 @@ mono_wasm_try_unbox_primitive_and_get_type_ref (MonoObject **objRef, void *resul
 	retval = _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (*objRef, result, result_capacity);
 	MONO_EXIT_GC_UNSAFE;
 	return retval;
-}
-
-// FIXME: Ref
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_array_length (MonoArray *array)
-{
-	return mono_array_length (array);
 }
 
 EMSCRIPTEN_KEEPALIVE int
