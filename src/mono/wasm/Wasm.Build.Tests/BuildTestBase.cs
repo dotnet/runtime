@@ -932,16 +932,20 @@ namespace Wasm.Build.Tests
             File.WriteAllText(counterRazorPath, oldContent + additionalCode);
         }
 
+        // Keeping these methods with explicit Build/Publish in the name
+        // so in the test code it is evident which is being run!
         public Task BlazorRunForBuildWithDotnetRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
             => BlazorRunTest($"run -c {config} {extraArgs}", _projectDir!, test);
-
 
         public Task BlazorRunForPublishWithWebServer(string config, Func<IPage, Task>? test=null, string extraArgs="")
             => BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files {extraArgs}",
                              Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(config, forPublish: true), "..")),
                              test);
 
-        public async Task BlazorRunTest(string runArgs, string workingDirectory, Func<IPage, Task>? test=null)
+        public async Task BlazorRunTest(string runArgs,
+                                        string workingDirectory,
+                                        Func<IPage, Task>? test = null,
+                                        bool detectRuntimeFailures = true)
         {
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(workingDirectory);
@@ -965,6 +969,12 @@ namespace Wasm.Build.Tests
                 if (EnvironmentVariables.ShowBuildOutput)
                     Console.WriteLine($"[{msg.Type}] {msg.Text}");
                 _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+
+                if (detectRuntimeFailures)
+                {
+                    if (msg.Text.Contains("[MONO] * Assertion") || msg.Text.Contains("Error: [MONO] "))
+                        throw new XunitException($"Detected a runtime failure at line: {msg.Text}");
+                }
             }
         }
 
