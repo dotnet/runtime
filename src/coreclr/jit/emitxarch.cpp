@@ -756,17 +756,17 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
             case INS_l_jg: 
                 return PEEPHOLE_CONTINUE;
 
-            case INS_mov:
-            case INS_movsx:
-            case INS_movzx:
-            {
-                if ((id->idReg1() == reg1) || (id->idReg1() == reg2))
-                {
-                    return PEEPHOLE_ABORT;
-                }
+            //case INS_mov:
+            //case INS_movsx:
+            //case INS_movzx:
+            //{
+            //    if ((id->idReg1() == reg1) || (id->idReg1() == reg2))
+            //    {
+            //        return PEEPHOLE_ABORT;
+            //    }
 
-                return PEEPHOLE_CONTINUE;
-            }
+            //    return PEEPHOLE_CONTINUE;
+            //}
 
             case INS_cmp:
             {
