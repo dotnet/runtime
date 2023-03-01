@@ -30,7 +30,16 @@ inline bool emitter::instrIsExtendedReg3opImul(instruction ins)
 /* static */
 inline bool emitter::instrHasImplicitRegPairDest(instruction ins)
 {
+    // These instructions write to RAX and RDX.
     return (ins == INS_mulEAX) || (ins == INS_imulEAX) || (ins == INS_div) || (ins == INS_idiv);
+}
+
+/* static */
+inline bool emitter::instrHasImplicitRegSingleDest(instruction ins)
+{
+    // 'cdq' writes to RDX.
+    // 'cwde' and 'cmpxchg' writes to RAX.
+    return (ins == INS_cdq) || (ins == INS_cwde) || (ins == INS_cmpxchg);
 }
 
 // Because we don't actually have support for encoding these 3-op
