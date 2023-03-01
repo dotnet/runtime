@@ -494,7 +494,7 @@ namespace System.Net.Http
             {
                 if (entry.Value.CleanCacheAndDisposeIfUnused())
                 {
-                    _pools.TryRemove(entry.Key, out HttpConnectionPool _);
+                    _pools.TryRemove(entry.Key, out HttpConnectionPool? _);
                 }
             }
 
