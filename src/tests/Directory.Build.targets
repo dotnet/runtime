@@ -571,6 +571,10 @@
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\index.html"
+          TargetDir="runtime-test/"/>
+
+        <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
     </ItemGroup>
@@ -641,12 +645,15 @@
   <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
          rpath so that the test can load its native library dependencies if there's any -->
-    <IlcRPath Condition="'$(TargetOS)' != 'osx'">$ORIGIN/..</IlcRPath>
-    <IlcRPath Condition="'$(TargetOS)' == 'osx'">@executable_path/..</IlcRPath>
+    <IlcRPath Condition="'$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true'">@executable_path/..</IlcRPath>
+    <IlcRPath Condition="'$(IlcRPath)' == ''">$ORIGIN/..</IlcRPath>
 
-    <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only"
-      Microsoft.NETCore.Native.targets expect IlcHostArch to be set but it doesn't have to -->
+    <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only" -->
     <DisableUnsupportedError>true</DisableUnsupportedError>
+
+    <!-- The default TrimMode in the SDK is full. But trimming most of the tests would just make them fail,
+         so the default for the test tree is partial. -->
+    <TrimMode Condition="'$(EnableAggressiveTrimming)' != 'true'">partial</TrimMode>
 
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
@@ -665,6 +672,9 @@
 
     <!-- xunit calls MakeGenericType to check if something is IEquatable -->
     <IlcArg Condition="'$(EagerlyValidateTypeConstruction)' != 'false'" Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
+
+    <!-- Bump the generic cycle tolerance. There's at least one test with a cycle that is reachable at runtime to depth 6 -->
+    <IlcArg Include="--maxgenericcycle:7" />
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />

@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.JavaScript
     /// This attribute is meaningless if the source generator associated with it is not enabled.
     /// The current built-in source generator only supports C# and only supplies an implementation when applied to static, non-partial, or non-generic methods.
     /// applied to static, non-partial, non-generic methods.
-    /// Exported methods cannot be trimmed by the linker.
+    /// Exported methods cannot be trimmed by the ILLink.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     [SupportedOSPlatform("browser")]

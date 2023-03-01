@@ -368,17 +368,9 @@ void BasicBlock::dspBlockILRange() const
 //
 void BasicBlock::dspFlags()
 {
-    if (bbFlags & BBF_VISITED)
-    {
-        printf("v ");
-    }
     if (bbFlags & BBF_MARKED)
     {
         printf("m ");
-    }
-    if (bbFlags & BBF_CHANGED)
-    {
-        printf("! ");
     }
     if (bbFlags & BBF_REMOVED)
     {
@@ -1515,6 +1507,9 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     static_assert_no_msg(BasicBlock::MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
 
     block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
+
+    block->bbPreorderNum  = 0;
+    block->bbPostorderNum = 0;
 
     return block;
 }

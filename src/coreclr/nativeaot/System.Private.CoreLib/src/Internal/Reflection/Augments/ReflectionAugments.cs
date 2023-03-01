@@ -48,7 +48,7 @@ namespace Internal.Reflection.Augments
             {
                 // Type exists in metadata only. Aside from the enums, there is no chance a type with a TypeCode would not have an MethodTable,
                 // so if it's not an enum, return the default.
-                if (!type.IsEnum)
+                if (!type.IsEnum || type.IsGenericParameter)
                     return TypeCode.Object;
                 Type underlyingType = Enum.GetUnderlyingType(type);
                 eeType = underlyingType.TypeHandle.ToEETypePtr();

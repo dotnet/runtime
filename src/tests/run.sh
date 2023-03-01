@@ -95,6 +95,9 @@ do
         loongarch64)
             buildArch="loongarch64"
             ;;
+        riscv64)
+            buildArch="riscv64"
+            ;;
         wasm)
             buildArch="wasm"
             ;;

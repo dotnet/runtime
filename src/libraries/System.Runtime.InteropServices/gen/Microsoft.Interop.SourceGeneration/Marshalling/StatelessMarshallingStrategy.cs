@@ -82,11 +82,19 @@ namespace Microsoft.Interop
             }
 
             // <nativeIdentifier> = <convertToUnmanaged>;
-            yield return ExpressionStatement(
-                AssignmentExpression(
+            var assignment = AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(nativeIdentifier),
-                    convertToUnmanaged));
+                    convertToUnmanaged);
+
+
+            if (_unmanagedType is PointerTypeInfo pointer)
+            {
+                var rewriter = new PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
+                assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
+
+            }
+            yield return ExpressionStatement(assignment);
         }
 
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context)

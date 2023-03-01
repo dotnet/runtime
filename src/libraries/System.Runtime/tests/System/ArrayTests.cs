@@ -4780,6 +4780,8 @@ namespace System.Tests
     [Collection(nameof(DisableParallelization))]
     public class DangerousArrayTests
     {
+        static readonly GCMemoryInfo memoryInfo = GC.GetGCMemoryInfo();
+
         [OuterLoop] // Allocates large array
         [ConditionalFact]
         public static void Copy_LargeMultiDimensionalArray()
@@ -4790,11 +4792,11 @@ namespace System.Tests
                 throw new SkipTestException("Unable to allocate enough memory");
             }
 
-            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            if (memoryInfo.TotalAvailableMemoryBytes < 4_000_000_000 )
             {
                 // On these platforms, occasionally the OOM Killer will terminate the
                 // tests when they're using ~1GB, before they complete.
-                throw new SkipTestException("Prone to OOM killer");
+                throw new SkipTestException($"Prone to OOM killer. {memoryInfo.TotalAvailableMemoryBytes} is available.");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
@@ -4816,11 +4818,11 @@ namespace System.Tests
                 throw new SkipTestException("Unable to allocate enough memory");
             }
 
-            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            if (memoryInfo.TotalAvailableMemoryBytes < 4_000_000_000 )
             {
                 // On these platforms, occasionally the OOM Killer will terminate the
                 // tests when they're using ~1GB, before they complete.
-                throw new SkipTestException("Prone to OOM killer");
+                throw new SkipTestException($"Prone to OOM killer. ${memoryInfo.TotalAvailableMemoryBytes} is available.");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);

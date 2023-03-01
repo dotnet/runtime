@@ -10901,9 +10901,16 @@ field_access_end:
 					} else {
 						EMIT_NEW_PCONST (cfg, ins, handle);
 					}
+
 					EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, ins->dreg);
 					EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
+					ins->opcode = OP_LDTOKEN_FIELD;
+					ins->inst_c0 = n;
+					ins->inst_p1 = handle;
+
+					cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+					cfg->cbb->needs_decompose = TRUE;
 				}
 			}
 
@@ -12640,6 +12647,7 @@ mono_op_no_side_effects (int opcode)
 	case OP_VZERO:
 	case OP_XZERO:
 	case OP_XONES:
+	case OP_XCONST:
 	case OP_ICONST:
 	case OP_I8CONST:
 	case OP_ADD_IMM:
@@ -12706,11 +12714,6 @@ mono_handle_global_vregs (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 
 	vreg_to_bb = (gint32 *)mono_mempool_alloc0 (cfg->mempool, sizeof (gint32*) * cfg->next_vreg + 1);
-
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	if (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION)
-		mono_simd_simplify_indirection (cfg);
-#endif
 
 	/* Find local vregs used in more than one bb */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {

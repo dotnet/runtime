@@ -11,36 +11,22 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal sealed class JsonParameterInfo<T> : JsonParameterInfo
     {
-        public T TypedDefaultValue { get; private set; } = default!;
+        public new JsonConverter<T> EffectiveConverter => MatchingProperty.EffectiveConverter;
+        public new JsonPropertyInfo<T> MatchingProperty { get; }
+        public new T? DefaultValue { get; }
 
-        public override void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
+        public JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo<T> matchingPropertyInfo)
+            : base(parameterInfoValues, matchingPropertyInfo)
         {
-            base.Initialize(parameterInfo, matchingProperty, options);
-            InitializeDefaultValue(matchingProperty);
-        }
+            Debug.Assert(parameterInfoValues.ParameterType == typeof(T));
+            Debug.Assert(matchingPropertyInfo.IsConfigured);
 
-        private void InitializeDefaultValue(JsonPropertyInfo matchingProperty)
-        {
-            Debug.Assert(ClrInfo.ParameterType == matchingProperty.PropertyType);
+            MatchingProperty = matchingPropertyInfo;
+            DefaultValue = parameterInfoValues.HasDefaultValue && parameterInfoValues.DefaultValue is not null
+                ? (T)parameterInfoValues.DefaultValue
+                : default;
 
-            if (ClrInfo.HasDefaultValue)
-            {
-                object? defaultValue = ClrInfo.DefaultValue;
-
-                if (defaultValue == null && !matchingProperty.PropertyTypeCanBeNull)
-                {
-                    DefaultValue = TypedDefaultValue;
-                }
-                else
-                {
-                    DefaultValue = defaultValue;
-                    TypedDefaultValue = (T)defaultValue!;
-                }
-            }
-            else
-            {
-                DefaultValue = TypedDefaultValue;
-            }
+            base.DefaultValue = DefaultValue;
         }
     }
 }

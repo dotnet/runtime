@@ -54,6 +54,7 @@ const initialRuntimeHelpers: Partial<RuntimeHelpers> =
     mono_wasm_load_runtime_done: false,
     mono_wasm_bindings_is_ready: false,
     maxParallelDownloads: 16,
+    enableDownloadRetry: true,
     config: {
         environmentVariables: {},
     },

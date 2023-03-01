@@ -46,7 +46,6 @@ function initializeImportsAndExports(
     Object.assign(exports.mono, export_mono_api());
     Object.assign(exports.binding, export_binding_api());
     Object.assign(exports.internal, export_internal());
-    Object.assign(exports.internal, export_internal());
     const API = export_api();
     __linker_exports = export_linker();
     Object.assign(exportedRuntimeAPI, {

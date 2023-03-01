@@ -77,12 +77,13 @@ FlowEdge* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, 
 // fgAddRefPred: Increment block->bbRefs by one and add "blockPred" to the predecessor list of "block".
 //
 // Arguments:
+//    initializingPreds -- Optional (default: false). Only set to "true" when the initial preds computation is
+//                         happening.
+//
 //    block     -- A block to operate on.
 //    blockPred -- The predecessor block to add to the predecessor list.
 //    oldEdge   -- Optional (default: nullptr). If non-nullptr, and a new edge is created (and the dup count
 //                 of an existing edge is not just incremented), the edge weights are copied from this edge.
-//    initializingPreds -- Optional (default: false). Only set to "true" when the initial preds computation is
-//                         happening.
 //
 // Return Value:
 //    The flow edge representing the predecessor.
@@ -94,10 +95,8 @@ FlowEdge* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, 
 //    -- fgModified is set if a new flow edge is created (but not if an existing flow edge dup count is incremented),
 //       indicating that the flow graph shape has changed.
 //
-FlowEdge* Compiler::fgAddRefPred(BasicBlock* block,
-                                 BasicBlock* blockPred,
-                                 FlowEdge*   oldEdge /* = nullptr */,
-                                 bool        initializingPreds /* = false */)
+template <bool initializingPreds>
+FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge /* = nullptr */)
 {
     assert(block != nullptr);
     assert(blockPred != nullptr);
@@ -226,6 +225,14 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block,
 
     return flow;
 }
+
+// Add explicit instantiations.
+template FlowEdge* Compiler::fgAddRefPred<false>(BasicBlock* block,
+                                                 BasicBlock* blockPred,
+                                                 FlowEdge*   oldEdge /* = nullptr */);
+template FlowEdge* Compiler::fgAddRefPred<true>(BasicBlock* block,
+                                                BasicBlock* blockPred,
+                                                FlowEdge*   oldEdge /* = nullptr */);
 
 //------------------------------------------------------------------------
 // fgRemoveRefPred: Decrements the reference count of a predecessor edge from "blockPred" to "block",

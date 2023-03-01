@@ -18,10 +18,10 @@ namespace System.Security.Cryptography
         private readonly ICryptoTransform _transform;
         private byte[] _inputBuffer;  // read from _stream before _Transform
         private int _inputBufferIndex;
-        private int _inputBlockSize;
+        private readonly int _inputBlockSize;
         private byte[] _outputBuffer; // buffered output of _Transform
         private int _outputBufferIndex;
-        private int _outputBlockSize;
+        private readonly int _outputBlockSize;
         private bool _canRead;
         private bool _canWrite;
         private bool _finalBlockTransformed;
@@ -249,10 +249,10 @@ namespace System.Security.Cryptography
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+            TaskToAsyncResult.End<int>(asyncResult);
 
         public override int ReadByte()
         {
@@ -488,10 +488,10 @@ namespace System.Security.Cryptography
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         public override void Write(byte[] buffer, int offset, int count)
         {

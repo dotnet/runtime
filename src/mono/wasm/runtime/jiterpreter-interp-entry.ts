@@ -13,7 +13,8 @@ import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, counters, getRawCwrap, importDef,
     getWasmFunctionTable, recordFailure, getOptions,
-    JiterpreterOptions, shortNameBase
+    JiterpreterOptions, shortNameBase,
+    getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -39,11 +40,10 @@ typedef struct {
 } JiterpEntryDataHeader;
 */
 
-const // offsetOfStack = 12,
+const
     maxInlineArgs = 16,
     // just allocate a bunch of extra space
-    sizeOfJiterpEntryData = 64,
-    offsetOfRMethod = 0;
+    sizeOfJiterpEntryData = 64;
 
 const maxJitQueueLength = 4,
     queueFlushDelayMs = 10;
@@ -541,7 +541,7 @@ function generate_wasm_body (
 
     // Store the cleaned up rmethod value into the data.rmethod field of the scratch buffer
     builder.appendU8(WasmOpcode.i32_store);
-    builder.appendMemarg(offsetOfRMethod, 0); // data.rmethod
+    builder.appendMemarg(getMemberOffset(JiterpMember.Rmethod), 0); // data.rmethod
 
     // prologue takes data->rmethod and initializes data->context, then returns a value for sp_args
     // prologue also performs thread attach

@@ -185,12 +185,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_PropertyInfoImmutable()
-        {
-            throw new InvalidOperationException(SR.PropertyInfoImmutable);
-        }
-
-        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializerPropertyNameConflict(Type type, string propertyName)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameConflict, type, propertyName));

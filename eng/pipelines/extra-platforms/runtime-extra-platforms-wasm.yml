@@ -200,6 +200,8 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
+        - wasi_wasm
+        - wasi_wasm_win
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
@@ -241,6 +243,7 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      runOnlyOnWasmOnlyPipelines: true
 
   # Disable for now
   #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
