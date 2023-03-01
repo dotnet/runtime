@@ -16,7 +16,7 @@ namespace System.Net
     ///     Provides an Internet Protocol (IP) address.
     ///   </para>
     /// </devdoc>
-    public class IPAddress
+    public class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>
     {
         public static readonly IPAddress Any = new ReadOnlyIPAddress(new byte[] { 0, 0, 0, 0 });
         public static readonly IPAddress Loopback = new ReadOnlyIPAddress(new byte[] { 127, 0, 0, 1 });
@@ -236,6 +236,14 @@ namespace System.Net
             return (address != null);
         }
 
+        static bool IParsable<IPAddress>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result) =>
+            // provider is explicitly ignored
+            TryParse(s, out result);
+
+        static bool ISpanParsable<IPAddress>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result) =>
+            // provider is explicitly ignored
+            TryParse(s, out result);
+
         public static IPAddress Parse(string ipString)
         {
             ArgumentNullException.ThrowIfNull(ipString);
@@ -247,6 +255,14 @@ namespace System.Net
         {
             return IPAddressParser.Parse(ipSpan, tryParse: false)!;
         }
+
+        static IPAddress ISpanParsable<IPAddress>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) =>
+            // provider is explicitly ignored
+            Parse(s);
+
+        static IPAddress IParsable<IPAddress>.Parse(string s, IFormatProvider? provider) =>
+            // provider is explicitly ignored
+            Parse(s);
 
         public bool TryWriteBytes(Span<byte> destination, out int bytesWritten)
         {
@@ -386,12 +402,20 @@ namespace System.Net
                 IPAddressParser.IPv4AddressToString(PrivateAddress) :
                 IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId);
 
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) =>
+            // format and provider are explicitly ignored
+            ToString();
+
         public bool TryFormat(Span<char> destination, out int charsWritten)
         {
             return IsIPv4 ?
                 IPAddressParser.IPv4AddressToString(PrivateAddress, destination, out charsWritten) :
                 IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId, destination, out charsWritten);
         }
+
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            // format and provider are explicitly ignored
+            TryFormat(destination, out charsWritten);
 
         public static long HostToNetworkOrder(long host)
         {
