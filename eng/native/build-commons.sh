@@ -544,6 +544,7 @@ if [ -z "$__OutputRid" ]; then
         __OutputRid="$__PortableOS-$__TargetArch"
     fi
 fi
+export __OutputRid
 echo "__OutputRid: ${__OutputRid}"
 
 # When the host runs on an unknown rid, it falls back to the output rid

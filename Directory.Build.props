@@ -179,6 +179,7 @@
   <!-- _portableOS is the the portable OS corresponding to the the target platform. -->
   <PropertyGroup Label="CalculatePortableOS">
     <_portableOS Condition="'$(_portableOS)' == ''">$(TargetOS.ToLowerInvariant())</_portableOS>
+    <_portableOS Condition="'$(_portableOS)' == 'anyos'">$(__PortableOS)</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'windows'">win</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableOS)' == 'linux-musl'">linux-musl</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableOS)' == 'linux-bionic'">linux-bionic</_portableOS>
