@@ -134,7 +134,7 @@ initDistroRid()
 
     local passedRootfsDir=""
     local targetOs="$1"
-    local buildArch="$2"
+    local targetArch="$2"
     local isCrossBuild="$3"
     local isPortableBuild="$4"
 
@@ -142,7 +142,7 @@ initDistroRid()
     if [[ $isCrossBuild == 1 && "$targetOs" != "osx" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
-    initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
+    initDistroRidGlobal "${targetOs}" "${targetArch}" "${isPortableBuild}" "${passedRootfsDir}"
 }
 
 showSubsetHelp()
@@ -286,6 +286,14 @@ while [[ $# > 0 ]]; do
           os="illumos" ;;
         solaris)
           os="solaris" ;;
+        linux-bionic)
+          os="linux"
+          __PortableOS=linux-bionic
+          ;;
+        linux-musl)
+          os="linux-musl"
+          __PortableOS=linux-musl
+          ;;
         *)
           echo "Unsupported target OS '$2'."
           echo "The allowed values are windows, linux, freebsd, osx, maccatalyst, tvos, tvossimulator, ios, iossimulator, android, browser, wasi, illumos and solaris."
@@ -516,7 +524,7 @@ if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError 0"
 fi
 
-initDistroRid $os $arch $crossBuild $portableBuild
+initDistroRid "$os" "$arch" "$crossBuild" "$portableBuild"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.

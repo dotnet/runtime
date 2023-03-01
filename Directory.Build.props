@@ -171,69 +171,43 @@
     <WasmtimeDir>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
   </PropertyGroup>
 
-  <PropertyGroup Label="CalculateOS">
-    <!-- Default to portable build if not explicitly set -->
+  <PropertyGroup Label="CalculatePortableBuild">
     <PortableBuild Condition="'$(PortableBuild)' == '' and '$(DotNetBuildFromSource)' == 'true'">false</PortableBuild>
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
-
-    <_hostRid Condition="'$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
-    <_hostRid Condition="'$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostRid>
-
-    <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
-    <_parseDistroRid Condition="'$(_parseDistroRid)' == ''">$(_hostRid)</_parseDistroRid>
-    <_distroRidIndex>$(_parseDistroRid.LastIndexOf('-'))</_distroRidIndex>
-
-    <_runtimeOS>$(RuntimeOS)</_runtimeOS>
-    <_runtimeOS Condition="'$(_runtimeOS)' == ''">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_runtimeOS>
-
-    <!-- _runtimeOS is calculated based on the build system OS, however if building for Browser/iOS/Android we need to let
-         the build system to use browser/ios/android as the _runtimeOS for produced package RIDs. -->
-    <_runtimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</_runtimeOS>
-
-    <_portableOS>linux</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl' or $(_runtimeOS.StartsWith('alpine'))">linux-musl</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'linux-bionic'">linux-bionic</_portableOS>
-    <_portableOS Condition="'$(_hostOS)' == 'osx'">osx</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'freebsd' or '$(TargetOS)' == 'freebsd'">freebsd</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'illumos' or '$(TargetOS)' == 'illumos'">illumos</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'solaris' or '$(TargetOS)' == 'solaris'">solaris</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'browser'">browser</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'wasi'">wasi</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'maccatalyst'">maccatalyst</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'ios'">ios</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'iossimulator'">iossimulator</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'tvos'">tvos</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'tvossimulator'">tvossimulator</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'android'">android</_portableOS>
-
-    <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
-    <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
-    <_runtimeOS Condition="'$(RuntimeOS)' == '' and '$(DotNetBuildFromSource)' == 'true'">$(_portableOS)</_runtimeOS>
-
-    <_packageLibc Condition="$(_runtimeOS.Contains('musl'))">-musl</_packageLibc>
-    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)$(_packageLibc)</_packageOS>
-    <_packageOS Condition="'$(_packageOS)' == '' and '$(PortableBuild)' == 'true'">$(_portableOS)</_packageOS>
-    <_packageOS Condition="'$(_packageOS)' == ''">$(_runtimeOS)</_packageOS>
   </PropertyGroup>
 
-  <PropertyGroup Label="CalculateRID">
-    <_toolsRID Condition="'$(CrossBuild)' == 'true'">$(_hostOS)-$(_hostArch)</_toolsRID>
-    <_toolsRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_runtimeOS)-x64</_toolsRID>
-    <_toolsRID Condition="'$(_toolsRID)' == ''">$(_runtimeOS)-$(_hostArch)</_toolsRID>
+  <!-- _portableOS is the the portable OS corresponding to the the target platform. -->
+  <PropertyGroup Label="CalculatePortableOS">
+    <_portableOS>$(__PortableOS)</_portableOS>
+    <_portableOS Condition="'$(_portableOS)' == ''">$(TargetOS.ToLowerInvariant())</_portableOS>
+    <_portableOS Condition="'$(_portableOS)' == 'windows'">win</_portableOS>
+
+    <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
+    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
+  </PropertyGroup>
+
+  <!-- These are the rids used for consuming prebuilt packages. -->
+  <PropertyGroup Label="CalculatePackageRID">
+    <_packageOS>$(RuntimeOS)</_packageOS>
+    <_packageOS Condition="'$(_packageOS)' == ''">$(_portableOS)</_packageOS>
+    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)</_packageOS>
+    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(RuntimeOS)' == 'linux-musl'">linux-musl</_packageOS>
+
+    <_toolsRID>$(_packageOS)-$(_hostArch)</_toolsRID>
+    <_toolsRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_portableOS)-x64</_toolsRID>
 
     <!-- There are no WebAssembly tools, so use the default ones -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'wasi'">linux-x64</_toolsRID>
-    <_toolsRID Condition="('$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'wasi') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="('$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'wasi') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
+    <_toolsRID Condition="'$(_portableOS)' == 'browser' or '$(_portableOS)' == 'wasi'">linux-x64</_toolsRID>
+    <_toolsRID Condition="('$(_portableOS)' == 'browser' or '$(_portableOS)' == 'wasi') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
+    <_toolsRID Condition="('$(_portableOS)' == 'browser' or '$(_portableOS)' == 'wasi') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Android tools, so use the default ones -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic'">linux-x64</_toolsRID>
-    <_toolsRID Condition="('$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="('$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
+    <_toolsRID Condition="'$(_portableOS)' == 'android' or '$(_portableOS)' == 'linux-bionic'">linux-x64</_toolsRID>
+    <_toolsRID Condition="('$(_portableOS)' == 'android' or '$(_portableOS)' == 'linux-bionic') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
+    <_toolsRID Condition="('$(_portableOS)' == 'android' or '$(_portableOS)' == 'linux-bionic') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Mac Catalyst, iOS or tvOS tools and it can be built on OSX only, so use that -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'maccatalyst' or '$(_runtimeOS)' == 'ios' or '$(_runtimeOS)' == 'iossimulator' or '$(_runtimeOS)' == 'tvos' or '$(_runtimeOS)' == 'tvossimulator'">osx-x64</_toolsRID>
+    <_toolsRID Condition="'$(_portableOS)' == 'maccatalyst' or '$(_portableOS)' == 'ios' or '$(_portableOS)' == 'iossimulator' or '$(_portableOS)' == 'tvos' or '$(_portableOS)' == 'tvossimulator'">osx-x64</_toolsRID>
 
     <!-- There are no non-portable builds for Ilasm, Ildasm, ILC etc. -->
     <ToolsRID Condition="'$(PortableBuild)' != 'true' and '$(_portableOS)' == 'linux'">linux-$(_hostArch)</ToolsRID>
@@ -241,12 +215,21 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
+  </PropertyGroup>
 
-    <OutputRid Condition="'$(OutputRid)' == '' and '$(DotNetBuildFromSource)' == 'true'">$(_hostRid)</OutputRid>
-    <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
-    <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
-    <TargetsLinuxBionic Condition="$(OutputRid.StartsWith('linux-bionic'))">true</TargetsLinuxBionic>
-    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
+  <!-- OutputRid names the packages for the target platform. -->
+  <PropertyGroup Label="CalculateOutputRID">
+    <_hostRid Condition="'$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
+    <_hostRid Condition="'$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostRid>
+
+    <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
+    <_parseDistroRid Condition="'$(_parseDistroRid)' == ''">$(_hostRid)</_parseDistroRid>
+    <_distroRidIndex>$(_parseDistroRid.LastIndexOf('-'))</_distroRidIndex>
+
+    <_outputOS>$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_outputOS>
+    <_outputOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_outputOS>
+
+    <OutputRid Condition="'$(OutputRid)' == ''">$(_outputOS)-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
