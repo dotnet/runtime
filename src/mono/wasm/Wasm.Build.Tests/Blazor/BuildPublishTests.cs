@@ -232,6 +232,7 @@ public class BuildPublishTests : BuildTestBase
         await BlazorRunForBuildWithDotnetRun(config);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82481")]
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug", false)]
     [InlineData("Debug", true)]
