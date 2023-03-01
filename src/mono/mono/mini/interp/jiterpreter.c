@@ -217,7 +217,7 @@ mono_jiterp_try_newstr (MonoString **destination, int length) {
 	*destination = mono_string_new_size_checked(length, error);
 	if (!is_ok (error))
 		*destination = 0;
-	mono_interp_error_cleanup (error); // FIXME: do not swallow the error
+	mono_error_cleanup (error); // FIXME: do not swallow the error
 	return *destination != 0;
 }
 
