@@ -40,7 +40,7 @@ namespace System.Runtime.Caching
 #if NETCOREAPP
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
-        private static bool _configSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsOSPlatform("WASI");
+        private static bool _configSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
         private static bool _configSupported => true;
 #endif

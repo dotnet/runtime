@@ -26,7 +26,7 @@ namespace System.Xml
 
         private static async Task<Stream> GetNonFileStreamAsync(Uri uri, ICredentials? credentials, IWebProxy? proxy)
         {
-            if (OperatingSystem.IsOSPlatform("WASI"))
+            if (OperatingSystem.IsWasi())
                 throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
 
             var handler = new HttpClientHandler();
