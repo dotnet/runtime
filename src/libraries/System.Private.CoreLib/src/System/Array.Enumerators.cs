@@ -28,9 +28,10 @@ namespace System
         public bool MoveNext()
         {
             nint index = _index + 1;
-            if ((nuint)index >= _array.NativeLength)
+            nuint length = _array.NativeLength;
+            if ((nuint)index >= length)
             {
-                _index = (nint)_array.NativeLength;
+                _index = (nint)length;
                 return false;
             }
             _index = index;
@@ -82,10 +83,10 @@ namespace System
         public bool MoveNext()
         {
             int index = _index + 1;
-            int length = (int)_array.NativeLength;
-            if ((uint)index >= (uint)length)
+            uint length = (uint)_array.NativeLength;
+            if ((uint)index >= length)
             {
-                _index = length;
+                _index = (int)length;
                 return false;
             }
             _index = index;
