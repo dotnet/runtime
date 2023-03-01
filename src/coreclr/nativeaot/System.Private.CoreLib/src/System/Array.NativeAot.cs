@@ -1168,8 +1168,8 @@ namespace System
 
         public new IEnumerator<T> GetEnumerator()
         {
-            T[] _this = Unsafe.As<T[]>(this);
-            return _this.Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(_this);
+            T[] @this = Unsafe.As<T[]>(this);
+            return @this.Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(@this);
         }
 
         public int Count
@@ -1206,14 +1206,14 @@ namespace System
 
         public bool Contains(T item)
         {
-            T[] _this = Unsafe.As<T[]>(this);
-            return Array.IndexOf(_this, item, 0, _this.Length) >= 0;
+            T[] @this = Unsafe.As<T[]>(this);
+            return Array.IndexOf(@this, item, 0, @this.Length) >= 0;
         }
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            T[] _this = Unsafe.As<T[]>(this);
-            Array.Copy(_this, 0, array, arrayIndex, _this.Length);
+            T[] @this = Unsafe.As<T[]>(this);
+            Array.Copy(@this, 0, array, arrayIndex, @this.Length);
         }
 
         public bool Remove(T item)
@@ -1251,8 +1251,8 @@ namespace System
 
         public int IndexOf(T item)
         {
-            T[] _this = Unsafe.As<T[]>(this);
-            return Array.IndexOf(_this, item, 0, _this.Length);
+            T[] @this = Unsafe.As<T[]>(this);
+            return Array.IndexOf(@this, item, 0, @this.Length);
         }
 
         public void Insert(int index, T item)
