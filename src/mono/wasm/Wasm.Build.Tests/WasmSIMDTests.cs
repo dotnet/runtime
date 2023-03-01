@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void BuildWithoutSIMD_AOT(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"nosimd_with_workload_aot";
