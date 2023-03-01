@@ -1223,43 +1223,17 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             tgtPrefUse = BuildUse(intrin.op1);
             srcCount++;
         }
-        else
+        else if ((intrin.id != NI_AdvSimd_VectorTableLookup) && (intrin.id != NI_AdvSimd_Arm64_VectorTableLookup))
         {
-            if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup))
-            {
-                srcCount += BuildConsecutiveRegisters(intrin.op1);
-            }
-            else
-            {
-                srcCount += BuildOperandUses(intrin.op1);
-            }
-        }
-    }
-
-    if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup) ||
-        (intrin.id == NI_AdvSimd_VectorTableLookupExtension) ||
-        (intrin.id == NI_AdvSimd_Arm64_VectorTableLookupExtension))
-    {
-        if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup))
-        {
-            assert(intrin.op2 != nullptr);
-            srcCount += BuildOperandUses(intrin.op2);
+            srcCount += BuildOperandUses(intrin.op1);
         }
         else
         {
-            assert(intrin.op2 != nullptr);
-            assert(intrin.op3 != nullptr);
-            srcCount += BuildConsecutiveRegisters(intrin.op2, intrin.op1);
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+            srcCount += BuildConsecutiveRegisters(intrin.op1);
         }
-        assert(dstCount == 1);
-        buildInternalRegisterUses();
-        BuildDef(intrinsicTree);
-        *pDstCount = 1;
-
-        return srcCount;
     }
-    else if ((intrin.category == HW_Category_SIMDByIndexedElement) && (genTypeSize(intrin.baseType) == 2))
+
+    if ((intrin.category == HW_Category_SIMDByIndexedElement) && (genTypeSize(intrin.baseType) == 2))
     {
         // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g.
         // "MLA (by element)") have encoding that restricts what registers that can be used for the indexed element when
@@ -1301,6 +1275,27 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount += BuildOperandUses(intrin.op3);
             }
         }
+    }
+
+    else if (HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id))
+    {
+        if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup))
+        {
+            assert(intrin.op2 != nullptr);
+            srcCount += BuildOperandUses(intrin.op2);
+        }
+        else
+        {
+            assert(intrin.op2 != nullptr);
+            assert(intrin.op3 != nullptr);
+            srcCount += BuildConsecutiveRegisters(intrin.op2, intrin.op1);
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+        }
+        assert(dstCount == 1);
+        buildInternalRegisterUses();
+        BuildDef(intrinsicTree);
+        *pDstCount = 1;
+        return srcCount;
     }
     else if (intrin.op2 != nullptr)
     {

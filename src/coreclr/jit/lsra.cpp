@@ -1298,10 +1298,6 @@ PhaseStatus LinearScan::doLinearScan()
 
     splitBBNumToTargetBBNumMap = nullptr;
 
-#ifdef TARGET_ARM64
-    nextConsecutiveRefPositionMap = nullptr;
-#endif
-
     // This is complicated by the fact that physical registers have refs associated
     // with locations where they are killed (e.g. calls), but we don't want to
     // count these as being touched.
@@ -1318,6 +1314,7 @@ PhaseStatus LinearScan::doLinearScan()
     initVarRegMaps();
 
 #ifdef TARGET_ARM64
+    nextConsecutiveRefPositionMap = nullptr;
     if (compiler->info.needsConsecutiveRegisters)
     {
         allocateRegisters<true>();
