@@ -96,6 +96,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_f64_to_u52", "number", ["number", "number"]],
     [true, "mono_wasm_method_get_name", "number", ["number"]],
     [true, "mono_wasm_method_get_full_name", "number", ["number"]],
+    [true, "mono_wasm_gc_lock", "void", []],
+    [true, "mono_wasm_gc_unlock", "void", []],
 
     // jiterpreter
     [true, "mono_jiterp_get_trace_bailout_count", "number", ["number"]],
@@ -235,6 +237,8 @@ export interface t_Cwraps {
     mono_wasm_runtime_run_module_cctor(assembly: MonoAssembly): void;
     mono_wasm_method_get_name(method: MonoMethod): CharPtr;
     mono_wasm_method_get_full_name(method: MonoMethod): CharPtr;
+    mono_wasm_gc_lock(): void;
+    mono_wasm_gc_unlock(): void;
 
     mono_jiterp_get_trace_bailout_count(reason: number): number;
     mono_jiterp_value_copy(destination: VoidPtr, source: VoidPtr, klass: MonoClass): void;
