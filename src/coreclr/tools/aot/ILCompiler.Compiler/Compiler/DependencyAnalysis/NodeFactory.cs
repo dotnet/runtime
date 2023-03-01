@@ -1057,7 +1057,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                _systemArrayOfTEnumeratorType ??= _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
+                _systemArrayOfTEnumeratorType ??= _systemArrayOfTEnumeratorType = _context.SystemModule.GetKnownType("System", "SZGenericArrayEnumerator`1");
                 return _systemArrayOfTEnumeratorType;
             }
         }
