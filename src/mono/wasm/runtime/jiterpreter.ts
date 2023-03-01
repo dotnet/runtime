@@ -5,7 +5,7 @@ import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
 import { Module } from "./imports";
 import {
-    getU16
+    getU16, getU32
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode, OpcodeInfo } from "./mintops";
@@ -14,7 +14,8 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, shortNameBase,
     counters, getRawCwrap, importDef,
-    JiterpreterOptions, getOptions, recordFailure
+    JiterpreterOptions, getOptions, recordFailure,
+    JiterpMember, getMemberOffset
 } from "./jiterpreter-support";
 import {
     generate_wasm_body
@@ -54,8 +55,12 @@ export const
     nullCheckCaching = true,
     // Print diagnostic information to the console when performing null check optimizations
     traceNullCheckOptimizations = false,
+    // Print diagnostic information when generating backward branches
+    traceBackBranches = false,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
+    // Unproductive if we have backward branches enabled because it can stop us from jitting
+    //  nested loops
     abortAtJittedLoopBodies = true,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
@@ -574,7 +579,7 @@ function assert_not_null (
 function generate_wasm (
     frame: NativePointer, methodName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
-    methodFullName: string | undefined
+    methodFullName: string | undefined, backwardBranchTable: Uint16Array | null
 ) : number {
     // Pre-allocate a decent number of constant slots - this adds fixed size bloat
     //  to the trace but will make the actual pointer constants in the trace smaller
@@ -694,8 +699,8 @@ function generate_wasm (
         //  to using global constants and figuring out how many constant slots we need in advance
         //  since a long trace might need many slots and that bloats the header.
         const opcodes_processed = generate_wasm_body(
-            frame, traceName, ip, endOfBody, builder,
-            instrumentedTraceId
+            frame, traceName, ip, startOfBody, endOfBody,
+            builder, instrumentedTraceId, backwardBranchTable
         );
         const keep = (opcodes_processed >= mostRecentOptions.minimumTraceLength);
 
@@ -894,8 +899,34 @@ export function mono_interp_tier_prepare_jiterpreter (
     }
     const methodName = Module.UTF8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
+
+    const imethod = getU32(getMemberOffset(JiterpMember.Imethod) + <any>frame);
+    const backBranchCount = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
+    const pBackBranches = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
+    let backwardBranchTable = backBranchCount
+        ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount)
+        : null;
+
+    // If we're compiling a trace that doesn't start at the beginning of a method,
+    //  it's possible all the backward branch targets precede it, so we won't want to
+    //  actually wrap it in a loop and have the eip check at the beginning.
+    if (backwardBranchTable && (ip !== startOfBody)) {
+        const threshold = (<any>ip - <any>startOfBody) / 2;
+        let foundReachableBranchTarget = false;
+        for (let i = 0; i < backwardBranchTable.length; i++) {
+            if (backwardBranchTable[i] > threshold) {
+                foundReachableBranchTarget = true;
+                break;
+            }
+        }
+        // We didn't find any backward branch targets we can reach from inside this trace,
+        //  so null out the table.
+        if (!foundReachableBranchTarget)
+            backwardBranchTable = null;
+    }
+
     const fnPtr = generate_wasm(
-        frame, methodName, ip, startOfBody, sizeOfBody, methodFullName
+        frame, methodName, ip, startOfBody, sizeOfBody, methodFullName, backwardBranchTable
     );
 
     if (fnPtr) {
@@ -917,7 +948,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
         return;
 
     console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
-    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated`);
+    const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100;
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated. ${counters.backBranchesEmitted} back-branches emitted (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%)`);
     if (concise)
         return;
 
