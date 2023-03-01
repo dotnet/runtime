@@ -12,31 +12,31 @@ namespace System.Net
     /// </summary>
     public readonly struct IPNetwork : IEquatable<IPNetwork>, ISpanFormattable, ISpanParsable<IPNetwork>
     {
-        public IPAddress BaseAddress { get; private init; }
-        public int PrefixLength { get; private init; }
+        public IPAddress BaseAddress { get; }
+        public int PrefixLength { get; }
 
-        /*
-         We can also add two more easy to implement properties:
-         * AddressCount - a lazily calculated property showing the amount of potential address this instance "Contains". 2^(128_OR_32 - PrefixLength)
-            * 2^128 is going to fit into BigInteger, which causes a concern for memory allocation, since for actually big integers BigInteger seems to allocate a byte array.
-            * We can just have a Nullable<BigInteger> backing field for the lazy property. But we should be fine with the increased byte size for IPNetwork type itself caused by that.
-         * Since BaseAddress represents the first address in the range, does it make sense to have a property that represents the last address?
-         */
+        private const char AddressAndPrefixLengthSeparator = '/';
+        private const int BitsPerByte = 8;
 
-        private const char addressAndPrefixLengthSeparator = '/';
-        private const int bitsPerByte = 8;
-        private const string
-            baseAddressConstructorParamName = "baseAddress",
-            prefixLengthConstructorParamName = "prefixLength";
+        private const string BaseAddressConstructorParamName = "baseAddress";
+        private const string PrefixLengthConstructorParamName = "prefixLength";
         public IPNetwork(IPAddress baseAddress, int prefixLength)
+            : this(baseAddress, prefixLength, validateAndThrow: true)
+        {
+        }
+
+        private IPNetwork(IPAddress baseAddress, int prefixLength, bool validateAndThrow)
         {
             BaseAddress = baseAddress;
             PrefixLength = prefixLength;
 
-            var validationError = Validate();
-            if (validationError.HasValue)
+            if (validateAndThrow)
             {
-                throw validationError.Value.ConstructorExceptionFactoryMethod();
+                ValidationError? validationError = Validate();
+                if (validationError.HasValue)
+                {
+                    throw validationError.Value.ConstructorExceptionFactoryMethod();
+                }
             }
         }
 
@@ -53,29 +53,25 @@ namespace System.Net
             // to be discussed in the PR
 
             var expectedBytesCount = GetAddressFamilyByteLength(BaseAddress.AddressFamily);
-            if (expectedBytesCount * bitsPerByte == PrefixLength)
+            if (expectedBytesCount * BitsPerByte == PrefixLength)
             {
                 return BaseAddress.Equals(address);
             }
 
             Span<byte> baseAddressBytes = stackalloc byte[expectedBytesCount];
-            if (!BaseAddress.TryWriteBytes(baseAddressBytes, out _))
-            {
-                throw new UnreachableException();
-            }
+            bool written = BaseAddress.TryWriteBytes(baseAddressBytes, out int bytesWritten);
+            Debug.Assert(written && bytesWritten == expectedBytesCount);
 
             Span<byte> otherAddressBytes = stackalloc byte[expectedBytesCount];
-            if (!address.TryWriteBytes(otherAddressBytes, out _))
-            {
-                throw new UnreachableException();
-            }
+            written = address.TryWriteBytes(otherAddressBytes, out bytesWritten);
+            Debug.Assert(written && bytesWritten == expectedBytesCount);
 
-            for (int processedBitsCount = 0, i = 0; processedBitsCount < PrefixLength; processedBitsCount += bitsPerByte, i++)
+            for (int processedBitsCount = 0, i = 0; processedBitsCount < PrefixLength; processedBitsCount += BitsPerByte, i++)
             {
                 var baseAddressByte = baseAddressBytes[i];
                 var otherAddressByte = otherAddressBytes[i];
 
-                var rightShiftAmount = Math.Max(0, bitsPerByte - (PrefixLength - processedBitsCount));
+                var rightShiftAmount = Math.Max(0, BitsPerByte - (PrefixLength - processedBitsCount));
                 if (rightShiftAmount != 0)
                 {
                     baseAddressByte >>= rightShiftAmount;
@@ -129,20 +125,20 @@ namespace System.Net
         #region Private methods
         private static bool TryParseInternal(ReadOnlySpan<char> s, out IPNetwork result, [NotNullWhen(false)] out string? error)
         {
-            const int maxCharsCountAfterIpAddress = 4;
-            const int minCharsRequired = 4;
+            const int MaxCharsCountAfterIpAddress = 4;
+            const int MinCharsRequired = 4;
 
-            if (s.Length < minCharsRequired)
+            if (s.Length < MinCharsRequired)
             {
                 error = SR.dns_bad_ip_network;
                 result = default;
                 return false;
             }
 
-            int separatorExpectedStartingIndex = s.Length - maxCharsCountAfterIpAddress;
+            int separatorExpectedStartingIndex = s.Length - MaxCharsCountAfterIpAddress;
             int separatorIndex = s
                 .Slice(separatorExpectedStartingIndex)
-                .IndexOf(addressAndPrefixLengthSeparator);
+                .IndexOf(AddressAndPrefixLengthSeparator);
             if (separatorIndex != -1)
             {
                 separatorIndex += separatorExpectedStartingIndex;
@@ -152,11 +148,7 @@ namespace System.Net
 
                 if (IPAddress.TryParse(ipAddressSpan, out var ipAddress) && int.TryParse(prefixLengthSpan, out var prefixLength))
                 {
-                    result = new IPNetwork
-                    {
-                        BaseAddress = ipAddress,
-                        PrefixLength = prefixLength
-                    };
+                    result = new IPNetwork(ipAddress, prefixLength, validateAndThrow: false);
 
                     error = result.Validate()?.ParseExceptionMessage;
                     return error == null;
@@ -176,36 +168,43 @@ namespace System.Net
             }
         }
 
-        private readonly record struct ValidationError(
-            Func<Exception> ConstructorExceptionFactoryMethod,
-            string ParseExceptionMessage);
+        private readonly struct ValidationError
+        {
+            public ValidationError(Func<Exception> constructorExceptionFactoryMethod, string parseExceptionMessage)
+            {
+                ConstructorExceptionFactoryMethod = constructorExceptionFactoryMethod;
+                ParseExceptionMessage = parseExceptionMessage;
+            }
 
-        private static readonly ValidationError
-            _baseAddressIsNullError = new ValidationError(() => new ArgumentNullException(baseAddressConstructorParamName), string.Empty),
-            _baseAddressHasSetBitsInMaskError = new ValidationError(() => new ArgumentException(baseAddressConstructorParamName), SR.dns_bad_ip_network),
-            _prefixLengthLessThanZeroError = new ValidationError(() => new ArgumentOutOfRangeException(prefixLengthConstructorParamName), SR.dns_bad_ip_network),
-            _prefixLengthGreaterThanAllowedError = new ValidationError(() => new ArgumentOutOfRangeException(prefixLengthConstructorParamName), SR.dns_bad_ip_network);
+            public readonly Func<Exception> ConstructorExceptionFactoryMethod;
+            public readonly string ParseExceptionMessage;
+        }
+
+        private static readonly ValidationError s_baseAddressIsNullError = new ValidationError(() => new ArgumentNullException(BaseAddressConstructorParamName), string.Empty);
+        private static readonly ValidationError s_baseAddressHasSetBitsInMaskError = new ValidationError(() => new ArgumentException(BaseAddressConstructorParamName), SR.dns_bad_ip_network);
+        private static readonly ValidationError s_prefixLengthLessThanZeroError = new ValidationError(() => new ArgumentOutOfRangeException(PrefixLengthConstructorParamName), SR.dns_bad_ip_network);
+        private static readonly ValidationError s_prefixLengthGreaterThanAllowedError = new ValidationError(() => new ArgumentOutOfRangeException(PrefixLengthConstructorParamName), SR.dns_bad_ip_network);
 
         private ValidationError? Validate()
         {
             if (BaseAddress == null)
             {
-                return _baseAddressIsNullError;
+                return s_baseAddressIsNullError;
             }
 
             if (PrefixLength < 0)
             {
-                return _prefixLengthLessThanZeroError;
+                return s_prefixLengthLessThanZeroError;
             }
 
-            if (PrefixLength > GetAddressFamilyByteLength(BaseAddress.AddressFamily) * bitsPerByte)
+            if (PrefixLength > GetAddressFamilyByteLength(BaseAddress.AddressFamily) * BitsPerByte)
             {
-                return _prefixLengthGreaterThanAllowedError;
+                return s_prefixLengthGreaterThanAllowedError;
             }
 
             if (IsAnyMaskBitOnForBaseAddress())
             {
-                return _baseAddressHasSetBitsInMaskError;
+                return s_baseAddressHasSetBitsInMaskError;
             }
 
             return default;
@@ -216,22 +215,18 @@ namespace System.Net
         /// </summary>
         private bool IsAnyMaskBitOnForBaseAddress()
         {
-            // TODO: same as with Contains method - this can be made much easier and potentially more performant for IPv4 if IPAddress.PrivateAddress is made internal (currently private)
-            // to be discussed in the PR
-
             Span<byte> addressBytes = stackalloc byte[GetAddressFamilyByteLength(BaseAddress.AddressFamily)];
-            if (!BaseAddress.TryWriteBytes(addressBytes, out int bytesWritten))
-            {
-                throw new UnreachableException();
-            }
 
-            var addressBitsCount = addressBytes.Length * bitsPerByte;
+            bool written = BaseAddress.TryWriteBytes(addressBytes, out int bytesWritten);
+            Debug.Assert(written && bytesWritten == addressBytes.Length);
+
+            var addressBitsCount = addressBytes.Length * BitsPerByte;
 
             for (int addressBytesIndex = addressBytes.Length - 1, numberOfEndingBitsToBeOff = addressBitsCount - PrefixLength;
                 addressBytesIndex >= 0 && numberOfEndingBitsToBeOff > 0;
-                addressBytesIndex--, numberOfEndingBitsToBeOff -= bitsPerByte)
+                addressBytesIndex--, numberOfEndingBitsToBeOff -= BitsPerByte)
             {
-                byte maskForByte = unchecked((byte)(byte.MaxValue << Math.Min(numberOfEndingBitsToBeOff, bitsPerByte)));
+                byte maskForByte = unchecked((byte)(byte.MaxValue << Math.Min(numberOfEndingBitsToBeOff, BitsPerByte)));
                 var addressByte = addressBytes[addressBytesIndex];
                 if ((addressByte & maskForByte) != addressByte)
                 {
@@ -254,7 +249,7 @@ namespace System.Net
         #region Formatting (public)
         public override string ToString()
         {
-            return $"{BaseAddress}{addressAndPrefixLengthSeparator}{PrefixLength}";
+            return $"{BaseAddress}{AddressAndPrefixLengthSeparator}{PrefixLength}";
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten)
@@ -270,7 +265,7 @@ namespace System.Net
                 return false;
             }
 
-            destination[charsWritten++] = addressAndPrefixLengthSeparator;
+            destination[charsWritten++] = AddressAndPrefixLengthSeparator;
 
             if (!PrefixLength.TryFormat(destination.Slice(charsWritten), out var prefixLengthCharsWritten))
             {
