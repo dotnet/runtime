@@ -30,7 +30,7 @@ namespace System.Buffers
             var position = sequence.Start;
             _currentPositionObject = position.GetObject();
             _currentPositionInteger = position.GetInteger();
-            sequence.GetFirstSpan(out _currentSpan, out position);
+            sequence.GetFirstSpan(out _currentSpan, next: out position);
             _nextPositionObject = position.GetObject();
             _nextPositionInteger = position.GetInteger();
             _currentSpanIndex = 0;
