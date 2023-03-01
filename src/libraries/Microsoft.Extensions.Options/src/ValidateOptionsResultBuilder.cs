@@ -26,10 +26,10 @@ namespace Microsoft.Extensions.Options
         public ValidateOptionsResultBuilder() { }
 
         /// <summary>
-        /// Adds validation error.
+        /// Adds a new validation error to the builder.
         /// </summary>
         /// <param name="error">Content of error message.</param>
-        /// <param name="propertyName">THe property in the option object which contains an error.</param>
+        /// <param name="propertyName">The property in the option object which contains an error.</param>
         public void AddError(string error, string? propertyName = null)
         {
             ThrowHelper.ThrowIfNull(error);
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Adds any validation error carried by the <see cref="ValidationResult"/> instance to this instance.
         /// </summary>
-        /// <param name="result">The instance to consume the errors from.</param>
+        /// <param name="result">The instance to append the error from.</param>
         public void AddResult(ValidationResult? result)
         {
             if (result?.ErrorMessage is not null)
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Options
         {
             if (results != null)
             {
-                foreach (var result in results)
+                foreach (ValidationResult? result in results)
                 {
                     AddResult(result);
                 }
@@ -115,13 +115,6 @@ namespace Microsoft.Extensions.Options
 
         private int ErrorsCount => _errors is null ? 0 : _errors.Count;
 
-        private List<string> Errors
-        {
-            get
-            {
-                _errors ??= new();
-                return _errors;
-            }
-        }
+        private List<string> Errors => _errors ??= new();
     }
 }
