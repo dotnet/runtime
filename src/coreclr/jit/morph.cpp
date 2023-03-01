@@ -11550,7 +11550,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
                 return tree;
             }
-
             if (!tree->TypeIs(TYP_VOID))
             {
                 if (op1->OperIs(GT_OBJ, GT_BLK, GT_IND))
