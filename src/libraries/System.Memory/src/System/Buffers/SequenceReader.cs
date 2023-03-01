@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
@@ -29,7 +28,18 @@ namespace System.Buffers
             _sequence = sequence;
             _length = -1;
 
-            ResetReader();
+            var position = _sequence.Start;
+            _currentPositionObject = position.GetObject();
+            _currentPositionInteger = position.GetInteger();
+            _sequence.GetFirstSpan(out _currentSpan, out position);
+            _nextPositionObject = position.GetObject();
+            _nextPositionInteger = position.GetInteger();
+            _currentSpanIndex = 0;
+            _consumedAtStartOfCurrentSpan = 0;
+            if (_currentSpan.IsEmpty && !_sequence.IsSingleSegment)
+            {   // edge-case; multi-segment with zero-length as first
+                GetNextSpan();
+            }
         }
 
         /// <summary>
@@ -240,18 +250,14 @@ namespace System.Buffers
 
         private void ResetReader()
         {
-            var position = _sequence.Start;
-            _currentPositionObject = position.GetObject();
-            _currentPositionInteger = position.GetInteger();
-            _sequence.GetFirstSpan(out _currentSpan, out position);
-            _nextPositionObject = position.GetObject();
-            _nextPositionInteger = position.GetInteger();
-            _currentSpanIndex = 0;
-            _consumedAtStartOfCurrentSpan = 0;
-            if (_currentSpan.IsEmpty && !_sequence.IsSingleSegment)
-            {   // edge-case; multi-segment with zero-length as first
-                GetNextSpan();
-            }
+            // preserve the length - it can be relatively expensive to calculate on demand
+            var length = _length;
+
+            // reset all state
+            this = new(_sequence);
+
+            // reinstate the length
+            Unsafe.AsRef(_length) = length;
         }
 
         /// <summary>
