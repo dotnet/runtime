@@ -109,7 +109,7 @@ public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICanc
         return Emit(BundleFile, (inputStream) =>
         {
             using var outputUtf8Writer = new StreamWriter(inputStream, Utf8NoBom);
-            GenerateRegisterBundledObjects($"mono_wasm_register_{BundleName}_bundle", RegistrationCallbackFunctionName, files, outputUtf8Writer);
+            GenerateRegisteredBundledObjects($"mono_wasm_register_{BundleName}_bundle", RegistrationCallbackFunctionName, files, outputUtf8Writer);
         }) && !Log.HasLoggedErrors;
     }
 

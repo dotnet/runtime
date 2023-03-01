@@ -504,6 +504,11 @@ namespace System
 #if TARGET_WASI || TARGET_BROWSER
             if (UseEmbeddedTzDatabase)
             {
+                // embedded database only supports relative paths
+                if (tzVariable[0] == '/')
+                {
+                    return false;
+                }
                 if(!TryLoadEmbeddedTzFile(tzFilePath, out rawData))
                 {
                     return false;
