@@ -6731,8 +6731,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 
         emitAttr size    = emitTypeSize(type);
         bool     canSkip = compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && !op1->isUsedFromMemory() &&
-                       (targetReg != REG_NA) && !op2->isUsedFromMemory() &&
-                       emit->IsRedundantCmp(size, op1->GetRegNum(), op2->GetRegNum());
+                       !op2->isUsedFromMemory() && emit->IsRedundantCmp(size, op1->GetRegNum(), op2->GetRegNum());
 
         if (!canSkip)
         {
