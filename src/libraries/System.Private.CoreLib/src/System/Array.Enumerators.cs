@@ -95,7 +95,7 @@ namespace System
 
         public void Reset() => _index = -1;
 
-#pragma warning disable CA1822 // Mark members as static
+#pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
         public void Dispose()
         {
         }
