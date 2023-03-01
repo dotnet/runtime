@@ -53,10 +53,7 @@ namespace System.Buffers
         /// <summary>
         /// The current position in the <see cref="Sequence"/>.
         /// </summary>
-        public readonly SequencePosition Position
-            => _sequence.GetPosition(_currentSpanIndex, new SequencePosition(_currentPositionObject, _currentPositionInteger));
-        // TODO: by eager-read, we *fully expect* that Position is inside the current span object (or very end for EOF); as such,
-        // we should be able to simplify to: => new SequencePosition(_currentPositionObject, _currentPositionInteger + _currentSpanIndex)
+        public readonly SequencePosition Position => new(_currentPositionObject, _currentPositionInteger + _currentSpanIndex); // since index in same segment, this is valid
 
         /// <summary>
         /// The current segment in the <see cref="Sequence"/> as a span.
