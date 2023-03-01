@@ -20,7 +20,8 @@ function _ensure_allocated(): void {
     alloca_limit = <VoidPtr>(<any>alloca_base + alloca_buffer_size);
 }
 
-const is_bigint_supported = typeof BigInt !== "undefined" && typeof BigInt64Array !== "undefined";
+const max_int64_big = BigInt("9223372036854775807");
+const min_int64_big = BigInt("-9223372036854775808");
 
 export function temp_malloc(size: number): VoidPtr {
     _ensure_allocated();
@@ -135,7 +136,6 @@ export function setU52(offset: MemOffset, value: number): void {
 }
 
 export function setI64Big(offset: MemOffset, value: bigint): void {
-    mono_assert(is_bigint_supported, "BigInt is not supported.");
     mono_assert(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
     mono_assert(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
 
@@ -202,7 +202,6 @@ export function getU52(offset: MemOffset): number {
 }
 
 export function getI64Big(offset: MemOffset): bigint {
-    mono_assert(is_bigint_supported, "BigInt is not supported.");
     return Module.HEAP64[<any>offset >>> 3];
 }
 
@@ -212,16 +211,6 @@ export function getF32(offset: MemOffset): number {
 
 export function getF64(offset: MemOffset): number {
     return Module.HEAPF64[<any>offset >>> 3];
-}
-
-let max_int64_big: BigInt;
-let min_int64_big: BigInt;
-export function afterUpdateMemoryViews(): void {
-    if (is_bigint_supported) {
-        // TODO: why do we need to initialize these on memory change?
-        max_int64_big = BigInt("9223372036854775807");
-        min_int64_big = BigInt("-9223372036854775808");
-    }
 }
 
 export function getCU64(offset: MemOffset): cuint64.CUInt64 {
