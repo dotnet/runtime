@@ -20,7 +20,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void BuildWithSIMD_NoAOT_ShouldNotRelink(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"sim_with_workload_no_aot";
+            string projectName = $"simd_with_workload_no_aot";
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, "<WasmEnableSIMD>true</WasmEnableSIMD>");
 
@@ -48,13 +48,41 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        // https://github.com/dotnet/runtime/issues/75044 - disabled for V8, and NodeJS
-        //[MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.Chrome })]
+        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        public void BuildWithoutSIMD_AOT(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string projectName = $"nosimd_with_workload_aot";
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs, "<WasmEnableSIMD>false</WasmEnableSIMD>");
+
+            (_, string output) = BuildProject(buildArgs,
+                                    id: id,
+                                    new BuildProjectOptions(
+                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
+                                        Publish: false,
+                                        DotnetWasmFromRuntimePack: true));
+
+            if (!_buildContext.TryGetBuildFor(buildArgs, out _))
+            {
+                // Check if this is not a cached build
+                Assert.Contains("Compiling native assets with excc", output);
+            }
+
+            RunAndTestWasmApp(buildArgs,
+                                expectedExitCode: 42,
+                                test: output =>
+                                {
+                                    Assert.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>", output);
+                                    Assert.Contains("Hello, World!", output);
+                                }, host: host, id: id);
+        }
+
+        [Theory]
+        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         public void PublishWithSIMD_AOT(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"sim_with_workload_aot";
+            string projectName = $"simd_with_workload_aot";
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, "<WasmEnableSIMD>true</WasmEnableSIMD>");
 
@@ -66,6 +94,29 @@ namespace Wasm.Build.Tests
 
             RunAndTestWasmApp(buildArgs,
                                 extraXHarnessArgs: host == RunHost.NodeJS ? "--engine-arg=--experimental-wasm-simd" : "",
+                                expectedExitCode: 42,
+                                test: output =>
+                                {
+                                    Assert.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>", output);
+                                    Assert.Contains("Hello, World!", output);
+                                }, host: host, id: id);
+        }
+
+        [Theory]
+        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        public void PublishWithoutSIMD_AOT(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string projectName = $"nosimd_with_workload_aot";
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs, "<WasmEnableSIMD>false</WasmEnableSIMD>");
+
+            BuildProject(buildArgs,
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
+                                DotnetWasmFromRuntimePack: false));
+
+            RunAndTestWasmApp(buildArgs,
                                 expectedExitCode: 42,
                                 test: output =>
                                 {
