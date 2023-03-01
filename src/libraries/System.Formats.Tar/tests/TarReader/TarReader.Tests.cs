@@ -106,6 +106,8 @@ namespace System.Formats.Tar.Tests
         [InlineData("    key   ", "    value    ")]
         [InlineData("    key spaced   ", "    value spaced    ")]
         [InlineData("many sla/s\\hes", "/////////////\\\\\\///////////")]
+        [InlineData("key", "va=lue")]
+        [InlineData("key", "=")]
         public void PaxExtendedAttribute_Roundtrips(string key, string value)
         {
             var stream = new MemoryStream();
@@ -120,6 +122,7 @@ namespace System.Formats.Tar.Tests
                 PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
                 Assert.Equal(5, entry.ExtendedAttributes.Count);
                 Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
+                Assert.Null(reader.GetNextEntry());
             }
         }
     }
