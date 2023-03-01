@@ -204,8 +204,10 @@
     <ItemGroup Label="Add samples">
       <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(RunSmokeTestsOnlyForNodeJs)' != 'true'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(RunSmokeTestsOnlyForNodeJs)' != 'true'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)**/System.Net.Http.Functional.Tests.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(RunSmokeTestsOnlyForNodeJs)' == 'true'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)**/System.Net.WebSockets.Client.Tests.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(RunSmokeTestsOnlyForNodeJs)' == 'true'" />
 
       <HelixWorkItem Include="@(_WasmWorkItem -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
