@@ -3386,11 +3386,13 @@ struct GenTreeVecCon : public GenTree
                 return (gtSimd16Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd16Val.u64[1] == 0xFFFFFFFFFFFFFFFF);
             }
 
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
             {
                 return (gtSimd32Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[1] == 0xFFFFFFFFFFFFFFFF) &&
                        (gtSimd32Val.u64[2] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[3] == 0xFFFFFFFFFFFFFFFF);
             }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -3430,6 +3432,7 @@ struct GenTreeVecCon : public GenTree
                        (left->gtSimd16Val.u64[1] == right->gtSimd16Val.u64[1]);
             }
 
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
             {
                 return (left->gtSimd32Val.u64[0] == right->gtSimd32Val.u64[0]) &&
@@ -3437,6 +3440,7 @@ struct GenTreeVecCon : public GenTree
                        (left->gtSimd32Val.u64[2] == right->gtSimd32Val.u64[2]) &&
                        (left->gtSimd32Val.u64[3] == right->gtSimd32Val.u64[3]);
             }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -3467,11 +3471,13 @@ struct GenTreeVecCon : public GenTree
                 return (gtSimd16Val.u64[0] == 0x0000000000000000) && (gtSimd16Val.u64[1] == 0x0000000000000000);
             }
 
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
             {
                 return (gtSimd32Val.u64[0] == 0x0000000000000000) && (gtSimd32Val.u64[1] == 0x0000000000000000) &&
                        (gtSimd32Val.u64[2] == 0x0000000000000000) && (gtSimd32Val.u64[3] == 0x0000000000000000);
             }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -8051,18 +8057,14 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
 
 // Represents GT_COPY or GT_RELOAD node
 //
-// As it turns out, these are only needed on targets that happen to have multi-reg returns.
-// However, they are actually needed on any target that has any multi-reg ops. It is just
-// coincidence that those are the same (and there isn't a FEATURE_MULTIREG_OPS).
+// Needed to support multi-reg ops.
 //
 struct GenTreeCopyOrReload : public GenTreeUnOp
 {
-#if FEATURE_MULTIREG_RET
     // State required to support copy/reload of a multi-reg call node.
     // The first register is always given by GetRegNum().
     //
     regNumberSmall gtOtherRegs[MAX_MULTIREG_COUNT - 1];
-#endif
 
     //----------------------------------------------------------
     // ClearOtherRegs: set gtOtherRegs to REG_NA.
@@ -8075,12 +8077,10 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     //
     void ClearOtherRegs()
     {
-#if FEATURE_MULTIREG_RET
         for (unsigned i = 0; i < MAX_MULTIREG_COUNT - 1; ++i)
         {
             gtOtherRegs[i] = REG_NA;
         }
-#endif
     }
 
     //-----------------------------------------------------------
@@ -8101,11 +8101,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
             return GetRegNum();
         }
 
-#if FEATURE_MULTIREG_RET
         return (regNumber)gtOtherRegs[idx - 1];
-#else
-        return REG_NA;
-#endif
     }
 
     //-----------------------------------------------------------
@@ -8126,18 +8122,11 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
         {
             SetRegNum(reg);
         }
-#if FEATURE_MULTIREG_RET
         else
         {
             gtOtherRegs[idx - 1] = (regNumberSmall)reg;
             assert(gtOtherRegs[idx - 1] == reg);
         }
-#else
-        else
-        {
-            unreached();
-        }
-#endif
     }
 
     //----------------------------------------------------------------------------
@@ -8166,7 +8155,6 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 
     unsigned GetRegCount() const
     {
-#if FEATURE_MULTIREG_RET
         // We need to return the highest index for which we have a valid register.
         // Note that the gtOtherRegs array is off by one (the 0th register is GetRegNum()).
         // If there's no valid register in gtOtherRegs, GetRegNum() must be valid.
@@ -8181,7 +8169,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
                 return i;
             }
         }
-#endif
+
         // We should never have a COPY or RELOAD with no valid registers.
         assert(GetRegNum() != REG_NA);
         return 1;
@@ -9127,12 +9115,12 @@ inline regNumber GenTree::GetRegByIndex(int regIndex) const
         return AsMultiRegOp()->GetRegNumByIdx(regIndex);
     }
 #endif
+#endif // FEATURE_MULTIREG_RET
 
     if (OperIs(GT_COPY, GT_RELOAD))
     {
         return AsCopyOrReload()->GetRegNumByIdx(regIndex);
     }
-#endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
