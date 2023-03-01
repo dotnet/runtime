@@ -722,9 +722,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TestWatcherExe>watchdog$(ExeSuffix)</TestWatcherExe>
-    <TestWatcherPath>$(ArtifactsDir)obj/coreclr/$(OSPlatformConfig)/test-watchdog/$(TestWatcherExe)</TestWatcherPath>
-    <TestWatcherPath>$([MSBuild]::NormalizePath($(TestWatcherPath)))</TestWatcherPath>
+    <TestWatcherDirectory>$(ArtifactsDir)obj/coreclr/$(OSPlatformConfig)/test-watchdog/</TestWatcherDirectory>
+    <TestWatcherDirectory>$([MSBuild]::NormalizePath($(TestWatcherDirectory)))</TestWatcherDirectory>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
@@ -732,7 +731,7 @@
 
     <!-- Browser-Wasm follows a very different workflow, which is currently out of scope of the Log Checker and Test Watcher. -->
     <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true'" />
-    <HelixCorrelationPayload Include="$(TestWatcherPath)" Condition="'$(TargetsBrowser)' != 'true'" />
+    <HelixCorrelationPayload Include="$(TestWatcherDirectory)" Condition="'$(TargetsBrowser)' != 'true'" />
 
     <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
     <LegacyPayloads Update="@(LegacyPayloads)">

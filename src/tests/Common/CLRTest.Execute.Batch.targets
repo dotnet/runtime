@@ -319,10 +319,10 @@ $(BatchCopyCoreShimLocalCmds)
 
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
-) ELSE IF NOT "%_DebuggerFullPath%"=="" (
-  set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
-) ELSE (
+) ELSE IF NOT "%_WatcherFullPath%"=="" (
   set LAUNCHER=$(WatcherRunFile) $(CLRTestRunFile)
+) ELSE (
+  set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
 )
 
 $(BatchIlrtTestLaunchCmds)
