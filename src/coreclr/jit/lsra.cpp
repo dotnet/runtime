@@ -5374,9 +5374,8 @@ void LinearScan::allocateRegisters()
                         // For consecutive register, it doesn't matter what the assigned register was.
                         // We have just assigned it `copyRegMask` and that's the one in-use, and not the
                         // one that was assigned previously.
-                        assignedRegMask = REG_NA;
 
-                        regsInUseThisLocation |= copyRegMask | assignedRegMask;
+                        regsInUseThisLocation |= copyRegMask;
                         if (currentRefPosition.lastUse)
                         {
                             if (currentRefPosition.delayRegFree)
@@ -5464,10 +5463,13 @@ void LinearScan::allocateRegisters()
                         // We have just assigned it `copyRegMask` and that's the one in-use, and not the
                         // one that was assigned previously.
 
-                        assignedRegMask = REG_NA;
+                        regsInUseThisLocation |= copyRegMask;
                     }
+                    else
 #endif
-                    regsInUseThisLocation |= copyRegMask | assignedRegMask;
+                    {
+                        regsInUseThisLocation |= copyRegMask | assignedRegMask;
+                    }
                     if (currentRefPosition.lastUse)
                     {
                         if (currentRefPosition.delayRegFree)
