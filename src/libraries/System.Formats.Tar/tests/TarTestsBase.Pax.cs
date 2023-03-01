@@ -124,5 +124,17 @@ namespace System.Formats.Tar.Tests
             VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
             VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
         }
+
+        public static IEnumerable<object[]> GetPaxExtendedAttributesRoundtripTestData()
+        {
+            yield return new object[] { "key", "value" };
+            yield return new object[] { "key    ", "value    " };
+            yield return new object[] { "    key", "    value" };
+            yield return new object[] { "    key   ", "    value    " };
+            yield return new object[] { "    key spaced   ", "    value spaced    " };
+            yield return new object[] { "many sla/s\\hes", "/////////////\\\\\\///////////" };
+            yield return new object[] { "key", "va=lue" };
+            yield return new object[] { "key", "=" };
+        }
     }
 }
