@@ -866,7 +866,6 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
 
     bool result = false;
 
-    // instInfo
     emitPeepholeIterateLastInstrs(
         [&](instrDesc* id)
         {
