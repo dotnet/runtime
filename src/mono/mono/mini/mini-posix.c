@@ -97,6 +97,8 @@
 #endif
 #include "mono/utils/mono-tls-inline.h"
 
+gboolean term_signaled = FALSE;
+
 #if defined(HOST_WATCHOS)
 
 void
@@ -291,6 +293,15 @@ MONO_SIG_HANDLER_FUNC (static, sigquit_signal_handler)
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
 
+MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
+{
+	term_signaled = TRUE;
+
+	mono_gc_finalize_notify ();
+
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+}
+
 MONO_SIG_HANDLER_FUNC (static, sigusr2_signal_handler)
 {
 	gboolean enabled = mono_trace_is_enabled ();
@@ -390,6 +401,8 @@ mono_runtime_posix_install_handlers (void)
 	sigaddset (&signal_set, SIGFPE);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler, SA_RESTART);
 	sigaddset (&signal_set, SIGQUIT);
+	add_signal_handler (SIGTERM, sigterm_signal_handler, SA_RESTART);
+	sigaddset (&signal_set, SIGTERM);
 	add_signal_handler (SIGILL, mono_crashing_signal_handler, 0);
 	sigaddset (&signal_set, SIGILL);
 	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler, 0);
