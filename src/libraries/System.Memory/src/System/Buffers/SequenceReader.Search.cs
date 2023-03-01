@@ -755,6 +755,9 @@ namespace System.Buffers
                 var position = _sequence.End;
                 _currentPositionObject = position.GetObject();
                 _currentPositionInteger = position.GetInteger();
+                // and mimic default(Position) for next
+                _nextPositionObject = default;
+                _nextPositionInteger = default;
             }
         }
 
@@ -810,46 +813,38 @@ namespace System.Buffers
             Debug.Assert(currentSpan.Length < next.Length);
 
             int fullLength = next.Length;
-            SequencePosition position = new(_currentPositionObject, _currentPositionInteger);
-            if (_sequence.TryGetBuffer(position, out var nextSegment, out var nextPosition))
+            SequencePosition position = new(_nextPositionObject, _nextPositionInteger);
+
+            while (next.StartsWith(currentSpan))
             {
-                // no-op removed by compiler; we don't need the first segment, but we
-                // also don't want the compiler creating a hidden local for a discard
-                // (we use this same local *later*)
-                _ = nextSegment; // suppress IDE0059
-
-                position = nextPosition;
-                while (next.StartsWith(currentSpan))
+                if (next.Length == currentSpan.Length)
                 {
-                    if (next.Length == currentSpan.Length)
+                    // Fully matched
+                    if (advancePast)
                     {
-                        // Fully matched
-                        if (advancePast)
-                        {
-                            Advance(fullLength);
-                        }
-                        return true;
+                        Advance(fullLength);
                     }
+                    return true;
+                }
 
-                    // Need to check the next segment
-                    while (true)
+                // Need to check the next segment
+                while (true)
+                {
+                    if (!_sequence.TryGetBuffer(position, out var nextSegment, out var nextPosition))
                     {
-                        if (!_sequence.TryGetBuffer(position, out nextSegment, out nextPosition))
+                        // Nothing left
+                        return false;
+                    }
+                    position = nextPosition;
+                    if (nextSegment.Length > 0)
+                    {
+                        next = next.Slice(currentSpan.Length);
+                        currentSpan = nextSegment.Span;
+                        if (currentSpan.Length > next.Length)
                         {
-                            // Nothing left
-                            return false;
+                            currentSpan = currentSpan.Slice(0, next.Length);
                         }
-                        position = nextPosition;
-                        if (nextSegment.Length > 0)
-                        {
-                            next = next.Slice(currentSpan.Length);
-                            currentSpan = nextSegment.Span;
-                            if (currentSpan.Length > next.Length)
-                            {
-                                currentSpan = currentSpan.Slice(0, next.Length);
-                            }
-                            break;
-                        }
+                        break;
                     }
                 }
             }

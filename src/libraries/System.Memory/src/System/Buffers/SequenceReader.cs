@@ -9,11 +9,11 @@ namespace System.Buffers
 {
     public ref partial struct SequenceReader<T> where T : unmanaged, IEquatable<T>
     {
-        // keep all fields explicit to track (and pack) space; currently 72 bytes on x64
+        // keep all fields explicit to track (and pack) space
 
         // deconstruct position for packing purposes
-        private object? _currentPositionObject;
-        private int _currentPositionInteger, _currentSpanIndex;
+        private object? _currentPositionObject, _nextPositionObject;
+        private int _currentPositionInteger, _nextPositionInteger, _currentSpanIndex;
 
         private readonly long _length;
         private long _consumedAtStartOfCurrentSpan;
@@ -153,28 +153,23 @@ namespace System.Buffers
             else
             {
                 long remainingOffset = offset - (_currentSpan.Length - _currentSpanIndex);
-                SequencePosition position = new(_currentPositionObject, _currentPositionInteger);
+                SequencePosition position = new(_nextPositionObject, _nextPositionInteger);
 
-                // first we need to skip past the current span (we already discounted that data)
-                if (_sequence.TryGetBuffer(position, out var currentMemory, out var next))
+                ReadOnlyMemory<T> currentMemory;
+                while (_sequence.TryGetBuffer(position, out currentMemory, out var next))
                 {
-                    // now seek the additional buffers until we land in the segment we want
                     position = next;
-                    while (_sequence.TryGetBuffer(position, out currentMemory, out next))
+                    // Skip empty segment
+                    if (currentMemory.Length > 0)
                     {
-                        position = next;
-                        // Skip empty segment
-                        if (currentMemory.Length > 0)
+                        if (remainingOffset >= currentMemory.Length)
                         {
-                            if (remainingOffset >= currentMemory.Length)
-                            {
-                                // Subtract current non consumed data
-                                remainingOffset -= currentMemory.Length;
-                            }
-                            else
-                            {
-                                break;
-                            }
+                            // Subtract current non consumed data
+                            remainingOffset -= currentMemory.Length;
+                        }
+                        else
+                        {
+                            break;
                         }
                     }
                 }
@@ -252,9 +247,12 @@ namespace System.Buffers
             _currentPositionObject = position.GetObject();
             _currentPositionInteger = position.GetInteger();
             _consumedAtStartOfCurrentSpan = 0;
-            _currentSpan = _sequence.FirstSpan;
+            _sequence.TryGetBuffer(position, out var memory, out var next);
+            _nextPositionObject = next.GetObject();
+            _nextPositionInteger = next.GetInteger();
+            _currentSpan = memory.Span;
             _currentSpanIndex = 0;
-            if (_currentSpanIndex == _currentSpan.Length && !_sequence.IsSingleSegment)
+            if (_currentSpan.IsEmpty && !_sequence.IsSingleSegment)
             {
                 GetNextSpan();
             }
@@ -269,8 +267,9 @@ namespace System.Buffers
             {
                 _consumedAtStartOfCurrentSpan += _currentSpan.Length; // account for previous
 
-                SequencePosition position = new(_currentPositionObject, _currentPositionInteger);
-                while (_sequence.TryGetBuffer(position, out ReadOnlyMemory<T> memory, out var next))
+                SequencePosition position = new(_nextPositionObject, _nextPositionInteger);
+
+                while (_sequence.TryGetBuffer(position, out var memory, out var next))
                 {
                     if (memory.Length > 0)
                     {
@@ -278,6 +277,8 @@ namespace System.Buffers
                         _currentSpanIndex = 0;
                         _currentPositionObject = position.GetObject();
                         _currentPositionInteger = position.GetInteger();
+                        _nextPositionObject = next.GetObject();
+                        _nextPositionInteger = next.GetInteger();
                         return true;
                     }
                     position = next;
@@ -396,29 +397,19 @@ namespace System.Buffers
             firstSpan.CopyTo(destination);
             int copied = firstSpan.Length;
 
-            SequencePosition position = new(_currentPositionObject, _currentPositionInteger);
-            // first we need to skip past the current span (we already discounted that data)
-            if (_sequence.TryGetBuffer(position, out var nextSegment, out var next))
+            SequencePosition position = new(_nextPositionObject, _nextPositionInteger);
+            while (_sequence.TryGetBuffer(position, out var nextSegment, out var next))
             {
-                // no-op removed by compiler; we don't need the first segment, but we
-                // also don't want the compiler creating a hidden local for a discard
-                // (we use this same local *later*)
-                _ = nextSegment; // suppress IDE0059
-
                 position = next;
-                while (_sequence.TryGetBuffer(position, out nextSegment, out next))
+                if (nextSegment.Length > 0)
                 {
-                    position = next;
-                    if (nextSegment.Length > 0)
+                    ReadOnlySpan<T> nextSpan = nextSegment.Span;
+                    int toCopy = Math.Min(nextSpan.Length, destination.Length - copied);
+                    nextSpan.Slice(0, toCopy).CopyTo(destination.Slice(copied));
+                    copied += toCopy;
+                    if (copied >= destination.Length)
                     {
-                        ReadOnlySpan<T> nextSpan = nextSegment.Span;
-                        int toCopy = Math.Min(nextSpan.Length, destination.Length - copied);
-                        nextSpan.Slice(0, toCopy).CopyTo(destination.Slice(copied));
-                        copied += toCopy;
-                        if (copied >= destination.Length)
-                        {
-                            break;
-                        }
+                        break;
                     }
                 }
             }
