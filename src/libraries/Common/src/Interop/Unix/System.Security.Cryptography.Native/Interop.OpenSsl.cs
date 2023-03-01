@@ -385,21 +385,34 @@ internal static partial class Interop
 
                 if (sslAuthenticationOptions.IsClient)
                 {
+                    string punyCode = string.Empty;
                     // The IdnMapping converts unicode input into the IDNA punycode sequence.
-                    string punyCode = string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ? string.Empty : s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
-
-                    // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
-                    if (!Ssl.SslSetTlsExtHostName(sslHandle, punyCode))
+                    try
                     {
-                        Crypto.ErrClearError();
+                        punyCode = string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ? string.Empty : s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
+                    }
+                    catch (ArgumentException)
+                    {
+                        punyCode = sslAuthenticationOptions.TargetHost;
+                        throw;
                     }
 
-                    if (cacheSslContext && !string.IsNullOrEmpty(punyCode))
+                    if (!string.IsNullOrEmpty(punyCode))
                     {
-                        sslCtxHandle.TrySetSession(sslHandle, punyCode);
-                        bool ignored = false;
-                        sslCtxHandle.DangerousAddRef(ref ignored);
-                        sslHandle.SslContextHandle = sslCtxHandle;
+                        // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
+                        if (!Ssl.SslSetTlsExtHostName(sslHandle, punyCode))
+                        {
+                            Crypto.ErrClearError();
+                        }
+
+
+                        if (cacheSslContext)
+                        {
+                            sslCtxHandle.TrySetSession(sslHandle, punyCode);
+                            bool ignored = false;
+                            sslCtxHandle.DangerousAddRef(ref ignored);
+                            sslHandle.SslContextHandle = sslCtxHandle;
+                        }
                     }
 
                     // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,
@@ -745,16 +758,18 @@ internal static partial class Interop
             Debug.Assert(session != IntPtr.Zero);
 
             IntPtr ptr = Ssl.SslGetData(ssl);
-            Debug.Assert(ptr != IntPtr.Zero);
-            GCHandle gch = GCHandle.FromIntPtr(ptr);
-
-            SafeSslContextHandle? ctxHandle = gch.Target as SafeSslContextHandle;
-            // There is no relation between SafeSslContextHandle and SafeSslHandle so the handle
-            // may be released while the ssl session is still active.
-            if (ctxHandle != null && ctxHandle.TryAddSession(Ssl.SslGetServerName(ssl), session))
+            if (ptr != IntPtr.Zero)
             {
-                // offered session was stored in our cache.
-                return 1;
+                GCHandle gch = GCHandle.FromIntPtr(ptr);
+
+                SafeSslContextHandle? ctxHandle = gch.Target as SafeSslContextHandle;
+                // There is no relation between SafeSslContextHandle and SafeSslHandle so the handle
+                // may be released while the ssl session is still active.
+                if (ctxHandle != null && ctxHandle.TryAddSession(Ssl.SslGetServerName(ssl), session))
+                {
+                    // offered session was stored in our cache.
+                    return 1;
+                }
             }
 
             // OpenSSL will destroy session.

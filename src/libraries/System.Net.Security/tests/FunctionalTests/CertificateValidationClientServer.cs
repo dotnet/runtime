@@ -262,6 +262,45 @@ namespace System.Net.Security.Tests
             return true;
         }
 
+        [Theory]
+        [InlineData("www-.volal.cz")]
+        [InlineData("www-.colorhexa.com")]
+        [InlineData("xn--www-7m0a.thegratuit.com")]
+        public async Task SslStream_InvalidTargetName_HandshakeOk(string name)
+        {
+            //using CancellationTokenSource cts = new CancellationTokenSource();
+            //cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = name,
+                    CertificateChainPolicy = new X509ChainPolicy() { VerificationFlags = X509VerificationFlags.IgnoreInvalidName }
+
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                //serverOptions.CertificateChainPolicy = new X509ChainPolicy() { VerificationFlags = X509VerificationFlags.IgnoreInvalidName };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, default),
+                                server.AuthenticateAsServerAsync(serverOptions, default));
+
+                Console.WriteLine("Server get '{0}' SNI ", server.TargetHostName );
+                await TestHelper.PingPong(client, server, default);
+                Assert.Null(server.RemoteCertificate);
+            }
+        }
+
         private bool ClientSideRemoteServerCertificateValidation(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             SslPolicyErrors expectedSslPolicyErrors = SslPolicyErrors.None;
