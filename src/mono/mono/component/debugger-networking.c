@@ -235,6 +235,7 @@ mono_debugger_get_address_info (const char *hostname, int port, int flags, MonoA
 	return 0;
 
 #else
-	#error "No networking implementation available"
+	g_error ("No networking implementation available");
+	return 1;
 #endif /* defined (HAVE_GETADDRINFO) */
 }
