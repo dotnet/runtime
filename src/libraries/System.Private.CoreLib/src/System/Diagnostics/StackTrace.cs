@@ -126,6 +126,15 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Constructs a "fake" stack trace
+        /// </summary>
+        public StackTrace(StackFrame[] frames)
+        {
+            _stackFrames = frames;
+            _numOfFrames = frames.Length;
+        }
+
+        /// <summary>
         /// Property to get the number of frames in the stack trace
         /// </summary>
         public virtual int FrameCount => _numOfFrames;
