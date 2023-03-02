@@ -1889,7 +1889,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
     // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
-    setMethodHasExpRuntimeLookup();
+    impInlineRoot()->setMethodHasExpRuntimeLookup();
     helperCall->SetExpRuntimeLookup();
 
     if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))

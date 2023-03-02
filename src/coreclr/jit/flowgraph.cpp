@@ -180,6 +180,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     return gtNewLclvNode(tmpNum, expr->TypeGet());
                 };
 
+                // if sigTree was not a constant e.g. COMMA(..., CNS)) - spill it
+                if (!sigTree->IsCnsIntOrI())
+                {
+                    spillExpr(sigTree);
+                }
+
                 // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
                 ctxTree                = spillExpr(ctxTree);
                 GenTree* slotPtrTree   = gtClone(ctxTree);
