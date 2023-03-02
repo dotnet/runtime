@@ -22,6 +22,7 @@ namespace System.Net.Quic.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73290", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/82885", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.SupportsTls13))]
         public void SupportedWindowsPlatforms_IsSupportedIsTrue()
         {
