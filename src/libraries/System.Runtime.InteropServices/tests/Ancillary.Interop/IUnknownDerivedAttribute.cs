@@ -22,6 +22,6 @@ namespace System.Runtime.InteropServices.Marshalling
         public Type Implementation => typeof(TImpl);
 
         /// <inheritdoc />
-        public unsafe void* VirtualMethodTableManagedImplementation => T.VirtualMethodTableManagedImplementation;
+        public unsafe void* VirtualMethodTableManagedImplementation => T.ManagedVirtualMethodTable;
     }
 }

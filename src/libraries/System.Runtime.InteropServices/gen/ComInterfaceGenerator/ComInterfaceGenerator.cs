@@ -197,6 +197,231 @@ namespace Microsoft.Interop
                 .Select(static (vtable, ct) => GeneratePopulateVTableMethod(vtable));
 
             context.RegisterConcatenatedSyntaxOutputs(populateVTable, "PopulateVTable.g.cs");
+
+            IncrementalValuesProvider<MemberDeclarationSyntax> iIUnknownInterfaceTypeImplementation =
+                nativeToManagedStubContexts
+                .Collect()
+                .SelectMany(static (data, ct) => data.GroupBy(stub => stub.ContainingSyntaxContext))
+                .Select(static (context, ct) => GenerateIIUnknownInterfaceTypeImplementation(context.Key, context.Count()));
+
+            context.RegisterConcatenatedSyntaxOutputs(iIUnknownInterfaceTypeImplementation, "IIUnknownInterfaceTypeImplementation.g.cs");
+        }
+
+        private static MemberDeclarationSyntax GenerateIIUnknownInterfaceTypeImplementation(ContainingSyntaxContext context, int methodsCount)
+        {
+            // generate the following code:
+            // static Guid IIUnknownInterfaceType.Iid => new Guid("00000000-0000-0000-0000-000000000000");
+            var iid = PropertyDeclaration(List<AttributeListSyntax>(),
+                TokenList(Token(SyntaxKind.StaticKeyword)),
+                ParseTypeName("System.Guid"),
+                ExplicitInterfaceSpecifier(ParseName(TypeNames.IIUnknownInterfaceType)),
+                Identifier("Iid"),
+                AccessorList(
+                    SingletonList(
+                        AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, Block(
+                            SingletonList(
+                                ReturnStatement(
+                                    ObjectCreationExpression(ParseTypeName("System.Guid"))
+                                    .WithArgumentList(
+                                        ArgumentList(
+                                            SingletonSeparatedList(
+                                                Argument(
+                                                    LiteralExpression(SyntaxKind.StringLiteralExpression, Literal("00000000-0000-0000-0000-000000000000")))))))))))));
+            // private static readonly void** m_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IComInterface1), sizeof(void*) * 4);
+            var m_vtable = FieldDeclaration(
+                List<AttributeListSyntax>(),
+                TokenList(
+                    Token(SyntaxKind.StaticKeyword),
+                    Token(SyntaxKind.PrivateKeyword),
+                    Token(SyntaxKind.ReadOnlyKeyword)),
+                VariableDeclaration(
+                    PointerType(PointerType(ParseTypeName("void"))),
+                    SingletonSeparatedList(
+                        VariableDeclarator("m_vtable")
+                            .WithInitializer(
+                                EqualsValueClause(
+                                    CastExpression(
+                                        PointerType(PointerType(ParseTypeName("void"))),
+                                        InvocationExpression(
+                                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                                ParseTypeName(TypeNames.RuntimeHelpers),
+                                                IdentifierName("AllocateTypeAssociatedMemory")))
+                                        .WithArgumentList(
+                                            ArgumentList(
+                                                SeparatedList<ArgumentSyntax>(NodeOrTokenList(
+                                                    Argument(
+                                                        TypeOfExpression(
+                                                            IdentifierName(context.ContainingSyntax[0].Identifier))),
+                                                    Token(SyntaxKind.CommaToken),
+                                                    Argument(
+                                                        BinaryExpression(SyntaxKind.MultiplyExpression,
+                                                            SizeOfExpression(
+                                                                PointerType(ParseTypeName("void"))),
+                                                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(3 + methodsCount))))))))))))));
+            // static void** IIUnknownInterfaceType.ManagedVirtualMethodTable
+            // {
+            //     get
+            //     {
+            //         if (m_vtable[0] == null)
+            //         {
+            //             nint v0 = (nint)m_vtable[0];
+            //             nint v1 = (nint)m_vtable[1];
+            //             nint v2 = (nint)m_vtable[2];
+            //             IUnknownVTableComWrappers.GetIUnknownImpl(out v0, out v1, out v2);
+            //             m_vtable[0] = (void*)v0;
+            //             m_vtable[1] = (void*)v1;
+            //             m_vtable[2] = (void*)v2;
+            //             Native.PopulateManagedVirtualMethodTable(m_vtable);
+            //         }
+            //         return m_vtable;
+            //     }
+            // }
+            var managedVirtualMethodTableProperty = PropertyDeclaration(
+                List<AttributeListSyntax>(),
+                TokenList(Token(SyntaxKind.StaticKeyword)),
+                PointerType(PointerType(ParseTypeName("void"))),
+                ExplicitInterfaceSpecifier(ParseName(TypeNames.IIUnknownInterfaceType)),
+                Identifier("ManagedVirtualMethodTable"),
+                AccessorList(
+                    SingletonList(
+                        AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, Block(
+                            List(new StatementSyntax[]
+                            {
+
+                                IfStatement(
+                                    BinaryExpression(
+                                        SyntaxKind.EqualsExpression,
+                                        ElementAccessExpression(
+                                            IdentifierName("m_vtable"))
+                                        .WithArgumentList(
+                                            BracketedArgumentList(
+                                                SingletonSeparatedList(
+                                                    Argument(
+                                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))),
+                                        LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                                    Block(
+                                        List(new StatementSyntax[]
+                                        {
+                                            // nint v0 = (nint)m_vtable[0];
+                                            LocalDeclarationStatement(VariableDeclaration(ParseTypeName("nint"),
+                                                SeparatedList(SingletonList(VariableDeclarator(Identifier("v0"),
+                                                null,
+                                                EqualsValueClause(
+                                                    CastExpression(
+                                                        ParseTypeName("nint"),
+                                                        ElementAccessExpression(IdentifierName("m_vtable"),
+                                                        BracketedArgumentList(
+                                                            SeparatedList(
+                                                                SingletonList(
+                                                                    Argument(
+                                                                        LiteralExpression(
+                                                                            SyntaxKind.NumericLiteralExpression,
+                                                                            Literal(0)))))))))))))),
+                                            // nint v1 = (nint)m_vtable[1];
+                                            LocalDeclarationStatement(VariableDeclaration(ParseTypeName("nint"),
+                                                SeparatedList(SingletonList(VariableDeclarator(Identifier("v1"),
+                                                null,
+                                                EqualsValueClause(
+                                                    CastExpression(
+                                                        ParseTypeName("nint"),
+                                                        ElementAccessExpression(IdentifierName("m_vtable"),
+                                                        BracketedArgumentList(
+                                                            SeparatedList(
+                                                                SingletonList(
+                                                                    Argument(
+                                                                        LiteralExpression(
+                                                                            SyntaxKind.NumericLiteralExpression,
+                                                                            Literal(1)))))))))))))),
+                                            // nint v2 = (nint)m_vtable[2];
+                                            LocalDeclarationStatement(VariableDeclaration(ParseTypeName("nint"),
+                                                SeparatedList(SingletonList(VariableDeclarator(Identifier("v2"),
+                                                null,
+                                                EqualsValueClause(
+                                                    CastExpression(
+                                                        ParseTypeName("nint"),
+                                                        ElementAccessExpression(IdentifierName("m_vtable"),
+                                                        BracketedArgumentList(
+                                                            SeparatedList(
+                                                                SingletonList(
+                                                                    Argument(
+                                                                        LiteralExpression(
+                                                                            SyntaxKind.NumericLiteralExpression,
+                                                                            Literal(2)))))))))))))),
+                                            // IUnknownVTableComWrappers.GetIUnknownImpl(out v0, out v1, out v2);
+                                            ExpressionStatement(
+                                                InvocationExpression(
+                                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                                        ParseTypeName(TypeNames.ComWrappers),
+                                                        IdentifierName("GetIUnknownImpl")))
+                                                .WithArgumentList(
+                                                    ArgumentList(
+                                                        SeparatedList<ArgumentSyntax>(NodeOrTokenList(
+                                                            Argument(IdentifierName("v0"))
+                                                                    .WithRefKindKeyword(Token(SyntaxKind.OutKeyword)),
+                                                            Token(SyntaxKind.CommaToken),
+                                                            Argument(IdentifierName("v1"))
+                                                                .WithRefKindKeyword(Token(SyntaxKind.OutKeyword)),
+                                                            Token(SyntaxKind.CommaToken),
+                                                            Argument(IdentifierName("v2"))
+                                                                .WithRefKindKeyword(Token(SyntaxKind.OutKeyword))))))),
+                                            // m_vtable[0] = (void*)v0;
+                                            ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                                 ElementAccessExpression(
+                                                     IdentifierName("m_vtable"),
+                                                     BracketedArgumentList(
+                                                         SingletonSeparatedList(
+                                                             Argument(
+                                                                 LiteralExpression(
+                                                                     SyntaxKind.NumericLiteralExpression,
+                                                                     Literal(0)))))),
+                                                 CastExpression(
+                                                     PointerType(
+                                                         ParseTypeName("void")),
+                                                     IdentifierName("v0")))),
+                                            // m_vtable[1] = (void*)v1;
+                                            ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                                 ElementAccessExpression(
+                                                     IdentifierName("m_vtable"),
+                                                     BracketedArgumentList(
+                                                         SingletonSeparatedList(
+                                                             Argument(
+                                                                 LiteralExpression(
+                                                                     SyntaxKind.NumericLiteralExpression,
+                                                                     Literal(0)))))),
+                                                 CastExpression(
+                                                     PointerType(
+                                                         ParseTypeName("void")),
+                                                     IdentifierName("v1")))),
+                                            // m_vtable[2] = (void*)v2;
+                                            ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                                 ElementAccessExpression(
+                                                     IdentifierName("m_vtable"),
+                                                     BracketedArgumentList(
+                                                         SingletonSeparatedList(
+                                                             Argument(
+                                                                 LiteralExpression(
+                                                                     SyntaxKind.NumericLiteralExpression,
+                                                                     Literal(0)))))),
+                                                 CastExpression(
+                                                     PointerType(
+                                                         ParseTypeName("void")),
+                                                     IdentifierName("v2")))),
+                                            // Native.PopulateManagedVirtualMethodTable(m_vtable);
+                                            ExpressionStatement(
+                                                InvocationExpression(
+                                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                                        IdentifierName("Native"),
+                                                        IdentifierName("PopulateUnmanagedVirtualMethodTable")))
+                                                .WithArgumentList(
+                                                    ArgumentList(
+                                                        SingletonSeparatedList(
+                                                            Argument(
+                                                                IdentifierName("m_vtable"))))))
+                                        }))),
+                                ReturnStatement(IdentifierName("m_vtable"))
+                            }))))));
+
+            return context.WrapMembersInContainingSyntaxWithUnsafeModifierWithInterfaceOnInnerType(ParseTypeName(TypeNames.IIUnknownInterfaceType), iid, m_vtable, managedVirtualMethodTableProperty);
         }
 
         private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, CancellationToken ct)
@@ -327,7 +552,7 @@ namespace Microsoft.Interop
                 .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword)))
                 .AddParameterListParameters(
                     Parameter(Identifier(VTableParameterName))
-                    .WithType(GenericName(TypeNames.System_Span).AddTypeArgumentListArguments(IdentifierName("nint"))));
+                    .WithType(PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))));
 
         private static MemberDeclarationSyntax GeneratePopulateVTableMethod(IGrouping<ContainingSyntaxContext, IncrementalMethodStubGenerationContext> vtableMethods)
         {
@@ -345,7 +570,7 @@ namespace Microsoft.Interop
                             ElementAccessExpression(
                                 IdentifierName(VTableParameterName))
                             .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(method.VtableIndexData.Index)))),
-                            CastExpression(IdentifierName("nint"),
+                            CastExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
                                 CastExpression(functionPointerType,
                                     PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
                                         IdentifierName($"ABI_{method.StubMethodSyntaxTemplate.Identifier}")))))));

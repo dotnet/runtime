@@ -135,5 +135,38 @@ namespace Microsoft.Interop
             }
             return wrappedMember;
         }
+        public MemberDeclarationSyntax WrapMembersInContainingSyntaxWithUnsafeModifierWithInterfaceOnInnerType(TypeSyntax interfaceName, params MemberDeclarationSyntax[] members)
+        {
+            bool addedUnsafe = false;
+            MemberDeclarationSyntax? wrappedMember = null;
+            int i = 0;
+            foreach (var containingType in ContainingSyntax)
+            {
+                TypeDeclarationSyntax type = TypeDeclaration(containingType.TypeKind, containingType.Identifier)
+                    .WithModifiers(containingType.Modifiers)
+                    .AddMembers(wrappedMember is not null ? new[] { wrappedMember } : members);
+                if (i == 0)
+                {
+                    type = type.WithBaseList(BaseList(SeparatedList<BaseTypeSyntax>(new[] {
+                        SimpleBaseType(interfaceName)
+                    })));
+                }
+                if (!addedUnsafe)
+                {
+                    type = type.WithModifiers(type.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword));
+                }
+                if (containingType.TypeParameters is not null)
+                {
+                    type = type.AddTypeParameterListParameters(containingType.TypeParameters.Parameters.ToArray());
+                }
+                wrappedMember = type;
+                i++;
+            }
+            if (ContainingNamespace is not null)
+            {
+                wrappedMember = NamespaceDeclaration(ParseName(ContainingNamespace)).AddMembers(wrappedMember);
+            }
+            return wrappedMember;
+        }
     }
 }
