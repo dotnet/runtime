@@ -2422,12 +2422,6 @@
   <data name="InvalidOperation_CannotRestoreUnsuppressedFlow" xml:space="preserve">
     <value>Cannot restore context flow when it is not suppressed.</value>
   </data>
-  <data name="InvalidOperation_CannotSuppressFlowMultipleTimes" xml:space="preserve">
-    <value>Context flow is already suppressed.</value>
-  </data>
-  <data name="InvalidOperation_CannotUseAFCMultiple" xml:space="preserve">
-    <value>AsyncFlowControl object can be used only once to call Undo().</value>
-  </data>
   <data name="InvalidOperation_CannotUseAFCOtherThread" xml:space="preserve">
     <value>AsyncFlowControl object must be used on the thread where it was created.</value>
   </data>
