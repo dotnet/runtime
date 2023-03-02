@@ -2162,28 +2162,6 @@ static unsigned MarkGCField(BYTE* gcPtrs, CorInfoGCType type)
     return 0;
 }
 
-static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs);
-
-static unsigned ComputeGCLayout(FieldDesc* pFD, BYTE* gcPtrs)
-{
-    unsigned result = 0;
-    if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
-    {
-        MethodTable* pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-        result += ComputeGCLayout(pFieldMT, gcPtrs);
-    }
-    else if (pFD->IsObjRef())
-    {
-        result += MarkGCField(gcPtrs, TYPE_GC_REF);
-    }
-    else if (pFD->IsByRef())
-    {
-        result += MarkGCField(gcPtrs, TYPE_GC_BYREF);
-    }
-
-    return result;
-}
-
 static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
 {
     STANDARD_VM_CONTRACT;
@@ -2195,20 +2173,35 @@ static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
     {
+        int fieldStartIndex = pFD->GetOffset() / TARGET_POINTER_SIZE;
+
+        if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            MethodTable* pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
+        }
+        else if (pFD->IsObjRef())
+        {
+            result += MarkGCField(gcPtrs + fieldStartIndex, TYPE_GC_REF);
+        }
+        else if (pFD->IsByRef())
+        {
+            result += MarkGCField(gcPtrs + fieldStartIndex, TYPE_GC_BYREF);
+        }
+
         if (isInlineArray)
         {
             _ASSERTE(pFD->GetOffset() == 0);
-            DWORD totalSize = pMT->GetNumInstanceFieldBytes();
-            DWORD elementSize = pFD->GetSize();
-            for (DWORD offset = 0; offset < totalSize; offset += elementSize)
+            DWORD totalLayoutSize = pMT->GetNumInstanceFieldBytes() / TARGET_POINTER_SIZE;
+            DWORD elementLayoutSize = pFD->GetSize() / TARGET_POINTER_SIZE;
+            for (DWORD offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
             {
-                result += ComputeGCLayout(pFD, gcPtrs + (offset / TARGET_POINTER_SIZE));
+                memcpy(gcPtrs + offset, gcPtrs, elementLayoutSize);
+                result += elementLayoutSize;
             }
-        }
-        else
-        {
-            int fieldStartIndex = pFD->GetOffset() / TARGET_POINTER_SIZE;
-            result += ComputeGCLayout(pFD, gcPtrs + fieldStartIndex);
+
+            // value array has only one element field
+            break;
         }
     }
     return result;
