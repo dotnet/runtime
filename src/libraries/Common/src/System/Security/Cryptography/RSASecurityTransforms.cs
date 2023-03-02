@@ -460,7 +460,7 @@ namespace System.Security.Cryptography
 
                 byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> buf = new Span<byte>(rented, 0, rsaSize);
-                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, KeySize);
+                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize);
 
                 try
                 {
@@ -512,47 +512,45 @@ namespace System.Security.Cryptography
                         palAlgId,
                         signatureAlgorithm);
                 }
-                else
+
+                Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss && hashAlgorithm == HashAlgorithmName.MD5);
+                SafeSecKeyRefHandle publicKey = GetKeys().PublicKey;
+
+                int keySize = KeySize;
+                int rsaSize = RsaPaddingProcessor.BytesRequiredForBitCount(keySize);
+
+                if (signature.Length != rsaSize)
                 {
-                    Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss && hashAlgorithm == HashAlgorithmName.MD5);
-                    SafeSecKeyRefHandle publicKey = GetKeys().PublicKey;
+                    return false;
+                }
 
-                    int keySize = KeySize;
-                    int rsaSize = RsaPaddingProcessor.BytesRequiredForBitCount(keySize);
+                if (hash.Length != RsaPaddingProcessor.HashLength(hashAlgorithm))
+                {
+                    return false;
+                }
 
-                    if (signature.Length != rsaSize)
+                byte[] rented = CryptoPool.Rent(rsaSize);
+                Span<byte> unwrapped = new Span<byte>(rented, 0, rsaSize);
+
+                try
+                {
+                    if (!Interop.AppleCrypto.TryRsaVerificationPrimitive(
+                        publicKey,
+                        signature,
+                        unwrapped,
+                        out int bytesWritten))
                     {
-                        return false;
+                        Debug.Fail($"TryRsaVerificationPrimitive with a pre-allocated buffer");
+                        throw new CryptographicException();
                     }
 
-                    if (hash.Length != RsaPaddingProcessor.HashLength(hashAlgorithm))
-                    {
-                        return false;
-                    }
-
-                    byte[] rented = CryptoPool.Rent(rsaSize);
-                    Span<byte> unwrapped = new Span<byte>(rented, 0, rsaSize);
-
-                    try
-                    {
-                        if (!Interop.AppleCrypto.TryRsaVerificationPrimitive(
-                            publicKey,
-                            signature,
-                            unwrapped,
-                            out int bytesWritten))
-                        {
-                            Debug.Fail($"TryRsaVerificationPrimitive with a pre-allocated buffer");
-                            throw new CryptographicException();
-                        }
-
-                        Debug.Assert(bytesWritten == rsaSize);
-                        return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize);
-                    }
-                    finally
-                    {
-                        CryptographicOperations.ZeroMemory(unwrapped);
-                        CryptoPool.Return(rented, clearSize: 0);
-                    }
+                    Debug.Assert(bytesWritten == rsaSize);
+                    return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(unwrapped);
+                    CryptoPool.Return(rented, clearSize: 0);
                 }
             }
 
