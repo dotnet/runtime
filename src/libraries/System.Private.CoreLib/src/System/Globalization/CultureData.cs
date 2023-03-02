@@ -2303,10 +2303,12 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
-
+#if TARGET_IOS
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type)
                                                 : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type)
                                                 : IcuGetLocaleInfo(type);
+#endif
+            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
         private string GetLocaleInfoCore(LocaleStringData type, string? uiCultureName = null)
@@ -2314,10 +2316,12 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
-
+#if TARGET_IOS
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type)
                                             : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type, uiCultureName)
                                             : IcuGetLocaleInfo(type, uiCultureName);
+#endif
+        return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
         }
 
         private string GetLocaleInfoCore(string localeName, LocaleStringData type, string? uiCultureName = null)
@@ -2325,10 +2329,12 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
-
+#if TARGET_IOS
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type)
                                             : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(localeName, type, uiCultureName)
                                             : IcuGetLocaleInfo(localeName, type, uiCultureName);
+#endif
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
         }
 
         private int[] GetLocaleInfoCoreUserOverride(LocaleGroupingData type)
