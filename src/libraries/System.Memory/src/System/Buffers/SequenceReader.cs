@@ -216,7 +216,7 @@ namespace System.Buffers
             {
                 value = currentSpan[i];
 
-                if (++_currentSpanIndex == currentSpan.Length)
+                if ((_currentSpanIndex = i + 1) == currentSpan.Length)
                 {
                     TryGetNextSpan(); // move ahead eagerly
                 }
