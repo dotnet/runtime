@@ -176,7 +176,7 @@
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
 
-  <!-- _portableOS is the the portable OS corresponding to the the target platform. -->
+  <!-- _portableOS is the portable OS corresponding to the target platform. -->
   <PropertyGroup Label="CalculatePortableOS">
     <_portableOS Condition="'$(_portableOS)' == ''">$(TargetOS.ToLowerInvariant())</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'anyos'">$(__PortableOS)</_portableOS>
@@ -211,8 +211,6 @@
     <!-- There are no Mac Catalyst, iOS or tvOS tools and it can be built on OSX only, so use that -->
     <_toolsRID Condition="'$(_portableOS)' == 'maccatalyst' or '$(_portableOS)' == 'ios' or '$(_portableOS)' == 'iossimulator' or '$(_portableOS)' == 'tvos' or '$(_portableOS)' == 'tvossimulator'">osx-x64</_toolsRID>
 
-    <!-- There are no non-portable builds for Ilasm, Ildasm, ILC etc. -->
-    <ToolsRID Condition="'$(PortableBuild)' != 'true' and '$(_portableOS)' == 'linux'">linux-$(_hostArch)</ToolsRID>
     <ToolsRID Condition="'$(ToolsRID)' == ''">$(_toolsRID)</ToolsRID>
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
