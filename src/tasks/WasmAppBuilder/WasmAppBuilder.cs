@@ -215,7 +215,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             // for the is IL IsAssembly check we need to read the bytes from the original DLL
             if (!Utils.IsManagedAssembly(bytes))
             {
-                Log.LogWarning("Skipping non-assembly file: " + assemblyPath);
+                Log.LogMessage(MessageImportance.Low, "Skipping non-assembly file: " + assemblyPath);
             }
             else
             {
