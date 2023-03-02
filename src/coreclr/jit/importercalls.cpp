@@ -4007,7 +4007,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->sigInst.methInstCount == 2);
 
             CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
-            CORINFO_CLASS_HANDLE toTypeHnd   = sig->sigInst.methInst[0];
+            CORINFO_CLASS_HANDLE toTypeHnd   = sig->sigInst.methInst[1];
 
             if (fromTypeHnd == toTypeHnd)
             {
