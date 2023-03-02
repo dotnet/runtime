@@ -219,6 +219,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             string assemblyPath = assembly;
             var bytes = File.ReadAllBytes(assemblyPath);
+            // for the is IL IsAssembly check we need to read the bytes from the original DLL
             if (!IsAssembly(bytes))
             {
                 Log.LogWarning("Skipping non-assembly file: " + assemblyPath);
@@ -226,7 +227,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             else
             {
                 if (UseWebcil)
-                    assemblyPath = Path.ChangeExtension(assemblyPath, ".webcil");
+                {
+                    assemblyPath = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
+                    // For the hash, read the bytes from the webcil file, not the dll file.
+                    bytes = File.ReadAllBytes(assemblyPath);
+                }
 
                 config.Assets.Add(new AssemblyEntry(Path.GetFileName(assemblyPath), GetFileHash(bytes)));
                 if (DebugLevel != 0)
