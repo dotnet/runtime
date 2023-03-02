@@ -818,6 +818,8 @@ namespace System
                     return "function";
                 case ExceptionArgument.scheduler:
                     return "scheduler";
+                case ExceptionArgument.continuation:
+                    return "continuation";
                 case ExceptionArgument.continuationAction:
                     return "continuationAction";
                 case ExceptionArgument.continuationFunction:
@@ -1142,6 +1144,7 @@ namespace System
         creationOptions,
         function,
         scheduler,
+        continuation,
         continuationAction,
         continuationFunction,
         tasks,
