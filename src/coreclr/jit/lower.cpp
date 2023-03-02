@@ -3335,7 +3335,6 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #endif // TARGET_XARCH
-
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
@@ -3398,7 +3397,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     GenCondition condCode;
     if (TryLowerConditionToFlagsNode(jtrue, cond, &condCode))
     {
-        jtrue->SetOperRaw(GT_JCC);
+        jtrue->SetOper(GT_JCC);
         jtrue->AsCC()->gtCondition = condCode;
     }
 
@@ -3457,7 +3456,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     GenCondition selectCond;
     if (((select->gtFlags & GTF_SET_FLAGS) == 0) && TryLowerConditionToFlagsNode(select, cond, &selectCond))
     {
-        select->SetOperRaw(GT_SELECTCC);
+        select->SetOper(GT_SELECTCC);
         GenTreeOpCC* newSelect = select->AsOpCC();
         newSelect->gtCondition = selectCond;
         ContainCheckSelect(newSelect);
