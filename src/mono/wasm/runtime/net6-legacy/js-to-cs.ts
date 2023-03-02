@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { isThenable } from "../cancelable-promise";
-import cwraps from "../cwraps";
+import { legacy_c_functions as cwraps } from "../cwraps";
 import { js_owned_gc_handle_symbol, assert_not_disposed, cs_owned_js_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, mono_wasm_release_cs_owned_object, teardown_managed_proxy, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
 import { Module } from "../imports";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
