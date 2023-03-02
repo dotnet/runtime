@@ -889,7 +889,7 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
                         return PEEPHOLE_ABORT;
                     }
 
-                    return PEEPHOLE_CONTINUE;
+                    return PEEPHOLE_ABORT;
                 }
 
                 default:
