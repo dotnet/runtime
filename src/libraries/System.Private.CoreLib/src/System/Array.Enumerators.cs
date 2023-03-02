@@ -67,7 +67,7 @@ namespace System
         }
     }
 
-    internal class SZGenericArrayEnumeratorBase
+    internal abstract class SZGenericArrayEnumeratorBase
     {
         protected readonly Array _array;
         protected int _index;
@@ -104,10 +104,17 @@ namespace System
 
     internal sealed class SZGenericArrayEnumerator<T> : SZGenericArrayEnumeratorBase, IEnumerator<T>
     {
-        // Array.Empty is intentionally omitted here, since we don't want to pay for generic instantiations that
-        // wouldn't have otherwise been used.
+        /// <summary>Provides an empty enumerator singleton.</summary>
+        /// <remarks>
+        /// If the consumer is using SZGenericArrayEnumerator elsewhere or is otherwise likely
+        /// to be using T[] elsewhere, this singleton should be used.  Otherwise, GenericEmptyEnumerator's
+        /// singleton should be used instead, as it doesn't reference T[] in order to reduce footprint.
+        /// </remarks>
 #pragma warning disable CA1825
-        internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(new T[0]);
+        internal static readonly SZGenericArrayEnumerator<T> Empty =
+            // Array.Empty is intentionally omitted here, since we don't want to pay for generic instantiations
+            // that wouldn't have otherwise been used.
+            new SZGenericArrayEnumerator<T>(new T[0]);
 #pragma warning restore CA1825
 
         public SZGenericArrayEnumerator(T[] array)
@@ -132,5 +139,47 @@ namespace System
         }
 
         object? IEnumerator.Current => Current;
+    }
+
+    internal abstract class GenericEmptyEnumeratorBase
+    {
+#pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
+        public bool MoveNext() => false;
+
+        public object Current
+        {
+            get
+            {
+                ThrowHelper.ThrowInvalidOperationException_EnumCurrent(-1);
+                return default;
+            }
+        }
+
+        public void Reset() { }
+
+        public void Dispose() { }
+#pragma warning restore CA1822
+    }
+
+    /// <summary>Provides an empty enumerator singleton.</summary>
+    /// <remarks>
+    /// If the consumer is using SZGenericArrayEnumerator elsewhere or is otherwise likely
+    /// to be using T[] elsewhere, SZGenericArrayEnumerator's singleton should be used.  Otherwise,
+    /// this singleton should be used, as it doesn't reference T[] in order to reduce footprint.
+    /// </remarks>
+    internal sealed class GenericEmptyEnumerator<T> : GenericEmptyEnumeratorBase, IEnumerator<T>
+    {
+        public static readonly GenericEmptyEnumerator<T> Instance = new();
+
+        private GenericEmptyEnumerator() { }
+
+        public new T Current
+        {
+            get
+            {
+                ThrowHelper.ThrowInvalidOperationException_EnumCurrent(-1);
+                return default;
+            }
+        }
     }
 }
