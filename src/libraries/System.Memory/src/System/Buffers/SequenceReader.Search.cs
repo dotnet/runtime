@@ -827,11 +827,16 @@ namespace System.Buffers
                     return true;
                 }
 
+                // move past the values we have validated
+                next = next.Slice(currentSpan.Length);
+
                 // Need to check the next segment
-                if (!TryGetNextBuffer(in _sequence, ref segment, ref currentSpan))
+                if (!TryGetNextBuffer(in _sequence, ref segment, ref currentSpan, out _))
                 {
-                    return false; // no more data
+                    // Nothing left
+                    return false;
                 }
+
                 if (currentSpan.Length > next.Length)
                 {
                     currentSpan = currentSpan.Slice(0, next.Length);

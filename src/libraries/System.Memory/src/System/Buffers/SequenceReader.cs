@@ -181,7 +181,7 @@ namespace System.Buffers
                 object? segment = _currentPositionObject;
 
                 ReadOnlySpan<T> currentSpan = default;
-                while (TryGetNextBuffer(in _sequence, ref segment, ref currentSpan))
+                while (TryGetNextBuffer(in _sequence, ref segment, ref currentSpan, out _))
                 {
                     if (remainingOffset >= currentSpan.Length)
                     {
@@ -285,16 +285,24 @@ namespace System.Buffers
         private bool TryGetNextSpan()
         {
             int lastLength = _currentSpan.Length;
-            object? segment = _currentPositionObject;
-            if (!TryGetNextBuffer(in _sequence, ref segment, ref _currentSpan))
+            if (!TryGetNextBuffer(in _sequence, ref _currentPositionObject, ref _currentSpan, out bool advanced))
             {
+                if (advanced) // we can still advance while returning false if the later segments are all empty
+                {
+                    _currentPositionInteger = _currentSpanIndex = 0;
+                    _consumedAtStartOfCurrentSpan += lastLength; // track consumed length
+                }
+                else
+                {
+                    // make sure we position at the end of the last (current) segment
+                    _currentSpanIndex = lastLength;
+                }
+                AssertValidPosition();
                 return false;
             }
+            Debug.Assert(advanced);
+            _currentPositionInteger = _currentSpanIndex = 0;
             _consumedAtStartOfCurrentSpan += lastLength; // track consumed length
-            _currentSpanIndex = 0;
-            _currentPositionObject = segment;
-            _currentPositionInteger = 0; // all non-first segments start at zero
-
             AssertValidPosition();
             return true;
         }
@@ -307,33 +315,31 @@ namespace System.Buffers
             {
                 ReadOnlySpan<T> span = default;
                 object? segment = _currentPositionObject;
-                Debug.Assert(!TryGetNextBuffer(in _sequence, ref segment, ref span), "failed to eagerly read-ahead");
+                Debug.Assert(!TryGetNextBuffer(in _sequence, ref segment, ref span, out _), "failed to eagerly read-ahead");
             }
         }
 
-        private static bool TryGetNextBuffer(in ReadOnlySequence<T> sequence, ref object? @object, ref ReadOnlySpan<T> buffer)
+        private static bool TryGetNextBuffer(in ReadOnlySequence<T> sequence, ref object? @object, ref ReadOnlySpan<T> buffer, out bool advanced)
         {
             SequencePosition end = sequence.End;
             object? endObject = end.GetObject();
-
+            advanced = false;
             ReadOnlySequenceSegment<T>? segment = @object as ReadOnlySequenceSegment<T>;
             if (segment is not null)
             {
-                while (!ReferenceEquals(segment, endObject) && (segment = segment!.Next) is not null)
+                while (!ReferenceEquals(segment, endObject) && (@object = segment = segment!.Next) is not null)
                 {
-                    ReadOnlySpan<T> span = segment.Memory.Span;
+                    advanced = true;
+                    buffer = segment!.Memory.Span;
 
                     if (ReferenceEquals(segment, endObject))
                     {
                         // the last segment ends early
-                        span = span.Slice(0, end.GetInteger());
+                        buffer = buffer.Slice(0, end.GetInteger());
                     }
 
-                    if (!span.IsEmpty) // skip empty segments
+                    if (!buffer.IsEmpty) // skip empty segments
                     {
-                        // note: only update object+buffer on success
-                        @object = segment;
-                        buffer = span;
                         return true;
                     }
                 }
@@ -457,7 +463,7 @@ namespace System.Buffers
             int copied = currentSpan.Length;
 
             object? segment = _currentPositionObject;
-            while (TryGetNextBuffer(in _sequence, ref segment, ref currentSpan))
+            while (TryGetNextBuffer(in _sequence, ref segment, ref currentSpan, out _))
             {
                 int toCopy = Math.Min(currentSpan.Length, destination.Length - copied);
                 currentSpan.Slice(0, toCopy).CopyTo(destination.Slice(copied));
