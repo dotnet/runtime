@@ -261,6 +261,7 @@ function getTraceImports () {
         ["ckovr_i4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_i4")],
         ["ckovr_u4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_u4")],
         importDef("newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")),
+        importDef("newstr", getRawCwrap("mono_jiterp_try_newstr")),
         importDef("ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")),
         importDef("ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")),
         importDef("conv", getRawCwrap("mono_jiterp_conv")),
@@ -271,6 +272,7 @@ function getTraceImports () {
         importDef("hascsize", getRawCwrap("mono_jiterp_object_has_component_size")),
         importDef("hasflag", getRawCwrap("mono_jiterp_enum_hasflag")),
         importDef("array_rank", getRawCwrap("mono_jiterp_get_array_rank")),
+        ["a_elesize", "array_rank", getRawCwrap("mono_jiterp_get_array_element_size")],
         importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
         importDef("transfer", getRawCwrap("mono_jiterp_trace_transfer")),
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
@@ -419,6 +421,12 @@ function initialize_builder (builder: WasmBuilder) {
         "newobj_i", {
             "ppDestination": WasmValtype.i32,
             "vtable": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "newstr", {
+            "ppDestination": WasmValtype.i32,
+            "length": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
     builder.defineType(

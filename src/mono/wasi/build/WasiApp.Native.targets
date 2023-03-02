@@ -170,7 +170,6 @@
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
       <_WasmCommonCFlags Condition="'$(WasmSingleFileBundle)' == 'true'" Include="-DBUNDLED_ASSEMBLIES=1" />
 
-      <_WasmCommonCFlags Include="-DINVARIANT_GLOBALIZATION=1" Condition="'$(InvariantGlobalization)' == 'true'"/>
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <!--<_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />-->
       <!--<_EmccCFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />-->

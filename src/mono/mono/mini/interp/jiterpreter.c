@@ -212,6 +212,16 @@ mono_jiterp_try_newobj_inlined (MonoObject **destination, MonoVTable *vtable) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_try_newstr (MonoString **destination, int length) {
+	ERROR_DECL(error);
+	*destination = mono_string_new_size_checked(length, error);
+	if (!is_ok (error))
+		*destination = 0;
+	mono_error_cleanup (error); // FIXME: do not swallow the error
+	return *destination != 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_gettype_ref (
 	MonoObject **destination, MonoObject **source
 ) {
@@ -667,6 +677,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_BOX:
 		case MINT_BOX_VT:
 		case MINT_UNBOX:
+		case MINT_NEWSTR:
 		case MINT_NEWOBJ_INLINED:
 		case MINT_NEWOBJ_VT_INLINED:
 		case MINT_LD_DELEGATE_METHOD_PTR:
@@ -680,6 +691,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_ADD_MUL_I4_IMM:
 		case MINT_ADD_MUL_I8_IMM:
 		case MINT_ARRAY_RANK:
+		case MINT_ARRAY_ELEMENT_SIZE:
 		case MINT_MONO_CMPXCHG_I4:
 		case MINT_MONO_CMPXCHG_I8:
 			return TRACE_CONTINUE;
@@ -1111,6 +1123,18 @@ mono_jiterp_get_array_rank (gint32 *dest, MonoObject **src)
 	}
 
 	*dest = m_class_get_rank (mono_object_class (*src));
+	return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_array_element_size (gint32 *dest, MonoObject **src)
+{
+	if (!src || !*src) {
+		*dest = 0;
+		return 0;
+	}
+
+	*dest = mono_array_element_size (mono_object_class (*src));
 	return 1;
 }
 
