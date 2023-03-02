@@ -26,6 +26,43 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        public void Period_InvalidArguments_Throws()
+        {
+            PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.FromMilliseconds(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.Zero);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.FromMilliseconds(uint.MaxValue));
+
+            timer.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => timer.Period = TimeSpan.FromMilliseconds(100));
+        }
+
+        [Fact]
+        public void Period_Roundtrips()
+        {
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
+            Assert.Equal(TimeSpan.FromMilliseconds(1), timer.Period);
+
+            timer.Period = TimeSpan.FromDays(1);
+            Assert.Equal(TimeSpan.FromDays(1), timer.Period);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.Zero);
+            Assert.Equal(TimeSpan.FromDays(1), timer.Period);
+        }
+
+        [Fact]
+        public async void Period_AffectsPendingWaits()
+        {
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromDays(40));
+
+            ValueTask<bool> task = timer.WaitForNextTickAsync();
+            Assert.False(task.IsCompleted);
+
+            timer.Period = TimeSpan.FromMilliseconds(1);
+            await task;
+        }
+
+        [Fact]
         public async Task Dispose_Idempotent()
         {
             var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
