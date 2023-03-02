@@ -99,6 +99,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(ildasm
+        PRIVATE
         ${ILDASM_LINK_LIBRARIES}
         mscorrc
         coreclrpal
@@ -107,6 +108,7 @@ if(CLR_CMAKE_HOST_UNIX)
     )
 else()
     target_link_libraries(ildasm
+        PRIVATE
         ${ILDASM_LINK_LIBRARIES}
         ole32
         oleaut32

@@ -14,6 +14,7 @@ import { ws_wasm_create, ws_wasm_open, ws_wasm_send, ws_wasm_receive, ws_wasm_cl
 import { mono_wasm_get_loaded_files } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { getOptions, applyOptions } from "./jiterpreter-support";
+import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
 
 export function export_internal(): any {
     return {
@@ -80,7 +81,11 @@ export function export_internal(): any {
         // jiterpreter
         jiterpreter_dump_stats,
         jiterpreter_apply_options: applyOptions,
-        jiterpreter_get_options: getOptions
+        jiterpreter_get_options: getOptions,
+
+        // Blazor GC Lock support
+        mono_wasm_gc_lock,
+        mono_wasm_gc_unlock,
     };
 }
 

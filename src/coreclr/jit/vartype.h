@@ -17,6 +17,7 @@ enum var_types_classification
     VTF_BYR = 0x0010, // type is Byref
     VTF_I   = 0x0020, // is machine sized
     VTF_S   = 0x0040, // is a struct type
+    VTF_VEC = 0x0080, // is a vector type
 };
 
 #include "vartypesdef.h"
@@ -61,30 +62,16 @@ inline var_types TypeGet(var_types v)
     return v;
 }
 
+template <class T>
+inline bool varTypeIsSIMD(T vt)
+{
 #ifdef FEATURE_SIMD
-template <class T>
-inline bool varTypeIsSIMD(T vt)
-{
-    switch (TypeGet(vt))
-    {
-        case TYP_SIMD8:
-        case TYP_SIMD12:
-        case TYP_SIMD16:
-        case TYP_SIMD32:
-            return true;
-        default:
-            return false;
-    }
-}
-#else  // FEATURE_SIMD
-
-// Always return false if FEATURE_SIMD is not enabled
-template <class T>
-inline bool varTypeIsSIMD(T vt)
-{
+    return ((varTypeClassification[TypeGet(vt)] & VTF_VEC) != 0);
+#else
+    // Always return false if FEATURE_SIMD is not enabled
     return false;
-}
 #endif // !FEATURE_SIMD
+}
 
 template <class T>
 inline bool varTypeIsIntegral(T vt)

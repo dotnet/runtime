@@ -116,8 +116,7 @@ namespace System
         public static int GetGeneration(WeakReference wo)
         {
             object? obj = wo.Target;
-            if (obj == null)
-                throw new ArgumentException(null, nameof(wo));
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
             return GetGeneration(obj);
         }
 

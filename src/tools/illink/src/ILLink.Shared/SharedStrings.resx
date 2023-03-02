@@ -550,7 +550,7 @@
     <value>Invoking members on dynamic types is not trimming-compatible. Types or members might have been removed by the trimmer.</value>
   </data>
   <data name="AttributeShouldOnlyBeUsedOnceOnMemberTitle" xml:space="preserve">
-    <value>The linker found multiple instances of attribute on a member. This attribute is only allowed to have one instance.</value>
+    <value>ILLink found multiple instances of attribute on a member. This attribute is only allowed to have one instance.</value>
   </data>
   <data name="AttributeShouldOnlyBeUsedOnceOnMemberMessage" xml:space="preserve">
     <value>Attribute '{0}' should only be used once on '{1}</value>
@@ -1180,7 +1180,7 @@
     <value>The use of 'RequiresAssemblyFilesAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
   </data>
   <data name="UnrecognizedInternalAttributeMessage" xml:space="preserve">
-    <value>The internal attribute name '{0}' being used in the xml is not supported by the linker, check the spelling and the supported internal attributes.</value>
+    <value>The internal attribute name '{0}' being used in the xml is not supported by ILLink, check the spelling and the supported internal attributes.</value>
   </data>
   <data name="UnrecognizedInternalAttributeTitle" xml:space="preserve">
     <value>Unrecognized internal attribute '{0}'</value>
