@@ -178,7 +178,7 @@ HRESULT EventPipeWritingProfiler::Shutdown()
 {
     Profiler::Shutdown();
 
-    if(_failures == 0 && _sawEnable && _sawDisable)
+    if(_failures == 0 && _enables == 2 && _disables == 2)
     {
         printf("PROFILER TEST PASSES\n");
     }
@@ -220,13 +220,13 @@ void EventPipeWritingProfiler::ProviderCallback(
     COR_PRF_FILTER_DATA *filter_data,
     void *callback_data)
 {
-    if (is_enabled)
+    if (is_enabled && source_id != nullptr)
     {
-        _sawEnable = true;
+        ++_enables;
     }
     else
     {
-        _sawDisable = true;
+        ++_disables;
     }
 
     // The diagnostics client library sets keywords to 0xF00000000000 by default

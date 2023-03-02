@@ -52,6 +52,11 @@ namespace EventPipeTests
 
                 using (EventPipeSession session = ProfilerControlHelpers.AttachEventPipeSessionToSelf(providers))
                 {
+                    using (EventPipeSession session2 = ProfilerControlHelpers.AttachEventPipeSessionToSelf(providers))
+                    {
+                        // Trigger multiple session logic
+                    }
+
                     TriggerMethod();
 
                     ManualResetEvent allEventsReceivedEvent = new ManualResetEvent(false);

@@ -16,8 +16,8 @@ public:
 
     EventPipeWritingProfiler() : Profiler(),
         _failures(0),
-        _sawEnable(false),
-        _sawDisable(false),
+        _enables(0),
+        _disables(0),
         _provider(0),
         _allTypesEvent(0),
         _arrayTypeEvent(0),
@@ -43,8 +43,8 @@ private:
     static EventPipeWritingProfiler *s_singleton;
 
     std::atomic<int> _failures;
-    BOOL _sawEnable;
-    BOOL _sawDisable;
+    std::atomic<int> _enables;
+    std::atomic<int> _disables;
     ICorProfilerInfo14 *_pCorProfilerInfo;
     EVENTPIPE_PROVIDER _provider;
     EVENTPIPE_EVENT _allTypesEvent;
