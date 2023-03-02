@@ -128,13 +128,19 @@ namespace System.Buffers
         public readonly bool TryPeek(out T value)
         {
             AssertValidPosition();
-            if (_currentSpanIndex == _currentSpan.Length) // only true at EOF due to eager read
+
+            // hoisting into locals for the compare allows us to avoid a bounds check
+            int i = _currentSpanIndex;
+            ReadOnlySpan<T> currentSpan = _currentSpan;
+
+            if ((uint)i < (uint)currentSpan.Length)
             {
-                value = default;
-                return false;
+                value = currentSpan[i];
+                return true;
             }
-            value = _currentSpan[_currentSpanIndex];
-            return true;
+
+            value = default;
+            return false;
         }
 
         /// <summary>
@@ -201,22 +207,24 @@ namespace System.Buffers
         public bool TryRead(out T value)
         {
             AssertValidPosition();
-            switch (_currentSpan.Length - _currentSpanIndex)
-            {
-                case 0: // end of current span; since we move ahead eagerly: EOF
-                    value = default;
-                    return false;
-                case 1: // one left in current span
-                    value = _currentSpan[_currentSpanIndex++];
-                    TryGetNextSpan(); // move ahead eagerly
-                    AssertValidPosition();
-                    return true;
-                default:
-                    value = _currentSpan[_currentSpanIndex++];
-                    AssertValidPosition();
-                    return true;
 
+            // hoisting into locals for the compare allows us to avoid a bounds check
+            int i = _currentSpanIndex;
+            ReadOnlySpan<T> currentSpan = _currentSpan;
+
+            if ((uint)i < (uint)currentSpan.Length)
+            {
+                value = currentSpan[i];
+
+                if (++_currentSpanIndex == currentSpan.Length)
+                {
+                    TryGetNextSpan(); // move ahead eagerly
+                }
+                AssertValidPosition();
+                return true;
             }
+            value = default;
+            return false;
         }
 
         /// <summary>
