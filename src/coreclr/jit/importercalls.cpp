@@ -4002,6 +4002,162 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             return impPopStack().val;
         }
 
+        case NI_SRCS_UNSAFE_BitCast:
+        {
+            assert(sig->sigInst.methInstCount == 2);
+
+            CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
+            CORINFO_CLASS_HANDLE toTypeHnd   = sig->sigInst.methInst[0];
+
+            if (fromTypeHnd == toTypeHnd)
+            {
+                // Handle the easy case of matching type handles, such as `int` to `int`
+                return impPopStack().val;
+            }
+
+            unsigned fromSize = info.compCompHnd->getClassSize(fromTypeHnd);
+            unsigned toSize   = info.compCompHnd->getClassSize(toTypeHnd);
+
+            if (fromSize != toSize)
+            {
+                // Fallback to the software implementation to throw when sizes don't match
+                return nullptr;
+            }
+
+            CorInfoType fromJitType = info.compCompHnd->asCorInfoType(fromTypeHnd);
+            var_types   fromType    = JitType2PreciseVarType(fromJitType);
+
+            CorInfoType toJitType = info.compCompHnd->asCorInfoType(toTypeHnd);
+            var_types   toType    = JitType2PreciseVarType(toJitType);
+
+            bool involvesStructType = false;
+
+#if FEATURE_SIMD
+            if (fromType == TYP_STRUCT)
+            {
+                unsigned simdSize = getSIMDTypeSizeInBytes(toTypeHnd);
+
+                if (simdSize != 0)
+                {
+                    fromType = getSIMDTypeForSize(simdSize);
+                }
+                else
+                {
+                    involvesStructType = true;
+                }
+            }
+
+            if (toType == TYP_STRUCT)
+            {
+                unsigned simdSize = getSIMDTypeSizeInBytes(toTypeHnd);
+
+                if (simdSize != 0)
+                {
+                    toType = getSIMDTypeForSize(simdSize);
+                }
+                else
+                {
+                    involvesStructType = true;
+                }
+            }
+#else
+            involvesStructType = (fromType == TYP_STRUCT) || (toType == TYP_STRUCT);
+#endif // FEATURE_SIMD
+
+            if (involvesStructType)
+            {
+                // Handle the complex case where TFrom or TTo involves a non-special TYP_STRUCT
+                // TODO-CQ: There is quite a bit of specialization we "could" do here. However,
+                // due to ABI differences and other special considerations this isn't always trivial
+                return nullptr;
+            }
+
+            if (varTypeIsSIMD(fromType))
+            {
+                // Handle bitcasting for same sized simd, such as `Vector128<float>` to `Vector128<byte>`
+                assert(varTypeIsSIMD(toType) && (fromType == toType));
+                return impPopStack().val;
+            }
+
+            if (varTypeIsFloating(fromType))
+            {
+                // Handle bitcasting from floating to same sized integral, such as `float` to `int`
+                assert(varTypeIsIntegral(toType));
+
+#if !TARGET_64BIT
+                if ((fromType == TYP_DOUBLE) && !impStackTop().val->IsCnsFltOrDbl())
+                {
+                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+                    return nullptr;
+                }
+#endif // !TARGET_64BIT
+
+                GenTree* op1 = impPopStack().val;
+
+                if (op1->IsCnsFltOrDbl())
+                {
+                    if (fromType == TYP_DOUBLE)
+                    {
+                        double f64Cns = static_cast<double>(op1->AsDblCon()->DconValue());
+                        return gtNewLconNode(static_cast<int64_t>(BitOperations::DoubleToUInt64Bits(f64Cns)));
+                    }
+                    else
+                    {
+                        assert(fromType == TYP_FLOAT);
+                        float f32Cns = static_cast<float>(op1->AsDblCon()->DconValue());
+                        return gtNewIconNode(static_cast<int32_t>(BitOperations::SingleToUInt32Bits(f32Cns)));
+                    }
+                }
+                else
+                {
+                    toType = varTypeToSigned(toType);
+                    op1    = impImplicitR4orR8Cast(op1, fromType);
+                    return gtNewBitCastNode(toType, op1);
+                }
+                break;
+            }
+
+            if (varTypeIsFloating(toType))
+            {
+                // Handle bitcasting from integral to same sized floating, such as `int` to `float`
+                assert(varTypeIsIntegral(fromType));
+
+#if !TARGET_64BIT
+                if ((toType == TYP_DOUBLE) && !impStackTop().val->IsIntegralConst())
+                {
+                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+                    return nullptr;
+                }
+#endif // !TARGET_64BIT
+
+                GenTree* op1 = impPopStack().val;
+
+                if (op1->IsIntegralConst())
+                {
+                    if (toType == TYP_DOUBLE)
+                    {
+                        uint64_t u64Cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                        return gtNewDconNode(BitOperations::UInt64BitsToDouble(u64Cns), TYP_DOUBLE);
+                    }
+                    else
+                    {
+                        assert(toType == TYP_FLOAT);
+
+                        uint32_t u32Cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                        return gtNewDconNode(BitOperations::UInt32BitsToSingle(u32Cns), TYP_FLOAT);
+                    }
+                }
+                else
+                {
+                    return gtNewBitCastNode(toType, op1);
+                }
+                break;
+            }
+
+            // Handle bitcasting for same sized integrals, such as `int` to `uint`
+            return impPopStack().val;
+        }
+
         case NI_SRCS_UNSAFE_ByteOffset:
         {
             assert(sig->sigInst.methInstCount == 1);
@@ -8201,6 +8357,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "AsRef") == 0)
                         {
                             result = NI_SRCS_UNSAFE_AsRef;
+                        }
+                        else if (strcmp(methodName, "BitCast") == 0)
+                        {
+                            result = NI_SRCS_UNSAFE_BitCast;
                         }
                         else if (strcmp(methodName, "ByteOffset") == 0)
                         {
