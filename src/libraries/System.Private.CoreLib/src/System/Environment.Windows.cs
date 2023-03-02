@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -216,26 +217,137 @@ namespace System
             char* lpCmdLine = Interop.Kernel32.GetCommandLine();
             Debug.Assert(lpCmdLine != null);
 
-            int numArgs = 0;
-            char** argvW = Interop.Shell32.CommandLineToArgv(lpCmdLine, &numArgs);
-            if (argvW == null)
+            return SegmentCommandLine(lpCmdLine);
+        }
+
+        private static unsafe string[] SegmentCommandLine(char* cmdLine)
+        {
+            //---------------------------------------------------------------------
+            // Splits a command line into argc/argv lists, using the VC7 parsing rules.
+            //
+            // This functions interface mimics the CommandLineToArgvW api.
+            //
+            //---------------------------------------------------------------------
+            // NOTE: Implementation-wise, once every few years it would be a good idea to
+            // compare this code with the C runtime library's parse_cmdline method,
+            // which is in vctools\crt\crtw32\startup\stdargv.c.  (Note we don't
+            // support wild cards, and we use Unicode characters exclusively.)
+            // We are up to date as of ~6/2005.
+            //---------------------------------------------------------------------
+
+            // The C# version is ported from C++ version in coreclr
+            // The behavior mimics what MSVCRT does before main,
+            // which is slightly different with CommandLineToArgvW
+
+            ArrayBuilder<string> arrayBuilder = default;
+
+            Span<char> stringBuffer = stackalloc char[260]; // Use MAX_PATH for a typical maximum
+            scoped ValueStringBuilder stringBuilder;
+
+            char* pSrc = cmdLine;
+            bool inQoute;
+            char c;
+
+            // First, parse the program name (argv[0]). Argv[0] is parsed under
+            // special rules. Anything up to the first whitespace outside a quoted
+            // subtring is accepted. Backslashes are treated as normal characters.
+            inQoute = false;
+            stringBuilder = new ValueStringBuilder(stringBuffer);
+            do
             {
-                ThrowHelper.ThrowOutOfMemoryException();
+                if (*pSrc == '"')
+                {
+                    inQoute = !inQoute;
+                    c = *pSrc++;
+                    continue;
+                }
+                c = *pSrc++;
+                stringBuilder.Append(c);
+            }
+            while (c != '\0' && (inQoute || c is not (' ' or '\t')));
+
+            arrayBuilder.Add(stringBuilder.ToString());
+            inQoute = false;
+
+            // loop on each argument
+            while (true)
+            {
+                if (*pSrc != '\0')
+                {
+                    while (*pSrc is ' ' or '\t')
+                    {
+                        ++pSrc;
+                    }
+                }
+
+                if (*pSrc == '\0')
+                {
+                    // end of args
+                    break;
+                }
+
+                // scan an argument
+                stringBuilder = new ValueStringBuilder(stringBuffer);
+
+                // loop through scanning one argument
+                while (true)
+                {
+                    bool copyChar = true;
+                    /* Rules: 2N backslashes + " ==> N backslashes and begin/end quote
+                       2N+1 backslashes + " ==> N backslashes + literal "
+                       N backslashes ==> N backslashes */
+                    int numSlash = 0;
+                    while (*pSrc == '\\')
+                    {
+                        /* count number of backslashes for use below */
+                        ++pSrc;
+                        ++numSlash;
+                    }
+                    if (*pSrc == '"')
+                    {
+                        /* if 2N backslashes before, start/end quote, otherwise
+                           copy literally */
+                        if (numSlash % 2 == 0)
+                        {
+                            if (inQoute && pSrc[1] == '"')
+                            {
+                                pSrc++; /* Double quote inside quoted string */
+                            }
+                            else
+                            {
+                                /* skip first quote char and copy second */
+                                copyChar = false;       /* don't copy quote */
+                                inQoute = !inQoute;
+                            }
+                        }
+                        numSlash /= 2; /* divide numslash by two */
+                    }
+
+                    /* copy slashes */
+                    while (numSlash-- > 0)
+                    {
+                        stringBuilder.Append('\\');
+                    }
+
+                    /* if at end of arg, break loop */
+                    if (*pSrc == '\0' || (!inQoute && *pSrc is ' ' or '\t'))
+                    {
+                        break;
+                    }
+
+                    /* copy character into argument */
+                    if (copyChar)
+                    {
+                        stringBuilder.Append(*pSrc);
+                    }
+
+                    pSrc++;
+                }
+
+                arrayBuilder.Add(stringBuilder.ToString());
             }
 
-            try
-            {
-                string[] result = new string[numArgs];
-                for (int i = 0; i < result.Length; i++)
-                {
-                    result[i] = new string(*(argvW + i));
-                }
-                return result;
-            }
-            finally
-            {
-                Interop.Kernel32.LocalFree((IntPtr)argvW);
-            }
+            return arrayBuilder.ToArray();
         }
     }
 }
