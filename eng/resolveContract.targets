@@ -48,7 +48,6 @@
   <!-- ##### APICompat settings ##### -->
 
   <PropertyGroup>
-    <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
     <ApiCompatContractItemName>ResolvedMatchingContract</ApiCompatContractItemName>
     <ApiCompatStrictMode Condition="'$(ApiCompatStrictMode)' == ''">true</ApiCompatStrictMode>
 

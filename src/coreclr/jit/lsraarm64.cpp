@@ -240,11 +240,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
-        case GT_JTRUE:
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -406,6 +401,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_GT:
         case GT_TEST_EQ:
         case GT_TEST_NE:
+        case GT_CMP:
+        case GT_TEST:
+        case GT_CCMP:
         case GT_JCMP:
             srcCount = BuildCmp(tree);
             break;
@@ -775,6 +773,10 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 1);
             srcCount = BuildSelect(tree->AsConditional());
             break;
+        case GT_SELECTCC:
+            assert(dstCount == 1);
+            srcCount = BuildSelect(tree->AsOp());
+            break;
 
     } // end switch (tree->OperGet())
 
@@ -785,7 +787,7 @@ int LinearScan::BuildNode(GenTree* tree)
     // We need to be sure that we've set srcCount and dstCount appropriately
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
-    assert(!tree->IsUnusedValue() || (dstCount != 0));
+    assert(!tree->IsValue() || (dstCount != 0));
     assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }

@@ -3,31 +3,27 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- don't need to run this on helix -->
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
     <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
-    <!-- the default heap size is ~512MB, which is too much because AppStart loads more copies
-      of the wasm runtime and can leak a few of them. the result is that browser-bench's memory
-      usage can climb as high as 3GB or more and then fail -->
-    <EmccInitialHeapSize>83886080</EmccInitialHeapSize>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="main.js" />
     <WasmExtraFilesToDeploy Include="appstart-frame.html" />
     <WasmExtraFilesToDeploy Include="frame-main.js" />
     <WasmExtraFilesToDeploy Include="style.css" />
     <Compile Remove="Console/Console.cs" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Bench.Sample.csproj</_SampleProject>
-    <_SampleAssembly> Wasm.Browser.Bench.Sample.dll</_SampleAssembly>
-  </PropertyGroup>
-
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\libraries\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer" />
+  </ItemGroup>
 </Project>

@@ -772,6 +772,14 @@ namespace System.Text.Json.SourceGeneration
                 {
                     classType = ClassType.KnownType;
                 }
+                else if (
+                    _knownUnsupportedTypes.Contains(type) ||
+                    _memberInfoType?.IsAssignableFrom(type) == true ||
+                    _delegateType?.IsAssignableFrom(type) == true ||
+                    (type.IsArray && type.GetArrayRank() > 1))
+                {
+                    classType = ClassType.KnownUnsupportedType;
+                }
                 else if (type.IsNullableValueType(_nullableOfTType, out Type? nullableUnderlyingType))
                 {
                     Debug.Assert(nullableUnderlyingType != null);
@@ -811,9 +819,8 @@ namespace System.Text.Json.SourceGeneration
 
                     if (type.IsArray)
                     {
-                        classType = type.GetArrayRank() > 1
-                            ? ClassType.TypeUnsupportedBySourceGen // Multi-dimentional arrays are not supported in STJ.
-                            : ClassType.Enumerable;
+                        Debug.Assert(type.GetArrayRank() == 1, "multi-dimensional arrays should have been handled earlier.");
+                        classType = ClassType.Enumerable;
                         collectionType = CollectionType.Array;
                         valueType = type.GetElementType()!;
                     }
@@ -962,13 +969,6 @@ namespace System.Text.Json.SourceGeneration
                             runtimeTypeRef = GetDictionaryTypeRef(collectionKeyTypeSpec, collectionValueTypeSpec);
                         }
                     }
-                }
-                else if (
-                    _knownUnsupportedTypes.Contains(type) ||
-                    _memberInfoType?.IsAssignableFrom(type) == true ||
-                    _delegateType?.IsAssignableFrom(type) == true)
-                {
-                    classType = ClassType.KnownUnsupportedType;
                 }
                 else
                 {

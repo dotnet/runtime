@@ -14,7 +14,8 @@ namespace System.Text.Json.Reflection
         {
             if (type.IsArray)
             {
-                return GetCompilableName(type.GetElementType()!) + "[]";
+                int rank = type.GetArrayRank();
+                return GetCompilableName(type.GetElementType()!) + TypeWrapper.FormatArrayTypeNameSuffix(rank);
             }
 
             if (type.IsGenericParameter)
@@ -78,7 +79,9 @@ namespace System.Text.Json.Reflection
         {
             if (type.IsArray)
             {
-                return GetTypeInfoPropertyName(type.GetElementType()!) + "Array";
+                int rank = type.GetArrayRank();
+                string suffix = rank == 1 ? "Array" : $"Array{rank}D"; // Array, Array2D, Array3D, ...
+                return GetTypeInfoPropertyName(type.GetElementType()!) + suffix;
             }
             else if (!type.IsGenericType)
             {

@@ -84,12 +84,10 @@ private:
     void ContainCheckArrOffset(GenTreeArrOffs* node);
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
-    void ContainCheckJTrue(GenTreeOp* node);
 #ifdef TARGET_ARM64
-    bool IsValidCompareChain(GenTree* child, GenTree* parent);
-    bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
-    void ContainCheckCompareChainForAnd(GenTree* tree);
-    void ContainCheckConditionalCompare(GenTreeOp* cmp);
+    GenTree* TryLowerAndToCCMP(GenTreeOp* tree);
+    insCflags TruthifyingFlags(GenCondition cond);
+    void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
@@ -123,7 +121,7 @@ private:
     void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive);
+    bool IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive);
 
     // ------------------------------
     // Call Lowering
@@ -137,6 +135,8 @@ private:
     GenTree* OptimizeConstCompare(GenTree* cmp);
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
+    GenTree* LowerSelect(GenTreeConditional* cond);
+    bool TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
@@ -306,6 +306,7 @@ private:
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
+    bool TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
@@ -339,7 +340,7 @@ private:
 #endif
 
     void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
-    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc);
+    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
     GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
@@ -500,12 +501,22 @@ private:
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);
 
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
+    bool IsRangeInvariantInRange(GenTree* rangeStart,
+                                 GenTree* rangeEnd,
+                                 GenTree* endExclusive,
+                                 GenTree* ignoreNode) const;
+
     // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
     // can be contained.
     bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const;
 
     // Similar to above, but allows bypassing a "transparent" parent.
     bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
+
+    // Check if marking an operand of a node as reg-optional is safe.
+    bool IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* node) const;
 
     inline LIR::Range& BlockRange() const
     {

@@ -8124,6 +8124,25 @@ mono_runtime_get_managed_cmd_line (void)
 	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
 
+void
+mono_runtime_run_startup_hooks (void)
+{
+	if (mono_runtime_get_no_exec ())
+		return;
+
+	MonoClass *klass = mono_class_try_load_from_name (mono_defaults.corlib, "System", "StartupHookProvider");
+	if (!klass)
+		return; // Linked away
+	ERROR_DECL (error);
+	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "ProcessStartupHooks", -1, 0, error);
+	mono_error_cleanup (error);
+	if (!method)
+		return;
+	mono_runtime_invoke_checked (method, NULL, NULL, error);
+	// runtime hooks design doc says not to catch exceptions from the hooks
+	mono_error_raise_exception_deprecated (error);
+}
+
 #if NEVER_DEFINED
 /*
  * The following section is purely to declare prototypes and

@@ -513,7 +513,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     var_types simdBaseType = TYP_UNKNOWN;
-
     if (simdSize != 0)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
@@ -2363,6 +2362,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(simdSize == 0);
 
             retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+        }
+
+        case NI_X86Base_DivRem:
+        case NI_X86Base_X64_DivRem:
+        {
+            assert(sig->numArgs == 3);
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+            assert(retType == TYP_STRUCT);
+            assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+
+            op3 = impPopStack().val;
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            GenTreeHWIntrinsic* divRemIntrinsic = gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic);
+
+            // Store the type from signature into SIMD base type for convenience
+            divRemIntrinsic->SetSimdBaseJitType(simdBaseJitType);
+
+            retNode = impAssignMultiRegTypeToVar(divRemIntrinsic,
+                                                 sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
 

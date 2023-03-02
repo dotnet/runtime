@@ -295,13 +295,19 @@ namespace System
 
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
-            ArgumentNullException.ThrowIfNull(action);
+            if (action is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
+            }
 
             if (length <= 0)
             {
                 if (length == 0)
+                {
                     return Empty;
-                throw new ArgumentOutOfRangeException(nameof(length));
+                }
+
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
 
             string result = FastAllocateString(length);
@@ -575,9 +581,9 @@ namespace System
             return new StringRuneEnumerator(this);
         }
 
-        internal static unsafe int wcslen(char* ptr) => SpanHelpers.IndexOfNullCharacter(ref *ptr);
+        internal static unsafe int wcslen(char* ptr) => SpanHelpers.IndexOfNullCharacter(ptr);
 
-        internal static unsafe int strlen(byte* ptr) => SpanHelpers.IndexOfNullByte(ref *ptr);
+        internal static unsafe int strlen(byte* ptr) => SpanHelpers.IndexOfNullByte(ptr);
 
         //
         // IConvertible implementation

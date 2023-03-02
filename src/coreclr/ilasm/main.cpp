@@ -142,12 +142,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     bool bClock = false;
     Clockwork   cw;
 
-#ifdef HOST_WINDOWS
-    // SWI has requested that the exact form of the function call below be used. For details
-    // see http://swi/SWI%20Docs/Detecting%20Heap%20Corruption.doc
-    (void)HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-#endif
-
     memset(pwzInputFiles,0,1024*sizeof(WCHAR*));
     memset(pwzDeltaFiles,0,1024*sizeof(WCHAR*));
     memset(&cw,0,sizeof(Clockwork));
@@ -728,7 +722,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         }
                         if(pIn)
                         {
-                            pIn->set_namew(NULL);
+                            pIn->clear_name();
                             delete pIn;
                         }
                     } // end for(iFile)
@@ -793,7 +787,8 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                                             if (pAsm->m_fStdMapping == FALSE)
                                                 pParser->msg(", with REFERENCE mapping");
 
-                                            pParser->msg(" --> '%S.*'\n", wzNewOutputFilename);
+                                            MAKE_UTF8PTR_FROMWIDE(newOutputFilenameUtf8, wzNewOutputFilename);
+                                            pParser->msg(" --> '%s.*'\n", newOutputFilenameUtf8);
                                         }
                                         exitval = 0;
                                         pIn = new MappedFileStream(wzInputFilename);
@@ -816,7 +811,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                                         } // end if ((!pIn) || !(pIn->IsValid())) -- else
                                         if(pIn)
                                         {
-                                            pIn->set_namew(NULL);
+                                            pIn->clear_name();
                                             delete pIn;
                                         }
                                     } // end for(iFile)

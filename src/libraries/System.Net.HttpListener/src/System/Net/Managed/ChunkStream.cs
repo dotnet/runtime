@@ -75,11 +75,11 @@ namespace System.Net
         private int _chunkRead;
         private int _totalWritten;
         private State _state;
-        private StringBuilder _saved;
+        private readonly StringBuilder _saved;
         private bool _sawCR;
         private bool _gotit;
         private int _trailerState;
-        private List<Chunk> _chunks;
+        private readonly List<Chunk> _chunks;
 
         public ChunkStream(WebHeaderCollection headers)
         {

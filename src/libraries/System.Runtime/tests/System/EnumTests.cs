@@ -895,6 +895,7 @@ namespace System.Tests
             yield return new object[] { typeof(Int32Enum), 66, (Int32Enum)66 };
             yield return new object[] { typeof(Int32Enum), 'a', (Int32Enum)97 };
             yield return new object[] { typeof(Int32Enum), 'b', (Int32Enum)98 };
+            yield return new object[] { typeof(Int32Enum), true, (Int32Enum)1 };
 
             // UInt32
             yield return new object[] { typeof(UInt32Enum), uint.MaxValue, UInt32Enum.Max };
@@ -958,6 +959,7 @@ namespace System.Tests
             Assert.Throws(exceptionType, () => Enum.ToObject(enumType, (ushort)5));
             Assert.Throws(exceptionType, () => Enum.ToObject(enumType, (ulong)5));
             Assert.Throws(exceptionType, () => Enum.ToObject(enumType, 'a'));
+            Assert.Throws(exceptionType, () => Enum.ToObject(enumType, true));
         }
 
         public static IEnumerable<object[]> ToObject_InvalidValue_TestData()

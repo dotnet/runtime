@@ -1,5 +1,5 @@
 <Project>
-  <Target Name="FindPythonWindows"
+  <Target Name="_FindPythonWindows"
           Condition="$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
           Returns="$(PYTHON)">
     <PropertyGroup>
@@ -8,25 +8,24 @@
     <Exec Command="py -3 $(_PythonLocationScript) 2&gt; nul || python3 $(_PythonLocationScript) 2&gt; nul || python $(_PythonLocationScript) 2&gt; nul"
           StandardOutputImportance="Low"
           EchoOff="true"
+          ContinueOnError="ErrorAndContinue"
           ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
     </Exec>
-    <PropertyGroup>
-      <PYTHON>"$(PYTHON)"</PYTHON>
-    </PropertyGroup>
   </Target>
-  <Target Name="FindPythonUnix"
+  <Target Name="_FindPythonUnix"
           Condition="!$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
           Returns="$(PYTHON)">
     <Exec Command="command -v python3 || command -v python || command -v py"
           StandardOutputImportance="Low"
           EchoOff="true"
+          ContinueOnError="ErrorAndContinue"
           ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
     </Exec>
-    <PropertyGroup>
-      <PYTHON>"$(PYTHON)"</PYTHON>
-    </PropertyGroup>
   </Target>
-  <Target Name="FindPython" DependsOnTargets="FindPythonWindows;FindPythonUnix" />
+  <Target Name="FindPython" DependsOnTargets="_FindPythonWindows;_FindPythonUnix">
+      <Error Condition="'$(PYTHON)' == ''"
+             Text="Python not found. Please add Python 3 to your path and try again."/>
+  </Target>
 </Project>

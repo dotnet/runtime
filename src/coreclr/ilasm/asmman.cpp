@@ -412,7 +412,8 @@ void    AsmMan::EndAssembly()
                     if(hFile == INVALID_HANDLE_VALUE)
                     {
                         hr = GetLastError();
-                        report->error("Failed to open key file '%S': 0x%08X\n",((Assembler*)m_pAssembler)->m_wzKeySourceName,hr);
+                        MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
+                        report->error("Failed to open key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
                         m_pCurAsmRef = NULL;
                         return;
                     }
@@ -439,7 +440,8 @@ void    AsmMan::EndAssembly()
                     DWORD dwBytesRead;
                     if (!ReadFile(hFile, m_sStrongName.m_pbPublicKey, m_sStrongName.m_cbPublicKey, &dwBytesRead, NULL)) {
                         hr = GetLastError();
-                        report->error("Failed to read key file '%S': 0x%08X\n",((Assembler*)m_pAssembler)->m_wzKeySourceName,hr);
+                        MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
+                        report->error("Failed to read key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
                         m_pCurAsmRef = NULL;
                         CloseHandle(hFile);
                         return;
@@ -564,7 +566,7 @@ void    AsmMan::EmitAssemblyRefs()
                     (mdAssemblyRef*)&tk);         // [OUT] Returned AssemblyRef token.
         if(m_pCurAsmRef->tkTok != tk)
         {
-            report->error("AsmRef'%S' tok %8.8X -> %8.8X\n",wzUniBuf,m_pCurAsmRef->tkTok,tk);
+            report->error("AsmRef'%s' tok %8.8X -> %8.8X\n",m_pCurAsmRef->szName,m_pCurAsmRef->tkTok,tk);
         }
         if(FAILED(hr)) report->error("Failed to define assembly ref '%s': 0x%08X\n",m_pCurAsmRef->szName,hr);
         else

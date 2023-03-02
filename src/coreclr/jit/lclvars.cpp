@@ -1988,6 +1988,12 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
+    if (varDsc->IsAddressExposed())
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it has already been marked address exposed\n", lclNum);
+        return false;
+    }
+
     CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
     assert(typeHnd != NO_CLASS_HANDLE);
 
@@ -2569,6 +2575,7 @@ unsigned Compiler::lvaGetFieldLocal(const LclVarDsc* varDsc, unsigned int fldOff
 void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason))
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
+    assert(!varDsc->lvIsStructField);
 
     varDsc->SetAddressExposed(true DEBUGARG(reason));
 
@@ -3785,7 +3792,9 @@ void Compiler::lvaSortByRefCount()
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
+#if defined(TARGET_XARCH)
                 case TYP_SIMD32:
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:
                     break;

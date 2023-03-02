@@ -114,7 +114,6 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
 
         [Theory]
         [MemberData(nameof(TestNames))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public void TestConstructorWithFileNameAndName(string testName)
         {
             var target = new DelimitedListTraceListener(Path.GetTempFileName(), testName);

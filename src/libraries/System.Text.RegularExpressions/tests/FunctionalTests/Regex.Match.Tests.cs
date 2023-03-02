@@ -960,6 +960,12 @@ namespace System.Text.RegularExpressions.Tests
 
             // Test for a bug in NonBacktracking's subsumption rule for XY subsuming X??Y, which didn't check that X is nullable
             yield return (@"XY|X??Y", "Y", RegexOptions.None, 0, 1, true, "Y");
+
+            // Tests for bugs in NonBacktracking, which didn't properly handle some combinations of loops and anchors
+            yield return (@"(a|\b){2}", "ac", RegexOptions.None, 0, 2, true, "a");
+            yield return (@"a?(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
+            yield return (@"(a|())*(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
+            yield return (@"(\b|a)*", "a", RegexOptions.None, 0, 1, true, "");
         }
 
         [OuterLoop("Takes several seconds to run")]
@@ -1228,7 +1234,7 @@ namespace System.Text.RegularExpressions.Tests
                         // Loop around a single-char loop
                         yield return new object[] { engine, @$"(a+{lazyInner})+{lazyOuter}$", $"{a50}b" };
                         yield return new object[] { engine, @$"([^a]+{lazyInner})+{lazyOuter}$", $"{b50}a" };
-                        yield return new object[] { engine, @$"(\w+{lazyInner})+{lazyOuter}$", $"{a50}!" };
+                        yield return new object[] { engine, @$"(\w+{lazyInner})+{lazyOuter}$", $"{a100}!" };
 
                         // Loop around a loop (w/ and w/out inner capture)
                         yield return new object[] { engine, @$"((?:aa)+{lazyInner})+{lazyOuter}$", $"{a100}b" };

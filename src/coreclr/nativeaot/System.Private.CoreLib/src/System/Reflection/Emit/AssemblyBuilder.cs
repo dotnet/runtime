@@ -7,29 +7,8 @@ using System.IO;
 
 namespace System.Reflection.Emit
 {
-    public sealed partial class AssemblyBuilder : Assembly
+    public partial class AssemblyBuilder : Assembly
     {
-        internal AssemblyBuilder()
-        {
-            // Prevent generating a default constructor
-        }
-
-        public override string FullName
-        {
-            get
-            {
-                return default;
-            }
-        }
-
-        public override Module ManifestModule
-        {
-            get
-            {
-                return default;
-            }
-        }
-
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -42,34 +21,6 @@ namespace System.Reflection.Emit
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
             return default;
-        }
-
-        public ModuleBuilder DefineDynamicModule(string name)
-        {
-            return default;
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return default;
-        }
-
-        public ModuleBuilder GetDynamicModule(string name)
-        {
-            return default;
-        }
-
-        public override int GetHashCode()
-        {
-            return default;
-        }
-
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-        {
-        }
-
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-        {
         }
     }
 }

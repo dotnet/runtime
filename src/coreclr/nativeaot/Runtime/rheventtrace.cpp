@@ -13,7 +13,6 @@
 #include "eventtrace.h"
 #include "rhbinder.h"
 #include "slist.h"
-#include "rwlock.h"
 #include "runtimeinstance.h"
 #include "shash.h"
 #include "eventtracepriv.h"

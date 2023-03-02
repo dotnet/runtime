@@ -468,7 +468,7 @@ namespace System.Security.Cryptography.Xml
                         validAlgorithmBuilder.Append(", ");
                     }
 
-                    validAlgorithmBuilder.AppendFormat("\"{0}\"", validAlgorithm);
+                    validAlgorithmBuilder.Append('"').Append(validAlgorithm).Append('"');
                 }
 
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
@@ -508,7 +508,7 @@ namespace System.Security.Cryptography.Xml
                         validAlgorithmBuilder.Append(", ");
                     }
 
-                    validAlgorithmBuilder.AppendFormat("\"{0}\"", validAlgorithm);
+                    validAlgorithmBuilder.Append('"').Append(validAlgorithm).Append('"');
                 }
 
                 foreach (string validAlgorithm in validTransformAlgorithms)
@@ -518,7 +518,7 @@ namespace System.Security.Cryptography.Xml
                         validAlgorithmBuilder.Append(", ");
                     }
 
-                    validAlgorithmBuilder.AppendFormat("\"{0}\"", validAlgorithm);
+                    validAlgorithmBuilder.Append('"').Append(validAlgorithm).Append('"');
                 }
 
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
@@ -1009,7 +1009,7 @@ namespace System.Security.Cryptography.Xml
 
                 foreach (X509ChainElement element in chain.ChainElements)
                 {
-                    chainElements.AppendFormat(CultureInfo.InvariantCulture, " {0}", GetKeyName(element.Certificate));
+                    chainElements.Append(' ').Append(GetKeyName(element.Certificate));
                 }
 
                 WriteLine(signedXml,

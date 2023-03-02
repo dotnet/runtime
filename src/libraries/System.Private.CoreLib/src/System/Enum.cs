@@ -2199,6 +2199,7 @@ namespace System
                 case TypeCode.Single: return ToObject(enumType, BitConverter.SingleToInt32Bits((float)value));
                 case TypeCode.Double: return ToObject(enumType, BitConverter.DoubleToInt64Bits((double)value));
                 case TypeCode.Char: return ToObject(enumType, (char)value);
+                case TypeCode.Boolean: return ToObject(enumType, (bool)value ? 1L : 0L);
             };
 
             Type valueType = value.GetType();

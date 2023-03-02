@@ -1030,7 +1030,7 @@ namespace System.Diagnostics.Tracing
         private struct EightObjects
         {
             internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051
+#pragma warning disable CA1823, CS0169, IDE0051, IDE0044
             private object? _arg1;
             private object? _arg2;
             private object? _arg3;
@@ -1038,7 +1038,7 @@ namespace System.Diagnostics.Tracing
             private object? _arg5;
             private object? _arg6;
             private object? _arg7;
-#pragma warning restore CA1823, CS0169, IDE0051
+#pragma warning restore CA1823, CS0169, IDE0051, IDE0044
         }
 
         /// <summary>

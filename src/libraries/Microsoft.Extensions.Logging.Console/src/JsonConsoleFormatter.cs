@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal sealed class JsonConsoleFormatter : ConsoleFormatter, IDisposable
     {
-        private IDisposable? _optionsReloadToken;
+        private readonly IDisposable? _optionsReloadToken;
 
         public JsonConsoleFormatter(IOptionsMonitor<JsonConsoleFormatterOptions> options)
             : base(ConsoleFormatterNames.Json)

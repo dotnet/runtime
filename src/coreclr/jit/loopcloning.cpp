@@ -3286,9 +3286,8 @@ PhaseStatus Compiler::optCloneLoops()
     if (optLoopsCloned > 0)
     {
         JITDUMP("Recompute reachability and dominators after loop cloning\n");
-        constexpr bool computePreds = false;
         // TODO: recompute the loop table, to include the slow loop path in the table?
-        fgUpdateChangedFlowGraph(computePreds);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
 #ifdef DEBUG

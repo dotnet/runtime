@@ -129,7 +129,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (lines == null)
 				return;
 			foreach (var line in lines) {
-				TraceWrite (new String ('\t', level));
+				TraceWrite (new string ('\t', level));
 				TraceWriteLine (line);
 			}
 		}

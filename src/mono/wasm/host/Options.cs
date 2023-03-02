@@ -597,7 +597,7 @@ namespace Mono.Options
             return type == '=' ? OptionValueType.Required : OptionValueType.Optional;
         }
 
-        private static void AddSeparators(string name, int end, ICollection<string> seps)
+        private static void AddSeparators(string name, int end, List<string> seps)
         {
             int start = -1;
             for (int i = end + 1; i < name.Length; ++i)
@@ -785,7 +785,7 @@ namespace Mono.Options
 
     public delegate void OptionAction<TKey, TValue>(TKey key, TValue value);
 
-    public class OptionSet : KeyedCollection<string, Option>
+    public partial class OptionSet : KeyedCollection<string, Option>
     {
         public OptionSet()
             : this(null, null)
@@ -1135,7 +1135,7 @@ namespace Mono.Options
             return false;
         }
 
-        private static bool Unprocessed(ICollection<string> extra, Option def, OptionContext c, string argument)
+        private static bool Unprocessed(List<string> extra, Option def, OptionContext c, string argument)
         {
             if (def == null)
             {
@@ -1148,15 +1148,15 @@ namespace Mono.Options
             return false;
         }
 
-        private readonly Regex ValueOption = new Regex(
-            @"^(?<flag>--|-|/)(?<name>[^:=]+)((?<sep>[:=])(?<value>.*))?$");
+        [GeneratedRegex(@"^(?<flag>--|-|/)(?<name>[^:=]+)((?<sep>[:=])(?<value>.*))?$")]
+        private static partial Regex ValueOption();
 
         protected bool GetOptionParts(string argument, out string flag, out string name, out string sep, out string value)
         {
             ArgumentNullException.ThrowIfNull(argument);
 
             flag = name = sep = value = null;
-            Match m = ValueOption.Match(argument);
+            Match m = ValueOption().Match(argument);
             if (!m.Success)
             {
                 return false;
@@ -1461,9 +1461,12 @@ namespace Mono.Options
             o.Write(s);
         }
 
+        [GeneratedRegex(@"(?<=(?<!\{)\{)[^{}]*(?=\}(?!\}))")]
+        private static partial Regex IgnoreDoubleBracesRegex();
+
         private static string GetArgumentName(int index, int maxIndex, string description)
         {
-            var matches = Regex.Matches(description ?? "", @"(?<=(?<!\{)\{)[^{}]*(?=\}(?!\}))"); // ignore double braces
+            var matches = IgnoreDoubleBracesRegex().Matches(description ?? "");
             string argName = "";
             foreach (Match match in matches)
             {

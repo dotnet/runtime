@@ -175,4 +175,10 @@ const char* NativeGetLocaleInfoString(const char* localeName,
     return strdup(value);
 }
 
-
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+const char* GlobalizationNative_GetICUDataPathFallback(void)
+{
+    NSString *bundlePath = [[NSBundle mainBundle] pathForResource:@"icudt" ofType:@"dat"];
+    return strdup([bundlePath UTF8String]);
+}
+#endif
