@@ -193,7 +193,7 @@
     <_packageOS>$(RuntimeOS)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == ''">$(_portableOS)</_packageOS>
     <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)</_packageOS>
-    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(RuntimeOS)' == 'linux-musl'">linux-musl</_packageOS>
+    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_packageOS>
 
     <_toolsRID>$(_packageOS)-$(_hostArch)</_toolsRID>
     <_toolsRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_portableOS)-x64</_toolsRID>
