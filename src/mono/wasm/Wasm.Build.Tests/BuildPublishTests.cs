@@ -15,17 +15,23 @@ namespace Wasm.Build.Tests
 {
     public class BuildPublishTests : NativeRebuildTestsBase
     {
+        private readonly char unicodeChar = '煉';
+
         public BuildPublishTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release")]
-        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
-        public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
+        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release", parameters: new object[] { false })]
+        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug", parameters: new object[] { false })]
+        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release", parameters: new object[] { true })]
+        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug", parameters: new object[] { true })]
+        public void BuildThenPublishNoAOT(BuildArgs buildArgs, bool testsUnicode, RunHost host, string id)
         {
-            string projectName = $"build_publish_{buildArgs.Config}";
+            string projectName = testsUnicode ?
+                $"build_publish_{buildArgs.Config}{unicodeChar}" :
+                $"build_publish_{buildArgs.Config}";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -70,11 +76,15 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
-        public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", parameters: new object[] { false })]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", parameters: new object[] { false })]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release", parameters: new object[] { true })]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug", parameters: new object[] { true })]
+        public void BuildThenPublishWithAOT(BuildArgs buildArgs, bool testsUnicode, RunHost host, string id)
         {
-            string projectName = $"build_publish_{buildArgs.Config}";
+            string projectName = testsUnicode ?
+                $"build_publish_{buildArgs.Config}{unicodeChar}" :
+                $"build_publish_{buildArgs.Config}";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<_WasmDevel>true</_WasmDevel>");
