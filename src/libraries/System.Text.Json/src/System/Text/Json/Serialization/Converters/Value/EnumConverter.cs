@@ -148,7 +148,7 @@ namespace System.Text.Json.Serialization.Converters
                 case TypeCode.UInt64:
                     if (reader.TryGetUInt64(out ulong uint64))
                     {
-                        return Unsafe.BitCast<ulong, T>(uint64)
+                        return Unsafe.BitCast<ulong, T>(uint64);
                     }
                     break;
                 case TypeCode.Int64:
