@@ -675,7 +675,7 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static double UInt64BitsToDouble(ulong value) { throw null; }
     }
-    public readonly partial struct Boolean : System.IComparable, System.IComparable<bool>, System.IConvertible, System.IEquatable<bool>
+    public readonly partial struct Boolean : System.IComparable, System.IComparable<bool>, System.IConvertible, System.IEquatable<bool>, System.IParsable<bool>, System.ISpanParsable<bool>
     {
         private readonly bool _dummyPrimitive;
         public static readonly string FalseString;
@@ -703,6 +703,10 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<bool>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<bool>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out bool result) { throw null; }
+        static bool System.ISpanParsable<bool>.Parse(ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static bool System.ISpanParsable<bool>.TryParse(ReadOnlySpan<char> s, System.IFormatProvider? provider, out bool result) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
@@ -4971,7 +4975,7 @@ namespace System
     {
         public STAThreadAttribute() { }
     }
-    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.ICloneable, System.IComparable, System.IComparable<string?>, System.IConvertible, System.IEquatable<string?>
+    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.ICloneable, System.IComparable, System.IComparable<string?>, System.IConvertible, System.IEquatable<string?>, System.IParsable<string>, System.ISpanParsable<string>
     {
         public static readonly string Empty;
         [System.CLSCompliantAttribute(false)]
@@ -5153,6 +5157,10 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
+        static string System.IParsable<string>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<string>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out string result) { throw null; }
+        static string System.ISpanParsable<string>.Parse(ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static bool System.ISpanParsable<string>.TryParse(ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out string result) { throw null; }
         public char[] ToCharArray() { throw null; }
         public char[] ToCharArray(int startIndex, int length) { throw null; }
         public System.String ToLower() { throw null; }
