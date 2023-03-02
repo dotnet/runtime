@@ -813,7 +813,7 @@ namespace System.Buffers
             Debug.Assert(currentSpan.Length < next.Length);
 
             int fullLength = next.Length;
-            SequencePosition position = Position;
+            object? segment = _currentPositionObject;
 
             while (next.StartsWith(currentSpan))
             {
@@ -828,7 +828,7 @@ namespace System.Buffers
                 }
 
                 // Need to check the next segment
-                if (!TryGetNextBuffer(in _sequence, ref position, ref currentSpan))
+                if (!TryGetNextBuffer(in _sequence, ref segment, ref currentSpan))
                 {
                     return false; // no more data
                 }

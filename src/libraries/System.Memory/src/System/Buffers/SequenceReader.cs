@@ -171,10 +171,11 @@ namespace System.Buffers
             else
             {
                 long remainingOffset = offset - (_currentSpan.Length - _currentSpanIndex);
-                SequencePosition position = Position;
+
+                object? segment = _currentPositionObject;
 
                 ReadOnlySpan<T> currentSpan = default;
-                while (TryGetNextBuffer(in _sequence, ref position, ref currentSpan))
+                while (TryGetNextBuffer(in _sequence, ref segment, ref currentSpan))
                 {
                     if (remainingOffset >= currentSpan.Length)
                     {
@@ -276,15 +277,15 @@ namespace System.Buffers
         private bool TryGetNextSpan()
         {
             int lastLength = _currentSpan.Length;
-            SequencePosition position = Position;
-            if (!TryGetNextBuffer(in _sequence, ref position, ref _currentSpan))
+            object? segment = _currentPositionObject;
+            if (!TryGetNextBuffer(in _sequence, ref segment, ref _currentSpan))
             {
                 return false;
             }
             _consumedAtStartOfCurrentSpan += lastLength; // track consumed length
             _currentSpanIndex = 0;
-            _currentPositionObject = position.GetObject();
-            _currentPositionInteger = position.GetInteger();
+            _currentPositionObject = segment;
+            _currentPositionInteger = 0; // all non-first segments start at zero
 
             AssertValidPosition();
             return true;
@@ -298,18 +299,18 @@ namespace System.Buffers
             if (_currentSpanIndex == _currentSpan.Length) // should only be at-length for EOF
             {
                 ReadOnlySpan<T> span = default;
-                SequencePosition position = Position;
-                Debug.Assert(!TryGetNextBuffer(in _sequence, ref position, ref span), "failed to eagerly read-ahead");
+                object? segment = _currentPositionObject;
+                Debug.Assert(!TryGetNextBuffer(in _sequence, ref segment, ref span), "failed to eagerly read-ahead");
             }
 #endif
         }
 
-        private static bool TryGetNextBuffer(in ReadOnlySequence<T> sequence, ref SequencePosition position, ref ReadOnlySpan<T> buffer)
+        private static bool TryGetNextBuffer(in ReadOnlySequence<T> sequence, ref object? @object, ref ReadOnlySpan<T> buffer)
         {
             SequencePosition end = sequence.End;
             object? endObject = end.GetObject();
 
-            ReadOnlySequenceSegment<T>? segment = position.GetObject() as ReadOnlySequenceSegment<T>;
+            ReadOnlySequenceSegment<T>? segment = @object as ReadOnlySequenceSegment<T>;
             if (segment is not null)
             {
                 while (!ReferenceEquals(segment, endObject) && (segment = segment!.Next) is not null)
@@ -324,8 +325,8 @@ namespace System.Buffers
 
                     if (!span.IsEmpty) // skip empty segments
                     {
-                        // note: only update position+buffer on success
-                        position = new(segment, 0);
+                        // note: only update object+buffer on success
+                        @object = segment;
                         buffer = span;
                         return true;
                     }
@@ -449,8 +450,8 @@ namespace System.Buffers
             currentSpan.CopyTo(destination);
             int copied = currentSpan.Length;
 
-            SequencePosition position = Position;
-            while (TryGetNextBuffer(in _sequence, ref position, ref currentSpan))
+            object? segment = _currentPositionObject;
+            while (TryGetNextBuffer(in _sequence, ref segment, ref currentSpan))
             {
                 int toCopy = Math.Min(currentSpan.Length, destination.Length - copied);
                 currentSpan.Slice(0, toCopy).CopyTo(destination.Slice(copied));
