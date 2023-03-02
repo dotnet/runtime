@@ -157,6 +157,9 @@ static GPtrArray *profile_options;
 static GSList *tramp_infos;
 GSList *mono_interp_only_classes;
 
+static MonoRuntimeInitCallback runtime_init_callback;
+static guint64 runtime_init_thread_id = G_MAXUINT64;
+
 static void register_icalls (void);
 static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
@@ -1281,6 +1284,8 @@ mono_patch_info_hash (gconstpointer data)
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return hash | mono_signature_hash (ji->data.sig);
+	case MONO_PATCH_INFO_X128_GOT:
+		return hash | (guint32)*(double*)ji->data.target;
 	case MONO_PATCH_INFO_R8_GOT:
 		return hash | (guint32)*(double*)ji->data.target;
 	case MONO_PATCH_INFO_R4_GOT:
@@ -1605,6 +1610,8 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 	case MONO_PATCH_INFO_R4_GOT:
 	case MONO_PATCH_INFO_R8:
 	case MONO_PATCH_INFO_R8_GOT:
+	case MONO_PATCH_INFO_X128:
+	case MONO_PATCH_INFO_X128_GOT:
 		target = patch_info->data.target;
 		break;
 	case MONO_PATCH_INFO_EXC_NAME:
@@ -4347,8 +4354,8 @@ init_class (MonoClass *klass)
 	 * The JIT can't handle SIMD types with != 16 size yet.
 	 */
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
-		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
-		if (!strcmp (name, "Vector4"))
+		// FIXME: Support Vector2/Vector3
+		if (!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
 #endif
@@ -4972,7 +4979,8 @@ register_icalls (void)
 	register_icall (mono_array_new_n_icall, mono_icall_sig_object_ptr_int_ptr, FALSE);
 	register_icall (mono_get_native_calli_wrapper, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_resume_unwind, mono_icall_sig_void_ptr, TRUE);
-	register_icall (mono_gsharedvt_constrained_call, mono_icall_sig_object_ptr_ptr_ptr_ptr_ptr, FALSE);
+	register_icall (mono_gsharedvt_constrained_call, mono_icall_sig_object_ptr_ptr_ptr_ptr_ptr_ptr, FALSE);
+	register_icall (mono_gsharedvt_constrained_call_fast, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_gsharedvt_value_copy, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
 	//WARNING We do runtime selection here but the string *MUST* be to a fallback function that has same signature and behavior
@@ -5030,6 +5038,9 @@ register_icalls (void)
 
 	register_icall_no_wrapper (mono_interp_entry_from_trampoline, mono_icall_sig_void_ptr_ptr);
 	register_icall_no_wrapper (mono_interp_to_native_trampoline, mono_icall_sig_void_ptr_ptr);
+
+	/* Register dummy icall placeholder for runtime init callback support in native-to-managed wrapper */
+	register_icall_no_wrapper (mono_dummy_runtime_init_callback, mono_icall_sig_void);
 
 #ifdef MONO_ARCH_HAS_REGISTER_ICALL
 	mono_arch_register_icall ();
@@ -5388,5 +5399,38 @@ mini_alloc_jinfo (MonoJitMemoryManager *jit_mm, int size)
 		return ji;
 	} else {
 		return (MonoJitInfo*)mono_mem_manager_alloc0 (jit_mm->mem_manager, size);
+	}
+}
+
+void
+mono_set_runtime_init_callback (MonoRuntimeInitCallback callback)
+{
+	runtime_init_callback = callback;
+}
+
+/*
+* Default implementation invoking runtime init callback in native-to-managed wrapper.
+*/
+void
+mono_invoke_runtime_init_callback (void)
+{
+	MonoRuntimeInitCallback callback = NULL;
+	mono_atomic_load_acquire (callback, MonoRuntimeInitCallback, &runtime_init_callback);
+	if (G_UNLIKELY (callback)) {
+		guint64 thread_id = mono_native_thread_os_id_get ();
+		if (callback && (mono_atomic_load_i64 ((volatile gint64 *)&runtime_init_thread_id) == thread_id))
+			return;
+
+		while (mono_atomic_cas_i64 ((volatile gint64 *)&runtime_init_thread_id, (gint64)thread_id, (gint64)G_MAXUINT64) != (gint64)G_MAXUINT64)
+			g_usleep (1000);
+
+		mono_atomic_load_acquire (callback, MonoRuntimeInitCallback, &runtime_init_callback);
+		if (callback) {
+			if (!mono_thread_info_current_unchecked ())
+				callback ();
+			mono_atomic_store_release (&runtime_init_callback, NULL);
+		}
+
+		mono_atomic_xchg_i64 ((volatile gint64 *)&runtime_init_thread_id, (gint64)G_MAXUINT64);
 	}
 }

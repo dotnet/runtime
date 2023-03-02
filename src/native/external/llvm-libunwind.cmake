@@ -7,7 +7,7 @@ set (LLVM_LIBUNWIND_SOURCES_BASE
     src/libunwind.cpp
 )
 
-if(CLR_CMAKE_TARGET_OSX)
+if(CLR_CMAKE_TARGET_APPLE)
     set(LLVM_LIBUNWIND_SOURCES_BASE
         ${LLVM_LIBUNWIND_SOURCES_BASE}
         src/Unwind_AppleExtras.cpp

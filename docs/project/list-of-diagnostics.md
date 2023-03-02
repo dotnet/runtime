@@ -133,7 +133,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1019`__ | Couldn't find a field of type Microsoft.Extensions.Logging.ILogger |
 |  __`SYSLIB1020`__ | Found multiple fields of type Microsoft.Extensions.Logging.ILogger |
 |  __`SYSLIB1021`__ | Can't have the same template with different casing |
-|  __`SYSLIB1022`__ | Can't have malformed format strings (like dangling {, etc)  |
+|  __`SYSLIB1022`__ | Logging method contains malformed format strings |
 |  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |
 |  __`SYSLIB1024`__ | Argument is using the unsupported out parameter modifier |
 |  __`SYSLIB1025`__ | Multiple logging methods cannot use the same event name within a class |
@@ -202,6 +202,15 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1088`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
 |  __`SYSLIB1089`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
 |  __`SYSLIB1090`__ | Invalid 'GeneratedComInterfaceAttribute' usage |
+|  __`SYSLIB1091`__ | Method is declared in different partial declaration than the 'GeneratedComInterface' attribute. |
+|  __`SYSLIB1092`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1093`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1094`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1095`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1096`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1097`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1098`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1099`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
 
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)

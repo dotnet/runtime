@@ -1187,6 +1187,43 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_X86Base_DivRem:
+        case NI_X86Base_X64_DivRem:
+        {
+            assert(node->GetOperandCount() == 3);
+
+            // SIMD base type is from signature and can distinguish signed and unsigned
+            var_types   targetType = node->GetSimdBaseType();
+            GenTree*    op1        = node->Op(1);
+            GenTree*    op2        = node->Op(2);
+            GenTree*    op3        = node->Op(3);
+            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
+
+            regNumber op1Reg = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+            regNumber op3Reg = op3->GetRegNum();
+
+            emitAttr attr = emitTypeSize(targetType);
+            emitter* emit = GetEmitter();
+
+            // op1: EAX, op2: EDX, op3: free
+            assert(op1Reg != REG_EDX);
+            assert(op2Reg != REG_EAX);
+            if (op3->isUsedFromReg())
+            {
+                assert(op3Reg != REG_EDX);
+                assert(op3Reg != REG_EAX);
+            }
+
+            emit->emitIns_Mov(INS_mov, attr, REG_EAX, op1Reg, /* canSkip */ true);
+            emit->emitIns_Mov(INS_mov, attr, REG_EDX, op2Reg, /* canSkip */ true);
+
+            // emit the DIV/IDIV instruction
+            emit->emitInsBinary(ins, attr, node, op3);
+
+            break;
+        }
+
         default:
             unreached();
             break;

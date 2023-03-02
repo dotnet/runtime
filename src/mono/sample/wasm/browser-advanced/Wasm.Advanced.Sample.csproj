@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <_SampleProject>Wasm.Advanced.Sample.csproj</_SampleProject>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <!-- add OpenGL emulation -->
@@ -12,9 +11,13 @@
     <WasmProfilers>browser;</WasmProfilers>
   </PropertyGroup>
   <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
     <!-- add export GL object from Module -->
     <EmccExportedRuntimeMethod Include="GL" />
     <NativeFileReference Include="fibonacci.c" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
+
 </Project>

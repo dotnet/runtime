@@ -26,7 +26,10 @@ namespace Microsoft.Workload.Build.Tasks
         public ITaskItem[]    InstallTargets     { get; set; } = Array.Empty<ITaskItem>();
 
         [Required, NotNull]
-        public string?        VersionBand        { get; set; }
+        public string?        VersionBandForSdkManifestsDir        { get; set; }
+
+        [Required, NotNull]
+        public string?        VersionBandForManifestPackages       { get; set; }
 
         [Required, NotNull]
         public string?        LocalNuGetsPath    { get; set; }
@@ -67,6 +70,9 @@ namespace Microsoft.Workload.Build.Tasks
 
                 if (OnlyUpdateManifests)
                     return !Log.HasLoggedErrors;
+
+                if (InstallTargets.Length == 0)
+                    throw new LogAsErrorException($"No install targets specified.");
 
                 InstallWorkloadRequest[] selectedRequests = InstallTargets
                     .SelectMany(workloadToInstall =>
@@ -301,7 +307,7 @@ namespace Microsoft.Workload.Build.Tasks
             // Multiple directories for a manifest, differing only in case causes
             // workload install to fail due to duplicate manifests!
             // This is applicable only on case-sensitive filesystems
-            string manifestVersionBandDir = Path.Combine(sdkDir, "sdk-manifests", VersionBand);
+            string manifestVersionBandDir = Path.Combine(sdkDir, "sdk-manifests", VersionBandForSdkManifestsDir);
             if (!Directory.Exists(manifestVersionBandDir))
             {
                 Log.LogMessage(MessageImportance.Low, $"    Could not find {manifestVersionBandDir}. Creating it..");
@@ -310,7 +316,7 @@ namespace Microsoft.Workload.Build.Tasks
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
 
-            PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
+            PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBandForManifestPackages}",
                                           Version: version,
                                           OutputDir: outputDir,
                                           relativeSourceDir: "data");

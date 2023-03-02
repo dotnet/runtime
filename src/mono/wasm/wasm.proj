@@ -32,7 +32,10 @@
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
+    <_EmccLinkUndefinedSymbolsFile>$(WasmObjDir)src\symbols.undefined</_EmccLinkUndefinedSymbolsFile>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
+    <EmSdkLLVMAr>$(EMSDK_PATH)\upstream\bin\llvm-ar</EmSdkLLVMAr>
+    <EmSdkLLVMAr Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(EmSdkLLVMAr).exe</EmSdkLLVMAr>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -45,17 +48,6 @@
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
     <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
-
-  <UsingTask TaskName="GenerateWasmBundle"
-    AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
-  <Target Name="BundleTimeZones">
-    <PropertyGroup>
-      <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
-    </PropertyGroup>
-    <GenerateWasmBundle
-      InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
-      OutputFileName="$(TimeZonesDataPath)" />
-  </Target>
 
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
@@ -86,6 +78,82 @@
       InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
+  </Target>
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleSourceFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)">
+    <PropertyGroup>
+      <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
+      <_WasmTimezonesBundleSourceFile>$(WasmObjDir)\wasm-bundled-timezones.c</_WasmTimezonesBundleSourceFile>
+      <_WasmTimezonesBundleObjectFile>$(WasmObjDir)\wasm-bundled-timezones.o</_WasmTimezonesBundleObjectFile>
+      <_WasmTimezonesBundleArchive>$(WasmObjDir)\wasm-bundled-timezones.a</_WasmTimezonesBundleArchive>
+      <_WasmTimezonesSourcesRsp>$(WasmObjDir)\wasm-bundled-timezones-sources.rsp</_WasmTimezonesSourcesRsp>
+      <_WasmTimezonesArchiveRsp>$(WasmObjDir)\wasm-bundled-timezones-archive.rsp</_WasmTimezonesArchiveRsp>
+    </PropertyGroup>
+    <ItemGroup>
+      <_WasmTimezonesInternal Include="$(_WasmTimezonesPath)\**\*.*" WasmRole="Timezone"/>
+    </ItemGroup>
+    <GetFileHash Files="@(_WasmTimezonesInternal)">
+      <Output TaskParameter="Items" ItemName="_WasmBundleTimezonesWithHashes" />
+    </GetFileHash>
+    <ItemGroup>
+      <_WasmBundleTimezonesWithHashes Update="@(_WasmBundleTimezonesWithHashes)">
+        <DestinationFile>$(WasmObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).c</DestinationFile>
+        <ObjectFile>$(WasmObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).o</ObjectFile>
+        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
+      </_WasmBundleTimezonesWithHashes>
+    </ItemGroup>
+    <!-- TODO make this incremental compilation -->
+    <EmitWasmBundleSourceFiles
+      FilesToBundle="@(_WasmBundleTimezonesWithHashes)"
+      BundleName="timezones"
+      BundleFile="$(WasmObjDir)\wasm-bundled-timezones.c"
+      RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
+      >
+    </EmitWasmBundleSourceFiles>
+    <ItemGroup>
+      <_WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(_WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
+      <_WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), $(_WasmTimezonesBundleSourceFile)).Replace('\','/'))" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_WasmTimezonesSourcesRsp)"
+      Overwrite="true"
+      Lines="@(_WasmBundleTimezonesSources, ' ')"
+      WriteOnlyWhenDifferent="true" />
+    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c @$(_WasmTimezonesSourcesRsp)"
+          WorkingDirectory="$(WasmObjDir)"
+          EmSdkPath="$(EMSDK_PATH)"
+          ConsoleToMsBuild="true"
+          IgnoreStandardErrorWarningFormat="true">
+    </RunWithEmSdkEnv>
+    <ItemGroup>
+      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(_WasmBundleTimezonesWithHashes.ObjectFile)).Replace('\','/'))" />
+      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), $(_WasmTimezonesBundleObjectFile)).Replace('\','/'))" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
+      Overwrite="true"
+      Lines="@(WasmBundleTimezonesObjects, ' ')"
+      WriteOnlyWhenDifferent="true" />
+    <RunWithEmSdkEnv Command="$(EmSdkLLVMAr) cs -r $(_WasmTimezonesBundleArchive) @$(_WasmTimezonesArchiveRsp)"
+          EmSdkPath="$(EMSDK_PATH)"
+          WorkingDirectory="$(WasmObjDir)"
+          ConsoleToMsBuild="true"
+          IgnoreStandardErrorWarningFormat="true">
+    </RunWithEmSdkEnv>
+
+    <ItemGroup>
+      <_WasmArchivedTimezones Include="$(WasmObjDir)\wasm-bundled-timezones.a" />
+    </ItemGroup>
+
+    <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
+    <ItemGroup>
+      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
+      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.c" />
+      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
+      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleSourceFile)" />
+      <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
+      <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.ObjectFile)" />
+    </ItemGroup>
+    <Delete Files="@(_WasmBundleTimezonesToDelete)" />
   </Target>
 
   <Target Name="GenerateEmccPropsAndRspFiles">
@@ -178,11 +246,13 @@
       <_EmccLinkFlags Include="-s STRICT_JS=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
       <_EmccLinkFlags Include="-s MODULARIZE=1"/>
-      <_EmccLinkFlags Include="-Wl,--allow-undefined"/>
+      
       <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
       <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
            active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
       <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
+
+      <_EmccLinkUndefinedSymbols Include="icudt68_dat" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
@@ -237,12 +307,16 @@
                       Lines="@(_EmccLinkFlags)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
+    <WriteLinesToFile File="$(_EmccLinkUndefinedSymbolsFile)"
+                      Lines="@(_EmccLinkUndefinedSymbols)"
+                      WriteOnlyWhenDifferent="true"
+                      Overwrite="true" />
   </Target>
 
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;GenerateTimezonesArchive;InstallNpmPackages;BuildWithRollup">
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
@@ -254,11 +328,13 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz  -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
+
       <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -Wl,--allow-undefined-file=$(_EmccLinkUndefinedSymbolsFile)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
@@ -315,7 +391,8 @@
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(ICULibFiles);
-                       @(ICULibNativeFiles);"
+                       @(ICULibNativeFiles);
+                       @(_WasmArchivedTimezones);"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
@@ -338,8 +415,7 @@
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;
-                       $(NativeBinDir)dotnet.wasm;
-                       $(NativeBinDir)dotnet.timezones.blat"
+                       $(NativeBinDir)dotnet.wasm"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
@@ -352,7 +428,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles)"
+    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles);@(_WasmArchivedTimezones)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

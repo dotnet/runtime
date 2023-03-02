@@ -883,8 +883,7 @@ protected:
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
-    void genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond);
-    void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
+    void genCodeForCCMP(GenTreeCCMP* ccmp);
 #endif
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
@@ -902,6 +901,10 @@ protected:
 
     void genCompareFloat(GenTree* treeNode);
     void genCompareInt(GenTree* treeNode);
+#ifdef TARGET_XARCH
+    bool genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
+#endif
 
 #ifdef FEATURE_SIMD
 #ifdef TARGET_ARM64
@@ -1022,6 +1025,30 @@ protected:
 
 #endif // !defined(TARGET_64BIT)
 
+    //-------------------------------------------------------------------------
+    // genUpdateLifeStore: Do liveness udpate after tree store instructions
+    // were emitted, update result var's home if it was stored on stack.
+    //
+    // Arguments:
+    //     tree        -  Gentree node
+    //     targetReg   -  of the tree
+    //     varDsc      -  result value's variable
+    //
+    // Return Value:
+    //     None.
+    __forceinline void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
+    {
+        if (targetReg != REG_NA)
+        {
+            genProduceReg(tree);
+        }
+        else
+        {
+            genUpdateLife(tree);
+            varDsc->SetRegNum(REG_STK);
+        }
+    }
+
     // Do liveness update for register produced by the current node in codegen after
     // code has been emitted for it.
     void genProduceReg(GenTree* tree);
@@ -1077,7 +1104,6 @@ protected:
 
 #ifdef TARGET_XARCH
     void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
-    void genCodeForBT(GenTreeOp* bt);
 #endif // TARGET_XARCH
 
     void genCodeForCast(GenTreeOp* tree);
@@ -1192,7 +1218,6 @@ protected:
     void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
-    void genCodeForJumpTrue(GenTreeOp* jtrue);
 #if defined(TARGET_LOONGARCH64)
     // TODO: refactor for LA.
     void genCodeForJumpCompare(GenTreeOp* tree);
@@ -1532,9 +1557,10 @@ public:
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM64
-    static insCflags InsCflagsForCcmp(GenCondition cond);
+#if defined(TARGET_ARM64)
     static insCond JumpKindToInsCond(emitJumpKind condition);
+#elif defined(TARGET_XARCH)
+    static instruction JumpKindToCmov(emitJumpKind condition);
 #endif
 
 #ifndef TARGET_LOONGARCH64

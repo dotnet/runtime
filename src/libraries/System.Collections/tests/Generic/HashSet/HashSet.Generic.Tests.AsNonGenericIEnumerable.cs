@@ -16,6 +16,7 @@ namespace System.Collections.Tests
             return set;
         }
 
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
 
         protected override ModifyOperation ModifyEnumeratorThrows => PlatformDetection.IsNetFramework ? base.ModifyEnumeratorThrows : (base.ModifyEnumeratorAllowed & ~ModifyOperation.Remove);

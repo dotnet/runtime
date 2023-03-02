@@ -127,7 +127,20 @@ namespace System.Drawing
             ArgumentNullException.ThrowIfNull(stream);
 
             _iconData = new byte[(int)stream.Length];
-            stream.Read(_iconData, 0, _iconData.Length);
+#if NET7_0_OR_GREATER
+            stream.ReadExactly(_iconData);
+#else
+            int totalRead = 0;
+            while (totalRead < _iconData.Length)
+            {
+                int bytesRead = stream.Read(_iconData, totalRead, _iconData.Length - totalRead);
+                if (bytesRead <= 0)
+                {
+                    throw new EndOfStreamException();
+                }
+                totalRead += bytesRead;
+            }
+#endif
             Initialize(width, height);
         }
 

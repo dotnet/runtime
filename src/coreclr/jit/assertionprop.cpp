@@ -3220,6 +3220,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             break;
         }
 
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
             simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
@@ -3230,7 +3231,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             conValTree = vecCon;
             break;
         }
-        break;
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
         case TYP_BYREF:
@@ -6157,6 +6158,8 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_ARR_LENGTH:
             break;
 
+        case GT_OBJ:
+        case GT_BLK:
         case GT_IND:
         {
             const ValueNum vn = tree->GetVN(VNK_Conservative);

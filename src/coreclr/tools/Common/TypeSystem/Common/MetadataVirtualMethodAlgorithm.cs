@@ -415,13 +415,21 @@ namespace Internal.TypeSystem
             return FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType, reverseMethodSearch, nameSigMatchMethodIsValidCandidate: s_VerifyMethodsHaveTheSameVirtualSlot);
         }
 
-        private static Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
+        private static readonly Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
 
         // Return true if the slot that defines methodToVerify matches slotDefiningMethod
         private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
         {
             MethodDesc slotDefiningMethodOfMethodToVerify = FindSlotDefiningMethodForVirtualMethod(methodToVerify);
             return slotDefiningMethodOfMethodToVerify == slotDefiningMethod;
+        }
+
+        private static readonly Func<MethodDesc, MethodDesc, bool> s_VerifyMethodIsPublic = VerifyMethodIsPublic;
+
+        // Return true if the method to verify is public
+        private static bool VerifyMethodIsPublic(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
+        {
+            return methodToVerify.IsPublic;
         }
 
         private static void FindBaseUnificationGroup(MetadataType currentType, UnificationGroup unificationGroup)
@@ -615,7 +623,7 @@ namespace Internal.TypeSystem
             {
                 MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
                     reverseMethodSearch: false, /* When searching for name/sig overrides on a type that explicitly defines an interface, search through the type in the forward direction*/
-                    nameSigMatchMethodIsValidCandidate :null);
+                    nameSigMatchMethodIsValidCandidate: s_VerifyMethodIsPublic);
                 foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
                 if (baseType == null)
@@ -653,7 +661,7 @@ namespace Internal.TypeSystem
                 {
                     MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
                                             reverseMethodSearch: false, /* When searching for name/sig overrides on a type that is the first type in the hierarchy to require the interface, search through the type in the forward direction*/
-                                            nameSigMatchMethodIsValidCandidate: null);
+                                            nameSigMatchMethodIsValidCandidate: s_VerifyMethodIsPublic);
 
                     foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
@@ -729,7 +737,7 @@ namespace Internal.TypeSystem
 
                 MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
                     reverseMethodSearch: true, /* When searching for a name sig match for an interface on parent types search in reverse order of declaration */
-                    nameSigMatchMethodIsValidCandidate:null);
+                    nameSigMatchMethodIsValidCandidate: s_VerifyMethodIsPublic);
 
                 if (nameSigOverride != null)
                 {

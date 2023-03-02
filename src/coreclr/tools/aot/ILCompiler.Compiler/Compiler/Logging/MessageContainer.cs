@@ -28,8 +28,8 @@ namespace ILCompiler.Logging
 #endif
     {
         /// <summary>
-        /// Optional data with a filename, line and column that triggered the
-        /// linker to output an error (or warning) message.
+        /// Optional data with a filename, line and column that triggered
+        /// to output an error (or warning) message.
         /// </summary>
         public MessageOrigin? Origin { get; }
 
@@ -41,7 +41,7 @@ namespace ILCompiler.Logging
         public string SubCategory { get; }
 
         /// <summary>
-        /// Code identifier for errors and warnings reported by the IL linker.
+        /// Code identifier for errors and warnings.
         /// </summary>
         public int? Code { get; }
 

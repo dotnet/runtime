@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Text;
-
 namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
@@ -677,7 +675,7 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static double UInt64BitsToDouble(ulong value) { throw null; }
     }
-    public readonly partial struct Boolean : System.IComparable, System.IComparable<bool>, System.IConvertible, System.IEquatable<bool>
+    public readonly partial struct Boolean : System.IComparable, System.IComparable<bool>, System.IConvertible, System.IEquatable<bool>, System.IParsable<bool>, System.ISpanParsable<bool>
     {
         private readonly bool _dummyPrimitive;
         public static readonly string FalseString;
@@ -705,6 +703,10 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<bool>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<bool>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out bool result) { throw null; }
+        static bool System.ISpanParsable<bool>.Parse(ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static bool System.ISpanParsable<bool>.TryParse(ReadOnlySpan<char> s, System.IFormatProvider? provider, out bool result) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
@@ -4336,6 +4338,7 @@ namespace System
         public static bool IsAndroid() { throw null; }
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsBrowser() { throw null; }
+        public static bool IsWasi() { throw null; }
         public static bool IsFreeBSD() { throw null; }
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]
@@ -4972,7 +4975,7 @@ namespace System
     {
         public STAThreadAttribute() { }
     }
-    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.ICloneable, System.IComparable, System.IComparable<string?>, System.IConvertible, System.IEquatable<string?>
+    public sealed partial class String : System.Collections.Generic.IEnumerable<char>, System.Collections.IEnumerable, System.ICloneable, System.IComparable, System.IComparable<string?>, System.IConvertible, System.IEquatable<string?>, System.IParsable<string>, System.ISpanParsable<string>
     {
         public static readonly string Empty;
         [System.CLSCompliantAttribute(false)]
@@ -5154,6 +5157,10 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
+        static string System.IParsable<string>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<string>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out string result) { throw null; }
+        static string System.ISpanParsable<string>.Parse(ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static bool System.ISpanParsable<string>.TryParse(ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out string result) { throw null; }
         public char[] ToCharArray() { throw null; }
         public char[] ToCharArray(int startIndex, int length) { throw null; }
         public System.String ToLower() { throw null; }
@@ -5794,6 +5801,7 @@ namespace System
         public bool IsContextful { get { throw null; } }
         public virtual bool IsEnum { get { throw null; } }
         public bool IsExplicitLayout { get { throw null; } }
+        public virtual bool IsFunctionPointer { get { throw null; } }
         public virtual bool IsGenericMethodParameter { get { throw null; } }
         public virtual bool IsGenericParameter { get { throw null; } }
         public virtual bool IsGenericType { get { throw null; } }
@@ -5824,6 +5832,7 @@ namespace System
         public virtual bool IsSZArray { get { throw null; } }
         public virtual bool IsTypeDefinition { get { throw null; } }
         public bool IsUnicodeClass { get { throw null; } }
+        public virtual bool IsUnmanagedFunctionPointer { get { throw null; } }
         public bool IsValueType { get { throw null; } }
         public virtual bool IsVariableBoundArray { get { throw null; } }
         public bool IsVisible { get { throw null; } }
@@ -5882,6 +5891,9 @@ namespace System
         public System.Reflection.FieldInfo[] GetFields() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingAttr);
+        public virtual System.Type[] GetFunctionPointerCallingConventions() { throw null; }
+        public virtual System.Type[] GetFunctionPointerParameterTypes() { throw null; }
+        public virtual System.Type GetFunctionPointerReturnType() { throw null; }
         public virtual System.Type[] GetGenericArguments() { throw null; }
         public virtual System.Type[] GetGenericParameterConstraints() { throw null; }
         public virtual System.Type GetGenericTypeDefinition() { throw null; }
@@ -5944,6 +5956,7 @@ namespace System
         public System.Type[] GetNestedTypes() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public abstract System.Type[] GetNestedTypes(System.Reflection.BindingFlags bindingAttr);
+        public virtual System.Type[] GetOptionalCustomModifiers() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Reflection.PropertyInfo[] GetProperties() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
@@ -5964,6 +5977,7 @@ namespace System
         public System.Reflection.PropertyInfo? GetProperty(string name, System.Type[] types) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         protected abstract System.Reflection.PropertyInfo? GetPropertyImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type? returnType, System.Type[]? types, System.Reflection.ParameterModifier[]? modifiers);
+        public virtual System.Type[] GetRequiredCustomModifiers() { throw null; }
         public new System.Type GetType() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The type might be removed")]
         public static System.Type? GetType(string typeName) { throw null; }
@@ -6019,14 +6033,14 @@ namespace System
         protected abstract bool IsPrimitiveImpl();
         public virtual bool IsSubclassOf(System.Type c) { throw null; }
         protected virtual bool IsValueTypeImpl() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public virtual System.Type MakeArrayType() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public virtual System.Type MakeArrayType(int rank) { throw null; }
         public virtual System.Type MakeByRefType() { throw null; }
         public static System.Type MakeGenericMethodParameter(int position) { throw null; }
         public static System.Type MakeGenericSignatureType(System.Type genericTypeDefinition, params System.Type[] typeArguments) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The native code for this instantiation might not be available at runtime.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
         public virtual System.Type MakePointerType() { throw null; }
@@ -11165,6 +11179,7 @@ namespace System.Reflection
         public static System.Reflection.FieldInfo GetFieldFromHandle(System.RuntimeFieldHandle handle) { throw null; }
         public static System.Reflection.FieldInfo GetFieldFromHandle(System.RuntimeFieldHandle handle, System.RuntimeTypeHandle declaringType) { throw null; }
         public override int GetHashCode() { throw null; }
+        public virtual System.Type GetModifiedFieldType() { throw null; }
         public virtual System.Type[] GetOptionalCustomModifiers() { throw null; }
         public virtual object? GetRawConstantValue() { throw null; }
         public virtual System.Type[] GetRequiredCustomModifiers() { throw null; }
@@ -11591,6 +11606,7 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) { throw null; }
         public virtual object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
+        public virtual System.Type GetModifiedParameterType() { throw null; }
         public virtual System.Type[] GetOptionalCustomModifiers() { throw null; }
         public object GetRealObject(System.Runtime.Serialization.StreamingContext context) { throw null; }
         public virtual System.Type[] GetRequiredCustomModifiers() { throw null; }
@@ -11666,6 +11682,7 @@ namespace System.Reflection
         public abstract System.Reflection.ParameterInfo[] GetIndexParameters();
         public virtual System.Type[] GetOptionalCustomModifiers() { throw null; }
         public virtual object? GetRawConstantValue() { throw null; }
+        public virtual System.Type GetModifiedPropertyType() { throw null; }
         public virtual System.Type[] GetRequiredCustomModifiers() { throw null; }
         public System.Reflection.MethodInfo? GetSetMethod() { throw null; }
         public abstract System.Reflection.MethodInfo? GetSetMethod(bool nonPublic);
@@ -11801,10 +11818,12 @@ namespace System.Reflection
         public override bool IsByRefLike { get { throw null; } }
         public override bool IsCollectible { get { throw null; } }
         public override bool IsConstructedGenericType { get { throw null; } }
+        public override bool IsFunctionPointer { get { throw null; } }
         public override bool IsGenericMethodParameter { get { throw null; } }
         public override bool IsGenericTypeParameter { get { throw null; } }
         public override bool IsSZArray { get { throw null; } }
         public override bool IsTypeDefinition { get { throw null; } }
+        public override bool IsUnmanagedFunctionPointer { get { throw null; } }
         public override bool IsVariableBoundArray { get { throw null; } }
         public override int MetadataToken { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
@@ -11830,6 +11849,9 @@ namespace System.Reflection
         public override System.Reflection.FieldInfo? GetField(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        public override System.Type[] GetFunctionPointerCallingConventions() { throw null; }
+        public override System.Type[] GetFunctionPointerParameterTypes() { throw null; }
+        public override System.Type GetFunctionPointerReturnType() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public override System.Type? GetInterface(string name, bool ignoreCase) { throw null; }
@@ -14444,6 +14466,7 @@ namespace System.Threading
         public void Cancel(bool throwOnFirstException) { }
         public void CancelAfter(int millisecondsDelay) { }
         public void CancelAfter(System.TimeSpan delay) { }
+        public System.Threading.Tasks.Task CancelAsync() { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token1, System.Threading.CancellationToken token2) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.Threading.CancellationToken[] tokens) { throw null; }
@@ -14462,6 +14485,7 @@ namespace System.Threading
         public PeriodicTimer(System.TimeSpan period) { }
         public void Dispose() { }
         ~PeriodicTimer() { }
+        public System.TimeSpan Period { get { throw null; } set { } }
         public System.Threading.Tasks.ValueTask<bool> WaitForNextTickAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public static partial class Timeout
@@ -14933,6 +14957,14 @@ namespace System.Threading.Tasks
         public new System.Threading.Tasks.Task<TResult> WaitAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public new System.Threading.Tasks.Task<TResult> WaitAsync(System.TimeSpan timeout) { throw null; }
         public new System.Threading.Tasks.Task<TResult> WaitAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+    public static partial class TaskToAsyncResult
+    {
+        public static System.IAsyncResult Begin(System.Threading.Tasks.Task task, System.AsyncCallback? callback, object? state) { throw null; }
+        public static void End(System.IAsyncResult asyncResult) { throw null; }
+        public static TResult End<TResult>(System.IAsyncResult asyncResult) { throw null; }
+        public static System.Threading.Tasks.Task Unwrap(System.IAsyncResult asyncResult) { throw null; }
+        public static System.Threading.Tasks.Task<TResult> Unwrap<TResult>(System.IAsyncResult asyncResult) { throw null; }
     }
     public partial class UnobservedTaskExceptionEventArgs : System.EventArgs
     {

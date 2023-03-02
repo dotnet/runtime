@@ -387,6 +387,11 @@ GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstC
 
     GenTree* effectiveVal = lastComma->gtGetOp2();
 
+    if (!effectiveVal->OperIsIndir() && !effectiveVal->IsLocal())
+    {
+        return firstComma;
+    }
+
     assert(effectiveVal == firstComma->gtEffectiveVal());
 
     GenTree* effectiveValAddr = comp->gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
@@ -591,11 +596,16 @@ void MorphInitBlockHelper::TryInitFieldByField()
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
+            {
                 assert(initPattern == 0);
                 src = m_comp->gtNewZeroConNode(fieldType);
                 break;
+            }
+
             default:
                 unreached();
         }

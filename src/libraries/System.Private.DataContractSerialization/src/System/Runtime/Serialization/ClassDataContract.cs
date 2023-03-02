@@ -617,7 +617,7 @@ namespace System.Runtime.Serialization.DataContracts
             /// in serialization/deserialization we base the decision whether to Demand SerializationFormatter permission on this value and hasDataContract
             /// </SecurityNote>
             private bool _hasDataContract;
-            private bool _hasExtensionData;
+            private readonly bool _hasExtensionData;
 
             internal XmlDictionaryString[]? ContractNamespaces;
             internal XmlDictionaryString[]? MemberNames;
@@ -1009,8 +1009,8 @@ namespace System.Runtime.Serialization.DataContracts
                     int endIndex = i;
                     bool hasConflictingType = false;
                     while (endIndex < membersInHierarchy.Count - 1
-                        && string.CompareOrdinal(membersInHierarchy[endIndex]._member.Name, membersInHierarchy[endIndex + 1]._member.Name) == 0
-                        && string.CompareOrdinal(membersInHierarchy[endIndex]._ns, membersInHierarchy[endIndex + 1]._ns) == 0)
+                        && membersInHierarchy[endIndex]._member.Name == membersInHierarchy[endIndex + 1]._member.Name
+                        && membersInHierarchy[endIndex]._ns == membersInHierarchy[endIndex + 1]._ns)
                     {
                         membersInHierarchy[endIndex]._member.ConflictingMember = membersInHierarchy[endIndex + 1]._member;
                         if (!hasConflictingType)

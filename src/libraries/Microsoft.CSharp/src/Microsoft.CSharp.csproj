@@ -9,6 +9,7 @@
     <EnableComBinder Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</EnableComBinder>
     <DefineConstants Condition="'$(EnableComBinder)' == 'true'">$(DefineConstants);ENABLECOMBINDER</DefineConstants>
     <AllowUnsafeBlocks Condition="'$(EnableComBinder)' == 'true'">true</AllowUnsafeBlocks>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />

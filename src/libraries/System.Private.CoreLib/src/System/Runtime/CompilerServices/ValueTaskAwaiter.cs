@@ -14,14 +14,16 @@ namespace System.Runtime.CompilerServices
         /// <summary>Shim used to invoke an <see cref="Action"/> passed as the state argument to a <see cref="Action{Object}"/>.</summary>
         internal static readonly Action<object?> s_invokeActionDelegate = static state =>
         {
-            if (!(state is Action action))
+            if (state is Action action)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
-                return;
+                action();
             }
-
-            action();
+            else
+            {
+                ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+            }
         };
+
         /// <summary>The value being awaited.</summary>
         private readonly ValueTask _value;
 

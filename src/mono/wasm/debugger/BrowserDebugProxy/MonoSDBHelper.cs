@@ -789,8 +789,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
-        private static int MINOR_VERSION = 61;
-        private static int MAJOR_VERSION = 2;
+        private const int MINOR_VERSION = 61;
+        private const int MAJOR_VERSION = 2;
 
         private int VmMinorVersion { get; set; }
         private int VmMajorVersion { get; set; }
@@ -799,9 +799,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Dictionary<int, AssemblyInfo> assemblies;
         private Dictionary<int, TypeInfoWithDebugInformation> types;
 
-        private MonoProxy proxy;
+        private readonly MonoProxy proxy;
         private DebugStore store;
-        private SessionId sessionId;
+        private readonly SessionId sessionId;
 
         internal readonly ILogger logger;
 
@@ -838,6 +838,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             ValueCreator = new(this, logger);
             ResetStore(null);
         }
+
+        public MonoSDBHelper Clone(SessionId sessionId)
+            => new MonoSDBHelper(proxy, logger, sessionId)
+            {
+                VmMajorVersion = VmMajorVersion,
+                VmMinorVersion = VmMinorVersion,
+                store = store,
+            };
 
         public void ResetStore(DebugStore store)
         {

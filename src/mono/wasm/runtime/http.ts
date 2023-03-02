@@ -4,6 +4,7 @@
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
 import { Module } from "./imports";
 import { MemoryViewType, Span } from "./marshal";
+import { fetch_like } from "./polyfills";
 import { mono_assert } from "./types";
 import { VoidPtr } from "./types/emscripten";
 
@@ -56,7 +57,7 @@ export function http_wasm_fetch(url: string, header_names: string[], header_valu
     }
 
     return wrap_as_cancelable_promise(async () => {
-        const res = await fetch(url, options) as ResponseExtension;
+        const res = await fetch_like(url, options) as ResponseExtension;
         res.__abort_controller = abort_controller;
         return res;
     });

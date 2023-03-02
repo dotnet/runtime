@@ -21,7 +21,6 @@ StringAttr("hello", name = "StringAttrSimple"),
 EnumAttr(PublicEnum.Case1, name = "EnumAttrSimple"),
 TypeAttr(typeof(object), name = "TypeAttrSimple")]
 [assembly: CompilationRelaxations(8)]
-[assembly: Debuggable((DebuggableAttribute.DebuggingModes)263)]
 [assembly: CLSCompliant(false)]
 [assembly: TypeForwardedTo(typeof(string))]
 [assembly: TypeForwardedTo(typeof(TypeInForwardedAssembly))]
@@ -60,7 +59,6 @@ namespace System.Reflection.Tests
         [InlineData(typeof(AssemblyDescriptionAttribute))]
         [InlineData(typeof(AssemblyCompanyAttribute))]
         [InlineData(typeof(CLSCompliantAttribute))]
-        [InlineData(typeof(DebuggableAttribute))]
         [InlineData(typeof(Attr))]
         public void CustomAttributes(Type type)
         {
@@ -857,7 +855,6 @@ namespace System.Reflection.Tests
         [InlineData(typeof(AssemblyDescriptionAttribute))]
         [InlineData(typeof(AssemblyCompanyAttribute))]
         [InlineData(typeof(CLSCompliantAttribute))]
-        [InlineData(typeof(DebuggableAttribute))]
         [InlineData(typeof(Attr))]
         public void GetCustomAttributesData(Type attrType)
         {

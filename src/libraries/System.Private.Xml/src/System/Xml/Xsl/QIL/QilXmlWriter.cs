@@ -37,8 +37,8 @@ namespace System.Xml.Xsl.Qil
     /// </remarks>
     internal sealed class QilXmlWriter : QilScopedVisitor
     {
-        private XmlWriter writer;
-        private Options options;
+        private readonly XmlWriter writer;
+        private readonly Options options;
         private readonly NameGenerator _ngen;
 
         [Flags]

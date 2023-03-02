@@ -833,9 +833,14 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 //
 int LinearScan::BuildSelect(GenTreeOp* select)
 {
-    assert(select->OperIs(GT_SELECT));
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
-    int srcCount = BuildOperandUses(select->AsConditional()->gtCond);
+    int srcCount = 0;
+    if (select->OperIs(GT_SELECT))
+    {
+        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
+    }
+
     srcCount += BuildOperandUses(select->gtOp1);
     srcCount += BuildOperandUses(select->gtOp2);
     BuildDef(select);

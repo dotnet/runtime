@@ -5,6 +5,7 @@
     <NoWarn>$(NoWarn);nullable</NoWarn>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
     <IsTrimmable>false</IsTrimmable>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types that support using XML configuration files (app.config). This package exists only to support migrating existing .NET Framework code that already uses System.Configuration. When writing new code, use another configuration system instead, such as Microsoft.Extensions.Configuration.</PackageDescription>
   </PropertyGroup>

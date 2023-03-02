@@ -72,12 +72,22 @@ namespace System.Text.RegularExpressions.Generator
 
         /// <summary>Emits the Regex-derived type for a method where we're unable to generate custom code.</summary>
         private static void EmitRegexLimitedBoilerplate(
-            IndentedTextWriter writer, RegexMethod rm, string reason)
+            IndentedTextWriter writer, RegexMethod rm, string reason, LanguageVersion langVer)
         {
-            writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
+            string visibility;
+            if (langVer >= LanguageVersion.CSharp11)
+            {
+                visibility = "file";
+                writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MethodName} method.</summary>");
+            }
+            else
+            {
+                visibility = "internal";
+                writer.WriteLine($"/// <summary>This class supports generated regexes and should not be used by other code directly.</summary>");
+            }
             writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
             writer.WriteLine($"[{s_generatedCodeAttribute}]");
-            writer.WriteLine($"file sealed class {rm.GeneratedName} : Regex");
+            writer.WriteLine($"{visibility} sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.Write($"    internal static readonly Regex Instance = ");

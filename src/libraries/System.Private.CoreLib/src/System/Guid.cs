@@ -9,6 +9,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -1203,8 +1205,49 @@ namespace System
                         p += HexsToCharsHexOutput(p, _j, _k);
                         *p++ = '}';
                     }
+                    else if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+                    {
+                        // Vectorized implementation for D, N, P and B formats:
+                        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+                        (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) =
+                            Buffers.Text.Utf8Formatter.FormatGuidVector128Utf8(this, dash);
+
+                        // Expand to UTF-16
+                        (Vector128<ushort> x0, Vector128<ushort> x1) = Vector128.Widen(vecX);
+                        (Vector128<ushort> y0, Vector128<ushort> y1) = Vector128.Widen(vecY);
+                        ushort* pChar = (ushort*)p;
+                        if (dash)
+                        {
+                            (Vector128<ushort> z0, Vector128<ushort> z1) = Vector128.Widen(vecZ);
+
+                            // We need to merge these vectors in this order:
+                            // xxxxxxxxxxxxxxxx
+                            //                     yyyyyyyyyyyyyyyy
+                            //         zzzzzzzzzzzzzzzz
+                            x0.Store(pChar + 0);
+                            y0.Store(pChar + 20);
+                            y1.Store(pChar + 28);
+                            z0.Store(pChar + 8); // overlaps x1
+                            z1.Store(pChar + 16);
+                            p += 36;
+                        }
+                        else
+                        {
+                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                            x0.Store(pChar + 0);
+                            x1.Store(pChar + 8);
+                            y0.Store(pChar + 16);
+                            y1.Store(pChar + 24);
+                            p += 32;
+                        }
+                        if (braces != 0)
+                            *p = (char)(braces >> 16);
+                        charsWritten = guidSize;
+                        return true;
+                    }
                     else
                     {
+                        // Non-vectorized fallback for D, N, P and B formats:
                         // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
                         p += HexsToChars(p, _a >> 24, _a >> 16);
                         p += HexsToChars(p, _a >> 8, _a);

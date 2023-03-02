@@ -103,7 +103,7 @@ internal static partial class Interop
             uint ipAddress, SafeLocalAllocHandle data, ushort dataSize, ref IP_OPTION_INFORMATION options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
 
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal static partial uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
-            byte[] sourceSocketAddress, byte[] destSocketAddress, SafeLocalAllocHandle data, ushort dataSize, ref IP_OPTION_INFORMATION options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
+        internal static unsafe partial uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
+            byte* sourceSocketAddress, byte[] destSocketAddress, SafeLocalAllocHandle data, ushort dataSize, ref IP_OPTION_INFORMATION options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
     }
 }

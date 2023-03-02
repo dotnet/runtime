@@ -696,6 +696,87 @@ gc_safe_transition_builder_cleanup (GCSafeTransitionBuilder *builder)
 #endif
 }
 
+typedef struct EmitGCUnsafeTransitionBuilder {
+	MonoMethodBuilder *mb;
+	int orig_domain_var;
+	int attach_cookie_var;
+} GCUnsafeTransitionBuilder;
+
+static void
+gc_unsafe_transition_builder_init (GCUnsafeTransitionBuilder *builder, MonoMethodBuilder *mb, gboolean use_attach)
+{
+	g_assert_checked (use_attach);
+	// Right now we always set use_attach and use mono_threads_coop_attach to enter into gc
+	// unsafe regions.  If !use_attach is needed (ie adding transitions, using
+	// mono_threads_enter_gc_unsafe_region_unbalanced) that needs to be implemented.
+	builder->mb = mb;
+	builder->orig_domain_var = -1;
+	builder->attach_cookie_var = -1;
+}
+
+static void
+gc_unsafe_transition_builder_add_vars (GCUnsafeTransitionBuilder *builder)
+{
+	MonoType *int_type = mono_get_int_type ();
+	builder->orig_domain_var = mono_mb_add_local (builder->mb, int_type);
+	builder->attach_cookie_var = mono_mb_add_local (builder->mb, int_type);
+}
+
+static void
+gc_unsafe_transition_builder_emit_enter (GCUnsafeTransitionBuilder *builder)
+{
+	MonoMethodBuilder *mb = builder->mb;
+	int attach_cookie = builder->attach_cookie_var;
+	int orig_domain = builder->orig_domain_var;
+	/*
+	 * // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
+	 * intptr_t attach_cookie;
+	 * intptr_t orig_domain = mono_threads_attach_coop (domain, &attach_cookie);
+	 * <interrupt check>
+	 */
+	/* orig_domain = mono_threads_attach_coop (domain, &attach_cookie); */
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
+	mono_mb_emit_ldloc_addr (mb, attach_cookie);
+	/*
+	 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
+	 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
+	 *
+	 * Special cased in interpreter, keep in sync.
+	 */
+	mono_mb_emit_icall (mb, mono_threads_attach_coop);
+	mono_mb_emit_stloc (mb, orig_domain);
+
+	/* <interrupt check> */
+	emit_thread_interrupt_checkpoint (mb);
+}
+
+static void
+gc_unsafe_transition_builder_emit_exit (GCUnsafeTransitionBuilder *builder)
+{
+	MonoMethodBuilder *mb = builder->mb;
+	int orig_domain = builder->orig_domain_var;
+	int attach_cookie = builder->attach_cookie_var;
+	/*
+	 * // does RUNNING -> (RUNNING|BLOCKING) + unset/switch domain
+	 * mono_threads_detach_coop (orig_domain, &attach_cookie);
+	 */
+
+	/* mono_threads_detach_coop (orig_domain, &attach_cookie); */
+	mono_mb_emit_ldloc (mb, orig_domain);
+	mono_mb_emit_ldloc_addr (mb, attach_cookie);
+	/* Special cased in interpreter, keep in sync */
+	mono_mb_emit_icall (mb, mono_threads_detach_coop);
+}
+
+static void
+gc_unsafe_transition_builder_cleanup (GCUnsafeTransitionBuilder *builder)
+{
+	builder->mb = NULL;
+	builder->orig_domain_var = -1;
+	builder->attach_cookie_var = -1;
+}
+
 static gboolean
 emit_native_wrapper_validate_signature (MonoMethodBuilder *mb, MonoMethodSignature* sig, MonoMarshalSpec** mspecs)
 {
@@ -2253,7 +2334,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	MonoImage *image = get_method_image (method);
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	int param_count = sig->param_count + sig->hasthis + 1;
-	int pos_leave, coop_gc_var = 0;
+	int pos_leave;
 	MonoExceptionClause *clause;
 	MonoType *object_type = mono_get_object_type ();
 #if defined (TARGET_WASM)
@@ -2266,6 +2347,10 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 #else
 	const gboolean do_blocking_transition = TRUE;
 #endif
+	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
+
+	if (do_blocking_transition)
+		gc_unsafe_transition_builder_init (&gc_unsafe_builder, mb, TRUE);
 
 	/* local 0 (temp for exception object) */
 	mono_mb_add_local (mb, object_type);
@@ -2275,8 +2360,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		mono_mb_add_local (mb, sig->ret);
 
 	if (do_blocking_transition) {
-		/* local 4, the local to be used when calling the suspend funcs */
-		coop_gc_var = mono_mb_add_local (mb, mono_get_int_type ());
+		gc_unsafe_transition_builder_add_vars (&gc_unsafe_builder);
 	}
 
 	/* clear exception arg */
@@ -2285,10 +2369,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
 
 	if (do_blocking_transition) {
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_GET_SP);
-		mono_mb_emit_icall (mb, mono_threads_enter_gc_unsafe_region_unbalanced);
-		mono_mb_emit_stloc (mb, coop_gc_var);
+		gc_unsafe_transition_builder_emit_enter (&gc_unsafe_builder);
 	}
 
 	/* try */
@@ -2361,10 +2442,9 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	}
 
 	if (do_blocking_transition) {
-		mono_mb_emit_ldloc (mb, coop_gc_var);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_GET_SP);
-		mono_mb_emit_icall (mb, mono_threads_exit_gc_unsafe_region_unbalanced);
+		gc_unsafe_transition_builder_emit_exit (&gc_unsafe_builder);
+
+		gc_unsafe_transition_builder_cleanup (&gc_unsafe_builder);
 	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -2411,11 +2491,12 @@ emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSp
 }
 
 static void
-emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
+emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
-	int i, *tmp_locals, orig_domain, attach_cookie;
+	int i, *tmp_locals;
 	gboolean closed = FALSE;
+	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
 
 	sig = m->sig;
 	csig = m->csig;
@@ -2453,8 +2534,8 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		m->vtaddr_var = mono_mb_add_local (mb, int_type);
 
-	orig_domain = mono_mb_add_local (mb, int_type);
-	attach_cookie = mono_mb_add_local (mb, int_type);
+	gc_unsafe_transition_builder_init (&gc_unsafe_builder, mb, TRUE);
+	gc_unsafe_transition_builder_add_vars (&gc_unsafe_builder);
 
 	/*
 	 * // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
@@ -2469,24 +2550,19 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	 * return ret;
 	 */
 
+	/* delete_old = FALSE */
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
 
-	/* orig_domain = mono_threads_attach_coop (domain, &attach_cookie); */
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
-	mono_mb_emit_ldloc_addr (mb, attach_cookie);
 	/*
-	 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
-	 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
-	 *
-	 * Special cased in interpreter, keep in sync.
-	 */
-	mono_mb_emit_icall (mb, mono_threads_attach_coop);
-	mono_mb_emit_stloc (mb, orig_domain);
+	* Transformed into a direct icall when runtime init callback is enabled for a native-to-managed wrapper.
+	* This icall is special cased in the JIT so it can be called in native-to-managed wrapper before
+	* runtime has been initialized. On return, runtime must be fully initialized.
+	*/
+	if (runtime_init_callback)
+		mono_mb_emit_icall (mb, mono_dummy_runtime_init_callback);
 
-	/* <interrupt check> */
-	emit_thread_interrupt_checkpoint (mb);
+	gc_unsafe_transition_builder_emit_enter(&gc_unsafe_builder);
 
 	/* we first do all conversions */
 	tmp_locals = g_newa (int, sig->param_count);
@@ -2630,6 +2706,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_VALUETYPE:
 			case MONO_TYPE_PTR:
+			case MONO_TYPE_I:
 				mono_emit_marshal (m, i, invoke_sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
 			default:
@@ -2638,11 +2715,9 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		}
 	}
 
-	/* mono_threads_detach_coop (orig_domain, &attach_cookie); */
-	mono_mb_emit_ldloc (mb, orig_domain);
-	mono_mb_emit_ldloc_addr (mb, attach_cookie);
-	/* Special cased in interpreter, keep in sync */
-	mono_mb_emit_icall (mb, mono_threads_detach_coop);
+	gc_unsafe_transition_builder_emit_exit (&gc_unsafe_builder);
+
+	gc_unsafe_transition_builder_cleanup (&gc_unsafe_builder);
 
 	/* return ret; */
 	if (m->retobj_var) {

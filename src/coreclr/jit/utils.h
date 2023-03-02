@@ -419,6 +419,16 @@ public:
         return *this;
     }
 
+    PhasedVar& operator|=(const T& value)
+    {
+#ifdef DEBUG
+        assert(m_writePhase);
+        m_initialized = true;
+#endif // DEBUG
+        m_value |= value;
+        return *this;
+    }
+
     // Note: if you need more <op>= functions, you can define them here, like operator&=
 
     // Assign a value, but don't assert if we're not in the write phase, and
@@ -741,6 +751,8 @@ public:
 
     static uint32_t BitScanReverse(uint64_t value);
 
+    static uint64_t DoubleToUInt64Bits(double value);
+
     static uint32_t LeadingZeroCount(uint32_t value);
 
     static uint32_t LeadingZeroCount(uint64_t value);
@@ -765,9 +777,15 @@ public:
 
     static uint64_t RotateRight(uint64_t value, uint32_t offset);
 
+    static uint32_t SingleToUInt32Bits(float value);
+
     static uint32_t TrailingZeroCount(uint32_t value);
 
     static uint32_t TrailingZeroCount(uint64_t value);
+
+    static float UInt32BitsToSingle(uint32_t value);
+
+    static double UInt64BitsToDouble(uint64_t value);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but

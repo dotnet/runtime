@@ -1304,14 +1304,24 @@ DONE:
             const bool         mustImportEntryBlock = gtIsRecursiveCall(methHnd) || actualCall->IsInlineCandidate() ||
                                               actualCall->IsGuardedDevirtualizationCandidate();
 
-            // Only schedule importation if we're not currently importing.
+            // Only schedule importation if we're not currently importing the entry BB.
             //
             if (opts.IsOSR() && mustImportEntryBlock && (compCurBB != fgEntryBB))
             {
-                JITDUMP("\ninlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
+                JITDUMP("\nOSR: inlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
                         " for importation\n",
                         dspTreeID(call), fgEntryBB->bbNum);
                 impImportBlockPending(fgEntryBB);
+
+                if (!fgOSROriginalEntryBBProtected && (fgEntryBB != fgFirstBB))
+                {
+                    // Protect fgEntryBB from deletion, since it may not have any
+                    // explicit flow references until morph.
+                    //
+                    fgEntryBB->bbRefs += 1;
+                    fgOSROriginalEntryBBProtected = true;
+                    JITDUMP("   also protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+                }
             }
         }
     }
@@ -2587,6 +2597,45 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             break;
     }
 
+    // Allow some lighweight intrinsics in Tier0 which can improve throughput
+    // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
+    // in this case unlike mustExpand.
+    bool betterToExpand = false;
+
+    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
+    // To be fixed in https://github.com/dotnet/runtime/pull/77465
+    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+
+    if (!mustExpand && tier0opts)
+    {
+        switch (ni)
+        {
+            // This one is just `return true/false`
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+
+            // We need these to be able to fold "typeof(...) == typeof(...)"
+            case NI_System_RuntimeTypeHandle_GetValueInternal:
+            case NI_System_Type_GetTypeFromHandle:
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
+
+            // Simple cases
+            case NI_System_String_get_Chars:
+            case NI_System_String_get_Length:
+            case NI_System_Span_get_Item:
+            case NI_System_Span_get_Length:
+            case NI_System_ReadOnlySpan_get_Item:
+            case NI_System_ReadOnlySpan_get_Length:
+                betterToExpand = true;
+                break;
+
+            default:
+                // Unsafe.* are all small enough to prefer expansions.
+                betterToExpand = ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
+                break;
+        }
+    }
+
     GenTree* retNode = nullptr;
 
     // Under debug and minopts, only expand what is required.
@@ -2594,7 +2643,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // If that call is an intrinsic and is expanded, codegen for NextCallReturnAddress will fail.
     // To avoid that we conservatively expand only required intrinsics in methods that call
     // the NextCallReturnAddress intrinsic.
-    if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
+    if (!mustExpand && ((opts.OptimizationDisabled() && !betterToExpand) || info.compHasNextCallRetAddr))
     {
         *pIntrinsicName = NI_Illegal;
         return retNode;
@@ -2704,6 +2753,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     retNode = gtNewIconNode(1);
                     JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
                     // We can also consider FTN_ADDR here
+                }
+                else if (opts.OptimizationDisabled())
+                {
+                    // It doesn't make sense to carry it as GT_INTRINSIC till Morph in Tier0
+                    retNode = gtNewIconNode(0);
+                    JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to false early\n");
                 }
                 else
                 {

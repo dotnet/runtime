@@ -197,7 +197,7 @@ namespace System.Runtime.InteropServices.JavaScript
             result = unixTime.DateTime;
         }
 
-        // we do this via reflection to allow linker to trim dependency on Uri class and it's assembly
+        // we do this via reflection to allow trimming tools to trim dependency on Uri class and it's assembly
         // if the user code has methods with Uri signature, they probably also have the Uri constructor
         // if they don't have it, they could configure ILLing to protect it after they enabled trimming
         // We believe that this code path is probably not even used in the wild

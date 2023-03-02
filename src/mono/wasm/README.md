@@ -314,6 +314,8 @@ npm update --lockfile-version=1
 * `runtime-extra-platforms` does not run any wasm jobs on PRs
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
 
+* `runtime-wasm-dbgtests` runs all the debugger test jobs
+
 ## Rolling build (twice a day):
 
 * `runtime` runs all the wasm jobs, but `AOT` still only runs smoke tests.

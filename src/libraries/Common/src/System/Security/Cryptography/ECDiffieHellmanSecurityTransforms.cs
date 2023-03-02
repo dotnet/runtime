@@ -238,7 +238,7 @@ namespace System.Security.Cryptography
 
             private sealed class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
             {
-                private EccSecurityTransforms _ecc;
+                private readonly EccSecurityTransforms _ecc;
 
                 public ECDiffieHellmanSecurityTransformsPublicKey(ECParameters ecParameters)
                 {

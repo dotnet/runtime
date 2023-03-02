@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -7,6 +7,12 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+
+     <!-- some tests require full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
+    
+    <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
+    <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
   </PropertyGroup>
 
   <!-- 
@@ -22,7 +28,11 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs" Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\FunctionPointerTests.cs" Link="Common\System\FunctionPointerTests.cs" />
+    <Compile Include="$(CommonTestPath)System\FunctionPointerCallingConventionTests.cs" Link="Common\System\FunctionPointerCallingConventionTests.cs" />
+    <Compile Include="$(CommonTestPath)System\FunctionPointerEqualityTests.cs" Link="Common\System\FunctionPointerEqualityTests.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs" Link="Common\System\MockType.cs" />
+    <Compile Include="$(CommonTestPath)System\ModifiedTypeTests.cs" Link="Common\System\ModifiedTypeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs" Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Tests.cs" />
@@ -56,8 +66,10 @@
     <Compile Include="System\Attributes.cs" />
     <Compile Include="System\AttributeUsageAttributeTests.cs" />
     <Compile Include="System\BadImageFormatExceptionTests.cs" />
+    <Compile Include="System\StringTests.GenericMath.cs" />
     <Compile Include="System\BooleanTests.cs" />
     <Compile Include="System\BufferTests.cs" />
+    <Compile Include="System\BooleanTests.GenericMath.cs" />
     <Compile Include="System\ByteTests.cs" />
     <Compile Include="System\CharTests.cs" />
     <Compile Include="System\CLSCompliantAttributeTests.cs" />
@@ -147,7 +159,7 @@
     <Compile Include="System\TypeLoadExceptionTests.cs" />
     <Compile Include="System\TypeUnloadedExceptionTests.cs" />
     <Compile Include="System\TupleTests.cs" />
-    <Compile Include="System\UseResourceKeysTest.cs" />
+    <Compile Include="System\Type\FunctionPointerTests.Runtime.cs" />
     <Compile Include="System\UInt16Tests.cs" />
     <Compile Include="System\UInt32Tests.cs" />
     <Compile Include="System\UInt64Tests.cs" />
@@ -157,6 +169,7 @@
     <Compile Include="System\Uri.CreateStringTests.cs" />
     <Compile Include="System\Uri.CreateUriTests.cs" />
     <Compile Include="System\Uri.MethodsTests.cs" />
+    <Compile Include="System\UseResourceKeysTest.cs" />
     <Compile Include="System\ValueTypeTests.cs" />
     <Compile Include="System\VersionTests.cs" />
     <Compile Include="System\WeakReferenceTests.cs" />
@@ -216,6 +229,7 @@
     <Compile Include="System\Reflection\CustomAttributesTestData.cs" />
     <Compile Include="System\Reflection\CustomAttribute_Named_Typed_ArgumentTests.cs" />
     <Compile Include="System\Reflection\DefaultMemberAttributeTests.cs" />
+    <Compile Include="System\Reflection\FunctionPointerTestsExtensions.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.cs" />
     <Compile Include="System\Reflection\InvokeWithRefLikeArgs.cs" />
     <Compile Include="System\Reflection\IsCollectibleTests.cs" />
@@ -324,14 +338,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
-                      ReferenceOutputAssembly="false"
-                      SetTargetFramework="TargetFramework=netstandard2.0"
-                      OutputItemType="Analyzer" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" />
     
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
 
+    <ProjectReference Include="$(CommonPath)..\tests\System\TestILAssembly\TestILAssembly.ilproj" Link="Common\System\TestILAssembly\TestILAssembly.ilproj" />
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
