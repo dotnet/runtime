@@ -73,6 +73,7 @@ inline bool varTypeIsSIMD(T vt)
 #endif
 }
 
+#ifdef TARGET_XARCH
 template <class T>
 inline bool varTypeIsMask(T vt)
 {
@@ -82,6 +83,7 @@ inline bool varTypeIsMask(T vt)
     return false;
 #endif // !FEATURE_
 }
+#endif
 
 template <class T>
 inline bool varTypeIsIntegral(T vt)

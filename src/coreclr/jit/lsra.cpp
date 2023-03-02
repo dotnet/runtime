@@ -698,7 +698,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
-    availableMaskRegs   = RBM_NONE;
+#if defined(TARGET_XARCH)
+    availableMaskRegs   = RBM_K1;
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
@@ -719,7 +721,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
     {
         availableFloatRegs |= RBM_HIGHFLOAT;
         availableDoubleRegs |= RBM_HIGHFLOAT;
-        availableMaskRegs |= RBM_K1;
     }
 #endif
 
@@ -739,10 +740,12 @@ LinearScan::LinearScan(Compiler* theCompiler)
         {
             availableRegs[i] = &availableDoubleRegs;
         }
+#ifdef TARGET_XARCH
         else if (thisType == TYP_MASK)
         {
             availableRegs[i] = &availableMaskRegs;
         }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
         else
         {
