@@ -11,35 +11,8 @@
 #ifndef __OAIDL_H__
 #define __OAIDL_H__
 
-#include "rpc.h"
-#include "rpcndr.h"
-
-#include "unknwn.h"
-
-typedef interface IErrorInfo IErrorInfo;
-typedef /* [unique] */ IErrorInfo *LPERRORINFO;
-
-EXTERN_C const IID IID_IErrorInfo;
-
-    interface
-    IErrorInfo : public IUnknown
-    {
-    public:
-        virtual HRESULT STDMETHODCALLTYPE GetGUID(
-            /* [out] */ GUID *pGUID) = 0;
-
-        virtual HRESULT STDMETHODCALLTYPE GetSource(
-            /* [out] */ BSTR *pBstrSource) = 0;
-
-        virtual HRESULT STDMETHODCALLTYPE GetDescription(
-            /* [out] */ BSTR *pBstrDescription) = 0;
-
-        virtual HRESULT STDMETHODCALLTYPE GetHelpFile(
-            /* [out] */ BSTR *pBstrHelpFile) = 0;
-
-        virtual HRESULT STDMETHODCALLTYPE GetHelpContext(
-            /* [out] */ DWORD *pdwHelpContext) = 0;
-
-    };
+// Pointer to IErrorInfo is still used in non-Windows code
+// Prevent accidentally using its member
+typedef void IErrorInfo;
 
 #endif //__OAIDL_H__
