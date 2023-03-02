@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -14,10 +13,6 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using System.Numerics;
-using System.Security.Cryptography;
-using System.Reflection.PortableExecutable;
-using System.Reflection.Metadata;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
@@ -42,8 +37,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     //       <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
     // </summary>
     public ITaskItem[]? ExtraConfig { get; set; }
-
-    private static SHA256 HashAlgorithm = SHA256.Create();
 
     private sealed class WasmAppConfig
     {
@@ -200,11 +193,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 return false;
             if (name == "dotnet.wasm")
             {
-                config.Assets.Add(new WasmEntry (name, GetFileHash(item.ItemSpec)) );
+                config.Assets.Add(new WasmEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
             }
             else if (IncludeThreadsWorker && name == "dotnet.worker.js")
             {
-                config.Assets.Add(new ThreadsWorkerEntry (name, GetFileHash(item.ItemSpec)));
+                config.Assets.Add(new ThreadsWorkerEntry (name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
         }
 
@@ -220,7 +213,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             string assemblyPath = assembly;
             var bytes = File.ReadAllBytes(assemblyPath);
             // for the is IL IsAssembly check we need to read the bytes from the original DLL
-            if (!IsAssembly(bytes))
+            if (!Utils.IsManagedAssembly(bytes))
             {
                 Log.LogWarning("Skipping non-assembly file: " + assemblyPath);
             }
@@ -233,13 +226,13 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     bytes = File.ReadAllBytes(assemblyPath);
                 }
 
-                config.Assets.Add(new AssemblyEntry(Path.GetFileName(assemblyPath), GetFileHash(bytes)));
+                config.Assets.Add(new AssemblyEntry(Path.GetFileName(assemblyPath), Utils.ComputeIntegrity(bytes)));
                 if (DebugLevel != 0)
                 {
                     var pdb = assembly;
                     pdb = Path.ChangeExtension(pdb, ".pdb");
                     if (File.Exists(pdb))
-                        config.Assets.Add(new PdbEntry(Path.GetFileName(pdb), GetFileHash(pdb)));
+                        config.Assets.Add(new PdbEntry(Path.GetFileName(pdb), Utils.ComputeIntegrity(pdb)));
                 }
             }
         }
@@ -262,13 +255,13 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
                 _fileWrites.Add(finalWebcil);
-                config.Assets.Add(new SatelliteAssemblyEntry(Path.GetFileName(finalWebcil), GetFileHash(finalWebcil), args.culture));
+                config.Assets.Add(new SatelliteAssemblyEntry(Path.GetFileName(finalWebcil), Utils.ComputeIntegrity(finalWebcil), args.culture));
             }
             else
             {
                 var satellitePath = Path.Combine(directory, name);
                 FileCopyChecked(args.fullPath, satellitePath, "SatelliteAssemblies");
-                config.Assets.Add(new SatelliteAssemblyEntry(name, GetFileHash(satellitePath), args.culture));
+                config.Assets.Add(new SatelliteAssemblyEntry(name, Utils.ComputeIntegrity(satellitePath), args.culture));
             }
         });
 
@@ -309,7 +302,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var vfsPath = Path.Combine(supportFilesDir, generatedFileName);
                 FileCopyChecked(item.ItemSpec, vfsPath, "FilesToIncludeInFileSystem");
 
-                var asset = new VfsEntry ($"supportFiles/{generatedFileName}", GetFileHash(vfsPath)) {
+                var asset = new VfsEntry ($"supportFiles/{generatedFileName}", Utils.ComputeIntegrity(vfsPath)) {
                     VirtualPath = targetPath
                 };
                 config.Assets.Add(asset);
@@ -326,7 +319,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     Log.LogError($"Expected the file defined as ICU resource: {idfn} to exist but it does not.");
                     return false;
                 }
-                config.Assets.Add(new IcuData(Path.GetFileName(idfn), GetFileHash(idfn)) { LoadRemote = loadRemote });
+                config.Assets.Add(new IcuData(Path.GetFileName(idfn), Utils.ComputeIntegrity(idfn)) { LoadRemote = loadRemote });
             }
         }
 
@@ -359,15 +352,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         string tmpMonoConfigPath = Path.GetTempFileName();
         using (var sw = File.CreateText(tmpMonoConfigPath))
         {
-            HashAlgorithm.Initialize();
             var sb = new StringBuilder();
             foreach(AssetEntry asset in config.Assets)
             {
                 sb.Append(asset.Hash);
             }
-            var bytesToHash = Encoding.UTF8.GetBytes(sb.ToString());
-            var hashBytes = HashAlgorithm.ComputeHash(bytesToHash);
-            config.AssetsHash = "sha256-" + Convert.ToBase64String(hashBytes);
+            config.AssetsHash = Utils.ComputeTextIntegrity(sb.ToString());
 
             var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
             sw.Write(json);
@@ -449,43 +439,4 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             return false;
         }
     }
-
-    public static bool IsAssembly(byte[] bytes)
-    {
-        try
-        {
-            // Try to read CLI metadata from the PE file.
-            using var peReader = new PEReader(ImmutableArray.Create(bytes));
-
-            if (!peReader.HasMetadata)
-            {
-                return false; // File does not have CLI metadata.
-            }
-
-            // Check that file has an assembly manifest.
-            MetadataReader reader = peReader.GetMetadataReader();
-            return reader.IsAssembly;
-        }
-        catch (BadImageFormatException)
-        {
-            return false;
-        }
-        catch (FileNotFoundException)
-        {
-            return false;
-        }
-    }
-
-    public static string GetFileHash(string filePath)
-    {
-        return GetFileHash(File.ReadAllBytes(filePath));
-    }
-
-    public static string GetFileHash(byte[] bytes)
-    {
-        HashAlgorithm.Initialize();
-        var hashBytes = HashAlgorithm.ComputeHash(bytes);
-        return "sha256-" + Convert.ToBase64String(hashBytes);
-    }
-
 }
