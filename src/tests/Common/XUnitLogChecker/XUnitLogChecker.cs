@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml;
 
+using CoreclrTestWrapperLib = CoreclrTestLib.CoreclrTestWrapperLib;
+
 public class XUnitLogChecker
 {
     private static class Patterns
@@ -113,6 +115,8 @@ public class XUnitLogChecker
 
         FixTheXml(tempLogPath);
         PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
+
+        var test = new CoreclrTestWrapperLib();
 
         // Rename the temp log to the final log, so that Helix can use it without
         // knowing what transpired here.
