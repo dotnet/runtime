@@ -699,7 +699,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
 #if defined(TARGET_XARCH)
-    availableMaskRegs   = RBM_K1;
+    availableMaskRegs = RBM_K1;
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
