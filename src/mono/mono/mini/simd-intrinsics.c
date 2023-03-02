@@ -3372,13 +3372,13 @@ emit_arm64_intrinsics (
 			return ret;
 		}
         case SN_VectorTableLookup:
-			if (!type_is_simd_vector (fsig->params [0]))
+			if (!type_is_simd_vector (fsig->params [0]) || !type_is_simd_vector (fsig->params [1]))
 				return NULL;
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
         case SN_VectorTableLookupExtension:
-            if (!type_is_simd_vector (fsig->params [0]))
+			if (!type_is_simd_vector (fsig->params [0]) || !type_is_simd_vector (fsig->params [1]))
 				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1, 0, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1, 0, fsig, args);
 		default:
 			g_assert_not_reached ();
 		}
