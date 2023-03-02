@@ -56,6 +56,15 @@ namespace Tracing.Tests.EnableDisableValidation
     {
         public static int Main()
         {
+            // There is a potential deadlock because EventPipeEventSource uses ConcurrentDictionary, which
+            // triggers loading the CDSCollectionETWBCLProvider EventSource, and registering the provider
+            // can deadlock with the writing thread. Force it to be created now.
+            ConcurrentDictionary<int, int> cd = new ConcurrentDictionary<int, int>(Environment.ProcessorCount, 0);
+            if (cd.Count > 0)
+            {
+                throw new Exception("This shouldn't ever happen");
+            }
+
             var providers = new List<EventPipeProvider>()
             {
                 new EventPipeProvider("Local.TestEventSource", EventLevel.Verbose)
