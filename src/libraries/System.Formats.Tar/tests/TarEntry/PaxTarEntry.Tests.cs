@@ -49,12 +49,14 @@ namespace System.Formats.Tar.Tests
         [InlineData("key", "\nvalue")]
         [InlineData("key", "val\nue")]
         [InlineData("key", "value\n")]
+        [InlineData("key=", "value\n")]
+        [InlineData("key\n", "value\n")]
         public void Disallowed_ExtendedAttributes_SeparatorCharacters(string key, string value)
         {
             Dictionary<string, string> extendedAttribute = new Dictionary<string, string>() { { key, value } };
 
             Assert.Throws<ArgumentException>(() => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttribute));
-            Assert.Throws < ArgumentException>(() => new PaxGlobalExtendedAttributesTarEntry(extendedAttribute));
+            Assert.Throws<ArgumentException>(() => new PaxGlobalExtendedAttributesTarEntry(extendedAttribute));
         }
 
         [Fact]

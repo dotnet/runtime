@@ -113,22 +113,19 @@ namespace System.Formats.Tar
         internal void InitializeExtendedAttributesWithExisting(IEnumerable<KeyValuePair<string, string>> existing)
         {
             Debug.Assert(_ea == null);
-            foreach (KeyValuePair<string, string> kvp in existing)
+            _ea = new Dictionary<string, string>(existing);
+            foreach (KeyValuePair<string, string> kvp in _ea)
             {
-                if (kvp.Key.IndexOf('=') != -1)
+                int index = kvp.Key.IndexOfAny(new char[] { '=', '\n' });
+                if (index >= 0)
                 {
-                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, '='));
-                }
-                if (kvp.Key.IndexOf('\n') != -1)
-                {
-                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, "\\n"));
+                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, kvp.Key[index] == '\n' ? "\\n" : kvp.Key[index]));
                 }
                 if (kvp.Value.IndexOf('\n') != -1)
                 {
                     throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, kvp.Key, "\\n"));
                 }
             }
-            _ea = new Dictionary<string, string>(existing);
         }
 
         private static string GetMagicForFormat(TarEntryFormat format) => format switch
