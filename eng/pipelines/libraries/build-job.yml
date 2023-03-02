@@ -101,7 +101,7 @@ jobs:
                 $(_additionalBuildArguments)
           displayName: Restore and Build Product
 
-        - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
+        - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h
