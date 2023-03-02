@@ -27,9 +27,6 @@
 #define DN_DEFINE_VECTOR_CUSTOM_ALLOC_INIT_T_SYMBOL_NAME(name) \
 	dn_vector_ ## name ## _custom_init_params_t
 
-#define DN_VECTOR_T_DEFAULT_ALLOC_PARAMS_T(type) { DN_DEFAULT_ALLOCATOR, sizeof(type), 0, DN_VECTOR_ATTRIBUTE_INIT_MEMORY }
-#define DN_VECTOR_T_DEFAULT_INIT_PARAMS_T(type) { DN_DEFAULT_ALLOCATOR, sizeof(type), 0, DN_VECTOR_ATTRIBUTE_INIT_MEMORY }
-
 #define DN_DEFINE_VECTOR_T(name, type) \
 DN_DEFINE_VECTOR_T_STRUCT(dn_vector_ ## name, type); \
 typedef enum { \
@@ -79,12 +76,12 @@ DN_DEFINE_VECTOR_IT_T_SYMBOL_NAME(name, data) (DN_DEFINE_VECTOR_IT_T_NAME(name) 
 static inline DN_DEFINE_VECTOR_T_NAME(name) * \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_alloc) (const DN_DEFINE_VECTOR_CUSTOM_ALLOC_PARAMS_T_SYMBOL_NAME(name) *params) \
 { \
-	return (DN_DEFINE_VECTOR_T_NAME(name) *)_dn_vector_alloc_capacity (params->allocator, sizeof (type), params->capacity, params->attributes); \
+	return (DN_DEFINE_VECTOR_T_NAME(name) *)dn_vector_custom_alloc ((dn_vector_custom_alloc_params_t *)params, sizeof (type)); \
 } \
 static inline DN_DEFINE_VECTOR_T_NAME(name) * \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, alloc) (void) \
 { \
-	return (DN_DEFINE_VECTOR_T_NAME(name) *)_dn_vector_alloc (DN_DEFAULT_ALLOCATOR, sizeof (type), DN_VECTOR_ATTRIBUTE_INIT_MEMORY); \
+	return (DN_DEFINE_VECTOR_T_NAME(name) *)dn_vector_alloc (sizeof (type)); \
 } \
 static inline void \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, free) (DN_DEFINE_VECTOR_T_NAME(name) *vector) \
@@ -99,12 +96,12 @@ DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_free) (DN_DEFINE_VECTOR_T_NAME(name)
 static inline bool \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_init) (DN_DEFINE_VECTOR_T_NAME(name) *vector, DN_DEFINE_VECTOR_CUSTOM_ALLOC_PARAMS_T_SYMBOL_NAME (name) *params) \
 { \
-	return _dn_vector_init_capacity ((dn_vector_t *)vector, params->allocator, sizeof(type), params->capacity, params->attributes); \
+	return dn_vector_custom_init ((dn_vector_t *)vector, (dn_vector_custom_alloc_params_t *)params, sizeof(type)); \
 } \
 static inline bool \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, init) (DN_DEFINE_VECTOR_T_NAME(name) *vector) \
 { \
-	return _dn_vector_init ((dn_vector_t *)vector, DN_DEFAULT_ALLOCATOR, sizeof (type), DN_VECTOR_ATTRIBUTE_INIT_MEMORY); \
+	return dn_vector_init ((dn_vector_t *)vector, sizeof (type)); \
 } \
 static inline void \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_dispose) (DN_DEFINE_VECTOR_T_NAME(name) *vector, dn_vector_dispose_func_t dispose_func) \

@@ -1381,7 +1381,7 @@ ep_finish_init (void)
 		_ep_can_start_threads = true;
 		if (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED) {
 			if (_ep_deferred_enable_session_ids) {
-				DN_VECTOR_FOREACH_BEGIN (_ep_deferred_enable_session_ids, EventPipeSessionID, session_id) {
+				DN_VECTOR_FOREACH_BEGIN (EventPipeSessionID, session_id, _ep_deferred_enable_session_ids) {
 					if (is_session_id_in_collection (session_id))
 						ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
 				} DN_VECTOR_FOREACH_END;
@@ -1398,7 +1398,7 @@ ep_finish_init (void)
 	// who was waiting on that lock will see that state and not mutate the defer list
 	if (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED) {
 		if (_ep_deferred_disable_session_ids) {
-			DN_VECTOR_FOREACH_BEGIN (_ep_deferred_disable_session_ids, EventPipeSessionID, session_id) {
+			DN_VECTOR_FOREACH_BEGIN (EventPipeSessionID, session_id, _ep_deferred_disable_session_ids) {
 				disable_helper (session_id);
 			} DN_VECTOR_FOREACH_END;
 			dn_vector_clear (_ep_deferred_disable_session_ids);
@@ -1433,7 +1433,7 @@ ep_shutdown (void)
 	}
 
 	if (_ep_rundown_execution_checkpoints) {
-		DN_VECTOR_PTR_FOREACH_BEGIN (_ep_rundown_execution_checkpoints, EventPipeExecutionCheckpoint *, checkpoint) {
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeExecutionCheckpoint *, checkpoint, _ep_rundown_execution_checkpoints) {
 			if (checkpoint)
 				ep_rt_utf8_string_free (checkpoint->name);
 		} DN_VECTOR_PTR_FOREACH_END;

@@ -62,42 +62,26 @@ struct _dn_umap_custom_params_t {
 	dn_umap_value_dispose_func_t value_dispose_func;
 };
 
-dn_umap_t *
-_dn_umap_alloc (
-	dn_allocator_t *allocator,
-	dn_umap_hash_func_t hash_func,
-	dn_umap_equal_func_t equal_func,
-	dn_umap_key_dispose_func_t key_dispose_func,
-	dn_umap_value_dispose_func_t value_dispose_func);
-
-bool
-_dn_umap_init (
-	dn_umap_t *map,
-	dn_allocator_t *allocator,
-	dn_umap_hash_func_t hash_func,
-	dn_umap_equal_func_t equal_func,
-	dn_umap_key_dispose_func_t key_dispose_func,
-	dn_umap_value_dispose_func_t value_dispose_func);
-
 dn_umap_it_t
-_dn_umap_begin (dn_umap_t *map);
+dn_umap_begin (dn_umap_t *map);
 
-bool
-_dn_umap_it_next (dn_umap_it_t *it);
+static inline dn_umap_it_t
+dn_umap_end (dn_umap_t *map)
+{
+	DN_ASSERT (map);
+	dn_umap_it_t it = { { map, NULL, 0 } };
+	return it;
+}
 
-static inline void
+void
 dn_umap_it_advance (
 	dn_umap_it_t *it,
-	uint32_t n)
-{
-	while (n && _dn_umap_it_next (it))
-		n--;
-}
+	uint32_t n);
 
 static inline dn_umap_it_t
 dn_umap_it_next (dn_umap_it_t it)
 {
-	_dn_umap_it_next (&it);
+	dn_umap_it_advance (&it, 1);
 	return it;
 }
 
@@ -124,7 +108,7 @@ dn_umap_it_value (dn_umap_it_t it)
 static inline bool
 dn_umap_it_begin (dn_umap_it_t it)
 {
-	dn_umap_it_t begin = _dn_umap_begin (it._internal._map);
+	dn_umap_it_t begin = dn_umap_begin (it._internal._map);
 	return (begin._internal._node == it._internal._node && begin._internal._index == it._internal._index);
 }
 
@@ -134,14 +118,14 @@ dn_umap_it_end (dn_umap_it_t it)
 	return !(it._internal._node);
 }
 
-#define DN_UMAP_FOREACH_BEGIN(map,key_type,key_name,value_type,value_name) do { \
+#define DN_UMAP_FOREACH_BEGIN(key_type, key_name, value_type, value_name, map) do { \
 	key_type key_name; \
 	value_type value_name; \
 	for (dn_umap_it_t __it##key_name = dn_umap_begin (map); !dn_umap_it_end (__it##key_name); __it##key_name = dn_umap_it_next (__it##key_name)) { \
 		key_name = ((key_type)(uintptr_t)dn_umap_it_key (__it##key_name)); \
 		value_name = ((value_type)(uintptr_t)dn_umap_it_value (__it##key_name));
 
-#define DN_UMAP_FOREACH_KEY_BEGIN(map,key_type,key_name) do { \
+#define DN_UMAP_FOREACH_KEY_BEGIN(key_type, key_name, map) do { \
 	key_type key_name; \
 	for (dn_umap_it_t __it##key_name = dn_umap_begin (map); !dn_umap_it_end (__it##key_name); __it##key_name = dn_umap_it_next (__it##key_name)) { \
 		key_name = ((key_type)(uintptr_t)dn_umap_it_key (__it##key_name));
@@ -150,57 +134,31 @@ dn_umap_it_end (dn_umap_it_t it)
 		} \
 	} while (0)
 
-#define DN_UMAP_DEFAULT_ALLOC_PARAMS { DN_DEFAULT_ALLOCATOR, NULL, NULL, NULL, NULL }
-
-static inline dn_umap_t *
-dn_umap_custom_alloc (const dn_umap_custom_alloc_params_t *params)
-{
-	DN_ASSERT (params);
-	return _dn_umap_alloc (params->allocator, params->hash_func, params->equal_func, params->key_dispose_func, params->value_dispose_func);
-}
+dn_umap_t *
+dn_umap_custom_alloc (const dn_umap_custom_alloc_params_t *params);
 
 static inline dn_umap_t *
 dn_umap_alloc (void)
 {
-	return _dn_umap_alloc (DN_DEFAULT_ALLOCATOR, NULL, NULL, NULL, NULL);
+	return dn_umap_custom_alloc (NULL);
 }
 
 void
 dn_umap_free (dn_umap_t *map);
 
-#define DN_UMAP_DEFAULT_INIT_PARAMS DN_UMAP_DEFAULT_ALLOC_PARAMS
-
-static inline bool
+bool
 dn_umap_custom_init (
 	dn_umap_t *map,
-	const dn_umap_custom_init_params_t *params)
-{
-	DN_ASSERT (params);
-	return _dn_umap_init (map, params->allocator, params->hash_func, params->equal_func, params->key_dispose_func, params->value_dispose_func);
-}
+	const dn_umap_custom_init_params_t *params);
 
 static inline bool
 dn_umap_init (dn_umap_t *map)
 {
-	return _dn_umap_init (map, DN_DEFAULT_ALLOCATOR, NULL, NULL, NULL, NULL);
+	return dn_umap_custom_init (map, NULL);
 }
 
 void
 dn_umap_dispose (dn_umap_t *map);
-
-static inline dn_umap_it_t
-dn_umap_begin (dn_umap_t *map)
-{
-	return _dn_umap_begin (map);
-}
-
-static inline dn_umap_it_t
-dn_umap_end (dn_umap_t *map)
-{
-	DN_ASSERT (map);
-	dn_umap_it_t it = { { map, NULL, 0 } };
-	return it;
-}
 
 static inline bool
 dn_umap_empty (const dn_umap_t *map)

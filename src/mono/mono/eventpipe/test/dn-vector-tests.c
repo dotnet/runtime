@@ -50,8 +50,11 @@ test_vector_alloc (void)
 
 	dn_vector_free (vector);
 
-	dn_vector_custom_alloc_params_t params = DN_VECTOR_DEFAULT_ALLOC_PARAMS_T (int32_t);
-	vector = dn_vector_custom_alloc (&params);
+	dn_vector_custom_alloc_params_t params = {0,};
+	params.capacity = 32;
+	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
+
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
 	if (vector->size != 0)
 		return FAILED ("vector size didn't match");
 
@@ -74,8 +77,8 @@ test_vector_init (void)
 
 	dn_vector_dispose (&vector);
 
-	dn_vector_custom_init_params_t params = DN_VECTOR_DEFAULT_INIT_PARAMS_T (int32_t);
-	if (!dn_vector_custom_init (&vector, &params))
+	dn_vector_custom_init_params_t params = {0, };
+	if (!dn_vector_custom_init_t (&vector, &params, int32_t))
 		return FAILED ("init vector");
 
 	if (vector.size != 0)
@@ -94,10 +97,10 @@ test_vector_alloc_capacity (void)
 {
 	dn_vector_t *vector = NULL;
 
-	dn_vector_custom_alloc_params_t params = DN_VECTOR_DEFAULT_ALLOC_PARAMS_T (int32_t);
+	dn_vector_custom_alloc_params_t params = {0, };
 	params.capacity = PREALLOC_SIZE;
 
-	vector = dn_vector_custom_alloc (&params);
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
 	if (vector->size != 0)
 		return FAILED ("vector size didn't match");
 
@@ -110,7 +113,7 @@ test_vector_alloc_capacity (void)
 
 	dn_vector_free (vector);
 
-	vector = dn_vector_custom_alloc (&params);
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
 	if (vector->size != 0)
 		return FAILED ("vector size didn't match");
 
@@ -129,10 +132,10 @@ RESULT
 test_vector_init_capacity (void)
 {
 	dn_vector_t vector;
-	dn_vector_custom_init_params_t params = DN_VECTOR_DEFAULT_ALLOC_PARAMS_T (int32_t);
+	dn_vector_custom_init_params_t params = {0, };
 	params.capacity = PREALLOC_SIZE;
 
-	if (!dn_vector_custom_init (&vector, &params))
+	if (!dn_vector_custom_init_t (&vector, &params, int32_t))
 		return FAILED ("init vector");
 
 	if (vector.size != 0)
@@ -147,7 +150,7 @@ test_vector_init_capacity (void)
 
 	dn_vector_dispose (&vector);
 
-	if (!dn_vector_custom_init (&vector, &params))
+	if (!dn_vector_custom_init_t (&vector, &params, int32_t))
 		return FAILED ("init vector");
 
 	if (vector.size != 0)
@@ -205,9 +208,9 @@ RESULT
 test_vector_dispose (void)
 {
 	dn_vector_t vector;
-	dn_vector_custom_init_params_t params = DN_VECTOR_DEFAULT_INIT_PARAMS_T (int32_t);
+	dn_vector_custom_init_params_t params = {0, };
 
-	if (!dn_vector_custom_init (&vector, &params))
+	if (!dn_vector_custom_init_t (&vector, &params, int32_t))
 		return FAILED ("init vector");
 	if (vector.size != 0)
 		return FAILED ("vector size didn't match");
@@ -222,9 +225,9 @@ RESULT
 test_vector_dispose_2 (void)
 {
 	dn_vector_t vector;
-	dn_vector_custom_init_params_t params = DN_VECTOR_DEFAULT_INIT_PARAMS_T (int32_t);
+	dn_vector_custom_init_params_t params = {0, };
 
-	if (!dn_vector_custom_init (&vector, &params))
+	if (!dn_vector_custom_init_t (&vector, &params, int32_t))
 		return FAILED ("init vector");
 	if (vector.size != 0)
 		return FAILED ("vector size didn't match");
@@ -430,10 +433,10 @@ static
 RESULT
 test_vector_reserve (void)
 {
-	dn_vector_custom_alloc_params_t params = DN_VECTOR_DEFAULT_ALLOC_PARAMS_T (int32_t);
+	dn_vector_custom_alloc_params_t params = {0, };
 	params.capacity = 10;
 
-	dn_vector_t *vector = dn_vector_custom_alloc (&params);
+	dn_vector_t *vector = dn_vector_custom_alloc_t (&params, int32_t);
 	uint32_t capacity = dn_vector_capacity (vector);
 
 	dn_vector_reserve (vector, 1024);
@@ -452,10 +455,10 @@ static
 RESULT
 test_vector_capacity (void)
 {
-	dn_vector_custom_alloc_params_t params = DN_VECTOR_DEFAULT_ALLOC_PARAMS_T (int32_t);
+	dn_vector_custom_alloc_params_t params = {0, };
 	params.capacity = 1024;
 
-	dn_vector_t *vector = dn_vector_custom_alloc (&params);
+	dn_vector_t *vector = dn_vector_custom_alloc_t (&params, int32_t);
 	uint32_t capacity = dn_vector_capacity (vector);
 	if (capacity < 1024)
 		return FAILED ("vector capacity didn't match #1");
@@ -474,7 +477,7 @@ test_vector_capacity (void)
 	dn_vector_free (vector);
 
 	params.capacity = 0;
-	vector = dn_vector_custom_alloc (&params);
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
 	dn_vector_free (vector);
 
 	return OK;
@@ -768,6 +771,41 @@ test_vector_erase_2 (void)
 
 static
 RESULT
+test_vector_erase_3 (void)
+{
+	dn_vector_t *vector = dn_vector_alloc_t (int32_t);
+	if (vector->size != 0)
+		return FAILED ("vector size didn't match");
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, i);
+
+	dn_vector_erase (dn_vector_begin (vector));
+
+	if (((uint32_t *)vector->data) [9] != 0)
+		return FAILED ("erase didn't zero memory.");
+
+	dn_vector_free (vector);
+
+	dn_vector_custom_alloc_params_t params = {0, };
+	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, i);
+
+	dn_vector_erase (dn_vector_begin (vector));
+
+	if (((uint32_t *)vector->data) [9] == 0)
+		return FAILED ("resize zeroed memory, but shouldn't.");
+
+	dn_vector_free (vector);
+
+	return OK;
+}
+
+static
+RESULT
 test_vector_erase_fast (void)
 {
 	int32_t v [] = { 30, 29, 28, 27, 26, 25 };
@@ -813,6 +851,41 @@ test_vector_erase_fast_2 (void)
 	dn_vector_custom_erase_fast (dn_vector_it_next_n (dn_vector_begin (vector), 3), test_vector_dispose_call_func);
 	if (test_vector_last_disposed_value != 27)
 		return FAILED ("custom erase failed to dispose correct value");
+
+	dn_vector_free (vector);
+
+	return OK;
+}
+
+static
+RESULT
+test_vector_erase_fast_3 (void)
+{
+	dn_vector_t *vector = dn_vector_alloc_t (int32_t);
+	if (vector->size != 0)
+		return FAILED ("vector size didn't match");
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, i);
+
+	dn_vector_erase_fast (dn_vector_begin (vector));
+
+	if (((uint32_t *)vector->data) [9] != 0)
+		return FAILED ("erase didn't zero memory.");
+
+	dn_vector_free (vector);
+
+	dn_vector_custom_alloc_params_t params = {0, };
+	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, i);
+
+	dn_vector_erase_fast (dn_vector_begin (vector));
+
+	if (((uint32_t *)vector->data) [9] == 0)
+		return FAILED ("resize zeroed memory, but shouldn't.");
 
 	dn_vector_free (vector);
 
@@ -917,6 +990,45 @@ test_vector_resize_2 (void)
 
 static
 RESULT
+test_vector_resize_3 (void)
+{
+	dn_vector_t *vector = dn_vector_alloc_t (int32_t);
+	if (vector->size != 0)
+		return FAILED ("vector size didn't match #1");
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, i);
+
+	dn_vector_resize (vector, 5);
+
+	for (uint32_t i = 5; i < 10; ++i) {
+		if (((uint32_t *)vector->data) [i] != 0)
+			return FAILED ("resize didn't zero memory.");
+	}
+
+	dn_vector_free (vector);
+
+	dn_vector_custom_alloc_params_t params = {0, };
+	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, i);
+
+	dn_vector_resize (vector, 5);
+
+	for (uint32_t i = 5; i < 10; ++i) {
+		if (((uint32_t *)vector->data) [i] != i)
+			return FAILED ("resize zeroed memory, but shouldn't.");
+	}
+
+	dn_vector_free (vector);
+
+	return OK;
+}
+
+static
+RESULT
 test_vector_clear (void)
 {
 	dn_vector_t *vector = dn_vector_alloc_t (int32_t);
@@ -959,6 +1071,45 @@ test_vector_clear_2 (void)
 
 static
 RESULT
+test_vector_clear_3 (void)
+{
+	dn_vector_t *vector = dn_vector_alloc_t (int32_t);
+	if (vector->size != 0)
+		return FAILED ("vector size didn't match #1");
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, i);
+
+	dn_vector_clear (vector);
+
+	for (int32_t i = 0; i < 10; ++i) {
+		if (((uint32_t *)vector->data) [i] != 0)
+			return FAILED ("clear didn't zero memory.");
+	}
+
+	dn_vector_free (vector);
+
+	dn_vector_custom_alloc_params_t params = {0, };
+	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, i);
+
+	dn_vector_clear (vector);
+
+	for (int32_t i = 0; i < 10; ++i) {
+		if (((uint32_t *)vector->data) [i] != i)
+			return FAILED ("clear zeroed memory, but shouldn't.");
+	}
+
+	dn_vector_free (vector);
+
+	return OK;
+}
+
+static
+RESULT
 test_vector_foreach_it (void)
 {
 	uint32_t count = 0;
@@ -969,7 +1120,7 @@ test_vector_foreach_it (void)
 	for (uint32_t i = 0; i < 100; ++i)
 		dn_vector_push_back (vector, i);
 
-	DN_VECTOR_FOREACH_BEGIN (vector, uint32_t, value) {
+	DN_VECTOR_FOREACH_BEGIN (uint32_t, value, vector) {
 		if (value != count)
 			return FAILED ("foreach iterator failed #1");
 		count++;
@@ -994,7 +1145,7 @@ test_vector_foreach_rev_it (void)
 	for (uint32_t i = 0; i < 100; ++i)
 		dn_vector_push_back (vector, i);
 
-	DN_VECTOR_FOREACH_RBEGIN (vector, uint32_t, value) {
+	DN_VECTOR_FOREACH_RBEGIN (uint32_t, value, vector) {
 		if (value != count - 1)
 			return FAILED ("foreach reverse iterator failed #1");
 		count--;
@@ -1074,12 +1225,16 @@ static Test dn_vector_tests [] = {
 	{"test_vector_pop_back_2", test_vector_pop_back_2},
 	{"test_vector_erase", test_vector_erase},
 	{"test_vector_erase_2", test_vector_erase_2},
+	{"test_vector_erase_3", test_vector_erase_3},
 	{"test_vector_erase_fast", test_vector_erase_fast},
 	{"test_vector_erase_fast_2", test_vector_erase_fast_2},
+	{"test_vector_erase_fast_3", test_vector_erase_fast_3},
 	{"test_vector_resize", test_vector_resize},
 	{"test_vector_resize_2", test_vector_resize_2},
+	{"test_vector_resize_3", test_vector_resize_3},
 	{"test_vector_clear", test_vector_clear},
 	{"test_vector_clear_2", test_vector_clear_2},
+	{"test_vector_clear_3", test_vector_clear_3},
 	{"test_vector_foreach_it", test_vector_foreach_it},
 	{"test_vector_foreach_rev_it", test_vector_foreach_rev_it},
 	{"test_vector_big", test_vector_big},

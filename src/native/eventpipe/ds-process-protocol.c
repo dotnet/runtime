@@ -363,7 +363,7 @@ env_info_env_block_get_size (DiagnosticsEnvironmentInfoPayload *payload)
 	size += sizeof (uint32_t);
 	size += (sizeof (uint32_t) * dn_vector_ptr_size (payload->env_array));
 
-	DN_VECTOR_PTR_FOREACH_BEGIN (payload->env_array, ep_char16_t *, env_value) {
+	DN_VECTOR_PTR_FOREACH_BEGIN (ep_char16_t *, env_value, payload->env_array) {
 		size += ((ep_rt_utf16_string_len (env_value) + 1) * sizeof (ep_char16_t));
 	} DN_VECTOR_PTR_FOREACH_END;
 
@@ -429,7 +429,7 @@ env_info_stream_env_block (
 	env_len = ep_rt_val_uint32_t (env_len);
 	success &= ds_ipc_stream_write (stream, (const uint8_t *)&env_len, sizeof (env_len), &bytes_written, EP_INFINITE_WAIT);
 
-	DN_VECTOR_PTR_FOREACH_BEGIN (env_info->env_array, ep_char16_t *, env_value) {
+	DN_VECTOR_PTR_FOREACH_BEGIN (ep_char16_t *, env_value, env_info->env_array) {
 		success &= ds_ipc_message_try_write_string_utf16_t_to_stream (stream, env_value);
 	} DN_VECTOR_PTR_FOREACH_END;
 
@@ -455,7 +455,7 @@ ds_env_info_payload_init (DiagnosticsEnvironmentInfoPayload *payload)
 void
 ds_env_info_payload_fini (DiagnosticsEnvironmentInfoPayload *payload)
 {
-	DN_VECTOR_PTR_FOREACH_BEGIN (payload->env_array, ep_char16_t *, env_value) {
+	DN_VECTOR_PTR_FOREACH_BEGIN (ep_char16_t *, env_value, payload->env_array) {
 		ep_rt_utf16_string_free (env_value);
 	} DN_VECTOR_PTR_FOREACH_END;
 

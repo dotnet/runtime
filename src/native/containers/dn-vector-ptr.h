@@ -8,16 +8,13 @@
 
 DN_DEFINE_VECTOR_T (ptr, void *)
 
-#define DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS { DN_DEFAULT_ALLOCATOR, sizeof (void *), 0, DN_VECTOR_ATTRIBUTE_INIT_MEMORY }
-#define DN_VECTOR_PTR_DEFAULT_INIT_PARAMS { DN_DEFAULT_ALLOCATOR, sizeof (void *), 0, DN_VECTOR_ATTRIBUTE_INIT_MEMORY }
-
-#define DN_VECTOR_PTR_FOREACH_BEGIN(vector,var_type,var_name) do { \
+#define DN_VECTOR_PTR_FOREACH_BEGIN(var_type, var_name, vector) do { \
 	var_type var_name; \
 	DN_ASSERT (sizeof (var_type) == (vector)->_internal._element_size); \
 	for (uint32_t __i_ ## var_name = 0; __i_ ## var_name < (vector)->size; ++__i_ ## var_name) { \
 		var_name = (var_type)*dn_vector_ptr_index (vector, __i_##var_name);
 
-#define DN_VECTOR_PTR_FOREACH_RBEGIN(vector,var_type,var_name) do { \
+#define DN_VECTOR_PTR_FOREACH_RBEGIN(var_type, var_name, vector) do { \
 	var_type var_name; \
 	DN_ASSERT (sizeof (var_type) == (vector)->_internal._element_size); \
 	for (uint32_t __i_ ## var_name = (vector)->size; __i_ ## var_name > 0; --__i_ ## var_name) { \

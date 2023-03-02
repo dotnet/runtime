@@ -96,7 +96,7 @@ provider_refresh_all_events (EventPipeProvider *provider)
 
 	EP_ASSERT (provider->event_list != NULL);
 
-	DN_LIST_FOREACH_BEGIN (provider->event_list, EventPipeEvent *, current_event) {
+	DN_LIST_FOREACH_BEGIN (EventPipeEvent *, current_event, provider->event_list) {
 		provider_refresh_event_state (current_event);
 	} DN_LIST_FOREACH_END;
 

@@ -42,6 +42,22 @@ struct _dn_list_result_t {
 	bool result;
 };
 
+static inline dn_list_it_t
+dn_list_begin (dn_list_t *list)
+{
+	DN_ASSERT (list);
+	dn_list_it_t it = { list->head, { list } };
+	return it;
+}
+
+static inline dn_list_it_t
+dn_list_end (dn_list_t *list)
+{
+	DN_ASSERT (list);
+	dn_list_it_t it = { NULL, { list } };
+	return it;
+}
+
 static inline void
 dn_list_it_advance (
 	dn_list_it_t *it,
@@ -117,12 +133,12 @@ dn_list_it_end (dn_list_it_t it)
 	return !(it.it);
 }
 
-#define DN_LIST_FOREACH_BEGIN(list,var_type,var_name) do { \
+#define DN_LIST_FOREACH_BEGIN(var_type, var_name, list) do { \
 	var_type var_name; \
 	for (dn_list_node_t *__it##var_name = (list)->head; __it##var_name; __it##var_name = __it##var_name->next) { \
 		var_name = (var_type)__it##var_name->data;
 
-#define DN_LIST_FOREACH_RBEGIN(list,var_type,var_name) do { \
+#define DN_LIST_FOREACH_RBEGIN(var_type, var_name, list) do { \
 	var_type var_name; \
 	for (dn_list_node_t *__it##var_name = (list)->tail; __it##var_name; __it##var_name = __it##var_name->prev) { \
 		var_name = (var_type)__it##var_name->data;
@@ -132,23 +148,12 @@ dn_list_it_end (dn_list_it_t it)
 	} while (0)
 
 dn_list_t *
-_dn_list_alloc (dn_allocator_t *allocator);
-
-bool
-_dn_list_init (
-	dn_list_t *list,
-	dn_allocator_t *allocator);
-
-static inline dn_list_t *
-dn_list_custom_alloc (dn_allocator_t *allocator)
-{
-	return _dn_list_alloc (allocator);
-}
+dn_list_custom_alloc (dn_allocator_t *allocator);
 
 static inline dn_list_t *
 dn_list_alloc (void)
 {
-	return _dn_list_alloc (DN_DEFAULT_ALLOCATOR);
+	return dn_list_custom_alloc (DN_DEFAULT_ALLOCATOR);
 }
 
 void
@@ -162,18 +167,15 @@ dn_list_free (dn_list_t *list)
 	dn_list_custom_free (list, NULL);
 }
 
-static inline bool
+bool
 dn_list_custom_init (
 	dn_list_t *list,
-	dn_allocator_t *allocator)
-{
-	return _dn_list_init (list, allocator);
-}
+	dn_allocator_t *allocator);
 
 static inline bool
 dn_list_init (dn_list_t *list)
 {
-	return _dn_list_init (list, DN_DEFAULT_ALLOCATOR);
+	return dn_list_custom_init (list, DN_DEFAULT_ALLOCATOR);
 }
 
 void
@@ -206,22 +208,6 @@ dn_list_back (const dn_list_t *list)
 
 #define dn_list_back_t(list, type) \
 	(type *)dn_list_back ((list))
-
-static inline dn_list_it_t
-dn_list_begin (dn_list_t *list)
-{
-	DN_ASSERT (list);
-	dn_list_it_t it = { list->head, { list } };
-	return it;
-}
-
-static inline dn_list_it_t
-dn_list_end (dn_list_t *list)
-{
-	DN_ASSERT (list);
-	dn_list_it_t it = { NULL, { list } };
-	return it;
-}
 
 static inline bool
 dn_list_empty (const dn_list_t *list)

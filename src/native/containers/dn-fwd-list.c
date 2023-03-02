@@ -113,10 +113,10 @@ fwd_list_remove_node (
 }
 
 dn_fwd_list_t *
-_dn_fwd_list_alloc (dn_allocator_t *allocator)
+dn_fwd_list_custom_alloc (dn_allocator_t *allocator)
 {
 	dn_fwd_list_t *list = (dn_fwd_list_t *)dn_allocator_alloc (allocator, sizeof (dn_fwd_list_t));
-	if (!_dn_fwd_list_init (list, allocator)) {
+	if (!dn_fwd_list_custom_init (list, allocator)) {
 		dn_allocator_free (allocator, list);
 		return NULL;
 	}
@@ -125,7 +125,7 @@ _dn_fwd_list_alloc (dn_allocator_t *allocator)
 }
 
 bool
-_dn_fwd_list_init (
+dn_fwd_list_custom_init (
 	dn_fwd_list_t *list,
 	dn_allocator_t *allocator)
 {

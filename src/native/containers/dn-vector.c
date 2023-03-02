@@ -62,7 +62,7 @@ ensure_capacity (
 
 	vector->data = data;
 
-	if (vector->data && check_attribute (vector, DN_VECTOR_ATTRIBUTE_INIT_MEMORY)) {
+	if (vector->data && !check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT)) {
 		// Checks already verified that element_offset won't overflow.
 		// new_capacity > vector capacity, so new_capacity - vector capacity won't underflow.
 		// dn_safe_size_t_multiply already verified element_length won't overflow.
@@ -73,65 +73,6 @@ ensure_capacity (
 	vector->_internal._capacity = (uint32_t)new_capacity;
 
 	return vector->data != NULL;
-}
-
-dn_vector_t *
-_dn_vector_alloc (
-	dn_allocator_t *allocator,
-	uint32_t element_size,
-	uint32_t attributes)
-{
-	return _dn_vector_alloc_capacity (allocator, element_size, INITIAL_CAPACITY, attributes);
-}
-
-dn_vector_t *
-_dn_vector_alloc_capacity (
-	dn_allocator_t *allocator,
-	uint32_t element_size,
-	uint32_t capacity,
-	uint32_t attributes)
-{
-	dn_vector_t *vector = (dn_vector_t *)dn_allocator_alloc (allocator, sizeof (dn_vector_t));
-	if (!_dn_vector_init_capacity (vector, allocator, element_size, capacity, attributes)) {
-		dn_allocator_free (allocator, vector);
-		return NULL;
-	}
-
-	return vector;
-}
-
-bool
-_dn_vector_init (
-	dn_vector_t *vector,
-	dn_allocator_t *allocator,
-	uint32_t element_size,
-	uint32_t attributes)
-{
-	return _dn_vector_init_capacity (vector, allocator, element_size, INITIAL_CAPACITY, attributes);
-}
-
-bool
-_dn_vector_init_capacity (
-	dn_vector_t *vector,
-	dn_allocator_t *allocator,
-	uint32_t element_size,
-	uint32_t capacity,
-	uint32_t attributes)
-{
-	if (DN_UNLIKELY (!vector))
-		return false;
-
-	memset (vector, 0, sizeof(dn_vector_t));
-	vector->_internal._allocator = allocator;
-	vector->_internal._element_size = element_size;
-	vector->_internal._attributes = attributes;
-
-	if (DN_UNLIKELY (!ensure_capacity (vector, capacity != 0 ? capacity : INITIAL_CAPACITY))) {
-		dn_vector_dispose (vector);
-		return false;
-	}
-
-	return true;
 }
 
 bool
@@ -223,10 +164,10 @@ _dn_vector_erase (
 	/* element_length won't underflow since size_to_move is already verfied to be 0 or larger */
 	memmove (element_offset (vector, position->it), element_offset (vector, (uint32_t)insert_offset), element_length (vector, (uint32_t)size_to_move));
 
-	if (check_attribute (vector, DN_VECTOR_ATTRIBUTE_INIT_MEMORY))
-		memset (element_offset(vector, vector->size - 1), 0, element_length (vector, 1));
-
 	vector->size --;
+
+	if (!check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT))
+		memset (element_offset(vector, vector->size), 0, element_length (vector, 1));
 
 	return true;
 }
@@ -250,10 +191,10 @@ _dn_vector_erase_fast (
 	/* vector->size - 1 won't underflow since vector->size > 0 */
 	memmove (element_offset (vector, position->it), element_offset (vector, vector->size - 1), element_length (vector, 1));
 
-	if (check_attribute (vector, DN_VECTOR_ATTRIBUTE_INIT_MEMORY))
-		memset (element_offset(vector, vector->size - 1), 0, element_length (vector, 1));
-
 	vector->size --;
+
+	if (!check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT))
+		memset (element_offset(vector, vector->size), 0, element_length (vector, 1));
 
 	return true;
 }
@@ -276,6 +217,73 @@ _dn_vector_buffer_capacity (
 	return (uint32_t)(capacity >> 1);
 }
 
+dn_vector_it_t
+_dn_vector_custom_find (
+	dn_vector_t *vector,
+	const uint8_t *value,
+	dn_vector_equal_func_t equal_func)
+{
+	DN_ASSERT (vector);
+
+	dn_vector_it_t found = dn_vector_end (vector);
+	for (uint32_t i = 0; i < vector->size; i++) {
+		if ((equal_func && equal_func (element_offset (vector, i), value)) || (!equal_func && !memcmp (element_offset (vector, i), value, element_length (vector, 1)))) {
+			found.it = i;
+			break;
+		}
+	}
+
+	return found;
+}
+
+dn_vector_t *
+dn_vector_custom_alloc (
+	const dn_vector_custom_alloc_params_t *params,
+	uint32_t element_size)
+{
+	dn_allocator_t *allocator = params ? params->allocator : DN_DEFAULT_ALLOCATOR;
+
+	dn_vector_t *vector = (dn_vector_t *)dn_allocator_alloc (allocator, sizeof (dn_vector_t));
+	if (!dn_vector_custom_init (vector, params, element_size)) {
+		dn_allocator_free (allocator, vector);
+		return NULL;
+	}
+
+	return vector;
+}
+
+bool
+dn_vector_custom_init (
+	dn_vector_t *vector,
+	const dn_vector_custom_alloc_params_t *params,
+	uint32_t element_size)
+{
+	uint32_t capacity = INITIAL_CAPACITY;
+
+	if (DN_UNLIKELY (!vector))
+		return false;
+
+	DN_ASSERT (element_size != 0);
+
+	memset (vector, 0, sizeof(dn_vector_t));
+
+	vector->_internal._element_size = element_size;
+
+	if (params) {
+		vector->_internal._allocator = params->allocator;
+		vector->_internal._attributes = params->attributes;
+		if (params->capacity != 0)
+			capacity = params->capacity;
+	}
+
+	if (DN_UNLIKELY (!ensure_capacity (vector, capacity))) {
+		dn_vector_dispose (vector);
+		return false;
+	}
+
+	return true;
+}
+
 void
 dn_vector_custom_free (
 	dn_vector_t *vector,
@@ -295,7 +303,7 @@ dn_vector_custom_dispose (
 
 	if (dispose_func) {
 		for(uint32_t i = 0; i < vector->size; i++)
-			dispose_func ((void *)(element_offset (vector, i)));
+			dispose_func ((element_offset (vector, i)));
 	}
 
 	dn_allocator_free (vector->_internal._allocator, vector->data);
@@ -338,7 +346,7 @@ dn_vector_custom_resize (
 				dispose_func (element_offset (vector, i));
 		}
 
-		if (check_attribute (vector, DN_VECTOR_ATTRIBUTE_INIT_MEMORY))
+		if (!check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT))
 			memset (element_offset(vector, size), 0, element_length (vector, vector->size - size));
 
 	}
@@ -354,13 +362,13 @@ dn_vector_custom_pop_back (
 {
 	DN_ASSERT (vector && vector->size != 0);
 
-	if (dispose_func)
-		dispose_func (dn_vector_at (vector, vector->_internal._element_size, vector->size - 1));
-
-	if ((vector->_internal._attributes & (uint32_t)DN_VECTOR_ATTRIBUTE_INIT_MEMORY) == DN_VECTOR_ATTRIBUTE_INIT_MEMORY)
-		memset (dn_vector_at (vector, vector->_internal._element_size, vector->size - 1), 0, vector->_internal._element_size);
-
 	vector->size --;
+
+	if (dispose_func)
+		dispose_func (element_offset (vector, vector->size));
+
+	if (!check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT))
+		memset (element_offset (vector, vector->size), 0, vector->_internal._element_size);
 }
 
 void
@@ -386,23 +394,4 @@ dn_vector_sort (
 		return;
 
 	qsort ((void *)vector->data, vector->size, element_length (vector, 1), (int (DN_CALLBACK_CALLTYPE *)(const void *, const void *))compare_func);
-}
-
-dn_vector_it_t
-dn_vector_custom_find (
-	dn_vector_t *vector,
-	const uint8_t *value,
-	dn_vector_equal_func_t equal_func)
-{
-	DN_ASSERT (vector);
-
-	dn_vector_it_t found = dn_vector_end (vector);
-	for (uint32_t i = 0; i < vector->size; i++) {
-		if ((equal_func && equal_func (element_offset (vector, i), value)) || (!equal_func && !memcmp (element_offset (vector, i), value, element_length (vector, 1)))) {
-			found.it = i;
-			break;
-		}
-	}
-
-	return found;
 }

@@ -26,10 +26,10 @@
 #include "dn-queue.h"
 
 dn_queue_t *
-_dn_queue_alloc (dn_allocator_t *allocator)
+dn_queue_custom_alloc (dn_allocator_t *allocator)
 {
 	dn_queue_t *queue = (dn_queue_t *)dn_allocator_alloc (allocator, sizeof (dn_queue_t));
-	if (!_dn_queue_init (queue, allocator)) {
+	if (!dn_queue_custom_init (queue, allocator)) {
 		dn_allocator_free (allocator, queue);
 		return NULL;
 	}
@@ -38,7 +38,7 @@ _dn_queue_alloc (dn_allocator_t *allocator)
 }
 
 bool
-_dn_queue_init (
+dn_queue_custom_init (
 	dn_queue_t *queue,
 	dn_allocator_t *allocator)
 {

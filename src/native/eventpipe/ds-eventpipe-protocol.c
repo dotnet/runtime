@@ -166,14 +166,14 @@ eventpipe_collect_tracing_command_try_parse_config (
 	ep_char8_t *provider_name_utf8 = NULL;
 	ep_char8_t *filter_data_utf8 = NULL;
 
-	dn_vector_custom_alloc_params_t params = DN_VECTOR_DEFAULT_ALLOC_PARAMS_T (EventPipeProviderConfiguration);
+	dn_vector_custom_alloc_params_t params = {0, };
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &count_configs));
 	ep_raise_error_if_nok (count_configs <= max_count_configs);
 
 	params.capacity = count_configs;
 
-	*result = dn_vector_custom_alloc (&params);
+	*result = dn_vector_custom_alloc_t (&params, EventPipeProviderConfiguration);
 	ep_raise_error_if_nok (*result);
 
 	for (uint32_t i = 0; i < count_configs; ++i) {
@@ -273,7 +273,7 @@ ds_eventpipe_collect_tracing_command_payload_free (EventPipeCollectTracingComman
 	ep_return_void_if_nok (payload != NULL);
 	ep_rt_byte_array_free (payload->incoming_buffer);
 
-	DN_VECTOR_FOREACH_BEGIN (payload->provider_configs, EventPipeProviderConfiguration, config) {
+	DN_VECTOR_FOREACH_BEGIN (EventPipeProviderConfiguration, config, payload->provider_configs) {
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config));
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config));
 	} DN_VECTOR_FOREACH_END;
@@ -328,7 +328,7 @@ ds_eventpipe_collect_tracing2_command_payload_free (EventPipeCollectTracing2Comm
 	ep_return_void_if_nok (payload != NULL);
 	ep_rt_byte_array_free (payload->incoming_buffer);
 
-	DN_VECTOR_FOREACH_BEGIN (payload->provider_configs, EventPipeProviderConfiguration, config) {
+	DN_VECTOR_FOREACH_BEGIN (EventPipeProviderConfiguration, config, payload->provider_configs) {
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config));
 		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config));
 	} DN_VECTOR_FOREACH_END;

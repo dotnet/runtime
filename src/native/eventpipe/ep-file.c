@@ -313,7 +313,7 @@ ep_file_alloc (
 	StreamWriter *stream_writer,
 	EventPipeSerializationFormat format)
 {
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 	params.hash_func = stack_hash_key_hash_func;
 	params.equal_func = stack_hash_key_equal_func;
 	params.value_dispose_func = stack_hash_value_free_func;

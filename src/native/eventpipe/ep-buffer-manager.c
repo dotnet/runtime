@@ -388,7 +388,7 @@ buffer_manager_init_sequence_point_thread_list (
 
 	ep_buffer_manager_requires_lock_held (buffer_manager);
 
-	DN_LIST_FOREACH_BEGIN (buffer_manager->thread_session_state_list, EventPipeThreadSessionState *, thread_session_state) {
+	DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
 		// The sequence number captured here is not guaranteed to be the most recent sequence number, nor
 		// is it guaranteed to match the number of events we would observe in the thread's write buffer
 		// memory. This is only used as a lower bound on the number of events the thread has attempted to
@@ -594,7 +594,7 @@ buffer_manager_move_next_event_any_thread (
 	dn_vector_ptr_t buffer_array;
 	dn_vector_ptr_t buffer_list_array;
 
-	dn_vector_ptr_custom_init_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_init_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 	params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
 
@@ -604,7 +604,7 @@ buffer_manager_move_next_event_any_thread (
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 		EventPipeBufferList *buffer_list;
 		EventPipeBuffer *buffer;
-		DN_LIST_FOREACH_BEGIN (buffer_manager->thread_session_state_list, EventPipeThreadSessionState *, thread_session_state) {
+		DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
 			buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
 			buffer = buffer_list->head_buffer;
 			if (buffer && ep_buffer_get_creation_timestamp (buffer) < stop_timestamp) {
@@ -1059,7 +1059,7 @@ ep_buffer_manager_suspend_write_event (
 
 	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
-	dn_vector_ptr_custom_init_params_t params = DN_VECTOR_PTR_DEFAULT_INIT_PARAMS;
+	dn_vector_ptr_custom_init_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 	params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
 
@@ -1069,14 +1069,14 @@ ep_buffer_manager_suspend_write_event (
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1);
 		EP_ASSERT (ep_buffer_manager_ensure_consistency (buffer_manager));
 		// Find all threads that have used this buffer manager.
-		DN_LIST_FOREACH_BEGIN (buffer_manager->thread_session_state_list, EventPipeThreadSessionState *, thread_session_state) {
+		DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
 			dn_vector_ptr_push_back (&thread_vector, ep_thread_session_state_get_thread (thread_session_state));
 		} DN_LIST_FOREACH_END;
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1);
 
 	// Iterate through all the threads, forcing them to relinquish any buffers stored in
 	// EventPipeThread's write buffer and prevent storing new ones.
-	DN_VECTOR_PTR_FOREACH_BEGIN (&thread_vector, EventPipeThread *, thread) {
+	DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &thread_vector) {
 		EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section2)
 			EventPipeThreadSessionState *thread_session_state = ep_thread_get_session_state (thread, buffer_manager->session);
 			ep_thread_session_state_set_write_buffer (thread_session_state, NULL);
@@ -1203,7 +1203,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 
 	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
-	dn_vector_ptr_custom_init_params_t params = DN_VECTOR_PTR_DEFAULT_INIT_PARAMS;
+	dn_vector_ptr_custom_init_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 	params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
 
@@ -1314,9 +1314,9 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	if (dn_vector_ptr_size (&session_states_to_delete) > 0) {
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section4)
 			if (buffer_manager_try_peek_sequence_point (buffer_manager, &sequence_point)) {
-				DN_LIST_FOREACH_BEGIN (buffer_manager->sequence_points, EventPipeSequencePoint *, current_sequence_point) {
+				DN_LIST_FOREACH_BEGIN (EventPipeSequencePoint *, current_sequence_point, buffer_manager->sequence_points) {
 					// foreach (session_state in session_states_to_delete)
-					DN_VECTOR_PTR_FOREACH_BEGIN (&session_states_to_delete, EventPipeThreadSessionState *, thread_session_state) {
+					DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, &session_states_to_delete) {
 						dn_umap_it_t found = dn_umap_ptr_uint32_find (ep_sequence_point_get_thread_sequence_numbers (current_sequence_point), thread_session_state);
 						if (!dn_umap_it_end (found)) {
 							dn_umap_erase (found);
@@ -1331,7 +1331,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	}
 
 	// foreach (session_state in session_states_to_delete)
-	DN_VECTOR_PTR_FOREACH_BEGIN (&session_states_to_delete, EventPipeThreadSessionState *, thread_session_state) {
+	DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, &session_states_to_delete) {
 		EP_ASSERT (thread_session_state != NULL);
 
 		// This may be the last reference to a given EventPipeThread, so make a ref to keep it around till we're done
@@ -1381,7 +1381,7 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 
 	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
-	dn_vector_ptr_custom_init_params_t params = DN_VECTOR_PTR_DEFAULT_INIT_PARAMS;
+	dn_vector_ptr_custom_init_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 	params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
 
@@ -1392,7 +1392,7 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 		EP_ASSERT (ep_buffer_manager_ensure_consistency (buffer_manager));
 
-		DN_LIST_FOREACH_BEGIN (buffer_manager->thread_session_state_list, EventPipeThreadSessionState *, thread_session_state) {
+		DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
 			// Get the list and determine if we can free it.
 			EventPipeBufferList *buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
 			ep_thread_session_state_set_buffer_list (thread_session_state, NULL);
@@ -1418,7 +1418,7 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
 
 	// remove and delete the session state
-	DN_VECTOR_PTR_FOREACH_BEGIN (&thread_session_states_to_remove, EventPipeThreadSessionState *, thread_session_state) {
+	DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, &thread_session_states_to_remove) {
 		// The strong reference from session state -> thread might be the very last reference
 		// We need to ensure the thread doesn't die until we can release the lock
 		EP_ASSERT (thread_session_state != NULL);
@@ -1446,7 +1446,7 @@ ep_buffer_manager_ensure_consistency (EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer_manager != NULL);
 
-	DN_LIST_FOREACH_BEGIN (buffer_manager->thread_session_state_list, EventPipeThreadSessionState *, thread_session_state) {
+	DN_LIST_FOREACH_BEGIN (EventPipeThreadSessionState *, thread_session_state, buffer_manager->thread_session_state_list) {
 		EP_ASSERT (ep_buffer_list_ensure_consistency (ep_thread_session_state_get_buffer_list (thread_session_state)));
 	} DN_LIST_FOREACH_END;
 

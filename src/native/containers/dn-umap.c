@@ -262,32 +262,8 @@ umap_insert (
 	return result;
 }
 
-dn_umap_it_t
-_dn_umap_begin (dn_umap_t *map)
-{
-	DN_ASSERT (map);
-
-	dn_umap_it_t it = dn_umap_end (map);
-	uint32_t index = 0;
-
-	while (true) {
-		if (index >= map->_internal._bucket_count)
-			return it;
-
-		if (map->_internal._buckets [index])
-			break;
-
-		index ++;
-	}
-
-	it._internal._node = map->_internal._buckets [index];
-	it._internal._index = index;
-
-	return it;
-}
-
-bool
-_dn_umap_it_next (dn_umap_it_t *it)
+static bool
+umap_it_next (dn_umap_it_t *it)
 {
 	if (DN_UNLIKELY(dn_umap_it_end (*it)))
 		return false;
@@ -314,16 +290,46 @@ _dn_umap_it_next (dn_umap_it_t *it)
 	return it->_internal._node;
 }
 
-dn_umap_t *
-_dn_umap_alloc (
-	dn_allocator_t *allocator,
-	dn_umap_hash_func_t hash_func,
-	dn_umap_equal_func_t equal_func,
-	dn_umap_key_dispose_func_t key_dispose_func,
-	dn_umap_value_dispose_func_t value_dispose_func)
+dn_umap_it_t
+dn_umap_begin (dn_umap_t *map)
 {
+	DN_ASSERT (map);
+
+	dn_umap_it_t it = dn_umap_end (map);
+	uint32_t index = 0;
+
+	while (true) {
+		if (index >= map->_internal._bucket_count)
+			return it;
+
+		if (map->_internal._buckets [index])
+			break;
+
+		index ++;
+	}
+
+	it._internal._node = map->_internal._buckets [index];
+	it._internal._index = index;
+
+	return it;
+}
+
+void
+dn_umap_it_advance (
+	dn_umap_it_t *it,
+	uint32_t n)
+{
+	while (n && umap_it_next (it))
+		n--;
+}
+
+dn_umap_t *
+dn_umap_custom_alloc (const dn_umap_custom_alloc_params_t *params)
+{
+	dn_allocator_t *allocator = params ? params->allocator : DN_DEFAULT_ALLOCATOR;
+
 	dn_umap_t *map = (dn_umap_t *)dn_allocator_alloc (allocator, sizeof (dn_umap_t));
-	if (!_dn_umap_init (map, allocator, hash_func, equal_func, key_dispose_func, value_dispose_func)) {
+	if (!dn_umap_custom_init (map, params)) {
 		dn_allocator_free (allocator, map);
 		return NULL;
 	}
@@ -332,36 +338,32 @@ _dn_umap_alloc (
 }
 
 bool
-_dn_umap_init (
+dn_umap_custom_init (
 	dn_umap_t *map,
-	dn_allocator_t *allocator,
-	dn_umap_hash_func_t hash_func,
-	dn_umap_equal_func_t equal_func,
-	dn_umap_key_dispose_func_t key_dispose_func,
-	dn_umap_value_dispose_func_t value_dispose_func)
+	const dn_umap_custom_alloc_params_t *params)
 {
 	if (DN_UNLIKELY (!map))
 		return false;
 
+	dn_allocator_t *allocator = params ? params->allocator : DN_DEFAULT_ALLOCATOR;
+
 	memset (map, 0, sizeof(dn_umap_t));
 
-	if (!hash_func)
-		hash_func = dn_direct_hash;
-
-	if (!equal_func)
-		equal_func = dn_direct_equal;
-
 	map->_internal._allocator = allocator;
-	
-	map->_internal._hash_func = hash_func;
-	map->_internal._key_equal_func = equal_func;
 
 	map->_internal._bucket_count = umap_spaced_primes_closest (1);
 	
 	map->_internal._last_rehash = map->_internal._bucket_count;
 
-	map->_internal._key_dispose_func = key_dispose_func;
-	map->_internal._value_dispose_func = value_dispose_func;
+	if (params) {
+		map->_internal._hash_func = params->hash_func ? params->hash_func : dn_direct_hash;
+		map->_internal._key_equal_func = params->equal_func ? params->equal_func : dn_direct_equal;
+		map->_internal._key_dispose_func = params->key_dispose_func;
+		map->_internal._value_dispose_func = params->value_dispose_func;
+	} else {
+		map->_internal._hash_func = dn_direct_hash;
+		map->_internal._key_equal_func = dn_direct_equal;
+	}
 
 	map->_internal._buckets = (dn_umap_node_t **)dn_allocator_alloc (allocator, sizeof (dn_umap_node_t *) * map->_internal._bucket_count);
 	if (map->_internal._buckets)
@@ -541,7 +543,7 @@ dn_umap_for_each (
 {
 	DN_ASSERT (map && for_each_func);
 
-	DN_UMAP_FOREACH_BEGIN (map, void *, key, void *, value) {
+	DN_UMAP_FOREACH_BEGIN (void *, key, void *, value, map) {
 		for_each_func (key, value, user_data);
 	} DN_UMAP_FOREACH_END;
 }

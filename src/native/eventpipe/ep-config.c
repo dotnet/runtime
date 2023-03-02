@@ -575,7 +575,7 @@ config_enable_disable (
 
 	// The provider list should be non-NULL, but can be NULL on shutdown.
 	if (!dn_list_empty (config->provider_list)) {
-		DN_LIST_FOREACH_BEGIN (config->provider_list, EventPipeProvider *, provider) {
+		DN_LIST_FOREACH_BEGIN (EventPipeProvider *, provider, config->provider_list) {
 			if (provider) {
 				// Enable/Disable the provider if it has been configured.
 				EventPipeSessionProvider *session_provider = config_get_session_provider (config, session, provider);

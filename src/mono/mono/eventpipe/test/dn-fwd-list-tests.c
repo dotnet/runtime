@@ -271,7 +271,7 @@ test_fwd_list_insert_after (void)
 		return FAILED ("insert_after failed #2");
 
 	size_t i = 0;
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (strcmp (item, items [i]))
 			return FAILED ("insert_range, found %s, expected %s #1", item, items [i]);
 		i++;
@@ -287,7 +287,7 @@ test_fwd_list_insert_after (void)
 		return FAILED ("insert_after failed #4");
 
 	i = 0;
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (strcmp (item, items [i]))
 			return FAILED ("insert_range, found %s, expected %s #1", item, items [i]);
 		i++;
@@ -314,7 +314,7 @@ test_fwd_list_insert_range_after (void)
 		return FAILED ("insert_range_after failed #1");
 
 	size_t i = 0;
-	DN_FWD_LIST_FOREACH_BEGIN (list1, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list1) {
 		if (strcmp (item, items [i]))
 			return FAILED ("insert_range_after, found %s, expected %s #1", item, items [i]);
 		i++;
@@ -333,7 +333,7 @@ test_fwd_list_insert_range_after (void)
 		return FAILED ("insert_range_after failed #2");
 
 	i = 1;
-	DN_FWD_LIST_FOREACH_BEGIN (list1, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list1) {
 		if (strcmp (item, items [i]))
 			return FAILED ("insert_range_after, found %s, expected %s #2", item, items [i]);
 		i--;
@@ -357,7 +357,7 @@ test_fwd_list_insert_range_after (void)
 		return FAILED ("insert_range_after failed #2");
 
 	i = 0;
-	DN_FWD_LIST_FOREACH_BEGIN (list1, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list1) {
 		if (strcmp (item, items [i]))
 			return FAILED ("insert_range_after, found %s, expected %s #2", item, items [i]);
 		i++;
@@ -445,7 +445,7 @@ test_fwd_list_push_front (void)
 	dn_fwd_list_push_front (&list, (char *)items [2]);
 
 	uint32_t i = 2;
-	DN_FWD_LIST_FOREACH_BEGIN (&list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, &list) {
 		if (strcmp (item, items [i]))
 			return FAILED ("push_front failed, found %s, expected %s #2", item, items [i]);
 		i--;
@@ -572,7 +572,7 @@ test_fwd_list_remove (void)
 	if (fwd_list_size (list) != 6)
 		return FAILED ("remove failed, incorrect size #1");
 
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (!strcmp (item, items [1]))
 			return FAILED ("remove failed, found removed item %s #1", item);
 	} DN_FWD_LIST_FOREACH_END;
@@ -583,7 +583,7 @@ test_fwd_list_remove (void)
 	if (fwd_list_size (list) != 4)
 		return FAILED ("remove failed, incorrect size #2");
 
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (!strcmp (item, items [0]))
 			return FAILED ("remove failed, found removed item %s #2", item);
 	} DN_FWD_LIST_FOREACH_END;
@@ -594,7 +594,7 @@ test_fwd_list_remove (void)
 	if (fwd_list_size (list) != 2)
 		return FAILED ("remove failed, incorrect size #3");
 
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (!strcmp (item, items [3]))
 			return FAILED ("remove failed, found removed item %s #3", item);
 	} DN_FWD_LIST_FOREACH_END;
@@ -603,7 +603,7 @@ test_fwd_list_remove (void)
 	dn_fwd_list_remove (list, items [3]);
 
 	// Validate that only "third" is left.
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (strcmp (item, items [2]))
 			return FAILED ("remove failed, unexpected item %s #4", item);
 	} DN_FWD_LIST_FOREACH_END;
@@ -650,7 +650,7 @@ test_fwd_list_remove_if (void)
 	if (fwd_list_size (list) != 6)
 		return FAILED ("remove failed, incorrect size #1");
 
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (!strcmp (item, items [1]))
 			return FAILED ("remove failed, found removed item %s #1", item);
 	} DN_FWD_LIST_FOREACH_END;
@@ -661,7 +661,7 @@ test_fwd_list_remove_if (void)
 	if (fwd_list_size (list) != 4)
 		return FAILED ("remove failed, incorrect size #2");
 
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (!strcmp (item, items [0]))
 			return FAILED ("remove failed, found removed item %s #2", item);
 	} DN_FWD_LIST_FOREACH_END;
@@ -669,7 +669,7 @@ test_fwd_list_remove_if (void)
 	// Remove all "fourth"
 	dn_fwd_list_remove_if (list, items [3], test_fwd_list_remove_if_func);
 
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (!strcmp (item, items [3]))
 			return FAILED ("remove failed, found removed item %s #3", item);
 	} DN_FWD_LIST_FOREACH_END;
@@ -681,7 +681,7 @@ test_fwd_list_remove_if (void)
 		return FAILED ("remove failed, incorrect size #3");
 
 	// Validate that only "third" is left.
-	DN_FWD_LIST_FOREACH_BEGIN (list, char *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (char *, item, list) {
 		if (strcmp (item, items [2]))
 			return FAILED ("remove failed, unexpected item %s #4", item);
 	} DN_FWD_LIST_FOREACH_END;
@@ -717,7 +717,7 @@ test_fwd_list_reverse (void)
 
 	dn_fwd_list_reverse (list);
 
-	DN_FWD_LIST_FOREACH_BEGIN (list, void *, data) {
+	DN_FWD_LIST_FOREACH_BEGIN (void *, data, list) {
 		if (POINTER_TO_INT32 (data) != count - 1)
 			return FAILED ("reverse failed #1");
 		count--;
@@ -760,7 +760,7 @@ fwd_list_verify_sort (
 	dn_fwd_list_pop_front (list);
 	len--;
 
-	DN_FWD_LIST_FOREACH_BEGIN (list, void *, item) {
+	DN_FWD_LIST_FOREACH_BEGIN (void *, item, list) {
 		int32_t curr = POINTER_TO_INT32 (item);
 		if (prev > curr)
 			return false;
@@ -865,7 +865,7 @@ test_fwd_list_iterator (void)
 	for (uint32_t i = 0; i < N_ELEMS; ++i)
 		dn_fwd_list_insert_after (dn_fwd_list_end (list), INT32_TO_POINTER (i));
 
-	DN_FWD_LIST_FOREACH_BEGIN (list, void *, data) {
+	DN_FWD_LIST_FOREACH_BEGIN (void *, data, list) {
 		if (POINTER_TO_INT32 (data) != count)
 			return FAILED ("foreach iterator failed #1");
 		count++;

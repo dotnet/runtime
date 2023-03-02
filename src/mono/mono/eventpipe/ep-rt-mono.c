@@ -2887,7 +2887,7 @@ ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
 		NULL);
 
 	if (execution_checkpoints) {
-		DN_VECTOR_PTR_FOREACH_BEGIN (execution_checkpoints, EventPipeExecutionCheckpoint *, checkpoint) {
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeExecutionCheckpoint *, checkpoint, execution_checkpoints) {
 			FireEtwExecutionCheckpointDCEnd (
 				clr_instance_get_id (),
 				checkpoint->name,

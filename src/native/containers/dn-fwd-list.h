@@ -41,6 +41,22 @@ struct _dn_fwd_list_result_t {
 	bool result;
 };
 
+static inline dn_fwd_list_it_t
+dn_fwd_list_begin (dn_fwd_list_t *list)
+{
+	DN_ASSERT (list);
+	dn_fwd_list_it_t it = { list->head, { list } };
+	return it;
+}
+
+static inline dn_fwd_list_it_t
+dn_fwd_list_end (dn_fwd_list_t *list)
+{
+	DN_ASSERT (list);
+	dn_fwd_list_it_t it = { NULL, { list } };
+	return it;
+}
+
 static inline void
 dn_fwd_list_it_advance (
 	dn_fwd_list_it_t *it,
@@ -94,7 +110,7 @@ dn_fwd_list_it_end (dn_fwd_list_it_t it)
 	return !(it.it);
 }
 
-#define DN_FWD_LIST_FOREACH_BEGIN(list,var_type,var_name) do { \
+#define DN_FWD_LIST_FOREACH_BEGIN(var_type, var_name, list) do { \
 	var_type var_name; \
 	for (dn_fwd_list_node_t *__it##var_name = (list)->head; __it##var_name; __it##var_name = __it##var_name->next) { \
 		var_name = (var_type)__it##var_name->data;
@@ -104,23 +120,12 @@ dn_fwd_list_it_end (dn_fwd_list_it_t it)
 	} while (0)
 
 dn_fwd_list_t *
-_dn_fwd_list_alloc (dn_allocator_t *allocator);
-
-bool
-_dn_fwd_list_init (
-	dn_fwd_list_t *list,
-	dn_allocator_t *allocator);
-
-static inline dn_fwd_list_t *
-dn_fwd_list_custom_alloc (dn_allocator_t *allocator)
-{
-	return _dn_fwd_list_alloc (allocator);
-}
+dn_fwd_list_custom_alloc (dn_allocator_t *allocator);
 
 static inline dn_fwd_list_t *
 dn_fwd_list_alloc (void)
 {
-	return _dn_fwd_list_alloc (DN_DEFAULT_ALLOCATOR);
+	return dn_fwd_list_custom_alloc (DN_DEFAULT_ALLOCATOR);
 }
 
 void
@@ -134,18 +139,15 @@ dn_fwd_list_free (dn_fwd_list_t *list)
 	dn_fwd_list_custom_free (list, NULL);
 }
 
-static inline bool
+bool
 dn_fwd_list_custom_init (
 	dn_fwd_list_t *list,
-	dn_allocator_t *allocator)
-{
-	return _dn_fwd_list_init (list, allocator);
-}
+	dn_allocator_t *allocator);
 
 static inline bool
 dn_fwd_list_init (dn_fwd_list_t *list)
 {
-	return _dn_fwd_list_init (list, DN_DEFAULT_ALLOCATOR);
+	return dn_fwd_list_custom_init (list, DN_DEFAULT_ALLOCATOR);
 }
 
 void
@@ -177,22 +179,6 @@ dn_fwd_list_before_begin (dn_fwd_list_t *list)
 	extern dn_fwd_list_node_t _fwd_list_before_begin_it_node;
 	dn_fwd_list_it_t it = { &_fwd_list_before_begin_it_node, { list } };
 
-	return it;
-}
-
-static inline dn_fwd_list_it_t
-dn_fwd_list_begin (dn_fwd_list_t *list)
-{
-	DN_ASSERT (list);
-	dn_fwd_list_it_t it = { list->head, { list } };
-	return it;
-}
-
-static inline dn_fwd_list_it_t
-dn_fwd_list_end (dn_fwd_list_t *list)
-{
-	DN_ASSERT (list);
-	dn_fwd_list_it_t it = { NULL, { list } };
 	return it;
 }
 

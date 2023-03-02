@@ -108,7 +108,7 @@ test_umap_free (void)
 {
 	uint32_t dispose_count = 0;
 
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 	params.value_dispose_func = test_umap_value_dispose_func;
 
 	dn_umap_t *map = dn_umap_custom_alloc (&params);
@@ -132,7 +132,7 @@ test_umap_dispose (void)
 {
 	uint32_t dispose_count = 0;
 	dn_umap_t map;
-	dn_umap_custom_init_params_t params = DN_UMAP_DEFAULT_INIT_PARAMS;
+	dn_umap_custom_init_params_t params = {0, };
 
 	params.value_dispose_func = test_umap_value_dispose_func;
 	if (!dn_umap_custom_init (&map, &params))
@@ -247,7 +247,7 @@ test_umap_clear (void)
 
 	dn_umap_free (map);
 
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 	params.value_dispose_func = test_umap_value_dispose_func;
 
 	map = dn_umap_custom_alloc (&params);
@@ -291,7 +291,7 @@ test_umap_insert (void)
 
 	dn_umap_free (map);
 
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 
 	params.hash_func = dn_str_hash;
 	params.equal_func = dn_str_equal;
@@ -333,7 +333,7 @@ test_umap_insert_or_assign (void)
 
 	dn_umap_free (map);
 
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 
 	params.hash_func = dn_str_hash;
 	params.equal_func = dn_str_equal;
@@ -415,7 +415,7 @@ test_umap_extract (void)
 	uint32_t key_dispose_count = 0;
 	uint32_t value_dispose_count = 0;
 
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 
 	params.key_dispose_func = test_umap_str_key_dispose_func;
 	params.value_dispose_func = test_umap_value_dispose_func;
@@ -462,7 +462,7 @@ test_umap_find (void)
 
 	dn_umap_free (map);
 
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 
 	params.hash_func = dn_str_hash;
 	params.equal_func = dn_str_equal;
@@ -606,7 +606,7 @@ test_umap_iterator (void)
 	for (uint32_t i = 0; i < 100; ++i)
 		dn_umap_insert (map, INT32_TO_POINTER (i), INT32_TO_POINTER (i));
 
-	DN_UMAP_FOREACH_BEGIN (map, uint32_t, key, uint32_t, value) {
+	DN_UMAP_FOREACH_BEGIN (uint32_t, key, uint32_t, value, map) {
 		if (key == value)
 			count++;
 	} DN_UMAP_FOREACH_END;
@@ -615,7 +615,7 @@ test_umap_iterator (void)
 		return FAILED ("foreach iterator failed #2");
 
 	count = 0;
-	DN_UMAP_FOREACH_KEY_BEGIN (map, uint32_t, key) {
+	DN_UMAP_FOREACH_KEY_BEGIN (uint32_t, key, map) {
 		count += key;
 	} DN_UMAP_FOREACH_END;
 
@@ -630,7 +630,7 @@ test_umap_iterator (void)
 static RESULT
 test_umap_iterator_2 (void)
 {
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 
 	params.hash_func = dn_direct_hash;
 	params.equal_func = dn_direct_equal;
@@ -646,7 +646,7 @@ test_umap_iterator_2 (void)
 	uint32_t keys_sum = 0;
 	uint32_t values_sum = 0;
 
-	DN_UMAP_FOREACH_BEGIN (map, uint32_t, key, uint32_t, value) {
+	DN_UMAP_FOREACH_BEGIN (uint32_t, key, uint32_t, value, map) {
 		if (key != value)
 			return FAILED ("key != value");
 		keys_sum += key;
@@ -675,7 +675,7 @@ umap_for_each_str_str_func (void *key, void *value, void *user_data)
 static RESULT
 test_umap_str_str_map (void)
 {
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 	params.hash_func = dn_str_hash;
 	params.equal_func = dn_str_equal;
 
@@ -720,7 +720,7 @@ test_umap_str_str_map (void)
 static RESULT
 test_umap_grow (void)
 {
-	dn_umap_custom_alloc_params_t params = DN_UMAP_DEFAULT_ALLOC_PARAMS;
+	dn_umap_custom_alloc_params_t params = {0, };
 	params.hash_func = dn_str_hash;
 	params.equal_func = dn_str_equal;
 	params.key_dispose_func = free;

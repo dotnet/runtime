@@ -139,7 +139,7 @@ ep_thread_unregister (EventPipeThread *thread)
 	bool found = false;
 	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
 		// Remove ourselves from the global list
-		DN_LIST_FOREACH_BEGIN (_ep_threads, EventPipeThread *, current_thread) {
+		DN_LIST_FOREACH_BEGIN (EventPipeThread *, current_thread, _ep_threads) {
 			if (current_thread == thread) {
 				dn_list_remove (_ep_threads, thread);
 				ep_rt_volatile_store_uint32_t(&thread->unregistered, 1);
@@ -178,7 +178,7 @@ ep_thread_get_threads (dn_vector_ptr_t *threads)
 	EP_ASSERT (threads != NULL);
 
 	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
-		DN_VECTOR_PTR_FOREACH_BEGIN (threads, EventPipeThread *, thread) {
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, threads) {
 			if (thread) {
 				// Add ref so the thread doesn't disappear when we release the lock
 				ep_thread_addref (thread);

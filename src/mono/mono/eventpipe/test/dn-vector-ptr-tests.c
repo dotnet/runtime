@@ -166,7 +166,7 @@ RESULT
 test_vector_ptr_alloc_capacity (void)
 {
 	dn_vector_ptr_t *vector = NULL;
-	dn_vector_ptr_custom_alloc_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_alloc_params_t params = {0, };
 
 	params.capacity = ARRAY_SIZE (test_vector_ptr_items);
 	vector = dn_vector_ptr_custom_alloc (&params);
@@ -195,7 +195,7 @@ test_vector_ptr_for_iterate (void)
 	dn_vector_ptr_t *vector = vector_ptr_alloc_and_fill (NULL);
 	uint32_t i = 0;
 
-	DN_VECTOR_PTR_FOREACH_BEGIN (vector, char *, item) {
+	DN_VECTOR_PTR_FOREACH_BEGIN (char *, item, vector) {
 		if (item != test_vector_ptr_items [i]) {
 			return FAILED (
 				"expected item at %d to be %s, but it was %s",
@@ -350,7 +350,7 @@ test_vector_ptr_capacity (void)
 
 	dn_vector_ptr_free (vector);
 
-	dn_vector_ptr_custom_alloc_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_alloc_params_t params = {0, };
 	params.capacity = ARRAY_SIZE (test_vector_ptr_items);
 
 	vector = dn_vector_ptr_custom_alloc (&params);
@@ -469,7 +469,7 @@ test_vector_ptr_foreach_it (void)
 	for (uint32_t i = 0; i < 100; ++i)
 		dn_vector_ptr_push_back (vector, INT32_TO_POINTER (i));
 
-	DN_VECTOR_PTR_FOREACH_BEGIN (vector, uint32_t *, value) {
+	DN_VECTOR_PTR_FOREACH_BEGIN (uint32_t *, value, vector) {
 		if (POINTER_TO_INT32 (value) != count)
 			return FAILED ("foreach iterator failed #1");
 		count++;
@@ -495,7 +495,7 @@ test_vector_ptr_foreach_rev_it (void)
 	for (uint32_t i = 0; i < 100; ++i)
 		dn_vector_ptr_push_back (vector, INT32_TO_POINTER (i));
 
-	DN_VECTOR_PTR_FOREACH_RBEGIN (vector, uint32_t *, value) {
+	DN_VECTOR_PTR_FOREACH_RBEGIN (uint32_t *, value, vector) {
 		if (POINTER_TO_INT32 (value) != count - 1)
 			return FAILED ("foreach reverse iterator failed #1");
 		count--;
@@ -580,7 +580,7 @@ test_vector_ptr_default_local_alloc (void)
 {
 	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
-	dn_vector_ptr_custom_alloc_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_alloc_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 
 	uint32_t init_capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
@@ -627,7 +627,7 @@ test_vector_ptr_local_alloc (void)
 	dn_allocator_fixed_or_malloc_init (&allocator, buffer, ARRAY_SIZE (buffer));
 	memset (buffer, 0, ARRAY_SIZE (buffer));
 
-	dn_vector_ptr_custom_alloc_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_alloc_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 
 	dn_vector_ptr_t *vector = dn_vector_ptr_custom_alloc (&params);
@@ -669,7 +669,7 @@ test_vector_ptr_local_alloc_capacity (void)
 
 	uint32_t init_capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
 
-	dn_vector_ptr_custom_alloc_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_alloc_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 	params.capacity = init_capacity;
 
@@ -714,7 +714,7 @@ test_vector_ptr_fixed_alloc_capacity (void)
 
 	uint32_t init_capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
 
-	dn_vector_ptr_custom_alloc_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_alloc_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 	params.capacity = init_capacity;
 
@@ -756,7 +756,7 @@ test_vector_ptr_fixed_or_malloc_alloc_capacity (void)
 
 	uint32_t init_capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
 
-	dn_vector_ptr_custom_alloc_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_alloc_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 	params.capacity = init_capacity;
 
@@ -817,7 +817,7 @@ test_vector_ptr_fixed_reset_alloc_capacity (void)
 
 	uint32_t init_capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
 
-	dn_vector_ptr_custom_alloc_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_alloc_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 	params.capacity = init_capacity;
 
@@ -868,7 +868,7 @@ test_vector_ptr_fixed_or_malloc_reset_alloc_capacity (void)
 
 	uint32_t init_capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
 
-	dn_vector_ptr_custom_alloc_params_t params = DN_VECTOR_PTR_DEFAULT_ALLOC_PARAMS;
+	dn_vector_ptr_custom_alloc_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
 	params.capacity = init_capacity;
 
