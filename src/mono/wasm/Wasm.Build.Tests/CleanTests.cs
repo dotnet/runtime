@@ -73,7 +73,7 @@ public class CleanTests : NativeRebuildTestsBase
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         bool relink = firstBuildNative;
-        BuildInternal(id, config, publish: false,
+        BlazorBuildInternal(id, config, publish: false,
                         extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
 
         string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
@@ -81,7 +81,7 @@ public class CleanTests : NativeRebuildTestsBase
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         relink = !firstBuildNative;
-        BuildInternal(id, config, publish: false,
+        BlazorBuildInternal(id, config, publish: false,
                         extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
 
         if (relink)

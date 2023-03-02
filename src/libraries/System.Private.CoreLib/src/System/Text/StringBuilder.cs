@@ -1568,7 +1568,7 @@ namespace System.Text
 
                 if ((uint)index >= (uint)args.Length)
                 {
-                    throw new FormatException(SR.Format_IndexOutOfRange);
+                    ThrowHelper.ThrowFormatIndexOutOfRange();
                 }
                 object? arg = args[index];
 

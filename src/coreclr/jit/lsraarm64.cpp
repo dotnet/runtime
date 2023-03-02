@@ -403,6 +403,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_TEST_NE:
         case GT_CMP:
         case GT_TEST:
+        case GT_CCMP:
         case GT_JCMP:
             srcCount = BuildCmp(tree);
             break;
@@ -771,6 +772,10 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_SELECT:
             assert(dstCount == 1);
             srcCount = BuildSelect(tree->AsConditional());
+            break;
+        case GT_SELECTCC:
+            assert(dstCount == 1);
+            srcCount = BuildSelect(tree->AsOp());
             break;
 
     } // end switch (tree->OperGet())

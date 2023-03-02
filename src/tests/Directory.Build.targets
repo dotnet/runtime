@@ -648,8 +648,7 @@
     <IlcRPath Condition="'$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true'">@executable_path/..</IlcRPath>
     <IlcRPath Condition="'$(IlcRPath)' == ''">$ORIGIN/..</IlcRPath>
 
-    <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only"
-      Microsoft.NETCore.Native.targets expect IlcHostArch to be set but it doesn't have to -->
+    <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only" -->
     <DisableUnsupportedError>true</DisableUnsupportedError>
 
     <!-- The default TrimMode in the SDK is full. But trimming most of the tests would just make them fail,
