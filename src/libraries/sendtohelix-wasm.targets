@@ -23,6 +23,7 @@
 
     <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
     <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
+    <_ScenarioLowerCase Condition="'$(Scenario)' != ''">$(Scenario.ToLowerInvariant())</_ScenarioLowerCase>
     <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
 
     <IsWasmDebuggerTests Condition="'$(Scenario)' == 'WasmDebuggerTests'">true</IsWasmDebuggerTests>
@@ -201,13 +202,17 @@
           DependsOnTargets="$(PrepareForBuildHelixWorkItems_WasmDependsOn);$(HelixExtensionTargets)" />
 
   <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
-    <ItemGroup Label="Add samples">
-      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
+    <Message Text="* Scenario: $(_ScenarioLowerCase)" Importance="High" />
+    <ItemGroup>
+      <_AllArchives Include="$(WorkItemArchiveWildCard)" Exclude="@(HelixCorrelationPayload)" />
+    </ItemGroup>
 
-      <HelixWorkItem Include="@(_WasmWorkItem -> '$(WorkItemPrefix)%(FileName)')">
+    <FilterTestArchivesList ArchiveFiles="@(_AllArchives)" Scenario="$(_ScenarioLowerCase)">
+      <Output TaskParameter="FilteredArchives" ItemName="_DefaultWasmWorkItems" />
+    </FilterTestArchivesList>
+
+    <ItemGroup>
+      <HelixWorkItem Include="@(_DefaultWasmWorkItems -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
@@ -221,15 +226,6 @@
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnBrowser'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
 
       <HelixWorkItem Include="@(_WasmSampleZipFile -> '%(FileName)')">
-        <PayloadArchive>%(Identity)</PayloadArchive>
-        <Command>$(HelixCommand)</Command>
-        <Timeout>$(_workItemTimeout)</Timeout>
-      </HelixWorkItem>
-
-      <_DefaultWorkItems Remove="@(_DefaultWorkItems)" />
-      <_DefaultWorkItems Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
-
-      <HelixWorkItem Include="@(_DefaultWorkItems -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
@@ -292,4 +288,41 @@
           DestinationFiles="@(_EmSdkFiles -> '$(EmSdkDirForHelixPayload)\%(RecursiveDir)%(FileName)%(Extension)')"
           SkipUnchangedFiles="true" />
   </Target>
+
+  <UsingTask TaskName="FilterTestArchivesList" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildBinPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <ArchiveFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <Scenario ParameterType="System.String" Required="true" />
+      <FilteredArchives ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="C#"><![CDATA[
+          List<ITaskItem> filtered = new(ArchiveFiles.Length);
+          foreach (var file in ArchiveFiles)
+          {
+              var fp = file.GetMetadata("FullPath");
+              string skipFile = $"{fp}.helix.skip";
+              if (File.Exists(skipFile) && File.ReadAllLines(skipFile).Contains(Scenario))
+              {
+                  Log.LogMessage(MessageImportance.High, $"Skipping {fp} for {Scenario} because it is in a skip list.");
+                  continue;
+              }
+
+              string onlyFile = $"{fp}.helix.only";
+              if (File.Exists(onlyFile) && !File.ReadAllLines(onlyFile).Contains(Scenario))
+              {
+                  Log.LogMessage(MessageImportance.High, $"Skipping {fp} for {Scenario} because it is not in the only list.");
+                  continue;
+              }
+
+              filtered.Add(file);
+          }
+
+          FilteredArchives = filtered.ToArray();
+      ]]></Code>
+    </Task>
+  </UsingTask>
 </Project>

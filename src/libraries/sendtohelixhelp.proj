@@ -1,4 +1,4 @@
-<Project InitialTargets="PrintHelixQueues;PrintBuildTargetFramework;BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
+<Project Sdk="Microsoft.DotNet.Helix.Sdk">
 
   <!-- This project uses the Helix SDK, documented at
        https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
@@ -298,4 +298,6 @@
   <Target Name="PrintBuildTargetFramework">
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
   </Target>
+
+  <Target Name="_PrepareForHelix" BeforeTargets="CoreTest" DependsOnTargets="PrintHelixQueues;PrintBuildTargetFramework;BuildHelixWorkItems" />
 </Project>

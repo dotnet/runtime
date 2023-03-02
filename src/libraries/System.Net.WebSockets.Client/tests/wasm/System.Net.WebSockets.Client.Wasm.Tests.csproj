@@ -9,10 +9,10 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmXHarnessArgs>--background-throttling</WasmXHarnessArgs>
+    <!-- default scenario for local runs -->
     <Scenario>WasmTestOnBrowser</Scenario>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
-    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <HelixWasmScenariosToRunOnly>WasmTestOnBrowser</HelixWasmScenariosToRunOnly>
   </PropertyGroup>
 
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->

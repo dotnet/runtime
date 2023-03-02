@@ -163,7 +163,26 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="DeployHelixTargetsFile" AfterTargets="ArchiveTests" Condition="'$(HelixTargetsFile)' != ''">
-    <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
+  <Target Name="DeployHelixFiles" AfterTargets="ArchiveTests">
+    <MakeDir Directories="$(TestArchiveTestsDir)" />
+
+    <Copy SourceFiles="$(HelixTargetsFile)"
+          DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets"
+          SkipUnchangedFiles="true"
+          Condition="'$(HelixTargetsFile)' != ''" />
+
+    <Error Text="Only one of %24(HelixWasmScenariosToSkip)='$(HelixWasmScenariosToSkip)', and %24(HelixWasmScenariosToRunOnly)='$(HelixWasmScenariosToRunOnly)' should be set"
+           Condition="'$(HelixWasmScenariosToSkip)' != '' and '$(HelixWasmScenariosToRunOnly)' != ''" />
+
+    <Delete Files="$(TestArchiveTestsDir)$(TestProjectName).*.helix.skip" />
+    <Delete Files="$(TestArchiveTestsDir)$(TestProjectName).*.helix.only" />
+
+    <ItemGroup>
+      <_SkipScenariosLines Include="$(HelixWasmScenariosToSkip)" />
+      <_OnlyScenariosLines Include="$(HelixWasmScenariosToRunOnly)" />
+    </ItemGroup>
+
+    <WriteLinesToFile Lines="@(_SkipScenariosLines)" File="$(TestArchiveTestsDir)$(TestProjectName).zip.helix.skip" Overwrite="true" Condition="@(_SkipScenariosLines->Count()) > 0" />
+    <WriteLinesToFile Lines="@(_OnlyScenariosLines)" File="$(TestArchiveTestsDir)$(TestProjectName).zip.helix.only" Overwrite="true" Condition="@(_OnlyScenariosLines->Count()) > 0" />
   </Target>
 </Project>

@@ -49,5 +49,6 @@
     </PropertyGroup>
     <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
+    <Message Text="$(ZippedApp) -> $(HelixArchiveRunOnlyAppsDir)" />
   </Target>
 </Project>
