@@ -136,49 +136,49 @@ namespace System.Text.Json.Serialization.Converters
                 case TypeCode.Int32:
                     if (reader.TryGetInt32(out int int32))
                     {
-                        return *(T*)&int32;
+                        return Unsafe.BitCast<int, T>(int32);
                     }
                     break;
                 case TypeCode.UInt32:
                     if (reader.TryGetUInt32(out uint uint32))
                     {
-                        return *(T*)&uint32;
+                        return Unsafe.BitCast<uint, T>(uint32);
                     }
                     break;
                 case TypeCode.UInt64:
                     if (reader.TryGetUInt64(out ulong uint64))
                     {
-                        return *(T*)&uint64;
+                        return Unsafe.BitCast<ulong, T>(uint64)
                     }
                     break;
                 case TypeCode.Int64:
                     if (reader.TryGetInt64(out long int64))
                     {
-                        return *(T*)&int64;
+                        return Unsafe.BitCast<long, T>(int64);
                     }
                     break;
                 case TypeCode.SByte:
                     if (reader.TryGetSByte(out sbyte byte8))
                     {
-                        return *(T*)&byte8;
+                        return Unsafe.BitCast<sbyte, T>(byte8);
                     }
                     break;
                 case TypeCode.Byte:
                     if (reader.TryGetByte(out byte ubyte8))
                     {
-                        return *(T*)&ubyte8;
+                        return Unsafe.BitCast<byte, T>(ubyte8);
                     }
                     break;
                 case TypeCode.Int16:
                     if (reader.TryGetInt16(out short int16))
                     {
-                        return *(T*)&int16;
+                        return Unsafe.BitCast<short, T>(int16);
                     }
                     break;
                 case TypeCode.UInt16:
                     if (reader.TryGetUInt16(out ushort uint16))
                     {
-                        return *(T*)&uint16;
+                        return Unsafe.BitCast<ushort, T>(uint16);
                     }
                     break;
             }
@@ -235,28 +235,28 @@ namespace System.Text.Json.Serialization.Converters
             switch (s_enumTypeCode)
             {
                 case TypeCode.Int32:
-                    writer.WriteNumberValue(*(int*)&value);
+                    writer.WriteNumberValue(Unsafe.BitCast<T, int>(value));
                     break;
                 case TypeCode.UInt32:
-                    writer.WriteNumberValue(*(uint*)&value);
+                    writer.WriteNumberValue(Unsafe.BitCast<T, uint>(value));
                     break;
                 case TypeCode.UInt64:
-                    writer.WriteNumberValue(*(ulong*)&value);
+                    writer.WriteNumberValue(Unsafe.BitCast<T, ulong>(value));
                     break;
                 case TypeCode.Int64:
-                    writer.WriteNumberValue(*(long*)&value);
+                    writer.WriteNumberValue(Unsafe.BitCast<T, long>(value));
                     break;
                 case TypeCode.Int16:
-                    writer.WriteNumberValue(*(short*)&value);
+                    writer.WriteNumberValue(Unsafe.BitCast<T, short>(value));
                     break;
                 case TypeCode.UInt16:
-                    writer.WriteNumberValue(*(ushort*)&value);
+                    writer.WriteNumberValue(Unsafe.BitCast<T, ushort>(value));
                     break;
                 case TypeCode.Byte:
-                    writer.WriteNumberValue(*(byte*)&value);
+                    writer.WriteNumberValue(Unsafe.BitCast<T, byte>(value));
                     break;
                 case TypeCode.SByte:
-                    writer.WriteNumberValue(*(sbyte*)&value);
+                    writer.WriteNumberValue(Unsafe.BitCast<T, sbyte>(value));
                     break;
                 default:
                     ThrowHelper.ThrowJsonException();
@@ -324,28 +324,28 @@ namespace System.Text.Json.Serialization.Converters
             switch (s_enumTypeCode)
             {
                 case TypeCode.Int32:
-                    writer.WritePropertyName(*(int*)&value);
+                    writer.WritePropertyName(Unsafe.BitCast<T, int>(value));
                     break;
                 case TypeCode.UInt32:
-                    writer.WritePropertyName(*(uint*)&value);
+                    writer.WritePropertyName(Unsafe.BitCast<T, uint>(value));
                     break;
                 case TypeCode.UInt64:
-                    writer.WritePropertyName(*(ulong*)&value);
+                    writer.WritePropertyName(Unsafe.BitCast<T, ulong>(value));
                     break;
                 case TypeCode.Int64:
-                    writer.WritePropertyName(*(long*)&value);
+                    writer.WritePropertyName(Unsafe.BitCast<T, long>(value));
                     break;
                 case TypeCode.Int16:
-                    writer.WritePropertyName(*(short*)&value);
+                    writer.WritePropertyName(Unsafe.BitCast<T, short>(value));
                     break;
                 case TypeCode.UInt16:
-                    writer.WritePropertyName(*(ushort*)&value);
+                    writer.WritePropertyName(Unsafe.BitCast<T, ushort>(value));
                     break;
                 case TypeCode.Byte:
-                    writer.WritePropertyName(*(byte*)&value);
+                    writer.WritePropertyName(Unsafe.BitCast<T, byte>(value));
                     break;
                 case TypeCode.SByte:
-                    writer.WritePropertyName(*(sbyte*)&value);
+                    writer.WritePropertyName(Unsafe.BitCast<T, sbyte>(value));
                     break;
                 default:
                     ThrowHelper.ThrowJsonException();

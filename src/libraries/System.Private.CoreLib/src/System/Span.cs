@@ -305,7 +305,7 @@ namespace System
                 // The runtime eventually calls memset, which can efficiently support large buffers.
                 // We don't need to check IsReferenceOrContainsReferences because no references
                 // can ever be stored in types this small.
-                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _reference), *(byte*)&value, (uint)_length);
+                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _reference), Unsafe.BitCast<T, byte>(value), (uint)_length);
             }
             else
             {

@@ -20,12 +20,12 @@ namespace System.Reflection
 
         public static void WriteDouble(this byte[] buffer, int start, double value)
         {
-            WriteUInt64(buffer, start, *(ulong*)&value);
+            WriteUInt64(buffer, start, BitConverter.DoubleToUInt64Bits(value));
         }
 
         public static void WriteSingle(this byte[] buffer, int start, float value)
         {
-            WriteUInt32(buffer, start, *(uint*)&value);
+            WriteUInt32(buffer, start, BitConverter.SingleToUInt32Bits(value));
         }
 
         public static void WriteByte(this byte[] buffer, int start, byte value)
