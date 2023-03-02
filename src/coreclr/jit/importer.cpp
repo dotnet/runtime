@@ -14245,6 +14245,7 @@ GenTree* Compiler::impThreadLocalFieldAccess(CORINFO_RESOLVED_TOKEN& token,
                                              CORINFO_FIELD_INFO*     pFieldInfo,
                                              var_types               fieldType)
 {
+    printf("Inside impThreadLocalFieldAccess for %s.\n", info.compMethodName);
     JITDUMP("Inside impThreadLocalFieldAccess\n");
     CORINFO_THREAD_LOCAL_FIELD_INFO threadLocalInfo;
     CORINFO_FIELD_HANDLE            fieldHandle = token.hField;
