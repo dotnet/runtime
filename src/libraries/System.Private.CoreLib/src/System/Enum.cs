@@ -46,20 +46,20 @@ namespace System
             RuntimeType rt = (RuntimeType)typeof(TEnum);
             Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
 
-            if (underlyingType == typeof(sbyte)) return GetNameInlined(GetEnumInfo<sbyte>(rt), *(sbyte*)&value);
-            if (underlyingType == typeof(byte)) return GetNameInlined(GetEnumInfo<byte>(rt), *(byte*)&value);
-            if (underlyingType == typeof(short)) return GetNameInlined(GetEnumInfo<short>(rt), *(short*)&value);
-            if (underlyingType == typeof(ushort)) return GetNameInlined(GetEnumInfo<ushort>(rt), *(ushort*)&value);
-            if (underlyingType == typeof(int)) return GetNameInlined(GetEnumInfo<int>(rt), *(int*)&value);
-            if (underlyingType == typeof(uint)) return GetNameInlined(GetEnumInfo<uint>(rt), *(uint*)&value);
-            if (underlyingType == typeof(long)) return GetNameInlined(GetEnumInfo<long>(rt), *(long*)&value);
-            if (underlyingType == typeof(ulong)) return GetNameInlined(GetEnumInfo<ulong>(rt), *(ulong*)&value);
+            if (underlyingType == typeof(sbyte)) return GetNameInlined(GetEnumInfo<sbyte>(rt), Unsafe.BitCast<TEnum, sbyte>(value));
+            if (underlyingType == typeof(byte)) return GetNameInlined(GetEnumInfo<byte>(rt), Unsafe.BitCast<TEnum, byte>(value));
+            if (underlyingType == typeof(short)) return GetNameInlined(GetEnumInfo<short>(rt), Unsafe.BitCast<TEnum, short>(value));
+            if (underlyingType == typeof(ushort)) return GetNameInlined(GetEnumInfo<ushort>(rt), Unsafe.BitCast<TEnum, ushort>(value));
+            if (underlyingType == typeof(int)) return GetNameInlined(GetEnumInfo<int>(rt), Unsafe.BitCast<TEnum, int>(value));
+            if (underlyingType == typeof(uint)) return GetNameInlined(GetEnumInfo<uint>(rt), Unsafe.BitCast<TEnum, uint>(value));
+            if (underlyingType == typeof(long)) return GetNameInlined(GetEnumInfo<long>(rt), Unsafe.BitCast<TEnum, long>(value));
+            if (underlyingType == typeof(ulong)) return GetNameInlined(GetEnumInfo<ulong>(rt), Unsafe.BitCast<TEnum, ulong>(value));
 #if RARE_ENUMS
-            if (underlyingType == typeof(nint)) return GetNameInlined(GetEnumInfo<nint>(rt), *(nint*)&value);
-            if (underlyingType == typeof(nuint)) return GetNameInlined(GetEnumInfo<nuint>(rt), *(nuint*)&value);
-            if (underlyingType == typeof(float)) return GetNameInlined(GetEnumInfo<float>(rt), *(float*)&value);
-            if (underlyingType == typeof(double)) return GetNameInlined(GetEnumInfo<double>(rt), *(double*)&value);
-            if (underlyingType == typeof(char)) return GetNameInlined(GetEnumInfo<char>(rt), *(char*)&value);
+            if (underlyingType == typeof(nint)) return GetNameInlined(GetEnumInfo<nint>(rt), Unsafe.BitCast<TEnum, nint>(value));
+            if (underlyingType == typeof(nuint)) return GetNameInlined(GetEnumInfo<nuint>(rt), Unsafe.BitCast<TEnum, nuint>(value));
+            if (underlyingType == typeof(float)) return GetNameInlined(GetEnumInfo<float>(rt), Unsafe.BitCast<TEnum, float>(value));
+            if (underlyingType == typeof(double)) return GetNameInlined(GetEnumInfo<double>(rt), Unsafe.BitCast<TEnum, double>(value));
+            if (underlyingType == typeof(char)) return GetNameInlined(GetEnumInfo<char>(rt), Unsafe.BitCast<TEnum, char>(value));
 #endif
             throw CreateUnknownEnumTypeException();
         }
@@ -473,20 +473,20 @@ namespace System
             RuntimeType rt = (RuntimeType)typeof(TEnum);
             Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
 
-            if (underlyingType == typeof(sbyte)) return IsDefinedPrimitive(rt, *(sbyte*)&value);
-            if (underlyingType == typeof(byte)) return IsDefinedPrimitive(rt, *(byte*)&value);
-            if (underlyingType == typeof(short)) return IsDefinedPrimitive(rt, *(short*)&value);
-            if (underlyingType == typeof(ushort)) return IsDefinedPrimitive(rt, *(ushort*)&value);
-            if (underlyingType == typeof(int)) return IsDefinedPrimitive(rt, *(int*)&value);
-            if (underlyingType == typeof(uint)) return IsDefinedPrimitive(rt, *(uint*)&value);
-            if (underlyingType == typeof(long)) return IsDefinedPrimitive(rt, *(long*)&value);
-            if (underlyingType == typeof(ulong)) return IsDefinedPrimitive(rt, *(ulong*)&value);
+            if (underlyingType == typeof(sbyte)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, sbyte>(value));
+            if (underlyingType == typeof(byte)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, byte>(value));
+            if (underlyingType == typeof(short)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, short>(value));
+            if (underlyingType == typeof(ushort)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, ushort>(value));
+            if (underlyingType == typeof(int)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, int>(value));
+            if (underlyingType == typeof(uint)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, uint>(value));
+            if (underlyingType == typeof(long)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, long>(value));
+            if (underlyingType == typeof(ulong)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, ulong>(value));
 #if RARE_ENUMS
-            if (underlyingType == typeof(nint)) return IsDefinedPrimitive(rt, *(nint*)&value);
-            if (underlyingType == typeof(nuint)) return IsDefinedPrimitive(rt, *(nuint*)&value);
-            if (underlyingType == typeof(float)) return IsDefinedPrimitive(rt, *(float*)&value);
-            if (underlyingType == typeof(double)) return IsDefinedPrimitive(rt, *(double*)&value);
-            if (underlyingType == typeof(char)) return IsDefinedPrimitive(rt, *(char*)&value);
+            if (underlyingType == typeof(nint)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, nint>(value));
+            if (underlyingType == typeof(nuint)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, nuint>(value));
+            if (underlyingType == typeof(float)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, float>(value));
+            if (underlyingType == typeof(double)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, double>(value));
+            if (underlyingType == typeof(char)) return IsDefinedPrimitive(rt, Unsafe.BitCast<TEnum, char>(value));
 #endif
 
             throw CreateUnknownEnumTypeException();
@@ -1753,38 +1753,38 @@ namespace System
             // be necessary for semantics inside of TryFormatPrimitiveNonDefault, so we can just do it here instead.
             if (format.IsEmpty)
             {
-                if (underlyingType == typeof(int)) return TryFormatPrimitiveDefault(rt, *(int*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(uint)) return TryFormatPrimitiveDefault(rt, *(uint*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(long)) return TryFormatPrimitiveDefault(rt, *(long*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveDefault(rt, *(ulong*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(byte)) return TryFormatPrimitiveDefault(rt, *(byte*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveDefault(rt, *(sbyte*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(short)) return TryFormatPrimitiveDefault(rt, *(short*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveDefault(rt, *(ushort*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(int)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, int>(value), destination, out charsWritten);
+                if (underlyingType == typeof(uint)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, uint>(value), destination, out charsWritten);
+                if (underlyingType == typeof(long)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, long>(value), destination, out charsWritten);
+                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, ulong>(value), destination, out charsWritten);
+                if (underlyingType == typeof(byte)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, byte>(value), destination, out charsWritten);
+                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, sbyte>(value), destination, out charsWritten);
+                if (underlyingType == typeof(short)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, short>(value), destination, out charsWritten);
+                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, ushort>(value), destination, out charsWritten);
 #if RARE_ENUMS
-                if (underlyingType == typeof(nint)) return TryFormatPrimitiveDefault(rt, *(nint*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveDefault(rt, *(nuint*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, *(float*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(double)) return TryFormatPrimitiveDefault(rt, *(double*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(char)) return TryFormatPrimitiveDefault(rt, *(char*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(nint)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, nint>(value), destination, out charsWritten);
+                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, nuint>(value), destination, out charsWritten);
+                if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, float>(value), destination, out charsWritten);
+                if (underlyingType == typeof(double)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, double>(value), destination, out charsWritten);
+                if (underlyingType == typeof(char)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, char>(value), destination, out charsWritten);
 #endif
             }
             else
             {
-                if (underlyingType == typeof(int)) return TryFormatPrimitiveNonDefault(rt, *(int*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(uint)) return TryFormatPrimitiveNonDefault(rt, *(uint*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(long)) return TryFormatPrimitiveNonDefault(rt, *(long*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveNonDefault(rt, *(ulong*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(byte)) return TryFormatPrimitiveNonDefault(rt, *(byte*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveNonDefault(rt, *(sbyte*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(short)) return TryFormatPrimitiveNonDefault(rt, *(short*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveNonDefault(rt, *(ushort*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(int)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, int>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(uint)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, uint>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(long)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, long>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, ulong>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(byte)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, byte>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, sbyte>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(short)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, short>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, ushort>(value), destination, out charsWritten, format);
 #if RARE_ENUMS
-                if (underlyingType == typeof(nint)) return TryFormatPrimitiveNonDefault(rt, *(nint*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveNonDefault(rt, *(nuint*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, *(float*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(double)) return TryFormatPrimitiveNonDefault(rt, *(double*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(char)) return TryFormatPrimitiveNonDefault(rt, *(char*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(nint)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, nint>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, nuint>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, float>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(double)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, double>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(char)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, char>(value), destination, out charsWritten, format);
 #endif
             }
 
@@ -1812,38 +1812,38 @@ namespace System
             // be necessary for semantics inside of TryFormatPrimitiveNonDefault, so we can just do it here instead.
             if (format.IsEmpty)
             {
-                if (underlyingType == typeof(int)) return TryFormatPrimitiveDefault(rt, *(int*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(uint)) return TryFormatPrimitiveDefault(rt, *(uint*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(long)) return TryFormatPrimitiveDefault(rt, *(long*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveDefault(rt, *(ulong*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(byte)) return TryFormatPrimitiveDefault(rt, *(byte*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveDefault(rt, *(sbyte*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(short)) return TryFormatPrimitiveDefault(rt, *(short*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveDefault(rt, *(ushort*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(int)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, int>(value), destination, out charsWritten);
+                if (underlyingType == typeof(uint)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, uint>(value), destination, out charsWritten);
+                if (underlyingType == typeof(long)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, long>(value), destination, out charsWritten);
+                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, ulong>(value), destination, out charsWritten);
+                if (underlyingType == typeof(byte)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, byte>(value), destination, out charsWritten);
+                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, sbyte>(value), destination, out charsWritten);
+                if (underlyingType == typeof(short)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, short>(value), destination, out charsWritten);
+                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, ushort>(value), destination, out charsWritten);
 #if RARE_ENUMS
-                if (underlyingType == typeof(nint)) return TryFormatPrimitiveDefault(rt, *(nint*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveDefault(rt, *(nuint*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, *(float*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(double)) return TryFormatPrimitiveDefault(rt, *(double*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(char)) return TryFormatPrimitiveDefault(rt, *(char*)&value, destination, out charsWritten);
+                if (underlyingType == typeof(nint)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, nint>(value), destination, out charsWritten);
+                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, nuint>(value), destination, out charsWritten);
+                if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, float>(value), destination, out charsWritten);
+                if (underlyingType == typeof(double)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, double>(value), destination, out charsWritten);
+                if (underlyingType == typeof(char)) return TryFormatPrimitiveDefault(rt, Unsafe.BitCast<TEnum, char>(value), destination, out charsWritten);
 #endif
             }
             else
             {
-                if (underlyingType == typeof(int)) return TryFormatPrimitiveNonDefault(rt, *(int*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(uint)) return TryFormatPrimitiveNonDefault(rt, *(uint*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(long)) return TryFormatPrimitiveNonDefault(rt, *(long*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveNonDefault(rt, *(ulong*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(byte)) return TryFormatPrimitiveNonDefault(rt, *(byte*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveNonDefault(rt, *(sbyte*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(short)) return TryFormatPrimitiveNonDefault(rt, *(short*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveNonDefault(rt, *(ushort*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(int)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, int>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(uint)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, uint>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(long)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, long>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(ulong)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, ulong>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(byte)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, byte>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, sbyte>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(short)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, short>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(ushort)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, ushort>(value), destination, out charsWritten, format);
 #if RARE_ENUMS
-                if (underlyingType == typeof(nint)) return TryFormatPrimitiveNonDefault(rt, *(nint*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveNonDefault(rt, *(nuint*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, *(float*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(double)) return TryFormatPrimitiveNonDefault(rt, *(double*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(char)) return TryFormatPrimitiveNonDefault(rt, *(char*)&value, destination, out charsWritten, format);
+                if (underlyingType == typeof(nint)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, nint>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(nuint)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, nuint>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, float>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(double)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, double>(value), destination, out charsWritten, format);
+                if (underlyingType == typeof(char)) return TryFormatPrimitiveNonDefault(rt, Unsafe.BitCast<TEnum, char>(value), destination, out charsWritten, format);
 #endif
             }
 
