@@ -135,7 +135,6 @@ namespace Microsoft.Interop
             {
                 return ExpressionStatement(invoke);
             }
-            _ = 0;
 
             return ExpressionStatement(
                     AssignmentExpression(
