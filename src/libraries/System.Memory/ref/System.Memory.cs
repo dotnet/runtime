@@ -208,6 +208,8 @@ namespace System
         public static System.ReadOnlySpan<char> AsSpan(this string? text) { throw null; }
         public static System.ReadOnlySpan<char> AsSpan(this string? text, int start) { throw null; }
         public static System.ReadOnlySpan<char> AsSpan(this string? text, int start, int length) { throw null; }
+        public static System.ReadOnlySpan<char> AsSpan(this string? text, System.Index startIndex) { throw null; }
+        public static System.ReadOnlySpan<char> AsSpan(this string? text, System.Range range) { throw null; }
         public static System.Span<T> AsSpan<T>(this System.ArraySegment<T> segment) { throw null; }
         public static System.Span<T> AsSpan<T>(this System.ArraySegment<T> segment, System.Index startIndex) { throw null; }
         public static System.Span<T> AsSpan<T>(this System.ArraySegment<T> segment, int start) { throw null; }

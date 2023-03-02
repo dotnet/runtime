@@ -736,28 +736,6 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 	MONO_EXIT_GC_UNSAFE;
 }
 
-// deprecated
-MonoObject*
-mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
-{
-	PVOLATILE(MonoObject) result = NULL;
-	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, (MonoObject **)&result);
-
-	if (result) {
-		MONO_ENTER_GC_UNSAFE;
-		MonoMethodSignature *sig = mono_method_signature (method);
-		MonoType *type = mono_signature_get_return_type (sig);
-		// If the method return type is void return null
-		// This gets around a memory access crash when the result return a value when
-		// a void method is invoked.
-		if (mono_type_get_type (type) == MONO_TYPE_VOID)
-			result = NULL;
-		MONO_EXIT_GC_UNSAFE;
-	}
-
-	return result;
-}
-
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_invoke_method_bound (MonoMethod *method, void* args)// JSMarshalerArguments
 {
@@ -839,28 +817,6 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_brea
 			mono_wasm_set_entrypoint_breakpoint(name, mono_method_get_token (method));
 	}
 	return method;
-}
-
-// TODO: ref
-EMSCRIPTEN_KEEPALIVE char *
-mono_wasm_string_get_utf8 (MonoString *str)
-{
-	char * result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoString *
-mono_wasm_string_from_js (const char *str)
-{
-	PVOLATILE(MonoString) result = NULL;
-	MONO_ENTER_GC_UNSAFE;
-	if (str)
-		result = mono_string_new (root_domain, str);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -1025,51 +981,6 @@ _marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type)
 	}
 }
 
-// FIXME: Ref
-EMSCRIPTEN_KEEPALIVE MonoClass *
-mono_wasm_get_obj_class (MonoObject *obj)
-{
-	if (!obj)
-		return NULL;
-
-	return mono_object_get_class (obj);
-}
-
-// This code runs inside a gc unsafe region
-static int
-_wasm_get_obj_type_ref_impl (PPVOLATILE(MonoObject) obj)
-{
-	if (!obj || !*obj)
-		return 0;
-
-	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
-	MonoClass *klass = mono_object_get_class (*obj);
-	if (!klass)
-		return MARSHAL_ERROR_NULL_CLASS_POINTER;
-	if ((klass == mono_get_string_class ()) &&
-		mono_string_instance_is_interned ((MonoString *)*obj))
-		return MARSHAL_TYPE_STRING_INTERNED;
-
-	MonoType *type = mono_class_get_type (klass);
-	if (!type)
-		return MARSHAL_ERROR_NULL_TYPE_POINTER;
-
-	int mono_type = mono_type_get_type (type);
-
-	return _marshal_type_from_mono_type (mono_type, klass, type);
-}
-
-// FIXME: Ref
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_get_obj_type (MonoObject *obj)
-{
-	int result;
-	MONO_ENTER_GC_UNSAFE;
-	result = _wasm_get_obj_type_ref_impl(&obj);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
 // This code runs inside a gc unsafe region
 static int
 _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj, void *result, int result_capacity) {
@@ -1226,12 +1137,6 @@ mono_wasm_array_length_ref (MonoArray **array)
 	return mono_array_length (*array);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoObject*
-mono_wasm_array_get (MonoArray *array, int idx)
-{
-	return mono_array_get (array, MonoObject*, idx);
-}
-
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_array_get_ref (PPVOLATILE(MonoArray) array, int idx, PPVOLATILE(MonoObject) result)
 {
@@ -1347,13 +1252,6 @@ mono_wasm_string_get_data_ref (
 	MONO_EXIT_GC_UNSAFE;
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_string_get_data (
-	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
-) {
-	mono_wasm_string_get_data_ref(&string, outChars, outLengthBytes, outIsInterned);
-}
-
 EMSCRIPTEN_KEEPALIVE MonoType *
 mono_wasm_class_get_type (MonoClass *klass)
 {
@@ -1362,18 +1260,6 @@ mono_wasm_class_get_type (MonoClass *klass)
 	MonoType *result;
 	MONO_ENTER_GC_UNSAFE;
 	result = mono_class_get_type (klass);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoClass *
-mono_wasm_type_get_class (MonoType *type)
-{
-	if (!type)
-		return NULL;
-	MonoClass *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_type_get_class (type);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
