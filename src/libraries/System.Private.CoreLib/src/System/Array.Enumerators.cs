@@ -107,7 +107,7 @@ namespace System
         /// <summary>Provides an empty enumerator singleton.</summary>
         /// <remarks>
         /// If the consumer is using SZGenericArrayEnumerator elsewhere or is otherwise likely
-        /// to be using T[] elsewhere, this singleton should be used.  Otherwise, GenericEmptyArrayEnumerator's
+        /// to be using T[] elsewhere, this singleton should be used.  Otherwise, GenericEmptyEnumerator's
         /// singleton should be used instead, as it doesn't reference T[] in order to reduce footprint.
         /// </remarks>
 #pragma warning disable CA1825
@@ -141,10 +141,19 @@ namespace System
         object? IEnumerator.Current => Current;
     }
 
-    internal abstract class GenericEmptyArrayEnumeratorBase
+    internal abstract class GenericEmptyEnumeratorBase
     {
 #pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
         public bool MoveNext() => false;
+
+        public object Current
+        {
+            get
+            {
+                ThrowHelper.ThrowInvalidOperationException_EnumCurrent(-1);
+                return default;
+            }
+        }
 
         public void Reset() { }
 
@@ -158,13 +167,13 @@ namespace System
     /// to be using T[] elsewhere, SZGenericArrayEnumerator's singleton should be used.  Otherwise,
     /// this singleton should be used, as it doesn't reference T[] in order to reduce footprint.
     /// </remarks>
-    internal sealed class GenericEmptyArrayEnumerator<T> : GenericEmptyArrayEnumeratorBase, IEnumerator<T>
+    internal sealed class GenericEmptyEnumerator<T> : GenericEmptyEnumeratorBase, IEnumerator<T>
     {
-        public static readonly GenericEmptyArrayEnumerator<T> Instance = new();
+        public static readonly GenericEmptyEnumerator<T> Instance = new();
 
-        private GenericEmptyArrayEnumerator() { }
+        private GenericEmptyEnumerator() { }
 
-        public T Current
+        public new T Current
         {
             get
             {
@@ -172,7 +181,5 @@ namespace System
                 return default;
             }
         }
-
-        object? IEnumerator.Current => Current;
     }
 }
