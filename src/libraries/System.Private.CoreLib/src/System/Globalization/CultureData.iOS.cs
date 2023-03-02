@@ -32,7 +32,6 @@ namespace System.Globalization
 
         internal static unsafe bool NativeGetLocaleName(string localeName, out string? windowsName)
         {
-            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleName is called localeName: " + localeName);
             windowsName = Interop.Globalization.NativeGetLocaleName(localeName, Native_ULOC_FULLNAME_CAPACITY);
             return true;
         }
@@ -52,9 +51,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(localeName != null, "[CultureData.NativeGetLocaleInfo] Expected localeName to be not be null");
 
-            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called localeName: " + localeName);
             string result = Interop.Globalization.NativeGetLocaleInfoString(localeName, (uint)type, Native_ULOC_KEYWORD_AND_VALUES_CAPACITY, uiCultureName);
-            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called result: " + result);
             return result;
         }
     }

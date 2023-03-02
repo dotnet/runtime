@@ -992,6 +992,7 @@ namespace System.Globalization
                     else
                     {
                         englishDisplayName = GetLocaleInfoCore(LocaleStringData.EnglishDisplayName);
+
                         // if it isn't found build one:
                         if (string.IsNullOrEmpty(englishDisplayName))
                         {
@@ -1540,8 +1541,7 @@ namespace System.Globalization
             {
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
-                    _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek()
-                                                                    : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
                 }
                 return _iFirstDayOfWeek;
             }

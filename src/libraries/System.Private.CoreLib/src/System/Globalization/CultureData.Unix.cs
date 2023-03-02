@@ -8,6 +8,7 @@ namespace System.Globalization
     internal sealed partial class CultureData
     {
         private bool InitCultureDataCore() => InitIcuCultureDataCore();
+
         // Unix doesn't support user overrides
         partial void InitUserOverride(bool useUserOverride);
 
