@@ -169,7 +169,7 @@
       "kind": "framework",
       "version": "${PackageVersionNet6}",
       "alias-to": {
-        "any": "Microsoft.NETCore.App.Runtime.Mono.android-arm"
+        "any": "Microsoft.NETCore.App.Runtime.Mono.android-arm64"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net6.android-x64": {

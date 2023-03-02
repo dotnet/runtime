@@ -87,9 +87,6 @@ void _safecrt_wfassign(int flag, void* argument, char16_t * number );
 
 int _minimal_chartowchar( char16_t* outWChar, const char* inChar );
 
-int _output_s( miniFILE* outfile, const char* _Format, va_list _ArgList);
-int _output( miniFILE *outfile, const char* _Format, va_list _ArgList);
-
 int __tinput_s( miniFILE* inFile, const unsigned char * inFormat, va_list inArgList );
 int __twinput_s( miniFILE* inFile, const char16_t * inFormat, va_list inArgList );
 

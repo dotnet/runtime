@@ -802,11 +802,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 
+#if defined(TARGET_XARCH)
                     case TYP_SIMD32:
                     {
                         simd32_t constValue = op->AsVecCon()->gtSimd32Val;
                         return OperandDesc(emit->emitSimd32Const(constValue));
                     }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
                     default:
@@ -1405,11 +1407,6 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
-        else
         {
             // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
             // former doesn't require 66h prefix and one byte smaller than the
@@ -1668,11 +1665,6 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
-        else
         {
             // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
             // former doesn't require 66h prefix and one byte smaller than the

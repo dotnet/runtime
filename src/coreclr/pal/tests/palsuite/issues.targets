@@ -2,23 +2,23 @@
 <Project DefaultTargets = "ProducePALTestList" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <!-- All OS/Arch/Runtime excludes -->
     <!-- Target specific excludes -->
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetOS)' == 'Linux'">
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetOS)' == 'linux'">
         <ExcludeList Include="eventprovider/eventprovidertest">
             <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
         </ExcludeList>
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'Linux'">
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'linux'">
         <ExcludeList Include="eventprovider/eventprovidertest">
             <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
         </ExcludeList>
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'Linux'">
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'linux'">
         <ExcludeList Include="eventprovider/eventprovidertest">
             <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
+    <ItemGroup Condition="'$(TargetOS)' == 'osx'">
         <ExcludeList Include="miscellaneous/queryperformancecounter/test1/paltest_queryperformancecounter_test1">
             <Issue>https://github.com/dotnet/runtime/issues/7639</Issue>
         </ExcludeList>

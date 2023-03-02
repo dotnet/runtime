@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     var metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
-                    return DescriptorMarker.GetDependencies(factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), metadataManager.FeatureSwitches);
+                    return DescriptorMarker.GetDependencies(metadataManager.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), metadataManager.FeatureSwitches);
                 }
             }
             return Array.Empty<DependencyListEntry>();

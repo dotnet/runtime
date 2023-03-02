@@ -12,7 +12,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class NodeInteropTests_Metadata : NodeInteropTests
     {
         public NodeInteropTests_Metadata()
-            : base(new StringSerializerWrapper(NodeInteropTestsContext_Metadata.Default, (options) => new NodeInteropTestsContext_Metadata(options)))
+            : base(new StringSerializerWrapper(NodeInteropTestsContext_Metadata.Default))
         {
         }
 
@@ -29,7 +29,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class NodeInteropTests_Default : NodeInteropTests
     {
         public NodeInteropTests_Default()
-            : base(new StringSerializerWrapper(NodeInteropTestsContext_Default.Default, (options) => new NodeInteropTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(NodeInteropTestsContext_Default.Default))
         {
         }
 

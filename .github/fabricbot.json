@@ -95,7 +95,8 @@
             "area-Codegen-Interpreter-mono"
           ],
           "mentionees": [
-            "brzvlad"
+            "brzvlad",
+            "kotlarmilos"
           ]
         },
         {
@@ -388,8 +389,9 @@
             "area-System.Data.SqlClient"
           ],
           "mentionees": [
-            "cheenamalhotra",
-            "david-engel"
+            "davoudeshtehari",
+            "david-engel",
+            "jrahnama"
           ]
         },
         {
@@ -14845,6 +14847,17 @@
                     }
                   }
                 ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-area-label"
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -14911,6 +14924,12 @@
                         "parameters": {
                           "label": "area-Meta"
                         }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "needs-area-label"
+                        }
                       }
                     ]
                   },
@@ -14943,6 +14962,12 @@
                     "name": "labelAdded",
                     "parameters": {
                       "label": "area-Meta"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "needs-area-label"
                     }
                   }
                 ]
@@ -15021,6 +15046,12 @@
                 "name": "hasLabel",
                 "parameters": {
                   "label": "area-Meta"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "needs-area-label"
                 }
               }
             ]
@@ -15520,6 +15551,17 @@
                         }
                       }
                     ]
+                  },
+                  {
+                    "operator": "not",
+                    "operands": [
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "needs-area-label"
+                        }
+                      }
+                    ]
                   }
                 ]
               }
@@ -15567,6 +15609,12 @@
                 "name": "hasLabel",
                 "parameters": {
                   "label": "area-Meta"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "needs-area-label"
                 }
               }
             ]
@@ -15705,6 +15753,12 @@
                 "parameters": {
                   "label": "area-Meta"
                 }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "needs-area-label"
+                }
               }
             ]
           },
@@ -15802,6 +15856,12 @@
                 "name": "hasLabel",
                 "parameters": {
                   "label": "area-Meta"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "needs-area-label"
                 }
               }
             ]
@@ -15914,6 +15974,12 @@
                 "name": "hasLabel",
                 "parameters": {
                   "label": "area-Meta"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "needs-area-label"
                 }
               }
             ]

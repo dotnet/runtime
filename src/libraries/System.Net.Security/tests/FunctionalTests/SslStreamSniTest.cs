@@ -3,12 +3,14 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
 {
@@ -18,7 +20,7 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
-        [SkipOnPlatform(TestPlatforms.Android, "Host name is not sent on Android")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
@@ -94,11 +96,13 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(HostNameData))]
-        [SkipOnPlatform(TestPlatforms.Android, "TODO: this test would work with GetServerCertificate(). Is there something wrong with the PEMs?")]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
+            if (PlatformDetection.IsAndroid && hostName.ToCharArray().Any(c => !char.IsAscii(c)))
+                throw new SkipTestException("Android does not support non-ASCII host names");
+
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             int timesCallbackCalled = 0;
@@ -171,6 +175,31 @@ namespace System.Net.Security.Tests
             {
                 return true;
             });
+        }
+        [Theory]
+        [InlineData("127.0.0.1")]
+        [InlineData("::1")]
+        [InlineData("2001:11:22::1")]
+        [InlineData("fe80::9c3a:b64d:6249:1de8%2")]
+        [InlineData("fe80::9c3a:b64d:6249:1de8")]
+        public async Task SslStream_IpLiteral_NotSend(string target)
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+            {
+                    TargetHost = target,
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+            };
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = Configuration.Certificates.GetServerCertificate(),
+            };
+
+            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions, default),
+                        server.AuthenticateAsServerAsync(serverOptions, default));
+
+            Assert.Equal(string.Empty, server.TargetHostName);
         }
 
         private static Func<Task> WithAggregateExceptionUnwrapping(Func<Task> a)

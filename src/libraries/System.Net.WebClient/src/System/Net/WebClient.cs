@@ -941,7 +941,7 @@ namespace System.Net
         }
 
         private byte[] UploadBits(
-            WebRequest request, Stream? readStream, byte[] buffer, int chunkSize,
+            WebRequest request, FileStream? readStream, byte[] buffer, int chunkSize,
             byte[]? header, byte[]? footer)
         {
             try
@@ -1002,7 +1002,7 @@ namespace System.Net
         }
 
         private async void UploadBitsAsync(
-            WebRequest request, Stream? readStream, byte[] buffer, int chunkSize,
+            WebRequest request, FileStream? readStream, byte[] buffer, int chunkSize,
             byte[]? header, byte[]? footer,
             AsyncOperation asyncOp, Action<byte[]?, Exception?, AsyncOperation> completionDelegate)
         {

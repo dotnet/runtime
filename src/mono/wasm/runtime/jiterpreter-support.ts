@@ -16,18 +16,42 @@ export declare interface MintOpcodePtr extends NativePointer {
     __brand: "MintOpcodePtr"
 }
 
+type FunctionType = [
+    index: FunctionTypeIndex,
+    parameters: { [name: string]: WasmValtype },
+    returnType: WasmValtype,
+    signature: string
+];
+
+type FunctionTypeIndex = number;
+
+type FunctionTypeByIndex = [
+    parameters: { [name: string]: WasmValtype },
+    returnType: WasmValtype,
+];
+
 export class WasmBuilder {
     stack: Array<BlobBuilder>;
     stackSize!: number;
     inSection!: boolean;
     inFunction!: boolean;
+    allowNullCheckOptimization!: boolean;
     locals = new Map<string, [WasmValtype, number]>();
+
+    permanentFunctionTypeCount = 0;
+    permanentFunctionTypes: { [name: string] : FunctionType } = {};
+    permanentFunctionTypesByShape: { [shape: string] : FunctionTypeIndex } = {};
+    permanentFunctionTypesByIndex: { [index: number] : FunctionTypeByIndex } = {};
+
     functionTypeCount!: number;
-    functionTypes!: { [name: string] : [number, { [name: string]: WasmValtype }, WasmValtype, string] };
-    functionTypesByShape!: { [shape: string] : number };
-    functionTypesByIndex: Array<any> = [];
+    functionTypes!: { [name: string] : FunctionType };
+    functionTypesByShape!: { [shape: string] : FunctionTypeIndex };
+    functionTypesByIndex: { [index: number] : FunctionTypeByIndex } = {};
+
     importedFunctionCount!: number;
-    importedFunctions!: { [name: string] : [number, number, string] };
+    importedFunctions!: { [name: string] : [
+        index: number, typeIndex: number, unknown: string
+    ] };
     importsToEmit!: Array<[string, string, number, number]>;
     argumentCount!: number;
     activeBlocks!: number;
@@ -36,6 +60,7 @@ export class WasmBuilder {
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;
     constantSlots: Array<number> = [];
+    backBranchOffsets: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
 
     constructor (constantSlotCount: number) {
@@ -49,10 +74,12 @@ export class WasmBuilder {
         this.inSection = false;
         this.inFunction = false;
         this.locals.clear();
-        this.functionTypeCount = 0;
-        this.functionTypes = {};
-        this.functionTypesByShape = {};
-        this.functionTypesByIndex.length = 0;
+
+        this.functionTypeCount = this.permanentFunctionTypeCount;
+        this.functionTypes = Object.create(this.permanentFunctionTypes);
+        this.functionTypesByShape = Object.create(this.permanentFunctionTypesByShape);
+        this.functionTypesByIndex = Object.create(this.permanentFunctionTypesByIndex);
+
         this.importedFunctionCount = 0;
         this.importedFunctions = {};
         this.importsToEmit = [];
@@ -65,6 +92,9 @@ export class WasmBuilder {
         this.constantSlots.length = this.options.useConstants ? constantSlotCount : 0;
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
+        this.backBranchOffsets.length = 0;
+
+        this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
 
     push () {
@@ -116,6 +146,10 @@ export class WasmBuilder {
         return this.current.appendF64(value);
     }
 
+    appendBoundaryValue (bits: number, sign: number) {
+        return this.current.appendBoundaryValue(bits, sign);
+    }
+
     appendULeb (value: number | MintOpcodePtr) {
         return this.current.appendULeb(<any>value);
     }
@@ -165,15 +199,9 @@ export class WasmBuilder {
         }
     }
 
-    ip_const (value: MintOpcodePtr, highBit?: boolean) {
+    ip_const (value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
-        let relativeValue = <any>value - <any>this.base;
-        if (highBit) {
-            // it is impossible to do this in JS as far as i can tell
-            // relativeValue |= 0x80000000;
-            relativeValue += 0xF000000;
-        }
-        this.appendLeb(relativeValue);
+        this.appendLeb(<any>value - <any>this.base);
     }
 
     i52_const (value: number) {
@@ -181,26 +209,43 @@ export class WasmBuilder {
         this.appendLeb(value);
     }
 
-    defineType (name: string, parameters: { [name: string]: WasmValtype }, returnType: WasmValtype) {
+    defineType (
+        name: string, parameters: { [name: string]: WasmValtype }, returnType: WasmValtype,
+        permanent: boolean
+    ) {
         if (this.functionTypes[name])
             throw new Error(`Function type ${name} already defined`);
+        if (permanent && (this.functionTypeCount > this.permanentFunctionTypeCount))
+            throw new Error("New permanent function types cannot be defined after non-permanent ones");
 
-        let index: number;
         let shape = "";
         for (const k in parameters)
             shape += parameters[k] + ",";
         shape += returnType;
-        index = this.functionTypesByShape[shape];
 
-        if (!index) {
+        let index = this.functionTypesByShape[shape];
+
+        if (typeof (index) !== "number") {
             index = this.functionTypeCount++;
-            this.functionTypesByShape[shape] = index;
-            this.functionTypesByIndex[index] = [parameters, returnType];
+
+            if (permanent) {
+                this.permanentFunctionTypeCount++;
+                this.permanentFunctionTypesByShape[shape] = index;
+                this.permanentFunctionTypesByIndex[index] = [parameters, returnType];
+            } else {
+                this.functionTypesByShape[shape] = index;
+                this.functionTypesByIndex[index] = [parameters, returnType];
+            }
         }
 
-        this.functionTypes[name] = [
+        const tup : FunctionType = [
             index, parameters, returnType, `(${JSON.stringify(parameters)}) -> ${returnType}`
         ];
+        if (permanent)
+            this.permanentFunctionTypes[name] = tup;
+        else
+            this.functionTypes[name] = tup;
+
         return index;
     }
 
@@ -211,7 +256,7 @@ export class WasmBuilder {
         if (trace > 1)
             console.log(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
         */
-        for (let i = 0; i < this.functionTypesByIndex.length; i++) {
+        for (let i = 0; i < this.functionTypeCount; i++) {
             const parameters = this.functionTypesByIndex[i][0];
             const returnType = this.functionTypesByIndex[i][1];
             this.appendU8(0x60);
@@ -475,7 +520,7 @@ export class WasmBuilder {
 
     getArrayView (fullCapacity?: boolean) {
         if (this.stackSize > 1)
-            throw new Error("Stack not empty");
+            throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
 
@@ -493,12 +538,15 @@ export class BlobBuilder {
     size: number;
     capacity: number;
     encoder?: TextEncoder;
+    textBuf = new Uint8Array(1024);
 
     constructor () {
         this.capacity = 32000;
         this.buffer = <any>Module._malloc(this.capacity);
         this.size = 0;
         this.clear();
+        if (typeof (TextEncoder) === "function")
+            this.encoder = new TextEncoder();
     }
 
     // It is necessary for you to call this before using the builder so that the DataView
@@ -561,6 +609,17 @@ export class BlobBuilder {
         return result;
     }
 
+    appendBoundaryValue (bits: number, sign: number) {
+        if (this.size + 8 >= this.capacity)
+            throw new Error("Buffer full");
+
+        const bytesWritten = cwraps.mono_jiterp_encode_leb_signed_boundary(<any>(this.buffer + this.size), bits, sign);
+        if (bytesWritten < 1)
+            throw new Error(`Failed to encode ${bits} bit boundary value with sign ${sign}`);
+        this.size += bytesWritten;
+        return bytesWritten;
+    }
+
     appendULeb (value: number) {
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
@@ -594,8 +653,10 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendBytes (bytes: Uint8Array) {
+    appendBytes (bytes: Uint8Array, count?: number) {
         const result = this.size;
+        if (typeof (count) === "number")
+            bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
         const av = this.getArrayView(true);
         av.set(bytes, this.size);
         this.size += bytes.length;
@@ -603,24 +664,34 @@ export class BlobBuilder {
     }
 
     appendName (text: string) {
-        let bytes: any = null;
+        let count = text.length;
+        // TextEncoder overhead is significant for short strings, and lots of our strings
+        //  are single-character import names, so add a fast path for single characters
+        let singleChar = text.length === 1 ? text.charCodeAt(0) : -1;
+        if (singleChar > 0x7F)
+            singleChar = -1;
 
-        if (typeof (TextEncoder) === "function") {
-            if (!this.encoder)
-                this.encoder = new TextEncoder();
-            bytes = this.encoder.encode(text);
-        } else {
-            bytes = new Uint8Array(text.length);
-            for (let i = 0; i < text.length; i++) {
-                const ch = text.charCodeAt(i);
-                if (ch > 0x7F)
-                    throw new Error("Out of range character and no TextEncoder available");
-                else
-                    bytes[i] = ch;
+        // Also don't bother running the encode path for empty strings
+        if (count && (singleChar < 0)) {
+            if (this.encoder) {
+                const temp = this.encoder.encodeInto(text, this.textBuf);
+                count = temp.written || 0;
+            } else {
+                for (let i = 0; i < count; i++) {
+                    const ch = text.charCodeAt(i);
+                    if (ch > 0x7F)
+                        throw new Error("Out of range character and no TextEncoder available");
+                    else
+                        this.textBuf[i] = ch;
+                }
             }
         }
-        this.appendULeb(bytes.length);
-        this.appendBytes(bytes);
+
+        this.appendULeb(count);
+        if (singleChar >= 0)
+            this.appendU8(singleChar);
+        else if (count > 1)
+            this.appendBytes(this.textBuf, count);
     }
 
     getArrayView (fullCapacity?: boolean) {
@@ -650,7 +721,12 @@ export const counters = {
     tracesCompiled: 0,
     entryWrappersCompiled: 0,
     jitCallsCompiled: 0,
-    failures: 0
+    directJitCallsCompiled: 0,
+    failures: 0,
+    bytesGenerated: 0,
+    nullChecksEliminated: 0,
+    backBranchesEmitted: 0,
+    backBranchesNotEmitted: 0,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -867,6 +943,31 @@ export function recordFailure () : void {
     }
 }
 
+export const enum JiterpMember {
+    VtableInitialized = 0,
+    ArrayData = 1,
+    StringLength = 2,
+    StringData = 3,
+    Imethod = 4,
+    DataItems = 5,
+    Rmethod = 6,
+    SpanLength = 7,
+    SpanData = 8,
+    ArrayLength = 9,
+    BackwardBranchOffsets = 10,
+    BackwardBranchOffsetsCount = 11,
+}
+
+const memberOffsets : { [index: number] : number } = {};
+
+export function getMemberOffset (member: JiterpMember) {
+    const cached = memberOffsets[member];
+    if (cached === undefined)
+        return memberOffsets[member] = cwraps.mono_jiterp_get_member_offset(<any>member);
+    else
+        return cached;
+}
+
 export function getRawCwrap (name: string): Function {
     const result = (<any>Module)["asm"][name];
     if (typeof (result) !== "function")
@@ -900,12 +1001,19 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
+    // Enable performing backward branches without exiting traces
+    noExitBackwardBranches: boolean;
+    // Unwrap gsharedvt wrappers when compiling jitcalls if possible
+    directJitCalls: boolean;
+    eliminateNullChecks: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
     jitCallHitCount: number;
     jitCallFlushThreshold: number;
     interpEntryHitCount: number;
     interpEntryFlushThreshold: number;
+    // Maximum total number of wasm bytes to generate
+    wasmBytesLimit: number;
 }
 
 const optionNames : { [jsName: string] : string } = {
@@ -921,12 +1029,16 @@ const optionNames : { [jsName: string] : string } = {
     "countBailouts": "jiterpreter-count-bailouts",
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
+    "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
+    "noExitBackwardBranches": "jiterpreter-backward-branches-enabled",
+    "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
     "jitCallHitCount": "jiterpreter-jit-call-hit-count",
     "jitCallFlushThreshold": "jiterpreter-jit-call-queue-flush-threshold",
     "interpEntryHitCount": "jiterpreter-interp-entry-hit-count",
     "interpEntryFlushThreshold": "jiterpreter-interp-entry-queue-flush-threshold",
+    "wasmBytesLimit": "jiterpreter-wasm-bytes-limit",
 };
 
 let optionsVersion = -1;

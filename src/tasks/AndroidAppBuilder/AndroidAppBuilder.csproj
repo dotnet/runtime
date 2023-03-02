@@ -17,6 +17,11 @@
     <Compile Include="ApkBuilder.cs" />
     <Compile Include="AndroidAppBuilder.cs" />
     <Compile Include="AndroidApkFileReplacerTask.cs" />
+    <Compile Include="AndroidLibBuilderTask.cs" />
+    <Compile Include="..\Common\AndroidSdkHelper.cs" />
+    <Compile Include="..\Common\DexBuilder.cs" />
+    <Compile Include="..\Common\JarBuilder.cs" />
+    <Compile Include="..\Common\JavaCompiler.cs" />
     <Compile Include="..\Common\Utils.cs" />
   </ItemGroup>
 

@@ -310,9 +310,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 CharKind.General : // The previous character kind is irrelevant when anchors are not used.
                 GetPositionKind(TInputReader.GetPositionId(this, input, i));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsMintermId(int positionId) => positionId >= 0;
-
         private void CheckTimeout(long timeoutOccursAt)
         {
             Debug.Assert(_checkTimeout);

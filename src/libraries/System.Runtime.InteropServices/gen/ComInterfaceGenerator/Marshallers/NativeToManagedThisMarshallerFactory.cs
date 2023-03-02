@@ -3,13 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed record NativeThisInfo(ManagedTypeInfo TypeKeyType) : MarshallingInfo;
+    internal sealed record NativeThisInfo(TypeSyntax UnwrapperType) : MarshallingInfo;
 
     internal sealed class NativeToManagedThisMarshallerFactory : IMarshallingGeneratorFactory
     {
@@ -20,17 +21,15 @@ namespace Microsoft.Interop
         }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
-            => info.MarshallingAttributeInfo is NativeThisInfo(ManagedTypeInfo typeKeyType) ? new Marshaller(typeKeyType) : _inner.Create(info, context);
+            => info.MarshallingAttributeInfo is NativeThisInfo ? new Marshaller() : _inner.Create(info, context);
 
         private sealed class Marshaller : IMarshallingGenerator
         {
-            private readonly ManagedTypeInfo _typeKeyType;
-
-            public Marshaller(ManagedTypeInfo typeKeyType) => _typeKeyType = typeKeyType;
-
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => new PointerTypeInfo("void*", "void*", false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
+                Debug.Assert(info.MarshallingAttributeInfo is NativeThisInfo);
+                TypeSyntax unwrapperType = ((NativeThisInfo)info.MarshallingAttributeInfo).UnwrapperType;
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
                     yield break;
@@ -38,23 +37,25 @@ namespace Microsoft.Interop
 
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-                // <managed> = IUnmanagedVirtualMethodTableProvider.GetObjectForUnmanagedWrapper<<managedType>>(<native>);
+                // <managed> = (<managedType>)UnmanagedObjectUnwrapper.GetObjectFormUnmanagedWrapper<TUnmanagedUnwrapper>(<native>);
                 yield return ExpressionStatement(
-                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(managedIdentifier),
-                        InvocationExpression(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                GenericName(Identifier(TypeNames.IUnmanagedVirtualMethodTableProvider),
-                                    TypeArgumentList(
-                                        SingletonSeparatedList(
-                                            _typeKeyType.Syntax))),
-                                GenericName(Identifier("GetObjectForUnmanagedWrapper"),
-                                    TypeArgumentList(
-                                        SingletonSeparatedList(
-                                            info.ManagedType.Syntax)))),
-                            ArgumentList(
-                                SingletonSeparatedList(
-                                    Argument(IdentifierName(nativeIdentifier)))))));
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(managedIdentifier),
+                        CastExpression(
+                            info.ManagedType.Syntax,
+                            InvocationExpression(
+                                MemberAccessExpression(
+                                    SyntaxKind.SimpleMemberAccessExpression,
+                                    ParseTypeName(TypeNames.UnmanagedObjectUnwrapper),
+                                    GenericName(Identifier("GetObjectForUnmanagedWrapper"))
+                                        .WithTypeArgumentList(
+                                            TypeArgumentList(
+                                                SingletonSeparatedList(
+                                                    unwrapperType)))),
+                                ArgumentList(
+                                    SingletonSeparatedList(
+                                        Argument(IdentifierName(nativeIdentifier))))))));
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;

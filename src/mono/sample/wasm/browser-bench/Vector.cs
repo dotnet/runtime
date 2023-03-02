@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.Intrinsics;
 
 namespace Sample
@@ -28,6 +29,7 @@ namespace Sample
                 new MaxFloat(),
                 new MinDouble(),
                 new MaxDouble(),
+                new Normalize(),
             };
         }
 
@@ -299,6 +301,26 @@ namespace Sample
 
             public override void RunStep() {
                 result = Vector128.Max(vector1, vector2);
+            }
+        }
+
+        class Normalize : VectorMeasurement
+        {
+            Vector128<float> result;
+            float x, y, z, w;
+            public override string Name => "Normalize float";
+
+            public Normalize()
+            {
+                x = Random.Shared.NextSingle();
+                y = Random.Shared.NextSingle();
+                z = Random.Shared.NextSingle();
+                w = Random.Shared.NextSingle();
+            }
+
+            public override void RunStep() {
+                Vector128<float> vector = Vector128.Create(x, y, z, w);
+                result = vector / (float)Math.Sqrt(Vector128.Dot(vector, vector));
             }
         }
     }

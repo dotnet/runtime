@@ -44,7 +44,6 @@
 		function invoke_getters_js_test () {
 			getters_js_test ();
 		}
-
 		function invoke_add () {
 			return App.int_add (10, 20);
 		}
@@ -91,6 +90,7 @@
 		function load_wasm_page_without_assets () {
 			console.log("load_wasm_page_without_assets")
 			window.location.replace("http://localhost:9400/wasm-page-without-assets.html");
+			console.debug ("#debugger-app-ready#");
 		}
 		function load_non_wasm_page_forcing_runtime_ready () {
 			console.log("load_non_wasm_page_forcing_runtime_ready")

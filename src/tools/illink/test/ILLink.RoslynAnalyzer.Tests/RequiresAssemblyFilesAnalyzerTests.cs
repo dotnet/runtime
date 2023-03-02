@@ -287,6 +287,10 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			}
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (src,
+				// (7,7): warning SYSLIB0044: 'AssemblyName.CodeBase' is obsolete: 'AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.'
+				DiagnosticResult.CompilerWarning ("SYSLIB0044").WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.AssemblyName.CodeBase", "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported."),
+				// (8,7): warning SYSLIB0044: 'AssemblyName.EscapedCodeBase' is obsolete: 'AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.'
+				DiagnosticResult.CompilerWarning ("SYSLIB0044").WithSpan (8, 7, 8, 24).WithArguments ("System.Reflection.AssemblyName.EscapedCodeBase", "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported."),
 				// (7,7): warning IL3002: Using member 'System.Reflection.AssemblyName.CodeBase.get' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. The code will return an empty string for assemblies embedded in a single-file app.
 				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.AssemblyName.CodeBase.get", " The code will return an empty string for assemblies embedded in a single-file app.", ""),
 				// (7,7): warning IL3000: 'System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.

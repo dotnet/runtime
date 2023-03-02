@@ -491,9 +491,6 @@ mono_thread_info_suspend_lock (void);
 void
 mono_thread_info_suspend_unlock (void);
 
-void
-mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid);
-
 MONO_COMPONENT_API void
 mono_thread_info_set_is_async_context (gboolean async_context);
 
@@ -653,8 +650,6 @@ mono_native_thread_id_main_thread_known (MonoNativeThreadId *main_thread_tid);
  * MonoNativeThreadId, and is intended solely to match the output of various diagonistic tools.
  */
 guint64 mono_native_thread_os_id_get (void);
-
-gint32 mono_native_thread_processor_id_get (void);
 
 MONO_API gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);

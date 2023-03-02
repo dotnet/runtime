@@ -1979,8 +1979,7 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
         GCPROTECT_BEGIN(gc);
 
         {
-            // The managed side expects ELEMENT_TYPE_U1 as the underlying type for boolean
-            gc.values = (BASEARRAYREF) AllocatePrimitiveArray((type == ELEMENT_TYPE_BOOLEAN) ? ELEMENT_TYPE_U1 : type, cFields);
+            gc.values = (BASEARRAYREF) AllocatePrimitiveArray(type, cFields);
 
             BYTE* pToValues = gc.values->GetDataPtr();
             size_t elementSize = gc.values->GetComponentSize();

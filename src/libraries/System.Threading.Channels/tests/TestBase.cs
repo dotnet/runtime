@@ -21,12 +21,6 @@ namespace System.Threading.Channels.Tests
             }
         }
 
-        protected async Task AssertCanceled(Task task, CancellationToken token)
-        {
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
-            AssertSynchronouslyCanceled(task, token);
-        }
-
         protected void AssertSynchronousSuccess<T>(ValueTask<T> task) => Assert.True(task.IsCompletedSuccessfully);
         protected void AssertSynchronousSuccess(ValueTask task) => Assert.True(task.IsCompletedSuccessfully);
         protected void AssertSynchronousSuccess(Task task) => Assert.Equal(TaskStatus.RanToCompletion, task.Status);

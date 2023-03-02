@@ -2,7 +2,9 @@
 
   <PropertyGroup>
     <!-- Package Validation isn't helpful when authoring shared framework packages. -->
-    <EnablePackageValidation Condition="'$(EnablePackageValidation)' == '' and '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true'">true</EnablePackageValidation>
+    <EnablePackageValidation Condition="'$(EnablePackageValidation)' == '' and
+                                        '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true' and
+                                        '$(DotNetBuildFromSource)' != 'true'">true</EnablePackageValidation>
     <!-- Don't perform baseline validation if we don't have a stable prebuilt version.
          Don't attempt to restore prebuilts during source-build. -->
     <DisablePackageBaselineValidation Condition="'$(IsShipping)' == 'false' or
@@ -28,9 +30,7 @@
     <GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' != 'true' and
                                        '$(BuildAllConfigurations)' == 'true' and
                                        '$(DotNetBuildFromSource)' == 'true'">true</GeneratePackageOnBuild>
-    <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
-    <LibIntellisenseDocumentationFilePath>$(XmlDocFileRoot)1033\$(AssemblyName).xml</LibIntellisenseDocumentationFilePath>
-    <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
+
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
@@ -107,16 +107,6 @@
                             Condition="$(TargetFrameworks.Contains('netstandard2.0')) and
                                        ($(TargetFrameworks.Contains('$(NetFrameworkMinimum)')) or $(TargetFrameworks.Contains('net47')) or $(TargetFrameworks.Contains('net48')))" />
   </ItemGroup>
-
-  <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
-  <Target Name="ChangeDocumentationFileForPackaging"
-          AfterTargets="DocumentationProjectOutputGroup"
-          Condition="'$(UseIntellisenseDocumentationFile)' == 'true'">
-    <ItemGroup>
-      <DocumentationProjectOutputGroupOutput Remove="@(DocumentationProjectOutputGroupOutput)" />
-      <DocumentationProjectOutputGroupOutput Include="$(LibIntellisenseDocumentationFilePath)" />
-    </ItemGroup>
-  </Target>
 
   <!-- Add runtime specific file into the package if the tfm is RID specific. -->
   <Target Name="AddRuntimeSpecificFilesToPackage"

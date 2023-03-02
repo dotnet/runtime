@@ -14,6 +14,7 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#include "../../vm/ceemain.h"
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
@@ -24,14 +25,27 @@
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
+#ifdef TARGET_UNIX
+#define NO_HOSTING_API_RETURN_ADDRESS ((void*)ULONG_PTR_MAX)
+void* g_hostingApiReturnAddress = NO_HOSTING_API_RETURN_ADDRESS;
+
+class HostingApiFrameHolder
+{
+public:
+    HostingApiFrameHolder(void* returnAddress)
+    {
+        g_hostingApiReturnAddress = returnAddress;
+    }
+
+    ~HostingApiFrameHolder()
+    {
+        g_hostingApiReturnAddress = NO_HOSTING_API_RETURN_ADDRESS;
+    }
+};
+#endif // TARGET_UNIX
+
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
-
-// Specifies whether coreclr is embedded or standalone
-extern bool g_coreclr_embedded;
-
-// Specifies whether hostpolicy is embedded in executable or standalone
-extern bool g_hostpolicy_embedded;
 
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
@@ -222,6 +236,7 @@ extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const c
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+NOINLINE
 DLLEXPORT
 int coreclr_initialize(
             const char* exePath,
@@ -240,6 +255,10 @@ int coreclr_initialize(
     bool hostPolicyEmbedded = false;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
     host_runtime_contract* hostContract = nullptr;
+
+#ifdef TARGET_UNIX
+    HostingApiFrameHolder apiFrameHolder(_ReturnAddress());
+#endif
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -455,6 +474,7 @@ int coreclr_create_delegate(
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+NOINLINE
 DLLEXPORT
 int coreclr_execute_assembly(
             void* hostHandle,
@@ -469,6 +489,10 @@ int coreclr_execute_assembly(
         return HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER);
     }
     *exitCode = -1;
+
+#ifdef TARGET_UNIX
+    HostingApiFrameHolder apiFrameHolder(_ReturnAddress());
+#endif
 
     ICLRRuntimeHost4* host = reinterpret_cast<ICLRRuntimeHost4*>(hostHandle);
 

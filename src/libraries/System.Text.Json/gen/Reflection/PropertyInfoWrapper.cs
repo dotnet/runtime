@@ -36,6 +36,8 @@ namespace System.Text.Json.Reflection
 
         public bool NeedsAtSign { get; }
 
+        public IPropertySymbol Symbol => _property;
+
         public override Type ReflectedType => throw new NotImplementedException();
 
         public override MethodInfo[] GetAccessors(bool nonPublic)

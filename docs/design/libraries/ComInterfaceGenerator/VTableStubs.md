@@ -80,26 +80,29 @@ public readonly ref struct VirtualMethodTableInfo
     }
 }
 
-public interface IUnmanagedVirtualMethodTableProvider<T> where T : IEquatable<T>
+public interface IUnmanagedVirtualMethodTableProvider
 {
-    protected VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(T typeKey);
+    protected VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(Type type);
 
     public sealed VirtualMethodTableInfo GetVirtualMethodTableInfoForKey<TUnmanagedInterfaceType>()
-        where TUnmanagedInterfaceType : IUnmanagedInterfaceType<T>
+        where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType>
     {
-        return GetVirtualMethodTableInfoForKey(TUnmanagedInterfaceType.TypeKey);
+        // Dispatch from a non-virtual generic to a virtual non-generic with System.Type
+        // to avoid generic virtual method dispatch, which is very slow.
+        return GetVirtualMethodTableInfoForKey(typeof(TUnmanagedInterfaceType));
     }
 }
 
-public interface IUnmanagedInterfaceType<T> where T : IEquatable<T>
+public interface IUnmanagedInterfaceType<TUnmanagedInterfaceType> where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType>
 {
-    public abstract static T TypeKey { get; }
 }
 ```
 
 ## Required API Shapes
 
-The user will be required to implement `IUnmanagedVirtualMethodTableProvider<T>` on the type that provides the method tables, and `IUnmanagedInterfaceType<T>` on the type that defines the unmanaged interface. The `T` types must match between the two interfaces. This mechanism is designed to enable each native API platform to provide their own casting key, for example `IID`s in COM, without interfering with each other or requiring using reflection-based types like `System.Type`.
+The user will be required to implement `IUnmanagedVirtualMethodTableProvider` on the type that provides the method tables, and `IUnmanagedInterfaceType<TUnmanagedInterfaceType>` on the type that defines the unmanaged interface. The `TUnmanagedInterfaceType` follows the same design principles as the generic math designs as somewhat of a "self" type to enable us to use the derived interface type in any additional APIs we add to support unmanaged-to-managed stubs.
+
+Previously, each of these interface types were also generic on another type `T`. The `T` types were required to match between the two interfaces. This mechanism was designed to enable each native API platform to provide their own casting key, for example `IID`s in COM, without interfering with each other or requiring using reflection-based types like `System.Type`. However, practical implementation showed that providing just a "type key" was not enough information to cover any non-trivial scenarios (like COM) efficiently without effectively forcing a two-level lookup model or hard-coding type support in the `IUnmanagedVirtualMethodTableProvider<T>` implementation. Additionally, we determined that using reflection to get to attributes is considered "okay" and using generic attributes would enable APIs that build on this model like COM to effectively retrieve information from the `System.Type` instance without causing additional problems.
 
 ## Example Usage
 
@@ -160,11 +163,8 @@ using System.Runtime.InteropServices;
 [assembly:DisableRuntimeMarshalling]
 
 // Define the interface of the native API
-partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {
-    // There is no concept of casting for this API, but providing a type key is still required by the generator.
-    // Use an empty readonly record struct to provide a type that implements IEquatable<T> but contains no data.
-    static NoCasting IUnmanagedInterfaceType.TypeKey => default;
 
     [VirtualMethodIndex(0, ImplicitThisParameter = false, Direction = CustomTypeMarshallerDirection.In)]
     int GetVersion();
@@ -176,11 +176,8 @@ partial interface INativeAPI : IUnmanagedInterfaceType<NoCasting>
     int Multiply(int x, int y);
 }
 
-// Define the key for native "casting" support for our scenario
-readonly record struct NoCasting {}
-
 // Define our runtime wrapper type for the native interface.
-unsafe class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativeAPI.Native
+unsafe class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
 {
     private CNativeAPI* _nativeAPI;
 
@@ -192,7 +189,7 @@ unsafe class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativ
         }
     }
 
-    VirtualMethodTableInfo IUnmanagedVirtualMethodTableProvider<NoCasting>.GetVirtualMethodTableInfoForKey(NoCasting _)
+    VirtualMethodTableInfo IUnmanagedVirtualMethodTableProvider.GetVirtualMethodTableInfoForKey(Type _)
     {
         return new(IntPtr.Zero, MemoryMarshal.Cast<CNativeAPI, IntPtr>(new ReadOnlySpan<CNativeAPI>(_nativeAPI, 1)));
     }
@@ -229,7 +226,7 @@ partial interface INativeAPI
     {
         int INativeAPI.GetVersion()
         {
-            var (_, vtable) = ((IUnmanagedVirtualMethodTableProvider<NoCasting>)this).GetVirtualMethodTableInfoForKey<INativeAPI>();
+            var (_, vtable) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey<INativeAPI>();
             int retVal;
             retVal = ((delegate* unmanaged<int>)vtable[0])();
             return retVal;
@@ -242,7 +239,7 @@ partial interface INativeAPI
     {
         int INativeAPI.Add(int x, int y)
         {
-            var (_, vtable) = ((IUnmanagedVirtualMethodTableProvider<NoCasting>)this).GetVirtualMethodTableInfoForKey<INativeAPI>();
+            var (_, vtable) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey<INativeAPI>();
             int retVal;
             retVal = ((delegate* unmanaged<int, int, int>)vtable[1])(x, y);
             return retVal;
@@ -255,7 +252,7 @@ partial interface INativeAPI
     {
         int INativeAPI.Multiply(int x, int y)
         {
-            var (_, vtable) = ((IUnmanagedVirtualMethodTableProvider<NoCasting>)this).GetVirtualMethodTableInfoForKey<INativeAPI>();
+            var (_, vtable) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey<INativeAPI>();
             int retVal;
             retVal = ((delegate* unmanaged<int, int, int>)vtable[2])(x, y);
             return retVal;
@@ -266,7 +263,7 @@ partial interface INativeAPI
 // LibraryImport-generated code omitted for brevity
 ```
 
-As this generator is primarily designed to provide building blocks for future work, it has a larger requirement on user-written code. In particular, this generator does not provide any support for authoring a runtime wrapper object that stores the native pointers for the underlying object or the virtual method table. However, this lack of support also provides significant flexibility for developers. The only requirement for the runtime wrapper object type is that it implements `IUnmanagedVirtualMethodTableProvider<T>` with a `T` matching the `TypeKey` type of the native interface.
+As this generator is primarily designed to provide building blocks for future work, it has a larger requirement on user-written code. In particular, this generator does not provide any support for authoring a runtime wrapper object that stores the native pointers for the underlying object or the virtual method table. However, this lack of support also provides significant flexibility for developers. The only requirement for the runtime wrapper object type is that it implements `IUnmanagedVirtualMethodTableProvider`.
 
 The emitted interface implementation can be used in two ways:
 
@@ -290,10 +287,8 @@ struct IUnknown
 using System;
 using System.Runtime.InteropServices;
 
-interface IUnknown: IUnmanagedInterfaceType<Guid>
+interface IUnknown: IUnmanagedInterfaceType<IUnknown>
 {
-    static Guid IUnmanagedTypeInterfaceType<Guid>.TypeKey => Guid.Parse("00000000-0000-0000-C000-000000000046");
-
     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvStdcall), typeof(CallConvMemberFunction) })]
     [VirtualMethodIndex(0)]
     int QueryInterface(in Guid riid, out IntPtr ppvObject);
@@ -307,7 +302,7 @@ interface IUnknown: IUnmanagedInterfaceType<Guid>
     uint Release();
 }
 
-class BaseIUnknownComObject : IUnmanagedVirtualMethodTableProvider<Guid>, IDynamicInterfaceCastable
+class BaseIUnknownComObject : IUnmanagedVirtualMethodTableProvider, IDynamicInterfaceCastable
 {
     private IntPtr _unknownPtr;
 
@@ -316,9 +311,9 @@ class BaseIUnknownComObject : IUnmanagedVirtualMethodTableProvider<Guid>, IDynam
         _unknownPtr = unknown;
     }
 
-    unsafe VirtualMethodTableInfo IUnmanagedVirtualMethodTableProvider<Guid>.GetVirtualMethodTableInfoForKey(Guid iid)
+    unsafe VirtualMethodTableInfo IUnmanagedVirtualMethodTableProvider.GetVirtualMethodTableInfoForKey(Type type)
     {
-        if (iid == IUnknown.TypeKey)
+        if (type == typeof(IUnknown))
         {
             return new VirtualMethodTableInfo(_unknownPtr, new ReadOnlySpan<IntPtr>(**(IntPtr***)_unknownPtr), 3);
         }
@@ -358,7 +353,7 @@ partial interface IUnknown
     {
         int IUnknown.QueryInterface(in Guid riid, out IntPtr ppvObject)
         {
-            var (thisPtr, vtable) = ((IUnmanagedVirtualMethodTableProvider<Guid>)this).GetVirtualMethodTableInfoForKey<IUnknown>();
+            var (thisPtr, vtable) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey<IUnknown>();
             int retVal;
             fixed (Guid* riid__gen_native = &riid)
             fixed (IntPtr* ppvObject__gen_native = &ppvObject)
@@ -375,7 +370,7 @@ partial interface IUnknown
     {
         uint IUnknown.AddRef()
         {
-            var (thisPtr, vtable) = ((IUnmanagedVirtualMethodTableProvider<Guid>)this).GetVirtualMethodTableInfoForKey<IUnknown>();
+            var (thisPtr, vtable) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey<IUnknown>();
             uint retVal;
             retVal = ((delegate* unmanaged[Stdcall, MemberFunction]<IntPtr, uint>)vtable[1])(thisPtr);
             return retVal;
@@ -388,7 +383,7 @@ partial interface IUnknown
     {
         uint IUnknown.Release()
         {
-            var (thisPtr, vtable) = ((IUnmanagedVirtualMethodTableProvider<Guid>)this).GetVirtualMethodTableInfoForKey<IUnknown>();
+            var (thisPtr, vtable) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey<IUnknown>();
             uint retVal;
             retVal = ((delegate* unmanaged[Stdcall, MemberFunction]<IntPtr, uint>)vtable[2])(thisPtr);
             return retVal;

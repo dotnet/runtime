@@ -6974,20 +6974,20 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
         // Init and run.
         if (SUCCEEDED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
             IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
-                {
-                    WCHAR *pwzObjFileName=NULL;
-                    if (pszObjFileName)
-                    {
-                        int nLength = (int) strlen(pszObjFileName)+1;
-                        pwzObjFileName = new WCHAR[nLength];
-                        memset(pwzObjFileName,0,sizeof(WCHAR)*nLength);
-                        WszMultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
-                    }
-                    DisplayFile((WCHAR*)pwzFileName, true, g_ulMetaInfoFilter, pwzObjFileName, DumpMI);
-                    g_pDisp->Release();
-                    g_pDisp = NULL;
-                    if (pwzObjFileName) VDELETE(pwzObjFileName);
-                }
+        {
+            WCHAR *pwzObjFileName=NULL;
+            if (pszObjFileName)
+            {
+                int nLength = (int) strlen(pszObjFileName)+1;
+                pwzObjFileName = new WCHAR[nLength];
+                memset(pwzObjFileName,0,sizeof(WCHAR)*nLength);
+                WszMultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
+            }
+            DisplayFile((WCHAR*)pwzFileName, true, g_ulMetaInfoFilter, pwzObjFileName, DumpMI);
+            g_pDisp->Release();
+            g_pDisp = NULL;
+            if (pwzObjFileName) VDELETE(pwzObjFileName);
+        }
     }
     else
     {
@@ -7782,10 +7782,10 @@ ReportAndExit:
             switch(ret)
             {
                 case 0: szString[0] = 0; break;
-                case 1: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_W_CREATEDW32RES)/*"// WARNING: Created Win32 resource file %ls"*/,
+                case 1: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_W_CREATEDW32RES)/*"// WARNING: Created Win32 resource file %s"*/,
                                 UnicodeToUtf(wzResFileName)); break;
                 case 0xDFFFFFFF: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_CORRUPTW32RES)/*"// ERROR: Corrupt Win32 resources"*/); break;
-                case 0xEFFFFFFF: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_CANTOPENW32RES)/*"// ERROR: Unable to open file %ls"*/,
+                case 0xEFFFFFFF: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_CANTOPENW32RES)/*"// ERROR: Unable to open file %s"*/,
                                          UnicodeToUtf(wzResFileName)); break;
                 case 0xFFFFFFFF: sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_CANTACCESSW32RES)/*"// ERROR: Unable to access Win32 resources"*/); break;
             }

@@ -77,15 +77,15 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddRangeTest()
         {
-            var map = Empty<int, GenericParameterHelper>();
+            IImmutableDictionary<int, GenericParameterHelper> map = Empty<int, GenericParameterHelper>();
             map = map.AddRange(Enumerable.Range(1, 100).Select(n => new KeyValuePair<int, GenericParameterHelper>(n, new GenericParameterHelper())));
             CollectionAssertAreEquivalent(map.Select(kv => kv.Key).ToList(), Enumerable.Range(1, 100).ToList());
             this.VerifyAvlTreeState(map);
             Assert.Equal(100, map.Count);
 
             // Test optimization for empty map.
-            var map2 = Empty<int, GenericParameterHelper>();
-            var jointMap = map2.AddRange(map);
+            IImmutableDictionary<int, GenericParameterHelper> map2 = Empty<int, GenericParameterHelper>();
+            IImmutableDictionary<int, GenericParameterHelper> jointMap = map2.AddRange(map);
             Assert.Same(map, jointMap);
 
             jointMap = map2.AddRange(map.ToReadOnlyDictionary());
@@ -192,9 +192,9 @@ namespace System.Collections.Immutable.Tests
             Assert.Same(empty, empty.RemoveRange(Enumerable.Empty<int>()));
             Assert.Same(empty, empty.AddRange(Enumerable.Empty<KeyValuePair<int, int>>()));
             var list = new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(3, 5), new KeyValuePair<int, int>(8, 10) };
-            var nonEmpty = empty.AddRange(list);
+            IImmutableDictionary<int, int> nonEmpty = empty.AddRange(list);
             this.VerifyAvlTreeState(nonEmpty);
-            var halfRemoved = nonEmpty.RemoveRange(Enumerable.Range(1, 5));
+            IImmutableDictionary<int, int> halfRemoved = nonEmpty.RemoveRange(Enumerable.Range(1, 5));
             Assert.Equal(1, halfRemoved.Count);
             Assert.True(halfRemoved.ContainsKey(8));
             this.VerifyAvlTreeState(halfRemoved);
@@ -205,7 +205,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(0, map.Keys.Count());
             Assert.Equal(0, map.ToReadOnlyDictionary().Keys.Count());
 
-            var nonEmpty = map.Add(key, default(TValue));
+            IImmutableDictionary<TKey, TValue> nonEmpty = map.Add(key, default(TValue));
             Assert.Equal(1, nonEmpty.Keys.Count());
             Assert.Equal(1, nonEmpty.ToReadOnlyDictionary().Keys.Count());
             KeysOrValuesTestHelper(((IDictionary<TKey, TValue>)nonEmpty).Keys, key);
@@ -216,7 +216,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(0, map.Values.Count());
             Assert.Equal(0, map.ToReadOnlyDictionary().Values.Count());
 
-            var nonEmpty = map.Add(key, default(TValue));
+            IImmutableDictionary<TKey, TValue> nonEmpty = map.Add(key, default(TValue));
             Assert.Equal(1, nonEmpty.Values.Count());
             Assert.Equal(1, nonEmpty.ToReadOnlyDictionary().Values.Count());
             KeysOrValuesTestHelper(((IDictionary<TKey, TValue>)nonEmpty).Values, default(TValue));
@@ -237,11 +237,11 @@ namespace System.Collections.Immutable.Tests
                 j++;
             }
 
-            var list = map.ToList();
+            List<KeyValuePair<int, GenericParameterHelper>> list = map.ToList();
             Assert.Equal<KeyValuePair<int, GenericParameterHelper>>(list, ImmutableSetTest.ToListNonGeneric<KeyValuePair<int, GenericParameterHelper>>(map));
 
             // Apply some less common uses to the enumerator to test its metal.
-            using (var enumerator = map.GetEnumerator())
+            using (IEnumerator<KeyValuePair<int, GenericParameterHelper>> enumerator = map.GetEnumerator())
             {
                 enumerator.Reset(); // reset isn't usually called before MoveNext
                 ManuallyEnumerateTest(list, enumerator);
@@ -255,7 +255,7 @@ namespace System.Collections.Immutable.Tests
                 ManuallyEnumerateTest(list, enumerator);
             }
 
-            var manualEnum = map.GetEnumerator();
+            IEnumerator<KeyValuePair<int, GenericParameterHelper>> manualEnum = map.GetEnumerator();
             Assert.Throws<InvalidOperationException>(() => manualEnum.Current);
             while (manualEnum.MoveNext()) { }
             Assert.False(manualEnum.MoveNext());
@@ -287,7 +287,7 @@ namespace System.Collections.Immutable.Tests
 
         private void VerifyAvlTreeState<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
         {
-            var rootNode = this.GetRootNode(dictionary);
+            IBinaryTree rootNode = this.GetRootNode(dictionary);
             rootNode.VerifyBalanced();
             rootNode.VerifyHeightIsWithinTolerance(dictionary.Count);
         }

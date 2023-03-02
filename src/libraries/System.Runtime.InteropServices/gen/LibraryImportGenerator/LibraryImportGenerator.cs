@@ -167,7 +167,7 @@ namespace Microsoft.Interop
             return new SyntaxTokenList(strippedTokens);
         }
 
-        private static MemberDeclarationSyntax PrintGeneratedSource(
+        private static MethodDeclarationSyntax PrintGeneratedSource(
             ContainingSyntax userDeclaredMethod,
             SignatureContext stub,
             BlockSyntax stubCode)

@@ -937,6 +937,12 @@ public:
         return m_MaxInlineDepth;
     }
 
+    // Get depth of maximum allowable force inline
+    unsigned GetMaxForceInlineDepth() const
+    {
+        return m_MaxForceInlineDepth;
+    }
+
     // Number of successful inlines into the root
     unsigned GetInlineCount() const
     {
@@ -1091,6 +1097,7 @@ private:
     unsigned          m_InlineCount;
     unsigned          m_MaxInlineSize;
     unsigned          m_MaxInlineDepth;
+    unsigned          m_MaxForceInlineDepth;
     int               m_InitialTimeBudget;
     int               m_InitialTimeEstimate;
     int               m_CurrentTimeBudget;

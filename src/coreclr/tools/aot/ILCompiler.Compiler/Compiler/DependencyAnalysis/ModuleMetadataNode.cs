@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
                 && ecmaModule.EntryPoint is MethodDesc entrypoint
                 && !factory.MetadataManager.IsReflectionBlocked(entrypoint))
             {
-                dependencies.Add(factory.ReflectableMethod(entrypoint), "Reflectable entrypoint");
+                dependencies.Add(factory.ReflectedMethod(entrypoint), "Reflectable entrypoint");
             }
 
             CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaAssembly)_module);

@@ -13,19 +13,6 @@ namespace System.Text
 {
     public class UTF7Encoding : Encoding
     {
-        private const string base64Chars =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        // 0123456789111111111122222222223333333333444444444455555555556666
-        //              012345678901234567890123456789012345678901234567890123
-
-        // These are the characters that can be directly encoded in UTF7.
-        private const string directChars =
-            "\t\n\r '(),-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-        // These are the characters that can be optionally directly encoded in UTF7.
-        private const string optionalChars =
-            "!\"#$%&*;<=>@[]^_`{|}";
-
 #pragma warning disable SYSLIB0001
         // Used by Encoding.UTF7 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
@@ -70,24 +57,30 @@ namespace System.Text
         private void MakeTables()
         {
             // Build our tables
-            _base64Bytes = new byte[64];
-            for (int i = 0; i < 64; i++) _base64Bytes[i] = (byte)base64Chars[i];
+
+            _base64Bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8.ToArray();
+            Debug.Assert(_base64Bytes.Length == 64);
+
             _base64Values = new sbyte[128];
             for (int i = 0; i < 128; i++) _base64Values[i] = -1;
             for (int i = 0; i < 64; i++) _base64Values[_base64Bytes[i]] = (sbyte)i;
+
+            // These are the characters that can be directly encoded in UTF7.
+            ReadOnlySpan<byte> directChars = "\t\n\r '(),-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8;
             _directEncode = new bool[128];
-            int count = directChars.Length;
-            for (int i = 0; i < count; i++)
+            foreach (byte c in directChars)
             {
-                _directEncode[directChars[i]] = true;
+                _directEncode[c] = true;
             }
 
             if (_allowOptionals)
             {
-                count = optionalChars.Length;
-                for (int i = 0; i < count; i++)
+                // These are the characters that can be optionally directly encoded in UTF7.
+                ReadOnlySpan<byte> optionalChars = "!\"#$%&*;<=>@[]^_`{|}"u8;
+
+                foreach (byte c in optionalChars)
                 {
-                    _directEncode[optionalChars[i]] = true;
+                    _directEncode[c] = true;
                 }
             }
         }

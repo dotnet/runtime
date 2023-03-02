@@ -316,10 +316,15 @@ namespace Internal.Runtime.TypeLoader
 
             uint nativeLayoutInfoToken;
             NativeFormatModuleInfo nativeLayoutModule;
-            MethodDesc templateMethod = TemplateLocator.TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
+            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
             if (templateMethod == null)
             {
                 throw new MissingTemplateException();
+            }
+
+            if (templateMethod.FunctionPointer != IntPtr.Zero)
+            {
+                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer, isFunctionPointerUSG: false);
             }
 
             // Ensure that if this method is non-shareable from a normal canonical perspective, then
@@ -511,8 +516,7 @@ namespace Internal.Runtime.TypeLoader
             /// <param name="offset">The offset at which we need to write the bitfield.</param>
             public void WriteToBitfield(LowLevelList<bool> bitfield, int offset)
             {
-                if (bitfield == null)
-                    throw new ArgumentNullException(nameof(bitfield));
+                ArgumentNullException.ThrowIfNull(bitfield);
 
                 if (IsNone)
                     return;
@@ -726,7 +730,7 @@ namespace Internal.Runtime.TypeLoader
             *generatedTypeClassConstructorSlotPointer = generatedTypeClassConstructorFatFunctionPointer;
         }
 
-        private void CopyDictionaryFromTypeToAppropriateSlotInDerivedType(TypeDesc baseType, TypeBuilderState derivedTypeState)
+        private void CopyDictionaryFromTypeToAppropriateSlotInDerivedType(DefType baseType, TypeBuilderState derivedTypeState)
         {
             var baseTypeState = baseType.GetOrCreateTypeBuilderState();
 
@@ -1238,7 +1242,7 @@ namespace Internal.Runtime.TypeLoader
             if (!TypeSystemContext.PointerTypesCache.TryGetValue(pointeeTypeHandle, out pointerTypeHandle))
             {
                 TypeSystemContext context = TypeSystemContextFactory.Create();
-                TypeDesc pointerType = context.GetPointerType(context.ResolveRuntimeTypeHandle(pointeeTypeHandle));
+                PointerType pointerType = context.GetPointerType(context.ResolveRuntimeTypeHandle(pointeeTypeHandle));
                 pointerTypeHandle = EETypeCreator.CreatePointerEEType((uint)pointerType.GetHashCode(), pointeeTypeHandle, pointerType);
                 unsafe
                 {
@@ -1258,7 +1262,7 @@ namespace Internal.Runtime.TypeLoader
             if (!TypeSystemContext.ByRefTypesCache.TryGetValue(pointeeTypeHandle, out byRefTypeHandle))
             {
                 TypeSystemContext context = TypeSystemContextFactory.Create();
-                TypeDesc byRefType = context.GetByRefType(context.ResolveRuntimeTypeHandle(pointeeTypeHandle));
+                ByRefType byRefType = context.GetByRefType(context.ResolveRuntimeTypeHandle(pointeeTypeHandle));
                 byRefTypeHandle = EETypeCreator.CreateByRefEEType((uint)byRefType.GetHashCode(), pointeeTypeHandle, byRefType);
                 unsafe
                 {

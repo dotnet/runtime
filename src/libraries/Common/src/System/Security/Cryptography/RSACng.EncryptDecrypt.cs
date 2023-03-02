@@ -219,7 +219,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            if (errorCode == ErrorCode.NTE_BUFFER_TOO_SMALL)
+            if (errorCode.IsBufferTooSmall())
             {
                 CryptographicOperations.ZeroMemory(output);
                 output = new byte[numBytesNeeded];
@@ -265,7 +265,7 @@ namespace System.Security.Cryptography
                     case ErrorCode.ERROR_SUCCESS:
                         bytesWritten = numBytesNeeded;
                         return true;
-                    case ErrorCode.NTE_BUFFER_TOO_SMALL:
+                    case ErrorCode code when code.IsBufferTooSmall():
                         bytesWritten = 0;
                         return false;
                     case ErrorCode.STATUS_UNSUCCESSFUL:

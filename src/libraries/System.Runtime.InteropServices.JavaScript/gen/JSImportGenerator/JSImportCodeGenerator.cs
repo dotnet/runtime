@@ -190,7 +190,7 @@ namespace Microsoft.Interop.JavaScript
                 IdentifierName(Constants.ArgumentReturn), IdentifierName("Initialize")))));
         }
 
-        private StatementSyntax InvokeSyntax()
+        private ExpressionStatementSyntax InvokeSyntax()
         {
             return ExpressionStatement(InvocationExpression(
                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, IdentifierName(Constants.JSFunctionSignatureGlobal), IdentifierName("InvokeJS")))

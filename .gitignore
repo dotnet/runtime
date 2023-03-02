@@ -363,5 +363,4 @@ src/coreclr/System.Private.CoreLib/common
 # Temporary artifacts from local libraries stress builds
 .dotnet-daily/
 run-stress-*
-debugger-test-with-colon-in-source-name.csproj
 test:.cs

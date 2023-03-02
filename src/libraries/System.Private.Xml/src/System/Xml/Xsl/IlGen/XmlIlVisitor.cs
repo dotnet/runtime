@@ -1270,7 +1270,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Generate code to combine nodes from two nested iterators using Union, Intersection, or Difference semantics.
         /// </summary>
-        private QilNode CreateSetIterator(QilBinary ndSet, string iterName, Type iterType, MethodInfo methCreate, MethodInfo methNext, MethodInfo methCurrent)
+        private QilBinary CreateSetIterator(QilBinary ndSet, string iterName, Type iterType, MethodInfo methCreate, MethodInfo methNext, MethodInfo methCurrent)
         {
             LocalBuilder locIter, locNav;
             Label lblNext, lblCall, lblNextLeft, lblNextRight, lblInitRight;
@@ -1378,7 +1378,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Generate code for QilNodeType.Sum, QilNodeType.Average, QilNodeType.Minimum, and QilNodeType.Maximum.
         /// </summary>
-        private QilNode CreateAggregator(QilUnary ndAgg, string aggName, XmlILStorageMethods methods, MethodInfo methAgg, MethodInfo methResult)
+        private QilUnary CreateAggregator(QilUnary ndAgg, string aggName, XmlILStorageMethods methods, MethodInfo methAgg, MethodInfo methResult)
         {
             Label lblOnEnd = _helper.DefineLabel();
             Type typAgg = methAgg.DeclaringType!;
@@ -1477,7 +1477,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Generate code for two-argument arithmetic operations.
         /// </summary>
-        private QilNode ArithmeticOp(QilBinary ndOp)
+        private QilBinary ArithmeticOp(QilBinary ndOp)
         {
             NestedVisitEnsureStack(ndOp.Left, ndOp.Right);
             _helper.CallArithmeticOp(ndOp.NodeType, ndOp.XmlType!.TypeCode);
@@ -2916,7 +2916,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Generate code for QilNodeType.TextCtor and QilNodeType.RawTextCtor.
         /// </summary>
-        private QilNode VisitTextCtor(QilUnary ndText, bool disableOutputEscaping)
+        private QilUnary VisitTextCtor(QilUnary ndText, bool disableOutputEscaping)
         {
             XmlILConstructInfo info = XmlILConstructInfo.Read(ndText);
             bool callChk;
@@ -3098,7 +3098,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Generate code to push the local name, namespace uri, or qname of the context navigator.
         /// </summary>
-        private QilNode VisitNodeProperty(QilUnary ndProp)
+        private QilUnary VisitNodeProperty(QilUnary ndProp)
         {
             // Generate code to push argument onto stack
             NestedVisitEnsureStack(ndProp.Child);

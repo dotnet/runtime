@@ -630,23 +630,26 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sAppPaths));
     }
 
-#if defined(TARGET_UNIX) && !defined(CORECLR_EMBEDDED)
-    // Check if the current code is executing in the single file host or in libcoreclr.so. The libSystem.Native is linked
-    // into the single file host, so we need to check only when this code is in libcoreclr.so.
-    // Preload the libSystem.Native.so/dylib to detect possible problems with loading it early
-    EX_TRY
+#if defined(TARGET_UNIX)
+    if (!g_coreclr_embedded)
     {
-        NativeLibrary::LoadLibraryByName(W("libSystem.Native"), SystemDomain::SystemAssembly(), FALSE, 0, TRUE);
+        // Check if the current code is executing in the single file host or in libcoreclr.so. The libSystem.Native is linked
+        // into the single file host, so we need to check only when this code is in libcoreclr.so.
+        // Preload the libSystem.Native.so/dylib to detect possible problems with loading it early
+        EX_TRY
+        {
+            NativeLibrary::LoadLibraryByName(W("libSystem.Native"), SystemDomain::SystemAssembly(), FALSE, 0, TRUE);
+        }
+        EX_HOOK
+        {
+            Exception *ex = GET_EXCEPTION();
+            SString err;
+            ex->GetMessage(err);
+            LogErrorToHost("Error message: %s", err.GetUTF8());
+        }
+        EX_END_HOOK;
     }
-    EX_HOOK
-    {
-        Exception *ex = GET_EXCEPTION();
-        SString err;
-        ex->GetMessage(err);
-        LogErrorToHost("Error message: %s", err.GetUTF8());
-    }
-    EX_END_HOOK;
-#endif // TARGET_UNIX && !CORECLR_EMBEDDED
+#endif // TARGET_UNIX
 
     *pAppDomainID=DefaultADID;
 

@@ -37,7 +37,7 @@ function initializeImportsAndExports(
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
 
-    // we want to have same instance of MONO, BINDING and Module in dotnet iffe
+    // we want to have same instance of MONO, BINDING and Module in dotnet iife
     set_imports_exports(imports, exports);
     set_legacy_exports(exports);
     init_polyfills(replacements);
@@ -45,7 +45,6 @@ function initializeImportsAndExports(
     // here we merge methods from the local objects into exported objects
     Object.assign(exports.mono, export_mono_api());
     Object.assign(exports.binding, export_binding_api());
-    Object.assign(exports.internal, export_internal());
     Object.assign(exports.internal, export_internal());
     const API = export_api();
     __linker_exports = export_linker();

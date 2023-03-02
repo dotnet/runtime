@@ -10,9 +10,6 @@ namespace System.Diagnostics.Metrics
     /// <summary>
     /// Meter is the class responsible for creating and tracking the Instruments.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public class Meter : IDisposable
     {
         private static readonly List<Meter> s_allMeters = new List<Meter>();

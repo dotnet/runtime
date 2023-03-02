@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -45,8 +45,6 @@
              Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\ObjectCloner.cs"
              Link="Common\System\ObjectCloner.cs" />
-    <Compile Include="$(CommonTestPath)System\RandomExtensions.cs"
-             Link="Common\System\RandomExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
     <!-- Generic tests -->

@@ -517,7 +517,7 @@ namespace System.Xml.Schema
             }
             SchemaInfo? schemaInfo = null;
             Uri _baseUri = _xmlResolver.ResolveUri(null, _reader.BaseURI);
-            XmlReader? reader = null;
+            XmlTextReader? reader = null;
             try
             {
                 Uri ruri = _xmlResolver.ResolveUri(_baseUri, uri.Substring(x_schema.Length));

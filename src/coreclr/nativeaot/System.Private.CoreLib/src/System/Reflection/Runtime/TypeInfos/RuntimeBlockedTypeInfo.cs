@@ -60,6 +60,14 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool IsByRefLike
+        {
+            get
+            {
+                return Internal.Runtime.Augments.RuntimeAugments.IsByRefLike(_typeHandle);
+            }
+        }
+
         public sealed override string FullName
         {
             get

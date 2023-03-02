@@ -726,7 +726,7 @@ namespace System.Net.Test.Common
             public async Task WriteStringAsync(string s)
             {
                 byte[] bytes = Encoding.ASCII.GetBytes(s);
-                await _stream.WriteAsync(bytes);
+                await _stream.WriteAsync(bytes, 0, bytes.Length);
             }
 
             public async Task SendResponseAsync(string response)
@@ -736,7 +736,7 @@ namespace System.Net.Test.Common
 
             public async Task SendResponseAsync(byte[] response)
             {
-                await _stream.WriteAsync(response);
+                await _stream.WriteAsync(response, 0, response.Length);
             }
 
             public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)

@@ -103,8 +103,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             if (!(other is NativeFormatRuntimeEventInfo otherEvent))
                 return false;

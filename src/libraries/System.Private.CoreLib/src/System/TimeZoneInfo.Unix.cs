@@ -912,7 +912,7 @@ namespace System
                 index++;
             } while ((uint)index < (uint)date.Length && char.IsAsciiDigit(date[index]));
 
-            int[] days = GregorianCalendarHelper.DaysToMonth365;
+            ReadOnlySpan<int> days = GregorianCalendar.DaysToMonth365;
 
             if (julianDay == 0 || julianDay > days[days.Length - 1])
             {

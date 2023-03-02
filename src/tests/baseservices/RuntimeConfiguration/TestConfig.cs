@@ -97,7 +97,6 @@ class TestConfig
     {
         // clear some environment variables that we will set during the test run
         Environment.SetEnvironmentVariable("DOTNET_gcServer", null);
-        Environment.SetEnvironmentVariable("COMPlus_gcServer", null);
 
         string corerunPath = GetCorerunPath();
         MethodInfo[] infos = typeof(TestConfig).GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);

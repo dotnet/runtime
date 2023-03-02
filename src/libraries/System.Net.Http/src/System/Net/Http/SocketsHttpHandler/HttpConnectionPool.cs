@@ -1043,8 +1043,8 @@ namespace System.Net.Http
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
-                        !request.IsExtendedConnectRequest &&
-                        (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+                        (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
+                        !request.IsExtendedConnectRequest)
                     {
                         Debug.Assert(async);
                         response = await TrySendUsingHttp3Async(request, cancellationToken).ConfigureAwait(false);

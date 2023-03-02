@@ -59,8 +59,6 @@ namespace System.Formats.Tar
 
                 if (!_leaveOpen)
                 {
-                    _archiveStream.Dispose();
-
                     if (_dataStreamsToDispose?.Count > 0)
                     {
                         foreach (Stream s in _dataStreamsToDispose)
@@ -68,6 +66,8 @@ namespace System.Formats.Tar
                             s.Dispose();
                         }
                     }
+
+                    _archiveStream.Dispose();
                 }
             }
         }
@@ -84,8 +84,6 @@ namespace System.Formats.Tar
 
                 if (!_leaveOpen)
                 {
-                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
-
                     if (_dataStreamsToDispose?.Count > 0)
                     {
                         foreach (Stream s in _dataStreamsToDispose)
@@ -93,6 +91,8 @@ namespace System.Formats.Tar
                             await s.DisposeAsync().ConfigureAwait(false);
                         }
                     }
+
+                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
                 }
             }
         }

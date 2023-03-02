@@ -3,11 +3,11 @@
   <ItemGroup>
     <RuntimeGroup Include="unix">
       <Parent>any</Parent>
-      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le;riscv64</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux">
       <Parent>unix</Parent>
-      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le;riscv64</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux-musl">
       <Parent>linux</Parent>
@@ -183,7 +183,7 @@
 
     <RuntimeGroup Include="freebsd">
       <Parent>unix</Parent>
-      <Architectures>x64</Architectures>
+      <Architectures>x64;arm64</Architectures>
       <Versions>12;13</Versions>
     </RuntimeGroup>
 

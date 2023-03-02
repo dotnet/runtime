@@ -480,8 +480,6 @@ ClearSuccess_Catch:
 
         ldr         x1, [sp, rsp_CatchFunclet_offset_thread]
 
-        ldr x1, [sp, rsp_CatchFunclet_offset_thread]
-
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
         INLINE_THREAD_UNHIJACK x1, x3, x12                      // Thread in x1, trashes x3 and x12
@@ -516,6 +514,13 @@ NoAbort:
         // reset SP and jump to continuation address
         mov         sp, x2
         br          x0
+
+#undef rsp_offset_is_not_handling_thread_abort
+#undef rsp_offset_x0
+#undef rsp_offset_x1
+#undef rsp_offset_x2
+#undef rsp_offset_x3
+#undef rsp_CatchFunclet_offset_thread
 
     NESTED_END RhpCallCatchFunclet, _Text
 
@@ -613,6 +618,9 @@ SetSuccess:
         FREE_CALL_FUNCLET_FRAME 0x60
         EPILOG_RETURN
 
+#undef rsp_offset_x1
+#undef rsp_FinallyFunclet_offset_thread
+
     NESTED_END RhpCallFinallyFunclet, _Text
 
 
@@ -653,3 +661,123 @@ SetSuccess:
         EPILOG_RETURN
 
     NESTED_END RhpCallFilterFunclet, Text
+
+#ifdef FEATURE_OBJCMARSHAL
+
+//
+// void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
+//                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
+//
+// INPUT:  X0:  callback context
+//         X1:  callback
+//         X2:  REGDISPLAY*
+//         X3:  ExInfo*
+//         X4:  pPreviousTransitionFrame
+//
+// OUTPUT:
+//
+
+    NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
+
+#define rsp_offset_x0 0x10
+#define rsp_offset_x1 0x18
+#define rsp_offset_x2 0x20
+#define rsp_offset_x3 0x28
+#define rsp_offset_x4 0x30
+#define rsp_CallPropagationCallback_offset_thread 0x38
+
+        // Using the NO_FP macro so that the debugger unwinds using SP.
+        // This makes backtraces work even after using RESTORE_PRESERVED_REGISTERS.
+        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp, lr, -0x40
+        mov fp, sp
+        stp x0, x1,   [sp, #rsp_offset_x0] // x0 to x3 are stored to restore them anytime
+        stp x2, x3,   [sp, #rsp_offset_x2]
+        stp x4, xzr,  [sp, #rsp_offset_x4]
+        // str xzr,      [sp, #rsp_CallPropagationCallback_offset_thread] // xzr makes space to store the thread obj
+
+        //
+        // clear the DoNotTriggerGc flag, trashes x4-x6
+        //
+
+        bl C_FUNC(RhpGetThread)
+        str x0, [sp, rsp_CallPropagationCallback_offset_thread]
+        mov x5,x0
+        ldp x0, x1,   [sp, #rsp_offset_x0]
+        ldp x2, x3,   [sp, #rsp_offset_x2]
+
+        add         x12, x5, #OFFSETOF__Thread__m_ThreadStateFlags
+
+ClearRetry_Propagate:
+        ldxr        w4, [x12]
+        bic         w4, w4, #TSF_DoNotTriggerGc
+        stxr        w6, w4, [x12]
+        cbz         w6, ClearSuccess_Propagate
+        b           ClearRetry_Propagate
+ClearSuccess_Propagate:
+
+        //
+        // set preserved regs to the values expected by the funclet
+        //
+        RESTORE_PRESERVED_REGISTERS x2
+        //
+        // trash the values at the old homes to make sure nobody uses them
+        //
+        TRASH_PRESERVED_REGISTERS_STORAGE x2
+
+#ifdef _DEBUG
+        // Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we
+        // have to spill all the preserved registers and then refill them after the call.
+
+        SAVE_PRESERVED_REGISTERS x2
+
+        ldr         x0, [sp, rsp_CallPropagationCallback_offset_thread]  // x0 <- Thread*
+        ldr         x1, [sp, #rsp_offset_x3]                             // x1 <- current ExInfo*
+        ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]                  // x2 <- resume SP value
+        bl          C_FUNC(RhpValidateExInfoPop)
+
+        ldr         x2, [sp, rsp_offset_x2]                              // x2 <- REGDISPLAY*
+
+        RESTORE_PRESERVED_REGISTERS x2
+#endif
+
+        ldr         x1, [sp, rsp_CallPropagationCallback_offset_thread]
+
+        // We must unhijack the thread at this point because the section of stack where the hijack is applied
+        // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
+        INLINE_THREAD_UNHIJACK x1, x3, x12                      // Thread in x1, trashes x3 and x12
+
+        ldr         x3, [sp, #rsp_offset_x3]                    // x3 <- current ExInfo*
+        ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]         // x2 <- resume SP value
+
+Propagate_PopExInfoLoop:
+        ldr         x3, [x3, #OFFSETOF__ExInfo__m_pPrevExInfo]  // x3 <- next ExInfo
+        cbz         x3, Propagate_DonePopping                   // if (pExInfo == null) { we're done }
+        cmp         x3, x2
+        blt         Propagate_PopExInfoLoop                     // if (pExInfo < resume SP} { keep going }
+
+Propagate_DonePopping:
+        str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     // store the new head on the Thread
+
+        // restore preemptive mode
+        ldr         x4, [sp, #rsp_offset_x4]                    // pPreviousTransitionFrame
+        str         x4, [x1, #OFFSETOF__Thread__m_pTransitionFrame]
+
+        // reset SP and LR and jump to continuation address
+        ldr         x0, [sp, #rsp_offset_x0]                    // callback context
+        ldr         x1, [sp, #rsp_offset_x1]                    // callback
+        ldr         x2, [sp, #rsp_offset_x2]                    // REGDISPLAY*
+        ldr         x3, [x2, #OFFSETOF__REGDISPLAY__pLR]        // x3 <- &resume LR value
+        ldr         lr, [x3]
+        ldr         x3, [x2, #OFFSETOF__REGDISPLAY__SP]         // x3 <- resume SP value
+        mov         sp, x3
+        br          x1
+
+#undef rsp_offset_x0
+#undef rsp_offset_x1
+#undef rsp_offset_x2
+#undef rsp_offset_x3
+#undef rsp_CallPropagationCallback_offset_thread
+
+    NESTED_END RhpCallPropagateExceptionCallback, _Text
+
+#endif // FEATURE_OBJCMARSHAL

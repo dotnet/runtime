@@ -309,10 +309,8 @@ namespace System.Net.Http.Headers
 
         private static void CheckCode(int code)
         {
-            if ((code < 0) || (code > 999))
-            {
-                throw new ArgumentOutOfRangeException(nameof(code));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(code);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(code, 999);
         }
 
         private static void CheckAgent(string agent)

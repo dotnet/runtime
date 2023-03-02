@@ -1493,7 +1493,7 @@ namespace System.Transactions
             throw CreateTransactionAbortedException(tx);
         }
 
-        private static TransactionException CreateTransactionAbortedException(InternalTransaction tx)
+        private static TransactionAbortedException CreateTransactionAbortedException(InternalTransaction tx)
         {
             return TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
@@ -2010,7 +2010,7 @@ namespace System.Transactions
             tx.ThrowIfPromoterTypeIsNotMSDTC();
 
             // Simply get call get object data for the promoted transaction.
-            ISerializable serializableTx = tx.PromotedTransaction as ISerializable;
+            OletxTransaction serializableTx = tx.PromotedTransaction;
             if (serializableTx == null)
             {
                 // The LTM can only support this if the Distributed TM Supports it.
@@ -2020,7 +2020,7 @@ namespace System.Transactions
             // Before forwarding this call to the promoted tx make sure to change
             // the full type info so that only if the promoted tx does not set this
             // then it should be set correctly.
-            serializationInfo.FullTypeName = tx.PromotedTransaction.GetType().FullName!;
+            serializationInfo.FullTypeName = serializableTx.GetType().FullName!;
 
             // Now forward the call.
             serializableTx.GetObjectData(serializationInfo, context);

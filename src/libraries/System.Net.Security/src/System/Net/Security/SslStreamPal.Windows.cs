@@ -122,14 +122,22 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
+        public static bool TryUpdateClintCertificate(
+            SafeFreeCredentials? _1,
+            SafeDeleteSslContext? _2,
+            SslAuthenticationOptions _3)
+        {
+            // We will need to allocate new credential handle
+            return false;
+        }
+
         public static unsafe SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
-            SslAuthenticationOptions sslAuthenticationOptions,
-            SelectClientCertificate? _ /*clientCertificateSelectionCallback*/)
+            SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
@@ -171,7 +179,7 @@ namespace System.Net.Security
             return status;
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions, bool newCredentialsRequested)
         {
             try
             {
@@ -189,6 +197,16 @@ namespace System.Net.Security
                 if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
                 {
                     AttachCertificateStore(cred, certificateContext.Trust._store!);
+                }
+
+                // Windows can fail to get local credentials in case of TLS Resume.
+                // We will store associated certificate in credentials and use it in case
+                // of TLS resume. It will be disposed when the credentials are.
+                if (newCredentialsRequested && sslAuthenticationOptions.CertificateContext != null)
+                {
+                    SafeFreeCredential_SECURITY handle = (SafeFreeCredential_SECURITY)cred;
+                    // We need to create copy to avoid Disposal issue.
+                    handle.LocalCertificate = new X509Certificate2(sslAuthenticationOptions.CertificateContext.Certificate);
                 }
 
                 return cred;
@@ -250,12 +268,9 @@ namespace System.Net.Security
             else
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
-                flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
-
-                if (authOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
-                {
-                    flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
-                }
+                flags =
+                    Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD |
+                    Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
             }
 
             EncryptionPolicy policy = authOptions.EncryptionPolicy;

@@ -98,7 +98,7 @@ namespace System.ComponentModel.Composition.Registration
             return partBuilder;
         }
 
-        private IEnumerable<Tuple<object, List<Attribute>>> EvaluateThisTypeAgainstTheConvention(Type type)
+        private List<Tuple<object, List<Attribute>>> EvaluateThisTypeAgainstTheConvention(Type type)
         {
             List<Attribute> attributes = new List<Attribute>();
 

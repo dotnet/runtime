@@ -37,8 +37,6 @@ internal sealed class JSEngineHost
 
     private async Task<int> RunAsync()
     {
-        string[] engineArgs = Array.Empty<string>();
-
         string engineBinary = _args.Host switch
         {
             WasmHost.V8 => "v8",
@@ -48,21 +46,8 @@ internal sealed class JSEngineHost
             _ => throw new CommandLineException($"Unsupported engine {_args.Host}")
         };
 
-        string? engineBinaryPath;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            if (engineBinary.Equals("node"))
-                engineBinaryPath = FindEngineInPath(engineBinary + ".exe"); // NodeJS ships as .exe rather than .cmd
-            else
-                engineBinaryPath = FindEngineInPath(engineBinary + ".cmd");
-        }
-        else
-        {
-            engineBinaryPath = FindEngineInPath(engineBinary);
-        }
-
-        if (engineBinaryPath is null)
-            throw new CommandLineException($"Cannot find host {engineBinary} in PATH");
+        if (!FileUtils.TryFindExecutableInPATH(engineBinary, out string? engineBinaryPath, out string? errorMessage))
+            throw new CommandLineException($"Cannot find host {engineBinary}: {errorMessage}");
 
         if (_args.CommonConfig.Debugging)
             throw new CommandLineException($"Debugging not supported with {_args.Host}");
@@ -79,9 +64,10 @@ internal sealed class JSEngineHost
             args.Add("--expose_wasm");
         }
 
+        args.AddRange(_args.CommonConfig.HostArguments);
+
         args.Add(_args.JSPath!);
 
-        args.AddRange(engineArgs);
         if (_args.Host is WasmHost.V8 or WasmHost.JavaScriptCore)
         {
             // v8/jsc want arguments to the script separated by "--", others don't
@@ -105,25 +91,5 @@ internal sealed class JSEngineHost
                                     msg => { if (msg != null) _logger.LogInformation(msg); });
 
         return exitCode;
-    }
-
-    private static string? FindEngineInPath(string engineBinary)
-    {
-        if (File.Exists(engineBinary) || Path.IsPathRooted(engineBinary))
-            return engineBinary;
-
-        var path = Environment.GetEnvironmentVariable("PATH");
-
-        if (path == null)
-            return engineBinary;
-
-        foreach (var folder in path.Split(Path.PathSeparator))
-        {
-            var fullPath = Path.Combine(folder, engineBinary);
-            if (File.Exists(fullPath))
-                return fullPath;
-        }
-
-        return null;
     }
 }

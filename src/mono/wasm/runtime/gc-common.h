@@ -1,6 +1,10 @@
 #define PVOLATILE(T) T* volatile
 #define PPVOLATILE(T) T* volatile *
 
+#if !defined(TARGET_BROWSER) && !defined(EMSCRIPTEN_KEEPALIVE)
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
 #define gpointer void*
 
 MONO_API MONO_RT_EXTERNAL_ONLY gpointer

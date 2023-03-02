@@ -169,11 +169,12 @@ namespace System.IO.Hashing
 
         private static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
+            ReadOnlySpan<uint> crcLookup = CrcLookup;
             for (int i = 0; i < source.Length; i++)
             {
                 byte idx = (byte)crc;
                 idx ^= source[i];
-                crc = s_crcLookup[idx] ^ (crc >> 8);
+                crc = crcLookup[idx] ^ (crc >> 8);
             }
 
             return crc;

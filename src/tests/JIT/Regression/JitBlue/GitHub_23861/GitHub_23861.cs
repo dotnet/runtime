@@ -27,19 +27,19 @@ namespace GitHub_23861
 
         public static void LessThanAllDouble() { TestVectorLessThanAll<double>(); }
 
-        private static void TestVectorLessThanAll<T>() where T : struct
+        private static void TestVectorLessThanAll<T>() where T : struct, INumber<T>
         {
             T[] values1 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
             {
-                values1[g] = (T)(dynamic)g;
+                values1[g] = T.CreateTruncating<int>(g);
             }
             Vector<T> vec1 = new Vector<T>(values1);
 
             T[] values2 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
             {
-                values2[g] = (T)(dynamic)(g + 25);
+                values2[g] = T.CreateTruncating<int>(g + 25);
             }
             Vector<T> vec2 = new Vector<T>(values2);
 

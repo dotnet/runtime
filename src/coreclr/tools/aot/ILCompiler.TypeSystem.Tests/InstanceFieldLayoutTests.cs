@@ -304,6 +304,50 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        public void TestSequentialTypeLayoutClass32Align()
+        {
+            MetadataType classType = _testModule.GetType("Sequential", "Class32Align");
+            Assert.Equal(0x28, classType.InstanceByteCount.AsInt);
+            foreach (var f in classType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "vector32Align":
+                        Assert.Equal(0x8, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestSequentialTypeLayoutClass64Align()
+        {
+            MetadataType classType = _testModule.GetType("Sequential", "Class64Align");
+            Assert.Equal(0x48, classType.InstanceByteCount.AsInt);
+            foreach (var f in classType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "vector64Align":
+                        Assert.Equal(0x8, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
         public void TestAutoLayoutStruct()
         {
             MetadataType structWithIntCharType = _testModule.GetType("Auto", "StructWithIntChar");
@@ -827,6 +871,50 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        public void TestAutoTypeLayoutClass32Align()
+        {
+            MetadataType classType = _testModule.GetType("Auto", "Class32Align");
+            Assert.Equal(0x28, classType.InstanceByteCount.AsInt);
+            foreach (var f in classType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "vector32Align":
+                        Assert.Equal(0x8, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public void TestAutoTypeLayoutClass64Align()
+        {
+            MetadataType classType = _testModule.GetType("Auto", "Class64Align");
+            Assert.Equal(0x48, classType.InstanceByteCount.AsInt);
+            foreach (var f in classType.GetFields())
+            {
+                if (f.IsStatic)
+                    continue;
+
+                switch (f.Name)
+                {
+                    case "vector64Align":
+                        Assert.Equal(0x8, f.Offset.AsInt);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Fact]
         public void TestTypeContainsGCPointers()
         {
             MetadataType type = _testModule.GetType("ContainsGCPointers", "NoPointers");
@@ -905,13 +993,45 @@ namespace TypeSystemTests
             }
 
             {
+                MetadataType type = (MetadataType)_testModule.GetType("System.Runtime.Intrinsics", "Vector256`1");
+                MetadataType instantiatedType = type.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Byte));
+                Assert.Equal(32, instantiatedType.InstanceFieldAlignment.AsInt);
+            }
+
+            {
+                MetadataType type = (MetadataType)_testModule.GetType("System.Runtime.Intrinsics", "Vector512`1");
+                MetadataType instantiatedType = type.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Byte));
+                Assert.Equal(64, instantiatedType.InstanceFieldAlignment.AsInt);
+            }
+
+            {
                 DefType type = _testModule.GetType("Auto", "int8x16x2");
                 Assert.Equal(16, type.InstanceFieldAlignment.AsInt);
             }
 
             {
+                DefType type = _testModule.GetType("Auto", "int8x32x2");
+                Assert.Equal(32, type.InstanceFieldAlignment.AsInt);
+            }
+
+            {
+                DefType type = _testModule.GetType("Auto", "int8x64x2");
+                Assert.Equal(64, type.InstanceFieldAlignment.AsInt);
+            }
+
+            {
                 DefType type = _testModule.GetType("Auto", "Wrapper_int8x16x2");
                 Assert.Equal(16, type.InstanceFieldAlignment.AsInt);
+            }
+
+            {
+                DefType type = _testModule.GetType("Auto", "Wrapper_int8x32x2");
+                Assert.Equal(32, type.InstanceFieldAlignment.AsInt);
+            }
+
+            {
+                DefType type = _testModule.GetType("Auto", "Wrapper_int8x64x2");
+                Assert.Equal(64, type.InstanceFieldAlignment.AsInt);
             }
         }
     }

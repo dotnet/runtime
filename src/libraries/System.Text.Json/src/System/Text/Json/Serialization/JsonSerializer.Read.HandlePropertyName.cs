@@ -24,17 +24,18 @@ namespace System.Text.Json
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
+            JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 #if DEBUG
-            if (state.Current.JsonTypeInfo.Kind != JsonTypeInfoKind.Object)
+            if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
             {
                 string objTypeName = obj?.GetType().FullName ?? "<null>";
-                Debug.Fail($"obj.GetType() => {objTypeName}; {state.Current.JsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
+                Debug.Fail($"obj.GetType() => {objTypeName}; {jsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
             }
 #endif
 
             useExtensionProperty = false;
 
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonTypeInfo.GetProperty(
+            JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.GetProperty(
                 unescapedPropertyName,
                 ref state.Current,
                 out byte[] utf8PropertyName);
@@ -45,11 +46,18 @@ namespace System.Text.Json
             // For case insensitive and missing property support of JsonPath, remember the value on the temporary stack.
             state.Current.JsonPropertyName = utf8PropertyName;
 
-            // Determine if we should use the extension property.
+            // Handle missing properties
             if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
             {
-                JsonPropertyInfo? dataExtProperty = state.Current.JsonTypeInfo.ExtensionDataProperty;
-                if (dataExtProperty != null && dataExtProperty.HasGetter && dataExtProperty.HasSetter)
+                if (jsonTypeInfo.EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                {
+                    Debug.Assert(jsonTypeInfo.ExtensionDataProperty is null, "jsonTypeInfo.Configure() should have caught conflicting configuration.");
+                    string stringPropertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
+                    ThrowHelper.ThrowJsonException_UnmappedJsonProperty(jsonTypeInfo.Type, stringPropertyName);
+                }
+
+                // Determine if we should use the extension property.
+                if (jsonTypeInfo.ExtensionDataProperty is JsonPropertyInfo { HasGetter: true, HasSetter: true } dataExtProperty)
                 {
                     state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
 

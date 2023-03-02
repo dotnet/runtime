@@ -24,9 +24,9 @@ extends:
           buildConfig: release
           platformGroup: all
           platforms:
-          # It is too early to include OSX_arm64 in platform group all
+          # It is too early to include osx_arm64 in platform group all
           # Adding it here will enable it also
-          - OSX_arm64
+          - osx_arm64
           jobParameters:
             isOfficialBuild: false
 
@@ -38,7 +38,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: release
           platforms:
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: outerloop
 
@@ -51,9 +51,9 @@ extends:
           buildConfig: release
           platformGroup: all
           platforms:
-          # It is too early to include OSX_arm64 in platform group all
+          # It is too early to include osx_arm64 in platform group all
           # Adding it here will enable it also
-          - OSX_arm64
+          - osx_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:

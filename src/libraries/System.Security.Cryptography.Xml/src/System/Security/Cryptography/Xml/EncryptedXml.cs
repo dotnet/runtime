@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(cipherData));
             }
 
-            Stream? inputStream = null;
+            MemoryStream? inputStream = null;
 
             if (cipherData.CipherValue != null)
             {

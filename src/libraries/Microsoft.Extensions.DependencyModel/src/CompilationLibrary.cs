@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.DependencyModel
             return ResolveReferencePaths(DefaultResolver, assemblies);
         }
 
-        private IEnumerable<string> ResolveReferencePaths(ICompilationAssemblyResolver resolver, List<string> assemblies)
+        private List<string> ResolveReferencePaths(ICompilationAssemblyResolver resolver, List<string> assemblies)
         {
             if (!resolver.TryResolveAssemblyPaths(this, assemblies))
             {

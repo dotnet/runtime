@@ -29,20 +29,18 @@ parameters:
   testResultsFormat: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
-  enableRichCodeNavigation: false
-  richCodeNavigationLanguage: 'csharp'
-  richCodeNavigationEnvironment: 'production'
+  extraVariablesTemplates: []
   isManualCodeQLBuild: false
 
 jobs:
 - template: /eng/common/templates/job/job.yml
   parameters:
-    ${{ if eq(parameters.hostedOs, '') }}:  
+    ${{ if eq(parameters.hostedOs, '') }}:
       name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
-      displayName: ${{ format('{0}{1} {2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
+      displayName: ${{ format('{0}{1}-{2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
     ${{ if ne(parameters.hostedOs, '') }}:
       name: ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
-      displayName: ${{ format('{0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
+      displayName: ${{ format('{0}{1}-{2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -56,9 +54,6 @@ jobs:
 
     workspace:
       clean: all
-    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
-    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
-    richCodeNavigationEnvironment: ${{ parameters.richCodeNavigationEnvironment }}
 
     ${{ if and(ne(parameters.dependOnEvaluatePaths, true),ne(parameters.dependsOn,'')) }}:
       dependsOn: ${{ parameters.dependsOn }}
@@ -76,7 +71,7 @@ jobs:
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
 
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_bionic')) }}:
+      - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
           value: /p:RuntimeOS=linux-bionic
 
@@ -90,9 +85,9 @@ jobs:
           value: ${{ parameters.jobParameters.crossrootfsDir }}
 
       - name: _cxx11Parameter
-        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
+        ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.archType, 'arm64')) }}:
           value: /p:MonoLLVMUseCxx11Abi=true
-        ${{ if and(eq(parameters.osGroup, 'Linux'), not(eq(parameters.archType, 'arm64'))) }}:
+        ${{ if and(eq(parameters.osGroup, 'linux'), not(eq(parameters.archType, 'arm64'))) }}:
           value: /p:MonoLLVMUseCxx11Abi=false
 
       - name: _officialBuildParameter
@@ -102,15 +97,9 @@ jobs:
           value: ''
 
       - name: _buildDarwinFrameworksParameter
-        ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'MacCatalyst')}}:
+        ${{ if in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
           value: /p:BuildDarwinFrameworks=true
-        ${{ if notin(parameters.osGroup, 'iOS', 'tvOS', 'MacCatalyst')}}:
-          value: ''
-
-      - name: _richCodeNavigationParam
-        ${{ if eq(parameters.enableRichCodeNavigation, true) }}:
-          value: /p:EnableRichCodeNavigation=true
-        ${{ if ne(parameters.enableRichCodeNavigation, true) }}:
+        ${{ if notin(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
           value: ''
 
       - name: _sclEnableCommand
@@ -133,7 +122,28 @@ jobs:
       - ${{ if eq(parameters.archType, 'arm64') }}:
         - name: _monoAotCrossCompileArg
           value: 'cross'
-        
+
+      - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
+        - template: ${{ variableTemplate.template }}
+          parameters:
+            osGroup: ${{ parameters.osGroup }}
+            osSubgroup: ${{ parameters.osSubgroup }}
+            archType: ${{ parameters.archType }}
+            buildConfig: ${{ parameters.buildConfig }}
+            runtimeFlavor: ${{ parameters.runtimeFlavor }}
+            runtimeVariant: ${{ parameters.runtimeVariant }}
+            helixQueues: ${{ parameters.helixQueues }}
+            targetRid: ${{ parameters.targetRid }}
+            nameSuffix: ${{ parameters.nameSuffix }}
+            platform: ${{ parameters.platform }}
+            pgoType: ${{ parameters.pgoType }}
+            shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+            ${{ if ne(variableTemplate.forwardedParameters, '') }}:
+              ${{ each parameter in variableTemplate.forwardedParameters }}:
+                ${{ parameter }}: ${{ parameters[parameter] }}
+            ${{ if ne(variableTemplate.parameters, '') }}:
+              ${{ insert }}: ${{ variableTemplate.parameters }}
+
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
@@ -162,7 +172,7 @@ jobs:
             runtimeOS: linux
             name: ${{ parameters.platform }}
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'MacCatalyst') }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
 
@@ -171,13 +181,12 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
-    - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
+    - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
       # Update machine certs
       - task: PowerShell@2
         displayName: Update machine certs
         inputs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
-
 
     # Build
     - ${{ if eq(parameters.isSourceBuild, false) }}:
@@ -185,7 +194,7 @@ jobs:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
 
-      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
+      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
         displayName: Build product
         ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
           continueOnError: ${{ parameters.shouldContinueOnError }}
@@ -195,7 +204,7 @@ jobs:
           displayName: Finalize CodeQL (manually-injected)
     #endif isSourceBuild
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -225,9 +234,9 @@ jobs:
       inputs:
         PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
         PublishLocation: Container
-        ${{ if ne(parameters.osGroup, 'Browser') }}:
+        ${{ if ne(parameters.osGroup, 'browser') }}:
           ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-        ${{ if eq(parameters.osGroup, 'Browser') }}:
-          ArtifactName: Logs_Build_Browser_wasm_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+        ${{ if eq(parameters.osGroup, 'browser') }}:
+          ArtifactName: Logs_Build_browser_wasm_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
       continueOnError: true
       condition: always()
