@@ -15,7 +15,7 @@ namespace System.Globalization
         private const int Native_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
         private const int Native_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
 
-                /// <summary>
+        /// <summary>
         /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
         /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
         /// </summary>
@@ -41,6 +41,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.NativeGetLocaleInfo] Expected _sWindowsName to be populated already");
+
             return NativeGetLocaleInfo(_sWindowsName, type, uiCultureName);
         }
 

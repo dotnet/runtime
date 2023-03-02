@@ -3,7 +3,6 @@
 
 using System.Runtime.InteropServices;
 using System;
-//
 
 internal static partial class Interop
 {
