@@ -190,10 +190,10 @@
 
   <!-- These are the rids used for consuming prebuilt packages. -->
   <PropertyGroup Label="CalculatePackageRID">
-    <_packageOS>$(RuntimeOS)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == ''">$(_portableOS)</_packageOS>
     <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)</_packageOS>
     <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_packageOS>
+    <_packageOS Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)</_packageOS>
 
     <_toolsRID>$(_packageOS)-$(_hostArch)</_toolsRID>
     <_toolsRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_portableOS)-x64</_toolsRID>
