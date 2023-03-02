@@ -6,7 +6,7 @@ using System.Reflection.Emit;
 
 namespace System.Reflection.Metadata.Experiment
 {
-    internal class PersistableFieldBuilder : FieldBuilder
+    internal sealed class PersistableFieldBuilder : FieldBuilder
     {
         //private int _fieldToken;
         private PersistableTypeBuilder _typeBuilder;

@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata.Experiment
         * */
     internal sealed class EntityWrappers
     {
-        internal class AssemblyReferenceWrapper
+        internal sealed class AssemblyReferenceWrapper
         {
             internal readonly Assembly assembly;
 
@@ -32,7 +32,7 @@ namespace System.Reflection.Metadata.Experiment
             }
         }
 
-        internal class TypeReferenceWrapper
+        internal sealed class TypeReferenceWrapper
         {
             internal readonly Type type;
             internal int parentToken;
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata.Experiment
             }
         }
 
-        internal class MethodReferenceWrapper
+        internal sealed class MethodReferenceWrapper
         {
             internal readonly MethodBase method;
             internal int parentToken;
@@ -80,7 +80,7 @@ namespace System.Reflection.Metadata.Experiment
             }
         }
 
-        internal class CustomAttributeWrapper
+        internal sealed class CustomAttributeWrapper
         {
             internal ConstructorInfo constructorInfo;
             internal byte[] binaryAttribute;

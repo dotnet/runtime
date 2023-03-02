@@ -10,13 +10,20 @@
     <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants> 
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs" Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs" Link="Common\Interop\Windows\Interop.FreeLibrary.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" Link="Common\Interop\Windows\Interop.GetModuleHandle.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs" Link="Common\Interop\Windows\Interop.LoadLibraryEx.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
+             Link="Common\Interop\Windows\Interop.FreeLibrary.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs"
+             Link="Common\Interop\Windows\Interop.GetModuleHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs"
+             Link="Common\Interop\Windows\Interop.LoadLibraryEx.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
     <Compile Include="Metadata\BlobContentIdTests.cs" />
     <Compile Include="Metadata\BlobTests.cs" />
     <Compile Include="Metadata\BlobUtilitiesTests.cs" />
@@ -26,9 +33,6 @@
     <Compile Include="Metadata\Ecma335\Encoding\InstructionEncoderTests.cs" />
     <Compile Include="Metadata\Ecma335\MetadataRootBuilderTests.cs" />
     <Compile Include="Metadata\Ecma335\PortablePdbBuilderTests.cs" />
-    <Compile Include="Metadata\Experiment\AssemblyTools.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
-    <Compile Include="Metadata\Experiment\CustomAttributeTesting.cs"  Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
-    <Compile Include="Metadata\Experiment\ReflectionTesting.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
     <Compile Include="Metadata\TypeSystem\AssemblyDefinitionTests.cs" />
     <Compile Include="Metadata\TypeSystem\AssemblyReferenceTests.cs" />
@@ -143,9 +147,5 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="7.0.0" />
-    <PackageReference Include="System.CodeDom" Version="7.0.0" />
   </ItemGroup>
 </Project>

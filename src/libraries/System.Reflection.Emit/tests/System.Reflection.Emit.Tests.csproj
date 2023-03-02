@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
@@ -62,6 +62,9 @@
     <Compile Include="ModuleBuilder\ModuleBuilderGetArrayMethod.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute.cs" />
     <Compile Include="ParameterBuilder\ParameterBuilderSetConstant.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblyTools.cs" />
+    <Compile Include="PersistableAssemblyBuilder\CustomAttributeTesting.cs" />
+    <Compile Include="PersistableAssemblyBuilder\ReflectionTesting.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAttributes.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderCanRead.cs" />
@@ -114,5 +117,10 @@
     <Compile Include="TypeBuilder\TypeBuilderSize.cs" />
     <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
     <Compile Include="Utilities.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.Emit.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.MetadataLoadContext\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
 </Project>

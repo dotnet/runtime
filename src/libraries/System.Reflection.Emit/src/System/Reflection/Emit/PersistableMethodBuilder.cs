@@ -7,7 +7,7 @@ using System.Reflection.Emit;
 
 namespace System.Reflection.Metadata.Experiment
 {
-    internal class PersistableMethodBuilder : MethodBuilder
+    internal sealed class PersistableMethodBuilder : MethodBuilder
     {
         public override string Name { get; }
         public override MethodAttributes Attributes { get; }

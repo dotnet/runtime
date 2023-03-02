@@ -9,7 +9,7 @@ using System.Reflection.PortableExecutable;
 
 namespace System.Reflection.Metadata.Experiment
 {
-    internal sealed class PersistableAssemblyBuilder : AssemblyBuilder
+    public sealed class PersistableAssemblyBuilder : AssemblyBuilder
     {
         private bool _previouslySaved;
         private AssemblyName _assemblyName;

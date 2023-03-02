@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
-using System.Linq;
 using System.Runtime.InteropServices;
 using static System.Reflection.Metadata.Experiment.EntityWrappers;
 using System.Globalization;
@@ -82,15 +80,15 @@ namespace System.Reflection.Metadata.Experiment
         {
             if (constructorInfo == null)
             {
-                throw new ArgumentNullException(nameof(constructorInfo));
+                ArgumentNullException.ThrowIfNull(nameof(constructorInfo));
             }
 
             if (binaryAttribute == null)
             {
-                throw new ArgumentNullException(nameof(binaryAttribute)); // This is incorrect
+                ArgumentNullException.ThrowIfNull(nameof(binaryAttribute)); // This is incorrect
             }
 
-            if (constructorInfo.DeclaringType == null)
+            if (constructorInfo!.DeclaringType == null)
             {
                 throw new ArgumentException("Attribute constructor has no type.");
             }
@@ -110,7 +108,7 @@ namespace System.Reflection.Metadata.Experiment
                 AssemblyReferenceWrapper assemblyReference = new AssemblyReferenceWrapper(constructorInfo.DeclaringType.Assembly);
                 TypeReferenceWrapper typeReference = new TypeReferenceWrapper(constructorInfo.DeclaringType);
                 MethodReferenceWrapper methodReference = new MethodReferenceWrapper(constructorInfo);
-                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(constructorInfo, binaryAttribute);
+                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(constructorInfo, binaryAttribute!);
 
                 if (!_module._assemblyRefStore.Contains(assemblyReference)) // Avoid adding the same assembly twice
                 {
@@ -238,9 +236,6 @@ namespace System.Reflection.Metadata.Experiment
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException();
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
-                "But in this case it acts only on TypeBuilder which is never trimmed (as it's runtime created).")]
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) => throw new NotSupportedException();
         public override Type MakePointerType() => throw new NotSupportedException();
         public override Type MakeByRefType() => throw new NotSupportedException();

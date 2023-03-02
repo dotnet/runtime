@@ -11,7 +11,7 @@ using static System.Reflection.Metadata.Experiment.EntityWrappers;
 
 namespace System.Reflection.Metadata.Experiment
 {
-    internal sealed class PersistableModuleBuilder : ModuleBuilder
+    public sealed class PersistableModuleBuilder : ModuleBuilder
     {
         internal List<AssemblyReferenceWrapper> _assemblyRefStore = new List<AssemblyReferenceWrapper>();
         internal int _nextAssemblyRefRowId = 1;
