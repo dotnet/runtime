@@ -47,15 +47,17 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 // setNextConsecutiveRegisterAssignment: For subsequent refPositions, set the register
 //   requirement to be the consecutive register(s) of the register that is assigned to
 //   the firstRefPosition.
+//   If one of the subsequent RefPosition is RefTypeUpperVectorRestore, sets the
+//   registerAssignment to not include any of the consecutive registers that are being
+//   assigned to the RefTypeUse refpositions.
 //
 // Arguments:
 //    firstRefPosition  - First refPosition of the series of consecutive registers.
-//    firstReg          - Register assigned to the first refposition.
+//    firstRegAssigned  - Register assigned to the first refposition.
 //
 //  Returns:
 //      True if all the consecutive registers starting from `firstRegAssigned` were free. Even if one
-//      of them is busy, returns false and does not change the registerAssignment of a subsequent
-//      refPosition.
+//      of them is busy, returns false and does not change the registerAssignment of any refPositions.
 //
 bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned)
 {
@@ -116,11 +118,10 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
 }
 
 //------------------------------------------------------------------------
-// areNextConsecutiveRegistersBusy: Starting with `regToAssign`, check if next
-//   `registersToCheck` are free or not.
+// areNextConsecutiveRegistersFree: Starting with `regToAssign`, check if next
+//   consecutive `registersToCheck` are free or not.
 //
 // Arguments:
-//      - First refPosition of the series of consecutive registers.
 //    regToAssign     - Register assigned to the first refposition.
 //    registersCount  - Number of registers to check.
 //    registerType    - Type of register.
@@ -143,6 +144,19 @@ bool LinearScan::areNextConsecutiveRegistersFree(regNumber regToAssign, int regi
     return true;
 }
 
+//------------------------------------------------------------------------
+// getFreeCandidates: Returns the mask of all the free candidates for given refPosition.
+//   If refPosition is the first RefPosition of a series of refpositions that needs
+//   consecutive registers, then returns only the mask such that it satisfies the need
+//   of having free consecutive registers.
+//
+// Arguments:
+//    candidates   - Register assigned to the first refposition.
+//    refPosition  - Number of registers to check.
+//
+//  Returns:
+//      Register mask of all the free registers
+//
 regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
 {
     regMaskTP result = candidates & m_AvailableRegs;
@@ -208,9 +222,10 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
 
     if (compiler->opts.OptimizationEnabled())
     {
-        // One last time, check if subsequent refpositions already have consecutive registers assigned
-        // and if yes, and if one of the register out of consecutiveResult is available for the first
-        // refposition, then just use that. This will avoid unnecessary copies.
+        // One last time, check if subsequent refpositions (all refpositions except the first for which
+        // we assigned above) already have consecutive registers assigned. If yes, and if one of the
+        // register out of the `consecutiveResult` is available for the first refposition, then just use
+        // that. This will avoid unnecessary copies.
 
         regNumber firstRegNum  = REG_NA;
         regNumber prevRegNum   = REG_NA;
@@ -1229,7 +1244,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            srcCount += BuildConsecutiveRegisters(intrin.op1);
+            srcCount += BuildConsecutiveRegistersForUse(intrin.op1);
         }
     }
 
@@ -1288,7 +1303,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert(intrin.op2 != nullptr);
             assert(intrin.op3 != nullptr);
-            srcCount += BuildConsecutiveRegisters(intrin.op2, intrin.op1);
+            srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
             srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
         }
         assert(dstCount == 1);
@@ -1367,19 +1382,31 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     return srcCount;
 }
 
-int LinearScan::BuildConsecutiveRegisters(GenTree* treeNode, GenTree* rmwNode)
+//------------------------------------------------------------------------
+//  BuildConsecutiveRegistersForUse: Build ref position(s) for `treeNode` that has a
+//  requirement of allocating consecutive registers. It will create the RefTypeUse
+//  RefPositions for as many consecutive registers are needed for `treeNode` and in
+//  between, it might contain RefTypeUpperVectorRestore RefPositions.
+//
+//  For the first RefPosition of the series, it sets the `regCount` field equal to
+//  the number of subsequent RefPositions (including the first one) involved for this
+//  treeNode. For the subsequent RefPositions, it sets the `regCount` to 0. For all
+//  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
+//  identify these RefPositions during allocation.
+//
+//  It also populates a `refPositionMap` to access the subsequent RefPositions from
+//  a given RefPosition. This was preferred rather than adding a field in RefPosition
+//  for this purpose.
+//
+// Arguments:
+//    treeNode       - The GT_HWINTRINSIC node of interest
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
 {
-    int       srcCount     = 0;
-    Interval* rmwInterval  = nullptr;
-    bool      rmwIsLastUse = false;
-    if ((rmwNode != nullptr))
-    {
-        if (isCandidateLocalRef(rmwNode))
-        {
-            rmwInterval  = getIntervalForLocalVarNode(rmwNode->AsLclVar());
-            rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
-        }
-    }
+    int srcCount = 0;
     if (treeNode->OperIsFieldList())
     {
         unsigned     regCount    = 0;
