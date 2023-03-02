@@ -360,7 +360,6 @@ namespace Wasm.Build.Tests
             {
                 "index.html",
                 mainJS,
-                "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
                 "dotnet.js"

@@ -513,11 +513,6 @@ export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): b
     data = data.slice(manifestSize + 8);
 
     // Create the folder structure
-    // /usr/share/zoneinfo
-    // /usr/share/zoneinfo/Africa
-    // /usr/share/zoneinfo/Asia
-    // ..
-
     const folders = new Set<string>();
     manifest.filter(m => {
         const file = m[0];

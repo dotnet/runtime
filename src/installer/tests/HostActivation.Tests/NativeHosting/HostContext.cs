@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             result.Should().Pass()
                 .And.InitializeContextForApp(expectedAppPath)
                 .And.ExecuteAssemblyMock(expectedAppPath, appArgs)
-                .And.HaveStdErrContaining($"Executing as a {(isSelfContained ? "self-contained" : "framework-dependent")} app");
+                .And.ExecuteSelfContained(isSelfContained);
 
             CheckPropertiesValidation propertyValidation = new CheckPropertiesValidation(checkProperties, LogPrefix.App, SharedTestState.AppPropertyName, SharedTestState.AppPropertyValue);
             propertyValidation.ValidateActiveContext(result, newPropertyName);

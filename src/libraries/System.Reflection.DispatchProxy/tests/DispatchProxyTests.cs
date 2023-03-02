@@ -811,6 +811,25 @@ namespace DispatchProxyTests
             }
         }
 
+        [Fact]
+        public static void Test_Multiple_AssemblyLoadContextsWithBadName()
+        {
+            if (typeof(DispatchProxyTests).Assembly.Location == "")
+                return;
+
+            Assembly assembly = Assembly.LoadFile(typeof(DispatchProxyTests).Assembly.Location);
+            Type type = assembly.GetType(typeof(DispatchProxyTests).FullName);
+            MethodInfo method = type.GetMethod(nameof(Demo), BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.True((bool)method.Invoke(null, null));
+        }
+
+        internal static bool Demo()
+        {
+            TestType_IHelloService proxy = DispatchProxy.Create<TestType_IHelloService, InternalInvokeProxy>();
+            proxy.Hello("Hello");
+            return true;
+        }
+
         private static TInterface CreateHelper<TInterface, TProxy>(bool useGenericCreate) where TProxy : DispatchProxy
         {
             if (useGenericCreate)

@@ -192,7 +192,6 @@
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.js.symbols;
-        $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
       <!-- for threaded wasm -->
@@ -225,7 +224,6 @@
       <LibrariesRuntimeFiles
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
-        $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
 

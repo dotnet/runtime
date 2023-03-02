@@ -235,6 +235,76 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree*
 }
 
 //------------------------------------------------------------------------
+// IsRangeInvariantInRange: Check if a range of nodes are invariant in the
+// specified range.
+//
+// Arguments:
+//    rangeStart   - The first node.
+//    rangeEnd     - The last node.
+//    endExclusive - The exclusive end of the range to check invariance for.
+//    ignoreNode   - A node to ignore interference checks with, for example
+//                   because it will retain its relative order with 'node'.
+//
+// Returns:
+//    True if the range can be evaluated at any point between its current location
+//    and 'endExclusive' without giving a different result; otherwise false.
+//
+// Remarks:
+//    Note that the range is treated as a unit and no pairwise interference
+//    checks between nodes in the range are performed.
+//
+bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart,
+                                       GenTree* rangeEnd,
+                                       GenTree* endExclusive,
+                                       GenTree* ignoreNode) const
+{
+    assert((rangeStart != nullptr) && (rangeEnd != nullptr));
+
+    if ((rangeEnd->gtNext == endExclusive) ||
+        ((ignoreNode != nullptr) && (rangeEnd->gtNext == ignoreNode) && (rangeEnd->gtNext->gtNext == endExclusive)))
+    {
+        return true;
+    }
+
+    if (rangeStart->OperConsumesFlags())
+    {
+        return false;
+    }
+
+    m_scratchSideEffects.Clear();
+    GenTree* cur = rangeStart;
+    while (true)
+    {
+        m_scratchSideEffects.AddNode(comp, cur);
+
+        if (cur == rangeEnd)
+        {
+            break;
+        }
+
+        cur = cur->gtNext;
+        assert((cur != nullptr) && "Expected rangeStart to precede rangeEnd");
+    }
+
+    for (GenTree* cur = rangeEnd->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+        if (cur == ignoreNode)
+        {
+            continue;
+        }
+
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // IsSafeToContainMem: Checks for conflicts between childNode and parentNode,
 // and returns 'true' iff memory operand childNode can be contained in parentNode.
 //
@@ -2994,15 +3064,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
     ssize_t        op2Value = op2->IconValue();
 
-#ifdef TARGET_ARM64
-    // Do not optimise further if op1 has a contained chain.
-    if (op1->OperIs(GT_AND) &&
-        (op1->isContainedCompareChainSegment(op1->gtGetOp1()) || op1->isContainedCompareChainSegment(op1->gtGetOp2())))
-    {
-        return cmp;
-    }
-#endif
-
 #ifdef TARGET_XARCH
     var_types op1Type = op1->TypeGet();
     if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && FitsIn(op1Type, op2Value))
@@ -3408,7 +3469,6 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         }
     }
 
-#ifdef TARGET_XARCH
     // Do not transform GT_SELECT with GTF_SET_FLAGS into GT_SELECTCC; this
     // node is used by decomposition on x86.
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
@@ -3423,7 +3483,6 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         ContainCheckSelect(newSelect);
         return newSelect->gtNext;
     }
-#endif
 
     ContainCheckSelect(select);
     return select->gtNext;
@@ -3519,21 +3578,30 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         return true;
     }
 
-    // TODO-Cleanup: Avoid creating these SETCC nodes in the first place.
     if (condition->OperIs(GT_SETCC))
     {
         assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
-        GenTree* flagsProducer = condition->gtPrev;
-        if (!IsInvariantInRange(flagsProducer, parent, condition))
+        GenTree* flagsDef = condition->gtPrev;
+#ifdef TARGET_ARM64
+        // CCMP is a flag producing node that also consumes flags, so find the
+        // "root" of the flags producers and move the entire range.
+        // We limit this to 10 nodes look back to avoid quadratic behavior.
+        for (int i = 0; i < 10 && flagsDef->OperIs(GT_CCMP); i++)
+        {
+            assert((flagsDef->gtPrev != nullptr) && ((flagsDef->gtPrev->gtFlags & GTF_SET_FLAGS) != 0));
+            flagsDef = flagsDef->gtPrev;
+        }
+#endif
+        if (!IsRangeInvariantInRange(flagsDef, condition->gtPrev, parent, condition))
         {
             return false;
         }
 
         *cond = condition->AsCC()->gtCondition;
 
+        LIR::Range range = BlockRange().Remove(flagsDef, condition->gtPrev);
+        BlockRange().InsertBefore(parent, std::move(range));
         BlockRange().Remove(condition);
-        BlockRange().Remove(flagsProducer);
-        BlockRange().InsertBefore(parent, flagsProducer);
         return true;
     }
 

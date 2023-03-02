@@ -178,6 +178,11 @@ struct InterpMethod {
 	unsigned int needs_thread_attach : 1;
 	// If set, this method is MulticastDelegate.Invoke
 	unsigned int is_invoke : 1;
+#if HOST_BROWSER
+	unsigned int contains_traces : 1;
+	guint16 *backward_branch_offsets;
+	unsigned int backward_branch_offsets_count;
+#endif
 #if PROFILE_INTERP
 	long calls;
 	long opcounts;
