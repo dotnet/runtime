@@ -92,7 +92,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 GenTreeCall* call = tree->AsCall();
                 call->ClearExpRuntimeLookup();
                 assert(call->gtArgs.CountArgs() == 2);
-                assert(!call->IsTailCall()); // We don't expect it here
+
+                if (call->IsTailCall())
+                {
+                    assert(!"Unexpected runtime lookup as a tail call");
+                    continue;
+                }
 
                 // call(ctx, signature);
                 GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
@@ -121,10 +126,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 assert(signature != nullptr);
 
                 CORINFO_RUNTIME_LOOKUP runtimeLookup = {};
-                if (!GetSignatureToLookupInfoMap()->Lookup(signature, &runtimeLookup))
-                {
-                    continue;
-                }
+                const bool             lookupFound   = GetSignatureToLookupInfoMap()->Lookup(signature, &runtimeLookup);
+                assert(lookupFound);
 
                 const bool needsSizeCheck = runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK;
                 if (needsSizeCheck)
@@ -132,13 +135,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     JITDUMP("dynamic expansion, needs size check.\n")
                 }
 
-                if (block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP)
-                {
-                    // Test
-                    continue;
-                }
-
-                auto debugInfo = stmt->GetDebugInfo();
+                DebugInfo debugInfo = stmt->GetDebugInfo();
 
                 assert(runtimeLookup.indirections != 0);
                 assert(runtimeLookup.testForNull);
@@ -192,7 +189,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 {
                     if ((i == 1 && runtimeLookup.indirectFirstOffset) || (i == 2 && runtimeLookup.indirectSecondOffset))
                     {
-                        indOffTree = spillExpr(slotPtrTree);
+                        indOffTree  = spillExpr(slotPtrTree);
                         slotPtrTree = gtClone(indOffTree);
                     }
 
@@ -219,7 +216,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                         if (isLastIndirectionWithSizeCheck)
                         {
                             lastIndOfTree = spillExpr(slotPtrTree);
-                            slotPtrTree = gtClone(lastIndOfTree);
+                            slotPtrTree   = gtClone(lastIndOfTree);
                         }
 
                         slotPtrTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree,
@@ -255,7 +252,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
 
                 // Save dictionary slot to a local (to be used by fast path)
-                //GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
 
                 GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
@@ -272,7 +268,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 GenTreeCall* fallbackCall = gtCloneExpr(call)->AsCall();
                 assert(ctxTree->OperIs(GT_LCL_VAR));
-                //fallbackCall->gtArgs.GetArgByIndex(0)->SetLateNode(gtClone(ctxTree));
                 Statement* asgFallbackStmt = fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), fallbackCall));
                 asgFallbackStmt->SetDebugInfo(debugInfo);
                 fgInsertStmtAtBeg(fallbackBb, asgFallbackStmt);
@@ -433,8 +428,11 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
     if (result == PhaseStatus::MODIFIED_EVERYTHING)
     {
-        fgReorderBlocks(/* useProfileData */ false);
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+        if (opts.OptimizationEnabled())
+        {
+            fgReorderBlocks(/* useProfileData */ false);
+            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+        }
 
 #ifdef DEBUG
         if (verbose)
