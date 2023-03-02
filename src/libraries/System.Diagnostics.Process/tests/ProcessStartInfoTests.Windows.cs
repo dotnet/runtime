@@ -110,16 +110,5 @@ namespace System.Diagnostics.Tests
             Assert.True(p.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
         }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void TestUseCreateNoWindowAndWindowStyle_NotSupported()
-        {
-            Process p = CreateProcessLong();
-            p.StartInfo.CreateNoWindow  = true;
-            p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-
-            Assert.Throws<ArgumentException>(() => p.Start());
-        }
     }
 }

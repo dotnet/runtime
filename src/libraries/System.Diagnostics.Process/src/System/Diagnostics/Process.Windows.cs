@@ -497,11 +497,6 @@ namespace System.Diagnostics
 
                     if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
                     {
-                        if (startInfo.CreateNoWindow)
-                        {
-                            throw new ArgumentException(SR.CantSetWindowStyleWithCreateNoWindow);
-                        }
-
                         startupInfo.wShowWindow = startInfo.WindowStyle switch
                         {
                             ProcessWindowStyle.Minimized => (short)Interop.Shell32.SW_SHOWMINIMIZED,
