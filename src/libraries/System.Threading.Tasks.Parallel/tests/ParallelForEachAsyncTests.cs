@@ -841,7 +841,7 @@ namespace System.Threading.Tasks.Tests
             Task t = Parallel.ForEachAsync((IEnumerable<int>)new ThrowsExceptionFromDisposeAndCancellationCallback(), (item, cancellationToken) => default);
             await Assert.ThrowsAsync<FormatException>(() => t);
             Assert.True(t.IsFaulted);
-            Assert.DoesNotContain(t.Exception.InnerExceptions, e => e is TimeZoneNotFoundException);
+            Assert.DoesNotContain(t.Exception.InnerExceptions, e => e is InvalidTimeZoneException);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
