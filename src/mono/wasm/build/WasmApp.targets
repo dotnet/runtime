@@ -108,7 +108,8 @@
     <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
 
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
-    <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and '$(DeployOnBuild)' == 'true'">true</WasmBuildOnlyAfterPublish>
+    <!-- VS uses DeployOnBuild, and sdk sets _IsPublishing -->
+    <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(OutputType)' != 'Library'">true</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
     <UseAppHost>false</UseAppHost>
@@ -172,7 +173,7 @@
     <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="WasmNestedPublishApp"
-             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=">
+             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=">
       <Output TaskParameter="TargetOutputs" ItemName="WasmNestedPublishAppResultItems" />
     </MSBuild>
 
