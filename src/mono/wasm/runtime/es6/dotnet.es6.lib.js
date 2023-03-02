@@ -106,7 +106,6 @@ const linked_functions = [
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
-    "mono_wasm_get_icudt_name",
 
     #if USE_PTHREADS
     /// mono-threads-wasm.c

@@ -27,7 +27,6 @@ const fn_signatures: SigLine[] = [
     [true, "mono_background_exec", null, []],
     [true, "mono_set_timeout_exec", null, []],
     [true, "mono_wasm_load_icu_data", "number", ["number"]],
-    [true, "mono_wasm_get_icudt_name", "string", ["string"]],
     [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
     [true, "mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
     [false, "mono_wasm_load_runtime", null, ["string", "number"]],
@@ -47,7 +46,6 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_string_get_utf8", "number", ["number"]],
     [true, "mono_wasm_string_from_utf16_ref", "void", ["number", "number", "number"]],
     [true, "mono_wasm_get_obj_type", "number", ["number"]],
-    [true, "mono_wasm_array_length", "number", ["number"]],
     [true, "mono_wasm_array_length_ref", "number", ["number"]],
     [true, "mono_wasm_array_get", "number", ["number", "number"]],
     [true, "mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
@@ -98,6 +96,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_f64_to_u52", "number", ["number", "number"]],
     [true, "mono_wasm_method_get_name", "number", ["number"]],
     [true, "mono_wasm_method_get_full_name", "number", ["number"]],
+    [true, "mono_wasm_gc_lock", "void", []],
+    [true, "mono_wasm_gc_unlock", "void", []],
 
     // jiterpreter
     [true, "mono_jiterp_get_trace_bailout_count", "number", ["number"]],
@@ -141,7 +141,6 @@ export interface t_Cwraps {
     mono_background_exec(): void;
     mono_set_timeout_exec(): void;
     mono_wasm_load_icu_data(offset: VoidPtr): number;
-    mono_wasm_get_icudt_name(name: string): string;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
     mono_wasm_load_runtime(unused: string, debugLevel: number): void;
@@ -166,7 +165,6 @@ export interface t_Cwraps {
      */
     mono_wasm_string_get_utf8(str: MonoString): CharPtr;
     mono_wasm_string_from_utf16_ref(str: CharPtr, len: number, result: MonoObjectRef): void;
-    mono_wasm_array_length(array: MonoArray): number;
 
     mono_wasm_array_length_ref(array: MonoObjectRef): number;
     mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
@@ -239,6 +237,8 @@ export interface t_Cwraps {
     mono_wasm_runtime_run_module_cctor(assembly: MonoAssembly): void;
     mono_wasm_method_get_name(method: MonoMethod): CharPtr;
     mono_wasm_method_get_full_name(method: MonoMethod): CharPtr;
+    mono_wasm_gc_lock(): void;
+    mono_wasm_gc_unlock(): void;
 
     mono_jiterp_get_trace_bailout_count(reason: number): number;
     mono_jiterp_value_copy(destination: VoidPtr, source: VoidPtr, klass: MonoClass): void;
