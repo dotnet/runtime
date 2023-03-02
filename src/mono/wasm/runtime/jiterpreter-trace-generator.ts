@@ -510,6 +510,8 @@ export function generate_wasm_body (
                 // index < length
                 builder.appendU8(WasmOpcode.i32_lt_u);
                 // index >= 0
+                // FIXME: It would be nice to optimize this down to a single (index < length) comparison
+                //  but interp.c doesn't do it - presumably because a span could be bigger than 2gb?
                 builder.local("math_lhs32");
                 builder.i32_const(0);
                 builder.appendU8(WasmOpcode.i32_ge_s);
@@ -2828,21 +2830,18 @@ function append_getelema1 (
 
     // load index for check
     append_ldloc(builder, indexOffset, WasmOpcode.i32_load);
-    // stash it since we need it 3 times
+    // stash it since we need it twice
     builder.local("math_lhs32", WasmOpcode.tee_local);
     // array null check
     append_ldloc_cknull(builder, objectOffset, ip, true);
     // load array length
     builder.appendU8(WasmOpcode.i32_load);
     builder.appendMemarg(getMemberOffset(JiterpMember.ArrayLength), 2);
-    // check index < array.length
+    // check index < array.length, unsigned. if index is negative it will be interpreted as
+    //  a massive value which is naturally going to be bigger than array.length. interp.c
+    //  exploits this property so we can too
     builder.appendU8(WasmOpcode.i32_lt_u);
-    // check index >= 0
-    builder.local("math_lhs32");
-    builder.i32_const(0);
-    builder.appendU8(WasmOpcode.i32_ge_s);
-    builder.appendU8(WasmOpcode.i32_and);
-    // bailout unless (index >= 0) && (index < array.length)
+    // bailout unless (index < array.length)
     builder.appendU8(WasmOpcode.br_if);
     builder.appendLeb(0);
     append_bailout(builder, ip, BailoutReason.ArrayLoadFailed);
