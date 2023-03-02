@@ -70,8 +70,7 @@ namespace System.Buffers.Text
                 {
                     // First char isn't whitespace, but we didn't consume anything,
                     // thus the input may have whitespace anywhere in between. So fall back to block-wise decoding.
-                    status = DecodeWithWhitespaceBlockwise(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock);
-                    break;
+                    return DecodeWithWhitespaceBlockwise(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock);
                 }
 
                 bytesConsumed += localConsumed;
@@ -938,7 +937,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsWhitespace(int value)
+        internal static bool IsWhitespace(int value)
         {
             if (Environment.Is64BitProcess)
             {
