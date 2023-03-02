@@ -544,7 +544,7 @@ namespace Wasm.Build.Tests
             if (options.WarnAsError)
                 extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-            var res = BuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
+            var res = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
             _testOutput.WriteLine($"BlazorBuild, options.tfm: {options.TargetFramework}");
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: false, targetFramework: options.TargetFramework);
             AssertBlazorBundle(options.Config,
@@ -557,7 +557,7 @@ namespace Wasm.Build.Tests
 
         protected (CommandResult, string) BlazorPublish(BlazorBuildOptions options, params string[] extraArgs)
         {
-            var res = BuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
+            var res = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: true, targetFramework: options.TargetFramework);
             AssertBlazorBundle(options.Config,
                                isPublish: true,
@@ -572,11 +572,20 @@ namespace Wasm.Build.Tests
 
                 // make sure this assembly gets skipped
                 Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Item1.Output);
+
             }
+
+            string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework, "wasm", "for-build");
+            // Check that we linked only for publish
+            if (options.ExpectRelinkDirWhenPublishing)
+                Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is liokely a test authoring error");
+            else
+                Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets created when relinking during Build");
+
             return res;
         }
 
-        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
+        protected (CommandResult, string) BlazorBuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
         {
             string label = publish ? "publish" : "build";
             _testOutput.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
@@ -922,13 +931,26 @@ namespace Wasm.Build.Tests
             File.WriteAllText(counterRazorPath, oldContent + additionalCode);
         }
 
-        public async Task BlazorRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
+        // Keeping these methods with explicit Build/Publish in the name
+        // so in the test code it is evident which is being run!
+        public Task BlazorRunForBuildWithDotnetRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
+            => BlazorRunTest($"run -c {config} {extraArgs}", _projectDir!, test);
+
+        public Task BlazorRunForPublishWithWebServer(string config, Func<IPage, Task>? test=null, string extraArgs="")
+            => BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files {extraArgs}",
+                             Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(config, forPublish: true), "..")),
+                             test);
+
+        public async Task BlazorRunTest(string runArgs,
+                                        string workingDirectory,
+                                        Func<IPage, Task>? test = null,
+                                        bool detectRuntimeFailures = true)
         {
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!);
+                                        .WithWorkingDirectory(workingDirectory);
 
             await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, $"run -c {config} {extraArgs}", onConsoleMessage: OnConsoleMessage);
+            var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage);
 
             await page.Locator("text=Counter").ClickAsync();
             var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
@@ -946,6 +968,12 @@ namespace Wasm.Build.Tests
                 if (EnvironmentVariables.ShowBuildOutput)
                     Console.WriteLine($"[{msg.Type}] {msg.Text}");
                 _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+
+                if (detectRuntimeFailures)
+                {
+                    if (msg.Text.Contains("[MONO] * Assertion") || msg.Text.Contains("Error: [MONO] "))
+                        throw new XunitException($"Detected a runtime failure at line: {msg.Text}");
+                }
             }
         }
 
@@ -1210,7 +1238,8 @@ namespace Wasm.Build.Tests
         string Config,
         NativeFilesType ExpectedFileType,
         string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
-        bool WarnAsError = true
+        bool WarnAsError = true,
+        bool ExpectRelinkDirWhenPublishing=false
     );
 
     public enum GlobalizationMode

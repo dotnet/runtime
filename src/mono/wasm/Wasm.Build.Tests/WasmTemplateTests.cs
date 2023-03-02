@@ -418,21 +418,6 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        public async Task BlazorRunTest()
-        {
-            string config = "Debug";
-            string id = $"blazor_{config}_{Path.GetRandomFileName()}";
-            string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-
-            new DotNetCommand(s_buildEnv, _testOutput)
-                    .WithWorkingDirectory(_projectDir!)
-                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
-                    .EnsureSuccessful();
-
-            await BlazorRun(config);
-        }
-
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("", BuildTestBase.DefaultTargetFramework)]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]

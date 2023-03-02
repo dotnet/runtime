@@ -56,11 +56,7 @@ namespace System.Buffers
 
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector128<byte> bitmap, out BitVector256 lookup);
-
-                return Ssse3.IsSupported && lookup.Contains(0)
-                    ? new IndexOfAnyAsciiByteValues<IndexOfAnyAsciiSearcher.Ssse3HandleZeroInNeedle>(bitmap, lookup)
-                    : new IndexOfAnyAsciiByteValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
+                return new IndexOfAnyAsciiByteValues(values);
             }
 
             return new IndexOfAnyByteValues(values);
