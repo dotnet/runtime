@@ -69,7 +69,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#if TARGET_OSX
+#ifdef HAVE_SYS_RESOURCE_H
 #   include <sys/resource.h>
 #endif
 
@@ -1909,23 +1909,28 @@ switch_gc (char* argv[], const char* target_gc)
 #endif
 }
 
-#ifdef TARGET_OSX
-
-/*
- * tries to increase the minimum number of files, if the number is below 1024
- */
 static void
-darwin_change_default_file_handles ()
+increase_descriptor_limit (void)
 {
+#if defined(HAVE_GETRLIMIT) && !defined(DONT_SET_RLIMIT_NOFILE)
 	struct rlimit limit;
 
-	if (getrlimit (RLIMIT_NOFILE, &limit) == 0){
-		if (limit.rlim_cur < 1024){
-			limit.rlim_cur = MAX(1024,limit.rlim_cur);
-			setrlimit (RLIMIT_NOFILE, &limit);
-		}
+	if (getrlimit (RLIMIT_NOFILE, &limit) == 0) {
+		// Set our soft limit for file descriptors to be the same
+		// as the max limit.
+		limit.rlim_cur = limit.rlim_max;
+#ifdef __APPLE__
+		// Based on compatibility note in setrlimit(2) manpage for OSX,
+		// trim the limit to OPEN_MAX.
+		if (limit.rlim_cur > OPEN_MAX)
+			limit.rlim_cur = OPEN_MAX;
+#endif
+		setrlimit (RLIMIT_NOFILE, &limit);
 	}
+#endif
 }
+
+#ifdef TARGET_OSX
 
 static void
 switch_arch (char* argv[], const char* target_arch)
@@ -2084,9 +2089,7 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
-#if TARGET_OSX
-	darwin_change_default_file_handles ();
-#endif
+	increase_descriptor_limit ();
 
 	if (g_hasenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);

@@ -5,7 +5,7 @@ import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
 import { Module } from "./imports";
 import {
-    getU16
+    getU16, getU32
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode, OpcodeInfo } from "./mintops";
@@ -14,7 +14,8 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, shortNameBase,
     counters, getRawCwrap, importDef,
-    JiterpreterOptions, getOptions, recordFailure
+    JiterpreterOptions, getOptions, recordFailure,
+    JiterpMember, getMemberOffset
 } from "./jiterpreter-support";
 import {
     generate_wasm_body
@@ -46,10 +47,20 @@ export const
     // Very expensive!!!!
     trapTraceErrors = false,
     // When eliminating a null check, replace it with a runtime 'not null' assertion
-    //  that will print a diagnostic message if the value is actually null
+    //  that will print a diagnostic message if the value is actually null or if
+    //  the value does not match the value on the native interpreter stack in memory
     nullCheckValidation = false,
+    // Cache null-checked pointers in cknull_ptr between instructions. Incredibly fragile
+    //  for some reason I have not been able to identify
+    nullCheckCaching = true,
+    // Print diagnostic information to the console when performing null check optimizations
+    traceNullCheckOptimizations = false,
+    // Print diagnostic information when generating backward branches
+    traceBackBranches = false,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
+    // Unproductive if we have backward branches enabled because it can stop us from jitting
+    //  nested loops
     abortAtJittedLoopBodies = true,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
@@ -75,8 +86,6 @@ export const disabledOpcodes : Array<MintOpcode> = [
 // Having any items in this list will add some overhead to the jitting of *all* traces
 // These names can be substrings and instrumentation will happen if the substring is found in the full name
 export const instrumentedMethodNames : Array<string> = [
-    // "System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>& System.Collections.Generic.Dictionary`2<System.Type, System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>>:FindValue (System.Type)"
-    // "InternalInsertNode"
 ];
 
 export class InstrumentedTraceState {
@@ -114,10 +123,10 @@ export let countLimitedPrintCounter = 10;
 export const abortCounts : { [key: string] : number } = {};
 export const traceInfo : { [key: string] : TraceInfo } = {};
 
-export const // offsetOfStack = 12,
-    offsetOfImethod = 4,
-    offsetOfDataItems = 20,
+export const
     sizeOfDataItem = 4,
+    sizeOfObjectHeader = 8,
+
     // HACK: Typically we generate ~12 bytes of extra gunk after the function body so we are
     //  subtracting 20 from the maximum size to make sure we don't produce too much
     // Also subtract some more size since the wasm we generate for one opcode could be big
@@ -173,6 +182,7 @@ export const enum BailoutReason {
     ConditionalBackwardBranch,
     ComplexBranch,
     ArrayLoadFailed,
+    ArrayStoreFailed,
     StringOperationFailed,
     DivideByZero,
     Overflow,
@@ -199,6 +209,7 @@ export const BailoutReasonNames = [
     "ConditionalBackwardBranch",
     "ComplexBranch",
     "ArrayLoadFailed",
+    "ArrayStoreFailed",
     "StringOperationFailed",
     "DivideByZero",
     "Overflow",
@@ -240,13 +251,8 @@ function getTraceImports () {
     traceImports = [
         importDef("bailout", getRawCwrap("mono_jiterp_trace_bailout")),
         importDef("copy_pointer", getRawCwrap("mono_wasm_copy_managed_pointer")),
-        importDef("array_length", getRawCwrap("mono_wasm_array_length_ref")),
-        importDef("array_address", getRawCwrap("mono_jiterp_array_get_element_address_with_size_ref")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
-        importDef("strlen", getRawCwrap("mono_jiterp_strlen_ref")),
-        importDef("getchr", getRawCwrap("mono_jiterp_getchr_ref")),
-        importDef("getspan", getRawCwrap("mono_jiterp_getitem_span")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
         importDef("cast", getRawCwrap("mono_jiterp_cast_ref")),
         importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
@@ -255,6 +261,7 @@ function getTraceImports () {
         ["ckovr_i4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_i4")],
         ["ckovr_u4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_u4")],
         importDef("newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")),
+        importDef("newstr", getRawCwrap("mono_jiterp_try_newstr")),
         importDef("ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")),
         importDef("ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")),
         importDef("conv", getRawCwrap("mono_jiterp_conv")),
@@ -265,10 +272,12 @@ function getTraceImports () {
         importDef("hascsize", getRawCwrap("mono_jiterp_object_has_component_size")),
         importDef("hasflag", getRawCwrap("mono_jiterp_enum_hasflag")),
         importDef("array_rank", getRawCwrap("mono_jiterp_get_array_rank")),
+        ["a_elesize", "array_rank", getRawCwrap("mono_jiterp_get_array_element_size")],
         importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
         importDef("transfer", getRawCwrap("mono_jiterp_trace_transfer")),
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
+        importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -359,18 +368,6 @@ function initialize_builder (builder: WasmBuilder) {
         }, WasmValtype.void, true
     );
     builder.defineType(
-        "array_length", {
-            "ppArray": WasmValtype.i32
-        }, WasmValtype.i32, true
-    );
-    builder.defineType(
-        "array_address", {
-            "ppArray": WasmValtype.i32,
-            "elementSize": WasmValtype.i32,
-            "index": WasmValtype.i32
-        }, WasmValtype.i32, true
-    );
-    builder.defineType(
         "entry", {
             "imethod": WasmValtype.i32
         }, WasmValtype.i32, true
@@ -424,6 +421,12 @@ function initialize_builder (builder: WasmBuilder) {
         "newobj_i", {
             "ppDestination": WasmValtype.i32,
             "vtable": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "newstr", {
+            "ppDestination": WasmValtype.i32,
+            "length": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
     builder.defineType(
@@ -534,7 +537,9 @@ function initialize_builder (builder: WasmBuilder) {
     builder.defineType(
         "notnull", {
             "ptr": WasmValtype.i32,
+            "expected": WasmValtype.i32,
             "traceIp": WasmValtype.i32,
+            "ip": WasmValtype.i32,
         }, WasmValtype.void, true
     );
     builder.defineType(
@@ -560,22 +565,29 @@ function initialize_builder (builder: WasmBuilder) {
             "locals": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
+    builder.defineType(
+        "stelem_ref", {
+            "o": WasmValtype.i32,
+            "aindex": WasmValtype.i32,
+            "ref": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
 }
 
 function assert_not_null (
-    value: number, traceIp: MintOpcodePtr
+    value: number, expectedValue: number, traceIp: MintOpcodePtr, ip: MintOpcodePtr
 ) {
-    if (value)
+    if (value && (value === expectedValue))
         return;
     const info = traceInfo[<any>traceIp];
-    throw new Error(`expected non-null value in trace ${info.name} but found null`);
+    throw new Error(`expected non-null value ${expectedValue} but found ${value} in trace ${info.name} @ 0x${(<any>ip).toString(16)}`);
 }
 
 // returns function id
 function generate_wasm (
     frame: NativePointer, methodName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
-    methodFullName: string | undefined
+    methodFullName: string | undefined, backwardBranchTable: Uint16Array | null
 ) : number {
     // Pre-allocate a decent number of constant slots - this adds fixed size bloat
     //  to the trace but will make the actual pointer constants in the trace smaller
@@ -597,6 +609,15 @@ function generate_wasm (
     const traceOffset = <any>ip - <any>startOfBody;
     const endOfBody = <any>startOfBody + <any>sizeOfBody;
     const traceName = `${methodName}:${(traceOffset).toString(16)}`;
+
+    // HACK: If we aren't starting at the beginning of the method, we don't know which
+    //  locals may have already had their address taken, so the null check optimization
+    //  is potentially invalid since there could be addresses on the stack
+    // FIXME: The interpreter maintains information on which locals have had their address
+    //  taken, so if we flow that information through it will allow us to make this optimization
+    //  robust in all scenarios and remove this hack
+    if (traceOffset > 0)
+        builder.allowNullCheckOptimization = false;
 
     if (useDebugCount) {
         if (cwraps.mono_jiterp_debug_count() === 0) {
@@ -686,8 +707,8 @@ function generate_wasm (
         //  to using global constants and figuring out how many constant slots we need in advance
         //  since a long trace might need many slots and that bloats the header.
         const opcodes_processed = generate_wasm_body(
-            frame, traceName, ip, endOfBody, builder,
-            instrumentedTraceId
+            frame, traceName, ip, startOfBody, endOfBody,
+            builder, instrumentedTraceId, backwardBranchTable
         );
         const keep = (opcodes_processed >= mostRecentOptions.minimumTraceLength);
 
@@ -768,7 +789,7 @@ function generate_wasm (
     } catch (exc: any) {
         threw = true;
         rejected = false;
-        console.error(`MONO_WASM: ${traceName} code generation failed: ${exc} ${exc.stack}`);
+        console.error(`MONO_WASM: ${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
         recordFailure();
         return 0;
     } finally {
@@ -786,7 +807,7 @@ function generate_wasm (
                     console.log(builder.traceBuf[i]);
             }
 
-            console.log(`// MONO_WASM: ${traceName} generated, blob follows //`);
+            console.log(`// MONO_WASM: ${methodFullName || methodName}:${traceOffset.toString(16)} generated, blob follows //`);
             let s = "", j = 0;
             try {
                 // We may have thrown an uncaught exception while inside a block,
@@ -886,8 +907,34 @@ export function mono_interp_tier_prepare_jiterpreter (
     }
     const methodName = Module.UTF8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
+
+    const imethod = getU32(getMemberOffset(JiterpMember.Imethod) + <any>frame);
+    const backBranchCount = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
+    const pBackBranches = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
+    let backwardBranchTable = backBranchCount
+        ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount)
+        : null;
+
+    // If we're compiling a trace that doesn't start at the beginning of a method,
+    //  it's possible all the backward branch targets precede it, so we won't want to
+    //  actually wrap it in a loop and have the eip check at the beginning.
+    if (backwardBranchTable && (ip !== startOfBody)) {
+        const threshold = (<any>ip - <any>startOfBody) / 2;
+        let foundReachableBranchTarget = false;
+        for (let i = 0; i < backwardBranchTable.length; i++) {
+            if (backwardBranchTable[i] > threshold) {
+                foundReachableBranchTarget = true;
+                break;
+            }
+        }
+        // We didn't find any backward branch targets we can reach from inside this trace,
+        //  so null out the table.
+        if (!foundReachableBranchTarget)
+            backwardBranchTable = null;
+    }
+
     const fnPtr = generate_wasm(
-        frame, methodName, ip, startOfBody, sizeOfBody, methodFullName
+        frame, methodName, ip, startOfBody, sizeOfBody, methodFullName, backwardBranchTable
     );
 
     if (fnPtr) {
@@ -909,7 +956,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
         return;
 
     console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
-    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated`);
+    const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100;
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated. ${counters.backBranchesEmitted} back-branches emitted (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%)`);
     if (concise)
         return;
 
@@ -993,7 +1041,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                         continue;
 
                     // not worth implementing / too difficult
-                    case "intrins_ordinal_ignore_case_ascii":
                     case "intrins_marvin_block":
                     case "intrins_ascii_chars_to_uppercase":
                     case "newarr":

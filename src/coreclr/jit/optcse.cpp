@@ -785,9 +785,9 @@ bool Compiler::optValnumCSE_Locate()
 
         compCurBB = block;
 
-        /* Ensure that the BBF_VISITED and BBF_MARKED flag are clear */
-        /* Everyone who uses these flags are required to clear afterwards */
-        noway_assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
+        // Ensure that the BBF_MARKED flag is clear.
+        // Everyone who uses this flag is required to clear it afterwards.
+        noway_assert((block->bbFlags & BBF_MARKED) == 0);
 
         /* Walk the statement trees in this basic block */
         for (Statement* const stmt : block->NonPhiStatements())
@@ -2655,9 +2655,10 @@ public:
                 //
                 int spillSimdRegInProlog = 1;
 
-                // If we have a SIMD32 that is live across a call we have even higher spill costs
-                //
-                if (candidate->Expr()->TypeGet() == TYP_SIMD32)
+// If we have a SIMD32 that is live across a call we have even higher spill costs
+//
+#if defined(TARGET_XARCH)
+                if (candidate->Expr()->TypeIs(TYP_SIMD32))
                 {
                     // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
                     // (to hold the upper half of the simd32 register that isn't preserved across the call)
@@ -2669,6 +2670,7 @@ public:
                     //
                     cse_use_cost += 2;
                 }
+#endif // TARGET_XARCH
 
                 extra_yes_cost = (BB_UNITY_WEIGHT_UNSIGNED * spillSimdRegInProlog) * 3;
             }
@@ -3870,11 +3872,11 @@ void Compiler::optOptimizeCSEs()
 
 void Compiler::optCleanupCSEs()
 {
-    // We must clear the BBF_VISITED and BBF_MARKED flags.
+    // We must clear the BBF_MARKED flag.
     for (BasicBlock* const block : Blocks())
     {
-        // And clear all the "visited" bits on the block.
-        block->bbFlags &= ~(BBF_VISITED | BBF_MARKED);
+        // And clear the "marked" flag on the block.
+        block->bbFlags &= ~BBF_MARKED;
 
         // Walk the statement trees in this basic block.
         for (Statement* const stmt : block->NonPhiStatements())
@@ -3900,7 +3902,7 @@ void Compiler::optEnsureClearCSEInfo()
 {
     for (BasicBlock* const block : Blocks())
     {
-        assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
+        assert((block->bbFlags & BBF_MARKED) == 0);
 
         for (Statement* const stmt : block->NonPhiStatements())
         {

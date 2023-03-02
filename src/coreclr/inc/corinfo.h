@@ -1246,6 +1246,7 @@ struct CORINFO_LOOKUP_KIND
 //
 #define CORINFO_MAXINDIRECTIONS 4
 #define CORINFO_USEHELPER ((uint16_t) 0xffff)
+#define CORINFO_USENULL ((uint16_t) 0xfffe)
 #define CORINFO_NO_SIZE_CHECK ((uint16_t) 0xffff)
 
 struct CORINFO_RUNTIME_LOOKUP
@@ -1258,6 +1259,7 @@ struct CORINFO_RUNTIME_LOOKUP
 
     // Number of indirections to get there
     // CORINFO_USEHELPER = don't know how to get it, so use helper function at run-time instead
+    // CORINFO_USENULL = the context should be null because the callee doesn't actually use it
     // 0 = use the this pointer itself (e.g. token is C<!0> inside code in sealed class C)
     //     or method desc itself (e.g. token is method void M::mymeth<!!0>() inside code in M::mymeth)
     // Otherwise, follow each byte-offset stored in the "offsets[]" array (may be negative)

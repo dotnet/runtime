@@ -35,6 +35,7 @@ export class WasmBuilder {
     stackSize!: number;
     inSection!: boolean;
     inFunction!: boolean;
+    allowNullCheckOptimization!: boolean;
     locals = new Map<string, [WasmValtype, number]>();
 
     permanentFunctionTypeCount = 0;
@@ -59,6 +60,7 @@ export class WasmBuilder {
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;
     constantSlots: Array<number> = [];
+    backBranchOffsets: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
 
     constructor (constantSlotCount: number) {
@@ -90,6 +92,9 @@ export class WasmBuilder {
         this.constantSlots.length = this.options.useConstants ? constantSlotCount : 0;
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
+        this.backBranchOffsets.length = 0;
+
+        this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
 
     push () {
@@ -194,15 +199,9 @@ export class WasmBuilder {
         }
     }
 
-    ip_const (value: MintOpcodePtr, highBit?: boolean) {
+    ip_const (value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
-        let relativeValue = <any>value - <any>this.base;
-        if (highBit) {
-            // it is impossible to do this in JS as far as i can tell
-            // relativeValue |= 0x80000000;
-            relativeValue += 0xF000000;
-        }
-        this.appendLeb(relativeValue);
+        this.appendLeb(<any>value - <any>this.base);
     }
 
     i52_const (value: number) {
@@ -726,6 +725,8 @@ export const counters = {
     failures: 0,
     bytesGenerated: 0,
     nullChecksEliminated: 0,
+    backBranchesEmitted: 0,
+    backBranchesNotEmitted: 0,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -942,6 +943,31 @@ export function recordFailure () : void {
     }
 }
 
+export const enum JiterpMember {
+    VtableInitialized = 0,
+    ArrayData = 1,
+    StringLength = 2,
+    StringData = 3,
+    Imethod = 4,
+    DataItems = 5,
+    Rmethod = 6,
+    SpanLength = 7,
+    SpanData = 8,
+    ArrayLength = 9,
+    BackwardBranchOffsets = 10,
+    BackwardBranchOffsetsCount = 11,
+}
+
+const memberOffsets : { [index: number] : number } = {};
+
+export function getMemberOffset (member: JiterpMember) {
+    const cached = memberOffsets[member];
+    if (cached === undefined)
+        return memberOffsets[member] = cwraps.mono_jiterp_get_member_offset(<any>member);
+    else
+        return cached;
+}
+
 export function getRawCwrap (name: string): Function {
     const result = (<any>Module)["asm"][name];
     if (typeof (result) !== "function")
@@ -975,6 +1001,8 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
+    // Enable performing backward branches without exiting traces
+    noExitBackwardBranches: boolean;
     // Unwrap gsharedvt wrappers when compiling jitcalls if possible
     directJitCalls: boolean;
     eliminateNullChecks: boolean;
@@ -1002,6 +1030,7 @@ const optionNames : { [jsName: string] : string } = {
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
     "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
+    "noExitBackwardBranches": "jiterpreter-backward-branches-enabled",
     "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",

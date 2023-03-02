@@ -232,7 +232,7 @@
 .class interface private abstract auto ansi I4Reabstract
        implements I4
 {
-  .method private hidebysig abstract
+  .method private hidebysig virtual abstract
           static int32  Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)

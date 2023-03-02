@@ -8,15 +8,18 @@
 #endif
 #include "config.h"
 
+void jiterp_preserve_module (void);
+
+// NOTE: All code in this file needs to be guarded with HOST_BROWSER, since
+//  we don't run non-wasm tests for changes to this file!
+
+#if HOST_BROWSER
+
 #if 0
 #define jiterp_assert(b) g_assert(b)
 #else
 #define jiterp_assert(b)
 #endif
-
-void jiterp_preserve_module (void);
-
-#if HOST_BROWSER
 
 #include <emscripten.h>
 
@@ -196,29 +199,6 @@ mono_jiterp_value_copy (void *dest, void *src, MonoClass *klass) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_strlen_ref (MonoString **ppString, int *result) {
-	MonoString *pString = *ppString;
-	if (!pString)
-		return 0;
-
-	*result = mono_string_length_internal(pString);
-	return 1;
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_getchr_ref (MonoString **ppString, int *pIndex, int *result) {
-	int index = *pIndex;
-	MonoString *pString = *ppString;
-	if (!pString)
-		return 0;
-	if ((index < 0) || (index >= mono_string_length_internal(pString)))
-		return 0;
-
-	*result = mono_string_chars_internal(pString)[index];
-	return 1;
-}
-
-EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_try_newobj_inlined (MonoObject **destination, MonoVTable *vtable) {
 	*destination = 0;
 	if (!vtable->initialized)
@@ -232,19 +212,13 @@ mono_jiterp_try_newobj_inlined (MonoObject **destination, MonoVTable *vtable) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_getitem_span (
-	void **destination, MonoSpanOfVoid *span, int index, size_t element_size
-) {
-	if (!span)
-		return 0;
-
-	const gint32 length = span->_length;
-	if ((index < 0) || (index >= length))
-		return 0;
-
-	unsigned char * pointer = (unsigned char *)span->_reference;
-	*destination = pointer + (index * element_size);
-	return 1;
+mono_jiterp_try_newstr (MonoString **destination, int length) {
+	ERROR_DECL(error);
+	*destination = mono_string_new_size_checked(length, error);
+	if (!is_ok (error))
+		*destination = 0;
+	mono_error_cleanup (error); // FIXME: do not swallow the error
+	return *destination != 0;
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -336,19 +310,6 @@ mono_jiterp_cast_ref (
 	}
 
 	return 0;
-}
-
-EMSCRIPTEN_KEEPALIVE void*
-mono_jiterp_array_get_element_address_with_size_ref (MonoArray **array, int size, int index)
-{
-	// HACK: This does not need to be volatile because we know array is visible to
-	//  the GC and this is called from interp traces in gc unsafe mode
-	MonoArray* _array = *array;
-	if (!_array)
-		return NULL;
-	if (index >= mono_array_length_internal(_array))
-		return NULL;
-	return mono_array_addr_with_size_fast (_array, size, index);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -510,17 +471,6 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 }
 
 #undef JITERP_RELOP
-
-// we use these helpers at JIT time to figure out where to do memory loads and stores
-EMSCRIPTEN_KEEPALIVE size_t
-mono_jiterp_get_offset_of_vtable_initialized_flag () {
-	return offsetof(MonoVTable, initialized);
-}
-
-EMSCRIPTEN_KEEPALIVE size_t
-mono_jiterp_get_offset_of_array_data () {
-	return MONO_STRUCT_OFFSET (MonoArray, vector);
-}
 
 EMSCRIPTEN_KEEPALIVE size_t
 mono_jiterp_get_size_of_stackval () {
@@ -713,6 +663,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_STRLEN:
 		case MINT_GETCHR:
 		case MINT_GETITEM_SPAN:
+		case MINT_GETITEM_LOCALSPAN:
 		case MINT_INTRINS_SPAN_CTOR:
 		case MINT_INTRINS_UNSAFE_BYTE_OFFSET:
 		case MINT_INTRINS_GET_TYPE:
@@ -726,6 +677,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_BOX:
 		case MINT_BOX_VT:
 		case MINT_UNBOX:
+		case MINT_NEWSTR:
 		case MINT_NEWOBJ_INLINED:
 		case MINT_NEWOBJ_VT_INLINED:
 		case MINT_LD_DELEGATE_METHOD_PTR:
@@ -735,9 +687,13 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_INTRINS_TRY_GET_HASHCODE:
 		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
 		case MINT_INTRINS_ENUM_HASFLAG:
+		case MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII:
 		case MINT_ADD_MUL_I4_IMM:
 		case MINT_ADD_MUL_I8_IMM:
 		case MINT_ARRAY_RANK:
+		case MINT_ARRAY_ELEMENT_SIZE:
+		case MINT_MONO_CMPXCHG_I4:
+		case MINT_MONO_CMPXCHG_I8:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
@@ -749,7 +705,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 				if (*inside_branch_block)
 					return TRACE_CONTINUE;
 				else
-					return TRACE_ABORT;
+					return mono_opt_jiterpreter_backward_branches_enabled ? TRACE_CONTINUE : TRACE_ABORT;
 			}
 
 			*inside_branch_block = TRUE;
@@ -787,6 +743,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			(opcode >= MINT_BRFALSE_I4) &&
 			(opcode <= MINT_BLT_UN_I8_IMM_SP)
 		) {
+			// FIXME: Detect negative displacement and abort appropriately
 			*inside_branch_block = TRUE;
 			return TRACE_CONTINUE;
 		}
@@ -957,15 +914,16 @@ trace_info_alloc () {
  *  instruction that would end up there instead and not waste any resources trying to compile it.
  */
 void
-jiterp_insert_entry_points (void *_td)
+jiterp_insert_entry_points (void *_imethod, void *_td)
 {
-	if (!mono_opt_jiterpreter_traces_enabled)
-		return;
+	InterpMethod *imethod = (InterpMethod *)_imethod;
 	TransformData *td = (TransformData *)_td;
-
 	// Insert an entry opcode for the next basic block (call resume and first bb)
 	// FIXME: Should we do this based on relationships between BBs instead of insn sequence?
 	gboolean enter_at_next = TRUE;
+
+	if (!mono_opt_jiterpreter_traces_enabled)
+		return;
 
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		// Enter trace at top of functions
@@ -995,6 +953,7 @@ jiterp_insert_entry_points (void *_td)
 			gint32 trace_index = trace_info_alloc ();
 
 			td->cbb = bb;
+			imethod->contains_traces = TRUE;
 			InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
 			memcpy(ins->data, &trace_index, sizeof (trace_index));
 
@@ -1167,6 +1126,18 @@ mono_jiterp_get_array_rank (gint32 *dest, MonoObject **src)
 	return 1;
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_array_element_size (gint32 *dest, MonoObject **src)
+{
+	if (!src || !*src) {
+		*dest = 0;
+		return 0;
+	}
+
+	*dest = mono_array_element_size (mono_object_class (*src));
+	return 1;
+}
+
 // Returns 1 on success so that the trace can do br_if to bypass its bailout
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_set_object_field (
@@ -1237,6 +1208,26 @@ mono_jiterp_math_tan (double value)
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_stelem_ref (
+	MonoArray *o, gint32 aindex, MonoObject *ref
+) {
+	if (!o)
+		return 0;
+	if (aindex >= mono_array_length_internal (o))
+		return 0;
+
+	if (ref) {
+		// FIXME push/pop LMF
+		gboolean isinst = mono_jiterp_isinst (ref, m_class_get_element_class (mono_object_class (o)));
+		if (!isinst)
+			return 0;
+	}
+
+	mono_array_setref_fast ((MonoArray *) o, aindex, ref);
+	return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_trace_transfer (
 	int displacement, JiterpreterThunk trace, void *frame, void *pLocals
 ) {
@@ -1257,9 +1248,55 @@ mono_jiterp_trace_transfer (
 	return displacement + relative_displacement;
 }
 
+#define JITERP_MEMBER_VT_INITIALIZED 0
+#define JITERP_MEMBER_ARRAY_DATA 1
+#define JITERP_MEMBER_STRING_LENGTH 2
+#define JITERP_MEMBER_STRING_DATA 3
+#define JITERP_MEMBER_IMETHOD 4
+#define JITERP_MEMBER_DATA_ITEMS 5
+#define JITERP_MEMBER_RMETHOD 6
+#define JITERP_MEMBER_SPAN_LENGTH 7
+#define JITERP_MEMBER_SPAN_DATA 8
+#define JITERP_MEMBER_ARRAY_LENGTH 9
+#define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS 10
+#define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT 11
+
+// we use these helpers at JIT time to figure out where to do memory loads and stores
+EMSCRIPTEN_KEEPALIVE size_t
+mono_jiterp_get_member_offset (int member) {
+	switch (member) {
+		case JITERP_MEMBER_VT_INITIALIZED:
+			return MONO_STRUCT_OFFSET (MonoVTable, initialized);
+		case JITERP_MEMBER_ARRAY_DATA:
+			return MONO_STRUCT_OFFSET (MonoArray, vector);
+		case JITERP_MEMBER_ARRAY_LENGTH:
+			return MONO_STRUCT_OFFSET (MonoArray, max_length);
+		case JITERP_MEMBER_STRING_LENGTH:
+			return MONO_STRUCT_OFFSET (MonoString, length);
+		case JITERP_MEMBER_STRING_DATA:
+			return MONO_STRUCT_OFFSET (MonoString, chars);
+		case JITERP_MEMBER_IMETHOD:
+			return offsetof (InterpFrame, imethod);
+		case JITERP_MEMBER_DATA_ITEMS:
+			return offsetof (InterpMethod, data_items);
+		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS:
+			return offsetof (InterpMethod, backward_branch_offsets);
+		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT:
+			return offsetof (InterpMethod, backward_branch_offsets_count);
+		case JITERP_MEMBER_RMETHOD:
+			return offsetof (JiterpEntryDataHeader, rmethod);
+		case JITERP_MEMBER_SPAN_LENGTH:
+			return offsetof (MonoSpanOfVoid, _length);
+		case JITERP_MEMBER_SPAN_DATA:
+			return offsetof (MonoSpanOfVoid, _reference);
+		default:
+			g_assert_not_reached();
+	}
+}
+
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
-#endif
+#endif // HOST_BROWSER
 
 void jiterp_preserve_module () {
 }

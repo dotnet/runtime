@@ -18,6 +18,11 @@ namespace System
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
         private const string TimeZoneEnvironmentVariable = "TZ";
 
+#if TARGET_WASI || TARGET_BROWSER
+        // if TZDIR is set, then the embedded TZ data will be ignored and normal unix behavior will be used
+        private static readonly bool UseEmbeddedTzDatabase = string.IsNullOrEmpty(Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable));
+#endif
+
         private static TimeZoneInfo GetLocalTimeZoneCore()
         {
             // Without Registry support, create the TimeZoneInfo from a TZ file
@@ -29,9 +34,31 @@ namespace System
             value = null;
             e = null;
 
+            byte[]? rawData=null;
             string timeZoneDirectory = GetTimeZoneDirectory();
             string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
-            byte[] rawData;
+
+#if TARGET_WASI || TARGET_BROWSER
+            if (UseEmbeddedTzDatabase)
+            {
+                if(!TryLoadEmbeddedTzFile(timeZoneFilePath, out rawData))
+                {
+                    e = new FileNotFoundException(id, "Embedded TZ data not found");
+                    return TimeZoneInfoResult.TimeZoneNotFoundException;
+                }
+
+                value = GetTimeZoneFromTzData(rawData, id);
+
+                if (value == null)
+                {
+                    e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, id));
+                    return TimeZoneInfoResult.InvalidTimeZoneException;
+                }
+
+                return TimeZoneInfoResult.Success;
+            }
+#endif
+
             try
             {
                 rawData = File.ReadAllBytes(timeZoneFilePath);
@@ -74,52 +101,68 @@ namespace System
         /// <remarks>
         /// Lines that start with # are comments and are skipped.
         /// </remarks>
-        private static List<string> GetTimeZoneIds()
+        private static IEnumerable<string> GetTimeZoneIds()
+        {
+            try
+            {
+                var fileName = Path.Combine(GetTimeZoneDirectory(), TimeZoneFileName);
+#if TARGET_WASI || TARGET_BROWSER
+                if (UseEmbeddedTzDatabase)
+                {
+                    if(!TryLoadEmbeddedTzFile(fileName, out var rawData))
+                    {
+                        return Array.Empty<string>();
+                    }
+                    using var blobReader = new StreamReader(new MemoryStream(rawData), Encoding.UTF8);
+                    return ParseTimeZoneIds(blobReader);
+                }
+#endif
+                using var reader = new StreamReader(fileName, Encoding.UTF8);
+                return ParseTimeZoneIds(reader);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            return Array.Empty<string>();
+        }
+
+        private static List<string> ParseTimeZoneIds(StreamReader reader)
         {
             List<string> timeZoneIds = new List<string>();
 
-            try
+            string? zoneTabFileLine;
+            while ((zoneTabFileLine = reader.ReadLine()) != null)
             {
-                using (StreamReader sr = new StreamReader(Path.Combine(GetTimeZoneDirectory(), TimeZoneFileName), Encoding.UTF8))
+                if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')
                 {
-                    string? zoneTabFileLine;
-                    while ((zoneTabFileLine = sr.ReadLine()) != null)
+                    // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
+
+                    int firstTabIndex = zoneTabFileLine.IndexOf('\t');
+                    if (firstTabIndex >= 0)
                     {
-                        if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')
+                        int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
+                        if (secondTabIndex >= 0)
                         {
-                            // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
-
-                            int firstTabIndex = zoneTabFileLine.IndexOf('\t');
-                            if (firstTabIndex >= 0)
+                            string timeZoneId;
+                            int startIndex = secondTabIndex + 1;
+                            int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
+                            if (thirdTabIndex >= 0)
                             {
-                                int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
-                                if (secondTabIndex >= 0)
-                                {
-                                    string timeZoneId;
-                                    int startIndex = secondTabIndex + 1;
-                                    int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
-                                    if (thirdTabIndex >= 0)
-                                    {
-                                        int length = thirdTabIndex - startIndex;
-                                        timeZoneId = zoneTabFileLine.Substring(startIndex, length);
-                                    }
-                                    else
-                                    {
-                                        timeZoneId = zoneTabFileLine.Substring(startIndex);
-                                    }
+                                int length = thirdTabIndex - startIndex;
+                                timeZoneId = zoneTabFileLine.Substring(startIndex, length);
+                            }
+                            else
+                            {
+                                timeZoneId = zoneTabFileLine.Substring(startIndex);
+                            }
 
-                                    if (!string.IsNullOrEmpty(timeZoneId))
-                                    {
-                                        timeZoneIds.Add(timeZoneId);
-                                    }
-                                }
+                            if (!string.IsNullOrEmpty(timeZoneId))
+                            {
+                                timeZoneIds.Add(timeZoneId);
                             }
                         }
                     }
                 }
             }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
 
             return timeZoneIds;
         }
@@ -379,6 +422,22 @@ namespace System
             return false;
         }
 
+#if TARGET_WASI || TARGET_BROWSER
+        private static bool TryLoadEmbeddedTzFile(string name, [NotNullWhen(true)] out byte[]? rawData)
+        {
+            IntPtr bytes = Interop.Sys.GetTimeZoneData(name, out int length);
+            if(bytes == IntPtr.Zero)
+            {
+                rawData = null;
+                return false;
+            }
+
+            rawData = new byte[length];
+            Marshal.Copy(bytes, rawData, 0, length);
+            return true;
+        }
+#endif
+
         /// <summary>
         /// Gets the tzfile raw data for the current 'local' time zone using the following rules.
         ///
@@ -386,6 +445,10 @@ namespace System
         /// 1. Read the TZ environment variable.  If it is set, use it.
         /// 2. Get the default TZ from the device
         /// 3. Use UTC if all else fails.
+        ///
+        /// On WASI / Browser
+        /// 1. if TZDIR is not set, use TZ variable as id to embedded database.
+        /// 2. fall back to unix behavior if TZDIR is set.
         ///
         /// On all other platforms
         /// 1. Read the TZ environment variable.  If it is set, use it.
@@ -406,6 +469,11 @@ namespace System
             {
 #if TARGET_IOS || TARGET_TVOS
                 tzVariable = Interop.Sys.GetDefaultTimeZone();
+#elif TARGET_WASI || TARGET_BROWSER
+                if (UseEmbeddedTzDatabase)
+                {
+                    return false; // use UTC
+                }
 #else
                 return
                     TryLoadTzFile("/etc/localtime", ref rawData, ref id) ||
@@ -432,6 +500,24 @@ namespace System
             {
                 tzFilePath = tzVariable;
             }
+
+#if TARGET_WASI || TARGET_BROWSER
+            if (UseEmbeddedTzDatabase)
+            {
+                // embedded database only supports relative paths
+                if (tzVariable[0] == '/')
+                {
+                    return false;
+                }
+                if(!TryLoadEmbeddedTzFile(tzFilePath, out rawData))
+                {
+                    return false;
+                }
+                id = tzVariable;
+                return true;
+            }
+#endif
+
             return TryLoadTzFile(tzFilePath, ref rawData, ref id);
         }
 

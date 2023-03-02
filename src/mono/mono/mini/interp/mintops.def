@@ -795,6 +795,16 @@ OPDEF(MINT_PROF_COVERAGE_STORE, "prof_coverage_store", 5, 0, 0, MintOpLongInt)
 OPDEF(MINT_TIER_ENTER_METHOD, "tier_enter_method", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_TIER_PATCHPOINT, "tier_patchpoint", 2, 0, 0, MintOpShortInt)
 
+OPDEF(MINT_SIMD_V128_LDC, "simd_v128_ldc", 10, 1, 0, MintOpNoArgs)
+OPDEF(MINT_SIMD_V128_I1_CREATE, "simd_v128_i1_create", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_SIMD_V128_I2_CREATE, "simd_v128_i2_create", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_SIMD_V128_I4_CREATE, "simd_v128_i4_create", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_SIMD_V128_I8_CREATE, "simd_v128_i8_create", 3, 1, 1, MintOpNoArgs)
+
+OPDEF(MINT_SIMD_INTRINS_P_P, "simd_intrins_p_p", 4, 1, 1, MintOpShortInt)
+OPDEF(MINT_SIMD_INTRINS_P_PP, "simd_intrins_p_pp", 5, 1, 2, MintOpShortInt)
+OPDEF(MINT_SIMD_INTRINS_P_PPP, "simd_intrins_p_ppp", 6, 1, 3, MintOpShortInt)
+
 OPDEF(MINT_INTRINS_ENUM_HASFLAG, "intrins_enum_hasflag", 5, 1, 2, MintOpClassToken)
 OPDEF(MINT_INTRINS_GET_HASHCODE, "intrins_get_hashcode", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_TRY_GET_HASHCODE, "intrins_try_get_hashcode", 3, 1, 1, MintOpNoArgs)

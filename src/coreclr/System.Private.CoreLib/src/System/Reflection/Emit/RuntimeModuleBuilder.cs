@@ -400,11 +400,11 @@ namespace System.Reflection.Emit
 
             if (methodBase is MethodOnTypeBuilderInstantiation motbi)
             {
-                methDef = motbi.m_method;
+                methDef = motbi._method;
             }
             else if (methodBase is ConstructorOnTypeBuilderInstantiation cotbi)
             {
-                methDef = cotbi.m_ctor;
+                methDef = cotbi._ctor;
             }
             else if (methodBase is MethodBuilder || methodBase is ConstructorBuilder)
             {
@@ -445,15 +445,15 @@ namespace System.Reflection.Emit
                     return methodBuilder.GetMethodSignature();
                 case RuntimeConstructorBuilder constructorBuilder:
                     return constructorBuilder.GetMethodSignature();
-                case MethodOnTypeBuilderInstantiation motbi when motbi.m_method is RuntimeMethodBuilder methodBuilder:
+                case MethodOnTypeBuilderInstantiation motbi when motbi._method is RuntimeMethodBuilder methodBuilder:
                     return methodBuilder.GetMethodSignature();
                 case MethodOnTypeBuilderInstantiation motbi:
-                    method = motbi.m_method;
+                    method = motbi._method;
                     break;
-                case ConstructorOnTypeBuilderInstantiation cotbi when cotbi.m_ctor is RuntimeConstructorBuilder constructorBuilder:
+                case ConstructorOnTypeBuilderInstantiation cotbi when cotbi._ctor is RuntimeConstructorBuilder constructorBuilder:
                     return constructorBuilder.GetMethodSignature();
                 case ConstructorOnTypeBuilderInstantiation cotbi:
-                    method = cotbi.m_ctor;
+                    method = cotbi._ctor;
                     break;
             }
 

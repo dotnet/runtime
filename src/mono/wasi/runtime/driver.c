@@ -9,8 +9,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#define INVARIANT_GLOBALIZATION 1
-
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class.h>
@@ -64,9 +62,14 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
-extern const char* dotnet_wasi_getbundledfile(const char* name, int* out_length);
-extern void dotnet_wasi_registerbundledassemblies();
+extern void mono_wasm_register_timezones_bundle();
+#ifdef BUNDLED_ASSEMBLIES
+extern void mono_wasm_register_assemblies_bundle();
+#endif
+
 extern const char* dotnet_wasi_getentrypointassemblyname();
+int32_t mono_wasi_load_icu_data(const void* pData);
+void load_icu_data (void);
 
 int mono_wasm_enable_gc = 1;
 
@@ -329,7 +332,33 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 	}
 }
 
-void mono_wasm_link_icu_shim (void);
+void load_icu_data (void)
+{
+	FILE *fileptr;
+	unsigned char *buffer;
+	long filelen;
+	char filename[256];
+	sprintf(filename, "./icudt.dat");
+
+	fileptr = fopen(filename, "rb");
+	if (fileptr == 0) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+
+	fseek(fileptr, 0, SEEK_END);
+	filelen = ftell(fileptr);
+	rewind(fileptr);
+
+	buffer = (unsigned char *)malloc(filelen * sizeof(char));
+	if(!fread(buffer, filelen, 1, fileptr)) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+	fclose(fileptr);
+
+	assert(mono_wasi_load_icu_data(buffer));
+}
 
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -343,11 +372,9 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
-#ifndef INVARIANT_GLOBALIZATION
-	mono_wasm_link_icu_shim ();
-#else
-	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
-#endif
+    char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+    if (strcmp(invariant_globalization, "true") != 0 && strcmp(invariant_globalization, "1") != 0)
+	    load_icu_data();
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
@@ -401,6 +428,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
+	mono_wasm_register_timezones_bundle();
+#ifdef BUNDLED_ASSEMBLIES
+	mono_wasm_register_assemblies_bundle();
+#endif
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 

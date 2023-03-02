@@ -150,7 +150,6 @@ namespace System
             false;
 #endif
 
-/* TODO https://github.com/dotnet/runtime/issues/78389
         /// <summary>
         /// Indicates whether the current application is running as WASI.
         /// </summary>
@@ -161,7 +160,6 @@ namespace System
 #else
             false;
 #endif
-*/
 
         /// <summary>
         /// Indicates whether the current application is running on Linux.

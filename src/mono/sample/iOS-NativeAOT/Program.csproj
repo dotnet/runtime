@@ -1,0 +1,95 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <IntermediateOutputPath>$(MSBuildThisFileDirectory)/obj/</IntermediateOutputPath>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
+    <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iossimulator</TargetOS>
+    <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <AppName>HelloiOS</AppName>
+    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
+    <!-- NativeAOT-specific props -->
+    <NativeLib>static</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+    <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
+    <!-- FIXME: Once we support building System.Globalization.Native and icu, should be removed -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- FIXME: We do not use publish targets yet, but we need to create a publish directory -->
+    <PublishDir Condition="'$(PublishDir)' == ''">$(OutputPath)/publish</PublishDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\iOS\Program.cs" Link="Program.cs" />
+    <DirectPInvoke Include="__Internal" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
+    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
+    <EnableAppSandbox Condition="'$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
+  </PropertyGroup>
+
+  <Import Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.NETCore.Native.targets" />
+  <UsingTask TaskName="AppleAppBuilderTask"
+             AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+
+  <!-- FIXME: Once we set up builing appropriate runtime package for iOS-like platforms the following properties should be removed -->
+  <Target Name="ConfigureIlcPathsForiOSCrossCompilation">
+      <PropertyGroup>
+        <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
+        <IlcToolsPath>$(IlcPath)</IlcToolsPath>
+        <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+        <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
+        <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="BuildAppBundle"
+    AfterTargets="Build"
+    DependsOnTargets="ConfigureIlcPathsForiOSCrossCompilation;SetupProperties;ComputeIlcCompileInputs;IlcCompile">
+
+    <PropertyGroup>
+      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
+      <IosSimulator Condition="'$(TargetsiOSSimulator)' == 'true'">iPhone 11</IosSimulator>
+      <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <NativeLibrary Include="%(ManagedBinary.IlcOutputFile)" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(AppDir)" />
+
+    <AppleAppBuilderTask
+        UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
+        NativeDependencies="@(NativeLibrary)"
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(AppName)"
+        Assemblies="@(BundleAssemblies)"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(AppDir)"
+        Optimized="$(Optimized)"
+        InvariantGlobalization="$(InvariantGlobalization)"
+        StripSymbolTable="$(StripDebugSymbols)"
+        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)" >
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
+    <Message Importance="High" Text="App:   $(AppBundlePath)"/>
+
+  </Target>
+
+  <Target Name="RunAppBundle"
+          AfterTargets="BuildAppBundle"
+          Condition="'$(DeployAndRun)' == 'true'">
+    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
+  </Target>
+
+</Project>
