@@ -294,7 +294,6 @@ namespace System.Buffers
         [Conditional("DEBUG")]
         private readonly void AssertValidPosition()
         {
-#if DEBUG
             Debug.Assert(_currentSpanIndex >= 0 && _currentSpanIndex <= _currentSpan.Length, "span index out of range");
             if (_currentSpanIndex == _currentSpan.Length) // should only be at-length for EOF
             {
@@ -302,7 +301,6 @@ namespace System.Buffers
                 object? segment = _currentPositionObject;
                 Debug.Assert(!TryGetNextBuffer(in _sequence, ref segment, ref span), "failed to eagerly read-ahead");
             }
-#endif
         }
 
         private static bool TryGetNextBuffer(in ReadOnlySequence<T> sequence, ref object? @object, ref ReadOnlySpan<T> buffer)
