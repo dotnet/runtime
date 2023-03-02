@@ -1157,7 +1157,13 @@ private:
 #ifdef DEBUG
     const char* getScoreName(RegisterScore score);
 #endif
+#ifdef TARGET_ARM64
+    template <bool hasConsecutiveRegister = false>
+#endif
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+#ifdef TARGET_ARM64
+    template <bool hasConsecutiveRegister = false>
+#endif
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1193,7 +1199,8 @@ private:
     bool areNextConsecutiveRegistersFree(regNumber regToAssign, int registersToCheck, var_types registerType);
     bool setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     regMaskTP getFreeCandidates(regMaskTP candidates, RefPosition* refPosition);
-#else
+#endif // TARGET_ARM64
+
     regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
     {
         regMaskTP result = candidates & m_AvailableRegs;
@@ -1207,7 +1214,6 @@ private:
 #endif // TARGET_ARM
         return result;
     }
-#endif // TARGET_ARM64
 
 #ifdef DEBUG
     class RegisterSelection;
@@ -1223,7 +1229,10 @@ private:
     public:
         RegisterSelection(LinearScan* linearScan);
 
-        // Perform register selection and update currentInterval or refPosition
+// Perform register selection and update currentInterval or refPosition
+#ifdef TARGET_ARM64
+        template <bool hasConsecutiveRegister = false>
+#endif
         FORCEINLINE regMaskTP select(Interval*    currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
