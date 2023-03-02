@@ -746,6 +746,7 @@ namespace System.Buffers
         /// </summary>
         public void AdvanceToEnd()
         {
+            AssertValidPosition();
             if (!End)
             {
                 _consumedAtStartOfCurrentSpan = Length;
@@ -755,9 +756,8 @@ namespace System.Buffers
                 SequencePosition position = _sequence.End;
                 _currentPositionObject = position.GetObject();
                 _currentPositionInteger = position.GetInteger();
-                // and mimic default(Position) for next
-                _nextPositionObject = default;
-                _nextPositionInteger = default;
+
+                AssertValidPosition();
             }
         }
 
@@ -813,7 +813,7 @@ namespace System.Buffers
             Debug.Assert(currentSpan.Length < next.Length);
 
             int fullLength = next.Length;
-            SequencePosition position = new(_nextPositionObject, _nextPositionInteger);
+            SequencePosition position = Position;
 
             while (next.StartsWith(currentSpan))
             {
@@ -828,24 +828,13 @@ namespace System.Buffers
                 }
 
                 // Need to check the next segment
-                while (true)
+                if (!TryGetNextBuffer(in _sequence, ref position, ref currentSpan))
                 {
-                    if (!_sequence.TryGetBuffer(position, out ReadOnlyMemory<T> nextSegment, out SequencePosition nextPosition))
-                    {
-                        // Nothing left
-                        return false;
-                    }
-                    position = nextPosition;
-                    if (nextSegment.Length > 0)
-                    {
-                        next = next.Slice(currentSpan.Length);
-                        currentSpan = nextSegment.Span;
-                        if (currentSpan.Length > next.Length)
-                        {
-                            currentSpan = currentSpan.Slice(0, next.Length);
-                        }
-                        break;
-                    }
+                    return false; // no more data
+                }
+                if (currentSpan.Length > next.Length)
+                {
+                    currentSpan = currentSpan.Slice(0, next.Length);
                 }
             }
 
