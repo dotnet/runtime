@@ -482,7 +482,11 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 #ifdef TARGET_ARM64
         else
         {
-            ContainCheckCompareChainForAnd(binOp);
+            GenTree* next = TryLowerAndToCCMP(binOp);
+            if (next != nullptr)
+            {
+                return next;
+            }
         }
 #endif
     }
@@ -2264,156 +2268,116 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 
 #ifdef TARGET_ARM64
 //------------------------------------------------------------------------
-// IsValidCompareChain : Determine if the node contains a valid chain of ANDs and CMPs.
+// TryLowerAndToCCMP : Lower an and of two conditions into test + CCMP + SETCC nodes.
 //
 // Arguments:
-//    child - pointer to the node being checked.
-//    parent - parent node of the child.
+//    tree - pointer to the node
 //
-// Return value:
-//    True if a valid chain is found.
-//
-// Notes:
-//    A compare chain is a sequence of CMP nodes connected by AND nodes.
-//    For example:   AND (AND (CMP A B) (CMP C D)) (CMP E F)
-//    The chain can just be a single compare node, however it's parent
-//    must always be an AND or SELECT node.
-//    If a CMP or AND node is contained then it and all it's children are
-//    considered to be in a valid chain.
-//    Chains are built up during the lowering of each successive parent.
-//
-bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
-{
-    assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
-
-    if (parent->isContainedCompareChainSegment(child))
-    {
-        // Already have a chain.
-        return true;
-    }
-    else if (child->OperIs(GT_AND))
-    {
-        // Count both sides.
-        return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
-               IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
-    }
-    else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) && varTypeIsIntegral(child->gtGetOp2()))
-    {
-        // Can the child compare be contained.
-        return IsInvariantInRange(child, parent);
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
-// ContainCheckCompareChain : Determine if a chain of ANDs and CMPs can be contained.
-//
-// Arguments:
-//    child - pointer to the node being checked.
-//    parent - parent node of the child.
-//    startOfChain - If found, returns the earliest valid op in the chain.
-//
-// Return value:
-//    True if a valid chain is was contained.
-//
-// Notes:
-//    Assumes the chain was checked via IsValidCompareChain.
-//
-bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** startOfChain)
-{
-    assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
-    *startOfChain = nullptr; // Nothing found yet.
-
-    if (parent->isContainedCompareChainSegment(child))
-    {
-        // Already have a contained chain.
-        return true;
-    }
-    // Can the child be contained.
-    else if (IsInvariantInRange(child, parent))
-    {
-        if (child->OperIs(GT_AND))
-        {
-            // If Op2 is not contained, then try to contain it.
-            if (!child->isContainedCompareChainSegment(child->AsOp()->gtGetOp2()))
-            {
-                if (!ContainCheckCompareChain(child->gtGetOp2(), child, startOfChain))
-                {
-                    // Op2 must be contained in order to contain Op1 or the AND.
-                    return false;
-                }
-            }
-
-            // If Op1 is not contained, then try to contain it.
-            if (!child->isContainedCompareChainSegment(child->AsOp()->gtGetOp1()))
-            {
-                if (!ContainCheckCompareChain(child->gtGetOp1(), child, startOfChain))
-                {
-                    return false;
-                }
-            }
-
-            // Contain the AND.
-            child->SetContained();
-            return true;
-        }
-        else if (child->OperIsCmpCompare())
-        {
-            child->AsOp()->SetContained();
-
-            // Ensure the children of the compare are contained correctly.
-            child->AsOp()->gtGetOp1()->ClearContained();
-            child->AsOp()->gtGetOp2()->ClearContained();
-            ContainCheckConditionalCompare(child->AsOp());
-            *startOfChain = child;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
-// ContainCheckCompareChainForAnd : Determine if an AND is a containable chain
-//
-// Arguments:
-//    node - pointer to the node
-//
-void Lowering::ContainCheckCompareChainForAnd(GenTree* tree)
+GenTree* Lowering::TryLowerAndToCCMP(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_AND));
 
     if (!comp->opts.OptimizationEnabled())
     {
-        return;
+        return nullptr;
     }
 
-    // First check there is a valid chain.
-    if (IsValidCompareChain(tree->AsOp()->gtGetOp2(), tree) && IsValidCompareChain(tree->AsOp()->gtGetOp1(), tree))
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    // Find out whether op2 is eligible to be converted to a conditional
+    // compare. It must be a normal integral relop; for example, we cannot
+    // conditionally perform a floating point comparison and there is no "ctst"
+    // instruction that would allow us to conditionally implement
+    // TEST_EQ/TEST_NE.
+    //
+    if (!op2->OperIsCmpCompare() || !varTypeIsIntegral(op2->gtGetOp1()))
     {
-        GenTree* startOfChain = nullptr;
+        return nullptr;
+    }
 
-        // To ensure ordering at code generation, Op1 and the parent can
-        // only be contained if Op2 is contained.
-        if (ContainCheckCompareChain(tree->AsOp()->gtGetOp2(), tree, &startOfChain))
-        {
-            if (ContainCheckCompareChain(tree->AsOp()->gtGetOp1(), tree, &startOfChain))
-            {
-                // If op1 is the start of a chain, then it'll be generated as a standard compare.
-                if (startOfChain != nullptr)
-                {
-                    // The earliest node in the chain will be generated as a standard compare.
-                    assert(startOfChain->OperIsCmpCompare());
-                    startOfChain->AsOp()->gtGetOp1()->ClearContained();
-                    startOfChain->AsOp()->gtGetOp2()->ClearContained();
-                    ContainCheckCompare(startOfChain->AsOp());
-                }
-            }
-        }
+    // For op1 we can allow more arbitrary operations that set the condition
+    // flags; the final transformation into the flags def is done by
+    // TryLowerConditionToFlagsNode below, but we have a quick early out here
+    // too.
+    //
+    if (!op1->OperIsCompare() && !op1->OperIs(GT_SETCC))
+    {
+        return nullptr;
+    }
 
-        JITDUMP("Lowered `AND` chain:\n");
-        DISPTREE(tree);
+    // We leave checking invariance of op1 to tree to TryLowerConditionToFlagsNode.
+    if (!IsInvariantInRange(op2, tree))
+    {
+        return nullptr;
+    }
+
+    GenCondition cond1;
+    if (!TryLowerConditionToFlagsNode(tree, op1, &cond1))
+    {
+        return nullptr;
+    }
+
+    BlockRange().Remove(op2);
+    BlockRange().InsertBefore(tree, op2);
+
+    GenCondition cond2 = GenCondition::FromRelop(op2);
+    op2->SetOper(GT_CCMP);
+    op2->gtType = TYP_VOID;
+    op2->gtFlags |= GTF_SET_FLAGS;
+
+    op2->gtGetOp1()->ClearContained();
+    op2->gtGetOp2()->ClearContained();
+
+    GenTreeCCMP* ccmp = op2->AsCCMP();
+    ccmp->gtCondition = cond1;
+    // If the first comparison fails, set the condition flags to something that
+    // makes the second one fail as well so that the overall AND failed.
+    ccmp->gtFlagsVal = TruthifyingFlags(GenCondition::Reverse(cond2));
+    ContainCheckConditionalCompare(ccmp);
+
+    tree->SetOper(GT_SETCC);
+    tree->AsCC()->gtCondition = cond2;
+
+    return tree->gtNext;
+}
+
+//------------------------------------------------------------------------
+// TruthifyingFlags: Get a flags immediate that will make a specified condition true.
+//
+// Arguments:
+//    condition - the condition.
+//
+// Returns:
+//    A flags immediate that, if those flags were set, would cause the specified condition to be true.
+//
+insCflags Lowering::TruthifyingFlags(GenCondition condition)
+{
+    switch (condition.GetCode())
+    {
+        case GenCondition::EQ:
+            return INS_FLAGS_Z;
+        case GenCondition::NE:
+            return INS_FLAGS_NONE;
+        case GenCondition::SGE:
+            return INS_FLAGS_Z;
+        case GenCondition::SGT:
+            return INS_FLAGS_NONE;
+        case GenCondition::SLT:
+            return INS_FLAGS_NC;
+        case GenCondition::SLE:
+            return INS_FLAGS_NZC;
+        case GenCondition::UGE:
+            return INS_FLAGS_C;
+        case GenCondition::UGT:
+            return INS_FLAGS_C;
+        case GenCondition::ULT:
+            return INS_FLAGS_NONE;
+        case GenCondition::ULE:
+            return INS_FLAGS_Z;
+        default:
+            NO_WAY("unexpected condition type");
+            return INS_FLAGS_NONE;
     }
 }
 
@@ -2423,9 +2387,8 @@ void Lowering::ContainCheckCompareChainForAnd(GenTree* tree)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
+void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 {
-    assert(cmp->OperIsCmpCompare());
     GenTree* op2 = cmp->gtOp2;
 
     if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
@@ -2452,38 +2415,8 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
 #ifdef TARGET_ARM
     noway_assert(!"GT_SELECT nodes are not supported on arm32");
 #else
-    if (!comp->opts.OptimizationEnabled())
-    {
-        return;
-    }
-
-    GenTree* cond = node->AsConditional()->gtCond;
-    GenTree* op1  = node->gtOp1;
-    GenTree* op2  = node->gtOp2;
-
-    if (cond->OperIsCompare())
-    {
-        // All compare node types (including TEST_) are containable.
-        if (IsInvariantInRange(cond, node))
-        {
-            cond->AsOp()->SetContained();
-        }
-    }
-    else
-    {
-        // Check for a compare chain and try to contain it.
-        GenTree* startOfChain = nullptr;
-        ContainCheckCompareChain(cond, node, &startOfChain);
-
-        if (startOfChain != nullptr)
-        {
-            // The earliest node in the chain will be generated as a standard compare.
-            assert(startOfChain->OperIsCmpCompare());
-            startOfChain->AsOp()->gtGetOp1()->ClearContained();
-            startOfChain->AsOp()->gtGetOp2()->ClearContained();
-            ContainCheckCompare(startOfChain->AsOp());
-        }
-    }
+    GenTree* op1 = node->gtOp1;
+    GenTree* op2 = node->gtOp2;
 
     if (op1->IsIntegralConst(0))
     {
