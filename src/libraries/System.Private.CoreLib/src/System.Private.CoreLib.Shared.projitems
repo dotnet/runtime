@@ -1278,7 +1278,7 @@
     <Compile Include="$(CommonPath)Interop\Interop.Locale.cs">
       <Link>Common\Interop\Interop.Locale.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.Locale.iOS.cs">
+    <Compile Include="$(CommonPath)Interop\Interop.Locale.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
       <Link>Common\Interop\Interop.Locale.iOS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Normalization.cs">
