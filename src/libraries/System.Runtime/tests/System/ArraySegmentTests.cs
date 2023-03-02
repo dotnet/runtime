@@ -24,6 +24,7 @@ namespace System.Tests
             return Factory(count * 2, count / 2, count);
         }
 
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override bool Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
         protected override bool IsReadOnly_ValidityValue => true;

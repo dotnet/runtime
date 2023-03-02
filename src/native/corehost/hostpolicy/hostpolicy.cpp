@@ -537,6 +537,12 @@ namespace
                 "Internal.Runtime.InteropServices.ComponentActivator",
                 "GetFunctionPointer",
                 delegate);
+        case coreclr_delegate_type::load_assembly:
+            return coreclr->create_delegate(
+                "System.Private.CoreLib",
+                "Internal.Runtime.InteropServices.ComponentActivator",
+                "LoadAssembly",
+                delegate);
         default:
             return StatusCode::LibHostInvalidArgs;
         }

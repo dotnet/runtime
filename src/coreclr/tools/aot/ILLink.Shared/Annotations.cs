@@ -13,13 +13,6 @@ using ILLink.Shared.TrimAnalysis;
 
 namespace ILLink.Shared
 {
-	// Temporary workaround - should be removed once linker can be upgraded to build against
-	// high enough version of the framework which has this enum value.
-	internal static class DynamicallyAccessedMemberTypesOverlay
-	{
-		public const DynamicallyAccessedMemberTypes Interfaces = (DynamicallyAccessedMemberTypes) 0x2000;
-	}
-
 	internal static class Annotations
 	{
 		public static bool SourceHasRequiredAnnotations (
@@ -71,8 +64,8 @@ namespace ILLink.Shared
 				memberTypesList.Remove (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
 
 			return string.Join (", ", memberTypesList.Select (mt => {
-				string mtName = mt == DynamicallyAccessedMemberTypesOverlay.Interfaces
-					? nameof (DynamicallyAccessedMemberTypesOverlay.Interfaces)
+				string mtName = mt == DynamicallyAccessedMemberTypes.Interfaces
+					? nameof (DynamicallyAccessedMemberTypes.Interfaces)
 					: mt.ToString ();
 
 				return $"'{nameof (DynamicallyAccessedMemberTypes)}.{mtName}'";
@@ -86,8 +79,8 @@ namespace ILLink.Shared
 			var values = new HashSet<DynamicallyAccessedMemberTypes> (
 								Enum.GetValues (typeof (DynamicallyAccessedMemberTypes))
 								.Cast<DynamicallyAccessedMemberTypes> ());
-			if (!values.Contains (DynamicallyAccessedMemberTypesOverlay.Interfaces))
-				values.Add (DynamicallyAccessedMemberTypesOverlay.Interfaces);
+			if (!values.Contains (DynamicallyAccessedMemberTypes.Interfaces))
+				values.Add (DynamicallyAccessedMemberTypes.Interfaces);
 			return values.ToArray ();
 		}
 

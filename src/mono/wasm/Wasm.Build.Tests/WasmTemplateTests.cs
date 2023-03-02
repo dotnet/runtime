@@ -148,7 +148,8 @@ namespace Wasm.Build.Tests
                         HasV8Script: false,
                         MainJS: "main.mjs",
                         Publish: false,
-                        TargetFramework: BuildTestBase.DefaultTargetFramework
+                        TargetFramework: BuildTestBase.DefaultTargetFramework,
+                        IsBrowserProject: false
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
@@ -174,7 +175,8 @@ namespace Wasm.Build.Tests
                             MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false));
+                            UseCache: false,
+                            IsBrowserProject: false));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
         }
@@ -216,7 +218,8 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: false,
-                            TargetFramework: expectedTFM
+                            TargetFramework: expectedTFM,
+                            IsBrowserProject: false
                             ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config, expectedTFM), "AppBundle"), fromRuntimePack: !relinking, targetFramework: expectedTFM);
@@ -388,7 +391,8 @@ namespace Wasm.Build.Tests
                             MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false));
+                            UseCache: false,
+                            IsBrowserProject: false));
 
             if (!aot)
             {
