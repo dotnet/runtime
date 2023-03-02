@@ -347,6 +347,20 @@ namespace Microsoft.Win32
             {
                 Win32Error(ret, null);
             }
+
+            if (string.IsNullOrEmpty(subkey))
+            {
+                // If subkey is empty, the old implementation opens a new handle to current key
+                // and deletes current key.
+                // However, RegDeleteTree only delete subkeys and values of current key
+                // if subkey is null.
+                // Also delete current key to restore old behavior.
+                ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
+                if (ret != 0)
+                {
+                    Win32Error(ret, null);
+                }
+            }
         }
 
         /// <summary>Deletes the specified value from this key.</summary>
