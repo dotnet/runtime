@@ -6287,8 +6287,6 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 			if (direct_callable && !strcmp (callee_cfg->method->name, ".cctor"))
 				direct_callable = FALSE;
 
-			if (direct_callable && (m_class_has_cctor (method->klass) || !mono_aot_can_specialize (callee_cfg->method)))
-				direct_callable = FALSE;
 			//
 			// FIXME: Support inflated methods, it asserts in mini_llvm_init_gshared_method_this () because the method is not in
 			// amodule->extra_methods.
@@ -6591,14 +6589,17 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						patch_info->type = MONO_PATCH_INFO_NONE;
 					} else if ((m_class_get_image (patch_info->data.method->klass) == acfg->image) && !got_only && is_direct_callable (acfg, method, patch_info)) {
 						MonoCompile *callee_cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, cmethod);
-						char *name = mono_aot_get_mangled_method_name (cmethod);
-						mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "DIRECT CALL: %s by %s", name, method ? mono_method_full_name (method, TRUE) : "");
-						g_free (name);
 
-						direct_call = TRUE;
-						direct_call_target = callee_cfg->asm_symbol;
-						patch_info->type = MONO_PATCH_INFO_NONE;
-						acfg->stats.direct_calls ++;
+						if (!m_class_has_cctor (method->klass) && mono_aot_can_specialize (callee_cfg->method)) {
+							char *name = mono_aot_get_mangled_method_name (cmethod);
+							mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "DIRECT CALL: %s by %s", name, method ? mono_method_full_name (method, TRUE) : "");
+							g_free (name);
+
+							direct_call = TRUE;
+							direct_call_target = callee_cfg->asm_symbol;
+							patch_info->type = MONO_PATCH_INFO_NONE;
+							acfg->stats.direct_calls ++;
+						}
 					}
 
 					acfg->stats.all_calls ++;
