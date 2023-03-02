@@ -22,6 +22,8 @@
     <NativeAotSupported Condition="'$(CrossBuild)' == 'true' and '$(TargetOS)' != '$(HostOS)'">false</NativeAotSupported>
     <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
+    <ObjCopyName Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(CrossBuild)' == 'true' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">llvm-objcopy-15</ObjCopyName>
+    <ObjCopyName Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(CrossBuild)' == 'true' and '$(RuntimeIdentifier)' == 'linux-arm64'">aarch64-linux-gnu-objcopy</ObjCopyName>
   </PropertyGroup>
 
   <Target Name="PublishCrossgen"
@@ -33,7 +35,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-<MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
+    <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
              Targets="Restore"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
               ;_IsPublishing=true
@@ -48,6 +50,8 @@
               ;RuntimeIdentifier=$(PackageRID)
               ;NativeAotSupported=$(NativeAotSupported)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
+              ;StripSymbols=true
+              ;ObjCopyName=$(ObjCopyName)
               ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />

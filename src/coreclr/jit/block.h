@@ -1080,7 +1080,8 @@ struct BasicBlock : private LIR::Range
         void* bbSparseProbeList; // Used early on by fgInstrument
     };
 
-    unsigned bbPostOrderNum; // the block's post order number in the graph.
+    unsigned bbPreorderNum;  // the block's  preorder number in the graph (1...fgMaxBBNum]
+    unsigned bbPostorderNum; // the block's postorder number in the graph (1...fgMaxBBNum]
 
     IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
     IL_OFFSET bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)

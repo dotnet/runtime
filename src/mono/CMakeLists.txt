@@ -143,6 +143,9 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-none")
     set(TARGET_SYSTEM_NAME "emscripten")
     set(TARGET_ARCH "wasm")
+  elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-wasi")
+    set(TARGET_SYSTEM_NAME "wasi")
+    set(TARGET_ARCH "wasm")
   elseif(AOT_TARGET_TRIPLE STREQUAL "x86_64-none-linux-android")
     set(TARGET_SYSTEM_NAME "android")
     set(TARGET_ARCH "x86_64")
@@ -910,6 +913,8 @@ else()
 endif()
 
 if(CLR_CMAKE_HOST_ALPINE_LINUX)
+  # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
+  add_definitions(-DDONT_SET_RLIMIT_NOFILE)
   # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)

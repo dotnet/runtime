@@ -30,7 +30,7 @@ public:
 
     host_runtime_contract host_contract;
 
-    int initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs);
+    int initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs);
 };
 
 #endif // __HOSTPOLICY_CONTEXT_H__
