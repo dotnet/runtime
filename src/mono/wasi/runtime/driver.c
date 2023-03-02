@@ -104,6 +104,10 @@ typedef uint32_t target_mword;
 typedef target_mword SgenDescriptor;
 typedef SgenDescriptor MonoGCDescriptor;
 
+#ifdef DRIVER_GEN
+#include "driver-gen.c"
+#endif
+
 typedef struct WasmAssembly_ WasmAssembly;
 
 struct WasmAssembly_ {
