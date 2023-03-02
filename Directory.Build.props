@@ -196,7 +196,7 @@
     <_packageOS Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)</_packageOS>
 
     <_toolsRID>$(_packageOS)-$(_hostArch)</_toolsRID>
-    <_toolsRID Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-musl'">linux</_toolsRID>
+    <_toolsRID Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-musl'">linux-$(_hostArch)</_toolsRID>
     <_toolsRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_portableOS)-x64</_toolsRID>
 
     <!-- There are no WebAssembly tools, so use the default ones -->
