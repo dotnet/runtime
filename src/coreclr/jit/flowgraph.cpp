@@ -378,6 +378,23 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     fgAddRefPred(fallbackBb, nullcheckBb);
                 }
 
+                // Some quick validation
+                assert(prevBb->NumSucc() == 1);
+                if (needsSizeCheck)
+                {
+                    assert(prevBb->GetSucc(0) == sizeCheckBb);
+                    assert(sizeCheckBb->NumSucc() == 2);
+                }
+                else
+                {
+                    assert(prevBb->GetSucc(0) == nullcheckBb);
+                }
+                assert(nullcheckBb->NumSucc() == 2);
+                assert(fastPathBb->NumSucc() == 1);
+                assert(fallbackBb->NumSucc() == 1);
+                assert(fastPathBb->GetSucc(0) == block);
+                assert(fallbackBb->GetSucc(0) == block);
+
                 // Re-distribute weights (see '[weight: X]' on the diagrams above)
 
                 block->inheritWeight(prevBb);
@@ -404,6 +421,24 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                     // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
                     fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
+                }
+
+                // Update loop info
+                if (prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+                {
+                    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+                    fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
+                    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
+                    if (needsSizeCheck)
+                    {
+                        sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+                    }
+
+                    // Update lpBottom after block split
+                    if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
+                    {
+                        optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
+                    }
                 }
 
                 // All blocks are expected to be in the same EH region

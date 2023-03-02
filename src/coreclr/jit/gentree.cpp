@@ -5780,6 +5780,25 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             GenTreeCall* call;
             call = tree->AsCall();
 
+            if (call->IsHelperCall())
+            {
+                switch (eeGetHelperNum(call->gtCallMethHnd))
+                {
+                    case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
+                    case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
+                    case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
+                    case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
+                    case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                        // These helpers a hoistable and are extremely slow. Also, they introduce a control flow in a
+                        // late phase
+                        costEx *= 2;
+                        costSz *= 3;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
             // Evaluate the arguments
 
             lvl2 = gtSetCallArgsOrder(&call->gtArgs, /* lateArgs */ false, &costEx, &costSz);
