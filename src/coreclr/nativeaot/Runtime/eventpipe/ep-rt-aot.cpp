@@ -515,7 +515,7 @@ void ep_rt_aot_init (void)
     extern CrstStatic _ep_rt_aot_config_lock;
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
-    _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipe);
+    _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)

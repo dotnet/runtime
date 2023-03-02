@@ -27,6 +27,7 @@ enum CrstType
     CrstCastCache,
     CrstYieldProcessorNormalized,
     CrstEventPipe,
+    CrstEventPipeConfig,
 };
 
 enum CrstFlags
