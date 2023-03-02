@@ -68,5 +68,58 @@ namespace System.Diagnostics.Tests
                 }
             }
         }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(ProcessWindowStyle.Normal)]
+        [InlineData(ProcessWindowStyle.Hidden)]
+        [InlineData(ProcessWindowStyle.Minimized)]
+        [InlineData(ProcessWindowStyle.Maximized)]
+        public void TestWindowStyleUseShellExecuteFalse(ProcessWindowStyle windowStyle)
+        {
+            // "x y" where x is the expected dwFlags & 0x1 result and y is the wShowWindow value
+            string procArg = windowStyle switch
+            {
+                ProcessWindowStyle.Hidden => "1 0",
+                ProcessWindowStyle.Minimized => "1 2",
+                ProcessWindowStyle.Maximized => "1 3",
+                _ => "0 0",
+            };
+
+            Process p = CreateProcess((string procArg) =>
+            {
+                Interop.GetStartupInfoW(out var si);
+
+                string[] argSplit = procArg.Split(" ");
+                int expectedFlags = int.Parse(argSplit[0]);
+                short expectedWindow = short.Parse(argSplit[1]);
+
+                if ((si.dwFlags & 0x00000001) == expectedFlags && si.wShowWindow == expectedWindow)
+                {
+                    return RemoteExecutor.SuccessExitCode;
+                }
+                else
+                {
+                    return -1;
+                }
+            }, procArg);
+            p.StartInfo.UseShellExecute  = false;
+            p.StartInfo.WindowStyle = windowStyle;
+            p.Start();
+
+            Assert.True(p.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void TestUseCreateNoWindowAndWindowStyle_NotSupported()
+        {
+            Process p = CreateProcessLong();
+            p.StartInfo.CreateNoWindow  = true;
+            p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+
+            Assert.Throws<ArgumentException>(() => p.Start());
+        }
     }
 }
