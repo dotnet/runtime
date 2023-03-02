@@ -1039,6 +1039,7 @@ CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type)
     return DEFAULT_CLASS_INTERFACE_TYPE;
 }
 
+#ifdef FEATURE_COMINTEROP
 //--------------------------------------------------------------------------------
 // GetErrorInfo helper, enables and disables GC during call-outs
 HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
@@ -1054,7 +1055,6 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
 
     *ppIErrInfo = NULL;
 
-#ifdef FEATURE_COMINTEROP
     GCX_PREEMP();
 
     HRESULT hr = S_OK;
@@ -1069,12 +1069,9 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
     EX_END_CATCH(SwallowAllExceptions);
 
     return hr;
-#else // FEATURE_COMINTEROP
-    // Indicate no error object
-    return S_FALSE;
-#endif
 }
 
+#endif // FEATURE_COMINTEROP
 
 #include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
