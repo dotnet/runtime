@@ -31,14 +31,13 @@ char* DetectDefaultAppleLocaleName()
     return strdup([localeName UTF8String]);
 }
 
-int32_t NativeGetLocaleName(const UChar* localeName,
-                                         UChar* value,
+const char* NativeGetLocaleName(const char* localeName,
                                          int32_t valueLength)
 {
-     UErrorCode status = U_ZERO_ERROR;
-     NSLocale *currentLocale = [NSLocale currentLocale]; 
-     value = (UChar *)[currentLocale.localeIdentifier UTF8String]; 
-     return UErrorCodeToBool(status);
+     NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+     NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+     const char* value = [currentLocale.localeIdentifier UTF8String];
+     return strdup(value);
 }
 
 const char* NativeGetLocaleInfoString(const char* localeName,
@@ -46,168 +45,133 @@ const char* NativeGetLocaleInfoString(const char* localeName,
                                                 int32_t valueLength,
                                                 const char* uiLocaleName)
 {
-    NSLog(@"NSLog NativeGetLocaleInfoString is running");
-   // NSLocale *currentLocale = [NSLocale currentLocale];
-    NSLocale *locale = [NSLocale autoupdatingCurrentLocale];
-    NSString *s = [NSString stringWithFormat:@"%s", localeName];
-
-    NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:s];
-
     const char* value;
-
-    NSLog(@"NSLog NativeGetLocaleInfoString is running after NSLocale");
-   // UErrorCode status = U_ZERO_ERROR;
+    NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+    NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
     NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
     numberFormatter.locale = currentLocale;
-    //NSCalendar *calendar = [NSCalendar autoupdatingCurrentCalendar];
-    //[calendar setLocale:currentLocale];
-    NSDateFormatter *timeFormatter = [[NSDateFormatter alloc] init];
-    timeFormatter.locale = currentLocale;
+    NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setLocale:currentLocale];
+    NSLocale *gbLocale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_GB"];
 
-
-    NSLog(@"NSLog NativeGetLocaleInfoString is running after NSNumberFormatter");
 
     switch (localeStringData)
     {
+        ///// <summary>localized name of locale, eg "German (Germany)" in UI language (corresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>
         case LocaleString_LocalizedDisplayName:
-        NSLog(@"NSLog LocaleString_LocalizedDisplayName case is running");
-            value = [[currentLocale localizedStringForLocaleIdentifier:currentLocale.localeIdentifier] UTF8String];
+            value = [[gbLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier] UTF8String];
             break;
+        /// <summary>Display name (language + country usually) in English, eg "German (Germany)" (corresponds to LOCALE_SENGLISHDISPLAYNAME)</summary>
         case LocaleString_EnglishDisplayName:
-        NSLog(@"NSLog LocaleString_EnglishDisplayName case is running");
-            value = [currentLocale.localeIdentifier UTF8String];
+            value = [[gbLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier] UTF8String];
            break;
+        /// <summary>Display name in native locale language, eg "Deutsch (Deutschland) (corresponds to LOCALE_SNATIVEDISPLAYNAME)</summary>
         case LocaleString_NativeDisplayName:
-        NSLog(@"NSLog LocaleString_NativeDisplayName case is running");
-            value = [currentLocale.localeIdentifier UTF8String];
+            value = [[currentLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier] UTF8String];
             break;
+        /// <summary>Language Display Name for a language, eg "German" in UI language (corresponds to LOCALE_SLOCALIZEDLANGUAGENAME)</summary>
         case LocaleString_LocalizedLanguageName:
-        NSLog(@"NSLog LocaleString_LocalizedLanguageName case is running");
-            value = [[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
+            value = [[gbLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
             break;
+        /// <summary>English name of language, eg "German" (corresponds to LOCALE_SENGLISHLANGUAGENAME)</summary>
         case LocaleString_EnglishLanguageName:
-        NSLog(@"NSLog LocaleString_EnglishLanguageName case is running");
-            value = [[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
+            value = [[gbLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
             break;
+        /// <summary>native name of language, eg "Deutsch" (corresponds to LOCALE_SNATIVELANGUAGENAME)</summary>
         case LocaleString_NativeLanguageName:
-        NSLog(@"NSLog LocaleString_NativeLanguageName case is running");
             value = [[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
            break;
+        /// <summary>English name of country, eg "Germany" (corresponds to LOCALE_SENGLISHCOUNTRYNAME)</summary>
         case LocaleString_EnglishCountryName:
-        NSLog(@"NSLog LocaleString_EnglishCountryName case is running");
-            value = [[currentLocale localizedStringForCountryCode:currentLocale.countryCode] UTF8String];
+            value = [[gbLocale localizedStringForCountryCode:currentLocale.countryCode] UTF8String];
             break;
+        /// <summary>native name of country, eg "Deutschland" (corresponds to LOCALE_SNATIVECOUNTRYNAME)</summary>
         case LocaleString_NativeCountryName:
-        NSLog(@"NSLog LocaleString_NativeCountryName case is running");
             value = [[currentLocale localizedStringForCountryCode:currentLocale.countryCode] UTF8String];
             break;
         case LocaleString_ThousandSeparator:
-        NSLog(@"NSLog LocaleString_ThousandSeparator case is running");
             value = [currentLocale.groupingSeparator UTF8String];
             break;
         case LocaleString_DecimalSeparator:
-        NSLog(@"NSLog LocaleString_DecimalSeparator case is running");
             value = [currentLocale.decimalSeparator UTF8String];
+            // or value = [[currentLocale objectForKey:NSLocaleDecimalSeparator] UTF8String];
             break;
         case LocaleString_Digits:
-        NSLog(@"NSLog LocaleString_Digits case is running");
-            // TODO fake value
-            value = [currentLocale.currencySymbol UTF8String];
+            // TODO find mapping for Digits
+            value = "0123456789";
            break;
         case LocaleString_MonetarySymbol:
-        NSLog(@"NSLog LocaleString_MonetarySymbol case is running");
             value = [currentLocale.currencySymbol UTF8String];
             break;
         case LocaleString_Iso4217MonetarySymbol:
-        NSLog(@"NSLog LocaleString_Iso4217MonetarySymbol case is running");
-            // check if this is correct
+            // check if this is correct, check currencyISOCode
             value = [currentLocale.currencySymbol UTF8String];
             break;
         case LocaleString_CurrencyEnglishName:
-        NSLog(@"NSLog LocaleString_CurrencyEnglishName case is running");
-            value = [[currentLocale localizedStringForCurrencyCode:currentLocale.currencyCode] UTF8String];
+            value = [[gbLocale localizedStringForCurrencyCode:currentLocale.currencyCode] UTF8String];
             break;
         case LocaleString_CurrencyNativeName:
-        NSLog(@"NSLog LocaleString_CurrencyNativeName case is running");
             value = [[currentLocale localizedStringForCurrencyCode:currentLocale.currencyCode] UTF8String];
             break;
         case LocaleString_MonetaryDecimalSeparator:
-        NSLog(@"NSLog LocaleString_MonetaryDecimalSeparator case is running");
-            // TODO fake value
-            value = [locale.localeIdentifier UTF8String];
+            // TODO find mapping for MonetaryDecimalSeparator
+            value = "";
             break;
         case LocaleString_MonetaryThousandSeparator:
-        NSLog(@"NSLog LocaleString_MonetaryThousandSeparator case is running");
-            // TODO fake value
-            value = [locale.localeIdentifier UTF8String];
+            // TODO find mapping for MonetaryThousandSeparator
+            value = "";
             break;
         case LocaleString_AMDesignator:
-        NSLog(@"NSLog LocaleString_AMDesignator case is running");
-            // TODO fake value
-            value = [timeFormatter.AMSymbol UTF8String];
+            value = [dateFormatter.AMSymbol UTF8String];
             break;
         case LocaleString_PMDesignator:
-        NSLog(@"NSLog LocaleString_PMDesignator case is running");
-            // TODO fake value
-            value = [timeFormatter.pmSymbol UTF8String];
+            value = [dateFormatter.PMSymbol UTF8String];
             break;
         case LocaleString_PositiveSign:
-        NSLog(@"NSLog LocaleString_PositiveSign case is running");
             value = [numberFormatter.plusSign UTF8String];
             break;
         case LocaleString_NegativeSign:
-        NSLog(@"NSLog LocaleString_NegativeSign case is running");
             value = [numberFormatter.minusSign UTF8String];
             break;
         case LocaleString_Iso639LanguageTwoLetterName:
-        NSLog(@"NSLog LocaleString_LocalizedDisplayName case is running");
-            // TODO fake value
-            value = [locale.localeIdentifier UTF8String];
+            // check if this is correct
+            value = [[currentLocale objectForKey:NSLocaleLanguageCode] UTF8String];
             break;
         case LocaleString_Iso639LanguageThreeLetterName:
-        NSLog(@"NSLog LocaleString_Iso639LanguageThreeLetterName case is running");
-            // TODO fake value
-            value = [locale.localeIdentifier UTF8String];
+            // TODO find mapping for Iso639LanguageThreeLetterName
+            // check ISOLanguageCodes
+            value = [currentLocale.languageCode UTF8String];
             break;
         case LocaleString_Iso3166CountryName:
-        NSLog(@"NSLog LocaleString_Iso3166CountryName case is running");
             value = [currentLocale.countryCode UTF8String];
             break;
         case LocaleString_Iso3166CountryName2:
-        NSLog(@"NSLog LocaleString_Iso3166CountryName2 case is running");
-            // TODO fake value
-            value = [locale.localeIdentifier UTF8String];
+            // TODO find mapping for Iso3166CountryName2
+            value = [currentLocale.countryCode UTF8String];
             break;
         case LocaleString_NaNSymbol:
-        NSLog(@"NSLog LocaleString_NaNSymbol case is running");
             value = [numberFormatter.notANumberSymbol UTF8String];
             break;
         case LocaleString_PositiveInfinitySymbol:
-        NSLog(@"NSLog LocaleString_PositiveInfinitySymbol case is running");
             value = [numberFormatter.positiveInfinitySymbol UTF8String];
             break;
         case LocaleString_NegativeInfinitySymbol:
-        NSLog(@"NSLog LocaleString_NegativeInfinitySymbol case is running");
             value = [numberFormatter.negativeInfinitySymbol UTF8String];
             break;
         case LocaleString_ParentName:
-        NSLog(@"NSLog LocaleString_ParentName case is running");
-            // TODO fake value
-            value = [locale.localeIdentifier UTF8String];
+            // TODO find mapping for ParentName
+            value = "";
             break;
         case LocaleString_PercentSymbol:
-        NSLog(@"NSLog LocaleString_PercentSymbol case is running");
             value = [numberFormatter.percentSymbol UTF8String];
             break;
         case LocaleString_PerMilleSymbol:
-        NSLog(@"NSLog LocaleString_PerMilleSymbol case is running");
             value = [numberFormatter.perMillSymbol UTF8String];
             break;
         default:
-        NSLog(@"NSLog default case is running");
             break;
     }
-     NSLog(@"Globalization nativeGetLocaleInfo value: %s", value);
+    NSLog(@"Globalization nativeGetLocaleInfo value: %s", value);
     return strdup(value);
 }
 

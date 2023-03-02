@@ -924,7 +924,7 @@ namespace System.Globalization
 
         // Parent name (which may be a custom locale/culture)
         // Ask using the real name, so that we get parents of neutrals
-        internal string ParentName => _sParent ??= string.Empty;
+        internal string ParentName => _sParent ??= GetLocaleInfoCore(_sRealName!, LocaleStringData.ParentName);
 
         // Localized pretty name for this locale (ie: Inglis (estados Unitos))
         internal string DisplayName
@@ -969,18 +969,15 @@ namespace System.Globalization
             get
             {
                 string? englishDisplayName = _sEnglishDisplayName;
-                System.Diagnostics.Debug.Write("Globalization EnglishName get englishDisplayName: " + englishDisplayName);
                 if (englishDisplayName == null && !GlobalizationMode.Invariant)
                 {
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
                         englishDisplayName = GetLocaleInfoCore(LocaleStringData.EnglishDisplayName);
-                        System.Diagnostics.Debug.Write("Globalization EnglishName get IsNeutralCulture englishDisplayName: " + englishDisplayName);
                         if (string.IsNullOrEmpty(englishDisplayName))
                         {
                             englishDisplayName = EnglishLanguageName;
-                            System.Diagnostics.Debug.Write("Globalization EnglishName get IsNeutralCulture nested if englishDisplayName: " + englishDisplayName);
                         }
 
                         // differentiate the legacy display names
@@ -995,11 +992,9 @@ namespace System.Globalization
                     else
                     {
                         englishDisplayName = GetLocaleInfoCore(LocaleStringData.EnglishDisplayName);
-                        System.Diagnostics.Debug.Write("Globalization EnglishName get else case englishDisplayName: " + englishDisplayName);
                         // if it isn't found build one:
                         if (string.IsNullOrEmpty(englishDisplayName))
                         {
-                            System.Diagnostics.Debug.Write("Globalization EnglishName get still null englishDisplayName: " + englishDisplayName);
                             // Our existing names mostly look like:
                             // "English" + "United States" -> "English (United States)"
                             // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
@@ -1011,19 +1006,16 @@ namespace System.Globalization
                                     ", ",
                                     EnglishCountryName,
                                     ")");
-                                System.Diagnostics.Debug.Write("Globalization EnglishName get concat englishDisplayName: " + englishDisplayName);
                             }
                             else
                             {
                                 // "English" + "United States" -> "English (United States)"
                                 englishDisplayName = EnglishLanguageName + " (" + EnglishCountryName + ")";
-                                System.Diagnostics.Debug.Write("Globalization EnglishName get concat else englishDisplayName: " + englishDisplayName);
                             }
                         }
                     }
 
                     _sEnglishDisplayName = englishDisplayName;
-                    System.Diagnostics.Debug.Write("Globalization EnglishName get final initialization englishDisplayName: " + englishDisplayName);
                 }
 
                 return englishDisplayName!;
@@ -1549,7 +1541,6 @@ namespace System.Globalization
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
                     _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek()
-                                                                    //: GlobalizationMode.Hybrid ? NativeGetLocaleInfo(LocaleNumberData.FirstDayOfWeek)
                                                                     : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
                 }
                 return _iFirstDayOfWeek;
@@ -2295,9 +2286,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return 0;
 
-            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type)
-                                            //: GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type)
-                                            : IcuGetLocaleInfo(type);
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
         private int GetLocaleInfoCoreUserOverride(LocaleNumberData type)
@@ -2306,9 +2295,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return 0;
 
-            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type)
-                                                //: GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type)
-                                                : IcuGetLocaleInfo(type);
+            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
         private string GetLocaleInfoCoreUserOverride(LocaleStringData type)
@@ -2327,7 +2314,7 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
-// call this function
+
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type)
                                             : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type, uiCultureName)
                                             : IcuGetLocaleInfo(type, uiCultureName);
@@ -2350,16 +2337,13 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type)
-                                                //: GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type)
-                                                : IcuGetLocaleInfo(type);
+            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
         /// <remarks>
         /// The numeric values of the enum members match their Win32 counterparts.  The CultureData Win32 PAL implementation
         /// takes a dependency on this fact, in order to prevent having to construct a mapping from internal values to LCTypes.
         /// </remarks>
-        //important
         private enum LocaleStringData : uint
         {
             /// <summary>localized name of locale, eg "German (Germany)" in UI language (corresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>

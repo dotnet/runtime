@@ -9,7 +9,7 @@ PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLeng
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
 
-PALEXPORT int32_t Native_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
+PALEXPORT const char* NativeGetLocaleName(const char* localeName, int32_t valueLength);
 
 PALEXPORT int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLength);
 

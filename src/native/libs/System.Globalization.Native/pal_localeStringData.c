@@ -6,11 +6,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #include "pal_locale_internal.h"
 #include "pal_localeStringData.h"
-#include <glib.h>
 
 /*
 Function:
@@ -402,7 +400,6 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
 
     return UErrorCodeToBool(status);
 }
-
 
 /*
 PAL Function:

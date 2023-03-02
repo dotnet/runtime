@@ -68,8 +68,7 @@ NativeGetLocaleName
 
 NativeGetLocaleName for Apple platforms
 */
-int32_t NativeGetLocaleName(const UChar* localeName,
-                                         UChar* value,
+const char* NativeGetLocaleName(const char* localeName,
                                          int32_t valueLength);
 
 /*
