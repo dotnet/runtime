@@ -256,7 +256,7 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
 #else
