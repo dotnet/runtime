@@ -1715,8 +1715,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);
                 if (repeat > 0)
                 {
-                    bmtFP->NumValueArrayElements = repeat;
-                    GetHalfBakedClass()->SetValueArrayFlag();
+                    bmtFP->NumInlineArrayElements = repeat;
+                    GetHalfBakedClass()->SetInlineArrayFlag();
                 }
                 else
                 {
@@ -1752,9 +1752,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
         _ASSERTE(HasLayout());
 
-        if (bmtFP->NumValueArrayElements)
+        if (bmtFP->NumInlineArrayElements)
         {
-            GetLayoutInfo()->m_cbManagedSize *= bmtFP->NumValueArrayElements;
+            GetLayoutInfo()->m_cbManagedSize *= bmtFP->NumInlineArrayElements;
         }
 
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
@@ -8362,9 +8362,9 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
         }
 
-        if (bmtFP->NumValueArrayElements > 1)
+        if (bmtFP->NumInlineArrayElements > 1)
         {
-            INT64 extendedSize = (INT64)dwNumInstanceFieldBytes * (INT64)bmtFP->NumValueArrayElements;
+            INT64 extendedSize = (INT64)dwNumInstanceFieldBytes * (INT64)bmtFP->NumInlineArrayElements;
             if (extendedSize > FIELD_OFFSET_LAST_REAL_OFFSET) {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
             }
@@ -8373,7 +8373,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
 
             if (pFieldDescList[0].IsByValue())
             {
-                dwNumGCPointerSeries *= bmtFP->NumValueArrayElements;
+                dwNumGCPointerSeries *= bmtFP->NumInlineArrayElements;
             }
         }
 
@@ -11554,10 +11554,10 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
         }
 
         DWORD repeat = 1;
-        if (bmtFP->NumValueArrayElements > 1)
+        if (bmtFP->NumInlineArrayElements > 1)
         {
             _ASSERTE(bmtEnumFields->dwNumInstanceFields == 1);
-            repeat = bmtFP->NumValueArrayElements;
+            repeat = bmtFP->NumInlineArrayElements;
         }
 
         // Build the pointer series map for this pointers in this instance

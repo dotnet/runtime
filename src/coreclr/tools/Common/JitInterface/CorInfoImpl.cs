@@ -2027,7 +2027,7 @@ namespace Internal.JitInterface
             if (type.IsIntrinsic)
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC_TYPE;
 
-            if (type.IsValueArray)
+            if (type.IsInlineArray)
                 result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
 
             if (metadataType != null)
@@ -2246,7 +2246,7 @@ namespace Internal.JitInterface
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
-            bool isValueArray = type.IsValueArray;
+            bool isInlineArray = type.IsInlineArray;
 
             foreach (var field in type.GetFields())
             {
@@ -2289,7 +2289,7 @@ namespace Internal.JitInterface
                     result += MarkGcField(fieldGcPtrs, gcType);
                 }
 
-                if (isValueArray)
+                if (isInlineArray)
                 {
                     Debug.Assert(field.Offset.AsInt == 0);
                     int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;

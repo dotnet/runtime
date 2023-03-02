@@ -281,13 +281,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             Debug.Assert(type is DefType);
             DefType defType = (DefType)type;
-            bool isValArray = defType.IsValueArray;
+            bool isInlineArray = defType.IsInlineArray;
             foreach (FieldDesc field in defType.GetFields())
             {
                 if (field.IsStatic)
                     continue;
 
-                if (isValArray)
+                if (isInlineArray)
                 {
                     var elementSize = field.FieldType.GetElementSize().AsInt;
                     var totalSize = defType.InstanceFieldSize.AsInt;

@@ -358,7 +358,7 @@ namespace Internal.TypeSystem
                 out instanceByteSizeAndAlignment);
 
             // value array cannot have explicit layout
-            if (type.IsValueArray)
+            if (type.IsInlineArray)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
@@ -434,9 +434,9 @@ namespace Internal.TypeSystem
                 layoutMetadata.Size,
                 out instanceByteSizeAndAlignment);
 
-            if (type.IsValueArray)
+            if (type.IsInlineArray)
             {
-                AdjustForValueArray(type, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+                AdjustForInlineArray(type, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
@@ -454,9 +454,9 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        private static void AdjustForValueArray(MetadataType type, ref SizeAndAlignment instanceByteSizeAndAlignment, ref SizeAndAlignment instanceSizeAndAlignment)
+        private static void AdjustForInlineArray(MetadataType type, ref SizeAndAlignment instanceByteSizeAndAlignment, ref SizeAndAlignment instanceSizeAndAlignment)
         {
-            int repeat = type.GetValueArrayLength();
+            int repeat = type.GetInlineArrayLength();
 
             if (repeat <= 0)
             {
@@ -787,9 +787,9 @@ namespace Internal.TypeSystem
                 classLayoutSize: 0,
                 byteCount: out instanceByteSizeAndAlignment);
 
-            if (type.IsValueArray)
+            if (type.IsInlineArray)
             {
-                AdjustForValueArray(type, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+                AdjustForInlineArray(type, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout

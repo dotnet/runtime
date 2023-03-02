@@ -4862,7 +4862,7 @@ public:
         _ASSERTE(pMT != nullptr);
         _ASSERTE(pMT->IsByRefLike());
 
-        bool isValArray = pMT->GetClass()->HasValueArrayFlagSet();
+        bool isValArray = pMT->GetClass()->HasInlineArrayFlagSet();
         ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
         for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {

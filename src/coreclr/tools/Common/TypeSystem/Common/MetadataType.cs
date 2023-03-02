@@ -92,9 +92,9 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract MetadataType GetNestedType(string name);
 
-        public virtual int GetValueArrayLength()
+        public virtual int GetInlineArrayLength()
         {
-            Debug.Assert(this.IsValueArray);
+            Debug.Assert(this.IsInlineArray);
             return 1;
         }
     }

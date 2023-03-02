@@ -2191,11 +2191,11 @@ static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
     _ASSERTE(pMT->IsValueType());
 
     unsigned result = 0;
-    bool isValueArray = pMT->GetClass()->HasValueArrayFlagSet();
+    bool isInlineArray = pMT->GetClass()->HasInlineArrayFlagSet();
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
     {
-        if (isValueArray)
+        if (isInlineArray)
         {
             _ASSERTE(pFD->GetOffset() == 0);
             DWORD totalSize = pMT->GetNumInstanceFieldBytes();
@@ -3575,7 +3575,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
 
-        if (pClass->HasValueArrayFlagSet())
+        if (pClass->HasInlineArrayFlagSet())
             ret |= CORINFO_FLG_DONT_DIG_FIELDS;
 
         if (VMClsHnd.IsCanonicalSubtype())

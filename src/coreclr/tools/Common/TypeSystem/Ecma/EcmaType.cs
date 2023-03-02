@@ -266,7 +266,7 @@ namespace Internal.TypeSystem.Ecma
                             stringComparer.Equals(nameHandle, "InlineArrayAttribute") &&
                             stringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices"))
                         {
-                            flags |= TypeFlags.IsValueArray;
+                            flags |= TypeFlags.IsInlineArray;
                         }
                     }
                 }
@@ -533,9 +533,9 @@ namespace Internal.TypeSystem.Ecma
                 attributeNamespace, attributeName).IsNil;
         }
 
-        public override int GetValueArrayLength()
+        public override int GetInlineArrayLength()
         {
-            Debug.Assert(this.IsValueArray);
+            Debug.Assert(this.IsInlineArray);
 
             var attr = MetadataReader.GetCustomAttribute(MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
                 "System.Runtime.CompilerServices", "InlineArrayAttribute"));

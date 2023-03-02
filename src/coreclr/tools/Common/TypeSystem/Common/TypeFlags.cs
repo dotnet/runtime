@@ -57,7 +57,7 @@ namespace Internal.TypeSystem
         HasFinalizer         = 0x2000,
 
         IsByRefLike            = 0x04000,
-        IsValueArray           = 0x08000,
+        IsInlineArray          = 0x08000,
         IsIntrinsic            = 0x10000,
         AttributeCacheComputed = 0x20000,
 

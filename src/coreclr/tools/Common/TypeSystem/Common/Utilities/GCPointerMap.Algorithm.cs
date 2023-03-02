@@ -31,9 +31,9 @@ namespace Internal.TypeSystem
             }
 
             int repeat = 1;
-            if (type.IsValueArray)
+            if (type.IsInlineArray)
             {
-                repeat = ((MetadataType)type).GetValueArrayLength();
+                repeat = ((MetadataType)type).GetInlineArrayLength();
             }
 
             foreach (FieldDesc field in type.GetFields())

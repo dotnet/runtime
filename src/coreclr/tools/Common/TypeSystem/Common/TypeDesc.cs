@@ -679,11 +679,11 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets a value indicating whether this is a value array type
         /// </summary>
-        public bool IsValueArray
+        public bool IsInlineArray
         {
             get
             {
-                return (GetTypeFlags(TypeFlags.IsValueArray | TypeFlags.AttributeCacheComputed) & TypeFlags.IsValueArray) != 0;
+                return (GetTypeFlags(TypeFlags.IsInlineArray | TypeFlags.AttributeCacheComputed) & TypeFlags.IsInlineArray) != 0;
             }
         }
 
