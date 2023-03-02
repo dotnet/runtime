@@ -4025,58 +4025,39 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             CorInfoType fromJitType = info.compCompHnd->asCorInfoType(fromTypeHnd);
-            var_types   fromType    = JitType2PreciseVarType(fromJitType);
+            var_types   fromType    = JITtype2varType(fromJitType);
 
             CorInfoType toJitType = info.compCompHnd->asCorInfoType(toTypeHnd);
-            var_types   toType    = JitType2PreciseVarType(toJitType);
+            var_types   toType    = JITtype2varType(toJitType);
 
             bool involvesStructType = false;
 
-#if FEATURE_SIMD
             if (fromType == TYP_STRUCT)
             {
-                unsigned simdSize = getSIMDTypeSizeInBytes(toTypeHnd);
+                involvesStructType = true;
 
-                if (simdSize != 0)
+                if (toType == TYP_STRUCT)
                 {
-                    fromType = getSIMDTypeForSize(simdSize);
-                }
-                else
-                {
-                    involvesStructType = true;
+                    ClassLayout* fromLayout = typGetObjLayout(fromTypeHnd);
+                    ClassLayout* toLayout   = typGetObjLayout(toTypeHnd);
+
+                    if (ClassLayout::AreCompatible(fromLayout, toLayout))
+                    {
+                        // Handle compatible struct layouts where we can simply return op1
+                        return impPopStack().val;
+                    }
                 }
             }
-
-            if (toType == TYP_STRUCT)
+            else if (toType == TYP_STRUCT)
             {
-                unsigned simdSize = getSIMDTypeSizeInBytes(toTypeHnd);
-
-                if (simdSize != 0)
-                {
-                    toType = getSIMDTypeForSize(simdSize);
-                }
-                else
-                {
-                    involvesStructType = true;
-                }
+                involvesStructType = true;
             }
-#else
-            involvesStructType = (fromType == TYP_STRUCT) || (toType == TYP_STRUCT);
-#endif // FEATURE_SIMD
 
             if (involvesStructType)
             {
-                // Handle the complex case where TFrom or TTo involves a non-special TYP_STRUCT
-                // TODO-CQ: There is quite a bit of specialization we "could" do here. However,
-                // due to ABI differences and other special considerations this isn't always trivial
+                // TODO-CQ: Handle this by getting the address of `op1` and then dereferencing
+                // that as TTo, much as `Unsafe.As<TFrom, TTo>(ref op1)` would work.
                 return nullptr;
-            }
-
-            if (varTypeIsSIMD(fromType))
-            {
-                // Handle bitcasting for same sized simd, such as `Vector128<float>` to `Vector128<byte>`
-                assert(varTypeIsSIMD(toType) && (fromType == toType));
-                return impPopStack().val;
             }
 
             if (varTypeIsFloating(fromType))
