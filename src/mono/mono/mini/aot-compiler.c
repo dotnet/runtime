@@ -9148,11 +9148,16 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 		}
 		break;
 	}
+	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_VTABLE: {
 		MonoClass *klass = patch_info->data.klass;
 
 		if (mono_class_is_ginst (klass) && !mini_class_is_generic_sharable (klass))
 			add_generic_class_with_depth (acfg, klass, depth + 5, "vtable");
+
+		/* The .cctor needs to run at runtime. */
+		if (mono_class_is_ginst (klass) && !mono_generic_context_is_sharable_full (&mono_class_get_generic_class (klass)->context, FALSE, FALSE) && mono_class_get_cctor (klass))
+			add_extra_method_with_depth (acfg, mono_class_get_cctor (klass), depth + 1);
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
