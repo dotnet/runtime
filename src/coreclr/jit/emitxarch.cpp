@@ -707,17 +707,20 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 #endif // TARGET_64BIT
 
     
-bool emitter::emitIsInstructionResettingFlags(instrDesc* id)
+bool emitter::emitDoesInsModifyFlags(instruction ins)
 {
-    return (CodeGenInterface::instInfo[id->idIns()] & (Resets_OF | Resets_SF | Resets_AF | Resets_PF | Resets_CF));
+    return (CodeGenInterface::instInfo[ins] &
+            (Resets_OF | Resets_SF | Resets_AF | Resets_PF | Resets_CF | Undefined_OF | Undefined_SF | Undefined_AF |
+             Undefined_PF | Undefined_CF | Undefined_ZF | Writes_OF | Writes_SF | Writes_AF | Writes_PF | Writes_CF |
+             Writes_ZF | Restore_SF_ZF_AF_PF_CF));
 }
 
-bool emitter::emitIsInstructionWritingToReg(instrDesc* id, regNumber reg)
+bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
 {
-    switch ((ID_OPS)emitFmtToOps[id->idInsFmt()])
+    switch (id->idIns())
     {
-        // This is conservative.
-        case ID_OP_CALL:
+        // This is conservative. We assume a call will write to all regs even if it does not.
+        case INS_call:
             return true;
 
         default:
@@ -869,32 +872,35 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
     emitPeepholeIterateLastInstrs(
         [&](instrDesc* id)
         {
-            if (emitIsInstructionWritingToReg(id, reg1) || emitIsInstructionWritingToReg(id, reg2))
-            {
-                return PEEPHOLE_ABORT;
-            }
+            instruction ins = id->idIns();
 
-            if (emitIsInstructionResettingFlags(id))
-            {
-                return PEEPHOLE_ABORT;
-            }
-
-            switch (id->idIns())
+            switch (ins)
             {
                 case INS_cmp:
                 {
                     if ((id->idReg1() == reg1) && (id->idReg2() == reg2))
                     {
                         result = (size == id->idOpSize());
-                        return PEEPHOLE_ABORT;
                     }
 
                     return PEEPHOLE_ABORT;
                 }
 
                 default:
-                    return PEEPHOLE_CONTINUE;
+                    break;
             }
+
+            if (emitDoesInsModifyFlags(ins))
+            {
+                return PEEPHOLE_ABORT;
+            }
+
+            if (emitIsInstrWritingToReg(id, reg1) || emitIsInstrWritingToReg(id, reg2))
+            {
+                return PEEPHOLE_ABORT;
+            }
+
+            return PEEPHOLE_CONTINUE;
     });
 
     return result;

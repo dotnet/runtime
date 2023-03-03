@@ -2080,8 +2080,8 @@ private:
     void spillIntArgRegsToShadowSlots();
 
 #ifdef TARGET_XARCH
-    bool emitIsInstructionWritingToReg(instrDesc* id, regNumber reg);
-    bool emitIsInstructionResettingFlags(instrDesc* id);
+    bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
+    bool emitDoesInsModifyFlags(instruction ins);
 #endif // TARGET_XARCH
 
     /************************************************************************/
