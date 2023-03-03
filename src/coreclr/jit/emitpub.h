@@ -102,7 +102,6 @@ UNATIVE_OFFSET emitDataSize();
 static bool instrIs3opImul(instruction ins);
 static bool instrIsExtendedReg3opImul(instruction ins);
 static bool instrHasImplicitRegPairDest(instruction ins);
-static bool instrHasImplicitRegSingleDest(instruction ins);
 static void      check3opImulValues();
 static regNumber inst3opImulReg(instruction ins);
 static instruction inst3opImulForReg(regNumber reg);
