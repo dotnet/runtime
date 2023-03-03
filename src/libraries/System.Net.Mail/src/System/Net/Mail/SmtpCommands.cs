@@ -687,29 +687,14 @@ namespace System.Net.Mail
         internal static ReadOnlySpan<byte> StartTls => "STARTTLS"u8;
     }
 
-    internal struct LineInfo
+    internal readonly struct LineInfo
     {
-        private readonly string _line;
-        private readonly SmtpStatusCode _statusCode;
-
         internal LineInfo(SmtpStatusCode statusCode, string line)
         {
-            _statusCode = statusCode;
-            _line = line;
+            StatusCode = statusCode;
+            Line = line;
         }
-        internal string Line
-        {
-            get
-            {
-                return _line;
-            }
-        }
-        internal SmtpStatusCode StatusCode
-        {
-            get
-            {
-                return _statusCode;
-            }
-        }
+        internal string Line { get; }
+        internal SmtpStatusCode StatusCode { get; }
     }
 }
