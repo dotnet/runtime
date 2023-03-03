@@ -1810,13 +1810,18 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
         t_maxThreadStaticBlocks = 0;
     }
     else if (staticBlockIndex < 100)
-    {
-        printf("*** [Thread# %d] Saving t_threadStaticBlocks[%u] @ 0x%zx = 0x%zx\n", threadID, staticBlockIndex, (size_t)(&(t_threadStaticBlocks[staticBlockIndex])), (size_t)(staticBlock));
+    {        
         //_ASSERTE(staticBlockIndex != 0);
         void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
-        //_ASSERTE(currentEntry == nullptr);
-        t_threadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+        // We could be coming here 2nd time after running the ctor when we try to get the static block.
+        // In such case, just avoid adding the same entry.
+        if (currentEntry != staticBlock)
+        {
+            printf("*** [Thread# %d] Saving t_threadStaticBlocks[%u] @ 0x%zx = 0x%zx\n", threadID, staticBlockIndex, (size_t)(&(t_threadStaticBlocks[staticBlockIndex])), (size_t)(staticBlock));
+            _ASSERTE(currentEntry == nullptr);
+            t_threadStaticBlocks[staticBlockIndex] = staticBlock;
+            t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+        }        
     }
     else
     {
