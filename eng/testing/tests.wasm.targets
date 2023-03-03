@@ -33,7 +33,6 @@
     <BuildAOTTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildAOTTestsOn>
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">helix</BuildAOTTestsOn>
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
-    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
@@ -50,11 +49,6 @@
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true' or '$(RunAOTCompilation)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
   </PropertyGroup>
-  <ItemGroup Condition="'$(BuildAOTTestsOn)' == 'helix'">
-    <TrimmerRootDescriptor
-      Condition="'$(WasmEnableLegacyJsInterop)' == 'true'"
-      Include="$(MonoProjectRoot)\wasm\build\ILLink.Descriptors.LegacyJsInterop.xml" />
-  </ItemGroup>
 
   <ItemGroup>
     <_AOT_InternalForceInterpretAssemblies Include="@(HighAotMemoryUsageAssembly)" />
