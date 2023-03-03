@@ -1092,7 +1092,7 @@ export function generate_wasm_body (
                     (opcode >= MintOpcode.MINT_LDELEM_I1) &&
                     (opcode <= MintOpcode.MINT_LDLEN)
                 ) {
-                    if (!emit_arrayop(builder, ip, opcode))
+                    if (!emit_arrayop(builder, frame, ip, opcode))
                         ip = abort;
                 } else if (
                     (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
@@ -2840,7 +2840,7 @@ function append_getelema1 (
     // append_getelema1 leaves the address on the stack
 }
 
-function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
+function emit_arrayop (builder: WasmBuilder, frame: NativePointer, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
     const isLoad = (
             (opcode <= MintOpcode.MINT_LDELEMA_TC) &&
             (opcode >= MintOpcode.MINT_LDELEM_I1)
@@ -2956,6 +2956,17 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
             // memcpy (locals + ip [1], src_addr, size);
             append_memmove_dest_src(builder, elementSize);
             invalidate_local_range(getArgU16(ip, 1), elementSize);
+            return true;
+        }
+        case MintOpcode.MINT_STELEM_VT: {
+            const elementSize = getArgU16(ip, 5),
+                klass = get_imethod_data(frame, getArgU16(ip, 4));
+            // dest
+            append_getelema1(builder, ip, objectOffset, indexOffset, elementSize);
+            // src
+            append_ldloca(builder, valueOffset, 0);
+            builder.ptr_const(klass);
+            builder.callImport("value_copy");
             return true;
         }
         default:
