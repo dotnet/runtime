@@ -305,8 +305,8 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     init_c_exports();
     cwraps_internal(INTERNAL);
     if (WasmEnableLegacyJsInterop) {
-    cwraps_mono_api(MONO);
-    cwraps_binding_api(BINDING);
+        cwraps_mono_api(MONO);
+        cwraps_binding_api(BINDING);
     }
     // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
     // emscripten - on a worker since we don't have any other dependencies that causes run() to get
@@ -559,7 +559,7 @@ export function bindings_init(): void {
         const mark = startMeasure();
         init_managed_exports();
         if (WasmEnableLegacyJsInterop) {
-        init_legacy_exports();
+            init_legacy_exports();
         }
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();

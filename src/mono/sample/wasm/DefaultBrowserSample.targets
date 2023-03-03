@@ -3,7 +3,6 @@
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
-    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
     <!-- note that enabling debugger disables interp optimizations -->
     <WasmDebugLevel Condition="'$(Configuration)' == 'Debug'">-1</WasmDebugLevel>
     <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>

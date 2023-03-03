@@ -4,6 +4,7 @@
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <WasmEnableWebcil>true</WasmEnableWebcil>
+    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
     <EmccAssertions>true</EmccAssertions>
     <EmccEnvironment>web</EmccEnvironment>
     <!-- add OpenGL emulation -->
