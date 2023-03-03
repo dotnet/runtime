@@ -589,6 +589,18 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 }
 #endif // TARGET_64BIT
 
+
+//------------------------------------------------------------------------
+// emitIsInstrWritingToReg: checks if the given register is being written to
+//
+// Arguments:
+//    id - instruction of interest
+//    reg - register of interest
+//
+// Return Value:
+//    true if the instruction writes to the given register.
+//    false if it did not, or if we can't safely determine.
+//
 bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
 {
     instruction ins = id->idIns();
