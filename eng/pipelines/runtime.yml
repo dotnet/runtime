@@ -515,7 +515,7 @@ extends:
             - wasi_wasm
             - wasi_wasm_win
           extraBuildArgs: /p:RunWasmSamples=true
-          shouldContinueOnError: true
+          shouldContinueOnError: false
           alwaysRun: true
           scenarios:
             - normal
