@@ -215,12 +215,16 @@ namespace System.Security.Cryptography
 
         private Span<byte> GetTempBuffer(Span<byte> inputBuffer, Span<byte> tmpBuffer)
         {
-            if (_whitespaces == FromBase64TransformMode.DoNotIgnoreWhiteSpaces)
+            Span<byte> tempBuffer = DiscardWhiteSpaces(inputBuffer, tmpBuffer);
+
+            if (_whitespaces == FromBase64TransformMode.DoNotIgnoreWhiteSpaces
+                && inputBuffer.Length != tempBuffer.Length)
             {
-                return inputBuffer;
+                // Base64.DecodeFromUtf8() does not return OperationStatus.InvalidData when decoding whitespace.
+                ThrowHelper.ThrowBase64FormatException();
             }
 
-            return DiscardWhiteSpaces(inputBuffer, tmpBuffer);
+            return tempBuffer;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
