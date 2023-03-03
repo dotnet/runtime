@@ -14,7 +14,7 @@ using Xunit;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    public class NativeInterfaceShape
+    public class VTableGeneratorOutputShape
     {
         [Fact]
         public async Task NativeInterfaceNestedInUserInterface()
