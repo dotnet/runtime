@@ -25,15 +25,16 @@ namespace System.Buffers
 
         internal override unsafe T[] GetValues()
         {
-            return new[] { Unsafe.BitCast<TImpl, T>(_e0), Unsafe.BitCast<TImpl, T>(_e1), Unsafe.BitCast<TImpl, T>(_e2), Unsafe.BitCast<TImpl, T>(_e3) };
+            TImpl e0 = _e0, e1 = _e1, e2 = _e2, e3 = _e3;
+            return new[] { *(T*)&e0, *(T*)&e1, *(T*)&e2, *(T*)&e3 };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override unsafe bool ContainsCore(T value) =>
-            Unsafe.BitCast<T, TImpl>(value) == _e0 ||
-            Unsafe.BitCast<T, TImpl>(value) == _e1 ||
-            Unsafe.BitCast<T, TImpl>(value) == _e2 ||
-            Unsafe.BitCast<T, TImpl>(value) == _e3;
+            *(TImpl*)&value == _e0 ||
+            *(TImpl*)&value == _e1 ||
+            *(TImpl*)&value == _e2 ||
+            *(TImpl*)&value == _e3;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<T> span) =>
