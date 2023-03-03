@@ -589,7 +589,6 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 }
 #endif // TARGET_64BIT
 
-
 //------------------------------------------------------------------------
 // emitIsInstrWritingToReg: checks if the given register is being written to
 //
