@@ -598,10 +598,15 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 //
 // Return Value:
 //    true if the instruction writes to the given register.
-//    false if it did not, or if we can't safely determine.
+//    false if it did not.
+//
+// Note: This only handles integer registers. Also, an INS_call will always return true.
 //
 bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
 {
+    // This only handles integer registers for now.
+    assert(genIsValidIntReg(reg));
+
     instruction ins = id->idIns();
 
     // These are special cases since they modify one or more register(s) implicitly.
@@ -616,7 +621,7 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         case INS_div:
         case INS_imulEAX:
         case INS_mulEAX:
-            if (reg == REG_RAX || reg == REG_RDX)
+            if ((reg == REG_RAX) || (reg == REG_RDX))
             {
                 return true;
             }
@@ -625,6 +630,42 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         // Always writes to RAX.
         case INS_cmpxchg:
             if (reg == REG_RAX)
+            {
+                return true;
+            }
+            break;
+
+        case INS_movsb:
+        case INS_movsd:
+        case INS_movsq:
+            if ((reg == REG_RDI) || (reg == REG_RSI))
+            {
+                return true;
+            }
+            break;
+
+        case INS_stosb:
+        case INS_stosd:
+        case INS_stosq:
+            if (reg == REG_RDI)
+            {
+                return true;
+            }
+            break;
+
+        case INS_r_movsb:
+        case INS_r_movsd:
+        case INS_r_movsq:
+            if ((reg == REG_RDI) || (reg == REG_RSI) || (reg == REG_RCX))
+            {
+                return true;
+            }
+            break;
+
+        case INS_r_stosb:
+        case INS_r_stosd:
+        case INS_r_stosq:
+            if ((reg == REG_RDI) || (reg == REG_RCX))
             {
                 return true;
             }
