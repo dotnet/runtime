@@ -117,6 +117,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         public bool LoadRemote { get; set; }
     }
 
+    private sealed class SymbolsData : AssetEntry
+    {
+        public SymbolsData(string name, string hash) : base(name, hash, "symbols") {}
+    }
+
     protected override bool ValidateArguments()
     {
         if (!base.ValidateArguments())
@@ -198,6 +203,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             else if (IncludeThreadsWorker && name == "dotnet.worker.js")
             {
                 config.Assets.Add(new ThreadsWorkerEntry (name, Utils.ComputeIntegrity(item.ItemSpec)));
+            }
+            else if(name == "dotnet.js.symbols"){
+                config.Assets.Add(new SymbolsData (name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
         }
 

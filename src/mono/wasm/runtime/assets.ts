@@ -4,6 +4,7 @@
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
+import { wasm_func_map } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { MONO } from "./net6-legacy/imports";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
@@ -37,6 +38,7 @@ const skipBufferByAssetTypes: {
     [k: string]: boolean
 } = {
     "dotnetwasm": true,
+    "symbols": true,
 };
 
 // these assets are instantiated differently than the main flow
@@ -45,6 +47,7 @@ const skipInstantiateByAssetTypes: {
 } = {
     "js-module-threads": true,
     "dotnetwasm": true,
+    "symbols": true,
 };
 
 export function get_preferred_icu_asset(): string | null {
@@ -128,6 +131,12 @@ export async function mono_download_assets(): Promise<void> {
                         await beforeOnRuntimeInitialized.promise;
                         // this is after onRuntimeInitialized
                         _instantiate_asset(asset, url, data);
+                    }
+                    if (asset.behavior === "symbols") {
+                        await instantiate_symbols_asset(asset);
+                        asset.pendingDownloadInternal = null as any; // GC
+                        asset.pendingDownload = null as any; // GC
+                        asset.buffer = null as any; // GC
                     }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
@@ -391,6 +400,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     switch (asset.behavior) {
         case "dotnetwasm":
         case "js-module-threads":
+        case "symbols":
             // do nothing
             break;
         case "resource":
@@ -491,6 +501,27 @@ export async function instantiate_wasm_asset(
         compiledModule = arrayBufferResult.module;
     }
     successCallback(compiledInstance, compiledModule);
+}
+
+export async function instantiate_symbols_asset(
+    pendingAsset: AssetEntryInternal,
+): Promise<void> {
+    try {
+        const response = await pendingAsset.pendingDownloadInternal!.response;
+        const data = await response.text();
+        data.split(/[\r\n]/).forEach((line: string) => {
+            const parts: string[] = line.split(/:/);
+            if (parts.length < 2)
+                return;
+
+            parts[1] = parts.splice(1).join(":");
+            wasm_func_map.set(Number(parts[0]), parts[1]);
+        });
+        if (runtimeHelpers.diagnosticTracing) console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+
+    } catch (error: any) {
+        console.log(`MONO_WASM: Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
+    }
 }
 
 // used from Blazor
