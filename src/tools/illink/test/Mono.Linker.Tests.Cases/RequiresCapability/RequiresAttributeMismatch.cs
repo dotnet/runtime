@@ -23,8 +23,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	{
 		// Base/Derived and Implementation/Interface differs between ILLink and analyzer https://github.com/dotnet/linker/issues/2533
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
+		[ExpectedWarning ("IL3002", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
+		[ExpectedWarning ("IL3002", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
+		[ExpectedWarning ("IL3002", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "DerivedClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.set", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInProperty.get", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
@@ -32,6 +38,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()")]
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()")]
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()")]
+		[ExpectedWarning ("IL3002", "BaseClassWithRequires.VirtualMethod()", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "BaseClassWithRequires.VirtualMethod()", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "DerivedClassWithRequires.VirtualMethod()", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "IBaseWithRequires.PropertyAnnotationInAccesor.get")]
 		[ExpectedWarning ("IL2026", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.set", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
@@ -43,8 +51,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[ExpectedWarning ("IL2026", "ImplementationClassWithRequiresInSource.Method()", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "ImplementationClassWithRequiresInSource.PropertyAnnotationInAccesor.get", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
+		[ExpectedWarning ("IL3002", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
+		[ExpectedWarning ("IL3002", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
+		[ExpectedWarning ("IL3002", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "PropertyAnnotationInPropertyAndAccessor.set")]
 
 		public static void Main ()
