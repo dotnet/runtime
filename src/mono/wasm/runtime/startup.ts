@@ -352,7 +352,7 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
         mono_wasm_globalization_init();
 
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
-        if (runtimeHelpers.config.cacheMemory && !runtimeHelpers.memoryIsLoaded) {
+        if (config.cacheMemory && !runtimeHelpers.memoryIsLoaded) {
             await storeMemory(runtimeHelpers.configurationHash, Module.HEAP8.buffer);
         }
         bindings_init();
@@ -470,7 +470,7 @@ async function instantiate_wasm_module(
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
 
-        if (runtimeHelpers.config.cacheMemory && config.assetsHash) {
+        if (config.cacheMemory && config.assetsHash) {
             memoryBytes = await getMemory(runtimeHelpers.configurationHash);
             runtimeHelpers.memoryIsLoaded = !!memoryBytes;
         }
@@ -553,7 +553,7 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
         }
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
-        if (!runtimeHelpers.config.cacheMemory) bindings_init();
+        if (!config.cacheMemory) bindings_init();
     } catch (err: any) {
         _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
 
@@ -602,7 +602,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
     configLoaded = true;
     if (!configFilePath) {
         normalizeConfig();
-        afterConfigLoaded.promise_control.resolve(runtimeHelpers.config);
+        afterConfigLoaded.promise_control.resolve(config);
         return;
     }
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
@@ -623,7 +623,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
 
         if (Module.onConfigLoaded) {
             try {
-                await Module.onConfigLoaded(<MonoConfig>runtimeHelpers.config);
+                await Module.onConfigLoaded(<MonoConfig>config);
                 normalizeConfig();
             }
             catch (err: any) {
@@ -631,7 +631,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
                 throw err;
             }
         }
-        afterConfigLoaded.promise_control.resolve(runtimeHelpers.config);
+        afterConfigLoaded.promise_control.resolve(config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err}`;
         abort_startup(errMessage, true);
@@ -648,13 +648,14 @@ function normalizeConfig() {
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
     config.globalizationMode = config.globalizationMode || "auto";
+    config.cacheMemory = config.cacheMemory == undefined ? true : !!config.cacheMemory;
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
     }
     if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
         config.diagnosticTracing = true;
     }
-    runtimeHelpers.diagnosticTracing = !!runtimeHelpers.config.diagnosticTracing;
+    runtimeHelpers.diagnosticTracing = !!config.diagnosticTracing;
 
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance

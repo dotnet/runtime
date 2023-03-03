@@ -18,6 +18,7 @@ export interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
     withApplicationArgumentsFromQuery(): DotnetHostBuilder
+    withMemoryCache(value: boolean): DotnetHostBuilder
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
 }
