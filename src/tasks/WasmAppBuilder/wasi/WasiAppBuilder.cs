@@ -77,30 +77,41 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
             FileCopyChecked(args.fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
         });
 
-        foreach (ITaskItem item in ExtraFilesToDeploy!)
-        {
-            string src = item.ItemSpec;
-            string dst;
-
-            string tgtPath = item.GetMetadata("TargetPath");
-            if (!string.IsNullOrEmpty(tgtPath))
-            {
-                dst = Path.Combine(AppDir!, tgtPath);
-                string? dstDir = Path.GetDirectoryName(dst);
-                if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
-                    Directory.CreateDirectory(dstDir!);
-            }
-            else
-            {
-                dst = Path.Combine(AppDir!, Path.GetFileName(src));
-            }
-
-            if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
-                return false;
-        }
+        if (!DeployFiles(ExtraFilesToDeploy, nameof(ExtraFilesToDeploy)))
+            return false;
+        if (!DeployFiles(FilesToIncludeInFileSystem, nameof(FilesToIncludeInFileSystem)))
+            return false;
 
         UpdateRuntimeConfigJson();
         return !Log.HasLoggedErrors;
+
+        bool DeployFiles(ITaskItem[] fileItems, string label)
+        {
+            foreach (ITaskItem item in fileItems)
+            {
+                string src = item.ItemSpec;
+                string dst;
+
+                string tgtPath = item.GetMetadata("TargetPath");
+                if (!string.IsNullOrEmpty(tgtPath))
+                {
+                    dst = Path.Combine(AppDir!, tgtPath);
+                    string? dstDir = Path.GetDirectoryName(dst);
+                    if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
+                        Directory.CreateDirectory(dstDir!);
+                }
+                else
+                {
+                    dst = Path.Combine(AppDir!, Path.GetFileName(src));
+                }
+
+                if (!FileCopyChecked(src, dst, label))
+                    return false;
+            }
+
+            return true;
+        }
+
     }
 
     protected override void AddToRuntimeConfig(JsonObject wasmHostProperties, JsonArray runtimeArgsArray, JsonArray perHostConfigs)
