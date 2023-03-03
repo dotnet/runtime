@@ -144,6 +144,11 @@ namespace Internal.Runtime.InteropServices
         }
 
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         private static void LoadAssemblyImpl(string assemblyPath)
         {
             lock(s_loadedInDefaultContext)
