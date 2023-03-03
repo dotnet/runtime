@@ -188,7 +188,7 @@
     <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
   </PropertyGroup>
 
-  <!-- PackageRID is used for packages needed to build the target. -->
+  <!-- PackageRID is used for packages needed for the target. -->
   <PropertyGroup Label="CalculatePackageRID">
     <_packageOS Condition="'$(_packageOS)' == ''">$(_portableOS)</_packageOS>
     <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)</_packageOS>
