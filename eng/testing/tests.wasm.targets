@@ -35,6 +35,21 @@
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
+    <!--
+      When building for BuildAOTTestsOnHelix=true, the WasmApp*targets are *not* imported, because
+      they get instead used by the AOT proxy project on helix.
+
+      On the build machine only the regular part of the build is run, which includes trimming. But if
+      WasmApp*targets modify any trimming arguments, then those will not get picked up by this build.
+      For example - linker substitution files used with simd builds.
+
+      So, set those parameters explicitly here.
+      -->
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true' or '$(RunAOTCompilation)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
+  </PropertyGroup>
+
   <ItemGroup>
     <_AOT_InternalForceInterpretAssemblies Include="@(HighAotMemoryUsageAssembly)" />
   </ItemGroup>

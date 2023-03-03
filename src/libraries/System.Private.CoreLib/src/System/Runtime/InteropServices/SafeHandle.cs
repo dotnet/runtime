@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices
     /// <summary>Represents a wrapper class for operating system handles.</summary>
     public abstract partial class SafeHandle : CriticalFinalizerObject, IDisposable
     {
-#if DEBUG
+#if DEBUG && CORECLR
         /// <summary>Indicates whether debug tracking and logging of SafeHandle finalization is enabled.</summary>
         private static readonly bool s_logFinalization = Environment.GetEnvironmentVariable("DEBUG_SAFEHANDLE_FINALIZATION") == "1";
         /// <summary>Debug counter for the number of SafeHandles that have been finalized.</summary>
@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         //   code, so this managed code must not assume it is the only code
         //   manipulating _state.
 
-#if DEBUG
+#if DEBUG && CORECLR
         private readonly string? _ctorStackTrace;
 #endif
         /// <summary>Specifies the handle to be wrapped.</summary>
@@ -71,7 +71,7 @@ namespace System.Runtime.InteropServices
             {
                 GC.SuppressFinalize(this);
             }
-#if DEBUG
+#if DEBUG && CORECLR
             else if (s_logFinalization)
             {
                 int lastError = Marshal.GetLastPInvokeError();
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices
 
         protected virtual void Dispose(bool disposing)
         {
-#if DEBUG
+#if DEBUG && CORECLR
             if (!disposing && _ctorStackTrace is not null)
             {
                 long count = Interlocked.Increment(ref s_safeHandlesFinalized);

@@ -396,8 +396,7 @@ namespace ILCompiler
                     int pointerSize = _nodeFactory.Target.PointerSize;
 
                     GenericLookupResult lookup = ReadyToRunGenericHelperNode.GetLookupSignature(_nodeFactory, lookupKind, targetOfLookup);
-                    int dictionarySlot = dictionaryLayout.GetSlotForFixedEntry(lookup);
-                    if (dictionarySlot != -1)
+                    if (dictionaryLayout.TryGetSlotForEntry(lookup, out int dictionarySlot))
                     {
                         int dictionaryOffset = dictionarySlot * pointerSize;
 
@@ -413,6 +412,10 @@ namespace ILCompiler
                             int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
                             return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset, indirectLastOffset: indirectLastOffset);
                         }
+                    }
+                    else
+                    {
+                        return GenericDictionaryLookup.CreateNullLookup(contextSource);
                     }
                 }
             }

@@ -7,4 +7,10 @@
   <ItemGroup>
     <Compile Include="mscorlib.forwards.cs" />
   </ItemGroup>
+  <Target Name="RemoveConflictingAssemblyReference" AfterTargets="FindReferenceAssembliesForReferences">
+    <ItemGroup>
+      <!-- System.Collections.Generic.CollectionExtensions type exists in both System.Private.CoreLib and Microsoft.Extensions.DependencyModel, we only want the former -->
+      <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies->WithMetadataValue('Filename', 'Microsoft.Extensions.DependencyModel'))" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -4378,11 +4378,10 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
-    unsigned     fgBBNumMin;       // The min bbNum that has been assigned to basic blocks
-    unsigned     fgBBNumMax;       // The max bbNum that has been assigned to basic blocks
-    unsigned     fgDomBBcount;     // # of BBs for which we have dominator and reachability information
-    BasicBlock** fgBBInvPostOrder; // The flow graph stored in an array sorted in topological order, needed to compute
-                                   // dominance. Indexed by block number. Size: fgBBNumMax + 1.
+    unsigned     fgBBNumMin;           // The min bbNum that has been assigned to basic blocks
+    unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
+    unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
+    BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -5193,10 +5192,11 @@ protected:
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
-    void fgDfsInvPostOrder(); // In order to compute dominance using fgIntersectDom, the flow graph nodes must be
-                              // processed in topological sort, this function takes care of that.
-
-    void fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, unsigned* count);
+    void fgDfsReversePostorder();
+    void fgDfsReversePostorderHelper(BasicBlock* block,
+                                     BlockSet&   visited,
+                                     unsigned&   preorderIndex,
+                                     unsigned&   reversePostorderIndex);
 
     BlockSet_ValRet_T fgDomFindStartNodes(); // Computes which basic blocks don't have incoming edges in the flow graph.
                                              // Returns this as a set.

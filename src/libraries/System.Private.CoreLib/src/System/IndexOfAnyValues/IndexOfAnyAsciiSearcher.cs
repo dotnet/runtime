@@ -384,9 +384,8 @@ namespace System.Buffers
             return -1;
         }
 
-        internal static int IndexOfAnyVectorized<TNegator, TOptimizations>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
+        internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
-            where TOptimizations : struct, IOptimizations
         {
             ref byte currentSearchSpace = ref searchSpace;
 
@@ -408,7 +407,7 @@ namespace System.Buffers
                         {
                             Vector256<byte> source = Vector256.LoadUnsafe(ref currentSearchSpace);
 
-                            Vector256<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source, bitmap256);
+                            Vector256<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap256));
                             if (result != Vector256<byte>.Zero)
                             {
                                 return ComputeFirstIndex<byte, TNegator>(ref searchSpace, ref currentSearchSpace, result);
@@ -433,7 +432,7 @@ namespace System.Buffers
                         Vector128<byte> source1 = Vector128.LoadUnsafe(ref halfVectorAwayFromEnd);
                         Vector256<byte> source = Vector256.Create(source0, source1);
 
-                        Vector256<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source, bitmap256);
+                        Vector256<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap256));
                         if (result != Vector256<byte>.Zero)
                         {
                             return ComputeFirstIndexOverlapped<byte, TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
@@ -454,7 +453,7 @@ namespace System.Buffers
                     {
                         Vector128<byte> source = Vector128.LoadUnsafe(ref currentSearchSpace);
 
-                        Vector128<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source, bitmap);
+                        Vector128<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap));
                         if (result != Vector128<byte>.Zero)
                         {
                             return ComputeFirstIndex<byte, TNegator>(ref searchSpace, ref currentSearchSpace, result);
@@ -480,7 +479,7 @@ namespace System.Buffers
                 ulong source1 = Unsafe.ReadUnaligned<ulong>(ref halfVectorAwayFromEnd);
                 Vector128<byte> source = Vector128.Create(source0, source1).AsByte();
 
-                Vector128<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source, bitmap);
+                Vector128<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap));
                 if (result != Vector128<byte>.Zero)
                 {
                     return ComputeFirstIndexOverlapped<byte, TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
@@ -490,9 +489,8 @@ namespace System.Buffers
             return -1;
         }
 
-        internal static int LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
+        internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
-            where TOptimizations : struct, IOptimizations
         {
             ref byte currentSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
@@ -516,7 +514,7 @@ namespace System.Buffers
 
                             Vector256<byte> source = Vector256.LoadUnsafe(ref currentSearchSpace);
 
-                            Vector256<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source, bitmap256);
+                            Vector256<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap256));
                             if (result != Vector256<byte>.Zero)
                             {
                                 return ComputeLastIndex<byte, TNegator>(ref searchSpace, ref currentSearchSpace, result);
@@ -539,7 +537,7 @@ namespace System.Buffers
                         Vector128<byte> source1 = Vector128.LoadUnsafe(ref secondVector);
                         Vector256<byte> source = Vector256.Create(source0, source1);
 
-                        Vector256<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source, bitmap256);
+                        Vector256<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap256));
                         if (result != Vector256<byte>.Zero)
                         {
                             return ComputeLastIndexOverlapped<byte, TNegator>(ref searchSpace, ref secondVector, result);
@@ -562,7 +560,7 @@ namespace System.Buffers
 
                         Vector128<byte> source = Vector128.LoadUnsafe(ref currentSearchSpace);
 
-                        Vector128<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source, bitmap);
+                        Vector128<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap));
                         if (result != Vector128<byte>.Zero)
                         {
                             return ComputeLastIndex<byte, TNegator>(ref searchSpace, ref currentSearchSpace, result);
@@ -586,7 +584,7 @@ namespace System.Buffers
                 ulong source1 = Unsafe.ReadUnaligned<ulong>(ref secondVector);
                 Vector128<byte> source = Vector128.Create(source0, source1).AsByte();
 
-                Vector128<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source, bitmap);
+                Vector128<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap));
                 if (result != Vector128<byte>.Zero)
                 {
                     return ComputeLastIndexOverlapped<byte, TNegator>(ref searchSpace, ref secondVector, result);
@@ -841,23 +839,6 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector128<byte> source, Vector128<byte> bitmapLookup)
-            where TNegator : struct, INegator
-            where TOptimizations : struct, IOptimizations
-        {
-            Vector128<byte> result = IndexOfAnyLookupCore(source, bitmapLookup);
-
-            // On X86, values above 127 will map to 0. If 0 is present in the needle, we must clear the false positives.
-            if (TOptimizations.NeedleContainsZero)
-            {
-                Vector128<byte> ascii = Vector128.LessThan(source, Vector128.Create((byte)128));
-                result &= ascii;
-            }
-
-            return TNegator.NegateIfNeeded(result);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> IndexOfAnyLookupCore(Vector128<byte> source, Vector128<byte> bitmapLookup)
         {
             // On X86, the Ssse3.Shuffle instruction will already perform an implicit 'AND 0xF' on the indices, so we can skip it.
@@ -897,23 +878,6 @@ namespace System.Buffers
                 Vector256<short> ascii0 = Vector256.LessThan(source0.AsUInt16(), Vector256.Create((ushort)128)).AsInt16();
                 Vector256<short> ascii1 = Vector256.LessThan(source1.AsUInt16(), Vector256.Create((ushort)128)).AsInt16();
                 Vector256<byte> ascii = Avx2.PackSignedSaturate(ascii0, ascii1).AsByte();
-                result &= ascii;
-            }
-
-            return TNegator.NegateIfNeeded(result);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector256<byte> source, Vector256<byte> bitmapLookup)
-            where TNegator : struct, INegator
-            where TOptimizations : struct, IOptimizations
-        {
-            // See comments in IndexOfAnyLookup(Vector128<byte>) above for more details.
-            Vector256<byte> result = IndexOfAnyLookupCore(source, bitmapLookup);
-
-            if (TOptimizations.NeedleContainsZero)
-            {
-                Vector256<byte> ascii = Vector256.LessThan(source, Vector256.Create((byte)128));
                 result &= ascii;
             }
 
