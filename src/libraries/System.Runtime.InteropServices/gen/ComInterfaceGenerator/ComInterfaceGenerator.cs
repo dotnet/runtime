@@ -209,7 +209,6 @@ namespace Microsoft.Interop
 
         private static MemberDeclarationSyntax GenerateIIUnknownInterfaceTypeImplementation(ContainingSyntaxContext context, int methodsCount)
         {
-            // generate the following code:
             // static Guid IIUnknownInterfaceType.Iid => new Guid("00000000-0000-0000-0000-000000000000");
             var iid = PropertyDeclaration(List<AttributeListSyntax>(),
                 TokenList(Token(SyntaxKind.StaticKeyword)),
@@ -287,7 +286,7 @@ namespace Microsoft.Interop
                         AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, Block(
                             List(new StatementSyntax[]
                             {
-
+                                // if (m_vtable[0] == null)
                                 IfStatement(
                                     BinaryExpression(
                                         SyntaxKind.EqualsExpression,
@@ -387,7 +386,7 @@ namespace Microsoft.Interop
                                                              Argument(
                                                                  LiteralExpression(
                                                                      SyntaxKind.NumericLiteralExpression,
-                                                                     Literal(0)))))),
+                                                                     Literal(1)))))),
                                                  CastExpression(
                                                      PointerType(
                                                          ParseTypeName("void")),
@@ -401,7 +400,7 @@ namespace Microsoft.Interop
                                                              Argument(
                                                                  LiteralExpression(
                                                                      SyntaxKind.NumericLiteralExpression,
-                                                                     Literal(0)))))),
+                                                                     Literal(2)))))),
                                                  CastExpression(
                                                      PointerType(
                                                          ParseTypeName("void")),
