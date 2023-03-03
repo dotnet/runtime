@@ -74,7 +74,7 @@ export function get_preferred_icu_asset(): string | null {
     return OTHERS;
 }
 
-export function shouldLoadIcuAsset(asset : AssetEntryInternal, preferredIcuAsset: string | null) : boolean{
+export function shouldLoadIcuAsset(asset: AssetEntryInternal, preferredIcuAsset: string | null): boolean {
     return !(asset.behavior == "icu" && asset.name != preferredIcuAsset);
 }
 
@@ -293,6 +293,14 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
             return response;
         }
         catch (err) {
+            if (!response) {
+                response = {
+                    ok: false,
+                    url: attemptUrl,
+                    status: 0,
+                    statusText: "" + err,
+                } as any;
+            }
             continue; //next source
         }
     }

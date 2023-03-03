@@ -83,7 +83,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        public async void BeginFromTask_CompletedAsynchronously_CallbackInvokedAsynchronously()
+        public async Task BeginFromTask_CompletedAsynchronously_CallbackInvokedAsynchronously()
         {
             var tcs = new TaskCompletionSource();
             var invoked = new TaskCompletionSource();
