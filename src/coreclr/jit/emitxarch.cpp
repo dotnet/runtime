@@ -637,7 +637,9 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
 
         case INS_movsb:
         case INS_movsd:
+#ifdef TARGET_AMD64
         case INS_movsq:
+#endif // TARGET_AMD64
             if ((reg == REG_RDI) || (reg == REG_RSI))
             {
                 return true;
@@ -646,7 +648,9 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
 
         case INS_stosb:
         case INS_stosd:
+#ifdef TARGET_AMD64
         case INS_stosq:
+#endif // TARGET_AMD64
             if (reg == REG_RDI)
             {
                 return true;
@@ -655,7 +659,9 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
 
         case INS_r_movsb:
         case INS_r_movsd:
+#ifdef TARGET_AMD64
         case INS_r_movsq:
+#endif // TARGET_AMD64
             if ((reg == REG_RDI) || (reg == REG_RSI) || (reg == REG_RCX))
             {
                 return true;
@@ -664,7 +670,9 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
 
         case INS_r_stosb:
         case INS_r_stosd:
+#ifdef TARGET_AMD64
         case INS_r_stosq:
+#endif // TARGET_AMD64
             if ((reg == REG_RDI) || (reg == REG_RCX))
             {
                 return true;
