@@ -7039,11 +7039,6 @@ public:
         optMethodFlags |= OMF_HAS_EXPRUNTIMELOOKUP;
     }
 
-    void clearMethodHasExpRuntimeLookup()
-    {
-        optMethodFlags &= ~OMF_HAS_EXPRUNTIMELOOKUP;
-    }
-
     bool doesMethodHavePatchpoints()
     {
         return (optMethodFlags & OMF_HAS_PATCHPOINT) != 0;

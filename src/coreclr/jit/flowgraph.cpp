@@ -64,6 +64,19 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
     if (!doesMethodHaveExpRuntimeLookup())
     {
+
+#ifdef DEBUG
+        for (BasicBlock* block : Blocks())
+        {
+            for (Statement* stmt : block->Statements())
+            {
+                for (GenTree* tree : stmt->TreeList())
+                {
+                    assert(!tree->IsCall() || (tree->IsCall() && !tree->AsCall()->IsExpRuntimeLookup()));
+                }
+            }
+        }
+#endif
         JITDUMP("Current method doesn't have runtime lookups - bail out.")
         return result;
     }
@@ -257,6 +270,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 GenTree* fastPathValue = gtNewOperNode(GT_IND, TYP_I_IMPL, gtCloneExpr(slotPtrTree));
                 fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
 
+                GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
+
                 // Save dictionary slot to a local (to be used by fast path)
 
                 GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
@@ -273,6 +288,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fallbackBb->bbFlags |= BBF_INTERNAL;
 
                 GenTreeCall* fallbackCall = gtCloneExpr(call)->AsCall();
+                assert(!fallbackCall->IsExpRuntimeLookup());
                 assert(ctxTree->OperIs(GT_LCL_VAR));
                 Statement* asgFallbackStmt = fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), fallbackCall));
                 asgFallbackStmt->SetDebugInfo(debugInfo);
@@ -285,7 +301,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 BasicBlock* fastPathBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
                 fastPathBb->bbFlags |= BBF_INTERNAL;
                 Statement* asgFastPathValueStmt =
-                    fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(fastPathValue)));
+                    fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone));
                 asgFastPathValueStmt->SetDebugInfo(debugInfo);
                 fgInsertStmtAtBeg(fastPathBb, asgFastPathValueStmt);
                 gtSetStmtInfo(asgFastPathValueStmt);

@@ -1260,7 +1260,6 @@ PhaseStatus Compiler::fgTransformIndirectCalls()
         }
 
         clearMethodHasFatPointer();
-        clearMethodHasExpRuntimeLookup();
     }
     else
     {
