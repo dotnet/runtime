@@ -475,6 +475,24 @@ namespace ILCompiler
                                 }
                             }
 
+                            // Interfaces implemented by arrays and array enumerators have weird casting rules
+                            // due to array covariance (string[] castable to object[], or int[] castable to uint[]).
+                            // Disqualify such interfaces.
+                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any) &&
+                                (type.IsArray || type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType))
+                            {
+                                TypeDesc elementType = type.IsArray ? ((ArrayType)type).ElementType : type.Instantiation[0];
+                                if (CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
+                                    (elementType.IsDefType && !elementType.IsValueType))
+                                {
+                                    foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                    {
+                                        if (baseInterface.HasInstantiation)
+                                            _disqualifiedInterfaces.Add(baseInterface);
+                                    }
+                                }
+                            }
+
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
                             if (!canonType.IsDefType || !((MetadataType)canonType).IsAbstract)
