@@ -86,11 +86,10 @@ _dn_vector_insert_range (
 	dn_vector_t *vector = position->_internal._vector;
 
 	uint64_t new_capacity = (uint64_t)vector->size + (uint64_t)element_count;
-	if (DN_UNLIKELY (new_capacity > (uint64_t)(UINT32_MAX)))
-		return false;
-
-	if (DN_UNLIKELY (!ensure_capacity (vector, (uint32_t)new_capacity)))
-		return false;
+	if (DN_UNLIKELY (new_capacity > (uint64_t)(vector->_internal._capacity))) {
+		if (DN_UNLIKELY (!ensure_capacity (vector, (uint32_t)new_capacity)))
+			return false;
+	}
 
 	uint64_t insert_offset = (uint64_t)position->it + (uint64_t)element_count;
 	uint64_t size_to_move = (uint64_t)vector->size - (uint64_t)position->it;
@@ -125,11 +124,10 @@ _dn_vector_append_range (
 	DN_ASSERT (vector && elements && element_count != 0);
 
 	uint64_t new_capacity = (uint64_t)vector->size + (uint64_t)element_count;
-	if (DN_UNLIKELY (new_capacity > (uint64_t)(UINT32_MAX)))
-		return false;
-
-	if (DN_UNLIKELY (!ensure_capacity (vector, (uint32_t)new_capacity)))
-		return false;
+	if (DN_UNLIKELY (new_capacity > (uint64_t)(vector->_internal._capacity))) {
+		if (DN_UNLIKELY (!ensure_capacity (vector, (uint32_t)new_capacity)))
+			return false;
+	}
 
 	/* ensure_capacity already verified element_offset and element_length won't overflow. */
 	memmove (element_offset (vector, vector->size), elements, element_length (vector, element_count));
@@ -152,7 +150,7 @@ _dn_vector_erase (
 	DN_ASSERT (vector && vector->size != 0);
 
 	uint64_t insert_offset = (uint64_t)position->it + 1;
-	int64_t size_to_move = (int64_t)vector->size - (int64_t)position->it;
+	int64_t size_to_move = (int64_t)vector->size - (int64_t)position->it - 1;
 	if (DN_UNLIKELY (insert_offset > vector->_internal._capacity || size_to_move < 0))
 		return false;
 
