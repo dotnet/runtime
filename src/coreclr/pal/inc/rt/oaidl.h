@@ -13,6 +13,6 @@
 
 // Pointer to IErrorInfo is still used in non-Windows code
 // Prevent accidentally using its member
-typedef void IErrorInfo;
+struct IErrorInfo;
 
 #endif //__OAIDL_H__
