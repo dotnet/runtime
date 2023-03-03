@@ -509,6 +509,10 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         {
             switch (id->idIns())
             {
+                // Conservative.
+                case INS_call:
+                    return PEEPHOLE_ABORT;
+
                 // These instructions sign-extend.
                 case INS_cwde:
                 case INS_cdq:
