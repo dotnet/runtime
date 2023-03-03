@@ -451,7 +451,21 @@ namespace System.Linq.Expressions.Tests
                 Delegate del =
                     Expression.Lambda(Expression.Add(param, Expression.Constant(5)), param).Compile();
                 Assert.Equal(305, del.DynamicInvoke(300));
+
+                // testing more than 2 parameters is important because because it follows a different code path in Compile.
+                Expression<Func<int, int, int, int, int, int>> fiveParameterExpression = (a, b, c, d, e) => a + b + c + d + e;
+                Func<int, int, int, int, int, int> fiveParameterFunc = fiveParameterExpression.Compile();
+                Assert.Equal(7, fiveParameterFunc(2, 2, 1, 1, 0));
+
+                Expression<Func<int, int, int>> callExpression = (a, b) => Add(a, b);
+                Func<int, int, int> callFunc = callExpression.Compile();
+                Assert.Equal(29, callFunc(20, 9));
             }, options);
+        }
+
+        private static int Add(int a, int b)
+        {
+            return a + b;
         }
     }
 

@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
@@ -12,7 +13,7 @@ namespace System.Dynamic.Utils
     internal static class DelegateHelpers
     {
         // This can be flipped to true using feature switches at publishing time
-        internal static bool CanEmitObjectArrayDelegate => true;
+        internal static bool CanEmitObjectArrayDelegate => RuntimeFeature.IsDynamicCodeSupported;
 
         // Separate class so that the it can be trimmed away and doesn't get conflated
         // with the Reflection.Emit statics below.
