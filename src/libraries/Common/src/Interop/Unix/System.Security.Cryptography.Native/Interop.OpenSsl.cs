@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Security;
@@ -25,7 +24,6 @@ internal static partial class Interop
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
-        private static readonly IdnMapping s_idnMapping = new IdnMapping();
         private static readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> s_clientSslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
 
         #region internal methods
@@ -385,22 +383,10 @@ internal static partial class Interop
 
                 if (sslAuthenticationOptions.IsClient)
                 {
-                    string punyCode = string.Empty;
-                    // The IdnMapping converts unicode input into the IDNA punycode sequence.
-                    try
-                    {
-                        punyCode = string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ? string.Empty : s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
-                    }
-                    catch (ArgumentException)
-                    {
-                        punyCode = sslAuthenticationOptions.TargetHost;
-                        throw;
-                    }
-
-                    if (!string.IsNullOrEmpty(punyCode))
+                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost))
                     {
                         // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
-                        if (!Ssl.SslSetTlsExtHostName(sslHandle, punyCode))
+                        if (!Ssl.SslSetTlsExtHostName(sslHandle, sslAuthenticationOptions.TargetHost))
                         {
                             Crypto.ErrClearError();
                         }
@@ -408,7 +394,7 @@ internal static partial class Interop
 
                         if (cacheSslContext)
                         {
-                            sslCtxHandle.TrySetSession(sslHandle, punyCode);
+                            sslCtxHandle.TrySetSession(sslHandle, sslAuthenticationOptions.TargetHost);
                             bool ignored = false;
                             sslCtxHandle.DangerousAddRef(ref ignored);
                             sslHandle.SslContextHandle = sslCtxHandle;

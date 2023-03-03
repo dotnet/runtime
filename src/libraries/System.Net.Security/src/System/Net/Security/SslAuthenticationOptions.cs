@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -11,6 +12,8 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
+        private static readonly IdnMapping s_idnMapping = new IdnMapping();
+
         // Simplified version of IPAddressParser.Parse to avoid allocations and dependencies.
         // It purposely ignores scopeId as we don't really use so we do not need to map it to actual interface id.
         private static unsafe bool IsValidAddress(ReadOnlySpan<char> ipSpan)
@@ -45,6 +48,20 @@ namespace System.Net.Security
 
             return false;
         }
+
+        private static unsafe bool IsSafeDnsString(ReadOnlySpan<char> name)
+        {
+            for (int i = 0; i < name.Length; i++)
+            {
+                if (!char.IsAsciiLetterOrDigit(name[i]) && name[i] != '.' && name[i] != '-' && name[i] != '_')
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
 
         internal SslAuthenticationOptions()
         {
@@ -86,12 +103,29 @@ namespace System.Net.Security
             if (!string.IsNullOrEmpty(sslClientAuthenticationOptions.TargetHost))
             {
                 // RFC 6066 section 3 says to exclude trailing dot from fully qualified DNS hostname
-                TargetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
+                string targetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
 
                 // RFC 6066 forbids IP literals
-                if (IsValidAddress(TargetHost))
+                if (IsValidAddress(targetHost))
                 {
                     TargetHost = string.Empty;
+                }
+                else
+                {
+                    try
+                    {
+                        TargetHost = s_idnMapping.GetAscii(targetHost);
+                    }
+                    catch (ArgumentException)
+                    {
+                        if (!IsSafeDnsString(targetHost))
+                        {
+                            throw;
+                        }
+
+                        // Seems like name that does not confrom to IDN but apers somewhat valid according to orogional DNS rfc.
+                        TargetHost = targetHost;
+                    }
                 }
             }
 
