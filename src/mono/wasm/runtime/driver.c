@@ -39,38 +39,25 @@
 #endif
 #include "gc-common.h"
 
-#ifdef CORE_BINDINGS
-void core_initialize_internals ();
-#endif
+void bindings_initialize_internals ();
 
-extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
-
-// Blazor specific custom routines - see dotnet_support.js for backing code
-extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
 
 void mono_wasm_enable_debugging (int);
-
-static int _marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type);
-
-int mono_wasm_register_root (char *start, size_t size, const char *name);
-void mono_wasm_deregister_root (char *addr);
-
 void mono_ee_interp_init (const char *opts);
 void mono_marshal_ilgen_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
 void mono_icall_table_init (void);
-void mono_aot_register_module (void **aot_info);
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
-int32_t monoeg_g_hasenv(const char *variable);
-void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
-char *mono_method_full_name (MonoMethod *method, int signature);
-extern void mono_wasm_register_timezones_bundle();
 
+extern void mono_wasm_register_timezones_bundle();
+extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 static void mono_wasm_init_finalizer_thread (void);
+
+#ifdef ENABLE_LEGACY_JS_INTEROP
 
 #define MARSHAL_TYPE_NULL 0
 #define MARSHAL_TYPE_INT 1
@@ -125,6 +112,8 @@ static int resolved_datetime_class = 0,
 	resolved_task_class = 0,
 	resolved_safehandle_class = 0,
 	resolved_voidtaskresult_class = 0;
+
+#endif /* ENABLE_LEGACY_JS_INTEROP */
 
 int mono_wasm_enable_gc = 1;
 
@@ -442,22 +431,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	return addr;
 }
 
-typedef void (*background_job_cb)(void);
-void mono_threads_schedule_background_job (background_job_cb cb);
-
-void mono_initialize_internals (void)
-{
-	// Blazor specific custom routines - see dotnet_support.js for backing code
-	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
-
-#ifdef CORE_BINDINGS
-	core_initialize_internals();
-#endif
-
-	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleBackgroundJob", mono_threads_schedule_background_job);
-}
-
-EMSCRIPTEN_KEEPALIVE void
+void
 mono_wasm_register_bundled_satellite_assemblies (void)
 {
 	/* In legacy satellite_assembly_count is always false */
@@ -612,7 +586,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 	root_domain = mono_jit_init_version ("mono", NULL);
 
-	mono_initialize_internals();
+	bindings_initialize_internals();
 
 	mono_thread_set_main (mono_thread_current ());
 
@@ -680,32 +654,6 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	result = mono_class_get_method_from_name (klass, name, arguments);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_get_delegate_invoke_ref (MonoObject **delegate)
-{
-	MonoMethod * result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_get_delegate_invoke(mono_object_get_class (*delegate));
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_box_primitive_ref (MonoClass *klass, void *value, int value_size, PPVOLATILE(MonoObject) result)
-{
-	assert (klass);
-
-	MONO_ENTER_GC_UNSAFE;
-	MonoType *type = mono_class_get_type (klass);
-	int alignment;
-
-	if (mono_type_size (type, &alignment) <= value_size)
-		// TODO: use mono_value_box_checked and propagate error out
-		store_volatile(result, mono_value_box (root_domain, klass, value));
-
-	MONO_EXIT_GC_UNSAFE;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -832,6 +780,8 @@ mono_wasm_string_from_utf16_ref (const mono_unichar2 * chars, int length, MonoSt
 	}
 	MONO_EXIT_GC_UNSAFE;
 }
+
+#ifdef ENABLE_LEGACY_JS_INTEROP
 
 static int
 class_is_task (MonoClass *klass)
@@ -979,6 +929,87 @@ _marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type)
 
 		return MARSHAL_TYPE_OBJECT;
 	}
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, PPVOLATILE(MonoArray) result)
+{
+	MONO_ENTER_GC_UNSAFE;
+	MonoClass * typeClass = mono_get_byte_class(); // default is Byte
+	switch (type) {
+	case MARSHAL_ARRAY_BYTE:
+		typeClass = mono_get_sbyte_class();
+		break;
+	case MARSHAL_ARRAY_SHORT:
+		typeClass = mono_get_int16_class();
+		break;
+	case MARSHAL_ARRAY_USHORT:
+		typeClass = mono_get_uint16_class();
+		break;
+	case MARSHAL_ARRAY_INT:
+		typeClass = mono_get_int32_class();
+		break;
+	case MARSHAL_ARRAY_UINT:
+		typeClass = mono_get_uint32_class();
+		break;
+	case MARSHAL_ARRAY_FLOAT:
+		typeClass = mono_get_single_class();
+		break;
+	case MARSHAL_ARRAY_DOUBLE:
+		typeClass = mono_get_double_class();
+		break;
+	case MARSHAL_ARRAY_UBYTE:
+	case MARSHAL_ARRAY_UBYTE_C:
+		typeClass = mono_get_byte_class();
+		break;
+	default:
+		printf ("Invalid marshal type %d in mono_wasm_typed_array_new", type);
+		abort();
+	}
+
+	PVOLATILE(MonoArray) buffer;
+
+	buffer = mono_array_new (mono_get_root_domain(), typeClass, length);
+	memcpy(mono_array_addr_with_size(buffer, sizeof(char), 0), arr, length * size);
+
+	store_volatile((PPVOLATILE(MonoObject))result, (MonoObject *)buffer);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoMethod*
+mono_wasm_get_delegate_invoke_ref (MonoObject **delegate)
+{
+	MonoMethod * result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_get_delegate_invoke(mono_object_get_class (*delegate));
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_box_primitive_ref (MonoClass *klass, void *value, int value_size, PPVOLATILE(MonoObject) result)
+{
+	assert (klass);
+
+	MONO_ENTER_GC_UNSAFE;
+	MonoType *type = mono_class_get_type (klass);
+	int alignment;
+
+	if (mono_type_size (type, &alignment) <= value_size)
+		// TODO: use mono_value_box_checked and propagate error out
+		store_volatile(result, mono_value_box (root_domain, klass, value));
+
+	MONO_EXIT_GC_UNSAFE;
+}
+
+EMSCRIPTEN_KEEPALIVE char *
+mono_wasm_get_type_name (MonoType * typePtr) {
+	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_REFLECTION);
+}
+
+EMSCRIPTEN_KEEPALIVE char *
+mono_wasm_get_type_aqn (MonoType * typePtr) {
+	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
 // This code runs inside a gc unsafe region
@@ -1184,6 +1215,8 @@ mono_wasm_string_array_new_ref (int size, MonoArray **result)
 	MONO_EXIT_GC_UNSAFE;
 }
 
+#endif /* ENABLE_LEGACY_JS_INTEROP */
+
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exec_regression (int verbose_level, char *image)
 {
@@ -1262,16 +1295,6 @@ mono_wasm_class_get_type (MonoClass *klass)
 	result = mono_class_get_type (klass);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE char *
-mono_wasm_get_type_name (MonoType * typePtr) {
-	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_REFLECTION);
-}
-
-EMSCRIPTEN_KEEPALIVE char *
-mono_wasm_get_type_aqn (MonoType * typePtr) {
-	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
 EMSCRIPTEN_KEEPALIVE void
