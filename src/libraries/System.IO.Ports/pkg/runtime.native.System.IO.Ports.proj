@@ -11,7 +11,7 @@
   <ItemGroup>
     <!-- Listing the runtime specific packages to populate the dependencies section.
          Not building these references to avoid unintentional Build/Pack invocations.
-         They are filtered in the traversal build in oob-all.csproj based on the OutputRid. -->
+         They are filtered in the traversal build in oob-all.csproj based on the OutputRID. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*.proj" Exclude="$(MSBuildProjectFile)" BuildReference="false" />
   </ItemGroup>
 </Project>

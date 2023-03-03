@@ -446,7 +446,7 @@ while [[ $# > 0 ]]; do
         echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
         exit 1
       fi
-      arguments="$arguments /p:OutputRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      arguments="$arguments /p:OutputRID=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       shift 2
       ;;
 

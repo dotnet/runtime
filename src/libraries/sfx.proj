@@ -43,7 +43,7 @@
           Condition="'$(RefOnly)' != 'true'"
           Inputs="@(SharedFrameworkAssembly);@(SharedFrameworkSuppressionsXml);$(ILLinkTasksAssembly)"
           Outputs="$(SharedFrameworkAssembliesTrimMarkerFile)">
-    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRid) shared framework assemblies with ILLinker..." Importance="high" />
+    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRID) shared framework assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>

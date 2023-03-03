@@ -15,10 +15,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Massage the OutputRid into an JITTools package RID that we can download -->
-    <_jitToolsRidPlatformIndex>$(OutputRid.LastIndexOf('-'))</_jitToolsRidPlatformIndex>
-    <JITToolsRidWithoutPlatform>$(OutputRid.Substring(0, $(_jitToolsRidPlatformIndex)))</JITToolsRidWithoutPlatform>
-    <JITToolsRidPlatform>$(OutputRid.Substring($(_jitToolsRidPlatformIndex)).TrimStart('-'))</JITToolsRidPlatform>
+    <!-- Massage the OutputRID into an JITTools package RID that we can download -->
+    <_jitToolsRidPlatformIndex>$(OutputRID.LastIndexOf('-'))</_jitToolsRidPlatformIndex>
+    <JITToolsRidWithoutPlatform>$(OutputRID.Substring(0, $(_jitToolsRidPlatformIndex)))</JITToolsRidWithoutPlatform>
+    <JITToolsRidPlatform>$(OutputRID.Substring($(_jitToolsRidPlatformIndex)).TrimStart('-'))</JITToolsRidPlatform>
 
     <!-- If it's not win/osx/linux-musl, it's a non-portable Linux. Treat as Linux. -->
     <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' != 'win' and '$(JITToolsRidWithoutPlatform)' != 'osx' and '$(JITToolsRidWithoutPlatform)' != 'linux-musl'">linux</JITToolsRidWithoutPlatform>

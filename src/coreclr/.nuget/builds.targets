@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <Target Name="FilterProjects" BeforeTargets="Build;Pack">
-    <Error Condition="'$(OutputRid)' == ''" Text="'OutputRid' property must be specified."/>
+    <Error Condition="'$(OutputRID)' == ''" Text="'OutputRID' property must be specified."/>
 
     <!-- Only build packages for current RID or non-RID-specific -->
     <ItemGroup>
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(OutputRid)'" />
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(OutputRID)'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(BuildIdentityPackage)' == 'true'">

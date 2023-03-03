@@ -37,7 +37,7 @@
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
       <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
       <_CoreClrBuildArg Condition="'$(HostArchitecture)' != ''" Include="-hostarch $(HostArchitecture)" />
-      <_CoreClrBuildArg Include="-outputrid $(OutputRid)" />
+      <_CoreClrBuildArg Include="-outputrid $(OutputRID)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">

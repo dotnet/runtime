@@ -73,7 +73,7 @@
       <TestContextVariable Include="NUGET_PACKAGES=$(TestRestorePackagesPath)" />
       <TestContextVariable Include="TEST_ARTIFACTS=$(SystemPathTestsOutputDir)" />
       <TestContextVariable Include="TEST_TARGETRID=$(TestTargetRid)" />
-      <TestContextVariable Include="BUILDRID=$(OutputRid)" />
+      <TestContextVariable Include="BUILDRID=$(OutputRID)" />
       <TestContextVariable Include="BUILD_ARCHITECTURE=$(TargetArchitecture)" />
       <TestContextVariable Include="BUILD_CONFIGURATION=$(Configuration)" />
       <TestContextVariable Include="MNA_VERSION=$(NETCoreAppRuntimePackageVersion)" />
