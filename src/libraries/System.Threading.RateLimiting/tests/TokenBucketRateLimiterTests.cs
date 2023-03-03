@@ -966,7 +966,7 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public async void TryReplenishWithAllTokensAvailable_Noops()
+        public async Task TryReplenishWithAllTokensAvailable_Noops()
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
             {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -3299,25 +3300,56 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             result = -1;
             if (str.GetNext())
             {
-                //
-                // Scan the month names (note that some calendars has 13 months) and find
-                // the matching month name which has the max string length.
-                // We need to do this because some cultures (e.g. "cs-CZ") which have
-                // abbreviated month names with the same prefix.
-                //
-                int monthsInYear = (dtfi.GetMonthName(13).Length == 0 ? 12 : 13);
-                for (int i = 1; i <= monthsInYear; i++)
+                if (dtfi.CultureName == "")
                 {
-                    string searchStr = dtfi.GetAbbreviatedMonthName(i);
-                    int matchStrLen = searchStr.Length;
-                    if (dtfi.HasSpacesInMonthNames
-                            ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
-                            : str.MatchSpecifiedWord(searchStr))
+                    // Invariant data. Do a fast lookup on the known abbreviated month names.
+                    ReadOnlySpan<char> span = str.Value.Slice(str.Index);
+                    if (span.Length >= 3)
                     {
-                        if (matchStrLen > maxMatchStrLen)
+                        uint m0 = span[0], m1 = span[1], m2 = span[2];
+                        if ((m0 | m1 | m2) <= 0x7F)
                         {
-                            maxMatchStrLen = matchStrLen;
-                            result = i;
+                            // Combine all the characters into a single uint, lowercased.
+                            maxMatchStrLen = 3; // assume we'll successfully match
+                            switch ((m0 << 16) | (m1 << 8) | m2 | 0x202020)
+                            {
+                                case 0x6a616e: /* 'jan' */ result = 1; break;
+                                case 0x666562: /* 'feb' */ result = 2; break;
+                                case 0x6d6172: /* 'mar' */ result = 3; break;
+                                case 0x617072: /* 'apr' */ result = 4; break;
+                                case 0x6d6179: /* 'may' */ result = 5; break;
+                                case 0x6a756e: /* 'jun' */ result = 6; break;
+                                case 0x6a756c: /* 'jul' */ result = 7; break;
+                                case 0x617567: /* 'aug' */ result = 8; break;
+                                case 0x736570: /* 'sep' */ result = 9; break;
+                                case 0x6f6374: /* 'oct' */ result = 10; break;
+                                case 0x6e6f76: /* 'nov' */ result = 11; break;
+                                case 0x646563: /* 'dec' */ result = 12; break;
+                                default: maxMatchStrLen = 0; break; // undo match assumption
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Scan the month names (note that some calendars has 13 months) and find
+                    // the matching month name which has the max string length.
+                    // We need to do this because some cultures (e.g. "cs-CZ") which have
+                    // abbreviated month names with the same prefix.
+                    int monthsInYear = (dtfi.GetMonthName(13).Length == 0 ? 12 : 13);
+                    for (int i = 1; i <= monthsInYear; i++)
+                    {
+                        string searchStr = dtfi.GetAbbreviatedMonthName(i);
+                        int matchStrLen = searchStr.Length;
+                        if (dtfi.HasSpacesInMonthNames
+                                ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
+                                : str.MatchSpecifiedWord(searchStr))
+                        {
+                            if (matchStrLen > maxMatchStrLen)
+                            {
+                                maxMatchStrLen = matchStrLen;
+                                result = i;
+                            }
                         }
                     }
                 }
@@ -3370,25 +3402,54 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             result = -1;
             if (str.GetNext())
             {
-                //
-                // Scan the month names (note that some calendars has 13 months) and find
-                // the matching month name which has the max string length.
-                // We need to do this because some cultures (e.g. "vi-VN") which have
-                // month names with the same prefix.
-                //
-                int monthsInYear = (dtfi.GetMonthName(13).Length == 0 ? 12 : 13);
-                for (int i = 1; i <= monthsInYear; i++)
+                if (dtfi.CultureName == "")
                 {
-                    string searchStr = dtfi.GetMonthName(i);
-                    int matchStrLen = searchStr.Length;
-                    if (dtfi.HasSpacesInMonthNames
-                            ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
-                            : str.MatchSpecifiedWord(searchStr))
+                    // Invariant data. Do a fast lookup on the known month names.
+                    ReadOnlySpan<char> span = str.Value.Slice(str.Index);
+                    if (span.Length >= 3)
                     {
-                        if (matchStrLen > maxMatchStrLen)
+                        uint m0 = span[0], m1 = span[1], m2 = span[2];
+                        if ((m0 | m1 | m2) <= 0x7F)
                         {
-                            maxMatchStrLen = matchStrLen;
-                            result = i;
+                            // Combine all the characters into a single uint, lowercased.
+                            switch ((m0 << 16) | (m1 << 8) | m2 | 0x202020)
+                            {
+                                case 0x6a616e: /* 'jan' */ SetIfStartsWith(span, "January", 1, ref result, ref maxMatchStrLen); break;
+                                case 0x666562: /* 'feb' */ SetIfStartsWith(span, "February", 2, ref result, ref maxMatchStrLen); break;
+                                case 0x6d6172: /* 'mar' */ SetIfStartsWith(span, "March", 3, ref result, ref maxMatchStrLen); break;
+                                case 0x617072: /* 'apr' */ SetIfStartsWith(span, "April", 4, ref result, ref maxMatchStrLen); break;
+                                case 0x6d6179: /* 'may' */ SetIfStartsWith(span, "May", 5, ref result, ref maxMatchStrLen); break;
+                                case 0x6a756e: /* 'jun' */ SetIfStartsWith(span, "June", 6, ref result, ref maxMatchStrLen); break;
+                                case 0x6a756c: /* 'jul' */ SetIfStartsWith(span, "July", 7, ref result, ref maxMatchStrLen); break;
+                                case 0x617567: /* 'aug' */ SetIfStartsWith(span, "August", 8, ref result, ref maxMatchStrLen); break;
+                                case 0x736570: /* 'sep' */ SetIfStartsWith(span, "September", 9, ref result, ref maxMatchStrLen); break;
+                                case 0x6f6374: /* 'oct' */ SetIfStartsWith(span, "October", 10, ref result, ref maxMatchStrLen); break;
+                                case 0x6e6f76: /* 'nov' */ SetIfStartsWith(span, "November", 11, ref result, ref maxMatchStrLen); break;
+                                case 0x646563: /* 'dec' */ SetIfStartsWith(span, "December", 12, ref result, ref maxMatchStrLen); break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Scan the month names (note that some calendars has 13 months) and find
+                    // the matching month name which has the max string length.
+                    // We need to do this because some cultures (e.g. "vi-VN") which have
+                    // month names with the same prefix.
+                    int monthsInYear = (dtfi.GetMonthName(13).Length == 0 ? 12 : 13);
+                    for (int i = 1; i <= monthsInYear; i++)
+                    {
+                        string searchStr = dtfi.GetMonthName(i);
+                        int matchStrLen = searchStr.Length;
+                        if (dtfi.HasSpacesInMonthNames
+                                ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
+                                : str.MatchSpecifiedWord(searchStr))
+                        {
+                            if (matchStrLen > maxMatchStrLen)
+                            {
+                                maxMatchStrLen = matchStrLen;
+                                result = i;
+                            }
                         }
                     }
                 }
@@ -3442,18 +3503,46 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             result = -1;
             if (str.GetNext())
             {
-                for (DayOfWeek i = DayOfWeek.Sunday; i <= DayOfWeek.Saturday; i++)
+                if (dtfi.CultureName == "")
                 {
-                    string searchStr = dtfi.GetAbbreviatedDayName(i);
-                    int matchStrLen = searchStr.Length;
-                    if (dtfi.HasSpacesInDayNames
-                            ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
-                            : str.MatchSpecifiedWord(searchStr))
+                    // Invariant data. Do a fast lookup on the known abbreviated day names.
+                    ReadOnlySpan<char> span = str.Value.Slice(str.Index);
+                    if (span.Length >= 3)
                     {
-                        if (matchStrLen > maxMatchStrLen)
+                        uint d0 = span[0], d1 = span[1], d2 = span[2];
+                        if ((d0 | d1 | d2) <= 0x7F)
                         {
-                            maxMatchStrLen = matchStrLen;
-                            result = (int)i;
+                            // Combine all the characters into a single uint, lowercased.
+                            maxMatchStrLen = 3; // assume we'll successfully match
+                            switch ((d0 << 16) | (d1 << 8) | d2 | 0x202020)
+                            {
+                                case 0x73756E /* 'sun' */: result = 0; break;
+                                case 0x6d6f6e /* 'mon' */: result = 1; break;
+                                case 0x747565 /* 'tue' */: result = 2; break;
+                                case 0x776564 /* 'wed' */: result = 3; break;
+                                case 0x746875 /* 'thu' */: result = 4; break;
+                                case 0x667269 /* 'fri' */: result = 5; break;
+                                case 0x736174 /* 'sat' */: result = 6; break;
+                                default: maxMatchStrLen = 0; break; // undo match assumption
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for (DayOfWeek i = DayOfWeek.Sunday; i <= DayOfWeek.Saturday; i++)
+                    {
+                        string searchStr = dtfi.GetAbbreviatedDayName(i);
+                        int matchStrLen = searchStr.Length;
+                        if (dtfi.HasSpacesInDayNames
+                                ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
+                                : str.MatchSpecifiedWord(searchStr))
+                        {
+                            if (matchStrLen > maxMatchStrLen)
+                            {
+                                maxMatchStrLen = matchStrLen;
+                                result = (int)i;
+                            }
                         }
                     }
                 }
@@ -3481,18 +3570,44 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             result = -1;
             if (str.GetNext())
             {
-                for (DayOfWeek i = DayOfWeek.Sunday; i <= DayOfWeek.Saturday; i++)
+                if (dtfi.CultureName == "")
                 {
-                    string searchStr = dtfi.GetDayName(i);
-                    int matchStrLen = searchStr.Length;
-                    if (dtfi.HasSpacesInDayNames
-                            ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
-                            : str.MatchSpecifiedWord(searchStr))
+                    // Invariant data. Do a fast lookup on the known day names.
+                    ReadOnlySpan<char> span = str.Value.Slice(str.Index);
+                    if (span.Length >= 3)
                     {
-                        if (matchStrLen > maxMatchStrLen)
+                        uint d0 = span[0], d1 = span[1], d2 = span[2];
+                        if ((d0 | d1 | d2) <= 0x7F)
                         {
-                            maxMatchStrLen = matchStrLen;
-                            result = (int)i;
+                            // Combine all the characters into a single uint, lowercased.
+                            switch ((d0 << 16) | (d1 << 8) | d2 | 0x202020)
+                            {
+                                case 0x73756E /* 'sun' */: SetIfStartsWith(span, "Sunday", 0, ref result, ref maxMatchStrLen); break;
+                                case 0x6d6f6e /* 'mon' */: SetIfStartsWith(span, "Monday", 1, ref result, ref maxMatchStrLen); break;
+                                case 0x747565 /* 'tue' */: SetIfStartsWith(span, "Tuesday", 2, ref result, ref maxMatchStrLen); break;
+                                case 0x776564 /* 'wed' */: SetIfStartsWith(span, "Wednesday", 3, ref result, ref maxMatchStrLen); break;
+                                case 0x746875 /* 'thu' */: SetIfStartsWith(span, "Thursday", 4, ref result, ref maxMatchStrLen); break;
+                                case 0x667269 /* 'fri' */: SetIfStartsWith(span, "Friday", 5, ref result, ref maxMatchStrLen); break;
+                                case 0x736174 /* 'sat' */: SetIfStartsWith(span, "Saturday", 6, ref result, ref maxMatchStrLen); break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for (DayOfWeek i = DayOfWeek.Sunday; i <= DayOfWeek.Saturday; i++)
+                    {
+                        string searchStr = dtfi.GetDayName(i);
+                        int matchStrLen = searchStr.Length;
+                        if (dtfi.HasSpacesInDayNames
+                                ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
+                                : str.MatchSpecifiedWord(searchStr))
+                        {
+                            if (matchStrLen > maxMatchStrLen)
+                            {
+                                maxMatchStrLen = matchStrLen;
+                                result = (int)i;
+                            }
                         }
                     }
                 }
@@ -3503,6 +3618,20 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Sets <paramref name="result"/> to <paramref name="matchResult"/> and <paramref name="maxMatchStrLen"/> to <paramref name="match"/>'s Length
+        /// if <paramref name="span"/> starts with <paramref name="match"/> with an ordinal ignore-case comparison.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // exposes StartsWith to constant `match`
+        private static void SetIfStartsWith(ReadOnlySpan<char> span, [ConstantExpected] string match, int matchResult, scoped ref int result, ref int maxMatchStrLen)
+        {
+            if (span.StartsWith(match, StringComparison.OrdinalIgnoreCase))
+            {
+                result = matchResult;
+                maxMatchStrLen = match.Length;
+            }
         }
 
         /*=================================MatchEraName==================================

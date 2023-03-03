@@ -1630,6 +1630,19 @@ ep_rt_config_value_get_output_streaming (void)
     return false;
 }
 
+static
+inline
+bool
+ep_rt_config_value_get_enable_stackwalk (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+    // TODO: EventPipe Configuration values - RhConfig?
+    // (CLRConfig::INTERNAL_EventPipeEnableStackwalk)
+    //PalDebugBreak();
+    return true;
+}
+
 /*
  * EventPipeSampleProfiler.
  */

@@ -786,7 +786,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		)
 			return TRACE_CONTINUE;
 		else if (
-			// math intrinsics
+			// math intrinsics - we implement most but not all of these
 			(opcode >= MINT_ASIN) &&
 			(opcode <= MINT_MAXF)
 		)
@@ -1172,6 +1172,11 @@ mono_jiterp_math_atan2 (double lhs, double rhs) {
 }
 
 EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_pow (double lhs, double rhs) {
+	return pow(lhs, rhs);
+}
+
+EMSCRIPTEN_KEEPALIVE double
 mono_jiterp_math_acos (double value)
 {
 	return acos(value);
@@ -1205,6 +1210,36 @@ EMSCRIPTEN_KEEPALIVE double
 mono_jiterp_math_tan (double value)
 {
 	return tan(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_exp (double value)
+{
+	return exp(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_log (double value)
+{
+	return log(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_log2 (double value)
+{
+	return log2(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_log10 (double value)
+{
+	return log10(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_fma (double x, double y, double z)
+{
+	return fma(x, y, z);
 }
 
 EMSCRIPTEN_KEEPALIVE int

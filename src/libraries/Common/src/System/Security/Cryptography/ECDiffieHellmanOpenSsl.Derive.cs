@@ -69,6 +69,17 @@ namespace System.Security.Cryptography
                 DeriveSecretAgreement);
         }
 
+        /// <inheritdoc />
+        public override byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
+        {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+            ThrowIfDisposed();
+
+            byte[]? secretAgreement = DeriveSecretAgreement(otherPartyPublicKey, hasher: null);
+            Debug.Assert(secretAgreement is not null);
+            return secretAgreement;
+        }
+
         /// <summary>
         /// Get the secret agreement generated between two parties
         /// </summary>

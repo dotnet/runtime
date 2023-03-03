@@ -114,6 +114,9 @@ class ExecutableAllocator
     // and replaces it by the passed in one.
     void UpdateCachedMapping(BlockRW *pBlock);
 
+    // Remove the cached mapping
+    void RemoveCachedMapping();
+
     // Find existing RW block that maps the whole specified range of RX memory.
     // Return NULL if no such block exists.
     void* FindRWBlock(void* baseRX, size_t size);
