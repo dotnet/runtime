@@ -717,54 +717,58 @@ bool emitter::emitDoesInsModifyFlags(instruction ins)
 
 bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
 {
-    switch (id->idIns())
+    instruction ins = id->idIns();
+
+    // These are special cases since they modify one or more register(s) implicitly.
+    switch (ins)
     {
-        // This is conservative. We assume a call will write to all regs even if it does not.
+        // This is conservative. We assume a call will write to all registers even if it does not.
         case INS_call:
             return true;
+
+        // These always write to RAX and RDX.
+        case INS_idiv:
+        case INS_div:
+        case INS_imulEAX:
+        case INS_mulEAX:
+            if (reg == REG_RAX || reg == REG_RDX)
+            {
+                return true;
+            }
+            break;
+
+        // Always writes to RAX.
+        case INS_cmpxchg:
+            if (reg == REG_RAX)
+            {
+                return true;
+            }
+            break;
 
         default:
             break;
     }
 
-    // This is a special case for idiv, div, imul, and mul.
-    // They always write to RAX and RDX.
-    if (instrHasImplicitRegPairDest(id->idIns()))
-    {
-        if (reg == REG_RAX || reg == REG_RDX)
-        {
-            return true;
-        }
-    }
-
 #ifdef TARGET_64BIT
-    // This is a special case for cdq/cwde/cmpxchg.
-    if (instrHasImplicitRegSingleDest(id->idIns()))
+    // This is a special case for cdq/cwde.
+    switch (ins)
     {
-        switch (id->idIns())
-        {
-            case INS_cwde:
-            case INS_cmpxchg:
+        case INS_cwde:
+            if (reg == REG_RAX)
             {
-                if (reg == REG_RAX)
-                {
-                    return PEEPHOLE_ABORT;
-                }
-                break;
+                return true;
             }
+            break;
 
-            case INS_cdq:
+        case INS_cdq:
+            if (reg == REG_RDX)
             {
-                if (reg == REG_RDX)
-                {
-                    return PEEPHOLE_ABORT;
-                }
-                break;
+                return true;
             }
+            break;
 
-            default:
-                break;
-        }
+        default:
+            break;
     }
 #endif // TARGET_64BIT
 
