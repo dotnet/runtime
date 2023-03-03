@@ -134,7 +134,7 @@ namespace System
             {
                 if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')
                 {
-                    // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
+                    // the format of the line is "ISO 3166 territory code \t coordinates \t TimeZone Id \t comments"
 
                     int firstTabIndex = zoneTabFileLine.IndexOf('\t');
                     if (firstTabIndex >= 0)
