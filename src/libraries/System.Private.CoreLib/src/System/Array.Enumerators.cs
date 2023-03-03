@@ -141,7 +141,7 @@ namespace System
         object? IEnumerator.Current => Current;
     }
 
-    internal abstract class GenericEmptyEnumeratorBase : IDisposable
+    internal abstract class GenericEmptyEnumeratorBase : IDisposable, IEnumerator
     {
 #pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
         public bool MoveNext() => false;
