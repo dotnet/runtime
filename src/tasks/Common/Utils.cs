@@ -66,7 +66,7 @@ internal static class Utils
             {
                 // set encoding to UTF-8 -> full Unicode support is needed for usernames -
                 // `command` contains tmp dir path with the username
-                sw.WriteLine("%SystemRoot%\System32\chcp.com 65001>nul");
+                sw.WriteLine(@"%SystemRoot%\System32\chcp.com 65001>nul");
                 sw.WriteLine("setlocal");
                 sw.WriteLine("set errorlevel=dummy");
                 sw.WriteLine("set errorlevel=");
