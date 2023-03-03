@@ -222,65 +222,63 @@ namespace System
 
         private static unsafe string[] SegmentCommandLine(char* cmdLine)
         {
-            //---------------------------------------------------------------------
-            // Splits a command line into argc/argv lists, using the VC7 parsing rules.
-            //
-            // This functions interface mimics the CommandLineToArgvW api.
-            //
-            //---------------------------------------------------------------------
-            // NOTE: Implementation-wise, once every few years it would be a good idea to
-            // compare this code with the C runtime library's parse_cmdline method,
-            // which is in vctools\crt\crtw32\startup\stdargv.c.  (Note we don't
-            // support wild cards, and we use Unicode characters exclusively.)
-            // We are up to date as of ~6/2005.
-            //---------------------------------------------------------------------
+            // Parse command line arguments using the rules documented at
+            // https://learn.microsoft.com/cpp/cpp/main-function-command-line-args#parsing-c-command-line-arguments
 
-            // The C# version is ported from C++ version in coreclr
-            // The behavior mimics what MSVCRT does before main,
-            // which is slightly different with CommandLineToArgvW
+            // CommandLineToArgvW API cannot be used here since
+            // it has slightly different behavior.
 
             ArrayBuilder<string> arrayBuilder = default;
 
             Span<char> stringBuffer = stackalloc char[260]; // Use MAX_PATH for a typical maximum
             scoped ValueStringBuilder stringBuilder;
 
-            char* pSrc = cmdLine;
-            bool inQoute;
             char c;
 
-            // First, parse the program name (argv[0]). Argv[0] is parsed under
-            // special rules. Anything up to the first whitespace outside a quoted
-            // subtring is accepted. Backslashes are treated as normal characters.
-            inQoute = false;
+            // First scan the program name, copy it, and count the bytes
+
+            char* p = cmdLine;
+
+            // A quoted program name is handled here. The handling is much
+            // simpler than for other arguments. Basically, whatever lies
+            // between the leading double-quote and next one, or a terminal null
+            // character is simply accepted. Fancier handling is not required
+            // because the program name must be a legal NTFS/HPFS file name.
+            // Note that the double-quote characters are not copied, nor do they
+            // contribyte to character_count.
+
+            bool inQuotes = false;
             stringBuilder = new ValueStringBuilder(stringBuffer);
+
             do
             {
-                if (*pSrc == '"')
+                if (*p == '"')
                 {
-                    inQoute = !inQoute;
-                    c = *pSrc++;
+                    inQuotes = !inQuotes;
+                    c = *p++;
                     continue;
                 }
-                c = *pSrc++;
+
+                c = *p++;
                 stringBuilder.Append(c);
             }
-            while (c != '\0' && (inQoute || c is not (' ' or '\t')));
+            while (c != '\0' && (inQuotes || (c is not (' ' or '\t'))));
 
             arrayBuilder.Add(stringBuilder.ToString());
-            inQoute = false;
+            inQuotes = false;
 
             // loop on each argument
             while (true)
             {
-                if (*pSrc != '\0')
+                if (*p != '\0')
                 {
-                    while (*pSrc is ' ' or '\t')
+                    while (*p is ' ' or '\t')
                     {
-                        ++pSrc;
+                        ++p;
                     }
                 }
 
-                if (*pSrc == '\0')
+                if (*p == '\0')
                 {
                     // end of args
                     break;
@@ -293,55 +291,60 @@ namespace System
                 while (true)
                 {
                     bool copyChar = true;
-                    /* Rules: 2N backslashes + " ==> N backslashes and begin/end quote
-                       2N+1 backslashes + " ==> N backslashes + literal "
-                       N backslashes ==> N backslashes */
+
+                    // Rules:
+                    // 2N   backslashes + " ==> N backslashes and begin/end quote
+                    // 2N+1 backslashes + " ==> N backslashes + literal "
+                    // N    backslashes     ==> N backslashes
                     int numSlash = 0;
-                    while (*pSrc == '\\')
+
+                    while (*p == '\\')
                     {
-                        /* count number of backslashes for use below */
-                        ++pSrc;
+                        // Count number of backslashes for use below
+                        ++p;
                         ++numSlash;
                     }
-                    if (*pSrc == '"')
+
+                    if (*p == '"')
                     {
-                        /* if 2N backslashes before, start/end quote, otherwise
-                           copy literally */
+                        // if 2N backslashes before, start / end quote, otherwise
+                        // copy literally:
                         if (numSlash % 2 == 0)
                         {
-                            if (inQoute && pSrc[1] == '"')
+                            if (inQuotes && p[1] == '"')
                             {
-                                pSrc++; /* Double quote inside quoted string */
+                                p++; // Double quote inside quoted string
                             }
                             else
                             {
-                                /* skip first quote char and copy second */
-                                copyChar = false;       /* don't copy quote */
-                                inQoute = !inQoute;
+                                // Skip first quote char and copy second:
+                                copyChar = false;       // Don't copy quote
+                                inQuotes = !inQuotes;
                             }
                         }
-                        numSlash /= 2; /* divide numslash by two */
+
+                        numSlash /= 2;
                     }
 
-                    /* copy slashes */
+                    // Copy slashes:
                     while (numSlash-- > 0)
                     {
                         stringBuilder.Append('\\');
                     }
 
-                    /* if at end of arg, break loop */
-                    if (*pSrc == '\0' || (!inQoute && *pSrc is ' ' or '\t'))
+                    // If at end of arg, break loop:
+                    if (*p == '\0' || (!inQuotes && *p is ' ' or '\t'))
                     {
                         break;
                     }
 
-                    /* copy character into argument */
+                    // Copy character into argument:
                     if (copyChar)
                     {
-                        stringBuilder.Append(*pSrc);
+                        stringBuilder.Append(*p);
                     }
 
-                    pSrc++;
+                    ++p;
                 }
 
                 arrayBuilder.Add(stringBuilder.ToString());
