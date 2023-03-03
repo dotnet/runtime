@@ -438,6 +438,7 @@ setlocal ENABLEDELAYEDEXPANSION
 set "lockFolder=%~dp0\lock"
 pushd %~dp0
 set "scriptPath=%~dp0"
+set /A _RunWithWatcher=0
 
 $(BatchCLRTestArgPrep)
 $(BatchCLRTestExitCodePrep)
