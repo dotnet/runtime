@@ -342,11 +342,23 @@
          https://github.com/mono/mono/issues/16417 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition\tests\System.ComponentModel.Composition.Tests.csproj" />
 
-    <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for this it has "System.Globalization.EnforceJapaneseEraYearRanges": true) -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
-
     <!-- This OuterLoop test requires browser UI, but the Helix agents are headless -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\wasm\System.Net.WebSockets.Client.Wasm.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(TargetOS)' == 'wasi' and '$(RunDisabledWasiTests)' != 'true') or ('$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true')" Label="Common wasm/wasi disabled tests">
+    <!-- Mono-Browser ignores runtimeconfig.template.json (e.g. for this it has "System.Globalization.EnforceJapaneseEraYearRanges": true) -->
+    <!-- wasi: unsupported right now -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
+
+    <!-- This test is disabled via an assembly-level attribute in source. We exclude it here to avoid queuing/running a work item entirely. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.Platforms\tests\Microsoft.NETCore.Platforms.Tests.csproj" />
+
+    <!-- Networking not supported - https://github.com/dotnet/runtime/issues/82561 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Http\tests\Microsoft.Extensions.Http.Tests\Microsoft.Extensions.Http.Tests.csproj" />
+
+    <!-- unsupported - https://github.com/dotnet/runtime/issues/82561 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Watcher\tests\System.IO.FileSystem.Watcher.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'wasi' and '$(RunDisabledWasiTests)' != 'true') or ('$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true')" Label="Crypto tests">
