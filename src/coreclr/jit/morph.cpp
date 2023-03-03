@@ -9671,11 +9671,16 @@ DONE_MORPHING_CHILDREN:
         case GT_MOD:
 #endif
             if (!varTypeIsFloating(tree->gtType))
-            {
+            {              
                 // We do not need to throw if the second operand is a non-(negative one) constant.
                 if (!op2->IsIntegralConst() || op2->IsIntegralConst(-1))
                 {
-                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                    // We do not need to throw if we know the first operand is a constant and not a min-value.
+                    if (!(tree->TypeIs(TYP_INT) && op1->IsIntegralConst() && !op1->IsIntegralConst(INT32_MIN)) &&
+                        !(tree->TypeIs(TYP_LONG) && op1->IsIntegralConst() && !op1->IsIntegralConst(INT64_MIN)))
+                    {
+                        fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                    }
                 }
 
                 // We do not need to throw if the second operand is a non-zero constant.
