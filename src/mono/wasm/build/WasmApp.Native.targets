@@ -218,7 +218,6 @@
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
       <_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
-      <_EmccCFlags Include="-DCORE_BINDINGS" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="-emit-llvm" />
 
@@ -258,6 +257,8 @@
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+      <EmscriptenEnvVars Include="WasmEnableLegacyJsInterop=$(WasmEnableLegacyJsInterop)"/>
+      <EmscriptenEnvVars Include="MonoWasmThreads=$(MonoWasmThreads)"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(WasmAllowUndefinedSymbols)' == 'true'">
