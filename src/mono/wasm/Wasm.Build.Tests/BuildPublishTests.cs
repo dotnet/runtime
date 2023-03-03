@@ -47,7 +47,6 @@ namespace Wasm.Build.Tests
                         Publish: false
                         ));
 
-
             Run();
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))

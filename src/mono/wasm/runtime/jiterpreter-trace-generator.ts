@@ -510,6 +510,8 @@ export function generate_wasm_body (
                 // index < length
                 builder.appendU8(WasmOpcode.i32_lt_u);
                 // index >= 0
+                // FIXME: It would be nice to optimize this down to a single (index < length) comparison
+                //  but interp.c doesn't do it - presumably because a span could be bigger than 2gb?
                 builder.local("math_lhs32");
                 builder.i32_const(0);
                 builder.appendU8(WasmOpcode.i32_ge_s);
@@ -665,12 +667,13 @@ export function generate_wasm_body (
                 break;
             }
 
-            case MintOpcode.MINT_ARRAY_RANK: {
+            case MintOpcode.MINT_ARRAY_RANK:
+            case MintOpcode.MINT_ARRAY_ELEMENT_SIZE: {
                 builder.block();
                 // dest, src
                 append_ldloca(builder, getArgU16(ip, 1), 4, true);
                 append_ldloca(builder, getArgU16(ip, 2), 0);
-                builder.callImport("array_rank");
+                builder.callImport(opcode === MintOpcode.MINT_ARRAY_RANK ? "array_rank" : "a_elesize");
                 // If the array was null we will bail out, otherwise continue
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
@@ -725,6 +728,21 @@ export function generate_wasm_body (
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.UnboxFailed);
+                builder.endBlock();
+                break;
+            }
+
+            case MintOpcode.MINT_NEWSTR: {
+                builder.block();
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                builder.callImport("newstr");
+                // If the newstr operation succeeded, continue, otherwise bailout
+                // Note that this assumes the newstr operation will fail again when the interpreter does it
+                //  (the only reason for a newstr to fail I can think of is an out-of-memory condition)
+                builder.appendU8(WasmOpcode.br_if);
+                builder.appendULeb(0);
+                append_bailout(builder, ip, BailoutReason.AllocFailed);
                 builder.endBlock();
                 break;
             }
@@ -1842,11 +1860,8 @@ const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
     [MintOpcode.MINT_ADD_I8]:    [WasmOpcode.i64_add,   WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_SUB_I8]:    [WasmOpcode.i64_sub,   WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_MUL_I8]:    [WasmOpcode.i64_mul,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    // Overflow check is too hard to do for int64 right now
-    /*
     [MintOpcode.MINT_DIV_I8]:    [WasmOpcode.i64_div_s, WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_REM_I8]:    [WasmOpcode.i64_rem_s, WasmOpcode.i64_load, WasmOpcode.i64_store],
-    */
     [MintOpcode.MINT_DIV_UN_I8]: [WasmOpcode.i64_div_u, WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_REM_UN_I8]: [WasmOpcode.i64_rem_u, WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_AND_I8]:    [WasmOpcode.i64_and,   WasmOpcode.i64_load, WasmOpcode.i64_store],
@@ -2017,13 +2032,17 @@ function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode
 
     switch (opcode) {
         case MintOpcode.MINT_DIV_I4:
+        case MintOpcode.MINT_DIV_I8:
         case MintOpcode.MINT_DIV_UN_I4:
         case MintOpcode.MINT_DIV_UN_I8:
         case MintOpcode.MINT_REM_I4:
+        case MintOpcode.MINT_REM_I8:
         case MintOpcode.MINT_REM_UN_I4:
         case MintOpcode.MINT_REM_UN_I8: {
             const is64 = (opcode === MintOpcode.MINT_DIV_UN_I8) ||
-                (opcode === MintOpcode.MINT_REM_UN_I8);
+                (opcode === MintOpcode.MINT_REM_UN_I8) ||
+                (opcode === MintOpcode.MINT_DIV_I8) ||
+                (opcode === MintOpcode.MINT_REM_I8);
             lhsVar = is64 ? "math_lhs64" : "math_lhs32";
             rhsVar = is64 ? "math_rhs64" : "math_rhs32";
 
@@ -2049,20 +2068,26 @@ function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode
             // Also perform overflow check for signed division operations
             if (
                 (opcode === MintOpcode.MINT_DIV_I4) ||
-                (opcode === MintOpcode.MINT_REM_I4)
+                (opcode === MintOpcode.MINT_REM_I4) ||
+                (opcode === MintOpcode.MINT_DIV_I8) ||
+                (opcode === MintOpcode.MINT_REM_I8)
             ) {
                 builder.block();
                 builder.local(rhsVar);
-                // If rhs is -1 and lhs is MININT32 this is an overflow
-                builder.i32_const(-1);
-                builder.appendU8(WasmOpcode.i32_ne);
+                // If rhs is -1 and lhs is INTnn_MIN this is an overflow
+                if (is64)
+                    builder.i52_const(-1);
+                else
+                    builder.i32_const(-1);
+                builder.appendU8(is64 ? WasmOpcode.i64_ne : WasmOpcode.i32_ne);
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
                 // rhs was -1 since the previous br_if didn't execute. Now check lhs.
                 builder.local(lhsVar);
-                // G_MININT32
-                builder.i32_const(-2147483647-1);
-                builder.appendU8(WasmOpcode.i32_ne);
+                // INTnn_MIN
+                builder.appendU8(is64 ? WasmOpcode.i64_const : WasmOpcode.i32_const);
+                builder.appendBoundaryValue(is64 ? 64 : 32, -1);
+                builder.appendU8(is64 ? WasmOpcode.i64_ne : WasmOpcode.i32_ne);
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.Overflow);
@@ -2070,9 +2095,7 @@ function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode
             }
             break;
         }
-        case MintOpcode.MINT_DIV_I8:
-            // We have to check lhs against MININT64 which is not 52-bit safe
-            return false;
+
         case MintOpcode.MINT_ADD_OVF_I4:
         case MintOpcode.MINT_ADD_OVF_UN_I4:
         case MintOpcode.MINT_MUL_OVF_I4:
@@ -2807,21 +2830,18 @@ function append_getelema1 (
 
     // load index for check
     append_ldloc(builder, indexOffset, WasmOpcode.i32_load);
-    // stash it since we need it 3 times
+    // stash it since we need it twice
     builder.local("math_lhs32", WasmOpcode.tee_local);
     // array null check
     append_ldloc_cknull(builder, objectOffset, ip, true);
     // load array length
     builder.appendU8(WasmOpcode.i32_load);
     builder.appendMemarg(getMemberOffset(JiterpMember.ArrayLength), 2);
-    // check index < array.length
+    // check index < array.length, unsigned. if index is negative it will be interpreted as
+    //  a massive value which is naturally going to be bigger than array.length. interp.c
+    //  exploits this property so we can too
     builder.appendU8(WasmOpcode.i32_lt_u);
-    // check index >= 0
-    builder.local("math_lhs32");
-    builder.i32_const(0);
-    builder.appendU8(WasmOpcode.i32_ge_s);
-    builder.appendU8(WasmOpcode.i32_and);
-    // bailout unless (index >= 0) && (index < array.length)
+    // bailout unless (index < array.length)
     builder.appendU8(WasmOpcode.br_if);
     builder.appendLeb(0);
     append_bailout(builder, ip, BailoutReason.ArrayLoadFailed);

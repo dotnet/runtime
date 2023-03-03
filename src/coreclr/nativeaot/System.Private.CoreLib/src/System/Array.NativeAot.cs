@@ -1157,38 +1157,6 @@ namespace System
         }
     }
 
-    internal class ArrayEnumeratorBase : ICloneable
-    {
-        protected int _index;
-        protected int _endIndex;
-
-        internal ArrayEnumeratorBase()
-        {
-            _index = -1;
-        }
-
-        public bool MoveNext()
-        {
-            if (_index < _endIndex)
-            {
-                _index++;
-                return (_index < _endIndex);
-            }
-            return false;
-        }
-
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
-
-#pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
-        public void Dispose()
-        {
-        }
-#pragma warning restore CA1822
-    }
-
     //
     // Note: the declared base type and interface list also determines what Reflection returns from TypeInfo.BaseType and TypeInfo.ImplementedInterfaces for array types.
     // This also means the class must be declared "public" so that the framework can reflect on it.
@@ -1200,17 +1168,15 @@ namespace System
 
         public new IEnumerator<T> GetEnumerator()
         {
-            // get length so we don't have to call the Length property again in ArrayEnumerator constructor
-            // and avoid more checking there too.
-            int length = this.Length;
-            return length == 0 ? ArrayEnumerator.Empty : new ArrayEnumerator(Unsafe.As<T[]>(this), length);
+            T[] @this = Unsafe.As<T[]>(this);
+            return @this.Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(@this);
         }
 
         public int Count
         {
             get
             {
-                return this.Length;
+                return Unsafe.As<T[]>(this).Length;
             }
         }
 
@@ -1240,13 +1206,14 @@ namespace System
 
         public bool Contains(T item)
         {
-            T[] array = Unsafe.As<T[]>(this);
-            return Array.IndexOf(array, item, 0, array.Length) >= 0;
+            T[] @this = Unsafe.As<T[]>(this);
+            return Array.IndexOf(@this, item, 0, @this.Length) >= 0;
         }
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            Array.Copy(Unsafe.As<T[]>(this), 0, array, arrayIndex, this.Length);
+            T[] @this = Unsafe.As<T[]>(this);
+            Array.Copy(@this, 0, array, arrayIndex, @this.Length);
         }
 
         public bool Remove(T item)
@@ -1284,8 +1251,8 @@ namespace System
 
         public int IndexOf(T item)
         {
-            T[] array = Unsafe.As<T[]>(this);
-            return Array.IndexOf(array, item, 0, array.Length);
+            T[] @this = Unsafe.As<T[]>(this);
+            return Array.IndexOf(@this, item, 0, @this.Length);
         }
 
         public void Insert(int index, T item)
@@ -1296,43 +1263,6 @@ namespace System
         public void RemoveAt(int index)
         {
             ThrowHelper.ThrowNotSupportedException();
-        }
-
-        private sealed class ArrayEnumerator : ArrayEnumeratorBase, IEnumerator<T>
-        {
-            private readonly T[] _array;
-
-            // Passing -1 for endIndex so that MoveNext always returns false without mutating _index
-            internal static readonly ArrayEnumerator Empty = new ArrayEnumerator(null, -1);
-
-            internal ArrayEnumerator(T[] array, int endIndex)
-            {
-                _array = array;
-                _endIndex = endIndex;
-            }
-
-            public T Current
-            {
-                get
-                {
-                    if ((uint)_index >= (uint)_endIndex)
-                        ThrowHelper.ThrowInvalidOperationException();
-                    return _array[_index];
-                }
-            }
-
-            object IEnumerator.Current
-            {
-                get
-                {
-                    return Current;
-                }
-            }
-
-            void IEnumerator.Reset()
-            {
-                _index = -1;
-            }
         }
     }
 

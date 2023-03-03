@@ -116,7 +116,8 @@ internal static class Utils
         bool silent = true,
         bool logStdErrAsMessage = false,
         MessageImportance debugMessageImportance=MessageImportance.High,
-        string? label=null)
+        string? label=null,
+        Action<Stream>? inputProvider = null)
     {
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
         logger.LogMessage(debugMessageImportance, $"{msgPrefix}Running: {path} {args}");
@@ -128,6 +129,7 @@ internal static class Utils
             CreateNoWindow = true,
             RedirectStandardError = true,
             RedirectStandardOutput = true,
+            RedirectStandardInput = inputProvider != null,
             Arguments = args,
         };
 
@@ -184,6 +186,7 @@ internal static class Utils
         };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
+        inputProvider?.Invoke(process.StandardInput.BaseStream);
         process.WaitForExit();
 
         logger.LogMessage(debugMessageImportance, $"{msgPrefix}Exit code: {process.ExitCode}");

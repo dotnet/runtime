@@ -60,7 +60,7 @@ namespace System.Xml.Xsl.XsltOld
         }
     }
 
-    internal struct DocumentKeyList
+    internal readonly struct DocumentKeyList
     {
         private readonly XPathNavigator _rootNav;
         private readonly Hashtable _keyTable;
