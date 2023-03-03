@@ -3030,14 +3030,20 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.disAsm = true;
     }
 #endif // !DEBUG
-    if (JitConfig.JitDisasmWithAlignmentBoundaries())
+
+#ifndef DEBUG
+    if (opts.disAsm)
+#endif
     {
-        opts.disAlignment = true;
-    }
-    if (JitConfig.JitDisasmDiffable())
-    {
-        opts.disDiffable = true;
-        opts.dspDiffable = true;
+        if (JitConfig.JitDisasmWithAlignmentBoundaries())
+        {
+            opts.disAlignment = true;
+        }
+        if (JitConfig.JitDisasmDiffable())
+        {
+            opts.disDiffable = true;
+            opts.dspDiffable = true;
+        }
     }
 
 // These are left for backward compatibility, to be removed
