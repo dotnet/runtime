@@ -2515,10 +2515,6 @@ const mathIntrinsicTable : { [opcode: number] : [isUnary: boolean, isF32: boolea
     [MintOpcode.MINT_FLOORF]:   [true, true,   WasmOpcode.f32_floor],
     [MintOpcode.MINT_ABS]:      [true, false,  WasmOpcode.f64_abs],
     [MintOpcode.MINT_ABSF]:     [true, true,   WasmOpcode.f32_abs],
-    [MintOpcode.MINT_MIN]:      [true, false,  WasmOpcode.f64_min],
-    [MintOpcode.MINT_MINF]:     [true, true,   WasmOpcode.f32_min],
-    [MintOpcode.MINT_MAX]:      [true, false,  WasmOpcode.f64_max],
-    [MintOpcode.MINT_MAXF]:     [true, true,   WasmOpcode.f32_max],
 
     [MintOpcode.MINT_ACOS]:     [true, false,  "acos"],
     [MintOpcode.MINT_ACOSF]:    [true, true,   "acos"],
@@ -2540,6 +2536,11 @@ const mathIntrinsicTable : { [opcode: number] : [isUnary: boolean, isF32: boolea
     [MintOpcode.MINT_LOG2F]:    [true, true,   "log2"],
     [MintOpcode.MINT_LOG10]:    [true, false,  "log10"],
     [MintOpcode.MINT_LOG10F]:   [true, true,   "log10"],
+
+    [MintOpcode.MINT_MIN]:      [false, false,  WasmOpcode.f64_min],
+    [MintOpcode.MINT_MINF]:     [false, true,   WasmOpcode.f32_min],
+    [MintOpcode.MINT_MAX]:      [false, false,  WasmOpcode.f64_max],
+    [MintOpcode.MINT_MAXF]:     [false, true,   WasmOpcode.f32_max],
 
     [MintOpcode.MINT_ATAN2]:    [false, false, "atan2"],
     [MintOpcode.MINT_ATAN2F]:   [false, true,  "atan2"],

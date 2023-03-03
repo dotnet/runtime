@@ -789,6 +789,20 @@ void Compiler::fgDfsReversePostorder()
         }
     }
 
+    // If there are still unvisited blocks (say isolated cycles), visit them too.
+    //
+    if (preorderIndex != fgBBcount + 1)
+    {
+        JITDUMP("DFS: flow graph has some isolated cycles, doing extra traversals\n");
+        for (BasicBlock* const block : Blocks())
+        {
+            if (!BlockSetOps::IsMember(this, visited, block->bbNum))
+            {
+                fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
+            }
+        }
+    }
+
     // After the DFS reverse postorder is completed, we must have visited all the basic blocks.
     noway_assert(preorderIndex == fgBBcount + 1);
     noway_assert(postorderIndex == fgBBcount + 1);
@@ -866,12 +880,44 @@ void Compiler::fgDfsReversePostorderHelper(BasicBlock* block,
     // Assume we haven't visited this node yet (callers ensure this).
     assert(!BlockSetOps::IsMember(this, visited, block->bbNum));
 
+    struct DfsBlockEntry
+    {
+    public:
+        DfsBlockEntry(Compiler* comp, BasicBlock* block) : m_block(block), m_nSucc(block->NumSucc(comp)), m_iter(0)
+        {
+        }
+
+        BasicBlock* getBlock()
+        {
+            return m_block;
+        }
+
+        bool atStart()
+        {
+            return m_iter == 0;
+        }
+
+        BasicBlock* getNextSucc(Compiler* comp)
+        {
+            if (m_iter >= m_nSucc)
+            {
+                return nullptr;
+            }
+            return m_block->GetSucc(m_iter++, comp);
+        }
+
+    private:
+        BasicBlock* m_block;
+        unsigned    m_nSucc;
+        unsigned    m_iter;
+    };
+
     // Allocate a local stack to hold the DFS traversal actions necessary
     // to compute pre/post-ordering of the control flowgraph.
     ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack));
 
     // Push the first block on the stack to seed the traversal.
-    stack.Push(DfsBlockEntry(DSS_Pre, block));
+    stack.Emplace(this, block);
 
     // Flag the node we just visited to avoid backtracking.
     BlockSetOps::AddElemD(this, visited, block->bbNum);
@@ -879,51 +925,46 @@ void Compiler::fgDfsReversePostorderHelper(BasicBlock* block,
     // The search is terminated once all the actions have been processed.
     while (!stack.Empty())
     {
-        DfsBlockEntry current      = stack.Pop();
-        BasicBlock*   currentBlock = current.dfsBlock;
+        DfsBlockEntry&    current = stack.TopRef();
+        BasicBlock* const block   = current.getBlock();
 
-        if (current.dfsStackState == DSS_Pre)
+        if (current.atStart())
         {
-            // This is a pre-visit that corresponds to the first time the
-            // node is encountered in the spanning tree and receives pre-order
-            // numberings. By pushing the post-action on the stack here we
-            // are guaranteed to only process it after all of its successors
-            // pre and post actions are processed.
-            stack.Push(DfsBlockEntry(DSS_Post, currentBlock));
-            currentBlock->bbPreorderNum = preorderIndex;
+            // Initial visit to this node
+            //
+            block->bbPreorderNum = preorderIndex;
             preorderIndex++;
-
-            for (BasicBlock* const succ : currentBlock->Succs(this))
-            {
-                // If this is a node we haven't seen before, go ahead and process
-                if (!BlockSetOps::IsMember(this, visited, succ->bbNum))
-                {
-                    // Push a pre-visit action for this successor onto the stack and
-                    // mark it as visited in case this block has multiple successors
-                    // to the same node (multi-graph).
-                    stack.Push(DfsBlockEntry(DSS_Pre, succ));
-                    BlockSetOps::AddElemD(this, visited, succ->bbNum);
-                }
-            }
         }
-        else
+
+        BasicBlock* const succ = current.getNextSucc(this);
+
+        if (succ == nullptr)
         {
-            // This is a post-visit that corresponds to the last time the
-            // node is visited in the spanning tree and only happens after
-            // all descendents in the spanning tree have had pre and post
-            // actions applied.
+            // Final visit to this node
+            //
+            block->bbPostorderNum = postorderIndex;
 
-            assert(current.dfsStackState == DSS_Post);
-            currentBlock->bbPostorderNum = postorderIndex;
-
-            // Compute the index of this in the reverse postorder and
+            // Compute the index of block in the reverse postorder and
             // update the reverse postorder accordingly.
             //
             assert(postorderIndex <= fgBBcount);
             unsigned reversePostorderIndex              = fgBBcount - postorderIndex + 1;
-            fgBBReversePostorder[reversePostorderIndex] = currentBlock;
+            fgBBReversePostorder[reversePostorderIndex] = block;
             postorderIndex++;
+
+            stack.Pop();
+            continue;
         }
+
+        if (BlockSetOps::IsMember(this, visited, succ->bbNum))
+        {
+            // Already visited this succ
+            //
+            continue;
+        }
+
+        BlockSetOps::AddElemD(this, visited, succ->bbNum);
+        stack.Emplace(this, succ);
     }
 }
 
