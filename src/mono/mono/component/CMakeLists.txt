@@ -24,6 +24,8 @@ list(APPEND components
 set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/debugger.c
   ${MONO_COMPONENT_PATH}/debugger.h
+  ${MONO_COMPONENT_PATH}/debugger-networking.c
+  ${MONO_COMPONENT_PATH}/debugger-networking.h
   ${MONO_COMPONENT_PATH}/debugger-agent.c
   ${MONO_COMPONENT_PATH}/debugger-agent.h
   ${MONO_COMPONENT_PATH}/debugger-engine.c

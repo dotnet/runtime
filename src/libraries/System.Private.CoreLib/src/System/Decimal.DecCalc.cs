@@ -2497,7 +2497,7 @@ done:
                 return (uint)num - div * TenToPowerNine;
             }
 
-            private struct PowerOvfl
+            private readonly struct PowerOvfl
             {
                 public readonly uint Hi;
                 public readonly ulong MidLo;
