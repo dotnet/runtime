@@ -20,6 +20,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
     {
 
 #ifdef DEBUG
+        // To make sure doesMethodHaveExpRuntimeLookup() is not lying to us:
         for (BasicBlock* block : Blocks())
         {
             for (Statement* stmt : block->Statements())
@@ -62,7 +63,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 if (call->IsTailCall())
                 {
-                    assert(!"Unexpected runtime lookup as a tail call");
+                    // It is very unlikely to happen but just in case
                     continue;
                 }
 
@@ -71,25 +72,18 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 GenTree* sigTree = call->gtArgs.GetArgByIndex(1)->GetNode();
 
                 void* signature = nullptr;
-                if (sigTree->IsCnsIntOrI())
+                if (sigTree->gtEffectiveVal()->IsCnsIntOrI())
                 {
-                    signature = (void*)sigTree->AsIntCon()->IconValue();
+                    signature = (void*)sigTree->gtEffectiveVal()->AsIntCon()->IconValue();
                 }
                 else
                 {
-                    // signature is not a constant (CSE'd?) - let's see if we can access it via VN
-                    if (vnStore->IsVNConstant(sigTree->gtVNPair.GetLiberal()))
-                    {
-                        signature = (void*)vnStore->CoercedConstantValue<ssize_t>(sigTree->gtVNPair.GetLiberal());
-                    }
-                    else
-                    {
-                        // Technically, it is possible (e.g. it was CSE'd and then VN was erased), but for Debug mode we
-                        // want to catch such cases as we really don't want to emit just a fallback call - it's too slow
-                        assert(!"can't restore signature argument value");
-                        continue;
-                    }
+                    // It should be still possible to restore signature and compileTimeHandle from VN
+                    // but let's see if it's worth the effort. Signature node is marked as DONT_CSE in importer
+                    assert(!"can't restore signature argument value");
+                    continue;
                 }
+
                 assert(signature != nullptr);
 
                 CORINFO_RUNTIME_LOOKUP runtimeLookup = {};
@@ -110,7 +104,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 BasicBlockFlags originalFlags = block->bbFlags;
                 BasicBlock*     prevBb        = block;
 
-                if (prevStmt == nullptr || opts.OptimizationDisabled())
+                if (prevStmt == nullptr)
                 {
                     JITDUMP("Splitting " FMT_BB " at the beginning.\n", prevBb->bbNum)
                     block = fgSplitBlockAtBeginning(prevBb);
@@ -241,8 +235,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 BasicBlock* fallbackBb = fgNewBBafter(BBJ_NONE, nullcheckBb, true);
                 fallbackBb->bbFlags |= BBF_INTERNAL;
 
-                GenTreeCall* fallbackCall = gtCloneExpr(call)->AsCall();
-                fallbackCall->gtArgs.GetArgByIndex(0)->SetLateNode(gtClone(ctxTree));
+                GenTree* signatureArg =
+                    gtNewIconEmbHndNode(signature, nullptr, GTF_ICON_GLOBAL_PTR,
+                                        (void*)sigTree->gtEffectiveVal()->AsIntCon()->gtCompileTimeHandle);
+                fgUpdateConstTreeValueNumber(signatureArg);
+                GenTreeCall* fallbackCall =
+                    gtNewHelperCallNode(runtimeLookup.helper, TYP_I_IMPL, gtClone(ctxTree), signatureArg);
                 gtSetEvalOrder(fallbackCall);
                 fgMorphCall(fallbackCall);
                 assert(!fallbackCall->IsExpRuntimeLookup());
