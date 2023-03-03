@@ -16212,6 +16212,31 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
     return true;
 }
 
+void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoint)
+{
+    class SideEffectSeparator final : public GenTreeVisitor<SideEffectSeparator>
+    {
+    public:
+        enum
+        {
+            DoPreOrder        = true,
+            UseExecutionOrder = true
+        };
+
+        SideEffectSeparator(Compiler* compiler) : GenTreeVisitor(compiler)
+        {
+            // TODO:
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            return Compiler::WALK_SKIP_SUBTREES;
+        }
+    };
+    SideEffectSeparator extractor(this);
+    extractor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+}
+
 //------------------------------------------------------------------------
 // gtExtractSideEffList: Extracts side effects from the given expression.
 //

@@ -1154,7 +1154,7 @@ private:
 
             case IndirTransform::BitCast:
                 indir->ChangeOper(GT_BITCAST);
-                lclNode = BashToLclVar(indir->gtGetOp1(), lclNum);
+                lclNode = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
                 break;
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -1166,7 +1166,7 @@ private:
             {
                 GenTree*  hwiNode     = nullptr;
                 var_types elementType = indir->TypeGet();
-                lclNode               = BashToLclVar(indir->gtGetOp1(), lclNum);
+                lclNode               = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
 
                 if (elementType == TYP_FLOAT)
                 {
@@ -1195,7 +1195,7 @@ private:
 
                 GenTree*  hwiNode     = nullptr;
                 var_types elementType = indir->TypeGet();
-                lclNode               = BashToLclVar(indir, lclNum);
+                lclNode               = indir->BashToLclVar(m_compiler, lclNum);
                 GenTree* simdLclNode  = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
                 GenTree* elementNode  = user->gtGetOp2();
 
@@ -1252,7 +1252,7 @@ private:
                 assert(genTypeSize(varDsc) >= genTypeSize(indir));
                 assert(!isDef);
 
-                lclNode    = BashToLclVar(indir->gtGetOp1(), lclNum);
+                lclNode    = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
                 *val.Use() = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
                 break;
 
@@ -1668,27 +1668,6 @@ private:
     static bool IsUnused(GenTree* node, GenTree* user)
     {
         return (user == nullptr) || (user->OperIs(GT_COMMA) && (user->AsOp()->gtGetOp1() == node));
-    }
-
-    //------------------------------------------------------------------------
-    // BashToLclVar: Bash node to a LCL_VAR.
-    //
-    // Arguments:
-    //    node   - the node to bash
-    //    lclNum - the local's number
-    //
-    // Return Value:
-    //    The bashed node.
-    //
-    GenTreeLclVar* BashToLclVar(GenTree* node, unsigned lclNum)
-    {
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-
-        node->ChangeOper(GT_LCL_VAR);
-        node->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
-        node->AsLclVar()->SetLclNum(lclNum);
-
-        return node->AsLclVar();
     }
 
     void SequenceLocal(GenTreeLclVarCommon* lcl)

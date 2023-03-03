@@ -121,6 +121,11 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 block->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT |
                                                    BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
 
+                // We've just split a block (e.g. in the middle of it) into two blocks.
+                // We have to do the same for the current statement - move all side effects before the runtime
+                // lookup to prevBb
+                gtSplitTree(block, stmt, call);
+
                 // Define a local for the result
                 const unsigned rtLookupLclNum   = lvaGrabTemp(true DEBUGARG("runtime lookup"));
                 lvaTable[rtLookupLclNum].lvType = TYP_I_IMPL;
@@ -128,10 +133,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 // Save expression to a local and append as the last statement in prevBb
                 auto spillExpr = [&](GenTree* expr) -> GenTree* {
-                    if (expr->OperIs(GT_LCL_VAR))
-                    {
-                        return gtClone(expr);
-                    }
                     unsigned const tmpNum   = lvaGrabTemp(false DEBUGARG("spilling expr"));
                     lvaTable[tmpNum].lvType = expr->TypeGet();
                     Statement* asgStmt      = fgNewStmtAtEnd(prevBb, gtNewTempAssign(tmpNum, expr));
@@ -313,7 +314,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
 
                 // Replace call with rtLookupLclNum local
-                call->ReplaceWith(gtNewLclvNode(rtLookupLclNum, call->TypeGet()), this);
+                call->BashToLclVar(this, rtLookupLclNum);
                 gtUpdateTreeAncestorsSideEffects(call);
                 gtSetStmtInfo(stmt);
                 fgSetStmtSeq(stmt);
