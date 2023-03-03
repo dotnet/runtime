@@ -18,6 +18,7 @@ interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder;
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
     withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    withMemoryCache(value: boolean): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>;
     run(): Promise<number>;
 }
@@ -133,7 +134,7 @@ type MonoConfig = {
      */
     pthreadPoolSize?: number;
     /**
-     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time.
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
      */
     cacheMemory?: boolean;
     /**
