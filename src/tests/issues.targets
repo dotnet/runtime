@@ -3790,6 +3790,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/enabledisable/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
