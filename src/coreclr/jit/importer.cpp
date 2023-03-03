@@ -14284,20 +14284,20 @@ GenTree* Compiler::impThreadLocalFieldRead(CORINFO_RESOLVED_TOKEN& token,
                                              CORINFO_FIELD_INFO*     pFieldInfo,
                                              var_types               fieldType)
 {
-    printf("Inside impThreadLocalFieldRead for %s.\n", info.compMethodName);
+    //printf("Inside impThreadLocalFieldRead for %s.\n", info.compMethodName);
     JITDUMP("Inside impThreadLocalFieldRead\n");
     CORINFO_THREAD_LOCAL_FIELD_INFO threadLocalInfo;
     CORINFO_FIELD_HANDLE            fieldHandle = token.hField;
     int                             fieldOffset = pFieldInfo->offset;
 
     info.compCompHnd->getThreadLocalFieldInfo(fieldHandle, &threadLocalInfo);
-    printf("ThreadLocalInfo:\n");
-    printf("offsetOfMaxThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfMaxThreadStaticBlocks);
-    printf("offsetOfThreadLocalStoragePointer: 0x%04x\n", threadLocalInfo.offsetOfThreadLocalStoragePointer);
-    printf("offsetOfThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfThreadStaticBlocks);
-    printf("threadStaticBlockIndex: 0x%04x\n", threadLocalInfo.threadStaticBlockIndex);
-    printf("tlsIndex: 0x%04x\n", threadLocalInfo.tlsIndex);
-    printf("--------------------------------\n");
+    JITDUMP("ThreadLocalInfo:\n");
+    JITDUMP("offsetOfMaxThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfMaxThreadStaticBlocks);
+    JITDUMP("offsetOfThreadLocalStoragePointer: 0x%04x\n", threadLocalInfo.offsetOfThreadLocalStoragePointer);
+    JITDUMP("offsetOfThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfThreadStaticBlocks);
+    JITDUMP("threadStaticBlockIndex: 0x%04x\n", threadLocalInfo.threadStaticBlockIndex);
+    JITDUMP("tlsIndex: 0x%04x\n", threadLocalInfo.tlsIndex);
+    JITDUMP("--------------------------------\n");
 
     // Thread Local Storage static field reference
     // TODO: Update this
@@ -14456,20 +14456,20 @@ GenTree* Compiler::impThreadLocalFieldWrite(CORINFO_RESOLVED_TOKEN& token,
                                            CORINFO_FIELD_INFO*     pFieldInfo,
                                            var_types               fieldType)
 {
-    printf("Inside impThreadLocalFieldWrite for %s.\n", info.compMethodName);
+    //printf("Inside impThreadLocalFieldWrite for %s.\n", info.compMethodName);
     JITDUMP("Inside impThreadLocalFieldWrite\n");
     CORINFO_THREAD_LOCAL_FIELD_INFO threadLocalInfo;
     CORINFO_FIELD_HANDLE            fieldHandle = token.hField;
     int                             fieldOffset = pFieldInfo->offset;
 
     info.compCompHnd->getThreadLocalFieldInfo(fieldHandle, &threadLocalInfo);
-    printf("ThreadLocalInfo:\n");
-    printf("offsetOfMaxThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfMaxThreadStaticBlocks);
-    printf("offsetOfThreadLocalStoragePointer: 0x%04x\n", threadLocalInfo.offsetOfThreadLocalStoragePointer);
-    printf("offsetOfThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfThreadStaticBlocks);
-    printf("threadStaticBlockIndex: 0x%04x\n", threadLocalInfo.threadStaticBlockIndex);
-    printf("tlsIndex: 0x%04x\n", threadLocalInfo.tlsIndex);
-    printf("--------------------------------\n");
+    JITDUMP("ThreadLocalInfo:\n");
+    JITDUMP("offsetOfMaxThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfMaxThreadStaticBlocks);
+    JITDUMP("offsetOfThreadLocalStoragePointer: 0x%04x\n", threadLocalInfo.offsetOfThreadLocalStoragePointer);
+    JITDUMP("offsetOfThreadStaticBlocks: 0x%04x\n", threadLocalInfo.offsetOfThreadStaticBlocks);
+    JITDUMP("threadStaticBlockIndex: 0x%04x\n", threadLocalInfo.threadStaticBlockIndex);
+    JITDUMP("tlsIndex: 0x%04x\n", threadLocalInfo.tlsIndex);
+    JITDUMP("--------------------------------\n");
 
     // Thread Local Storage static field reference
     // TODO: Update this diagram
