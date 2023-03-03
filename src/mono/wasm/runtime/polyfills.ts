@@ -216,8 +216,8 @@ export async function init_polyfills_async(): Promise<void> {
                 };
             }
         }
-        runtimeHelpers.subtle = globalThis.crypto.subtle || null;
     }
+    runtimeHelpers.subtle = globalThis.crypto?.subtle;
 }
 
 const dummyPerformance = {
