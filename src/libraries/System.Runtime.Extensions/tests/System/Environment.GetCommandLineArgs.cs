@@ -103,5 +103,28 @@ namespace System.Tests
 
             return RemoteExecutor.SuccessExitCode;
         }
+
+        public static bool IsWindowsCoreCLRJit
+            => PlatformDetection.IsWindows
+            && PlatformDetection.IsNotMonoRuntime
+            && PlatformDetection.IsNotNativeAot;
+
+        [ConditionalTheory(typeof(GetCommandLineArgs), nameof(IsWindowsCoreCLRJit))]
+        [InlineData(@"""abc"" d e", new[] { "abc", "d", "e" })]
+        [InlineData(@"a\\b d""e f""g h", new[] { @"a\\b", "de fg", "h" })]
+        [InlineData(@"a\\\""b c d", new[] { @"a\""b", "c", "d" })]
+        [InlineData(@"a\\\\""b c"" d e", new[] { @"a\\b c", "d", "e" })]
+        [InlineData(@"a""b"""" c d", new[] { @"ab"" c d" })]
+        public static unsafe void CheckCommandLineParser(string cmdLine, string[] args)
+        {
+            var method = typeof(Environment).GetMethod("SegmentCommandLine", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var span = cmdLine.AsSpan(); // Workaround
+            fixed (char* p = span)
+            {
+                Assert.Equal(args, method.Invoke(null, new object[] { Pointer.Box(p, typeof(char*)) }));
+            }
+        }
     }
 }

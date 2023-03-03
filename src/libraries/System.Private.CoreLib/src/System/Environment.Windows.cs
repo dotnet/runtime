@@ -264,6 +264,12 @@ namespace System
             }
             while (c != '\0' && (inQuotes || (c is not (' ' or '\t'))));
 
+            if (c == '\0')
+            {
+                p--;
+            }
+
+            stringBuilder.Length--;
             arrayBuilder.Add(stringBuilder.ToString());
             inQuotes = false;
 
