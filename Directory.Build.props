@@ -188,7 +188,7 @@
     <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
   </PropertyGroup>
 
-  <!-- These are the rids used for consuming prebuilt packages. -->
+  <!-- PackageRID is used for packages needed to build the target. -->
   <PropertyGroup Label="CalculatePackageRID">
     <_packageOS Condition="'$(_packageOS)' == ''">$(_portableOS)</_packageOS>
     <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)</_packageOS>
@@ -198,8 +198,9 @@
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
 
-  <!-- These are the rids used for consuming prebuilt packages. -->
+  <!-- ToolsRID is used for packages needed for the build host. -->
   <PropertyGroup Label="CalculateToolsRID">
+    <!-- note: for CrossBuilds, we're unable to determine if the host is linux-musl or linux-bionic. -->
     <_portableHostOS>$(_hostOS)</_portableHostOS>
     <_portableHostOS Condition="'$(_portableHostOS)' == 'windows'">win</_portableHostOS>
     <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_portableHostOS>
@@ -210,7 +211,7 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
   </PropertyGroup>
 
-  <!-- OutputRid names the packages for the target platform. -->
+  <!-- OutputRid is used to name the target platform. -->
   <PropertyGroup Label="CalculateOutputRID">
     <_hostRid Condition="'$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
     <_hostRid Condition="'$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostRid>
