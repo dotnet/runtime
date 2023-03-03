@@ -783,7 +783,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             opClassIDArg = gtNewIconNode(clsID, TYP_INT);
         }
 
-        if (typeIndex == -1)
+        if (helper != CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR)
         {
             result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
         }
