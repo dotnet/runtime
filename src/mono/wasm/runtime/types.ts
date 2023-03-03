@@ -120,6 +120,10 @@ export type MonoConfig = {
      */
     pthreadPoolSize?: number,
     /**
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
+     */
+    cacheMemory?: boolean,
+    /**
      * hash of assets
      */
     assetsHash?: string,
@@ -228,6 +232,11 @@ export type RuntimeHelpers = {
     quit: Function,
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
+    memoryIsLoaded: boolean,
+    configurationHash: number,
+    preferredIcuAsset: string | null,
+    timezone: string | null,
+    updateGlobalBufferAndViews: (buffer: ArrayBufferLike) => void
 }
 
 export type GlobalizationMode =

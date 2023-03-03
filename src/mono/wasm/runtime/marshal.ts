@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./imports";
+import { anyModule, Module, runtimeHelpers } from "./imports";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot } from "./types";
@@ -41,7 +41,6 @@ export const JSMarshalerTypeSize = 32;
 export const JSMarshalerSignatureHeaderSize = 4 + 4; // without Exception and Result
 
 export function alloc_stack_frame(size: number): JSMarshalerArguments {
-    const anyModule = Module as any;
     const args = anyModule.stackAlloc(JavaScriptMarshalerArgSize * size);
     mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
     const exc = get_arg(args, 0);

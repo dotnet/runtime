@@ -276,3 +276,13 @@ export function js_string_to_mono_string_new(string: string): MonoString {
         temp.release();
     }
 }
+
+export function get_hash_code(string: string) {
+    let hash = 0;
+    for (let i = 0, len = string.length; i < len; i++) {
+        const chr = string.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
+        hash |= 0;
+    }
+    return hash;
+}

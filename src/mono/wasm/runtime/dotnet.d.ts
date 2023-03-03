@@ -133,6 +133,10 @@ type MonoConfig = {
      */
     pthreadPoolSize?: number;
     /**
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time.
+     */
+    cacheMemory?: boolean;
+    /**
      * hash of assets
      */
     assetsHash?: string;

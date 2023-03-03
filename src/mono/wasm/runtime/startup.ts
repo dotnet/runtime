@@ -4,10 +4,10 @@
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { anyModule, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
-import { mono_wasm_globalization_init } from "./icu";
+import { get_preferred_icu_asset, mono_wasm_globalization_init } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
 import { mono_on_abort, mono_exit } from "./run";
@@ -16,7 +16,7 @@ import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController } from "./promise-controller";
-import { string_decoder } from "./strings";
+import { get_hash_code, string_decoder } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_internal } from "./exports-internal";
@@ -29,11 +29,13 @@ import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
+import { getMemory, storeMemory } from "./storage";
 
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
 export const dotnetReady = createPromiseController<any>();
 export const afterConfigLoaded = createPromiseController<MonoConfig>();
+export const beforeInstantiateWasm = createPromiseController<void>();
 export const afterInstantiateWasm = createPromiseController<void>();
 export const beforePreInit = createPromiseController<void>();
 export const afterPreInit = createPromiseController<void>();
@@ -103,6 +105,7 @@ function instantiateWasm(
 
     const mark = startMeasure();
     if (userInstantiateWasm) {
+        beforeInstantiateWasm.promise_control.resolve();
         const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => {
             endMeasure(mark, MeasuredBlock.instantiateWasm);
             afterInstantiateWasm.promise_control.resolve();
@@ -122,7 +125,6 @@ async function instantiateWasmWorker(
     // wait for the config to arrive by message from the main thread
     await afterConfigLoaded.promise;
 
-    const anyModule = Module as any;
     normalizeConfig();
     replace_linker_placeholders(imports, export_linker());
 
@@ -280,6 +282,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
 export function abort_startup(reason: any, should_exit: boolean): void {
     if (runtimeHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
     dotnetReady.promise_control.reject(reason);
+    beforeInstantiateWasm.promise_control.reject(reason);
     afterInstantiateWasm.promise_control.reject(reason);
     beforePreInit.promise_control.reject(reason);
     afterPreInit.promise_control.reject(reason);
@@ -334,6 +337,7 @@ async function mono_wasm_pre_init_full(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_full");
     Module.addRunDependency("mono_wasm_pre_init_full");
 
+    await beforeInstantiateWasm.promise;
     await mono_download_assets();
 
     Module.removeRunDependency("mono_wasm_pre_init_full");
@@ -348,6 +352,10 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
         mono_wasm_globalization_init();
 
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
+        if (runtimeHelpers.config.cacheMemory && !runtimeHelpers.memoryIsLoaded) {
+            await storeMemory(runtimeHelpers.configurationHash, Module.HEAP8.buffer);
+        }
+        bindings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
         if (!runtimeHelpers.mono_wasm_symbols_are_ready) readSymbolMapFile("dotnet.js.symbols");
 
@@ -457,20 +465,37 @@ async function instantiate_wasm_module(
 ): Promise<void> {
     // this is called so early that even Module exports like addRunDependency don't exist yet
     try {
-        replace_linker_placeholders(imports, export_linker());
+        let memoryBytes: ArrayBuffer | undefined = undefined;
         await mono_wasm_load_config(Module.configSrc);
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
+
+        if (runtimeHelpers.config.cacheMemory && config.assetsHash) {
+            memoryBytes = await getMemory(runtimeHelpers.configurationHash);
+            runtimeHelpers.memoryIsLoaded = !!memoryBytes;
+        }
+        beforeInstantiateWasm.promise_control.resolve();
+
         // FIXME: this would not apply re-try (on connection reset during download) for dotnet.wasm because we could not download the buffer before we pass it to instantiate_wasm_asset
         await start_asset_download(assetToLoad);
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
+
+        replace_linker_placeholders(imports, export_linker());
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
         assetToLoad.buffer = null as any; // GC
-
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
+
+        if (runtimeHelpers.memoryIsLoaded) {
+            const wasmMemory = anyModule.asm.memory;
+            // .grow() takes a delta compared to the previous size
+            wasmMemory.grow((memoryBytes!.byteLength - wasmMemory.buffer.byteLength + 65535) >>> 16);
+            runtimeHelpers.updateGlobalBufferAndViews(wasmMemory.buffer);
+            Module.HEAP8.set(new Int8Array(memoryBytes!), 0);
+            if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Loaded memory from cache");
+        }
         afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
         _print_error("MONO_WASM: instantiate_wasm_module() failed", err);
@@ -482,13 +507,6 @@ async function instantiate_wasm_module(
 
 // runs just in non-blazor
 async function _apply_configuration_from_args() {
-    try {
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (tz) mono_wasm_setenv("TZ", tz);
-    } catch {
-        console.info("MONO_WASM: failed to detect timezone, will fallback to UTC");
-    }
-
     // create /usr/share folder which is SpecialFolder.CommonApplicationData
     Module["FS_createPath"]("/", "usr", true, true);
     Module["FS_createPath"]("/", "usr/share", true, true);
@@ -524,17 +542,18 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
     runtimeHelpers.mono_wasm_load_runtime_done = true;
     try {
         const mark = startMeasure();
-        if (debugLevel == undefined) {
-            debugLevel = 0;
-            if (config && config.debugLevel) {
-                debugLevel = 0 + debugLevel;
+        if (!runtimeHelpers.memoryIsLoaded) {
+            if (debugLevel == undefined) {
+                debugLevel = 0;
+                if (config && config.debugLevel) {
+                    debugLevel = 0 + debugLevel;
+                }
             }
+            cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
         }
-        cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
         endMeasure(mark, MeasuredBlock.loadRuntime);
-        runtimeHelpers.waitForDebugger = config.waitForDebugger;
 
-        if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
+        if (!runtimeHelpers.config.cacheMemory) bindings_init();
     } catch (err: any) {
         _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
 
@@ -548,11 +567,12 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
 }
 
 export function bindings_init(): void {
-    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: bindings_init");
     if (runtimeHelpers.mono_wasm_bindings_is_ready) {
         return;
     }
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: bindings_init");
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
+    runtimeHelpers.waitForDebugger = config.waitForDebugger;
     try {
         const mark = startMeasure();
         init_managed_exports();
@@ -639,6 +659,25 @@ function normalizeConfig() {
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
         && typeof globalThis.performance.measure === "function";
+    runtimeHelpers.preferredIcuAsset = get_preferred_icu_asset();
+
+    if (runtimeHelpers.timezone === undefined && config.environmentVariables["TZ"] === undefined) {
+        try {
+            runtimeHelpers.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+            if (runtimeHelpers.timezone) config.environmentVariables["TZ"] = runtimeHelpers.timezone;
+        } catch {
+            console.info("MONO_WASM: failed to detect timezone, will fallback to UTC");
+        }
+    }
+
+    if (config.cacheMemory) {
+        // calculate hash of things which affect the memory snapshot
+        const configCopy = Object.assign({}, config) as any;
+        configCopy.assets = null; // we have config.assetsHash for this
+        configCopy.preferredIcuAsset = runtimeHelpers.preferredIcuAsset;
+        configCopy.timezone = runtimeHelpers.timezone;
+        runtimeHelpers.configurationHash = get_hash_code(JSON.stringify(configCopy));
+    }
 }
 
 

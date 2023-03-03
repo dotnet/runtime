@@ -137,6 +137,19 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withMemoryCache(value: boolean): DotnetHostBuilder {
+        try {
+            const configInternal: MonoConfigInternal = {
+                cacheMemory: value
+            };
+            Object.assign(this.moduleConfig.config!, configInternal);
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     withConfig(config: MonoConfig): DotnetHostBuilder {
         try {
             const providedConfig = { ...config };
