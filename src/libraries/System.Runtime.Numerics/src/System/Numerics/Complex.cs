@@ -1613,7 +1613,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Complex>.TryConvertToChecked<TOther>(Complex value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Complex>.TryConvertToChecked<TOther>(Complex value, [MaybeNullWhen(false)] out TOther result)
         {
             // Complex numbers with an imaginary part can't be represented as a "real number"
             // so we'll throw an OverflowException for this scenario for integer types and
@@ -1805,14 +1805,14 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Complex>.TryConvertToSaturating<TOther>(Complex value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Complex>.TryConvertToSaturating<TOther>(Complex value, [MaybeNullWhen(false)] out TOther result)
         {
             // Complex numbers with an imaginary part can't be represented as a "real number"
             // and there isn't really a well-defined way to "saturate" to just a real value.
@@ -1949,14 +1949,14 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Complex>.TryConvertToTruncating<TOther>(Complex value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Complex>.TryConvertToTruncating<TOther>(Complex value, [MaybeNullWhen(false)] out TOther result)
         {
             // Complex numbers with an imaginary part can't be represented as a "real number"
             // so we'll only consider the real part for the purposes of truncation.
@@ -2085,7 +2085,7 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

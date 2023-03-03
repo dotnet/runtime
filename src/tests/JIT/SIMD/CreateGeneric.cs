@@ -10,7 +10,7 @@ namespace VectorMathTests
     {
 		const float EPS = Single.Epsilon * 5;
 		
-        static int Main(string[] args)
+        static int Main()
         {
             var a = new System.Numerics.Vector<short>(51);
             for (int i = 0; i < System.Numerics.Vector<short>.Count; ++i)

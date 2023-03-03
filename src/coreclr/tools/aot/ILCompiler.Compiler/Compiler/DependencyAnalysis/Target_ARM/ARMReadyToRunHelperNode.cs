@@ -4,8 +4,6 @@
 using System;
 using System.Diagnostics;
 using Internal.TypeSystem;
-
-using ILCompiler;
 using ILCompiler.DependencyAnalysis.ARM;
 
 namespace ILCompiler.DependencyAnalysis
@@ -13,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// ARM specific portions of ReadyToRunHelperNode
     /// </summary>
-    partial class ReadyToRunHelperNode
+    public partial class ReadyToRunHelperNode
     {
         protected override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
         {

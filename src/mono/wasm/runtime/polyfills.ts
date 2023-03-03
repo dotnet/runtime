@@ -7,6 +7,7 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONM
 import { afterUpdateGlobalBufferAndViews } from "./memory";
 import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
 import { DotnetModuleConfigImports, EarlyReplacements } from "./types";
+import { TypedArray } from "./types/emscripten";
 
 let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
@@ -194,6 +195,32 @@ export async function init_polyfills_async(): Promise<void> {
         if (globalThis.performance === dummyPerformance) {
             const { performance } = INTERNAL.require("perf_hooks");
             globalThis.performance = performance;
+        }
+
+        if (!globalThis.crypto) {
+            globalThis.crypto = <any>{};
+        }
+        if (!globalThis.crypto.getRandomValues) {
+            let nodeCrypto: any = undefined;
+            try {
+                nodeCrypto = INTERNAL.require("node:crypto");
+            } catch (err: any) {
+                // Noop, error throwing polyfill provided bellow
+            }
+            
+            if (!nodeCrypto) {
+                globalThis.crypto.getRandomValues = () => { 
+                    throw new Error("Using node without crypto support. To enable current operation, either provide polyfill for 'globalThis.crypto.getRandomValues' or enable 'node:crypto' module."); 
+                };
+            } else if (nodeCrypto.webcrypto) {
+                globalThis.crypto = nodeCrypto.webcrypto;
+            } else if (nodeCrypto.randomBytes) {
+                globalThis.crypto.getRandomValues = (buffer: TypedArray) => {
+                    if (buffer) {
+                        buffer.set(nodeCrypto.randomBytes(buffer.length));
+                    }
+                };
+            }
         }
     }
 }

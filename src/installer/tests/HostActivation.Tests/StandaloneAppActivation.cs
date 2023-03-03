@@ -68,6 +68,7 @@ namespace HostActivation.Tests
             File.Delete(fixture.TestProject.RuntimeConfigJson);
             File.Delete(fixture.TestProject.DepsJson);
 
+            // Make sure normal run succeeds and doesn't print any errors
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -76,6 +77,15 @@ namespace HostActivation.Tests
                 // Note that this is an exact match - we don't expect any output from the host itself
                 .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
                 .And.NotHaveStdErr();
+
+            // Make sure tracing indicates there is no runtime config and no deps json
+            Command.Create(appExe)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                .And.HaveStdErrContaining($"Runtime config does not exist at [{fixture.TestProject.RuntimeConfigJson}]")
+                .And.HaveStdErrContaining($"Could not locate the dependencies manifest file [{fixture.TestProject.DepsJson}]");
         }
 
         [Fact]

@@ -10,7 +10,7 @@
 .class public _ldarga {
 
 .field public static int32 FOO
-.method public static	int32 args(int32) {
+.method public static	native int args(native int) {
 .maxstack	5
 	ldarga 0
 	ldind.i4
@@ -20,7 +20,7 @@
 }
 
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack		10
 	ldsflda		int32 _ldarga::FOO
@@ -28,7 +28,7 @@
 	add
 	conv.i4
 	ldsflda		int32 _ldarga::FOO
-	call	int32 _ldarga::args(int32)
+	call	native int _ldarga::args(native int)
 	ceq
 	brfalse		FAIL
 

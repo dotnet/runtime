@@ -1,4 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamConformanceTests", "..\Common\tests\StreamConformanceTests\StreamConformanceTests.csproj", "{BE259E6E-B4F5-47DC-93D5-204297098A8C}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{45972587-B4BF-4F09-94DC-20E2D460FAA8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Formats.Tar", "ref\System.Formats.Tar.csproj", "{E0B882C6-2082-45F2-806E-568461A61975}"
@@ -27,6 +29,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BE259E6E-B4F5-47DC-93D5-204297098A8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE259E6E-B4F5-47DC-93D5-204297098A8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE259E6E-B4F5-47DC-93D5-204297098A8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE259E6E-B4F5-47DC-93D5-204297098A8C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{45972587-B4BF-4F09-94DC-20E2D460FAA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{45972587-B4BF-4F09-94DC-20E2D460FAA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{45972587-B4BF-4F09-94DC-20E2D460FAA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -60,6 +66,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{BE259E6E-B4F5-47DC-93D5-204297098A8C} = {6CF0D830-3EE9-44B1-B548-EA8750AD7B3E}
 		{45972587-B4BF-4F09-94DC-20E2D460FAA8} = {6CF0D830-3EE9-44B1-B548-EA8750AD7B3E}
 		{6FD1E284-7B50-4077-B73A-5B31CB0E3577} = {6CF0D830-3EE9-44B1-B548-EA8750AD7B3E}
 		{E0B882C6-2082-45F2-806E-568461A61975} = {9BE8AFF4-D37B-49AF-AFD3-A15E514AC8AE}

@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
             bool encrypting)
         {
             IntPtr algorithm = GetAlgorithm(key.Length * 8, feedback * 8, cipherMode);
-            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
+            return new OpenSslCipherLite(algorithm, blockSize, paddingSize, key, iv, encrypting);
         }
 
         private static IntPtr GetAlgorithm(int keySize, int feedback, CipherMode cipherMode) =>

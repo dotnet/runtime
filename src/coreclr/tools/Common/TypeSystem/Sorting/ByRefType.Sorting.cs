@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Functionality related to deterministic ordering of types
-    partial class ByRefType
+    public partial class ByRefType
     {
         protected internal override int ClassCode => -959602231;
 

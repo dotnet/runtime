@@ -46,6 +46,30 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        public async Task CreateFromDirectory_IncludeBaseDirectoryAsync()
+        {
+            string folderName = zfolder("normal");
+            string withBaseDir = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, withBaseDir, CompressionLevel.Optimal, true);
+
+            IEnumerable<string> expected = Directory.EnumerateFiles(zfolder("normal"), "*", SearchOption.AllDirectories);
+            using (ZipArchive actual_withbasedir = ZipFile.Open(withBaseDir, ZipArchiveMode.Read))
+            {
+                foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
+                {
+                    string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
+                    Assert.StartsWith("normal", actualEntry.FullName);
+                    Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
+                    using (Stream expectedStream = File.OpenRead(expectedFile))
+                    using (Stream actualStream = actualEntry.Open())
+                    {
+                        await StreamsEqualAsync(expectedStream, actualStream);
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public void CreateFromDirectoryUnicode()
         {
             string folderName = zfolder("unicode");

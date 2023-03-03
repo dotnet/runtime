@@ -39,10 +39,9 @@ namespace System.Xml
             return writer;
         }
 
-        private static readonly Encoding s_UTF8Encoding = new UTF8Encoding(false);
         public static XmlDictionaryWriter CreateTextWriter(Stream stream)
         {
-            return CreateTextWriter(stream, s_UTF8Encoding, true);
+            return CreateTextWriter(stream, DataContractSerializer.UTF8NoBom, true);
         }
 
         public static XmlDictionaryWriter CreateTextWriter(Stream stream, Encoding encoding)

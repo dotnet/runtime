@@ -273,7 +273,8 @@ namespace DebuggerTests
 
         public async Task LaunchBrowser(DateTime start, TimeSpan span)
         {
-            _cancellationTokenSource.CancelAfter(span);
+            if (!System.Diagnostics.Debugger.IsAttached)
+                _cancellationTokenSource.CancelAfter(span);
             string uriStr = $"ws://{TestHarnessProxy.Endpoint.Authority}/launch-host-and-connect/?test_id={Id}";
             if (!DebuggerTestBase.RunningOnChrome)
             {

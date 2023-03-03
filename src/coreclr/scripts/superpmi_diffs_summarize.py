@@ -89,39 +89,8 @@ def append_diff_file(f, arch, file_name, full_file_path, asmdiffs):
         else:
             diffs_found = True
             f.write("## {} {}\n".format(diff_os, diff_arch))
-
-            if asmdiffs:
-                # Contents of asmdiffs are large so create a
-                # <summary><details> ... </details> disclosure section around
-                # the file and additionally provide some instructions.
-                f.write("""\
-
-<details>
-
-<summary>{0} {1} details</summary>
-
-Summary file: `{2}`
-
-To reproduce these diffs on Windows {3}:
-```
-superpmi.py asmdiffs -target_os {0} -target_arch {1} -arch {3}
-```
-
-""".format(diff_os, diff_arch, file_name, arch))
-
-                # Now write the contents
-                f.write(contents)
-
-                # Write the footer (close the <details> section)
-                f.write("""\
-
-</details>
-
-""")
-
-            else:
-                f.write(contents)
-                f.write("\n")
+            f.write(contents)
+            f.write("\n\n---\n\n")
 
     return diffs_found
 
@@ -168,7 +137,7 @@ def main(main_args):
             f.write("No diffs found\n")
 
         f.write("\n\n#Throughput impact on Windows {}\n\n".format(arch))
-        f.write("The following tables contain the impact on throughput " +
+        f.write("The following shows the impact on throughput " +
                 "in terms of number of instructions executed inside the JIT. " +
                 "Negative percentages/lower numbers are better.\n\n")
 

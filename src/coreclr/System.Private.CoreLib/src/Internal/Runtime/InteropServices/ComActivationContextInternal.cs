@@ -8,8 +8,7 @@ using System.Runtime.InteropServices;
 namespace Internal.Runtime.InteropServices
 {
     [StructLayout(LayoutKind.Sequential)]
-    [CLSCompliant(false)]
-    public unsafe struct ComActivationContextInternal
+    internal unsafe struct ComActivationContextInternal
     {
         public Guid ClassId;
         public Guid InterfaceId;
@@ -17,35 +16,5 @@ namespace Internal.Runtime.InteropServices
         public char* AssemblyNameBuffer;
         public char* TypeNameBuffer;
         public IntPtr ClassFactoryDest;
-    }
-
-    //
-    // Types below are 'public' only to aid in testing of functionality.
-    // They should not be considered publicly consumable.
-    //
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct ComActivationContext
-    {
-        public Guid ClassId;
-        public Guid InterfaceId;
-        public string AssemblyPath;
-        public string AssemblyName;
-        public string TypeName;
-    }
-
-    [ComImport]
-    [ComVisible(false)]
-    [Guid("00000001-0000-0000-C000-000000000046")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IClassFactory
-    {
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
-        void CreateInstance(
-            [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
-            ref Guid riid,
-            out IntPtr ppvObject);
-
-        void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock);
     }
 }

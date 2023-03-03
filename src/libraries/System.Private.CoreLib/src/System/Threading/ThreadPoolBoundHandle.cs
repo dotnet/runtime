@@ -177,8 +177,7 @@ namespace System.Threading
         private unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);
-
-            EnsureNotDisposed();
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
 
             ThreadPoolBoundHandleOverlapped overlapped = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, preAllocated: null, flowExecutionContext);
             overlapped._boundHandle = this;
@@ -217,8 +216,7 @@ namespace System.Threading
         public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated)
         {
             ArgumentNullException.ThrowIfNull(preAllocated);
-
-            EnsureNotDisposed();
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
 
             preAllocated.AddRef();
             try
@@ -328,12 +326,6 @@ namespace System.Threading
             // We also implement a disposable state to mimic behavior between this implementation and
             // .NET Native's version (code written against us, will also work against .NET Native's version).
             _isDisposed = true;
-        }
-
-        private void EnsureNotDisposed()
-        {
-            if (_isDisposed)
-                throw new ObjectDisposedException(GetType().ToString());
         }
     }
 }

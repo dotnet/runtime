@@ -21,21 +21,14 @@ namespace System.Drawing
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Disposes this and all contexts up the stack.
-        /// </summary>
-        public void Dispose(bool disposing)
-        {
             // Dispose all contexts up the stack since they are relative to this one and its state will be invalid.
             Next?.Dispose();
             Next = null;
 
             Clip?.Dispose();
             Clip = null;
+
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>

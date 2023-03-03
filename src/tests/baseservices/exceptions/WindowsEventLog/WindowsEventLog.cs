@@ -62,8 +62,8 @@ class Program
         testProcess.StartInfo.FileName = corerunPath;
         testProcess.StartInfo.Arguments = currentPath + "\\WindowsEventLog.exe " + testName + " " + randomCookie;
         testProcess.StartInfo.EnvironmentVariables["CORE_ROOT"] = Environment.GetEnvironmentVariable("CORE_ROOT");
-        testProcess.StartInfo.EnvironmentVariables["COMPlus_Corhost_Swallow_Uncaught_Exceptions"] = swallowExcep ? "1" : "0";
-        testProcess.StartInfo.EnvironmentVariables["COMPlus_UseEntryPointFilter"] = useEntryPointFilter ? "1" : "0";
+        testProcess.StartInfo.EnvironmentVariables["DOTNET_Corhost_Swallow_Uncaught_Exceptions"] = swallowExcep ? "1" : "0";
+        testProcess.StartInfo.EnvironmentVariables["DOTNET_UseEntryPointFilter"] = useEntryPointFilter ? "1" : "0";
         testProcess.StartInfo.UseShellExecute = false;
 
         testProcess.Start();

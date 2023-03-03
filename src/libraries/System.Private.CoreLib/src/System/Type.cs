@@ -104,7 +104,7 @@ namespace System
         public bool IsContextful => IsContextfulImpl();
         protected virtual bool IsContextfulImpl() => false;
 
-        public virtual bool IsEnum => IsSubclassOf(typeof(Enum));
+        public virtual bool IsEnum { [Intrinsic] get => IsSubclassOf(typeof(Enum)); }
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => false;
         public bool IsPrimitive => IsPrimitiveImpl();
@@ -327,9 +327,7 @@ namespace System
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             ArgumentNullException.ThrowIfNull(name);
-
-            if (genericParameterCount < 0)
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(genericParameterCount));
+            ArgumentOutOfRangeException.ThrowIfNegative(genericParameterCount);
             ArgumentNullException.ThrowIfNull(types);
             for (int i = 0; i < types.Length; i++)
             {
@@ -438,9 +436,57 @@ namespace System
             return cls;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TypeCode GetTypeCode(Type? type)
         {
+            if (RuntimeHelpers.IsKnownConstant(type) && type is RuntimeType)
+            {
+                return GetRuntimeTypeCode((RuntimeType)type);
+            }
             return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static TypeCode GetRuntimeTypeCode(RuntimeType type)
+        {
+            RuntimeType underlyingType = type;
+            if (type.IsActualEnum)
+                underlyingType = (RuntimeType)type.GetEnumUnderlyingType();
+
+            if (underlyingType == typeof(sbyte))
+                return TypeCode.SByte;
+            else if (underlyingType == typeof(byte))
+                return TypeCode.Byte;
+            else if (underlyingType == typeof(short))
+                return TypeCode.Int16;
+            else if (underlyingType == typeof(ushort))
+                return TypeCode.UInt16;
+            else if (underlyingType == typeof(int))
+                return TypeCode.Int32;
+            else if (underlyingType == typeof(uint))
+                return TypeCode.UInt32;
+            else if (underlyingType == typeof(long))
+                return TypeCode.Int64;
+            else if (underlyingType == typeof(ulong))
+                return TypeCode.UInt64;
+            else if (underlyingType == typeof(bool))
+                return TypeCode.Boolean;
+            else if (underlyingType == typeof(char))
+                return TypeCode.Char;
+            else if (underlyingType == typeof(float))
+                return TypeCode.Single;
+            else if (underlyingType == typeof(double))
+                return TypeCode.Double;
+            else if (underlyingType == typeof(decimal))
+                return TypeCode.Decimal;
+            else if (underlyingType == typeof(DateTime))
+                return TypeCode.DateTime;
+            else if (underlyingType == typeof(string))
+                return TypeCode.String;
+            else if (underlyingType == typeof(DBNull))
+                return TypeCode.DBNull;
+            else
+                return TypeCode.Object;
         }
 
         protected virtual TypeCode GetTypeCodeImpl()
@@ -503,6 +549,7 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "The single instance field on enum types is never trimmed")]
+        [Intrinsic]
         public virtual Type GetEnumUnderlyingType()
         {
             if (!IsEnum)
@@ -527,16 +574,14 @@ namespace System
         }
 
         /// <summary>
-        /// Retrieves an array of the values of the underlying type constants in a specified enumeration type.
+        /// Retrieves an array of the values of the underlying type constants of this enumeration type.
         /// </summary>
         /// <remarks>
-        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
-        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
+        /// You can use this method to get enumeration values when it's hard to create an array of the enumeration type.
+        /// For example, you might use this method for the <see cref="T:System.Reflection.MetadataLoadContext" /> enumeration or on a platform where run-time code generation is not available.
         /// </remarks>
-        /// <returns>An array that contains the values of the underlying type constants in enumType.</returns>
-        /// <exception cref="ArgumentException">
-        /// Thrown when the type is not an enumeration type.
-        /// </exception>
+        /// <returns>An array that contains the values of the underlying type constants in this enumeration type.</returns>
+        /// <exception cref="T:System.ArgumentException">This type is not an enumeration type.</exception>
         public virtual Array GetEnumValuesAsUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
@@ -555,8 +600,7 @@ namespace System
 
         public static Type MakeGenericMethodParameter(int position)
         {
-            if (position < 0)
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(position));
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             return new SignatureGenericMethodParameterType(position);
         }
 

@@ -29,6 +29,24 @@ sgen_vtable_get_descriptor (GCVTable vtable)
 	return (SgenDescriptor)vtable->gc_descr;
 }
 
+static inline gboolean
+sgen_vtable_has_class_obj (GCVTable vtable)
+{
+	MonoGCHandle *handle = vtable->loader_alloc;
+	return handle != NULL;
+}
+
+static inline GCObject*
+sgen_vtable_get_class_obj (GCVTable vtable)
+{
+	MonoGCHandle *handle = vtable->loader_alloc;
+	if (handle)
+		/* This could return NULL during unloading */
+		return (GCObject*)mono_gchandle_get_target_internal (handle);
+	else
+		return NULL;
+}
+
 typedef struct _SgenClientThreadInfo SgenClientThreadInfo;
 struct _SgenClientThreadInfo {
 	MonoThreadInfo info;
@@ -39,13 +57,6 @@ struct _SgenClientThreadInfo {
 	*/
 	gboolean skip, suspend_done;
 	volatile int in_critical_region;
-
-#ifdef SGEN_POSIX_STW
-	/* This is -1 until the first suspend. */
-	int signal;
-	/* FIXME: kill this, we only use signals on systems that have rt-posix, which doesn't have issues with duplicates. */
-	unsigned int stop_count; /* to catch duplicate signals. */
-#endif
 
 	gpointer runtime_data;
 

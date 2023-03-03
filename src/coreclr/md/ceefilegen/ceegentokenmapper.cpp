@@ -48,8 +48,6 @@ HRESULT STDMETHODCALLTYPE CeeGenTokenMapper::Map(
     ULONG ridFrom = 0;
     TOKENMAP *pMap = NULL;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     if ( IndexForType(tkFrom) == -1 )
     {
         // It is a type that we are not tracking, such as mdtProperty or mdtEvent,
@@ -89,8 +87,6 @@ HRESULT STDMETHODCALLTYPE CeeGenTokenMapper::Map(
     *pToken = tkTo;
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }
 

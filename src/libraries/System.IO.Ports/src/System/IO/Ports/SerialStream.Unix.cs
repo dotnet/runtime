@@ -380,12 +380,14 @@ namespace System.IO.Ports
             Interop.Termios.TermiosDiscard(_handle, Interop.Termios.Queue.SendQueue);
         }
 
+#pragma warning disable IDE0060
         internal void SetBufferSizes(int readBufferSize, int writeBufferSize)
         {
             if (_handle == null) InternalResources.FileNotOpen();
 
             // Ignore for now.
         }
+#pragma warning restore IDE0060
 
         internal bool IsOpen => _handle != null;
 
@@ -594,7 +596,7 @@ namespace System.IO.Ports
 
         // this method is used by SerialPort upon SerialStream's creation
         internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
-            bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
+            bool dtrEnable, bool rtsEnable, bool _1 /*discardNull*/, byte _2 /*parityReplace*/)
         {
             ArgumentNullException.ThrowIfNull(portName);
 

@@ -48,7 +48,7 @@ The results for this one library will then be available in this index.htm file, 
 
 For example, to build, test, and get code coverage results for the System.Diagnostics.Debug library, from the root of the repo one can do:
 
-    dotnet build src\System.Diagnostics.Debug\tests /t:Test /p:Coverage=true
+    dotnet build src\libraries\System.Diagnostics.Debug\tests /t:Test /p:Coverage=true
 
 And then once the run completes:
 

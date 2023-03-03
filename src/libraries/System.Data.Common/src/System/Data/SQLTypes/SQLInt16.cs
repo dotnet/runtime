@@ -26,7 +26,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlInt16(bool fNull)
+        private SqlInt16(bool _)
         {
             m_fNotNull = false;
             m_value = 0;

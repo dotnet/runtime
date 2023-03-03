@@ -135,7 +135,7 @@ namespace System.Linq.Expressions
 
         internal virtual ReadOnlyCollection<ParameterExpression> GetOrMakeVariables()
         {
-            return EmptyReadOnlyCollection<ParameterExpression>.Instance;
+            return ReadOnlyCollection<ParameterExpression>.Empty;
         }
 
         /// <summary>
@@ -913,7 +913,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(IEnumerable<Expression> expressions)
         {
-            return Block(EmptyReadOnlyCollection<ParameterExpression>.Instance, expressions);
+            return Block(ReadOnlyCollection<ParameterExpression>.Empty, expressions);
         }
 
         /// <summary>
@@ -936,7 +936,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Type type, IEnumerable<Expression> expressions)
         {
-            return Block(type, EmptyReadOnlyCollection<ParameterExpression>.Instance, expressions);
+            return Block(type, ReadOnlyCollection<ParameterExpression>.Empty, expressions);
         }
 
         /// <summary>
@@ -1089,7 +1089,7 @@ namespace System.Linq.Expressions
         {
             return expressions.Count switch
             {
-                0 => BlockCore(typeof(void), EmptyReadOnlyCollection<ParameterExpression>.Instance, EmptyReadOnlyCollection<Expression>.Instance),
+                0 => BlockCore(typeof(void), ReadOnlyCollection<ParameterExpression>.Empty, ReadOnlyCollection<Expression>.Empty),
                 2 => new Block2(expressions[0], expressions[1]),
                 3 => new Block3(expressions[0], expressions[1], expressions[2]),
                 4 => new Block4(expressions[0], expressions[1], expressions[2], expressions[3]),

@@ -38,7 +38,7 @@ public class GitHub_23885
     {
     }
 
-    static int Main(string[] args)
+    public static int Main()
     {
         int returnVal = 100;
 

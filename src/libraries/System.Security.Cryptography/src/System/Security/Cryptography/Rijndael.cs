@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -11,6 +12,7 @@ namespace System.Security.Cryptography
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class Rijndael : SymmetricAlgorithm
     {
+        [UnsupportedOSPlatform("browser")]
         public static new Rijndael Create()
         {
             return new RijndaelImplementation();

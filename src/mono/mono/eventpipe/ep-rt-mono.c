@@ -2120,13 +2120,13 @@ ep_rt_mono_rand_try_get_bytes (
 }
 
 char *
-ep_rt_mono_get_managed_cmd_line ()
+ep_rt_mono_get_managed_cmd_line (void)
 {
 	return mono_runtime_get_managed_cmd_line ();
 }
 
 char *
-ep_rt_mono_get_os_cmd_line ()
+ep_rt_mono_get_os_cmd_line (void)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -3084,7 +3084,7 @@ struct _BulkTypeEventLogger {
 
 static
 BulkTypeEventLogger*
-ep_rt_bulk_type_event_logger_alloc ()
+ep_rt_bulk_type_event_logger_alloc (void)
 {
 	BulkTypeEventLogger *type_logger = g_malloc0 (sizeof (BulkTypeEventLogger));
 	type_logger->bulk_type_event_buffer = g_malloc0 (sizeof (uint8_t) * MAX_SIZE_OF_EVENT_BUFFER);

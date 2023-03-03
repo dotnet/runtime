@@ -39,6 +39,17 @@
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
   </PropertyGroup>
 
+  <!-- When trimming non-exe projects, root the whole intermediate assembly.
+       The SDK settings root only the entry point by default. These targets are used not only for standard
+       console apps, but also for test projects without an entry point. -->
+  <Target Name="RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" Condition="'$(OutputType)' != 'Exe'">
+    <ItemGroup>
+      <TrimmerRootAssembly Condition="'%(Identity)' == '@(IntermediateAssembly)'">
+        <RootMode>all</RootMode>
+      </TrimmerRootAssembly>
+    </ItemGroup>
+  </Target>
+
   <PropertyGroup>
     <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">$(AdditionalXHarnessArguments) --expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>

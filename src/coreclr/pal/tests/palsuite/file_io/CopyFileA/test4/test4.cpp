@@ -164,11 +164,11 @@ PALTEST(file_io_CopyFileA_test4_paltest_copyfilea_test4, "file_io/CopyFileA/test
     }
 
     /* Remove the temporary file */
-    bRc = DeleteFile(szDest);
-    if(!bRc)
+    int st = remove(szDest);
+    if(st != 0)
     {
         Fail("CopyFileA: Could not remove copied file with error %u\n",
-            GetLastError());
+            errno);
     }
 
     PAL_Terminate();

@@ -58,8 +58,7 @@ namespace System.Reflection.PortableExecutable
                 }
             }
 
-            // TODO: avoid multiple copies:
-            builder.WriteBytes(compressed.ToArray());
+            builder.WriteBytes(compressed.GetBuffer(), 0, (int)compressed.Length);
 
             return builder.Count - start;
         }

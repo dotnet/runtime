@@ -16,7 +16,7 @@
 #include <sys/systeminfo.h>
 #endif
 
-char* SystemNative_GetUnixRelease()
+char* SystemNative_GetUnixRelease(void)
 {
 #if defined(TARGET_ANDROID)
     // get the Android API level
@@ -68,7 +68,7 @@ enum
     ARCH_RISCV64,
 };
 
-int32_t SystemNative_GetOSArchitecture()
+int32_t SystemNative_GetOSArchitecture(void)
 {
 #ifdef TARGET_WASM
     return ARCH_WASM;

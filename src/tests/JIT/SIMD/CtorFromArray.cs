@@ -18,7 +18,7 @@ namespace VectorMathTests
             return arr;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             int v = 2;
             int[] arr = GenerateArray(20, v);

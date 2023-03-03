@@ -140,16 +140,6 @@ namespace System.Text
             iCount = -1;
         }
 
-        // This version just counts the fallback and doesn't actually copy anything.
-        internal static unsafe int InternalFallback(byte[] bytes, byte* pBytes)
-        // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
-        // array, and we might need the index, hence the byte*
-        {
-            // return our replacement string Length (always 1 for InternalDecoderBestFitFallback, either
-            // a best fit char or ?
-            return 1;
-        }
-
         // private helper methods
         private char TryBestFit(byte[] bytesCheck)
         {

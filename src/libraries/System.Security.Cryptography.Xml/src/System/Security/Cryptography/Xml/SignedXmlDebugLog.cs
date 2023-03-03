@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -191,7 +192,7 @@ namespace System.Security.Cryptography.Xml
         /// <summary>
         ///     Convert the byte array into a hex string
         /// </summary>
-        private static string FormatBytes(byte[] bytes)
+        private static string FormatBytes(byte[]? bytes)
         {
             if (bytes == null)
                 return NullString;
@@ -206,9 +207,9 @@ namespace System.Security.Cryptography.Xml
         {
             Debug.Assert(key != null, "key != null");
 
-            ICspAsymmetricAlgorithm cspKey = key as ICspAsymmetricAlgorithm;
-            X509Certificate certificate = key as X509Certificate;
-            X509Certificate2 certificate2 = key as X509Certificate2;
+            ICspAsymmetricAlgorithm? cspKey = key as ICspAsymmetricAlgorithm;
+            X509Certificate? certificate = key as X509Certificate;
+            X509Certificate2? certificate2 = key as X509Certificate2;
 
             //
             // Use the following sources for key names, if available:
@@ -255,11 +256,11 @@ namespace System.Security.Cryptography.Xml
         /// <summary>
         ///     Map an OID to the friendliest name possible
         /// </summary>
-        private static string GetOidName(Oid oid)
+        private static string? GetOidName(Oid oid)
         {
             Debug.Assert(oid != null, "oid != null");
 
-            string friendlyName = oid.FriendlyName;
+            string? friendlyName = oid.FriendlyName;
             if (string.IsNullOrEmpty(friendlyName))
                 friendlyName = oid.Value;
 
@@ -292,7 +293,7 @@ namespace System.Security.Cryptography.Xml
             {
                 string canonicalizationSettings = SR.Format(CultureInfo.InvariantCulture,
                                                                 SR.Log_CanonicalizationSettings,
-                                                                canonicalizationTransform.Resolver.GetType(),
+                                                                canonicalizationTransform.Resolver!.GetType(),
                                                                 canonicalizationTransform.BaseURI);
                 WriteLine(signedXml,
                           TraceEventType.Verbose,
@@ -318,7 +319,7 @@ namespace System.Security.Cryptography.Xml
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_CheckSignatureFormat,
                                                   validationMethod.Module.Assembly.FullName,
-                                                  validationMethod.DeclaringType.FullName,
+                                                  validationMethod.DeclaringType!.FullName,
                                                   validationMethod.Name);
                 WriteLine(signedXml, TraceEventType.Information, SignedXmlDebugEvent.BeginCheckSignatureFormat, logMessage);
             }
@@ -378,7 +379,7 @@ namespace System.Security.Cryptography.Xml
         /// </summary>
         /// <param name="signedXml">SignedXml object doing the verification</param>
         /// <param name="context">Context of the verification</param>
-        internal static void LogBeginSignatureVerification(SignedXml signedXml, XmlElement context)
+        internal static void LogBeginSignatureVerification(SignedXml signedXml, XmlElement? context)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
 
@@ -415,7 +416,7 @@ namespace System.Security.Cryptography.Xml
 
             if (VerboseLoggingEnabled)
             {
-                using (StreamReader reader = new StreamReader(canonicalizationTransform.GetOutput(typeof(Stream)) as Stream))
+                using (StreamReader reader = new StreamReader((canonicalizationTransform.GetOutput(typeof(Stream)) as Stream)!))
                 {
                     string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                       SR.Log_CanonicalizedOutput,
@@ -452,7 +453,7 @@ namespace System.Security.Cryptography.Xml
         /// <param name="signedXml">SignedXml object doing the signature verification</param>
         /// <param name="algorithm">Canonicalization algorithm</param>
         /// <param name="validAlgorithms">List of valid canonicalization algorithms</param>
-        internal static void LogUnsafeCanonicalizationMethod(SignedXml signedXml, string algorithm, IEnumerable<string> validAlgorithms)
+        internal static void LogUnsafeCanonicalizationMethod(SignedXml signedXml, string algorithm, IEnumerable<string>? validAlgorithms)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
             Debug.Assert(validAlgorithms != null, "validAlgorithms != null");
@@ -490,7 +491,7 @@ namespace System.Security.Cryptography.Xml
         internal static void LogUnsafeTransformMethod(
             SignedXml signedXml,
             string algorithm,
-            IEnumerable<string> validC14nAlgorithms,
+            IEnumerable<string>? validC14nAlgorithms,
             IEnumerable<string> validTransformAlgorithms)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
@@ -534,7 +535,7 @@ namespace System.Security.Cryptography.Xml
         /// </summary>
         /// <param name="signedXml">SignedXml doing the signing or verification</param>
         /// <param name="namespaces">namespaces being propagated</param>
-        internal static void LogNamespacePropagation(SignedXml signedXml, XmlNodeList namespaces)
+        internal static void LogNamespacePropagation(SignedXml signedXml, XmlNodeList? namespaces)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
 
@@ -571,7 +572,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="reference">The reference being processed</param>
         /// <param name="data">Stream containing the output of the reference</param>
         /// <returns>Stream containing the output of the reference</returns>
-        internal static Stream LogReferenceData(Reference reference, Stream data)
+        [return: NotNullIfNotNull("data")]
+        internal static Stream? LogReferenceData(Reference reference, Stream? data)
         {
             if (VerboseLoggingEnabled)
             {
@@ -589,7 +591,7 @@ namespace System.Security.Cryptography.Xml
                 int readBytes;
                 do
                 {
-                    readBytes = data.Read(buffer, 0, buffer.Length);
+                    readBytes = data!.Read(buffer, 0, buffer.Length);
                     ms.Write(buffer, 0, readBytes);
                 } while (readBytes == buffer.Length);
 
@@ -682,7 +684,7 @@ namespace System.Security.Cryptography.Xml
 
             if (VerboseLoggingEnabled)
             {
-                HashAlgorithm hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
                 string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_SigningReference,
@@ -762,7 +764,7 @@ namespace System.Security.Cryptography.Xml
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_KeyUsages,
                                                   keyUsages.KeyUsages,
-                                                  GetOidName(keyUsages.Oid),
+                                                  GetOidName(keyUsages.Oid!),
                                                   GetKeyName(certificate));
 
                 WriteLine(signedXml,
@@ -807,8 +809,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="expectedHash">hash value the signature expected the reference to have</param>
         internal static void LogVerifyReferenceHash(SignedXml signedXml,
                                                     Reference reference,
-                                                    byte[] actualHash,
-                                                    byte[] expectedHash)
+                                                    byte[]? actualHash,
+                                                    byte[]? expectedHash)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
             Debug.Assert(reference != null, "reference != null");
@@ -817,7 +819,7 @@ namespace System.Security.Cryptography.Xml
 
             if (VerboseLoggingEnabled)
             {
-                HashAlgorithm hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
                 string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_ReferenceHash,
@@ -850,8 +852,8 @@ namespace System.Security.Cryptography.Xml
                                                  SignatureDescription signatureDescription,
                                                  HashAlgorithm hashAlgorithm,
                                                  AsymmetricSignatureDeformatter asymmetricSignatureDeformatter,
-                                                 byte[] actualHashValue,
-                                                 byte[] signatureValue)
+                                                 byte[]? actualHashValue,
+                                                 byte[]? signatureValue)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
             Debug.Assert(signatureDescription != null, "signatureDescription != null");
@@ -896,8 +898,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="signatureValue">raw signature value</param>
         internal static void LogVerifySignedInfo(SignedXml signedXml,
                                                  KeyedHashAlgorithm mac,
-                                                 byte[] actualHashValue,
-                                                 byte[] signatureValue)
+                                                 byte[]? actualHashValue,
+                                                 byte[]? signatureValue)
         {
             Debug.Assert(signedXml != null, "signedXml != null");
             Debug.Assert(mac != null, "mac != null");
@@ -1031,7 +1033,7 @@ namespace System.Security.Cryptography.Xml
 
             if (InformationLoggingEnabled)
             {
-                HashAlgorithm hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
                 string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                     SR.Log_SignedXmlRecursionLimit,

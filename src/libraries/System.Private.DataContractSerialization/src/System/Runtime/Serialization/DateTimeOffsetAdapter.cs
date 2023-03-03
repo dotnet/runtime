@@ -64,9 +64,11 @@ namespace System.Runtime.Serialization
             return new DateTimeOffsetAdapter(value.UtcDateTime, (short)value.Offset.TotalMinutes);
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/runtime/issues/76012
         public string ToString(IFormatProvider provider)
         {
             return "DateTime: " + UtcDateTime + ", Offset: " + OffsetMinutes;
         }
+#pragma warning restore IDE0060
     }
 }

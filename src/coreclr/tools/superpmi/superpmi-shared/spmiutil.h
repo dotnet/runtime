@@ -82,10 +82,18 @@ void PutArm64Rel12(UINT32* pCode, INT32 imm12);
 void PutThumb2Mov32(UINT16* p, UINT32 imm32);
 void PutThumb2BlRel24(UINT16* p, INT32 imm24);
 
+bool GetArm64MovConstant(UINT32* p, unsigned* pReg, unsigned* pCon);
+bool GetArm64MovkConstant(UINT32* p, unsigned* pReg, unsigned* pCon, unsigned* pShift);
+
+void PutArm64MovkConstant(UINT32* p, unsigned con);
+
 template <typename T, int size>
 inline constexpr unsigned ArrLen(T (&)[size])
 {
     return size;
 }
+
+std::string getMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE methHnd);
+std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd);
 
 #endif // !_SPMIUtil

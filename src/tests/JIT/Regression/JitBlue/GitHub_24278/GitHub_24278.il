@@ -14,7 +14,7 @@
 // This happens in MainMethod at IL_0013:
 // V_0 is not initialized by IL instructions of one of the path to IL_0013 and must be zeroed in the prolog since it is live at IL_0013.
 
-.class private auto ansi beforefieldinit GitHub_24278.Program
+.class public auto ansi beforefieldinit GitHub_24278.Program
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static bool  True() cil managed noinlining
@@ -53,8 +53,8 @@
     IL_001e:  ret
   } // end of method Program::MainMethod
 
-  .method private hidebysig static int32
-          Main(string[] args) cil managed
+  .method public hidebysig static int32
+          Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

@@ -179,6 +179,7 @@ namespace Microsoft.Extensions.Options
         /// Note: These are run after all <seealso cref="Configure(Action{TOptions})"/>.
         /// </summary>
         /// <param name="configureOptions">The action used to configure the options.</param>
+        /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
         public virtual OptionsBuilder<TOptions> PostConfigure(Action<TOptions> configureOptions)
         {
             ThrowHelper.ThrowIfNull(configureOptions);

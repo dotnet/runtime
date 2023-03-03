@@ -4,10 +4,10 @@
 
 using System;
 
-class BadMath
+public class BadMath
 {
     public static double[,] Res = new double[2, 40];
-    static int Main(string[] args)
+    public static int Main()
     {
 
         double t0 = 1.5;

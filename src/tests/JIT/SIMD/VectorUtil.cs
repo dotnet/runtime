@@ -255,7 +255,7 @@ class JitLog : IDisposable
 
     private static String GetLogFileName()
     {
-        String jitLogFileName = Environment.GetEnvironmentVariable("COMPlus_JitFuncInfoLogFile");
+        String jitLogFileName = Environment.GetEnvironmentVariable("DOTNET_JitFuncInfoLogFile");
         return jitLogFileName;
     }
 

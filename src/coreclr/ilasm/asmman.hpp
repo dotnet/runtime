@@ -17,12 +17,7 @@ struct AsmManFile
     BinStr* pHash;
     BOOL    m_fNew;
     CustomDescrList m_CustomDescrList;
-    AsmManFile()
-    {
-        szName = NULL;
-        pHash = NULL;
-        m_fNew = TRUE;
-    }
+    AsmManFile() = default;
     ~AsmManFile()
     {
         if(szName)  delete szName;
@@ -56,28 +51,16 @@ struct AsmManAssembly
 	USHORT	usVerMinor;
 	USHORT	usBuild;
 	USHORT	usRevision;
-    AsmManAssembly()
+    AsmManAssembly() = default;
+    ~AsmManAssembly()
     {
-    /*
-        usVerMajor = usVerMinor = usBuild = usRevision = 0xFFFF;
-        szName = szAlias = NULL;
-        dwAlias = dwAttr = 0;
-        tkTok = 0;
-        pPublicKey = pPublicKeyToken =pHashBlob = pLocale = NULL;
-        ulHashAlgorithm = 0;
-        m_fNew = TRUE;
-        isAutodetect = isRef = FALSE;
-    */
+        if(szAlias && (szAlias != szName)) delete [] szAlias;
+        if(szName) delete [] szName;
+        if(pPublicKey) delete pPublicKey;
+        if(pPublicKeyToken) delete pPublicKeyToken;
+        if(pHashBlob) delete pHashBlob;
+        if(pLocale) delete pLocale;
     }
-	~AsmManAssembly()
-	{
-		if(szAlias && (szAlias != szName)) delete [] szAlias;
-		if(szName) delete [] szName;
-		if(pPublicKey) delete pPublicKey;
-		if(pPublicKeyToken) delete pPublicKeyToken;
-		if(pHashBlob) delete pHashBlob;
-		if(pLocale) delete pLocale;
-	}
     int ComparedTo(AsmManAssembly* pX){ return strcmp(szAlias,pX->szAlias); }
 };
 //typedef SORTEDARRAY<AsmManAssembly> AsmManAssemblyList;
@@ -95,12 +78,7 @@ struct AsmManComType
     mdToken tkClass;
     BOOL    m_fNew;
     CustomDescrList m_CustomDescrList;
-    AsmManComType()
-    {
-        szName = szFileName = szAsmRefName = szComTypeName = NULL;
-        m_fNew = TRUE;
-        tkImpl = 0;
-    };
+    AsmManComType() = default;
     ~AsmManComType()
     {
         if(szName) delete szName;
@@ -123,7 +101,7 @@ struct AsmManRes
     BOOL    m_fNew;
 	CustomDescrList m_CustomDescrList;
 	char*	szAsmRefName;
-	AsmManRes() { szName = szAlias = szAsmRefName = szFileName = NULL; ulOffset = 0; tkTok = 0; dwAttr = 0; m_fNew = TRUE; };
+	AsmManRes() = default;
 	~AsmManRes()
 	{
         if(szAlias && (szAlias != szName)) delete szAlias;

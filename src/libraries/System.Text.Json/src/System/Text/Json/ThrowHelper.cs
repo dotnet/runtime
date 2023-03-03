@@ -247,6 +247,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ExpectedPropertyName(JsonTokenType tokenType)
+        {
+            throw GetInvalidOperationException("propertyName", tokenType);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_ExpectedStringComparison(JsonTokenType tokenType)
         {
             throw GetInvalidOperationException(tokenType);

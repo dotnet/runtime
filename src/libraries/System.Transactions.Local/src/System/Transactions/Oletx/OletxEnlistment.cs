@@ -997,10 +997,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
         try
         {
-            if (localEnlistmentShim != null)
-            {
-                localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Failed);
-            }
+            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.Failed);
         }
         catch (COMException ex)
         {
@@ -1055,10 +1052,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
         {
             // This may be the result of a reenlist, which means we don't have a
             // reference to the proxy.
-            if (localEnlistmentShim != null)
-            {
-                localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.SinglePhase);
-            }
+            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.SinglePhase);
         }
         catch (COMException ex)
         {
@@ -1117,10 +1111,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
         try
         {
-            if (localEnlistmentShim != null)
-            {
-                localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Failed);
-            }
+            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.Failed);
         }
         // If the TM went down during our call, there is nothing special we have to do because
         // the App doesn't expect any more notifications.
@@ -1170,10 +1161,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
         try
         {
-            if (localEnlistmentShim != null)
-            {
-                localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.InDoubt);
-            }
+            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.InDoubt);
         }
         // If the TM went down during our call, there is nothing special we have to do because
         // the App doesn't expect any more notifications.

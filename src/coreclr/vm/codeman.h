@@ -795,7 +795,7 @@ public:
 
     virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength) = 0;
 
-    BOOL IsFunclet(EECodeInfo * pCodeInfo);
+    virtual BOOL IsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL IsFilterFunclet(EECodeInfo * pCodeInfo);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1525,6 +1525,19 @@ public:
                                          int EndIndex);
 };
 
+class HotColdMappingLookupTable
+{
+public:
+    // ***************************************************************************
+    // Binary searches pInfo->m_pHotColdMap for the given hot/cold MethodIndex, and
+    // returns the index in pInfo->m_pHotColdMap of its corresponding cold/hot MethodIndex.
+    // If MethodIndex is cold and at index i, returns i + 1.
+    // If MethodIndex is hot and at index i, returns i - 1.
+    // If MethodIndex is not in pInfo->m_pHotColdMap, returns -1.
+    //
+    static int LookupMappingForMethod(ReadyToRunInfo* pInfo, ULONG MethodIndex);
+};
+
 #endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_READYTORUN
@@ -1593,6 +1606,7 @@ public:
 
     virtual TADDR                   GetFuncletStartAddress(EECodeInfo * pCodeInfo);
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
+    virtual BOOL                    IsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL                    IsFilterFunclet(EECodeInfo * pCodeInfo);
 #endif // FEATURE_EH_FUNCLETS
 

@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Microsoft.Extensions.Primitives
 {
+    /// <summary>
+    /// Provides extensions methods for the <see cref="Primitives"/> namespace.
+    /// </summary>
     public static class Extensions
     {
         /// <summary>

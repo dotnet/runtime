@@ -114,13 +114,8 @@ namespace System.Security.AccessControl
 
             int Length = BinaryLength; // Invokes the most derived property
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(offset),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            else if (binaryForm.Length - offset < BinaryLength)
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            if (binaryForm.Length - offset < BinaryLength)
             {
                 //
                 // The buffer will not fit the header
@@ -243,13 +238,8 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(offset),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            else if (binaryForm.Length - offset < HeaderLength)
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            if (binaryForm.Length - offset < HeaderLength)
             {
                 //
                 // We expect at least the ACE header ( 4 bytes )
@@ -697,11 +687,7 @@ namespace System.Security.AccessControl
             [MemberNotNull(nameof(_sid))]
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value);
                 _sid = value;
             }
         }

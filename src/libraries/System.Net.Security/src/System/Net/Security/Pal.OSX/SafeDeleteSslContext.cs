@@ -24,6 +24,8 @@ namespace System.Net
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SafeSslHandle SslContext => _sslContext;
+        public SslApplicationProtocol SelectedApplicationProtocol;
+        public bool IsServer;
 
         public SafeDeleteSslContext(SslAuthenticationOptions sslAuthenticationOptions)
             : base(IntPtr.Zero)
@@ -74,10 +76,15 @@ namespace System.Net
 
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
-                    // On OSX coretls supports only client side. For server, we will silently ignore the option.
-                    if (!sslAuthenticationOptions.IsServer)
+                    if (sslAuthenticationOptions.IsClient)
                     {
+                        // On macOS coreTls supports only client side.
                         Interop.AppleCrypto.SslCtxSetAlpnProtos(_sslContext, sslAuthenticationOptions.ApplicationProtocols);
+                    }
+                    else
+                    {
+                        // For Server, we do the selection in SslStream and we set it later
+                        Interop.AppleCrypto.SslBreakOnClientHello(_sslContext, true);
                     }
                 }
             }
@@ -102,6 +109,8 @@ namespace System.Net
 
             if (sslAuthenticationOptions.IsServer)
             {
+                IsServer = true;
+
                 if (sslAuthenticationOptions.RemoteCertRequired)
                 {
                     Interop.AppleCrypto.SslSetAcceptClientCert(_sslContext);

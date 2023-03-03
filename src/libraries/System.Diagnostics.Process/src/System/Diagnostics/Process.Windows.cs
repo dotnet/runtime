@@ -524,9 +524,17 @@ namespace System.Diagnostics
                         }
 
                         Interop.Advapi32.LogonFlags logonFlags = (Interop.Advapi32.LogonFlags)0;
-                        if (startInfo.LoadUserProfile)
+                        if (startInfo.LoadUserProfile && startInfo.UseCredentialsForNetworkingOnly)
+                        {
+                            throw new ArgumentException(SR.CantEnableConflictingLogonFlags, nameof(startInfo));
+                        }
+                        else if (startInfo.LoadUserProfile)
                         {
                             logonFlags = Interop.Advapi32.LogonFlags.LOGON_WITH_PROFILE;
+                        }
+                        else if (startInfo.UseCredentialsForNetworkingOnly)
+                        {
+                            logonFlags = Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY;
                         }
 
                         fixed (char* passwordInClearTextPtr = startInfo.PasswordInClearText ?? string.Empty)

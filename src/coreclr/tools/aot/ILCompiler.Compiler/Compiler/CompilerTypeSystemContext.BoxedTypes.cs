@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 using Internal.TypeSystem;
 using Internal.IL;
@@ -51,7 +50,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler
 {
     // Contains functionality related to pseudotypes representing boxed instances of value types
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
         /// <summary>
         /// For a shared (canonical) instance method on a generic valuetype, gets a method that can be used to call the
@@ -152,7 +151,7 @@ namespace ILCompiler
             }
         }
 
-        private class BoxedValuetypeHashtable : LockFreeReaderHashtable<BoxedValuetypeHashtableKey, BoxedValueType>
+        private sealed class BoxedValuetypeHashtable : LockFreeReaderHashtable<BoxedValuetypeHashtableKey, BoxedValueType>
         {
             protected override int GetKeyHashCode(BoxedValuetypeHashtableKey key)
             {
@@ -164,13 +163,13 @@ namespace ILCompiler
             }
             protected override bool CompareKeyToValue(BoxedValuetypeHashtableKey key, BoxedValueType value)
             {
-                return Object.ReferenceEquals(key.ValueType, value.ValueTypeRepresented) &&
-                    Object.ReferenceEquals(key.OwningModule, value.Module);
+                return ReferenceEquals(key.ValueType, value.ValueTypeRepresented) &&
+                    ReferenceEquals(key.OwningModule, value.Module);
             }
             protected override bool CompareValueToValue(BoxedValueType value1, BoxedValueType value2)
             {
-                return Object.ReferenceEquals(value1.ValueTypeRepresented, value2.ValueTypeRepresented) &&
-                    Object.ReferenceEquals(value1.Module, value2.Module);
+                return ReferenceEquals(value1.ValueTypeRepresented, value2.ValueTypeRepresented) &&
+                    ReferenceEquals(value1.Module, value2.Module);
             }
             protected override BoxedValueType CreateValueFromKey(BoxedValuetypeHashtableKey key)
             {
@@ -191,7 +190,7 @@ namespace ILCompiler
             }
         }
 
-        private class UnboxingThunkHashtable : LockFreeReaderHashtable<UnboxingThunkHashtableKey, GenericUnboxingThunk>
+        private sealed class UnboxingThunkHashtable : LockFreeReaderHashtable<UnboxingThunkHashtableKey, GenericUnboxingThunk>
         {
             protected override int GetKeyHashCode(UnboxingThunkHashtableKey key)
             {
@@ -203,13 +202,13 @@ namespace ILCompiler
             }
             protected override bool CompareKeyToValue(UnboxingThunkHashtableKey key, GenericUnboxingThunk value)
             {
-                return Object.ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
-                    Object.ReferenceEquals(key.OwningType, value.OwningType);
+                return ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
+                    ReferenceEquals(key.OwningType, value.OwningType);
             }
             protected override bool CompareValueToValue(GenericUnboxingThunk value1, GenericUnboxingThunk value2)
             {
-                return Object.ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
-                    Object.ReferenceEquals(value1.OwningType, value2.OwningType);
+                return ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
+                    ReferenceEquals(value1.OwningType, value2.OwningType);
             }
             protected override GenericUnboxingThunk CreateValueFromKey(UnboxingThunkHashtableKey key)
             {
@@ -218,7 +217,7 @@ namespace ILCompiler
         }
         private UnboxingThunkHashtable _unboxingThunkHashtable = new UnboxingThunkHashtable();
 
-        private class NonGenericUnboxingThunkHashtable : LockFreeReaderHashtable<UnboxingThunkHashtableKey, UnboxingThunk>
+        private sealed class NonGenericUnboxingThunkHashtable : LockFreeReaderHashtable<UnboxingThunkHashtableKey, UnboxingThunk>
         {
             protected override int GetKeyHashCode(UnboxingThunkHashtableKey key)
             {
@@ -230,13 +229,13 @@ namespace ILCompiler
             }
             protected override bool CompareKeyToValue(UnboxingThunkHashtableKey key, UnboxingThunk value)
             {
-                return Object.ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
-                    Object.ReferenceEquals(key.OwningType, value.OwningType);
+                return ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
+                    ReferenceEquals(key.OwningType, value.OwningType);
             }
             protected override bool CompareValueToValue(UnboxingThunk value1, UnboxingThunk value2)
             {
-                return Object.ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
-                    Object.ReferenceEquals(value1.OwningType, value2.OwningType);
+                return ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
+                    ReferenceEquals(value1.OwningType, value2.OwningType);
             }
             protected override UnboxingThunk CreateValueFromKey(UnboxingThunkHashtableKey key)
             {
@@ -250,7 +249,7 @@ namespace ILCompiler
         /// A type with an identical layout to the layout of a boxed value type.
         /// The type has a single field of the type of the valuetype it represents.
         /// </summary>
-        private partial class BoxedValueType : MetadataType, INonEmittableType
+        private sealed partial class BoxedValueType : MetadataType, INonEmittableType
         {
             public MetadataType ValueTypeRepresented { get; }
 
@@ -380,7 +379,7 @@ namespace ILCompiler
         /// <summary>
         /// Represents a thunk to call shared instance method on boxed valuetypes.
         /// </summary>
-        private partial class GenericUnboxingThunk : ILStubMethod
+        private sealed partial class GenericUnboxingThunk : ILStubMethod
         {
             private MethodDesc _targetMethod;
             private ValueTypeInstanceMethodWithHiddenParameter _nakedTargetMethod;
@@ -466,7 +465,7 @@ namespace ILCompiler
         /// <summary>
         /// Represents a thunk to call instance method on boxed valuetypes.
         /// </summary>
-        private partial class UnboxingThunk : ILStubMethod
+        private sealed partial class UnboxingThunk : ILStubMethod
         {
             private MethodDesc _targetMethod;
             private BoxedValueType _owningType;
@@ -565,7 +564,7 @@ namespace ILCompiler
         /// signature. This is so that we can refer to the parameter from IL. References to this method will
         /// be replaced by the actual instance method after codegen is done.
         /// </summary>
-        internal partial class ValueTypeInstanceMethodWithHiddenParameter : MethodDesc
+        internal sealed partial class ValueTypeInstanceMethodWithHiddenParameter : MethodDesc
         {
             private MethodDesc _methodRepresented;
             private MethodSignature _signature;

@@ -121,6 +121,9 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         return NULL;
     }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    pthread_jit_write_protect_np(0);
+#endif
 #endif
 
     int numBlocksPerMap = RhpGetNumThunkBlocksPerMapping();
@@ -223,11 +226,17 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         }
     }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    pthread_jit_write_protect_np(1);
+#else
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
         PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
         return NULL;
     }
+#endif
+
+    PalFlushInstructionCache(pThunksSection, THUNKS_MAP_SIZE);
 
     return pThunksSection;
 }

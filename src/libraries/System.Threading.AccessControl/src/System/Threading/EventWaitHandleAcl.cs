@@ -58,7 +58,7 @@ namespace System.Threading
                     eventFlags,
                     (uint)EventWaitHandleRights.FullControl);
 
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (handle.IsInvalid)
                 {
@@ -136,7 +136,7 @@ namespace System.Threading
             result = null;
             SafeWaitHandle existingHandle = Interop.Kernel32.OpenEvent((uint)rights, false, name);
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (existingHandle.IsInvalid)
             {
                 existingHandle.Dispose();

@@ -6,7 +6,7 @@
 
   <Target Name="VerifyCrossDacProperties" BeforeTargets="Build;Pack">
     <Error Condition="'$(CrossDacArtifactsDir)' == '' or !Exists('$(CrossDacArtifactsDir)')"
-          Text="Packaging the Cross OS DAC requires property CrossDacArtifactsDir to to a path containing all cross OS DAC assets needed." />
+          Text="Packaging the Cross OS DAC requires property CrossDacArtifactsDir to a path containing all cross OS DAC assets needed." />
   </Target>
 
   <Target Name="FilterSupportedCrossOsDacPackages" BeforeTargets="Build;Pack">

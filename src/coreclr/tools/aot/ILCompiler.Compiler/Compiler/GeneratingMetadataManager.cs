@@ -5,16 +5,11 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
-
-using Internal.IL;
-using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.Metadata.NativeFormat.Writer;
 
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
-
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
 namespace ILCompiler
 {
@@ -29,8 +24,8 @@ namespace ILCompiler
 
         public GeneratingMetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
             ManifestResourceBlockingPolicy resourceBlockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy,
-            DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, invokeThunkGenerationPolicy)
+            DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy, MetadataManagerOptions options)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, invokeThunkGenerationPolicy, options)
         {
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;
@@ -130,8 +125,7 @@ namespace ILCompiler
 
                 // Reflection requires that we maintain type identity. Even if we only generated a TypeReference record,
                 // if there is an MethodTable for it, we also need a mapping table entry for it.
-                if (record == null)
-                    record = transformed.GetTransformedTypeReference(definition);
+                record ??= transformed.GetTransformedTypeReference(definition);
 
                 if (record != null)
                     typeMappings.Add(new MetadataMapping<MetadataType>(definition, writer.GetRecordHandle(record)));

@@ -13,12 +13,12 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA256:
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
-                    return Interop.BrowserCrypto.CanUseSubtleCrypto
-                        ? new SHANativeHashProvider(hashAlgorithmId)
-                        : new SHAManagedHashProvider(hashAlgorithmId);
+                    return new SHAManagedHashProvider(hashAlgorithmId);
             }
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
+
+#pragma warning disable IDE0060
 
         public static class OneShotHashProvider
         {
@@ -28,30 +28,16 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 Span<byte> destination)
             {
-                if (Interop.BrowserCrypto.CanUseSubtleCrypto)
-                {
-                    return HMACNativeHashProvider.MacDataOneShot(hashAlgorithmId, key, source, destination);
-                }
-                else
-                {
-                    using HashProvider provider = CreateMacProvider(hashAlgorithmId, key);
-                    provider.AppendHashData(source);
-                    return provider.FinalizeHashAndReset(destination);
-                }
+                using HashProvider provider = CreateMacProvider(hashAlgorithmId, key);
+                provider.AppendHashData(source);
+                return provider.FinalizeHashAndReset(destination);
             }
 
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                if (Interop.BrowserCrypto.CanUseSubtleCrypto)
-                {
-                    return SHANativeHashProvider.HashOneShot(hashAlgorithmId, source, destination);
-                }
-                else
-                {
-                    HashProvider provider = CreateHashProvider(hashAlgorithmId);
-                    provider.AppendHashData(source);
-                    return provider.FinalizeHashAndReset(destination);
-                }
+                HashProvider provider = CreateHashProvider(hashAlgorithmId);
+                provider.AppendHashData(source);
+                return provider.FinalizeHashAndReset(destination);
             }
         }
 
@@ -63,11 +49,12 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA256:
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
-                    return Interop.BrowserCrypto.CanUseSubtleCrypto
-                        ? new HMACNativeHashProvider(hashAlgorithmId, key)
-                        : new HMACManagedHashProvider(hashAlgorithmId, key);
+                    return new HMACManagedHashProvider(hashAlgorithmId, key);
             }
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
+
+#pragma warning restore IDE0060
+
     }
 }

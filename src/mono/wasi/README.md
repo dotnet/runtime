@@ -14,7 +14,7 @@ To build the wasi runtime we need the file `wasm_m2n_invoke.g.h` which is genera
 
 ```
 make -C src/mono/wasm provision-wasm
-export EMDK_PATH=[path_printed_by_provision_wasm]
+export EMSDK_PATH=[path_printed_by_provision_wasm]
 ./build.sh mono+libs -os browser
 ```
 

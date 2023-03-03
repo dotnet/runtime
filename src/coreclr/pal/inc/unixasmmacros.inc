@@ -47,6 +47,8 @@
 #include "unixasmmacross390x.inc"
 #elif defined(HOST_LOONGARCH64)
 #include "unixasmmacrosloongarch64.inc"
+#elif defined(HOST_RISCV64)
+#include "unixasmmacrosriscv64.inc"
 #elif defined(HOST_POWERPC64)
 #include "unixasmmacrosppc64le.inc"
 #endif

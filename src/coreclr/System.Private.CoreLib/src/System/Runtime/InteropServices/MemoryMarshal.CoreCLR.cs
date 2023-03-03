@@ -19,9 +19,8 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         [Intrinsic]
         [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T GetArrayDataReference<T>(T[] array) =>
-            ref Unsafe.As<byte, T>(ref Unsafe.As<RawArrayData>(array).Data);
+            ref GetArrayDataReference(array);
 
         /// <summary>
         /// Returns a reference to the 0th element of <paramref name="array"/>. If the array is empty, returns a reference to where the 0th element

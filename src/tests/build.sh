@@ -60,7 +60,7 @@ build_Tests()
     export MSBUILDDEBUGPATH
 
     if [[ "$__SkipNative" != 1 && "$__BuildTestWrappersOnly" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
-        "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
+        "$__TargetOS" != "Browser" && "$__TargetOS" != "wasi" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
         build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
@@ -358,17 +358,19 @@ else
 fi
 
 # Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
-__Platform="$(uname)"
-if [[ "$__Platform" == "FreeBSD" ]]; then
-    __NumProc=$(($(sysctl -n hw.ncpu)+1))
-elif [[ "$__Platform" == "NetBSD" || "$__Platform" == "SunOS" ]]; then
-    __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-elif [[ "$__Platform" == "Darwin" ]]; then
-    __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+platform="$(uname)"
+if [[ "$platform" == "FreeBSD" ]]; then
+  __NumProc="$(($(sysctl -n hw.ncpu)+1))"
+elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+  __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
+elif [[ "$platform" == "Darwin" ]]; then
+  __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+elif command -v nproc > /dev/null 2>&1; then
+  __NumProc="$(nproc)"
+elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+  __NumProc="$(getconf _NPROCESSORS_ONLN)"
 else
-    __NumProc=$(nproc --all)
+  __NumProc=1
 fi
 
 # Set dependent variables

@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
                     KeyValuePair.Create(HashAlgorithmName.SHA512, 512 / 8),
                 });
 
-        private static int GetHashSizeInBytes(HashAlgorithmName hashAlgorithm)
+        internal static int GetHashSizeInBytes(HashAlgorithmName hashAlgorithm)
         {
             return s_hashSizes.GetOrAdd(
                 hashAlgorithm,

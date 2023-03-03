@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ret'{}
+.assembly 'b84962'{}
 .class public _ret {
 .field public static native int PTR
 .method public static		int32 retI(int32*) {
@@ -16,7 +16,7 @@
 	conv.i4
 	ret
 }
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
         ldsflda		native int _ret::PTR

@@ -41,9 +41,14 @@ namespace System.Text.Json.Reflection
 
         public static Type? GetCompatibleGenericBaseClass(
             this Type type,
-            Type baseType,
+            Type? baseType,
             bool sourceGenType = false)
         {
+            if (baseType is null)
+            {
+                return null;
+            }
+
             Debug.Assert(baseType.IsGenericType);
             Debug.Assert(!baseType.IsInterface);
             Debug.Assert(baseType == baseType.GetGenericTypeDefinition());
@@ -323,6 +328,112 @@ namespace System.Text.Json.Reflection
             }
 
             return defaultValue;
+        }
+
+        /// <summary>
+        /// Returns the type hierarchy for the given type, starting from the current type up to the base type(s) in the hierarchy.
+        /// Interface hierarchies with multiple inheritance will return results using topological sorting.
+        /// </summary>
+        public static Type[] GetSortedTypeHierarchy(
+#if !BUILDING_SOURCE_GENERATOR
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+#endif
+            this Type type)
+        {
+            if (!type.IsInterface)
+            {
+                // Non-interface hierarchies are linear, just walk up to the earliest ancestor.
+
+                var results = new List<Type>();
+                for (Type? current = type; current != null; current = current.BaseType)
+                {
+                    results.Add(current);
+                }
+
+                return results.ToArray();
+            }
+            else
+            {
+                // Interface hierarchies support multiple inheritance,
+                // query the entire list and sort them topologically.
+                Type[] interfaces = type.GetInterfaces();
+                {
+                    // include the current type into the list of interfaces
+                    Type[] newArray = new Type[interfaces.Length + 1];
+                    newArray[0] = type;
+                    interfaces.CopyTo(newArray, 1);
+                    interfaces = newArray;
+                }
+
+                TopologicalSort(interfaces, static (t1, t2) => t1.IsAssignableFrom(t2));
+                return interfaces;
+            }
+        }
+
+        private static void TopologicalSort<T>(T[] inputs, Func<T, T, bool> isLessThan)
+            where T : notnull
+        {
+            // Standard implementation of in-place topological sorting using Kahn's algorithm.
+
+            if (inputs.Length < 2)
+            {
+                return;
+            }
+
+            var graph = new Dictionary<T, HashSet<T>>();
+            var next = new Queue<T>();
+
+            // Step 1: construct the dependency graph.
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                T current = inputs[i];
+                HashSet<T>? dependencies = null;
+
+                for (int j = 0; j < inputs.Length; j++)
+                {
+                    if (i != j && isLessThan(current, inputs[j]))
+                    {
+                        (dependencies ??= new()).Add(inputs[j]);
+                    }
+                }
+
+                if (dependencies is null)
+                {
+                    next.Enqueue(current);
+                }
+                else
+                {
+                    graph.Add(current, dependencies);
+                }
+            }
+
+            Debug.Assert(next.Count > 0, "Input graph must be a DAG.");
+            int index = 0;
+
+            // Step 2: Walk the dependency graph starting with nodes that have no dependencies.
+            do
+            {
+                T nextTopLevelDependency = next.Dequeue();
+
+                foreach (KeyValuePair<T, HashSet<T>> kvp in graph)
+                {
+                    HashSet<T> dependencies = kvp.Value;
+                    if (dependencies.Count > 0)
+                    {
+                        dependencies.Remove(nextTopLevelDependency);
+
+                        if (dependencies.Count == 0)
+                        {
+                            next.Enqueue(kvp.Key);
+                        }
+                    }
+                }
+
+                inputs[index++] = nextTopLevelDependency;
+            }
+            while (next.Count > 0);
+
+            Debug.Assert(index == inputs.Length);
         }
     }
 }

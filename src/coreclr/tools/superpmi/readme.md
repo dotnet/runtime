@@ -41,7 +41,7 @@ each recorded function. The generated results are compared with a built-in
 SuperPMI "near differ", which depends on an external disassembler component
 called `coredistools`. Typically, scripting has SuperPMI generate a list of
 functions with differences, then the script re-invokes each JIT to generate
-disassembly output (using `COMPlus_JitDisasm`) for each differing function.
+disassembly output (using `DOTNET_JitDisasm`) for each differing function.
 These are then compared either visually, or with the jitutils tool
 `jit-analyze`, or both.
 
@@ -121,7 +121,7 @@ Set the following environment variables:
 ```
 SuperPMIShimLogPath=<full path to an existing, empty temporary directory>
 SuperPMIShimPath=<full path to clrjit.dll, the "standalone" JIT>
-COMPlus_JitName=superpmi-shim-collector.dll
+DOTNET_JitName=superpmi-shim-collector.dll
 ```
 
 for example, on Windows:
@@ -130,7 +130,7 @@ for example, on Windows:
 mkdir f:\spmi\temp
 set SuperPMIShimLogPath=f:\spmi\temp
 set SuperPMIShimPath=f:\gh\runtime\artifacts\tests\coreclr\windows.x64.Checked\Tests\Core_Root\clrjit.dll
-set COMPlus_JitName=superpmi-shim-collector.dll
+set DOTNET_JitName=superpmi-shim-collector.dll
 ```
 
 (On Linux, use `libclrjit.so` and `libsuperpmi-shim-collector.so`.

@@ -19,7 +19,7 @@ class MemoryArgument
         return result;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int final = 1_000_000;
         int result = F(0, 0, 0, 0, 0, final);

@@ -1928,6 +1928,13 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (image_is_dynamic (assembly->image))
 		return;
 
+	if (mono_image_get_alc (assembly->image)->collectible)
+		/*
+		 * Assemblies loaded into collectible ALCs require different codegen
+		 * due to static variable access etc.
+		 */
+		return;
+
 	gboolean loaded = FALSE;
 
 	mono_aot_lock ();
@@ -3113,6 +3120,7 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		/* Get the length first */
 		decode_llvm_mono_eh_frame (amodule, NULL, code, code_len, clauses, num_clauses, nesting, &this_reg, &this_offset, &num_llvm_clauses);
 		len = mono_jit_info_size (flags, num_llvm_clauses, num_holes);
+		g_assert (!mem_manager->collectible);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
 		mono_jit_info_init (jinfo, method, code, code_len, flags, num_llvm_clauses, num_holes);
 
@@ -4445,6 +4453,11 @@ mono_aot_can_dedup (MonoMethod *method)
 			/* Handled using linkonce */
 			return FALSE;
 #endif
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
+		if (sig->ret->has_cmods) {
+			// FIXME:
+			return FALSE;
+		}
 		return TRUE;
 	}
 	default:
@@ -4628,10 +4641,13 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 			 * been initialized by load_method () for a static cctor before the cctor has
 			 * finished executing (#23242).
 			 */
-			if (ji->type == MONO_PATCH_INFO_NONE) {
-			} else if (!got [got_slots [pindex]] || ji->type == MONO_PATCH_INFO_SFLDA) {
+			MonoJumpInfoType ji_type = ji->type;
+			LOAD_ACQUIRE_FENCE;
+
+			if (ji_type == MONO_PATCH_INFO_NONE) {
+			} else if (!got [got_slots [pindex]] || ji_type == MONO_PATCH_INFO_SFLDA) {
 				/* In llvm-only made, we might encounter shared methods */
-				if (mono_llvm_only && ji->type == MONO_PATCH_INFO_METHOD && mono_method_check_context_used (ji->data.method)) {
+				if (mono_llvm_only && ji_type == MONO_PATCH_INFO_METHOD && mono_method_check_context_used (ji->data.method)) {
 					g_assert (context);
 					ji->data.method = mono_class_inflate_generic_method_checked (ji->data.method, context, error);
 					if (!is_ok (error)) {
@@ -4641,10 +4657,10 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 					}
 				}
 				/* This cannot be resolved in mono_resolve_patch_target () */
-				if (ji->type == MONO_PATCH_INFO_AOT_JIT_INFO) {
+				if (ji_type == MONO_PATCH_INFO_AOT_JIT_INFO) {
 					// FIXME: Lookup using the index
 					jinfo = mono_aot_find_jit_info (amodule->assembly->image, code);
-					ji->type = MONO_PATCH_INFO_ABS;
+					ji->type = ji_type = MONO_PATCH_INFO_ABS;
 					ji->data.target = jinfo;
 				}
 				addr = mono_resolve_patch_target (method, code, ji, TRUE, error);
@@ -4653,18 +4669,19 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 					mono_mempool_destroy (mp);
 					return FALSE;
 				}
-				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
+				if (ji_type == MONO_PATCH_INFO_METHOD_JUMP) {
 					addr = mono_create_ftnptr (addr);
-				mono_memory_barrier ();
-				got [got_slots [pindex]] = addr;
-				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
 					register_jump_target_got_slot (ji->data.method, &(got [got_slots [pindex]]));
-
+				}
 				if (llvm) {
 					void (*init_aotconst) (int, gpointer) = (void (*)(int, gpointer))amodule->info.llvm_init_aotconst;
 					init_aotconst (got_slots [pindex], addr);
 				}
+				mono_memory_barrier ();
+				got [got_slots [pindex]] = addr;
 			}
+
+			STORE_RELEASE_FENCE;
 			ji->type = MONO_PATCH_INFO_NONE;
 		}
 

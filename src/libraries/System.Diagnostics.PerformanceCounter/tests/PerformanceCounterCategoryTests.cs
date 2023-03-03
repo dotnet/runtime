@@ -78,16 +78,15 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounterCategory_CategoryType_MultiInstance()
         {
             string categoryName = nameof(PerformanceCounterCategory_CategoryType_MultiInstance) + "_Category";
 
             Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.MultiInstance);
 
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory(categoryName));
+            PerformanceCounterCategory pcc = new PerformanceCounterCategory(categoryName);
 
-            Assert.Equal(PerformanceCounterCategoryType.MultiInstance, Helpers.RetryOnAllPlatforms(() => pcc.CategoryType));
+            Assert.Equal(PerformanceCounterCategoryType.MultiInstance, Helpers.RetryOnAllPlatformsWithClosingResources(() => pcc.CategoryType));
             PerformanceCounterCategory.Delete(categoryName);
         }
 
@@ -98,9 +97,9 @@ namespace System.Diagnostics.Tests
 
             Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.SingleInstance);
 
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory(categoryName));
+            PerformanceCounterCategory pcc = new PerformanceCounterCategory(categoryName);
 
-            Assert.Equal(PerformanceCounterCategoryType.SingleInstance, Helpers.RetryOnAllPlatforms(() => pcc.CategoryType));
+            Assert.Equal(PerformanceCounterCategoryType.SingleInstance, Helpers.RetryOnAllPlatformsWithClosingResources(() => pcc.CategoryType));
             PerformanceCounterCategory.Delete(categoryName);
         }
 
@@ -169,7 +168,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void PerformanceCounterCategory_CounterExists_InterruptsPerSec()
         {
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
+            PerformanceCounterCategory pcc = new PerformanceCounterCategory("Processor");
 
             Assert.True(pcc.CounterExists("Interrupts/sec"));
         }
@@ -229,7 +228,7 @@ namespace System.Diagnostics.Tests
             string categoryName = nameof(PerformanceCounterCategory_GetCounters) + "_Category";
             Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.SingleInstance);
 
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory(categoryName));
+            PerformanceCounterCategory pcc = new PerformanceCounterCategory(categoryName);
             PerformanceCounter[] counters = pcc.GetCounters();
 
             Assert.True(counters.Length > 0);
@@ -267,12 +266,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounterCategory_InstanceExists_Static()
         {
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
+            PerformanceCounterCategory pcc = new PerformanceCounterCategory("Processor");
 
-            string[] instances = pcc.GetInstanceNames();
+            string[] instances = Helpers.RetryOnAllPlatformsWithClosingResources(() => pcc.GetInstanceNames());
             Assert.True(instances.Length > 0);
 
             foreach (string instance in instances)
@@ -291,12 +289,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounterCategory_ReadCategory()
         {
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
+            PerformanceCounterCategory pcc = new PerformanceCounterCategory("Processor");
 
-            InstanceDataCollectionCollection idColCol = pcc.ReadCategory();
+            InstanceDataCollectionCollection idColCol = Helpers.RetryOnAllPlatformsWithClosingResources(() => pcc.ReadCategory());
 
             Assert.NotNull(idColCol);
         }

@@ -178,7 +178,7 @@ namespace ObjectStackAllocation
 
         static bool GCStressEnabled()
         {
-            return Environment.GetEnvironmentVariable("COMPlus_GCStress") != null;
+            return Environment.GetEnvironmentVariable("DOTNET_GCStress") != null;
         }
 
         static bool Crossgen2Test()

@@ -78,8 +78,8 @@ namespace System.ComponentModel.Design
             // We're going to add this locally. Ensure that the service instance
             // is correct.
             //
-            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
-            if (serviceInstance == null) throw new ArgumentNullException(nameof(serviceInstance));
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(serviceInstance);
             if (!(serviceInstance is ServiceCreatorCallback) && !serviceInstance.GetType().IsCOMObject && !serviceType.IsInstanceOfType(serviceInstance))
             {
                 throw new ArgumentException(SR.Format(SR.ErrorInvalidServiceInstance, serviceType.FullName));
@@ -119,8 +119,8 @@ namespace System.ComponentModel.Design
             // We're going to add this locally. Ensure that the service instance
             // is correct.
             //
-            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(callback);
 
             if (Services.ContainsKey(serviceType))
             {

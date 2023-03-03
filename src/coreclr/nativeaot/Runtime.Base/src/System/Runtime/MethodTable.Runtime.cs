@@ -30,15 +30,6 @@ namespace Internal.Runtime
 #if INPLACE_RUNTIME
             return RuntimeExceptionHelpers.GetRuntimeException(id);
 #else
-            DynamicModule* dynamicModule = this.DynamicModule;
-            if (dynamicModule != null)
-            {
-                delegate* <System.Runtime.ExceptionIDs, System.Exception> getRuntimeException = dynamicModule->GetRuntimeException;
-                if (getRuntimeException != null)
-                {
-                    return getRuntimeException(id);
-                }
-            }
             if (IsParameterizedType)
             {
                 return RelatedParameterType->GetClasslibException(id);
@@ -52,13 +43,6 @@ namespace Internal.Runtime
         internal IntPtr GetClasslibFunction(ClassLibFunctionId id)
         {
             return (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);
-        }
-
-        internal void SetToCloneOf(MethodTable* pOrigType)
-        {
-            Debug.Assert((_usFlags & (ushort)EETypeFlags.EETypeKindMask) == 0, "should be a canonical type");
-            _usFlags |= (ushort)EETypeKind.ClonedEEType;
-            _relatedType._pCanonicalType = pOrigType;
         }
 
         // Returns an address in the module most closely associated with this MethodTable that can be handed to
@@ -103,7 +87,7 @@ namespace Internal.Runtime
         /// </summary>
         internal bool SimpleCasting()
         {
-            return (_usFlags & (ushort)EETypeFlags.ComplexCastingMask) == (ushort)EETypeKind.CanonicalEEType;
+            return (_uFlags & (uint)EETypeFlags.ComplexCastingMask) == (uint)EETypeKind.CanonicalEEType;
         }
 
         /// <summary>
@@ -111,7 +95,7 @@ namespace Internal.Runtime
         /// </summary>
         internal static bool BothSimpleCasting(MethodTable* pThis, MethodTable* pOther)
         {
-            return ((pThis->_usFlags | pOther->_usFlags) & (ushort)EETypeFlags.ComplexCastingMask) == (ushort)EETypeKind.CanonicalEEType;
+            return ((pThis->_uFlags | pOther->_uFlags) & (uint)EETypeFlags.ComplexCastingMask) == 0;
         }
 
         internal bool IsEquivalentTo(MethodTable* pOtherEEType)

@@ -73,11 +73,29 @@ public class TestSummary
             string outputElement = !string.IsNullOrWhiteSpace(test.Output) ? $"<output><![CDATA[{test.Output}]]></output>" : string.Empty;
             if (test.Exception is not null)
             {
-                resultsFile.AppendLine($@"result=""Fail""><failure exception-type=""{test.Exception.GetType()}""><message><![CDATA[{test.Exception.Message}]]></message><stack-trace><![CDATA[{test.Exception.StackTrace}]]></stack-trace></failure>{outputElement}</test>");
+                string exceptionMessage = test.Exception.Message;
+                if (test.Exception is System.Reflection.TargetInvocationException tie)
+                {
+                    if (tie.InnerException != null)
+                    {
+                        exceptionMessage = $"{exceptionMessage} \n INNER EXCEPTION--\n {tie.InnerException.GetType()}--\n{tie.InnerException.Message}--\n{tie.InnerException.StackTrace}";
+                    }
+                }
+                if (string.IsNullOrWhiteSpace(exceptionMessage))
+                {
+                    exceptionMessage = "NoExceptionMessage";
+                }
+
+                string? stackTrace = test.Exception.StackTrace;
+                if (string.IsNullOrWhiteSpace(stackTrace))
+                {
+                    stackTrace = "NoStackTrace";
+                }
+                resultsFile.AppendLine($@"result=""Fail""><failure exception-type=""{test.Exception.GetType()}""><message><![CDATA[{exceptionMessage}]]></message><stack-trace><![CDATA[{stackTrace}]]></stack-trace></failure>{outputElement}</test>");
             }
             else if (test.SkipReason is not null)
             {
-                resultsFile.AppendLine($@"result=""Skip""><reason><![CDATA[{test.SkipReason}]]></reason></test>");
+                resultsFile.AppendLine($@"result=""Skip""><reason><![CDATA[{(!string.IsNullOrWhiteSpace(test.SkipReason) ? test.SkipReason : "No Known Skip Reason")}]]></reason></test>");
             }
             else
             {

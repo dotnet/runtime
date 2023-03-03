@@ -1027,6 +1027,12 @@ public:
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
     }
+#if defined(HOST_UNIX) && defined(HOST_64BIT)
+    DPtrType operator+(unsigned long long val)
+    {
+        return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
+    }
+#endif // HOST_UNIX && HOST_BIT64
     DPtrType operator+(short val)
     {
         return DPtrType(m_addr + val * sizeof(type));
@@ -2466,7 +2472,7 @@ typedef DPTR(PTR_PCODE) PTR_PTR_PCODE;
 
 // Helper macro for tracking EnumMemoryRegions progress.
 #if 0
-#define EMEM_OUT(args) DacWarning args
+#define EMEM_OUT(args) DacLogMessage args
 #else
 #define EMEM_OUT(args)
 #endif

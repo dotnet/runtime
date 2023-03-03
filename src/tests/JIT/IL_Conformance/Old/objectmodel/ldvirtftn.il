@@ -6,7 +6,7 @@
 .assembly 'ldvirtftn'{
 }
 
-.method public static int32 main(class System.String[]) {
+.method public static int32 main() {
 .locals	(int32, class _ldvirtftn)
 .entrypoint
 .maxstack	4

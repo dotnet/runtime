@@ -59,7 +59,7 @@ dotnet build -c $stress_configuration
 runscript=./run-stress-${stress_configuration,,}-${libraries_configuration,,}.sh
 if [[ ! -f $runscript ]]; then
     echo "Generating runscript."
-    echo "$testhost_root/dotnet exec ./bin/$stress_configuration/net$version/HttpStress.dll \$@" > $runscript
+    echo "$testhost_root/dotnet exec --roll-forward Major ./bin/$stress_configuration/net$version/HttpStress.dll \$@" > $runscript
     chmod +x $runscript
 fi
 

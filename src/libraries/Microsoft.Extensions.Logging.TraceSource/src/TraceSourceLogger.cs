@@ -7,15 +7,23 @@ using DiagnosticsTraceSource = System.Diagnostics.TraceSource;
 
 namespace Microsoft.Extensions.Logging.TraceSource
 {
+    /// <summary>
+    /// A logger that writes a trace source log message.
+    /// </summary>
     internal sealed class TraceSourceLogger : ILogger
     {
         private readonly DiagnosticsTraceSource _traceSource;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TraceSourceLogger"/> class.
+        /// </summary>
+        /// <param name="traceSource">trace source</param>
         public TraceSourceLogger(DiagnosticsTraceSource traceSource)
         {
             _traceSource = traceSource;
         }
 
+        /// <inheritdoc />
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             if (!IsEnabled(logLevel))

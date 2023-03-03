@@ -109,7 +109,7 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static RangeHeaderValue Parse(string? input)
+        public static RangeHeaderValue Parse(string input)
         {
             int index = 0;
             return (RangeHeaderValue)GenericHeaderParser.RangeParser.ParseValue(input, null, ref index);

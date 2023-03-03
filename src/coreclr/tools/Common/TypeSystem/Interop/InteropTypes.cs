@@ -3,8 +3,6 @@
 
 using Internal.IL;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem.Interop
 {
     public static class InteropTypes

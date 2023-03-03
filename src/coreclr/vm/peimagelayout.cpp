@@ -85,16 +85,18 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
     // that is suspicious, one or another might have a bug.
-    _ASSERTE(!pFlat->HasReadyToRunHeader());
+    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader());
 #endif
 
-    if (!pFlat->HasReadyToRunHeader() && !pFlat->HasWriteableSections())
+    // ignore R2R if the image is not a file.
+    if ((pFlat->HasReadyToRunHeader() && pOwner->IsFile()) ||
+        pFlat->HasWriteableSections())
     {
-        // we can use flat layout for this
-        return pFlat.Extract();
+        return new ConvertedImageLayout(pFlat);
     }
 
-    return new ConvertedImageLayout(pFlat);
+    // we can use flat layout for this
+    return pFlat.Extract();
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
@@ -448,7 +450,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
 
     IfFailThrow(Init(loadedImage));
 
-    if (IsNativeMachineFormat() && g_fAllowNativeImages)
+    if (m_pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
@@ -773,10 +775,18 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
+    DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
+#ifdef HOST_UNIX
+    // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
+    // This is required on MacOS and otherwise will allow us to place native R2R code close to the
+    // coreclr library and thus improve performance by avoiding jump stubs in managed code.
+    allocationType |= MEM_RESERVE_EXECUTABLE;
+#endif
+
     COUNT_T allocSize = ALIGN_UP(this->GetVirtualSize(), g_SystemInfo.dwAllocationGranularity);
-    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, PAGE_READWRITE);
     if (base == NULL && preferredBase != NULL)
-        base = ClrVirtualAlloc(NULL, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        base = ClrVirtualAlloc(NULL, allocSize, allocationType, PAGE_READWRITE);
 
     if (base == NULL)
         ThrowLastError();
@@ -817,9 +827,13 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
+        DWORD executableProtection = PAGE_EXECUTE_READ;
+#if defined(__APPLE__) && defined(HOST_ARM64)
+        executableProtection = PAGE_EXECUTE_READWRITE;
+#endif
         // Add appropriate page protection.
         DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            PAGE_EXECUTE_READ :
+            executableProtection :
             section->Characteristics & IMAGE_SCN_MEM_WRITE ?
             PAGE_READWRITE :
             PAGE_READONLY;

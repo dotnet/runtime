@@ -33,11 +33,11 @@ namespace System.Diagnostics.Tracing
                 {
                     if (IntPtr.Size == 8)
                     {
-                        decodedFields[i] = (IntPtr)BinaryPrimitives.ReadInt64LittleEndian(payload);
+                        decodedFields[i] = (nint)BinaryPrimitives.ReadInt64LittleEndian(payload);
                     }
                     else
                     {
-                        decodedFields[i] = (IntPtr)BinaryPrimitives.ReadInt32LittleEndian(payload);
+                        decodedFields[i] = (nint)BinaryPrimitives.ReadInt32LittleEndian(payload);
                     }
                     payload = payload.Slice(IntPtr.Size);
                 }

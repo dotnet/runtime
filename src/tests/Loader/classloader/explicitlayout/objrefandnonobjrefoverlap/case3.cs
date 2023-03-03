@@ -36,7 +36,7 @@ public struct WrapWrapBar { public WrapBar o; }
 
 public class Test{
 
-  public static int Main(string[] args){
+  public static int Main(){
       bool caught=false;
       try{
           Go();

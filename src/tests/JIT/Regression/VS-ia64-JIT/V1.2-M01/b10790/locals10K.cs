@@ -7,10 +7,10 @@ using System;
 namespace test
 {
 
-    class Locals10K
+    public class Locals10K
     {
 
-        static int Main()
+        public static int Main()
         {
 
             System.Int32

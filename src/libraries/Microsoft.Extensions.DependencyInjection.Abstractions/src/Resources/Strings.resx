@@ -140,4 +140,31 @@
     <value>Implementation type cannot be '{0}' because it is indistinguishable from other services registered for '{1}'.</value>
     <comment>{0} = implementation type, {1} = service type</comment>
   </data>
+  <data name="MultipleCtorsMarkedWithAttribute" xml:space="preserve">
+    <value>Multiple constructors were marked with {0}.</value>
+    <comment>{0} = attribute used with ActivatorUtilities</comment>
+  </data>
+  <data name="MarkedCtorMissingArgumentTypes" xml:space="preserve">
+    <value>Constructor marked with {0} does not accept all given argument types.</value>
+    <comment>{0} = attribute used with ActivatorUtilities</comment>
+  </data>
+  <data name="CannotCreateAbstractClasses" xml:space="preserve">
+    <value>Instances of abstract classes cannot be created.</value>
+  </data>
+  <data name="MultipleCtorsFoundWithBestLength" xml:space="preserve">
+    <value>Multiple constructors for type '{0}' were found with length {1}.</value>
+    <comment>{0} = instance type, {1} = best length</comment>
+  </data>
+  <data name="UnableToResolveService" xml:space="preserve">
+    <value>Unable to resolve service for type '{0}' while attempting to activate '{1}'.</value>
+    <comment>{0} = service type, {1} = required by</comment>
+  </data>
+  <data name="CtorNotLocated" xml:space="preserve">
+    <value>A suitable constructor for type '{0}' could not be located. Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.</value>
+    <comment>{0} = instance type</comment>
+  </data>
+  <data name="MultipleCtorsFound" xml:space="preserve">
+    <value>Multiple constructors accepting all given argument types have been found in type '{0}'. There should only be one applicable constructor.</value>
+    <comment>{0} = instance type</comment>
+  </data>
 </root>

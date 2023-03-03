@@ -7,14 +7,14 @@ using System.Runtime.CompilerServices;
 
 // The jit should null check 'this' in NextElement
 
-unsafe struct GitHub_23791
+public unsafe struct GitHub_23791
 {
     fixed byte A[10];
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     byte NextElement(int i) => A[1+i];
 
-    static int Main() 
+    public static int Main() 
     {
         int result = -1;
         GitHub_23791* x = null;

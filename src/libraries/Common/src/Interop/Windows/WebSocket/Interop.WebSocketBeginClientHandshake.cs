@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class WebSocket
     {
         [LibraryImport(Libraries.WebSocket)]
-        internal static partial int WebSocketBeginClientHandshake(
+        internal static unsafe partial int WebSocketBeginClientHandshake(
             SafeHandle webSocketHandle,
             IntPtr subProtocols,
             uint subProtocolCount,
@@ -17,7 +17,7 @@ internal static partial class Interop
             uint extensionCount,
             HttpHeader[] initialHeaders,
             uint initialHeaderCount,
-            out IntPtr additionalHeadersPtr,
+            out WEB_SOCKET_HTTP_HEADER* additionalHeadersPtr,
             out uint additionalHeaderCount);
     }
 }

@@ -72,7 +72,7 @@ int main(const int argc, const pal::char_t *argv[])
             }
 
             nethost_path = get_directory(nethost_path);
-            nethost_path.append(MAKE_LIBNAME("nethost"));
+            nethost_path.append(LIB_FILE_NAME_X("nethost"));
 
             pal::dll_t nethost;
             if (!pal::load_library(&nethost_path, &nethost))

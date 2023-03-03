@@ -21,7 +21,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
     endif()
   endif()
 
-  function(locate_toolchain_exec exec var)
+  function(locate_toolchain_exec exec var required)
     string(TOUPPER ${exec} EXEC_UPPERCASE)
     if(NOT "$ENV{CLR_${EXEC_UPPERCASE}}" STREQUAL "")
       set(${var} "$ENV{CLR_${EXEC_UPPERCASE}}" PARENT_SCOPE)
@@ -34,33 +34,40 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
       "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
       "${TOOLSET_PREFIX}${exec}")
 
-    if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-      message(FATAL_ERROR "Unable to find toolchain executable. Name: '${exec}', Prefix: '${TOOLSET_PREFIX}.'")
+    if (required AND EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
+      message(FATAL_ERROR "Unable to find toolchain executable. Name: '${exec}', Prefix: '${TOOLSET_PREFIX}'")
     endif()
-    set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
+
+    if (NOT EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
+      set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
+    endif()
   endfunction()
 
-  locate_toolchain_exec(ar CMAKE_AR)
-  locate_toolchain_exec(nm CMAKE_NM)
-  locate_toolchain_exec(ranlib CMAKE_RANLIB)
+  locate_toolchain_exec(ar CMAKE_AR YES)
+  locate_toolchain_exec(nm CMAKE_NM YES)
+  locate_toolchain_exec(ranlib CMAKE_RANLIB YES)
 
   if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    locate_toolchain_exec(link CMAKE_LINKER)
+    locate_toolchain_exec(link CMAKE_LINKER YES)
   endif()
 
   if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
-    locate_toolchain_exec(objdump CMAKE_OBJDUMP)
-    locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
+    locate_toolchain_exec(objdump CMAKE_OBJDUMP YES)
 
-    execute_process(
-      COMMAND ${CMAKE_OBJCOPY} --help
-      OUTPUT_VARIABLE OBJCOPY_HELP_OUTPUT
-    )
+    unset(CMAKE_OBJCOPY CACHE)
+    locate_toolchain_exec(objcopy CMAKE_OBJCOPY NO)
+
+    if (CMAKE_OBJCOPY)
+      execute_process(
+        COMMAND ${CMAKE_OBJCOPY} --help
+        OUTPUT_VARIABLE OBJCOPY_HELP_OUTPUT
+      )
+    endif()
 
     # if llvm-objcopy does not support --only-keep-debug argument, try to locate binutils' objcopy
-    if (CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT "${OBJCOPY_HELP_OUTPUT}" MATCHES "--only-keep-debug")
+    if (NOT CMAKE_OBJCOPY OR (CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT "${OBJCOPY_HELP_OUTPUT}" MATCHES "--only-keep-debug"))
       set(TOOLSET_PREFIX "")
-      locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
+      locate_toolchain_exec(objcopy CMAKE_OBJCOPY YES)
     endif ()
 
   endif()

@@ -2151,8 +2151,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
-        public static void ConvertTimeFromToUtc_UnixOnly()
+        public static void ConvertTimeFromToUtcUsingCustomZone()
         {
             // DateTime Kind is Local
             Assert.ThrowsAny<ArgumentException>(() =>
@@ -2181,21 +2180,13 @@ namespace System.Tests
             Assert.Equal(DateTimeKind.Unspecified, convertedAmbiguous.Kind);
             Assert.True(london.IsAmbiguousTime(convertedAmbiguous), $"Expected to have {convertedAmbiguous} is ambiguous");
 
-            // convert to London time and back
-            DateTime utc = DateTime.UtcNow;
-            Assert.Equal(DateTimeKind.Utc, utc.Kind);
+            // roundtrip check using ambiguous time.
+            DateTime utc = new DateTime(2022, 10, 30, 1, 47, 13, DateTimeKind.Utc);
             DateTime converted = TimeZoneInfo.ConvertTimeFromUtc(utc, london);
             Assert.Equal(DateTimeKind.Unspecified, converted.Kind);
             DateTime back = TimeZoneInfo.ConvertTimeToUtc(converted, london);
             Assert.Equal(DateTimeKind.Utc, back.Kind);
-
-            if (london.IsAmbiguousTime(converted))
-            {
-                // if the time is ambiguous this will not round trip the original value because this ambiguous time can be mapped into
-                // 2 UTC times. usually we return the value with the DST delta added to it.
-                back = back.AddTicks(-london.GetAdjustmentRules()[0].DaylightDelta.Ticks);
-            }
-
+            Assert.True(london.IsAmbiguousTime(converted));
             Assert.Equal(utc, back);
         }
 

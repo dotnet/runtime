@@ -480,7 +480,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (!Enum.IsDefined(typeof(ProcessPriorityClass), value))
+                if (!Enum.IsDefined(value))
                 {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ProcessPriorityClass));
                 }

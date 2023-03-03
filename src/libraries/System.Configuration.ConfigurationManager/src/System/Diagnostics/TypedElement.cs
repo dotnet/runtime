@@ -53,10 +53,7 @@ namespace System.Diagnostics
 
         protected object BaseGetRuntimeObject()
         {
-            if (_runtimeObject == null)
-                _runtimeObject = TraceUtils.GetRuntimeObject(TypeName, _baseType, InitData);
-
-            return _runtimeObject;
+            return _runtimeObject ??= TraceUtils.GetRuntimeObject(TypeName, _baseType, InitData);
         }
     }
 }

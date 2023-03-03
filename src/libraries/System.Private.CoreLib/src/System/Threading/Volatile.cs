@@ -99,7 +99,7 @@ namespace System.Threading
         [NonVersionable]
         public static void Write(ref long location, long value) =>
 #if TARGET_64BIT
-            Unsafe.As<long, VolatileIntPtr>(ref location).Value = (IntPtr)value;
+            Unsafe.As<long, VolatileIntPtr>(ref location).Value = (nint)value;
 #else
             // On 32-bit, we use Interlocked, since an ordinary volatile write would not be atomic.
             Interlocked.Exchange(ref location, value);

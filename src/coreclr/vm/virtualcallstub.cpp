@@ -1535,8 +1535,6 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
         PRECONDITION(returnAddress != NULL);
     } CONTRACTL_END
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
@@ -1546,8 +1544,6 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     PREFIX_ASSUME(pMgr != NULL);
 
     pMgr->BackPatchWorker(&callSite);
-
-    END_ENTRYPOINT_VOIDRET;
 }
 
 #if defined(TARGET_X86) && defined(TARGET_UNIX)
@@ -2000,7 +1996,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
 /*
 Resolve the token in the context of the method table, and set the target to point to
-the address that we should go to to get to the implementation.  Return a boolean indicating
+the address that we should go to get to the implementation.  Return a boolean indicating
 whether or not this is a permenent choice or a temporary choice.  For example, if the code has
 not been jitted yet, return FALSE and set the target to the prestub.  If the target is set to NULL,
 it means that the token is not resolvable.
@@ -2403,7 +2399,7 @@ VirtualCallStubManager::GetTarget(
 //----------------------------------------------------------------------------
 /*
 Resolve the token in the context of the method table, and set the target to point to
-the address that we should go to to get to the implementation.  Return a boolean indicating
+the address that we should go to get to the implementation.  Return a boolean indicating
 whether or not this is a permenent choice or a temporary choice.  For example, if the code has
 not been jitted yet, return FALSE and set the target to the prestub.  If the target is set to NULL,
 it means that the token is not resolvable.

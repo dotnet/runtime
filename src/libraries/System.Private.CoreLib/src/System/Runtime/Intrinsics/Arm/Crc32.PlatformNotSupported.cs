@@ -8,7 +8,6 @@ namespace System.Runtime.Intrinsics.Arm
     /// <summary>
     /// This class provides access to the ARM Crc32 hardware instructions via intrinsics
     /// </summary>
-    [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Crc32 : ArmBase
     {
@@ -16,7 +15,6 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-        [Intrinsic]
         public new abstract class Arm64 : ArmBase.Arm64
         {
             internal Arm64() { }

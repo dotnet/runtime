@@ -115,8 +115,6 @@ void __stdcall Frame::LogTransition(Frame* frame)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
 #ifdef TARGET_X86
     // On x86, StubLinkerCPU::EmitMethodStubProlog calls Frame::LogTransition
     // but the caller of EmitMethodStubProlog sets the GSCookie later on.
@@ -127,8 +125,6 @@ void __stdcall Frame::LogTransition(Frame* frame)
 
     if (Frame::ShouldLogTransitions())
         frame->Log();
-
-    END_ENTRYPOINT_VOIDRET;
 } // void Frame::Log()
 
 #endif // #ifndef DACCESS_COMPILE

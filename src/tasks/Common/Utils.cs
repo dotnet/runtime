@@ -23,6 +23,10 @@ internal static class Utils
         return reader.ReadToEnd();
     }
 
+    public static bool IsNewerThan(string inFile, string outFile)
+        => !File.Exists(inFile) || !File.Exists(outFile) ||
+                (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
+
     public static (int exitCode, string output) RunShellCommand(
                                         TaskLoggingHelper logger,
                                         string command,
@@ -233,6 +237,9 @@ internal static class Utils
 #if NETCOREAPP
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool>? predicate=null)
     {
+        if (!Directory.Exists(destDir))
+            Directory.CreateDirectory(destDir);
+
         string[] files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
         foreach (string file in files)
         {

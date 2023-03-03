@@ -106,6 +106,10 @@ namespace System.Runtime.InteropServices.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void GetFunctionPointerForDelegate_MarshalledClosedStaticDelegate()
         {
+            // Ensure AOT compilers see the delegate being used with interop
+            if (string.Empty.Length > 0)
+                Marshal.GetFunctionPointerForDelegate<NoArgsDelegate>(null);
+
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate original = targetMethod.CreateDelegate(typeof(NoArgsDelegate), "value");
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(original);

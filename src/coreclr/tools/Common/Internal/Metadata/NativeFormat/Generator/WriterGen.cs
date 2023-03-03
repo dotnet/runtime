@@ -10,7 +10,7 @@ class WriterGen : CsWriter
 
     public void EmitSource()
     {
-        WriteLine("#pragma warning disable 649");
+        WriteLine("#pragma warning disable 649, SA1121, IDE0036, SA1129");
         WriteLine();
 
         WriteLine("using System;");

@@ -16,9 +16,6 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class JsonMetadataServicesConverter<T> : JsonResumableConverter<T>
     {
         private readonly Func<JsonConverter<T>>? _converterCreator;
-
-        private readonly ConverterStrategy _converterStrategy;
-
         private JsonConverter<T>? _converter;
 
         // A backing converter for when fast-path logic cannot be used.
@@ -28,12 +25,10 @@ namespace System.Text.Json.Serialization.Converters
             {
                 _converter ??= _converterCreator!();
                 Debug.Assert(_converter != null);
-                Debug.Assert(_converter.ConverterStrategy == _converterStrategy);
+                Debug.Assert(_converter.ConverterStrategy == ConverterStrategy);
                 return _converter;
             }
         }
-
-        internal override ConverterStrategy ConverterStrategy => _converterStrategy;
 
         internal override Type? KeyType => Converter.KeyType;
 
@@ -51,13 +46,13 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             _converterCreator = converterCreator;
-            _converterStrategy = converterStrategy;
+            ConverterStrategy = converterStrategy;
         }
 
         public JsonMetadataServicesConverter(JsonConverter<T> converter)
         {
             _converter = converter;
-            _converterStrategy = converter.ConverterStrategy;
+            ConverterStrategy = converter.ConverterStrategy;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)

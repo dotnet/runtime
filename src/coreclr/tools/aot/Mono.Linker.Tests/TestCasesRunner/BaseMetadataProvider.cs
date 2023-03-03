@@ -85,7 +85,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return MakeSourceTreeFilePathAbsolute (value.ToString ()!);
 		}
 
-		static TypeReference ParentMostType (TypeReference type)
+		private static TypeReference ParentMostType (TypeReference type)
 		{
 			if (!type.IsNested)
 				return type;

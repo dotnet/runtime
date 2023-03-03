@@ -64,7 +64,7 @@ public class Tester<T>
 
 public class Runtime_46240
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         if (Tester<byte>.TestS() != 100)
         {

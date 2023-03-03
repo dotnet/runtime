@@ -10,10 +10,12 @@ using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class EnumConverter<T> : JsonConverter<T>
+    internal sealed class EnumConverter<T> : JsonPrimitiveConverter<T>
         where T : struct, Enum
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
+
+        private static readonly char[] s_specialChars = new[] { ',', ' ' };
 
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
@@ -85,10 +87,17 @@ namespace System.Text.Json.Serialization.Converters
                 string jsonName = FormatJsonName(name, namingPolicy);
                 _nameCacheForWriting.TryAdd(key, JsonEncodedText.Encode(jsonName, encoder));
                 _nameCacheForReading?.TryAdd(jsonName, value);
+
+                // If enum contains special char, make it failed to serialize or deserialize.
+                if (name.IndexOfAny(s_specialChars) != -1)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(typeof(T), name);
+                }
             }
         }
 
-        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+#pragma warning disable 8500 // address of managed types
+        public override unsafe T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             JsonTokenType token = reader.TokenType;
 
@@ -129,49 +138,49 @@ namespace System.Text.Json.Serialization.Converters
                 case TypeCode.Int32:
                     if (reader.TryGetInt32(out int int32))
                     {
-                        return Unsafe.As<int, T>(ref int32);
+                        return *(T*)&int32;
                     }
                     break;
                 case TypeCode.UInt32:
                     if (reader.TryGetUInt32(out uint uint32))
                     {
-                        return Unsafe.As<uint, T>(ref uint32);
+                        return *(T*)&uint32;
                     }
                     break;
                 case TypeCode.UInt64:
                     if (reader.TryGetUInt64(out ulong uint64))
                     {
-                        return Unsafe.As<ulong, T>(ref uint64);
+                        return *(T*)&uint64;
                     }
                     break;
                 case TypeCode.Int64:
                     if (reader.TryGetInt64(out long int64))
                     {
-                        return Unsafe.As<long, T>(ref int64);
+                        return *(T*)&int64;
                     }
                     break;
                 case TypeCode.SByte:
                     if (reader.TryGetSByte(out sbyte byte8))
                     {
-                        return Unsafe.As<sbyte, T>(ref byte8);
+                        return *(T*)&byte8;
                     }
                     break;
                 case TypeCode.Byte:
                     if (reader.TryGetByte(out byte ubyte8))
                     {
-                        return Unsafe.As<byte, T>(ref ubyte8);
+                        return *(T*)&ubyte8;
                     }
                     break;
                 case TypeCode.Int16:
                     if (reader.TryGetInt16(out short int16))
                     {
-                        return Unsafe.As<short, T>(ref int16);
+                        return *(T*)&int16;
                     }
                     break;
                 case TypeCode.UInt16:
                     if (reader.TryGetUInt16(out ushort uint16))
                     {
-                        return Unsafe.As<ushort, T>(ref uint16);
+                        return *(T*)&uint16;
                     }
                     break;
             }
@@ -180,7 +189,7 @@ namespace System.Text.Json.Serialization.Converters
             return default;
         }
 
-        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        public override unsafe void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
             // If strings are allowed, attempt to write it out as a string value
             if (_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
@@ -228,34 +237,35 @@ namespace System.Text.Json.Serialization.Converters
             switch (s_enumTypeCode)
             {
                 case TypeCode.Int32:
-                    writer.WriteNumberValue(Unsafe.As<T, int>(ref value));
+                    writer.WriteNumberValue(*(int*)&value);
                     break;
                 case TypeCode.UInt32:
-                    writer.WriteNumberValue(Unsafe.As<T, uint>(ref value));
+                    writer.WriteNumberValue(*(uint*)&value);
                     break;
                 case TypeCode.UInt64:
-                    writer.WriteNumberValue(Unsafe.As<T, ulong>(ref value));
+                    writer.WriteNumberValue(*(ulong*)&value);
                     break;
                 case TypeCode.Int64:
-                    writer.WriteNumberValue(Unsafe.As<T, long>(ref value));
+                    writer.WriteNumberValue(*(long*)&value);
                     break;
                 case TypeCode.Int16:
-                    writer.WriteNumberValue(Unsafe.As<T, short>(ref value));
+                    writer.WriteNumberValue(*(short*)&value);
                     break;
                 case TypeCode.UInt16:
-                    writer.WriteNumberValue(Unsafe.As<T, ushort>(ref value));
+                    writer.WriteNumberValue(*(ushort*)&value);
                     break;
                 case TypeCode.Byte:
-                    writer.WriteNumberValue(Unsafe.As<T, byte>(ref value));
+                    writer.WriteNumberValue(*(byte*)&value);
                     break;
                 case TypeCode.SByte:
-                    writer.WriteNumberValue(Unsafe.As<T, sbyte>(ref value));
+                    writer.WriteNumberValue(*(sbyte*)&value);
                     break;
                 default:
                     ThrowHelper.ThrowJsonException();
                     break;
             }
         }
+#pragma warning restore 8500
 
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -273,7 +283,7 @@ namespace System.Text.Json.Serialization.Converters
             return value;
         }
 
-        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             ulong key = ConvertToUInt64(value);
 
@@ -312,36 +322,38 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
+#pragma warning disable 8500 // address of managed type
             switch (s_enumTypeCode)
             {
                 case TypeCode.Int32:
-                    writer.WritePropertyName(Unsafe.As<T, int>(ref value));
+                    writer.WritePropertyName(*(int*)&value);
                     break;
                 case TypeCode.UInt32:
-                    writer.WritePropertyName(Unsafe.As<T, uint>(ref value));
+                    writer.WritePropertyName(*(uint*)&value);
                     break;
                 case TypeCode.UInt64:
-                    writer.WritePropertyName(Unsafe.As<T, ulong>(ref value));
+                    writer.WritePropertyName(*(ulong*)&value);
                     break;
                 case TypeCode.Int64:
-                    writer.WritePropertyName(Unsafe.As<T, long>(ref value));
+                    writer.WritePropertyName(*(long*)&value);
                     break;
                 case TypeCode.Int16:
-                    writer.WritePropertyName(Unsafe.As<T, short>(ref value));
+                    writer.WritePropertyName(*(short*)&value);
                     break;
                 case TypeCode.UInt16:
-                    writer.WritePropertyName(Unsafe.As<T, ushort>(ref value));
+                    writer.WritePropertyName(*(ushort*)&value);
                     break;
                 case TypeCode.Byte:
-                    writer.WritePropertyName(Unsafe.As<T, byte>(ref value));
+                    writer.WritePropertyName(*(byte*)&value);
                     break;
                 case TypeCode.SByte:
-                    writer.WritePropertyName(Unsafe.As<T, sbyte>(ref value));
+                    writer.WritePropertyName(*(sbyte*)&value);
                     break;
                 default:
                     ThrowHelper.ThrowJsonException();
                     break;
             }
+#pragma warning restore 8500
         }
 
 #if NETCOREAPP
@@ -370,7 +382,7 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 #else
-        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions options, out T value)
+        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
         {
             // Try parsing case sensitive first
             bool success = Enum.TryParse(enumString, out T result) || Enum.TryParse(enumString, ignoreCase: true, out result);

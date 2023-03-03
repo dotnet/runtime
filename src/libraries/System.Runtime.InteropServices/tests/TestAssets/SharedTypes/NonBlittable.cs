@@ -196,6 +196,31 @@ namespace SharedTypes
         }
     }
 
+    [CustomMarshaller(typeof(IntWrapper), MarshalMode.Default, typeof(IntWrapperMarshallerWithFreeCounts))]
+    public static unsafe class IntWrapperMarshallerWithFreeCounts
+    {
+        [ThreadStatic]
+        public static int NumCallsToFree = 0;
+
+        public static int* ConvertToUnmanaged(IntWrapper managed)
+        {
+            int* ret = (int*)Marshal.AllocCoTaskMem(sizeof(int));
+            *ret = managed.i;
+            return ret;
+        }
+
+        public static IntWrapper ConvertToManaged(int* unmanaged)
+        {
+            return new IntWrapper { i = *unmanaged };
+        }
+
+        public static void Free(int* unmanaged)
+        {
+            NumCallsToFree++;
+            Marshal.FreeCoTaskMem((IntPtr)unmanaged);
+        }
+    }
+
     [CustomMarshaller(typeof(IntWrapper), MarshalMode.Default, typeof(Marshaller))]
     public static unsafe class IntWrapperMarshallerStateful
     {
@@ -477,14 +502,14 @@ namespace SharedTypes
 
                 _list = managed;
                 // Always allocate at least one byte when the list is zero-length.
-                int spaceToAllocate = Math.Max(managed.Count * sizeof(TUnmanagedElement), 1);
-                if (spaceToAllocate <= buffer.Length)
+                int countToAllocate = Math.Max(managed.Count, 1);
+                if (countToAllocate <= buffer.Length)
                 {
-                    _span = buffer[0..spaceToAllocate];
+                    _span = buffer[0..countToAllocate];
                 }
                 else
                 {
-                    _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
+                    _allocatedMemory = Marshal.AllocCoTaskMem(countToAllocate * sizeof(TUnmanagedElement));
                     _span = new Span<TUnmanagedElement>((void*)_allocatedMemory, managed.Count);
                 }
             }

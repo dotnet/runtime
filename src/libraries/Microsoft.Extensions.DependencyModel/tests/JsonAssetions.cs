@@ -22,12 +22,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
     public class JsonAssertions: ReferenceTypeAssertions<JToken, JsonAssertions>
     {
-        public JsonAssertions(JToken token)
-        {
-            Subject = token;
-        }
+        public JsonAssertions(JToken token) : base(token) { }
 
-        protected override string Context => nameof(JToken);
+        protected override string Identifier => nameof(JToken);
 
         public AndWhichConstraint<JsonAssertions, JToken> HaveProperty(string expected)
         {

@@ -9,12 +9,12 @@ namespace System.IO.Compression
         /// The default external file attributes are used to support zip archives on multiple platforms.
         /// Since Windows doesn't use file permissions, there's no default value needed.
         /// </summary>
-        internal const UnixFileMode DefaultFileEntryPermissions = UnixFileMode.None;
+        internal const uint DefaultFileExternalAttributes = 0;
 
         /// <summary>
         /// The default external directory attributes are used to support zip archives on multiple platforms.
         /// Since Windows doesn't use file permissions, there's no default value needed.
         /// </summary>
-        internal const UnixFileMode DefaultDirectoryEntryPermissions = UnixFileMode.None;
+        internal const uint DefaultDirectoryExternalAttributes = 0;
     }
 }

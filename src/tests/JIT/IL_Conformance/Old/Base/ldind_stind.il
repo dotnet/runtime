@@ -17,7 +17,7 @@
 	.field public static native int I
 
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
         ldsflda		int8 ldind_stind::I1

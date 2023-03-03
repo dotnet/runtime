@@ -121,6 +121,7 @@ using asm_sigcontext::_xstate;
 #ifdef HOST_64BIT
 
 #if defined(HOST_LOONGARCH64)
+
 #define MCREG_R0(mc)      ((mc).__gregs[0])
 #define MCREG_Ra(mc)      ((mc).__gregs[1])
 #define MCREG_Tp(mc)      ((mc).__gregs[2])
@@ -155,7 +156,44 @@ using asm_sigcontext::_xstate;
 #define MCREG_S8(mc)      ((mc).__gregs[31])
 #define MCREG_Pc(mc)      ((mc).__pc)
 
+#elif defined(HOST_RISCV64)
+#error "TODO-RISCV64: review this"
+
+#define MCREG_Ra(mc)      ((mc).__gregs[1])
+#define MCREG_Sp(mc)      ((mc).__gregs[2])
+#define MCREG_Gp(mc)      ((mc).__gregs[3])
+#define MCREG_Tp(mc)      ((mc).__gregs[4])
+#define MCREG_T0(mc)      ((mc).__gregs[5])
+#define MCREG_T1(mc)      ((mc).__gregs[6])
+#define MCREG_T2(mc)      ((mc).__gregs[7])
+#define MCREG_S0(mc)      ((mc).__gregs[8])
+#define MCREG_S1(mc)      ((mc).__gregs[9])
+#define MCREG_A0(mc)      ((mc).__gregs[10])
+#define MCREG_A1(mc)      ((mc).__gregs[11])
+#define MCREG_A2(mc)      ((mc).__gregs[12])
+#define MCREG_A3(mc)      ((mc).__gregs[13])
+#define MCREG_A4(mc)      ((mc).__gregs[14])
+#define MCREG_A5(mc)      ((mc).__gregs[15])
+#define MCREG_A6(mc)      ((mc).__gregs[16])
+#define MCREG_A7(mc)      ((mc).__gregs[17])
+#define MCREG_S2(mc)      ((mc).__gregs[18])
+#define MCREG_S3(mc)      ((mc).__gregs[19])
+#define MCREG_S4(mc)      ((mc).__gregs[20])
+#define MCREG_S5(mc)      ((mc).__gregs[21])
+#define MCREG_S6(mc)      ((mc).__gregs[22])
+#define MCREG_S7(mc)      ((mc).__gregs[23])
+#define MCREG_S8(mc)      ((mc).__gregs[24])
+#define MCREG_S9(mc)      ((mc).__gregs[25])
+#define MCREG_S10(mc)     ((mc).__gregs[26])
+#define MCREG_S11(mc)     ((mc).__gregs[27])
+#define MCREG_T3(mc)      ((mc).__gregs[28])
+#define MCREG_T4(mc)      ((mc).__gregs[29])
+#define MCREG_T5(mc)      ((mc).__gregs[30])
+#define MCREG_T6(mc)      ((mc).__gregs[31])
+#define MCREG_Pc(mc)      ((mc).__gregs[0])
+
 #else // HOST_LOONGARCH64
+
 #define MCREG_Rbx(mc)       ((mc).__gregs[_REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).__gregs[_REG_RCX])
 #define MCREG_Rdx(mc)       ((mc).__gregs[_REG_RDX])
@@ -190,7 +228,8 @@ using asm_sigcontext::_xstate;
 #define FPREG_DataSelector(uc) *((WORD*) &(((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_dp) + 2)
 #define FPREG_MxCsr(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr)
 #define FPREG_MxCsr_Mask(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr_mask)
-#endif
+
+#endif // HOST_LOONGARCH64
 
 #else // HOST_64BIT
 
@@ -214,6 +253,7 @@ using asm_sigcontext::_xstate;
 #ifdef HOST_64BIT
 
 #if defined(HOST_LOONGARCH64)
+
 #define MCREG_R0(mc)      ((mc).gregs[0])
 #define MCREG_Ra(mc)      ((mc).gregs[1])
 #define MCREG_Tp(mc)      ((mc).gregs[2])
@@ -247,6 +287,7 @@ using asm_sigcontext::_xstate;
 #define MCREG_S7(mc)      ((mc).gregs[30])
 #define MCREG_S8(mc)      ((mc).gregs[31])
 #define MCREG_Pc(mc)      ((mc).pc)
+
 #endif // HOST_LOONGARCH64
 
 #define MCREG_Rbx(mc)       ((mc).gregs[REG_RBX])
@@ -535,6 +576,7 @@ const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_contex
 #endif // TARGET_OSX
 
 #elif defined(HOST_LOONGARCH64)
+
 #define MCREG_R0(mc)      ((mc).regs[0])
 #define MCREG_Ra(mc)      ((mc).regs[1])
 #define MCREG_Tp(mc)      ((mc).regs[2])
@@ -568,6 +610,7 @@ const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_contex
 #define MCREG_S7(mc)      ((mc).regs[30])
 #define MCREG_S8(mc)      ((mc).regs[31])
 #define MCREG_Pc(mc)      ((mc).pc)
+
 #else // HOST_ARM64
 
 #ifdef TARGET_OSX
@@ -762,6 +805,7 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #ifdef HOST_64BIT
 
 #if defined(HOST_LOONGARCH64)
+
 #define PTREG_R0(ptreg)      ((ptreg).regs[0])
 #define PTREG_Ra(ptreg)      ((ptreg).regs[1])
 #define PTREG_Tp(ptreg)      ((ptreg).regs[2])
@@ -795,6 +839,7 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define PTREG_S7(ptreg)      ((ptreg).regs[30])
 #define PTREG_S8(ptreg)      ((ptreg).regs[31])
 #define PTREG_Pc(ptreg)      ((ptreg).csr_epc)
+
 #endif // HOST_LOONGARCH64
 
 #if defined(HOST_POWERPC64)
@@ -958,16 +1003,12 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
     return pContext->Rip;
 #elif defined(HOST_X86)
     return pContext->Eip;
-#elif defined(HOST_ARM64) || defined(HOST_ARM)
-    return pContext->Pc;
-#elif defined(HOST_LOONGARCH64)
-    return pContext->Pc;
 #elif defined(HOST_S390X)
     return pContext->PSWAddr;
 #elif defined(HOST_POWERPC64)
     return pContext->Nip;
 #else
-#error "don't know how to get the program counter for this architecture"
+    return pContext->Pc;
 #endif
 }
 
@@ -977,16 +1018,12 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->Rip = pc;
 #elif defined(HOST_X86)
     pContext->Eip = pc;
-#elif defined(HOST_ARM64) || defined(HOST_ARM)
-    pContext->Pc = pc;
-#elif defined(HOST_LOONGARCH64)
-    pContext->Pc = pc;
 #elif defined(HOST_S390X)
     pContext->PSWAddr = pc;
 #elif defined(HOST_POWERPC64)
     pContext->Nip = pc;
 #else
-#error "don't know how to set the program counter for this architecture"
+    pContext->Pc = pc;
 #endif
 }
 
@@ -998,16 +1035,14 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->Ebp;
 #elif defined(HOST_ARM)
     return pContext->R7;
-#elif defined(HOST_ARM64)
-    return pContext->Fp;
-#elif defined(HOST_LOONGARCH64)
-    return pContext->Fp;
 #elif defined(HOST_S390X)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
+#elif defined(HOST_RISCV64)
+    return pContext->S0;
 #else
-#error "don't know how to get the frame pointer for this architecture"
+    return pContext->Fp;
 #endif
 }
 

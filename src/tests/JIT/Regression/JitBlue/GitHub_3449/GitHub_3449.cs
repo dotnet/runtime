@@ -16,7 +16,7 @@ public class Program
     // We don't have a good way to tell if the CLR is compiled by clang or VC++, so we simply allow
     // both answers.
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         ulong u64 = 0x84595161401484A0UL;
         double f64 = (double)u64;        

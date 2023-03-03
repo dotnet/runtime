@@ -41,15 +41,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (Type.Context.Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_preinitializationInfo.Type);
 
@@ -68,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!field.IsStatic || field.HasRva || field.IsLiteral || field.IsThreadStatic || !field.HasGCStaticBase)
                     continue;
-                
+
                 int padding = field.Offset.AsInt - initialOffset - builder.CountBytes;
                 Debug.Assert(padding >= 0);
                 builder.EmitZeros(padding);

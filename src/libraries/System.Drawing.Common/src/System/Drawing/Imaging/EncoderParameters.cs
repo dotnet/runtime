@@ -56,15 +56,15 @@ namespace System.Drawing.Imaging
             int size = sizeof(EncoderParameterPrivate);
 
             int length = _param.Length;
-            IntPtr memory = Marshal.AllocHGlobal(checked(length * size + IntPtr.Size));
+            IntPtr memory = Marshal.AllocHGlobal(length * size + IntPtr.Size);
 
-            Marshal.WriteIntPtr(memory, (IntPtr)length);
+            Marshal.WriteIntPtr(memory, (nint)length);
 
-            long arrayOffset = checked((long)memory + IntPtr.Size);
+            byte* arrayOffset = (byte*)memory + IntPtr.Size;
 
             for (int i = 0; i < length; i++)
             {
-                Marshal.StructureToPtr(_param[i], (IntPtr)(arrayOffset + i * size), false);
+                Marshal.StructureToPtr(_param[i], (nint)(arrayOffset + (nint)i * size), false);
             }
 
             return memory;

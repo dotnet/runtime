@@ -9,6 +9,8 @@ using System.Text.Json.Serialization.Metadata;
 
 [assembly: MetadataUpdateHandler(typeof(JsonSerializerOptionsUpdateHandler))]
 
+#pragma warning disable IDE0060
+
 namespace System.Text.Json
 {
     /// <summary>Handler used to clear JsonSerializerOptions reflection cache upon a metadata update.</summary>
@@ -22,9 +24,6 @@ namespace System.Text.Json
             {
                 options.Key.ClearCaches();
             }
-
-            // Flush the shared caching contexts
-            JsonSerializerOptions.TrackedCachingContexts.Clear();
 
             // Flush the dynamic method cache
             ReflectionEmitCachingMemberAccessor.Clear();

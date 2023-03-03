@@ -131,8 +131,8 @@ internal static class MsQuicConfiguration
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();
         msquicBuffers.Initialize(alpnProtocols, alpnProtocol => alpnProtocol.Protocol);
-        ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ConfigurationOpen(
-            MsQuicApi.Api.Registration.QuicHandle,
+        ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConfigurationOpen(
+            MsQuicApi.Api.Registration,
             msquicBuffers.Buffers,
             (uint)alpnProtocols.Count,
             &settings,
@@ -140,7 +140,7 @@ internal static class MsQuicConfiguration
             (void*)IntPtr.Zero,
             &handle),
             "ConfigurationOpen failed");
-        MsQuicSafeHandle configurationHandle = new MsQuicSafeHandle(handle, MsQuicApi.Api.ApiTable->ConfigurationClose, SafeHandleType.Configuration);
+        MsQuicSafeHandle configurationHandle = new MsQuicSafeHandle(handle, SafeHandleType.Configuration);
 
         try
         {
@@ -157,13 +157,13 @@ internal static class MsQuicConfiguration
             if (certificate is null)
             {
                 config.Type = QUIC_CREDENTIAL_TYPE.NONE;
-                status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
+                status = MsQuicApi.Api.ConfigurationLoadCredential(configurationHandle, &config);
             }
             else if (MsQuicApi.UsesSChannelBackend)
             {
                 config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_CONTEXT;
                 config.CertificateContext = (void*)certificate.Handle;
-                status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
+                status = MsQuicApi.Api.ConfigurationLoadCredential(configurationHandle, &config);
             }
             else
             {
@@ -192,7 +192,7 @@ internal static class MsQuicConfiguration
                         PrivateKeyPassword = (sbyte*)IntPtr.Zero
                     };
                     config.CertificatePkcs12 = &pkcs12Certificate;
-                    status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
+                    status = MsQuicApi.Api.ConfigurationLoadCredential(configurationHandle, &config);
                 }
             }
 

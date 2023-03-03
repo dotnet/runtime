@@ -6,7 +6,7 @@ using System.Text;
 
 public class InternTest
 {
-    public static int Main(String[] args)
+    public static int Main()
     {
         StringBuilder sb = new StringBuilder().Append('A').Append('B').Append('C');
 

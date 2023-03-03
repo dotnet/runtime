@@ -4,8 +4,8 @@
 #ifndef __PAL_RISCV64_ASMCONSTANTS_H__
 #define __PAL_RISCV64_ASMCONSTANTS_H__
 
-// https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/3f81fae0412bb9ad4002a4ade508be7aa5e1599b/riscv-dwarf.adoc
-// https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/442ae19a2846bca37c6416f2d347fe74bb0b0dba/riscv-cc.adoc
+// https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-dwarf.adoc
+// https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-cc.adoc
 
 #error "TODO-RISCV64: review this when other files are ported in this directory"
 

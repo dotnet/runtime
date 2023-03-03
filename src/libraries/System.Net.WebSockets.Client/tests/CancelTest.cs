@@ -14,14 +14,14 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public InvokerCancelTest(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpMessageInvoker(new SocketsHttpHandler());
+        protected override bool UseCustomInvoker => true;
     }
 
     public sealed class HttpClientCancelTest : CancelTest
     {
         public HttpClientCancelTest(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
+        protected override bool UseHttpClient => true;
     }
 
     public class CancelTest : ClientWebSocketTestBase

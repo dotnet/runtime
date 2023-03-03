@@ -362,7 +362,7 @@ internal sealed class OletxResourceManager
         Guid rmGuid = new(rmGuidArray);
         if (rmGuid != ResourceManagerIdentifier)
         {
-            throw TransactionException.Create(TraceSourceType.TraceSourceOleTx, SR.ResourceManagerIdDoesNotMatchRecoveryInformation, null);
+            throw TransactionException.Create(SR.ResourceManagerIdDoesNotMatchRecoveryInformation, null);
         }
 
         // Ask the proxy resource manager to reenlist.
@@ -462,10 +462,7 @@ internal sealed class OletxResourceManager
         }
         finally
         {
-            if (localTimer != null)
-            {
-                localTimer.Dispose();
-            }
+            localTimer?.Dispose();
         }
     }
 
@@ -496,7 +493,7 @@ internal sealed class OletxResourceManager
         lock (ReenlistList)
         {
             // This will do a linear search of the list, but that is what we need to do because
-            // the enlistments may change indicies while notifications are outstanding.  Also,
+            // the enlistments may change indices while notifications are outstanding.  Also,
             // this does not throw if the enlistment isn't on the list.
             ReenlistPendingList.Remove(enlistment);
 

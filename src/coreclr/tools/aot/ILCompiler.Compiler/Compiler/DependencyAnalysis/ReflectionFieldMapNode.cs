@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -27,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public ISymbolNode EndSymbol => _endSymbol;
-        
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__field_to_offset_map");
@@ -36,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
 
         public override bool StaticDependenciesAreComputed => true;
 

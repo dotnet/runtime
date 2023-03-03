@@ -1,4 +1,4 @@
-import createDotnetRuntime from './dotnet.js'
+import { dotnet } from './dotnet.js'
 
 function wasm_exit(exit_code) {
     var tests_done_elem = document.createElement("label");
@@ -10,8 +10,9 @@ function wasm_exit(exit_code) {
 }
 
 try {
-    const { BINDING } = await createDotnetRuntime();
-    const testMeaning = BINDING.bind_static_method("[WebAssembly.Browser.RuntimeConfig.Test] Sample.Test:TestMeaning");
+    const { getAssemblyExports } = await dotnet.create();
+    const exports = await getAssemblyExports("WebAssembly.Browser.RuntimeConfig.Test.dll");
+    const testMeaning = exports.Sample.Test.TestMeaning;
     const ret = testMeaning();
     document.getElementById("out").innerHTML = `${ret}`;
     console.debug(`ret: ${ret}`);

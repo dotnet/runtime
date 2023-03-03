@@ -7,7 +7,7 @@
 
 	.field public static int32 PTR
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack		20
 	ldc.i4	0x000000FF

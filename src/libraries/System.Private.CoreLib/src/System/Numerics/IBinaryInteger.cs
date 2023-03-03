@@ -8,7 +8,7 @@ namespace System.Numerics
     public interface IBinaryInteger<TSelf>
         : IBinaryNumber<TSelf>,
           IShiftOperators<TSelf, int, TSelf>
-        where TSelf : IBinaryInteger<TSelf>
+        where TSelf : IBinaryInteger<TSelf>?
     {
         /// <summary>Computes the quotient and remainder of two values.</summary>
         /// <param name="left">The value which <paramref name="right" /> divides.</param>
@@ -20,12 +20,17 @@ namespace System.Numerics
             return (quotient, (left - (quotient * right)));
         }
 
-        /// <summary>Computes the number of leading zeros in a value.</summary>
-        /// <param name="value">The value whose leading zeroes are to be counted.</param>
-        /// <returns>The number of leading zeros in <paramref name="value" />.</returns>
+        /// <summary>Computes the number of leading zero bits in a value.</summary>
+        /// <param name="value">The value whose leading zero bits are to be counted.</param>
+        /// <returns>The number of leading zero bits in <paramref name="value" />.</returns>
         static virtual TSelf LeadingZeroCount(TSelf value)
         {
-            TSelf bitCount = TSelf.CreateChecked(value.GetByteCount() * 8L);
+            if (!typeof(TSelf).IsValueType)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
+
+            TSelf bitCount = TSelf.CreateChecked(value!.GetByteCount() * 8L);
 
             if (value == TSelf.Zero)
             {
@@ -132,7 +137,12 @@ namespace System.Numerics
         /// <returns>The result of rotating <paramref name="value" /> left by <paramref name="rotateAmount" />.</returns>
         static virtual TSelf RotateLeft(TSelf value, int rotateAmount)
         {
-            int bitCount = checked(value.GetByteCount() * 8);
+            if (!typeof(TSelf).IsValueType)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
+
+            int bitCount = checked(value!.GetByteCount() * 8);
             return (value << rotateAmount) | (value >> (bitCount - rotateAmount));
         }
 
@@ -142,13 +152,18 @@ namespace System.Numerics
         /// <returns>The result of rotating <paramref name="value" /> right by <paramref name="rotateAmount" />.</returns>
         static virtual TSelf RotateRight(TSelf value, int rotateAmount)
         {
-            int bitCount = checked(value.GetByteCount() * 8);
+            if (!typeof(TSelf).IsValueType)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
+
+            int bitCount = checked(value!.GetByteCount() * 8);
             return (value >> rotateAmount) | (value << (bitCount - rotateAmount));
         }
 
-        /// <summary>Computes the number of trailing zeros in a value.</summary>
-        /// <param name="value">The value whose trailing zeroes are to be counted.</param>
-        /// <returns>The number of trailing zeros in <paramref name="value" />.</returns>
+        /// <summary>Computes the number of trailing zero bits in a value.</summary>
+        /// <param name="value">The value whose trailing zero bits are to be counted.</param>
+        /// <returns>The number of trailing zero bits in <paramref name="value" />.</returns>
         static abstract TSelf TrailingZeroCount(TSelf value);
 
         /// <summary>Tries to read a two's complement number from a span, in big-endian format, and convert it to an instance of the current type.</summary>

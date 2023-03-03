@@ -14,10 +14,10 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 7;
-        public const ushort CurrentMinorVersion = 1;
+        public const ushort CurrentMajorVersion = 8;
+        public const ushort CurrentMinorVersion = 0;
     }
-
+#if READYTORUN
 #pragma warning disable 0169
     internal struct ReadyToRunHeader
     {
@@ -34,6 +34,7 @@ namespace Internal.Runtime
         // Array of sections follows.
     };
 #pragma warning restore 0169
+#endif
 
     //
     // ReadyToRunSectionType IDs are used by the runtime to look up specific global data sections
@@ -68,6 +69,7 @@ namespace Internal.Runtime
         PgoInstrumentationData = 117, // Added in 5.2
         ManifestAssemblyMvids = 118, // Added in 5.3
         CrossModuleInlineInfo = 119, // Added in 6.3
+        HotColdMap = 120, // Added in 8.0
 
         //
         // NativeAOT ReadyToRun sections
@@ -79,7 +81,7 @@ namespace Internal.Runtime
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,
-        // 207 is unused - it was used by GCStaticDesc
+        DehydratedData = 207,
         ThreadStaticOffsetRegion = 208,
         // 209 is unused - it was used by ThreadStaticGCDescRegion
         // 210 is unused - it was used by ThreadStaticIndex

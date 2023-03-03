@@ -16,8 +16,7 @@
     <!-- Build these packages in the allconfigurations leg only. -->
     <ProjectReference Remove="Microsoft.Internal.Runtime.AspNetCore.Transport\src\Microsoft.Internal.Runtime.AspNetCore.Transport.proj;
                               Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj;
-                              Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj;
-                              Microsoft.NETCore.Platforms\src\Microsoft.NETCore.Platforms.csproj"
+                              Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
                       Condition="'$(BuildAllConfigurations)' != 'true'" />
 
     <!-- Skip these projects during source-build as they rely on external prebuilts. -->

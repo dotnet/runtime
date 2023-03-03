@@ -94,22 +94,22 @@ FILE* OpenOutput(_In_ __nullterminated const char* szFileName);
 void PrintLogo()
 {
     printf(".NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
-    printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
+    printf("\n%s\n\n", VER_LEGALCOPYRIGHT_LOGO_STR);
 }
 
 void SyntaxCon()
 {
     DWORD l;
 
-    for(l=IDS_USAGE_01; l<= IDS_USAGE_23; l++) printf(RstrANSI(l));
+    for(l=IDS_USAGE_01; l<= IDS_USAGE_23; l++) printf("%s", RstrANSI(l));
     if(g_fTDC)
     {
-        for(l=IDS_USAGE_24; l<= IDS_USAGE_32; l++) printf(RstrANSI(l));
-        for(l=IDS_USAGE_34; l<= IDS_USAGE_36; l++) printf(RstrANSI(l));
-        for(l=IDS_USAGE_37; l<= IDS_USAGE_39; l++) printf(RstrANSI(l));
+        for(l=IDS_USAGE_24; l<= IDS_USAGE_32; l++) printf("%s", RstrANSI(l));
+        for(l=IDS_USAGE_34; l<= IDS_USAGE_36; l++) printf("%s", RstrANSI(l));
+        for(l=IDS_USAGE_37; l<= IDS_USAGE_39; l++) printf("%s", RstrANSI(l));
     }
-    else printf(RstrANSI(IDS_USAGE_40));
-    for(l=IDS_USAGE_41; l<= IDS_USAGE_42; l++) printf(RstrANSI(l));
+    else printf("  /ALL        Combination of /HEADER, /BYTES, /TOKENS\n\n");
+    for(l=IDS_USAGE_41; l<= IDS_USAGE_42; l++) printf("%s", RstrANSI(l));
 
 }
 
@@ -403,7 +403,7 @@ int ProcessOneArg(_In_ __nullterminated char* szArg, _Out_ char** ppszObjFileNam
         else
         {
             PrintLogo();
-            printf(RstrANSI(IDS_E_INVALIDOPTION),szArg); //"INVALID COMMAND LINE OPTION: %s\n\n",szArg);
+            printf("INVALID COMMAND LINE OPTION: %s\n\n",szArg);
             return -1;
         }
     }
@@ -412,7 +412,7 @@ int ProcessOneArg(_In_ __nullterminated char* szArg, _Out_ char** ppszObjFileNam
         if(g_szInputFile[0])
         {
             PrintLogo();
-            printf(RstrANSI(IDS_E_MULTIPLEINPUT)); //"MULTIPLE INPUT FILES SPECIFIED\n\n");
+            printf("MULTIPLE INPUT FILES SPECIFIED\n\n");
             return -1; // check if it was already specified
         }
         szArg = CheckForDQuotes(szArg);

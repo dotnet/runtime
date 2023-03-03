@@ -107,7 +107,7 @@ namespace ToBoxOrNotToBox
 
         }
         
-        static void Main(string[] args)
+        static void Main()
         {
 
             const int baseCount = 2000000;

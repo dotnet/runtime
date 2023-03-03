@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         public float[] m_afField1 = new float[16];
         public int m_nField2 = 0;

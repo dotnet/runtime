@@ -10,7 +10,8 @@ using Xunit;
 //
 public class SetIn
 {
-    [ConditionalFact(typeof(Helpers), nameof(Helpers.IsConsoleInSupported))]
+    [Fact]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void SetInThrowsOnNull()
     {
         TextReader savedIn = Console.In;
@@ -24,7 +25,8 @@ public class SetIn
         }
     }
 
-    [ConditionalFact(typeof(Helpers), nameof(Helpers.IsConsoleInSupported))]
+    [Fact]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void SetInReadLine()
     {
         const string TextStringFormat = "Test {0}";

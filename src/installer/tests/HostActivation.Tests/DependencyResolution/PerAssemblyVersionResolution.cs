@@ -119,6 +119,46 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
     }
 
+    public class AdditionalDepsPerAssemblyVersionResolution :
+        PerAssemblyVersionResolutionBase,
+        IClassFixture<PerAssemblyVersionResolutionBase.SharedTestState>
+    {
+        public AdditionalDepsPerAssemblyVersionResolution(SharedTestState sharedState)
+            : base(sharedState)
+        {
+        }
+
+        protected override void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins)
+        {
+            using (TestApp additionalDependency = TestApp.CreateEmpty("additionalDeps"))
+            {
+                // Additional deps are treated as part of app dependencies.
+                // The result for whether the app wins should be the same whether the dependency is
+                // specified via additional deps or by the app itself.
+                NetCoreAppBuilder builder = NetCoreAppBuilder.PortableForNETCoreApp(additionalDependency)
+                    .WithPackage(TestVersionsPackage, "1.0.0", lib => lib
+                        .WithAssemblyGroup(null, g => g
+                            .WithAsset(testAssemblyName + ".dll", rf => rf
+                                .WithVersion(appAsmVersion, appFileVersion))));
+                builder.Build(additionalDependency);
+
+                TestApp app = SharedState.FrameworkReferenceApp.Copy();
+                string appTestAssemblyPath = Path.Combine(app.Location, $"{testAssemblyName}.dll");
+                File.WriteAllText(Path.Combine(app.Location, $"{testAssemblyName}.dll"), null);
+
+                string expectedTestAssemblyPath = appWins
+                    ? appTestAssemblyPath
+                    : Path.Combine(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, $"{testAssemblyName}.dll");
+                SharedState.DotNetWithNetCoreApp.Exec(Constants.AdditionalDeps.CommandLineArgument, additionalDependency.DepsJson, app.AppDll)
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveUsedAdditionalDeps(additionalDependency.DepsJson)
+                    .And.HaveResolvedAssembly(expectedTestAssemblyPath);
+            }
+        }
+    }
+
     public class ComponentPerAssemblyVersionResolution :
         PerAssemblyVersionResolutionBase,
         IClassFixture<PerAssemblyVersionResolutionBase.SharedTestState>

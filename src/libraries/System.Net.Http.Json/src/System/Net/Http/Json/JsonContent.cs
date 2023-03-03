@@ -80,11 +80,11 @@ namespace System.Net.Http.Json
                 {
                     if (async)
                     {
-                        await SerializeAsyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                        await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        SerializeSyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions);
+                        JsonSerializer.Serialize(transcodingStream, Value, ObjectType, _jsonSerializerOptions);
                     }
                 }
                 finally
@@ -105,7 +105,7 @@ namespace System.Net.Http.Json
 
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
-                    await SerializeAsyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                     // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
                     // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
                     // acceptable to Flush a Stream (multiple times) prior to completion.
@@ -117,32 +117,17 @@ namespace System.Net.Http.Json
             {
                 if (async)
                 {
-                    await SerializeAsyncHelper(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
 #if NETCOREAPP
-                    SerializeSyncHelper(targetStream, Value, ObjectType, _jsonSerializerOptions);
+                    JsonSerializer.Serialize(targetStream, Value, ObjectType, _jsonSerializerOptions);
 #else
                     Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
 #endif
                 }
             }
-#if NETCOREAPP
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresDynamicCode.")]
-            static void SerializeSyncHelper(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options)
-                => JsonSerializer.Serialize(utf8Json, value, inputType, options);
-#endif
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresDynamicCode.")]
-            static Task SerializeAsyncHelper(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
-                => JsonSerializer.SerializeAsync(utf8Json, value, inputType, options, cancellationToken);
         }
     }
 }

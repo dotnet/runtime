@@ -66,6 +66,14 @@ namespace ILCompiler
             }
         }
 
+        public PropertyDefinitionHandle Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        }
+
         public PropertyPseudoDesc(EcmaType type, PropertyDefinitionHandle handle)
         {
             _type = type;

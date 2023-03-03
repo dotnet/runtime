@@ -62,7 +62,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             _providers = copiedProviders;
-            _readOnlyProviders = new ReadOnlyCollection<ExportProvider>(_providers);
+            _readOnlyProviders = Array.AsReadOnly(_providers);
         }
 
         /// <summary>

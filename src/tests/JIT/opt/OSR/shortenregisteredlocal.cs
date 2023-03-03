@@ -58,7 +58,7 @@ public class ShortEnregisteredLocal
             return;
         }
     }
-    public static int Main(string[] args)
+    public static int Main()
     {
         new ShortEnregisteredLocal().Method0();
         return 100;

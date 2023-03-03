@@ -43,9 +43,7 @@ namespace System.IO.IsolatedStorage
             // InitStore will set up the IdentityHash
             InitStore(scope, null, null);
 
-            StringBuilder sb = new StringBuilder(Helper.GetRootDirectory(scope));
-            sb.Append(SeparatorExternal);
-            sb.Append(IdentityHash);
+            StringBuilder sb = new StringBuilder(GetIsolatedStorageRoot());
             sb.Append(SeparatorExternal);
 
             if (Helper.IsApplication(scope))

@@ -15,45 +15,34 @@ internal static class DataSetUtil
         }
     }
 
-    private static T TraceException<T>(string trace, T e)
-    {
-        Debug.Assert(null != e, "TraceException: null Exception");
-        return e;
-    }
-
-    private static T TraceExceptionAsReturnValue<T>(T e)
-    {
-        return TraceException("<comm.ADP.TraceException|ERR|THROW> '%ls'\n", e);
-    }
-
     internal static ArgumentException Argument(string message)
     {
-        return TraceExceptionAsReturnValue(new ArgumentException(message));
+        return new ArgumentException(message);
     }
 
     internal static ArgumentNullException ArgumentNull(string message)
     {
-        return TraceExceptionAsReturnValue(new ArgumentNullException(message));
+        return new ArgumentNullException(message);
     }
 
     internal static ArgumentOutOfRangeException ArgumentOutOfRange(string message, string parameterName)
     {
-        return TraceExceptionAsReturnValue(new ArgumentOutOfRangeException(parameterName, message));
+        return new ArgumentOutOfRangeException(parameterName, message);
     }
 
     internal static InvalidCastException InvalidCast(string message)
     {
-        return TraceExceptionAsReturnValue(new InvalidCastException(message));
+        return new InvalidCastException(message);
     }
 
     internal static InvalidOperationException InvalidOperation(string message)
     {
-        return TraceExceptionAsReturnValue(new InvalidOperationException(message));
+        return new InvalidOperationException(message);
     }
 
     internal static NotSupportedException NotSupported(string message)
     {
-        return TraceExceptionAsReturnValue(new NotSupportedException(message));
+        return new NotSupportedException(message);
     }
 
     internal static ArgumentOutOfRangeException InvalidEnumerationValue(Type type, int value)

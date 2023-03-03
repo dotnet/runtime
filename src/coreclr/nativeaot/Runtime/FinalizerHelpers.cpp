@@ -29,14 +29,12 @@ GPTR_DECL(Thread, g_pFinalizerThread);
 CLREventStatic g_FinalizerEvent;
 CLREventStatic g_FinalizerDoneEvent;
 
-// Finalizer method implemented by redhawkm.
 extern "C" void __cdecl ProcessFinalizers();
 
 // Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
-// finalizer thread we're still executing the DllMain for RedhawkU. At that point we can't run managed code
-// successfully (in particular module initialization code has not run for RedhawkM). Instead this method waits
+// finalizer thread we can't run managed code. Instead this method waits
 // for the first finalization request (by which time everything must be up and running) and kicks off the
-// managed portion of the thread at that point.
+// managed portion of the thread at that point
 uint32_t WINAPI FinalizerStart(void* pContext)
 {
     HANDLE hFinalizerEvent = (HANDLE)pContext;
@@ -62,8 +60,7 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     UInt32_BOOL fResult = PalSetEvent(hFinalizerEvent);
     ASSERT(fResult);
 
-    // Run the managed portion of the finalizer. Until we implement (non-process) shutdown this call will
-    // never return.
+    // Run the managed portion of the finalizer. This call will never return.
 
     ProcessFinalizers();
 

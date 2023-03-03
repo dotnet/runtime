@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -1281,8 +1282,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task IReadOnlyDictionary_NotSupportedKey()
         {
-            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<IReadOnlyDictionary<Uri, int>>(@"{""http://foo"":1}"));
-            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(new GenericIReadOnlyDictionaryWrapper<Uri, int>(new Dictionary<Uri, int> { { new Uri("http://foo"), 1 } })));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<IReadOnlyDictionary<JsonNode, int>>(@"{""key"":1}"));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(new GenericIReadOnlyDictionaryWrapper<JsonNode, int>(new Dictionary<JsonNode, int> { { JsonNode.Parse("false"), 1 } })));
         }
     }
 }

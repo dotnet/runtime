@@ -82,7 +82,7 @@
 .class public auto ansi beforefieldinit CMain
        extends [mscorlib]System.Object
 {
-  .method public hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .entrypoint
     // Code size       66 (0x42)

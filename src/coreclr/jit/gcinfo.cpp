@@ -252,6 +252,13 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
         return WBF_NoBarrier;
     }
 
+    // Write-barriers are no-op for frozen objects (as values)
+    if (store->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        // Ignore frozen objects
+        return WBF_NoBarrier;
+    }
+
     WriteBarrierForm wbf = gcWriteBarrierFormFromTargetAddress(store->Addr());
 
     if (wbf == WBF_BarrierUnknown)
@@ -277,7 +284,13 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 //
 GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
-    // We will assume there is no point in trying to deconstruct a TYP_I_IMPL address.
+    if (tgtAddr->IsLocalAddrExpr() != nullptr)
+    {
+        // No need for a GC barrier when writing to a local variable.
+        return GCInfo::WBF_NoBarrier;
+    }
+
+    // No point in trying to further deconstruct a TYP_I_IMPL address.
     if (tgtAddr->TypeGet() == TYP_I_IMPL)
     {
         return GCInfo::WBF_BarrierUnknown;
@@ -338,12 +351,6 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
                 }
             }
         }
-    }
-
-    if (tgtAddr->IsLocalAddrExpr() != nullptr)
-    {
-        // No need for a GC barrier when writing to a local variable.
-        return GCInfo::WBF_NoBarrier;
     }
 
     if (tgtAddr->TypeGet() == TYP_REF)

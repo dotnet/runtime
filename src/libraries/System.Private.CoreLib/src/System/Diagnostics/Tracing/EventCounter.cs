@@ -171,7 +171,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        protected void Flush()
+        private void Flush()
         {
             Debug.Assert(Monitor.IsEntered(this));
             for (int i = 0; i < _bufferedValues.Length; i++)

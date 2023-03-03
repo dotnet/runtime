@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// Provides JSON serialization-related metadata about a type.
     /// </summary>
     /// <typeparam name="T">The generic definition of the type.</typeparam>
-    public abstract class JsonTypeInfo<T> : JsonTypeInfo
+    public abstract partial class JsonTypeInfo<T> : JsonTypeInfo
     {
         private Action<Utf8JsonWriter, T>? _serialize;
 

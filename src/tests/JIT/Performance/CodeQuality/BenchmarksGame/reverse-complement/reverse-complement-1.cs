@@ -44,7 +44,7 @@ namespace BenchmarksGame
         const byte Gt = (byte)'>';
         const byte Lf = (byte)'\n';
 
-        static int Main(string[] args)
+        static int Main()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
             var outBytes = new byte[helpers.FileLength];

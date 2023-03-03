@@ -726,7 +726,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Cannot_Deserialize_ObjectWith_Ctor_With_65_Params()
+        public async Task Can_Deserialize_ObjectWith_Ctor_With_65_Params()
         {
             async Task RunTestAsync<T>()
             {
@@ -752,11 +752,8 @@ namespace System.Text.Json.Serialization.Tests
                 sb.Append("Int32");
                 sb.Append(")");
 
-                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<T>(input));
-                Assert.Contains(type.ToString(), ex.ToString());
-
-                ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<T>("{}"));
-                Assert.Contains(type.ToString(), ex.ToString());
+                T value = await Serializer.DeserializeWrapper<T>(input);
+                value = await Serializer.DeserializeWrapper<T>("{}");
             }
 
             await RunTestAsync<Class_With_Ctor_With_65_Params>();
@@ -1426,6 +1423,17 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(obj));
         }
 
+        [Fact]
+        public async Task TestClassWithManyConstructorParameters()
+        {
+            ClassWithManyConstructorParameters value = ClassWithManyConstructorParameters.Create();
+            string json = JsonSerializer.Serialize(value);
+
+            ClassWithManyConstructorParameters result = await Serializer.DeserializeWrapper<ClassWithManyConstructorParameters>(json);
+
+            Assert.Equal(value, result); // Type is C# record that implements structural equality.
+        }
+
         public class ClassWithDefaultCtorParams
         {
             public Point_2D_Struct_WithAttribute Struct { get; }
@@ -1469,7 +1477,7 @@ namespace System.Text.Json.Serialization.Tests
                 SampleEnumUInt32 enum5 = SampleEnumUInt32.MinZero,
                 string str1 = "abc",
                 string str2 = "",
-                string str3 = "\n\r⁉️\'\"\u200D\f\t\v\0\a\b\\\'\"",
+                string str3 = "\n\r\u2049\uFE0F\'\"\u200D\f\t\v\0\a\b\\\'\"",
                 char char1 = 'a',
                 char char2 = '\u200D',
                 double double1 = double.NegativeInfinity,

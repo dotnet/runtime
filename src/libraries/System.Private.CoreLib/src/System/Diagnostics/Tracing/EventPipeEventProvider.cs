@@ -1,47 +1,59 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
+
 namespace System.Diagnostics.Tracing
 {
     internal sealed class EventPipeEventProvider : IEventProvider
     {
-        // The EventPipeProvider handle.
-        private IntPtr m_provHandle = IntPtr.Zero;
+        private EventEnableCallback? _enableCallback;
+        private IntPtr _provHandle;
+        private GCHandle _gcHandle;
+
+        [UnmanagedCallersOnly]
+        private static unsafe void Callback(byte* sourceId, int isEnabled, byte level,
+            long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
+        {
+            ((EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!)._enableCallback!(
+                isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+        }
 
         // Register an event provider.
-        unsafe uint IEventProvider.EventRegister(
+        unsafe void IEventProvider.EventRegister(
             EventSource eventSource,
-            Interop.Advapi32.EtwEnableCallback enableCallback,
-            void* callbackContext,
-            ref long registrationHandle)
+            EventEnableCallback enableCallback)
         {
-            uint returnStatus = 0;
-            m_provHandle = EventPipeInternal.CreateProvider(eventSource.Name, enableCallback);
-            if (m_provHandle != IntPtr.Zero)
-            {
-                // Fixed registration handle because a new EventPipeEventProvider
-                // will be created for each new EventSource.
-                registrationHandle = 1;
-            }
-            else
+            _enableCallback = enableCallback;
+
+            Debug.Assert(!_gcHandle.IsAllocated);
+            _gcHandle = GCHandle.Alloc(this);
+
+            _provHandle = EventPipeInternal.CreateProvider(eventSource.Name, &Callback, (void*)GCHandle.ToIntPtr(_gcHandle));
+            if (_provHandle == 0)
             {
                 // Unable to create the provider.
-                returnStatus = 1;
+                _gcHandle.Free();
+                throw new OutOfMemoryException();
             }
-
-            return returnStatus;
         }
 
         // Unregister an event provider.
-        uint IEventProvider.EventUnregister(long registrationHandle)
+        void IEventProvider.EventUnregister()
         {
-            EventPipeInternal.DeleteProvider(m_provHandle);
-            return 0;
+            if (_provHandle != 0)
+            {
+                EventPipeInternal.DeleteProvider(_provHandle);
+                _provHandle = 0;
+            }
+            if (_gcHandle.IsAllocated)
+            {
+                _gcHandle.Free();
+            }
         }
 
         // Write an event.
         unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
-            long registrationHandle,
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
             Guid* activityId,
@@ -82,8 +94,7 @@ namespace System.Diagnostics.Tracing
         unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
             byte *pMetadata, uint metadataLength)
         {
-            IntPtr eventHandlePtr = EventPipeInternal.DefineEvent(m_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
-            return eventHandlePtr;
+            return EventPipeInternal.DefineEvent(_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
         }
 
         // Get or set the per-thread activity ID.

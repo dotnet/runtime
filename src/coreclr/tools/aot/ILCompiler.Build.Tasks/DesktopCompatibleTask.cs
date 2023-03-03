@@ -23,13 +23,13 @@ namespace Build.Tasks
             AssemblyName referenceName = new AssemblyName(AppDomain.CurrentDomain.ApplyPolicy(args.Name));
 
             string fileName = referenceName.Name + ".dll";
-            string assemblyPath = null;
-            string probingPath = null;
-            Assembly assm = null;
+            string assemblyPath;
+            string probingPath;
+            Assembly assm;
 
             // look next to requesting assembly
             assemblyPath = args.RequestingAssembly?.Location;
-            if (!String.IsNullOrEmpty(assemblyPath))
+            if (!string.IsNullOrEmpty(assemblyPath))
             {
                 probingPath = Path.Combine(Path.GetDirectoryName(assemblyPath), fileName);
                 Debug.WriteLine($"Considering {probingPath} based on RequestingAssembly");
@@ -41,7 +41,7 @@ namespace Build.Tasks
 
             // look next to the executing assembly
             assemblyPath = Assembly.GetExecutingAssembly().Location;
-            if (!String.IsNullOrEmpty(assemblyPath))
+            if (!string.IsNullOrEmpty(assemblyPath))
             {
                 probingPath = Path.Combine(Path.GetDirectoryName(assemblyPath), fileName);
 

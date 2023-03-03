@@ -230,8 +230,6 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize always throwing method. https://github.com/mono/linker/issues/2025")]
         public override Type GetInterface(string name, bool ignoreCase)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
@@ -455,12 +453,12 @@ namespace System.Reflection.Emit
 
         public override Type MakeArrayType()
         {
-            throw new ArgumentException("Cannot create an array type of a byref type");
+            throw new ArgumentException(SR.NotSupported_ByRefLikeArray);
         }
 
         public override Type MakeArrayType(int rank)
         {
-            throw new ArgumentException("Cannot create an array type of a byref type");
+            throw new ArgumentException(SR.NotSupported_ByRefLikeArray);
         }
 
         public override Type MakeByRefType()

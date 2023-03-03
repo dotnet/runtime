@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class TypeDesc
+    public partial class TypeDesc
     {
         /// <summary>
         /// Gets a value indicating whether this is a type that needs to be treated
@@ -18,7 +18,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    partial class InstantiatedType
+    public partial class InstantiatedType
     {
         partial void AddComputedIntrinsicFlag(ref TypeFlags flags)
         {

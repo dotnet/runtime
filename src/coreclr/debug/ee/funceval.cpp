@@ -3300,8 +3300,9 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
     {
         ThrowHR(COR_E_OVERFLOW);
     }
-    FuncEvalArgInfo * pFEArgInfo = (FuncEvalArgInfo *)_alloca(cbAllocSize);
-    memset(pFEArgInfo, 0, cbAllocSize);
+    void* memArgInfoArray = _alloca(cbAllocSize);
+    memset(memArgInfoArray, 0, cbAllocSize);
+    FuncEvalArgInfo* pFEArgInfo = (FuncEvalArgInfo*)memArgInfoArray;
 
     GatherFuncEvalArgInfo(pDE, mSig, argData, pFEArgInfo);
 
@@ -3482,8 +3483,9 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     {
         ThrowHR(COR_E_OVERFLOW);
     }
-    OBJECTREF * pObjectRefArray = (OBJECTREF*)_alloca(cbAllocSize);
-    memset(pObjectRefArray, 0, cbAllocSize);
+    void* memObjRefArray = _alloca(cbAllocSize);
+    memset(memObjRefArray, 0, cbAllocSize);
+    OBJECTREF* pObjectRefArray = (OBJECTREF*)memObjRefArray ;
     GCPROTECT_ARRAY_BEGIN(*pObjectRefArray, pDE->m_argCount);
 
     //
@@ -3579,7 +3581,7 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
         GCX_FORBID();
         RecordFuncEvalException( pDE, ppException);
     }
-    // Note: we need to catch all exceptioins here because they all get reported as the result of
+    // Note: we need to catch all exceptions here because they all get reported as the result of
     // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
     EX_END_CATCH(SwallowAllExceptions);
 
@@ -3994,32 +3996,34 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 #if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
 
 EXTERN_C EXCEPTION_DISPOSITION
-FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
-                       BIT64_ARG(IN     ULONG64             MemoryStackFp)
-                   NOT_BIT64_ARG(IN     ULONG32             MemoryStackFp),
+FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                                 IN     PVOID               pEstablisherFrame,
                                  IN OUT PCONTEXT            pContextRecord,
                                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                                 )
 {
-    DebuggerEval* pDE = NULL;
+    // The offset of the DebuggerEval pointer relative to the establisher frame.
+    SIZE_T debuggerEvalPtrOffset = 0;
 #if defined(TARGET_AMD64)
-    pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame);
+    // On AMD64 the establisher frame is the SP of FuncEvalHijack itself.
+    // In FuncEvalHijack we store RCX at the current SP.
+    debuggerEvalPtrOffset = 0;
 #elif defined(TARGET_ARM)
-    // on ARM the establisher frame is the SP of the caller of FuncEvalHijack, on other platforms it's FuncEvalHijack's SP.
-    // in FuncEvalHijack we allocate 8 bytes of stack space and then store R0 at the current SP, so if we subtract 8 from
+    // On ARM the establisher frame is the SP of the FuncEvalHijack's caller.
+    // In FuncEvalHijack we allocate 8 bytes of stack space and then store R0 at the current SP, so if we subtract 8 from
     // the establisher frame we can get the stack location where R0 was stored.
-    pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame - 8);
-
+    debuggerEvalPtrOffset = 8;
 #elif defined(TARGET_ARM64)
-    // on ARM64 the establisher frame is the SP of the caller of FuncEvalHijack.
-    // in FuncEvalHijack we allocate 32 bytes of stack space and then store R0 at the current SP + 16, so if we subtract 16 from
-    // the establisher frame we can get the stack location where R0 was stored.
-    pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame - 16);
+    // On ARM64 the establisher frame is the SP of the FuncEvalHijack's caller.
+    // In FuncEvalHijack we allocate 32 bytes of stack space and then store X0 at the current SP + 16, so if we subtract 16 from
+    // the establisher frame we can get the stack location where X0 was stored.
+    debuggerEvalPtrOffset = 16;
 #else
     _ASSERTE(!"NYI - FuncEvalHijackPersonalityRoutine()");
 #endif
 
-    FixupDispatcherContext(pDispatcherContext, &(pDE->m_context), pContextRecord);
+    DebuggerEval* pDE = *(DebuggerEval**)(pDispatcherContext->EstablisherFrame - debuggerEvalPtrOffset);
+    FixupDispatcherContext(pDispatcherContext, &(pDE->m_context));
 
     // Returning ExceptionCollidedUnwind will cause the OS to take our new context record and
     // dispatcher context and restart the exception dispatching on this call frame, which is

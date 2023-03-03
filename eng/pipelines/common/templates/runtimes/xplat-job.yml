@@ -7,8 +7,6 @@ parameters:
   helixType: '(unspecified)'
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
-  stagedBuild: false
   strategy: ''
   pool: ''
 

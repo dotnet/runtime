@@ -211,6 +211,10 @@ internal sealed class Xcode
     {
         // bundle everything as resources excluding native files
         var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib" };
+        if (!preferDylibs)
+        {
+            excludes.Add(".dylib");
+        }
         if (optimized)
         {
             excludes.Add(".pdb");
@@ -524,8 +528,15 @@ internal sealed class Xcode
 
         Utils.RunProcess(Logger, "xcodebuild", args.ToString(), workingDir: Path.GetDirectoryName(xcodePrjPath));
 
-        string appPath = Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config + "-" + sdk,
-            Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
+        string appDirectory = Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config + "-" + sdk);
+        if (!Directory.Exists(appDirectory))
+        {
+            // cmake 3.25.0 seems to have changed the output directory for MacCatalyst, move it back to the old format
+            string appDirectoryWithoutSdk = Path.Combine(Path.GetDirectoryName(xcodePrjPath)!, config);
+            Directory.Move(appDirectoryWithoutSdk, appDirectory);
+        }
+
+        string appPath = Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
 
         if (destination != null)
         {

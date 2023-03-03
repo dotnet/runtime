@@ -29,7 +29,7 @@ namespace Internal.IL
                     // Replace token in IL stream with a new token provided by the tokenReplaceFunc
                     //
                     // This is used by the StandaloneMethodMetadata logic to create method local tokens
-                    // and by the IL provider used for cross module inlining to create tokens which are 
+                    // and by the IL provider used for cross module inlining to create tokens which are
                     // stable and contained within the R2R module instead of being in a module separated
                     // by a version boundary.
                     int token = BinaryPrimitives.ReadInt32LittleEndian(tokenSpan);

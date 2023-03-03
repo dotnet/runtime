@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaValidatorApiTests
 {
     public class TCValidateAfterAdd : CXmlSchemaValidatorTestCase
     {
@@ -420,6 +419,7 @@ namespace System.Xml.Tests
         [InlineData("SCHEMA", "schB1_a.xsd", 1, 3, 3)]
         [InlineData("SCHEMA", "schM2_a.xsd", 1, 3, 3)]
         [InlineData("SCHEMA", "schH2_a.xsd", 1, 3, 3)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75132", TestPlatforms.Browser)]
         public void AddValid_Import_Include_Redefine(string testDir, string testFile, int expCount, int expCountGT, int expCountGE)
         {
             string xsd = Path.Combine(path, testDir, testFile);

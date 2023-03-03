@@ -28,7 +28,7 @@ MonoComponentDebugger *
 mono_component_debugger_init (void)
 {
 	debugger_agent_add_function_pointers (&fn_table);
-#if defined(TARGET_WASM) && !defined(HOST_WASI)
+#if defined(HOST_BROWSER)
 	mini_wasm_debugger_add_function_pointers (&fn_table);
 #endif
 #if defined(HOST_WASI)

@@ -108,15 +108,16 @@ namespace System.Runtime.Serialization
 
         internal CodeGenerator() { }
 
-        internal void BeginMethod(DynamicMethod dynamicMethod, Type delegateType, string methodName, Type[] argTypes, bool allowPrivateMemberAccess)
+        internal void BeginMethod(DynamicMethod dynamicMethod, Type delegateType, Type[] argTypes)
         {
             _dynamicMethod = dynamicMethod;
             _ilGen = _dynamicMethod.GetILGenerator();
             _delegateType = delegateType;
 
-            InitILGeneration(methodName, argTypes);
+            InitILGeneration(argTypes);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal void BeginMethod(string methodName, Type delegateType, bool allowPrivateMemberAccess)
         {
             MethodInfo signature = GetInvokeMethod(delegateType);
@@ -128,16 +129,17 @@ namespace System.Runtime.Serialization
             _delegateType = delegateType;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private void BeginMethod(Type returnType, string methodName, Type[] argTypes, bool allowPrivateMemberAccess)
         {
             _dynamicMethod = new DynamicMethod(methodName, returnType, argTypes, SerializationModule, allowPrivateMemberAccess);
 
             _ilGen = _dynamicMethod.GetILGenerator();
 
-            InitILGeneration(methodName, argTypes);
+            InitILGeneration(argTypes);
         }
 
-        private void InitILGeneration(string methodName, Type[] argTypes)
+        private void InitILGeneration(Type[] argTypes)
         {
             _methodEndLabel = _ilGen.DefineLabel();
             _blockStack = new Stack<object>();
@@ -185,15 +187,15 @@ namespace System.Runtime.Serialization
                 return var.GetType();
         }
 
-        internal LocalBuilder DeclareLocal(Type type, string name, object initialValue)
+        internal LocalBuilder DeclareLocal(Type type, object initialValue)
         {
-            LocalBuilder local = DeclareLocal(type, name);
+            LocalBuilder local = DeclareLocal(type);
             Load(initialValue);
             Store(local);
             return local;
         }
 
-        internal LocalBuilder DeclareLocal(Type type, string name)
+        internal LocalBuilder DeclareLocal(Type type)
         {
             return DeclareLocal(type, false);
         }
@@ -277,7 +279,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void ForEach(LocalBuilder local, Type elementType, Type enumeratorType,
+        internal void ForEach(LocalBuilder local, Type elementType,
             LocalBuilder enumerator, MethodInfo getCurrentMethod)
         {
             ForState forState = new ForState(local, DefineLabel(), DefineLabel(), enumerator);
@@ -657,7 +659,7 @@ namespace System.Runtime.Serialization
                     case TypeCode.Decimal:
                     case TypeCode.DateTime:
                     default:
-                        LocalBuilder zero = DeclareLocal(type, "zero");
+                        LocalBuilder zero = DeclareLocal(type);
                         LoadAddress(zero);
                         InitObj(type);
                         Load(zero);
@@ -1026,7 +1028,6 @@ namespace System.Runtime.Serialization
                 OpCode opCode = GetStelemOpCode(Type.GetTypeCode(arrayElementType));
                 if (opCode.Equals(OpCodes.Nop))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
-
                 _ilGen.Emit(opCode);
             }
         }
@@ -1219,7 +1220,7 @@ namespace System.Runtime.Serialization
             _blockStack.Push(switchState);
             return caseLabels;
         }
-        internal void Case(Label caseLabel1, string caseLabelName)
+        internal void Case(Label caseLabel1)
         {
             MarkLabel(caseLabel1);
         }
@@ -1291,7 +1292,7 @@ namespace System.Runtime.Serialization
         internal void CallStringFormat(string msg, params object[] values)
         {
             NewArray(typeof(object), values.Length);
-            _stringFormatArray ??= DeclareLocal(typeof(object[]), "stringFormatArray");
+            _stringFormatArray ??= DeclareLocal(typeof(object[]));
             Stloc(_stringFormatArray);
             for (int i = 0; i < values.Length; i++)
                 StoreArrayElement(_stringFormatArray, i, values[i]);

@@ -48,6 +48,7 @@
         HelixTargetQueues=$(HelixTargetQueues);
         BuildTargetFramework=$(BuildTargetFramework)
       </_PropertiesToPass>
+      <_DebuggerHosts Condition="'$(_DebuggerHosts)' == ''">$(DebuggerHost)</_DebuggerHosts>
       <_DebuggerHosts Condition="'$(_DebuggerHosts)' == ''">chrome</_DebuggerHosts>
     </PropertyGroup>
 

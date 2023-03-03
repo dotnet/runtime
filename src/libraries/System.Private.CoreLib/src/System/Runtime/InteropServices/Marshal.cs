@@ -43,10 +43,7 @@ namespace System.Runtime.InteropServices
         public static unsafe string PtrToStringAnsi(IntPtr ptr, int len)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
 
             return new string((sbyte*)ptr, 0, len);
         }
@@ -64,10 +61,7 @@ namespace System.Runtime.InteropServices
         public static unsafe string PtrToStringUni(IntPtr ptr, int len)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
 
             return new string((char*)ptr, 0, len);
         }
@@ -86,10 +80,7 @@ namespace System.Runtime.InteropServices
         public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            if (byteLen < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(byteLen), byteLen, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(byteLen);
 
             return string.CreateStringFromEncoding((byte*)ptr, byteLen, Encoding.UTF8);
         }
@@ -183,7 +174,9 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(arr);
 
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
-            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
+#pragma warning disable 8500 // sizeof of managed types
+            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));
+#pragma warning restore 8500
         }
 
         public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
@@ -283,10 +276,8 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(destination);
 
             ArgumentNullException.ThrowIfNull(source);
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             // The rest of the argument validation is done by CopyTo
 
@@ -363,18 +354,18 @@ namespace System.Runtime.InteropServices
         public static IntPtr ReadIntPtr(object ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
@@ -482,7 +473,9 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 
@@ -494,7 +487,9 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 

@@ -13,7 +13,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
         private ModuleDesc _generatedAssembly;
 
@@ -30,7 +30,7 @@ namespace ILCompiler
             }
         }
 
-        private class CompilerGeneratedAssembly : ModuleDesc, IAssemblyDesc
+        private sealed class CompilerGeneratedAssembly : ModuleDesc, IAssemblyDesc
         {
             private MetadataType _globalModuleType;
 

@@ -295,10 +295,11 @@ namespace System.Reflection.Tests
         [Fact]
         public static void GetAssemblyName()
         {
-            if (!PlatformDetection.IsNativeAot)
+            Assembly a = typeof(AssemblyNameTests).Assembly;
+            string assemblyLocation = AssemblyPathHelper.GetAssemblyLocation(a);
+            if (!string.IsNullOrEmpty(assemblyLocation))
             {
-                Assembly a = typeof(AssemblyNameTests).Assembly;
-                Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
+                Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(assemblyLocation).ToString());
             }
         }
 

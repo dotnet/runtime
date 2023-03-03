@@ -37,7 +37,7 @@ public int FldPubInst;
 protected int FldFamInst;          //Translates to "family"
 internal int FldAsmInst;           //Translates to "assembly"
 protected internal int FldFoaInst; //Translates to "famorassem"
-  
+
   //////////////////////////////
   // Static Fields
 public static int FldPubStat;
@@ -138,7 +138,7 @@ public int Test(){
 
   //@csharp - Note that C# will not compile an illegal access of FldPrivInst
   //So there is no negative test here, it should be covered elsewhere and
-  //should throw a FielAccessException within the runtime.  (IL sources is
+  //should throw a FieldAccessException within the runtime.  (IL sources is
   //the most logical, only?, choice)
 
   FldFamInst = 100;
@@ -174,7 +174,7 @@ public int Test(){
     mi_RetCode = 0;
 
   /////////////////////////////////
-  // Test instance method access  
+  // Test instance method access
   if(MethPubInst() != 100)
     mi_RetCode = 0;
 
@@ -203,7 +203,7 @@ public int Test(){
     mi_RetCode = 0;
 
   if(MethFoaStat() != 100)
-    mi_RetCode = 0;  
+    mi_RetCode = 0;
 
   /////////////////////////////////
   // Test virtual method access
@@ -219,7 +219,7 @@ public int Test(){
     mi_RetCode = 0;
 
   if(MethFoaVirt() != 100)
-    mi_RetCode = 0;  
+    mi_RetCode = 0;
 
   return mi_RetCode;
 }

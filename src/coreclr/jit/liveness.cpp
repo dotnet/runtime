@@ -280,19 +280,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-        {
-            GenTreeSIMD* simdNode = tree->AsSIMD();
-            if (simdNode->OperIsMemoryLoad())
-            {
-                // This instruction loads from memory and we need to record this information
-                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-            }
-            break;
-        }
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
@@ -970,7 +957,7 @@ void Compiler::fgExtendDbgLifetimes()
             if (!fgLocalVarLivenessDone)
             {
                 // Create a "zero" node
-                GenTree* zero = gtNewZeroConNode(genActualType(type));
+                GenTree* zero = gtNewZeroConNode(type);
 
                 // Create initialization node
                 if (!block->IsLIR())

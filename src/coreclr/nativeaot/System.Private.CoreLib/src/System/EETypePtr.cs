@@ -277,6 +277,14 @@ namespace System
             }
         }
 
+        internal bool IsTrackedReferenceWithFinalizer
+        {
+            get
+            {
+                return _value->IsTrackedReferenceWithFinalizer;
+            }
+        }
+
         internal EETypePtr NullableType
         {
             get

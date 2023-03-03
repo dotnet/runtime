@@ -64,7 +64,7 @@ namespace Microsoft.Interop
                     case CharEncoding.Utf8:
                         throw new MarshallingNotSupportedException(info, context) // [Compat] UTF-8 is not supported for char
                         {
-                            NotSupportedDetails = string.Format(SR.MarshallingCharAsSpecifiedStringMarshallingNotSupported, nameof(CharEncoding.Utf8))
+                            NotSupportedDetails = SR.Format(SR.MarshallingCharAsSpecifiedStringMarshallingNotSupported, nameof(CharEncoding.Utf8))
                         };
                     case CharEncoding.Custom:
                         throw new MarshallingNotSupportedException(info, context)

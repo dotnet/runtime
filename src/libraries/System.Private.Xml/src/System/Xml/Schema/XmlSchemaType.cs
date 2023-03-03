@@ -327,7 +327,7 @@ namespace System.Xml.Schema
         }
 
 
-        internal static bool IsDerivedFromDatatype(XmlSchemaDatatype derivedDataType, XmlSchemaDatatype baseDataType, XmlSchemaDerivationMethod except)
+        internal static bool IsDerivedFromDatatype(XmlSchemaDatatype derivedDataType, XmlSchemaDatatype baseDataType)
         {
             if (DatatypeImplementation.AnySimpleType.Datatype == baseDataType)
             {

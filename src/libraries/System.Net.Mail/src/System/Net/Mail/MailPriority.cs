@@ -273,10 +273,10 @@ namespace System.Net.Mail
             internal BaseWriter _writer;
         }
 
-        internal IAsyncResult BeginSend(BaseWriter writer, bool sendEnvelope, bool allowUnicode,
+        internal IAsyncResult BeginSend(BaseWriter writer, bool allowUnicode,
             AsyncCallback? callback, object? state)
         {
-            PrepareHeaders(sendEnvelope, allowUnicode);
+            PrepareHeaders(allowUnicode);
             writer.WriteHeaders(Headers, allowUnicode);
 
             if (Content != null)
@@ -331,11 +331,11 @@ namespace System.Net.Mail
         {
             if (sendEnvelope)
             {
-                PrepareEnvelopeHeaders(sendEnvelope, allowUnicode);
+                PrepareEnvelopeHeaders(allowUnicode);
                 writer.WriteHeaders(EnvelopeHeaders, allowUnicode);
             }
 
-            PrepareHeaders(sendEnvelope, allowUnicode);
+            PrepareHeaders(allowUnicode);
             writer.WriteHeaders(Headers, allowUnicode);
 
             if (Content != null)
@@ -348,7 +348,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal void PrepareEnvelopeHeaders(bool sendEnvelope, bool allowUnicode)
+        internal void PrepareEnvelopeHeaders(bool allowUnicode)
         {
             _headersEncoding ??= Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
 
@@ -379,7 +379,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal void PrepareHeaders(bool sendEnvelope, bool allowUnicode)
+        internal void PrepareHeaders(bool allowUnicode)
         {
             _headersEncoding ??= Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
 

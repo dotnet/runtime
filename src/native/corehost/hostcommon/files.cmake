@@ -7,8 +7,6 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/../fxr)
 # CMake does not recommend using globbing since it messes with the freshness checks
 list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/../json_parser.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../deps_format.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../deps_entry.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../host_startup_info.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../roll_forward_option.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fx_definition.cpp
@@ -24,8 +22,6 @@ list(APPEND SOURCES
 
 list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/../json_parser.h
-    ${CMAKE_CURRENT_LIST_DIR}/../deps_format.h
-    ${CMAKE_CURRENT_LIST_DIR}/../deps_entry.h
     ${CMAKE_CURRENT_LIST_DIR}/../host_startup_info.h
     ${CMAKE_CURRENT_LIST_DIR}/../roll_forward_option.h
     ${CMAKE_CURRENT_LIST_DIR}/../fx_definition.h

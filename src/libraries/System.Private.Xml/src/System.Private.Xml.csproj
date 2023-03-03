@@ -19,7 +19,6 @@
     <Compile Include="System\Xml\BinHexDecoder.cs" />
     <Compile Include="System\Xml\BinHexEncoder.cs" />
     <Compile Include="System\Xml\BinHexEncoderAsync.cs" />
-    <Compile Include="System\Xml\Bits.cs" />
     <Compile Include="System\Xml\BitStack.cs" />
     <Compile Include="System\Xml\ByteStack.cs" />
     <Compile Include="System\Xml\Core\HtmlEncodedRawTextWriter.cs">
@@ -759,7 +758,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
+                      ReferenceOutputAssembly="false"
+                      SetTargetFramework="TargetFramework=netstandard2.0"
+                      OutputItemType="Analyzer" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />

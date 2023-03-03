@@ -21,7 +21,7 @@
 //
 // In the absence of trashing, such bugs can become undetectable if the code that
 // dispatches the call happens to never touch the impacted argument register (e.g., xmm3 on
-// amd64 or d5 on arm32). In such a case, the original enregistered argument will flow
+// amd64 or q5 on arm64). In such a case, the original enregistered argument will flow
 // unmodified into the eventual callee, obscuring the fact that the dispatcher failed to
 // propagate the transition frame copy of this register.
 //

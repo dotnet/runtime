@@ -217,7 +217,6 @@ namespace System.Net.Http
             // matches the properties selected in https://github.com/dotnet/diagnostics/blob/ffd0254da3bcc47847b1183fa5453c0877020abd/src/Microsoft.Diagnostics.Monitoring.EventPipe/Configuration/HttpRequestSourceConfiguration.cs#L36-L40
             [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
             [DynamicDependency(nameof(HttpRequestMessage.Method), typeof(HttpRequestMessage))]
-            [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
             [DynamicDependency(nameof(Uri.Host), typeof(Uri))]
             [DynamicDependency(nameof(Uri.Port), typeof(Uri))]
             internal ActivityStartData(HttpRequestMessage request)
@@ -251,7 +250,6 @@ namespace System.Net.Http
             // preserve the same properties as ActivityStartData above + common Exception properties
             [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
             [DynamicDependency(nameof(HttpRequestMessage.Method), typeof(HttpRequestMessage))]
-            [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
             [DynamicDependency(nameof(Uri.Host), typeof(Uri))]
             [DynamicDependency(nameof(Uri.Port), typeof(Uri))]
             [DynamicDependency(nameof(System.Exception.Message), typeof(Exception))]
@@ -273,7 +271,6 @@ namespace System.Net.Http
             // preserve the same properties as ActivityStartData above
             [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
             [DynamicDependency(nameof(HttpRequestMessage.Method), typeof(HttpRequestMessage))]
-            [DynamicDependency(nameof(HttpRequestMessage.RequestUri), typeof(HttpRequestMessage))]
             [DynamicDependency(nameof(Uri.Host), typeof(Uri))]
             [DynamicDependency(nameof(Uri.Port), typeof(Uri))]
             internal RequestData(HttpRequestMessage request, Guid loggingRequestId, long timestamp)

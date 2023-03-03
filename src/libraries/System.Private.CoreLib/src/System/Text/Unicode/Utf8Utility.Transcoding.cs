@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -25,26 +26,23 @@ namespace System.Text.Unicode
             Debug.Assert(pOutputBuffer != null || outputCharsRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
             // First, try vectorized conversion.
+            OperationStatus status = Ascii.ToUtf16(new ReadOnlySpan<byte>(pInputBuffer, inputLength), new Span<char>(pOutputBuffer, outputCharsRemaining), out int bytesConsumed);
 
+            pInputBuffer += bytesConsumed;
+            pOutputBuffer += bytesConsumed;
+
+            // Quick check - did we just end up consuming the entire input buffer?
+            // If so, short-circuit the remainder of the method.
+
+            if (status == OperationStatus.Done)
             {
-                nuint numElementsConverted = ASCIIUtility.WidenAsciiToUtf16(pInputBuffer, pOutputBuffer, (uint)Math.Min(inputLength, outputCharsRemaining));
-
-                pInputBuffer += numElementsConverted;
-                pOutputBuffer += numElementsConverted;
-
-                // Quick check - did we just end up consuming the entire input buffer?
-                // If so, short-circuit the remainder of the method.
-
-                if ((int)numElementsConverted == inputLength)
-                {
-                    pInputBufferRemaining = pInputBuffer;
-                    pOutputBufferRemaining = pOutputBuffer;
-                    return OperationStatus.Done;
-                }
-
-                inputLength -= (int)numElementsConverted;
-                outputCharsRemaining -= (int)numElementsConverted;
+                pInputBufferRemaining = pInputBuffer;
+                pOutputBufferRemaining = pOutputBuffer;
+                return OperationStatus.Done;
             }
+
+            inputLength -= bytesConsumed;
+            outputCharsRemaining -= bytesConsumed;
 
             if (inputLength < sizeof(uint))
             {
@@ -74,7 +72,7 @@ namespace System.Text.Unicode
 #endif
                 // First, check for the common case of all-ASCII bytes.
 
-                if (ASCIIUtility.AllBytesInUInt32AreAscii(thisDWord))
+                if (Ascii.AllBytesInUInt32AreAscii(thisDWord))
                 {
                     // We read an all-ASCII sequence.
 
@@ -83,7 +81,7 @@ namespace System.Text.Unicode
                         goto ProcessRemainingBytesSlow; // running out of space, but may be able to write some data
                     }
 
-                    ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref *pOutputBuffer, thisDWord);
+                    Ascii.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref *pOutputBuffer, thisDWord);
                     pInputBuffer += 4;
                     pOutputBuffer += 4;
                     outputCharsRemaining -= 4;
@@ -102,15 +100,15 @@ namespace System.Text.Unicode
                         thisDWord = Unsafe.ReadUnaligned<uint>(pInputBuffer);
                         secondDWord = Unsafe.ReadUnaligned<uint>(pInputBuffer + sizeof(uint));
 
-                        if (!ASCIIUtility.AllBytesInUInt32AreAscii(thisDWord | secondDWord))
+                        if (!Ascii.AllBytesInUInt32AreAscii(thisDWord | secondDWord))
                         {
                             goto LoopTerminatedEarlyDueToNonAsciiData;
                         }
 
                         pInputBuffer += 8;
 
-                        ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref pOutputBuffer[0], thisDWord);
-                        ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref pOutputBuffer[4], secondDWord);
+                        Ascii.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref pOutputBuffer[0], thisDWord);
+                        Ascii.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref pOutputBuffer[4], secondDWord);
 
                         pOutputBuffer += 8;
                     }
@@ -121,15 +119,15 @@ namespace System.Text.Unicode
 
                 LoopTerminatedEarlyDueToNonAsciiData:
 
-                    if (ASCIIUtility.AllBytesInUInt32AreAscii(thisDWord))
+                    if (Ascii.AllBytesInUInt32AreAscii(thisDWord))
                     {
                         // The first DWORD contained all-ASCII bytes, so expand it.
 
-                        ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref *pOutputBuffer, thisDWord);
+                        Ascii.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref *pOutputBuffer, thisDWord);
 
                         // continue the outer loop from the second DWORD
 
-                        Debug.Assert(!ASCIIUtility.AllBytesInUInt32AreAscii(secondDWord));
+                        Debug.Assert(!Ascii.AllBytesInUInt32AreAscii(secondDWord));
                         thisDWord = secondDWord;
 
                         pInputBuffer += 4;
@@ -147,7 +145,7 @@ namespace System.Text.Unicode
 
             AfterReadDWordSkipAllBytesAsciiCheck:
 
-                Debug.Assert(!ASCIIUtility.AllBytesInUInt32AreAscii(thisDWord)); // this should have been handled earlier
+                Debug.Assert(!Ascii.AllBytesInUInt32AreAscii(thisDWord)); // this should have been handled earlier
 
                 // Next, try stripping off ASCII bytes one at a time.
                 // We only handle up to three ASCII bytes here since we handled the four ASCII byte case above.
@@ -848,23 +846,23 @@ namespace System.Text.Unicode
             // First, try vectorized conversion.
 
             {
-                nuint numElementsConverted = ASCIIUtility.NarrowUtf16ToAscii(pInputBuffer, pOutputBuffer, (uint)Math.Min(inputLength, outputBytesRemaining));
+                OperationStatus status = Ascii.FromUtf16(new ReadOnlySpan<char>(pInputBuffer, inputLength), new Span<byte>(pOutputBuffer, outputBytesRemaining), out int charsConsumed);
 
-                pInputBuffer += numElementsConverted;
-                pOutputBuffer += numElementsConverted;
+                pInputBuffer += charsConsumed;
+                pOutputBuffer += charsConsumed;
 
                 // Quick check - did we just end up consuming the entire input buffer?
                 // If so, short-circuit the remainder of the method.
 
-                if ((int)numElementsConverted == inputLength)
+                if (status == OperationStatus.Done)
                 {
                     pInputBufferRemaining = pInputBuffer;
                     pOutputBufferRemaining = pOutputBuffer;
                     return OperationStatus.Done;
                 }
 
-                inputLength -= (int)numElementsConverted;
-                outputBytesRemaining -= (int)numElementsConverted;
+                inputLength -= charsConsumed;
+                outputBytesRemaining -= charsConsumed;
             }
 
             if (inputLength < CharsPerDWord)

@@ -6,92 +6,39 @@ using System.Collections.Generic;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 using Internal.JitInterface;
+using System.Reflection.Metadata;
 
 namespace ILCompiler
 {
     /// <summary>
-    /// Provides compilation group for a library that compiles everything in the input IL module.
+    /// Roots all methods in the input IL module.
     /// </summary>
-    public class ReadyToRunRootProvider : ICompilationRootProvider
+    public class ReadyToRunLibraryRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
-        private IEnumerable<MethodDesc> _profileData;
-        private readonly bool _profileDrivenPartialNGen;
 
-        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, bool profileDrivenPartialNGen)
+        public ReadyToRunLibraryRootProvider(EcmaModule module)
         {
             _module = module;
-            _profileData = profileDataManager.GetMethodsForModuleDesc(module);
-            _profileDrivenPartialNGen = profileDrivenPartialNGen;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            foreach (var method in _profileData)
+            foreach (MetadataType type in _module.GetAllTypes())
             {
-                try
+                MetadataType typeWithMethods = type;
+                if (type.HasInstantiation)
                 {
-                    // Validate that this method is fully instantiated
-                    if (method.OwningType.IsGenericDefinition || method.OwningType.ContainsSignatureVariables())
-                    {
+                    typeWithMethods = InstantiateIfPossible(type);
+                    if (typeWithMethods == null)
                         continue;
-                    }
-
-                    if (method.IsGenericMethodDefinition)
-                    {
-                        continue;
-                    }
-
-                    bool containsSignatureVariables = false;
-                    foreach (TypeDesc t in method.Instantiation)
-                    {
-                        if (t.IsGenericDefinition)
-                        {
-                            containsSignatureVariables = true;
-                            break;
-                        }
-
-                        if (t.ContainsSignatureVariables())
-                        {
-                            containsSignatureVariables = true;
-                            break;
-                        }
-                    }
-                    if (containsSignatureVariables)
-                        continue;
-
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
-                    {
-                        CheckCanGenerateMethod(method);
-                        rootProvider.AddCompilationRoot(method, rootMinimalDependencies: true, reason: "Profile triggered method");
-                    }
                 }
-                catch (TypeSystemException)
-                {
-                    // Individual methods can fail to load types referenced in their signatures.
-                    // Skip them in library mode since they're not going to be callable.
-                    continue;
-                }
-            }
 
-            if (!_profileDrivenPartialNGen)
-            {
-                foreach (MetadataType type in _module.GetAllTypes())
-                {
-                    MetadataType typeWithMethods = type;
-                    if (type.HasInstantiation)
-                    {
-                        typeWithMethods = InstantiateIfPossible(type);
-                        if (typeWithMethods == null)
-                            continue;
-                    }
-
-                    RootMethods(typeWithMethods, "Library module method", rootProvider);
-                }
+                RootMethods(typeWithMethods, "Library module method", rootProvider);
             }
         }
 
-        private void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
+        private void RootMethods(MetadataType type, string reason, IRootingServiceProvider rootProvider)
         {
             foreach (MethodDesc method in type.GetAllMethods())
             {
@@ -192,7 +139,7 @@ namespace ILCompiler
             return new Instantiation(args);
         }
 
-        private static InstantiatedType InstantiateIfPossible(MetadataType type)
+        public static InstantiatedType InstantiateIfPossible(MetadataType type)
         {
             Instantiation inst = GetInstantiationThatMeetsConstraints(type.Instantiation);
             if (inst.IsNull)
@@ -203,7 +150,7 @@ namespace ILCompiler
             return type.MakeInstantiatedType(inst);
         }
 
-        private static MethodDesc InstantiateIfPossible(MethodDesc method)
+        public static MethodDesc InstantiateIfPossible(MethodDesc method)
         {
             Instantiation inst = GetInstantiationThatMeetsConstraints(method.Instantiation);
             if (inst.IsNull)

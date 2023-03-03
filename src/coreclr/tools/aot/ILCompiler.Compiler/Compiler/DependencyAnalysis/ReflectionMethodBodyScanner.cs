@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.TypeSystem;
 
 using AssemblyName = System.Reflection.AssemblyName;
@@ -19,15 +17,13 @@ namespace ILCompiler.DependencyAnalysis
             // not for correctness, so this shortcut is okay.
 
             type = null;
-            referenceModule = null;
-
             int i = 0;
 
             // Consume type name part
             StringBuilder typeName = new StringBuilder();
             StringBuilder typeNamespace = new StringBuilder();
             string containingTypeName = null;
-            while (i < name.Length && (char.IsLetterOrDigit(name[i]) || name[i] == '.' || name[i] == '`' || name[i] == '+'))
+            while (i < name.Length && (char.IsLetterOrDigit(name[i]) || name[i] == '.' || name[i] == '_' || name[i] == '`' || name[i] == '+'))
             {
                 if (name[i] == '.')
                 {
@@ -63,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Consume assembly name
             StringBuilder assemblyName = new StringBuilder();
-            while (i < name.Length && (char.IsLetterOrDigit(name[i]) || name[i] == '.'))
+            while (i < name.Length && (char.IsLetterOrDigit(name[i]) || name[i] == '.' || name[i] == '_'))
             {
                 assemblyName.Append(name[i]);
                 i++;
@@ -75,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
             referenceModule = callingModule;
             if (assemblyName.Length > 0)
             {
-                referenceModule = context.ResolveAssembly(new AssemblyName(assemblyName.ToString()), false);    
+                referenceModule = context.ResolveAssembly(new AssemblyName(assemblyName.ToString()), false);
             }
 
             if (referenceModule == null)
@@ -96,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             type = mdType;
-            
+
             return type != null;
         }
     }

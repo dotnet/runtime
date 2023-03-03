@@ -74,7 +74,7 @@ namespace GitHub_16065b
 
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             int result = 0;
             var A = new Matrix(new Array2D(0, 4));

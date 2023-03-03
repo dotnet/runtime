@@ -3,7 +3,7 @@
 
 #include "pal_err.h"
 
-void CryptoNative_ErrClearError()
+void CryptoNative_ErrClearError(void)
 {
 }
 
@@ -12,12 +12,12 @@ uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure)
     return 0;
 }
 
-uint64_t CryptoNative_ErrPeekError()
+uint64_t CryptoNative_ErrPeekError(void)
 {
     return 0;
 }
 
-uint64_t CryptoNative_ErrPeekLastError()
+uint64_t CryptoNative_ErrPeekLastError(void)
 {
     return 0;
 }

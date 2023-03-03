@@ -65,6 +65,13 @@ namespace R2RTest
         {
             ProcessParameters processParameters = base.CompilationProcess(outputFileName, inputAssemblyFileNames);
             processParameters.Arguments = $"{Crossgen2Path} {processParameters.Arguments}";
+            // DOTNET_ variables
+            processParameters.EnvironmentOverrides["DOTNET_GCStress"] = "";
+            processParameters.EnvironmentOverrides["DOTNET_HeapVerify"] = "";
+            processParameters.EnvironmentOverrides["DOTNET_ReadyToRun"] = "";
+            processParameters.EnvironmentOverrides["DOTNET_GCName"] = "";
+
+            // COMPlus_ variables
             processParameters.EnvironmentOverrides["COMPlus_GCStress"] = "";
             processParameters.EnvironmentOverrides["COMPlus_HeapVerify"] = "";
             processParameters.EnvironmentOverrides["COMPlus_ReadyToRun"] = "";
@@ -75,7 +82,7 @@ namespace R2RTest
         protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
         {
             ProcessParameters processParameters = base.ExecutionProcess(modules, folders, noEtw);
-            processParameters.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
+            processParameters.EnvironmentOverrides["DOTNET_ReadyToRun"] = "1";
             return processParameters;
         }
 

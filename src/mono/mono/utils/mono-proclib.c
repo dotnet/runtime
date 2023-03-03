@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #ifdef HOST_WIN32
 #include <windows.h>
@@ -29,7 +30,7 @@
 #endif
 
 int
-mono_process_current_pid ()
+mono_process_current_pid (void)
 {
 #ifdef HOST_WIN32
 	return (int) GetCurrentProcessId ();
@@ -190,3 +191,44 @@ mono_cpu_count (void)
 	return 1;
 #endif
 }
+
+/**
+ * mono_cpu_limit:
+ * \returns the number of processors available to this process
+ */
+int
+mono_cpu_limit (void)
+{
+#if defined(HOST_WIN32)
+	return mono_cpu_count ();
+#else
+	static int limit = -1;  /* Value will be cached for future calls */
+
+	/*
+	 * If 1st time through then check if user has mandated a value and use it,
+	 * otherwise we check for any cgroup limit and use the min of actual number
+	 * and that limit
+	 */
+	if (limit == -1) {
+		char *dotnetProcCnt = getenv ("DOTNET_PROCESSOR_COUNT");
+		if (dotnetProcCnt != NULL) {
+			errno = 0;
+			limit = (int) strtol (dotnetProcCnt, NULL, 0);
+			if ((errno == 0) && (limit > 0))        /* If it's in range and positive */
+			       return limit;
+		}
+		limit = mono_cpu_count ();
+#if HAVE_CGROUP_SUPPORT
+		int count = 0;
+		if (mono_get_cpu_limit (&count))
+			limit = (limit < count ? limit : count);
+#endif
+	}
+
+	/*
+	 * Just return the cached value
+	 */
+	return limit;
+#endif
+}
+

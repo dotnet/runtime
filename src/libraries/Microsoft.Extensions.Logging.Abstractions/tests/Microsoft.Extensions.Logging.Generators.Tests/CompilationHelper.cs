@@ -35,16 +35,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             }
 
-            CSharpParseOptions options = CSharpParseOptions.Default;
-
-#if ROSLYN4_0_OR_GREATER
-            // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.
-            options = options.WithLanguageVersion(LanguageVersion.Preview);
-#endif
-
             return CSharpCompilation.Create(
                 assemblyName,
-                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, options) },
+                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source) },
                 references: refs.ToArray(),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );

@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -289,7 +289,7 @@
     <value>Expected signature header for '{0}' or '{1}', but found '{2}' (0x{3:x2}).</value>
   </data>
   <data name="NotTypeDefOrRefHandle" xml:space="preserve">
-    <value>Specified handle is not a TypeDefinitionHandle or TypeRefererenceHandle.</value>
+    <value>Specified handle is not a TypeDefinitionHandle or TypeReferenceHandle.</value>
   </data>
   <data name="UnexpectedSignatureTypeCode" xml:space="preserve">
     <value>Unexpected SignatureTypeCode: (0x{0:x}).</value>
@@ -298,7 +298,7 @@
     <value>Signature type sequence must have at least one element.</value>
   </data>
   <data name="NotTypeDefOrRefOrSpecHandle" xml:space="preserve">
-    <value>Specified handle is not a TypeDefinitionHandle, TypeRefererenceHandle, or TypeSpecificationHandle.</value>
+    <value>Specified handle is not a TypeDefinitionHandle, TypeReferenceHandle, or TypeSpecificationHandle.</value>
   </data>
   <data name="UnexpectedDebugDirectoryType" xml:space="preserve">
     <value>The Debug directory was not of type {0}.</value>
@@ -404,5 +404,11 @@
   </data>
   <data name="UnexpectedValueUnknownType" xml:space="preserve">
     <value>Unexpected value '{0}' of unknown type.</value>
+  </data>
+  <data name="SwitchInstructionEncoderTooFewBranches" xml:space="preserve">
+    <value>The SwitchInstructionEncoder.Branch method was invoked too few times.</value>
+  </data>
+  <data name="SwitchInstructionEncoderTooManyBranches" xml:space="preserve">
+    <value>The SwitchInstructionEncoder.Branch method was invoked too many times.</value>
   </data>
 </root>

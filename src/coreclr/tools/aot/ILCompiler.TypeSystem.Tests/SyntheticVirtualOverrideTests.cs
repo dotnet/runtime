@@ -14,8 +14,8 @@ namespace TypeSystemTests
 {
     public partial class SyntheticVirtualOverrideTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
 
         public SyntheticVirtualOverrideTests()
         {
@@ -50,7 +50,7 @@ namespace TypeSystemTests
             Assert.All(virtualSlots, s => { Assert.True(s.OwningType.IsObject); });
             Assert.Equal(4, virtualSlots.Count);
 
-            List<MethodDesc> vtable = virtualSlots.Select(s => t.FindVirtualFunctionTargetMethodOnObjectType(s)).ToList();
+            List<MethodDesc> vtable = virtualSlots.Select(t.FindVirtualFunctionTargetMethodOnObjectType).ToList();
 
             Assert.Contains(vtable, m => m.Name == "Equals" && m.OwningType == t);
             Assert.Contains(vtable, m => m.Name == "GetHashCode" && m.OwningType == t);
@@ -73,7 +73,7 @@ namespace TypeSystemTests
             Assert.All(virtualSlots, s => { Assert.True(s.OwningType.IsObject); });
             Assert.Equal(4, virtualSlots.Count);
 
-            List<MethodDesc> vtable = virtualSlots.Select(s => t.FindVirtualFunctionTargetMethodOnObjectType(s)).ToList();
+            List<MethodDesc> vtable = virtualSlots.Select(t.FindVirtualFunctionTargetMethodOnObjectType).ToList();
 
             Assert.Contains(vtable, m => m.Name == "Equals" && m.OwningType == baseType);
             Assert.Contains(vtable, m => m.Name == "GetHashCode" && m.OwningType == baseType);
@@ -96,7 +96,7 @@ namespace TypeSystemTests
             Assert.All(virtualSlots, s => { Assert.True(s.OwningType.IsObject); });
             Assert.Equal(4, virtualSlots.Count);
 
-            List<MethodDesc> vtable = virtualSlots.Select(s => t.FindVirtualFunctionTargetMethodOnObjectType(s)).ToList();
+            List<MethodDesc> vtable = virtualSlots.Select(t.FindVirtualFunctionTargetMethodOnObjectType).ToList();
 
             Assert.Contains(vtable, m => m.Name == "Equals" && m.OwningType == t);
             Assert.Contains(vtable, m => m.Name == "GetHashCode" && m.OwningType == t);
@@ -104,7 +104,7 @@ namespace TypeSystemTests
             Assert.Contains(vtable, m => m.Name == "ToString" && m.OwningType.IsObject);
         }
 
-        private class SyntheticVirtualOverrideTypeSystemContext : TestTypeSystemContext
+        private sealed class SyntheticVirtualOverrideTypeSystemContext : TestTypeSystemContext
         {
             private Dictionary<TypeDesc, MethodDesc> _getHashCodeMethods = new Dictionary<TypeDesc, MethodDesc>();
             private Dictionary<TypeDesc, MethodDesc> _equalsMethods = new Dictionary<TypeDesc, MethodDesc>();
@@ -170,7 +170,7 @@ namespace TypeSystemTests
             }
         }
 
-        private partial class SyntheticMethod : MethodDesc
+        private sealed partial class SyntheticMethod : MethodDesc
         {
             private TypeDesc _owningType;
             private MethodSignature _signature;

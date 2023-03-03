@@ -7,18 +7,15 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void ConvertScalarToVector128Double()
         {
-            int testResult = Pass;
-
             if (Sse2.IsSupported)
             {
 
@@ -38,43 +35,10 @@ namespace IntelHardwareIntrinsicTest
                             Console.Write(item + ", ");
                         }
                         Console.WriteLine();
-                        testResult = Fail;
+                        Assert.Fail("");
                     }
                 }
             }
-
-            return testResult;
         }
-
-        public unsafe struct TestTable<T> : IDisposable where T : struct
-        {
-            public T[] inArray;
-            public T[] outArray;
-
-            public void* inArrayPtr => inHandle.AddrOfPinnedObject().ToPointer();
-            public void* outArrayPtr => outHandle.AddrOfPinnedObject().ToPointer();
-
-            GCHandle inHandle;
-            GCHandle outHandle;
-            public TestTable(T[] a, T[] b)
-            {
-                this.inArray = a;
-                this.outArray = b;
-
-                inHandle = GCHandle.Alloc(inArray, GCHandleType.Pinned);
-                outHandle = GCHandle.Alloc(outArray, GCHandleType.Pinned);
-            }
-            public bool CheckResult(Func<T[], T[], bool> check)
-            {
-                return check(inArray, outArray);
-            }
-
-            public void Dispose()
-            {
-                inHandle.Free();
-                outHandle.Free();
-            }
-        }
-
     }
 }

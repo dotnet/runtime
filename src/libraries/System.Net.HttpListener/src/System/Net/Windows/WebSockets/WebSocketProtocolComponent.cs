@@ -20,16 +20,12 @@ namespace System.Net.WebSockets
                 new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.Connection,
-                    NameLength = (uint)HttpKnownHeaderNames.Connection.Length,
-                    Value = HttpKnownHeaderNames.Upgrade,
-                    ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length
+                    Value = HttpKnownHeaderNames.Upgrade
                 },
                 new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.Upgrade,
-                    NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
-                    Value = HttpWebSocket.WebSocketUpgradeToken,
-                    ValueLength = (uint)HttpWebSocket.WebSocketUpgradeToken.Length
+                    Value = HttpWebSocket.WebSocketUpgradeToken
                 }
             };
 
@@ -86,37 +82,27 @@ namespace System.Net.WebSockets
                 new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.Connection,
-                    NameLength = (uint)HttpKnownHeaderNames.Connection.Length,
                     Value = HttpKnownHeaderNames.Upgrade,
-                    ValueLength = (uint)HttpKnownHeaderNames.Upgrade.Length
                 },
                 new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.Upgrade,
-                    NameLength = (uint)HttpKnownHeaderNames.Upgrade.Length,
                     Value = HttpWebSocket.WebSocketUpgradeToken,
-                    ValueLength = (uint)HttpWebSocket.WebSocketUpgradeToken.Length
                 },
                 new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.Host,
-                    NameLength = (uint)HttpKnownHeaderNames.Host.Length,
                     Value = string.Empty,
-                    ValueLength = 0
                 },
                 new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.SecWebSocketVersion,
-                    NameLength = (uint)HttpKnownHeaderNames.SecWebSocketVersion.Length,
                     Value = s_supportedVersion,
-                    ValueLength = (uint)s_supportedVersion.Length
                 },
                 new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.SecWebSocketKey,
-                    NameLength = (uint)HttpKnownHeaderNames.SecWebSocketKey.Length,
                     Value = s_dummyWebsocketKeyBase64,
-                    ValueLength = (uint)s_dummyWebsocketKeyBase64.Length
                 }
             };
         }
@@ -143,7 +129,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal static string GetSupportedVersion()
+        internal static unsafe string GetSupportedVersion()
         {
             if (!IsSupported)
             {
@@ -162,9 +148,6 @@ namespace System.Net.WebSockets
                     HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
                 }
 
-                IntPtr additionalHeadersPtr;
-                uint additionalHeaderCount;
-
                 errorCode = Interop.WebSocket.WebSocketBeginClientHandshake(webSocketHandle!,
                     IntPtr.Zero,
                     0,
@@ -172,15 +155,15 @@ namespace System.Net.WebSockets
                     0,
                     s_initialClientRequestHeaders,
                     (uint)s_initialClientRequestHeaders.Length,
-                    out additionalHeadersPtr,
-                    out additionalHeaderCount);
+                    out Interop.WebSocket.WEB_SOCKET_HTTP_HEADER* additionalHeadersPtr,
+                    out uint additionalHeaderCount);
                 ThrowOnError(errorCode);
 
-                Interop.WebSocket.HttpHeader[] additionalHeaders = MarshalHttpHeaders(additionalHeadersPtr, (int)additionalHeaderCount);
-
                 string? version = null;
-                foreach (Interop.WebSocket.HttpHeader header in additionalHeaders)
+                for (uint i = 0; i < additionalHeaderCount; i++)
                 {
+                    Interop.WebSocket.HttpHeader header = MarshalAndVerifyHttpHeader(additionalHeadersPtr + i);
+
                     if (string.Equals(header.Name,
                             HttpKnownHeaderNames.SecWebSocketVersion,
                             StringComparison.OrdinalIgnoreCase))
@@ -448,14 +431,13 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static void MarshalAndVerifyHttpHeader(IntPtr httpHeaderPtr,
-            ref Interop.WebSocket.HttpHeader httpHeader)
+        private static unsafe Interop.WebSocket.HttpHeader MarshalAndVerifyHttpHeader(
+            Interop.WebSocket.WEB_SOCKET_HTTP_HEADER* httpHeaderPtr)
         {
-            Debug.Assert(httpHeaderPtr != IntPtr.Zero, "'currentHttpHeaderPtr' MUST NOT be IntPtr.Zero.");
+            Interop.WebSocket.HttpHeader httpHeader = default;
 
-            IntPtr httpHeaderNamePtr = Marshal.ReadIntPtr(httpHeaderPtr);
-            IntPtr lengthPtr = IntPtr.Add(httpHeaderPtr, IntPtr.Size);
-            int length = Marshal.ReadInt32(lengthPtr);
+            IntPtr httpHeaderNamePtr = httpHeaderPtr->Name;
+            int length = (int)httpHeaderPtr->NameLength;
             Debug.Assert(length >= 0, "'length' MUST NOT be negative.");
 
             if (httpHeaderNamePtr != IntPtr.Zero)
@@ -470,21 +452,9 @@ namespace System.Net.WebSockets
                 throw new AccessViolationException();
             }
 
-            // structure of Interop.WebSocket.HttpHeader:
-            //   Name = string*
-            //   NameLength = uint*
-            //   Value = string*
-            //   ValueLength = uint*
-            // NOTE - All fields in the object are pointers to the actual value, hence the use of
-            //        n * IntPtr.Size to get to the correct place in the object.
-            int valueOffset = 2 * IntPtr.Size;
-            int lengthOffset = 3 * IntPtr.Size;
-
-            IntPtr httpHeaderValuePtr =
-                Marshal.ReadIntPtr(IntPtr.Add(httpHeaderPtr, valueOffset));
-            lengthPtr = IntPtr.Add(httpHeaderPtr, lengthOffset);
-            length = Marshal.ReadInt32(lengthPtr);
-            httpHeader.Value = Marshal.PtrToStringAnsi(httpHeaderValuePtr, (int)length);
+            IntPtr httpHeaderValuePtr = httpHeaderPtr->Value;
+            length = (int)httpHeaderPtr->ValueLength;
+            httpHeader.Value = Marshal.PtrToStringAnsi(httpHeaderValuePtr, length);
 
             if ((httpHeader.Value == null && length != 0) ||
                 (httpHeader.Value != null && length != httpHeader.Value.Length))
@@ -492,37 +462,8 @@ namespace System.Net.WebSockets
                 Debug.Fail("The length of 'httpHeader.Value' MUST MATCH 'length'.");
                 throw new AccessViolationException();
             }
-        }
 
-        private static Interop.WebSocket.HttpHeader[] MarshalHttpHeaders(IntPtr nativeHeadersPtr,
-            int nativeHeaderCount)
-        {
-            Debug.Assert(nativeHeaderCount >= 0, "'nativeHeaderCount' MUST NOT be negative.");
-            Debug.Assert(nativeHeadersPtr != IntPtr.Zero || nativeHeaderCount == 0,
-                "'nativeHeaderCount' MUST be 0.");
-
-            Interop.WebSocket.HttpHeader[] httpHeaders = new Interop.WebSocket.HttpHeader[nativeHeaderCount];
-
-            // structure of Interop.WebSocket.HttpHeader:
-            //   Name = string*
-            //   NameLength = uint*
-            //   Value = string*
-            //   ValueLength = uint*
-            // NOTE - All fields in the object are pointers to the actual value, hence the use of
-            //        4 * IntPtr.Size to get to the next header.
-            int httpHeaderStructSize = 4 * IntPtr.Size;
-
-            for (int i = 0; i < nativeHeaderCount; i++)
-            {
-                int offset = httpHeaderStructSize * i;
-                IntPtr currentHttpHeaderPtr = IntPtr.Add(nativeHeadersPtr, offset);
-                MarshalAndVerifyHttpHeader(currentHttpHeaderPtr, ref httpHeaders[i]);
-            }
-
-            Debug.Assert(httpHeaders != null);
-            Debug.Assert(httpHeaders.Length == nativeHeaderCount);
-
-            return httpHeaders;
+            return httpHeader;
         }
 
         public static bool Succeeded(int hr)

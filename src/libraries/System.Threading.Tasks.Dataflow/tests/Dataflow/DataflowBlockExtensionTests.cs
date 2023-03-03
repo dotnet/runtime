@@ -114,9 +114,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 DataflowBlock.NullTarget<int>().Completion);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [OuterLoop] // finalizer/GC interactions
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46566", TestPlatforms.Browser)]
         public void TestNullTarget_CompletionNoCaching()
         {
             // Make sure that the Completion task returned by a NullTarget
@@ -342,9 +341,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: expectedTotal, actual: total);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [OuterLoop] // stress test
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46566", TestPlatforms.Browser)]
         public void TestAsObservableAndAsObserver_AsObservableDoesntLeak()
         {
             const int Count = 1000;

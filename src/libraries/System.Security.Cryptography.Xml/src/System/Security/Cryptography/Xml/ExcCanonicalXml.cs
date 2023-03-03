@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(nodeList));
             }
 
-            XmlDocument doc = Utils.GetOwnerDocument(nodeList);
+            XmlDocument? doc = Utils.GetOwnerDocument(nodeList);
             if (doc == null)
                 throw new ArgumentException(nameof(nodeList));
 
@@ -61,15 +61,14 @@ namespace System.Security.Cryptography.Xml
         {
             StringBuilder sb = new StringBuilder();
             _c14nDoc.Write(sb, DocPosition.BeforeRootElement, _ancMgr);
-            UTF8Encoding utf8 = new UTF8Encoding(false);
-            return utf8.GetBytes(sb.ToString());
+            return Encoding.UTF8.GetBytes(sb.ToString());
         }
 
         internal byte[] GetDigestedBytes(HashAlgorithm hash)
         {
             _c14nDoc.WriteHash(hash, DocPosition.BeforeRootElement, _ancMgr);
             hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[] res = (byte[])hash.Hash.Clone();
+            byte[] res = (byte[])hash.Hash!.Clone();
             // reinitialize the hash so it is still usable after the call
             hash.Initialize();
             return res;
@@ -85,8 +84,8 @@ namespace System.Security.Cryptography.Xml
 
             do
             {
-                XmlNode currentNode = (XmlNode)elementList[index];
-                XmlNode currentNodeCanonical = (XmlNode)elementListCanonical[index];
+                XmlNode currentNode = (XmlNode)elementList[index]!;
+                XmlNode currentNodeCanonical = (XmlNode)elementListCanonical[index]!;
                 XmlNodeList childNodes = currentNode.ChildNodes;
                 XmlNodeList childNodesCanonical = currentNodeCanonical.ChildNodes;
                 for (int i = 0; i < childNodes.Count; i++)
@@ -96,17 +95,17 @@ namespace System.Security.Cryptography.Xml
 
                     if (Utils.NodeInList(childNodes[i], nodeList))
                     {
-                        MarkNodeAsIncluded(childNodesCanonical[i]);
+                        MarkNodeAsIncluded(childNodesCanonical[i]!);
                     }
 
-                    XmlAttributeCollection attribNodes = childNodes[i].Attributes;
+                    XmlAttributeCollection? attribNodes = childNodes[i]!.Attributes;
                     if (attribNodes != null)
                     {
                         for (int j = 0; j < attribNodes.Count; j++)
                         {
                             if (Utils.NodeInList(attribNodes[j], nodeList))
                             {
-                                MarkNodeAsIncluded(childNodesCanonical[i].Attributes.Item(j));
+                                MarkNodeAsIncluded(childNodesCanonical[i]!.Attributes!.Item(j)!);
                             }
                         }
                     }

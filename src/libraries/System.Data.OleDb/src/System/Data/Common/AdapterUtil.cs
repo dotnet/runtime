@@ -899,8 +899,6 @@ namespace System.Data.Common
         internal const int DefaultCommandTimeout = 30;
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
 
-        internal static readonly IntPtr PtrZero = new IntPtr(0); // IntPtr.Zero
-        internal static readonly int PtrSize = IntPtr.Size;
         internal static readonly IntPtr RecordsUnaffected = new IntPtr(-1);
 
         internal const int CharSize = System.Text.UnicodeEncoding.CharSize;
@@ -1256,17 +1254,12 @@ namespace System.Data.Common
 
         internal static IntPtr IntPtrOffset(IntPtr pbase, int offset)
         {
-            if (4 == ADP.PtrSize)
-            {
-                return (IntPtr)checked(pbase.ToInt32() + offset);
-            }
-            Debug.Assert(8 == ADP.PtrSize, "8 != IntPtr.Size");
-            return (IntPtr)checked(pbase.ToInt64() + offset);
+            return (nint)pbase + offset;
         }
 
-        internal static int IntPtrToInt32(IntPtr value)
+        internal static int IntPtrToInt32(nint value)
         {
-            if (4 == ADP.PtrSize)
+            if (4 == IntPtr.Size)
             {
                 return (int)value;
             }

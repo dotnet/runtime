@@ -9,6 +9,7 @@ namespace System.Formats.Tar
     // Windows specific methods for the TarEntry class.
     public abstract partial class TarEntry
     {
+#pragma warning disable IDE0060
         // Throws on Windows. Block devices are not supported on this platform.
         private void ExtractAsBlockDevice(string destinationFileName)
         {
@@ -38,5 +39,6 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
             Interop.Kernel32.CreateHardLink(hardLinkFilePath, targetFilePath);
         }
+#pragma warning restore IDE0060
     }
 }

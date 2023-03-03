@@ -129,6 +129,10 @@ check_struct_has_member("struct sockaddr_in6" sin6_len "netinet/in.h" HAVE_SOCKA
 check_struct_has_member("struct stat" st_atim "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIM)
 check_struct_has_member("struct stat" st_atimespec "sys/types.h;sys/stat.h;unistd.h" HAVE_STRUCT_STAT_ST_ATIMESPEC)
 
+if (HOST_DARWIN)
+  check_struct_has_member("struct objc_super" super_class "objc/runtime.h;objc/message.h" HAVE_OBJC_SUPER_SUPER_CLASS)
+endif()
+
 check_type_size("int" SIZEOF_INT)
 check_type_size("void*" SIZEOF_VOID_P)
 check_type_size("long" SIZEOF_LONG)

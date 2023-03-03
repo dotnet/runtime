@@ -29,7 +29,7 @@ namespace System.Data.Common
             DbSchemaTable schemaTable = new DbSchemaTable(dataTable, returnProviderSpecificTypes);
 
 
-            DataRow[] dataRows = SelectRows(dataTable, returnProviderSpecificTypes);
+            DataRow[] dataRows = SelectRows(dataTable);
             Debug.Assert(null != dataRows, "GetSchemaRows: unexpected null dataRows");
 
             DbSchemaRow[] schemaRows = new DbSchemaRow[dataRows.Length];
@@ -43,7 +43,7 @@ namespace System.Data.Common
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Filter expression is null.")]
-        private static DataRow[] SelectRows(DataTable dataTable, bool returnProviderSpecificTypes)
+        private static DataRow[] SelectRows(DataTable dataTable)
         {
             const DataViewRowState rowStates = DataViewRowState.Unchanged | DataViewRowState.Added | DataViewRowState.ModifiedCurrent;
             return dataTable.Select(null, "ColumnOrdinal ASC", rowStates);

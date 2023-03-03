@@ -426,6 +426,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public object AuxData { get; set; }
 
+        public bool AutoEvaluateProperties { get; set; }
+
         public PauseOnExceptionsKind PauseOnExceptions { get; set; }
 
         public List<Frame> CallStack { get; set; }

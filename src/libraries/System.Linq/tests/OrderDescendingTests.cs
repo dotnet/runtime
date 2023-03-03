@@ -104,6 +104,48 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void OrderedDescendingToArray()
+        {
+            var source = new[]
+            {
+                5, 9, 6, 7, 8, 5, 20
+            };
+            var expected = new[]
+            {
+                20, 9, 8, 7, 6, 5, 5
+            };
+
+            Assert.Equal(expected, source.OrderDescending().ToArray());
+        }
+
+        [Fact]
+        public void EmptyOrderedDescendingToArray()
+        {
+            Assert.Empty(Enumerable.Empty<int>().OrderDescending().ToArray());
+        }
+
+        [Fact]
+        public void OrderedDescendingToList()
+        {
+            var source = new[]
+            {
+                5, 9, 6, 7, 8, 5, 20
+            };
+            var expected = new[]
+            {
+                20, 9, 8, 7, 6, 5, 5
+            };
+
+            Assert.Equal(expected, source.OrderDescending().ToList());
+        }
+
+        [Fact]
+        public void EmptyOrderedDescendingToList()
+        {
+            Assert.Empty(Enumerable.Empty<int>().OrderDescending().ToList());
+        }
+
+        [Fact]
         public void SameKeysVerifySortStable()
         {
             var source = new[]

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -81,6 +82,34 @@ namespace System
             // length includes the null terminator
             builder.Length = (int)length - 1;
             return builder.ToString();
+        }
+
+        private static unsafe bool IsPrivilegedProcessCore()
+        {
+            SafeTokenHandle? token = null;
+            try
+            {
+                if (Interop.Advapi32.OpenProcessToken(Interop.Kernel32.GetCurrentProcess(), (int)Interop.Advapi32.TOKEN_ACCESS_LEVELS.Read, out token))
+                {
+                    Interop.Advapi32.TOKEN_ELEVATION elevation = default;
+
+                    if (Interop.Advapi32.GetTokenInformation(
+                            token,
+                            Interop.Advapi32.TOKEN_INFORMATION_CLASS.TokenElevation,
+                            &elevation,
+                            (uint)sizeof(Interop.Advapi32.TOKEN_ELEVATION),
+                            out _))
+                    {
+                        return elevation.TokenIsElevated != Interop.BOOL.FALSE;
+                    }
+                }
+
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+            }
+            finally
+            {
+                token?.Dispose();
+            }
         }
 
         private static bool Is64BitOperatingSystemWhen32BitProcess =>

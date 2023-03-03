@@ -341,10 +341,7 @@ namespace System.Net.Sockets
         /// </remarks>
         public void Close(int timeout)
         {
-            if (timeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeout, -1);
             _closeTimeout = timeout;
             Dispose();
         }

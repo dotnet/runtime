@@ -59,7 +59,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         public UnwindCode() { }
 
         /// <summary>
-        /// Unwinde code parsing is based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/unwindamd64.cpp">src\jit\unwindamd64.cpp</a> DumpUnwindInfo
+        /// Unwind code parsing is based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/unwindamd64.cpp">src\jit\unwindamd64.cpp</a> DumpUnwindInfo
         /// </summary>
         public UnwindCode(byte[] image, ref int frameOffset, ref int offset)
         {

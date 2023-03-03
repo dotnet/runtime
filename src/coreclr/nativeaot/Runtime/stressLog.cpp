@@ -58,14 +58,9 @@ inline __declspec(naked) unsigned __int64 getTimeStamp() {
 }
 
 #else // HOST_X86
-unsigned __int64 getTimeStamp() {
-
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-
-    PalQueryPerformanceCounter(&ret);
-
-    return ret.QuadPart;
+unsigned __int64 getTimeStamp()
+{
+    return PalQueryPerformanceCounter();
 }
 
 #endif // HOST_X86 else
@@ -76,10 +71,7 @@ unsigned __int64 getTimeStamp() {
 */
 unsigned __int64 getTickFrequency()
 {
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-    PalQueryPerformanceFrequency(&ret);
-    return ret.QuadPart;
+    return PalQueryPerformanceFrequency();
 }
 
 #endif // DACCESS_COMPILE

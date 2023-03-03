@@ -726,6 +726,8 @@ public:
     static double minimum(double val1, double val2);
 
     static float minimum(float val1, float val2);
+
+    static double normalize(double x);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
@@ -819,6 +821,7 @@ template <typename T>
 bool FitsIn(var_types type, T value)
 {
     static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                          std::is_same<T, size_t>::value || std::is_same<T, ssize_t>::value ||
                           std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
     switch (type)

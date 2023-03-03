@@ -59,10 +59,10 @@ mono_dead_letter_dealloc (id self, SEL _cmd)
 {
 	struct objc_super super;
 	super.receiver = self;
-#if !defined(__cplusplus) && !__OBJC2__
-	super.class = nsobject;
-#else
+#if defined(__cplusplus) || defined(HAVE_OBJC_SUPER_SUPER_CLASS)
 	super.super_class = nsobject;
+#else
+	super.class = nsobject;
 #endif
 	void (*objc_msgSendSuper_op)(struct objc_super *, SEL) = (void (*)(struct objc_super *, SEL)) objc_msgSendSuper;
 	objc_msgSendSuper_op (&super, dealloc);

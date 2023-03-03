@@ -1,0 +1,18 @@
+<!--
+***********************************************************************************************
+Microsoft.DotNet.ILCompiler.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) .NET Foundation. All rights reserved.
+***********************************************************************************************
+-->
+<Project>  
+  <!--We need to support SDK6.0 loading the latest ILC packages-->
+  <PropertyGroup>
+    <NeedNativePublishSupportForSDK6>$(NETCoreSdkVersion.StartsWith('6'))</NeedNativePublishSupportForSDK6>
+  </PropertyGroup>
+ <Import Project="$(ILCompilerTargetsPath)" Condition="'$(NeedNativePublishSupportForSDK6)' == 'true'"/>
+</Project>

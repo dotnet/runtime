@@ -14,7 +14,7 @@ namespace System
         // do it in a way that failures don't cascade.
         //
 
-        private static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         public static bool IsOpenSUSE => IsDistroAndVersion("opensuse");
         public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
         public static bool IsDebian => IsDistroAndVersion("debian");
@@ -34,6 +34,9 @@ namespace System
         public static bool IsFedora => IsDistroAndVersion("fedora");
         public static bool IsLinuxBionic => IsBionic();
 
+        public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
+        public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
+
         // OSX family
         public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
@@ -51,10 +54,6 @@ namespace System
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
-
-        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
-
-        public static bool IsUnixAndSuperUser => !IsWindows && IsSuperUser;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :

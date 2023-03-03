@@ -37,6 +37,6 @@ Some other places that may need to be modified include:
 * `eng/liveBuilds.targets`
 * `src/installer/pkg/sfx/Microsoft.NETCore.App/Directory.Build.prop`
 * [`../../build/WasmApp.targets`](../../build/WasmApp.targets)
-* `src/tests/BuildWasmApps/Wasm.Build.Tests/BuildTestBase.cs`
+* `src/mono/wasm//Wasm.Build.Tests/BuildTestBase.cs`
 * etc
 

@@ -15,6 +15,7 @@
 #include "classloadlevel.h"
 #include "array.h"
 #include "castcache.h"
+#include "frozenobjectheap.h"
 
 #ifdef _DEBUG_IMPL
 
@@ -342,6 +343,63 @@ BOOL TypeHandle::IsCanonicalSubtype() const
 
     return (*this == TypeHandle(g_pCanonMethodTableClass)) || IsSharedByGenericInstantiations();
 }
+
+#ifndef DACCESS_COMPILE
+bool TypeHandle::IsManagedClassObjectPinned() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // Function pointers are always mapped to typeof(IntPtr)
+    return !GetLoaderAllocator()->CanUnload() || IsFnPtrType();
+}
+
+void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
+{
+    REFLECTCLASSBASEREF refClass = NULL;
+
+    PTR_LoaderAllocator allocator = GetLoaderAllocator();
+
+    if (!allocator->CanUnload())
+    {
+        // Allocate RuntimeType on a frozen segment
+        // Take a lock here since we don't want to allocate redundant objects which won't be collected
+        CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+
+        if (*pDest == NULL)
+        {
+            FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+            Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());
+            _ASSERTE(obj != NULL);
+            // Since objects are aligned we can use the lowest bit as a storage for "is pinned object" flag
+            _ASSERTE((((SSIZE_T)obj) & 1) == 0);
+            refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
+            refClass->SetType(*this);
+            RUNTIMETYPEHANDLE handle = (RUNTIMETYPEHANDLE)obj;
+            // Set the bit to 1 (we'll have to reset it before use)
+            handle |= 1;
+            *pDest = handle;
+        }
+    }
+    else
+    {
+        GCPROTECT_BEGIN(refClass);
+        refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
+        refClass->SetKeepAlive(allocator->GetExposedObject());
+        LOADERHANDLE exposedClassObjectHandle = allocator->AllocateHandle(refClass);
+        _ASSERTE((exposedClassObjectHandle & 1) == 0);
+        refClass->SetType(*this);
+
+        // Let all threads fight over who wins using InterlockedCompareExchange.
+        // Only the winner can set m_ExposedClassObject from NULL.
+        if (InterlockedCompareExchangeT(pDest, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+        {
+            // GC will collect unused instance
+            allocator->FreeHandle(exposedClassObjectHandle);
+        }
+        GCPROTECT_END();
+    }
+}
+#endif
 
 /* static */ BOOL TypeHandle::IsCanonicalSubtypeInstantiation(Instantiation inst)
 {
@@ -1503,50 +1561,50 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
         {
             MethodTable *pMT = AsMethodTable();
             CHECK_MSGF(pMT->GetInternalCorElementType() == pKey->GetKind(),
-                       ("CorElementType %d of Array MethodTable does not match key %S", pMT->GetArrayElementType(), typeKeyString.GetUnicode()));
+                       ("CorElementType %d of Array MethodTable does not match key %s", pMT->GetArrayElementType(), typeKeyString.GetUTF8()));
 
             CHECK_MSGF(pMT->GetArrayElementTypeHandle() == pKey->GetElementType(),
-                       ("Element type of Array MethodTable does not match key %S",typeKeyString.GetUnicode()));
+                       ("Element type of Array MethodTable does not match key %s",typeKeyString.GetUTF8()));
 
             CHECK_MSGF(pMT->GetRank() == pKey->GetRank(),
-                       ("Rank %d of Array MethodTable does not match key %S", pMT->GetRank(), typeKeyString.GetUnicode()));
+                       ("Rank %d of Array MethodTable does not match key %s", pMT->GetRank(), typeKeyString.GetUTF8()));
         }
         else
         if (IsTypeDesc())
         {
             TypeDesc *pTD = AsTypeDesc();
             CHECK_MSGF(pTD->GetInternalCorElementType() == pKey->GetKind(),
-                       ("CorElementType %d of TypeDesc does not match key %S", pTD->GetInternalCorElementType(), typeKeyString.GetUnicode()));
+                       ("CorElementType %d of TypeDesc does not match key %s", pTD->GetInternalCorElementType(), typeKeyString.GetUTF8()));
 
             if (CorTypeInfo::IsModifier(pKey->GetKind()))
             {
                 CHECK_MSGF(pTD->GetTypeParam() == pKey->GetElementType(),
-                           ("Element type of TypeDesc does not match key %S",typeKeyString.GetUnicode()));
+                           ("Element type of TypeDesc does not match key %s",typeKeyString.GetUTF8()));
             }
         }
         else
         {
             MethodTable *pMT = AsMethodTable();
-            CHECK_MSGF(pMT->GetModule() == pKey->GetModule(), ("Module of MethodTable does not match key %S", typeKeyString.GetUnicode()));
+            CHECK_MSGF(pMT->GetModule() == pKey->GetModule(), ("Module of MethodTable does not match key %s", typeKeyString.GetUTF8()));
             CHECK_MSGF(pMT->GetCl() == pKey->GetTypeToken(),
-                       ("TypeDef %x of Methodtable does not match TypeDef %x of key %S", pMT->GetCl(), pKey->GetTypeToken(),
-                        typeKeyString.GetUnicode()));
+                       ("TypeDef %x of Methodtable does not match TypeDef %x of key %s", pMT->GetCl(), pKey->GetTypeToken(),
+                        typeKeyString.GetUTF8()));
 
             if (pMT->IsTypicalTypeDefinition())
             {
                 CHECK_MSGF(pKey->GetNumGenericArgs() == 0 && !pKey->HasInstantiation(),
-                           ("Key %S for Typical MethodTable has non-zero number of generic arguments", typeKeyString.GetUnicode()));
+                           ("Key %s for Typical MethodTable has non-zero number of generic arguments", typeKeyString.GetUTF8()));
             }
             else
             {
                 CHECK_MSGF(pMT->GetNumGenericArgs() == pKey->GetNumGenericArgs(),
-                           ("Number of generic params %d in MethodTable does not match key %S", pMT->GetNumGenericArgs(), typeKeyString.GetUnicode()));
+                           ("Number of generic params %d in MethodTable does not match key %s", pMT->GetNumGenericArgs(), typeKeyString.GetUTF8()));
                 if (pKey->HasInstantiation())
                 {
                     for (DWORD i = 0; i < pMT->GetNumGenericArgs(); i++)
                     {
                         CHECK_MSGF(pMT->GetInstantiation()[i] == pKey->GetInstantiation()[i],
-                               ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
+                               ("Generic argument %d in MethodTable does not match key %s", i, typeKeyString.GetUTF8()));
                     }
                 }
             }

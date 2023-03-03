@@ -159,7 +159,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31858", TestRuntimes.Mono)]
         [InlineData(typeof(int[]))]
         [InlineData(typeof(TestInterface))]
         [InlineData(typeof(GenericClass<>))]

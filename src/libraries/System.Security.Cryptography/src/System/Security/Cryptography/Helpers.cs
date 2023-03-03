@@ -204,7 +204,8 @@ namespace Internal.Cryptography
             if (aCurve.IsNamed)
             {
                 // On Windows we care about FriendlyName, on Unix we care about Value
-                return (aCurve.Oid.Value == bCurve.Oid.Value && aCurve.Oid.FriendlyName == bCurve.Oid.FriendlyName);
+                return aCurve.Oid.Value == bCurve.Oid.Value &&
+                    string.Equals(aCurve.Oid.FriendlyName, bCurve.Oid.FriendlyName, StringComparison.OrdinalIgnoreCase);
             }
 
             if (!aCurve.IsExplicit)
@@ -245,10 +246,10 @@ namespace Internal.Cryptography
 
         private static bool IsValidMonth(this Calendar calendar, int year, int month, int era)
         {
-            return (calendar.IsValidYear(year, era) && month >= 1 && month <= calendar.GetMonthsInYear(year, era));
+            return (calendar.IsValidYear(year) && month >= 1 && month <= calendar.GetMonthsInYear(year, era));
         }
 
-        private static bool IsValidYear(this Calendar calendar, int year, int era)
+        private static bool IsValidYear(this Calendar calendar, int year)
         {
             return (year >= calendar.GetYear(calendar.MinSupportedDateTime) && year <= calendar.GetYear(calendar.MaxSupportedDateTime));
         }

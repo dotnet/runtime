@@ -24,7 +24,7 @@ public class a
         Console.WriteLine("Done...");
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         Console.WriteLine("Starting....");
 

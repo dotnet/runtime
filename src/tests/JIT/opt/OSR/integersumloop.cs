@@ -18,7 +18,7 @@ class IntegerSumLoop
         return result;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int final = 1_000_000;
         long frequency = Stopwatch.Frequency;

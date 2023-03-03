@@ -9,6 +9,7 @@
 #include "args.h"
 #include "coreclr.h"
 #include <corehost_context_contract.h>
+#include <host_runtime_contract.h>
 #include "hostpolicy_init.h"
 
 struct hostpolicy_context_t
@@ -26,6 +27,8 @@ public:
     coreclr_property_bag_t coreclr_properties;
 
     std::unique_ptr<coreclr_t> coreclr;
+
+    host_runtime_contract host_contract;
 
     int initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs);
 };

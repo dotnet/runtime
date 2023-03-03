@@ -81,7 +81,7 @@ namespace BenchmarksGame
     public class KNucleotide_1
     {
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
 

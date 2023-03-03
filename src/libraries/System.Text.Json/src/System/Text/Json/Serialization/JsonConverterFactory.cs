@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.None;
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.None;
 
         /// <summary>
         /// Create a converter for the provided <see cref="Type"/>.
@@ -61,16 +61,6 @@ namespace System.Text.Json.Serialization
             return converter;
         }
 
-        internal sealed override object ReadCoreAsObject(
-            ref Utf8JsonReader reader,
-            JsonSerializerOptions options,
-            scoped ref ReadStack state)
-        {
-            Debug.Fail("We should never get here.");
-
-            throw new InvalidOperationException();
-        }
-
         internal sealed override bool OnTryReadAsObject(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
@@ -105,17 +95,6 @@ namespace System.Text.Json.Serialization
         }
 
         internal sealed override Type TypeToConvert => null!;
-
-        internal sealed override bool WriteCoreAsObject(
-            Utf8JsonWriter writer,
-            object? value,
-            JsonSerializerOptions options,
-            ref WriteStack state)
-        {
-            Debug.Fail("We should never get here.");
-
-            throw new InvalidOperationException();
-        }
 
         internal sealed override void WriteAsPropertyNameCoreAsObject(
             Utf8JsonWriter writer, object value,

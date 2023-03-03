@@ -4,7 +4,7 @@
 
 using System;
 
-class A
+public class A
 {
     public static int[] B = new int[2];
 
@@ -14,7 +14,7 @@ class A
         int n;
         for (aa = new A[7]; true; n = B[2] + B[2]) ;
     }
-    static int Main()
+    public static int Main()
     {
         try
         {

@@ -93,7 +93,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: null,
                 blockSize: BlockSize / BitsPerByte,
@@ -115,7 +114,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: null,
                 blockSize: BlockSize / BitsPerByte,
@@ -138,7 +136,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -161,7 +158,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -187,7 +183,6 @@ namespace System.Security.Cryptography
 
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CFB,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -213,7 +208,6 @@ namespace System.Security.Cryptography
 
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CFB,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -232,7 +226,7 @@ namespace System.Security.Cryptography
             // only 8bits feedback is available on all platforms
             if (feedback != 8)
             {
-                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+                throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
             }
         }
     }

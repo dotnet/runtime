@@ -58,12 +58,12 @@ size_t Object::GetSize()
     MethodTable * pEEType = get_EEType();
 
     // strings have component size2, all other non-arrays should have 0
-    ASSERT(( pEEType->get_ComponentSize() <= 2) || pEEType->IsArray());
+    ASSERT(( pEEType->GetComponentSize() <= 2) || pEEType->IsArray());
 
     size_t s = pEEType->get_BaseSize();
-    uint16_t componentSize = pEEType->get_ComponentSize();
-    if (componentSize > 0)
-        s += ((Array*)this)->GetArrayLength() * componentSize;
+    if (pEEType->HasComponentSize())
+        s += (size_t)((Array*)this)->GetArrayLength() * pEEType->RawGetComponentSize();
+
     return s;
 }
 

@@ -162,7 +162,8 @@ void EEClass::Destruct(MethodTable * pOwningMT)
         }
         if (pDelegateEEClass->m_pInstRetBuffCallStub)
         {
-            pDelegateEEClass->m_pInstRetBuffCallStub->DecRef();
+            ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pInstRetBuffCallStub, sizeof(Stub));
+            stubWriterHolder.GetRW()->DecRef();
         }
         // While m_pMultiCastInvokeStub is also a member,
         // it is owned by the m_pMulticastStubCache, not by the class
@@ -591,7 +592,6 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
                                                            mcInstantiated,
                                                            TRUE /* fNonVtableSlot */,
                                                            TRUE /* fNativeCodeSlot */,
-                                                           FALSE /* fComPlusCallInfo */,
                                                            pMT,
                                                            &dummyAmTracker);
 
@@ -2994,7 +2994,7 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
     if (HasOptionalFields())
         DacEnumMemoryRegion(dac_cast<TADDR>(GetOptionalFields()), sizeof(EEClassOptionalFields));
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         PTR_Module pModule = pMT->GetModule();
         if (pModule.IsValid())

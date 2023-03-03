@@ -373,10 +373,10 @@ namespace System.Xml
             => BitConverter.IsLittleEndian ? ReadRawBytes<long>() : BinaryPrimitives.ReverseEndianness(ReadRawBytes<long>());
 
         public float ReadSingle()
-            => ReadRawBytes<float>();
+            => BinaryPrimitives.ReadSingleLittleEndian(GetBuffer(sizeof(float), out int offset).AsSpan(offset, sizeof(float)));
 
         public double ReadDouble()
-            => ReadRawBytes<double>();
+            => BinaryPrimitives.ReadDoubleLittleEndian(GetBuffer(sizeof(double), out int offset).AsSpan(offset, sizeof(double)));
 
         public decimal ReadDecimal()
         {
@@ -768,23 +768,12 @@ namespace System.Xml
         public bool IsWhitespaceKey(int key)
         {
             string s = GetDictionaryString(key).Value;
-            for (int i = 0; i < s.Length; i++)
-            {
-                if (!XmlConverter.IsWhitespace(s[i]))
-                    return false;
-            }
-            return true;
+            return XmlConverter.IsWhitespace(s);
         }
 
         public bool IsWhitespaceUTF8(int offset, int length)
         {
-            byte[] buffer = _buffer;
-            for (int i = 0; i < length; i++)
-            {
-                if (!XmlConverter.IsWhitespace((char)buffer[offset + i]))
-                    return false;
-            }
-            return true;
+            return XmlConverter.IsWhitespace(_buffer.AsSpan(offset, length));
         }
 
         public bool IsWhitespaceUnicode(int offset, int length)
@@ -938,18 +927,20 @@ namespace System.Xml
             return (sbyte)GetByte(offset);
         }
 
-        private T ReadRawBytes<T>() where T : unmanaged
+#pragma warning disable 8500 // sizeof of managed types
+        private unsafe T ReadRawBytes<T>() where T : unmanaged
         {
-            ReadOnlySpan<byte> buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset)
-                .AsSpan(offset, Unsafe.SizeOf<T>());
+            ReadOnlySpan<byte> buffer = GetBuffer(sizeof(T), out int offset)
+                .AsSpan(offset, sizeof(T));
             T value = MemoryMarshal.Read<T>(buffer);
 
-            Advance(Unsafe.SizeOf<T>());
+            Advance(sizeof(T));
             return value;
         }
 
-        private T ReadRawBytes<T>(int offset) where T : unmanaged
-            => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, Unsafe.SizeOf<T>()));
+        private unsafe T ReadRawBytes<T>(int offset) where T : unmanaged
+            => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, sizeof(T)));
+#pragma warning restore 8500
 
         public int GetInt16(int offset)
             => BitConverter.IsLittleEndian ? ReadRawBytes<short>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<short>(offset));
@@ -964,10 +955,10 @@ namespace System.Xml
             => (ulong)GetInt64(offset);
 
         public float GetSingle(int offset)
-            => ReadRawBytes<float>(offset);
+            => BinaryPrimitives.ReadSingleLittleEndian(_buffer.AsSpan(offset, sizeof(float)));
 
         public double GetDouble(int offset)
-            => ReadRawBytes<double>(offset);
+            => BinaryPrimitives.ReadDoubleLittleEndian(_buffer.AsSpan(offset, sizeof(double)));
 
         public decimal GetDecimal(int offset)
         {

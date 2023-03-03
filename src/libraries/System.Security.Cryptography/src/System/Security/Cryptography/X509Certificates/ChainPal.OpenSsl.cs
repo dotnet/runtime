@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private static readonly TimeSpan s_maxUrlRetrievalTimeout = TimeSpan.FromMinutes(1);
 
+#pragma warning disable IDE0060
         internal static partial IChainPal FromHandle(IntPtr chainContext)
         {
             throw new PlatformNotSupportedException();
@@ -19,6 +20,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return true;
         }
+#pragma warning restore IDE0060
 
         public static void FlushStores()
         {
@@ -235,7 +237,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         if (OpenSslX509ChainEventSource.Log.IsEnabled())
                         {
-                            OpenSslX509ChainEventSource.Log.CachingIntermediateFailed(cert);
+                            OpenSslX509ChainEventSource.Log.CachingIntermediateFailedMessage();
                         }
                     }
                 }

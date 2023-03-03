@@ -12,27 +12,27 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class CastingConverter<T, TSource> : JsonConverter<T>
     {
         private readonly JsonConverter<TSource> _sourceConverter;
-
         internal override Type? KeyType => _sourceConverter.KeyType;
         internal override Type? ElementType => _sourceConverter.ElementType;
 
-        public override bool HandleNull => _sourceConverter.HandleNull;
-        internal override ConverterStrategy ConverterStrategy => _sourceConverter.ConverterStrategy;
+        public override bool HandleNull { get; }
         internal override bool SupportsCreateObjectDelegate => _sourceConverter.SupportsCreateObjectDelegate;
 
-        internal CastingConverter(JsonConverter<TSource> sourceConverter) : base(initialize: false)
+        internal CastingConverter(JsonConverter<TSource> sourceConverter)
         {
             Debug.Assert(typeof(T).IsInSubtypeRelationshipWith(typeof(TSource)));
             Debug.Assert(sourceConverter.SourceConverterForCastingConverter is null, "casting converters should not be layered.");
 
             _sourceConverter = sourceConverter;
-            Initialize();
-
             IsInternalConverter = sourceConverter.IsInternalConverter;
             IsInternalConverterForNumberType = sourceConverter.IsInternalConverterForNumberType;
-            RequiresReadAhead = sourceConverter.RequiresReadAhead;
-            CanUseDirectReadOrWrite = sourceConverter.CanUseDirectReadOrWrite;
+            ConverterStrategy = sourceConverter.ConverterStrategy;
             CanBePolymorphic = sourceConverter.CanBePolymorphic;
+
+            // Ensure HandleNull values reflect the exact configuration of the source converter
+            HandleNullOnRead = sourceConverter.HandleNullOnRead;
+            HandleNullOnWrite = sourceConverter.HandleNullOnWrite;
+            HandleNull = sourceConverter.HandleNull;
         }
 
         internal override JsonConverter? SourceConverterForCastingConverter => _sourceConverter;

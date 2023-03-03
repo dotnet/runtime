@@ -15,7 +15,6 @@ namespace System.Tests
         static string s_stackTrace;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73051", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15315", TestRuntimes.Mono)]
         public void StackTraceTest()
         {

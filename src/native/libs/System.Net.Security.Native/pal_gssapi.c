@@ -119,7 +119,7 @@ static void* volatile s_gssLib = NULL;
 
 #define gss_lib_name "libgssapi_krb5.so.2"
 
-static int32_t ensure_gss_shim_initialized()
+static int32_t ensure_gss_shim_initialized(void)
 {
     void* lib = dlopen(gss_lib_name, RTLD_LAZY);
     if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
@@ -673,7 +673,7 @@ uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
         minorStatus, packageType, desiredName, password, passwdLen, GSS_C_INITIATE, outputCredHandle);
 }
 
-uint32_t NetSecurityNative_IsNtlmInstalled()
+uint32_t NetSecurityNative_IsNtlmInstalled(void)
 {
 #if HAVE_GSS_SPNEGO_MECHANISM
     gss_OID ntlmOid = GSS_NTLM_MECHANISM;
@@ -706,7 +706,7 @@ uint32_t NetSecurityNative_IsNtlmInstalled()
     return foundNtlm;
 }
 
-int32_t NetSecurityNative_EnsureGssInitialized()
+int32_t NetSecurityNative_EnsureGssInitialized(void)
 {
 #if defined(GSS_SHIM)
     return ensure_gss_shim_initialized();

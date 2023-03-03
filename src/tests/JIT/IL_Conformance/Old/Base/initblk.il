@@ -11,7 +11,7 @@
 
 	.field public static int32 DATA
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 	ldsflda		int32 _initblk::DATA

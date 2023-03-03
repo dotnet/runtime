@@ -205,6 +205,11 @@ public:
 static void* CurrentClrInstance;
 static unsigned int CurrentAppDomainId;
 
+static void log_error_info(const char* line)
+{
+    std::fprintf(stderr, "%s\n", line);
+}
+
 static int run(const configuration& config)
 {
     platform_specific_actions actions;
@@ -282,6 +287,7 @@ static int run(const configuration& config)
     // Get CoreCLR exports
     coreclr_initialize_ptr coreclr_init_func = nullptr;
     coreclr_execute_assembly_ptr coreclr_execute_func = nullptr;
+    coreclr_set_error_writer_ptr coreclr_set_error_writer_func = nullptr;
     coreclr_shutdown_2_ptr coreclr_shutdown2_func = nullptr;
     if (!try_get_export(coreclr_mod, "coreclr_initialize", (void**)&coreclr_init_func)
         || !try_get_export(coreclr_mod, "coreclr_execute_assembly", (void**)&coreclr_execute_func)
@@ -289,6 +295,9 @@ static int run(const configuration& config)
     {
         return -1;
     }
+
+    // The coreclr_set_error_writer is optional
+    (void)try_get_export(coreclr_mod, "coreclr_set_error_writer", (void**)&coreclr_set_error_writer_func);
 
     // Construct CoreCLR properties.
     pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(tpa_list.c_str());
@@ -344,6 +353,11 @@ static int run(const configuration& config)
         propertyCount, propertyKeys.data(), propertyValues.data(),
         entry_assembly_utf8.c_str(), config.entry_assembly_argc, argv_utf8.get() };
 
+    if (coreclr_set_error_writer_func != nullptr)
+    {
+        coreclr_set_error_writer_func(log_error_info);
+    }
+
     int result;
     result = coreclr_init_func(
         exe_path_utf8.c_str(),
@@ -359,6 +373,11 @@ static int run(const configuration& config)
         logger.dump_details();
         pal::fprintf(stderr, W("END: coreclr_initialize failed - Error: 0x%08x\n"), result);
         return -1;
+    }
+
+    if (coreclr_set_error_writer_func != nullptr)
+    {
+        coreclr_set_error_writer_func(nullptr);
     }
 
     int exit_code;

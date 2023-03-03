@@ -48,12 +48,14 @@
 
     <!-- CoreDisTools are used in debugging visualizers. -->
     <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release' and '$(CrossHostArch)' == ''">true</IncludeCoreDisTools>
+    <!-- source-build doesn't use ObjWriter for the ILCompiler.  the end-user will end up pulling Microsoft-built bits for NativeAOT anyway.  -->
+    <IncludeObjWriter Condition="'$(DotNetBuildFromSource)' != 'true'">true</IncludeObjWriter>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
 
   <ItemGroup>
-    <PackageReference Include="runtime.$(ObjWriterRid).Microsoft.NETCore.Runtime.ObjWriter">
+    <PackageReference Include="runtime.$(ObjWriterRid).Microsoft.NETCore.Runtime.ObjWriter" Condition="'$(IncludeObjWriter)' == 'true'">
       <Version>$(ObjWriterVersion)</Version>
     </PackageReference>
 
@@ -62,7 +64,7 @@
       <Version>$(NetStandardLibraryVersion)</Version>
     </PackageReference>
 
-    <Content Include="$(NuGetPackageRoot)runtime.$(ObjWriterRid).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(ObjWriterRid)\native\$(LibPrefix)objwriter$(LibSuffix)">
+    <Content Include="$(NuGetPackageRoot)runtime.$(ObjWriterRid).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(ObjWriterRid)\native\$(LibPrefix)objwriter$(LibSuffix)" Condition="'$(IncludeObjWriter)' == 'true'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
       <Pack>false</Pack>
@@ -82,28 +84,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\CommandLine\Argument.cs" />
-    <Compile Include="..\..\Common\CommandLine\Argument_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentCommand.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentCommand_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentLexer.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentList_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentParser.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax_Definers.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntaxException.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentToken.cs" />
-    <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
-    <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />
-    <Compile Include="..\..\Common\CommandLine\Enumerable.cs" />
-    <Compile Include="..\..\Common\CommandLine\HelpTextGenerator.cs" />
+    <Compile Include="..\..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\InstructionSetHelpers.cs" Link="InstructionSetHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\Common\CommandLine\Resources\Strings.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.CommandLine.Strings</ClassName>
-    </EmbeddedResource>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
 
   <ItemGroup>

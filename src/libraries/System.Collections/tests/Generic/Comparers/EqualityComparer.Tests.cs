@@ -463,5 +463,90 @@ namespace System.Collections.Generic.Tests
 
             return result;
         }
+
+        [Fact]
+        public void EqualityComparerCreate_InvalidArguments_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("equals", () => EqualityComparer<int>.Create(null));
+            AssertExtensions.Throws<ArgumentNullException>("equals", () => EqualityComparer<string>.Create(null, null));
+            EqualityComparer<int>.Create((x, y) => x == y); // no exception
+            EqualityComparer<int>.Create((x, y) => x == y, null); // no exception
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_DelegatesUsed()
+        {
+            int equalsCalls = 0;
+            EqualityComparer<int> ec;
+
+            ec = EqualityComparer<int>.Create(
+                (x, y) =>
+                {
+                    equalsCalls++;
+                    return x == y * 2;
+                });
+            Assert.Throws<NotSupportedException>(() => ec.GetHashCode(42));
+            Assert.True(ec.Equals(2, 1));
+            Assert.False(ec.Equals(2, 2));
+            Assert.False(ec.Equals(1, 2));
+            Assert.True(ec.Equals(6, 3));
+            Assert.Equal(4, equalsCalls);
+
+            ec = EqualityComparer<int>.Create((x, y) => x == y, null);
+            Assert.Throws<NotSupportedException>(() => ec.GetHashCode(42));
+
+            int getHashCodeCalls = 0;
+            equalsCalls = 0;
+            ec = EqualityComparer<int>.Create(
+                (x, y) =>
+                {
+                    equalsCalls++;
+                    return x * 2 == y;
+                },
+                x =>
+                {
+                    getHashCodeCalls++;
+                    return x * 2;
+                });
+            Assert.True(ec.Equals(1, 2));
+            Assert.False(ec.Equals(2, 2));
+            Assert.False(ec.Equals(2, 1));
+            Assert.True(ec.Equals(3, 6));
+            Assert.Equal(6, ec.GetHashCode(3));
+            Assert.Equal(8, ec.GetHashCode(4));
+            Assert.Equal(4, equalsCalls);
+            Assert.Equal(2, getHashCodeCalls);
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_ArgsNotDereferenced()
+        {
+            EqualityComparer<string> ec = EqualityComparer<string>.Create((x, y) => true, x => 0);
+            Assert.True(ec.Equals(null, null));
+            Assert.Equal(0, ec.GetHashCode(null));
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_EqualsGetHashCodeOverridden()
+        {
+            Func<int, int, bool> equals1 = (x, y) => x == y;
+            Func<int, int, bool> equals2 = (x, y) => x == y;
+            Func<int, int> getHashCode1 = x => x;
+            Func<int, int> getHashCode2 = x => x;
+
+            EqualityComparer<int> ec = EqualityComparer<int>.Create(equals1, getHashCode1);
+            Assert.True(ec.Equals(ec));
+            Assert.Equal(ec.GetHashCode(), ec.GetHashCode());
+
+            Assert.True(EqualityComparer<int>.Create(equals1).Equals(EqualityComparer<int>.Create(equals1)));
+            Assert.True(EqualityComparer<int>.Create(equals1, getHashCode1).Equals(EqualityComparer<int>.Create(equals1, getHashCode1)));
+            Assert.Equal(EqualityComparer<int>.Create(equals1).GetHashCode(), EqualityComparer<int>.Create(equals1).GetHashCode());
+            Assert.Equal(EqualityComparer<int>.Create(equals1, getHashCode1).GetHashCode(), EqualityComparer<int>.Create(equals1, getHashCode1).GetHashCode());
+
+            Assert.False(EqualityComparer<int>.Create(equals1).Equals(EqualityComparer<int>.Create(equals2)));
+            Assert.False(EqualityComparer<int>.Create(equals1).Equals(EqualityComparer<int>.Create(equals1, getHashCode1)));
+            Assert.False(EqualityComparer<int>.Create(equals1, getHashCode1).Equals(EqualityComparer<int>.Create(equals1, getHashCode2)));
+            Assert.False(EqualityComparer<int>.Create(equals1, getHashCode1).Equals(EqualityComparer<int>.Create(equals2, getHashCode1)));
+        }
     }
 }

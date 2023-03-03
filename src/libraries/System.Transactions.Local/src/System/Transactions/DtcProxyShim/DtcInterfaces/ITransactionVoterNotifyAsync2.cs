@@ -10,11 +10,21 @@ namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 [ComImport, Guid("5433376B-414D-11d3-B206-00C04FC2F3EF"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface ITransactionVoterNotifyAsync2
 {
-    void Committed([MarshalAs(UnmanagedType.Bool)] bool fRetaining, IntPtr pNewUOW /* always null? */, uint hresult);
+    void Committed(
+        [MarshalAs(UnmanagedType.Bool)] bool fRetaining,
+        IntPtr pNewUOW,
+        uint hresult);
 
-    void Aborted(IntPtr pboidReason, [MarshalAs(UnmanagedType.Bool)] bool fRetaining, IntPtr pNewUOW, uint hresult);
+    void Aborted(
+        IntPtr pboidReason,
+        [MarshalAs(UnmanagedType.Bool)] bool fRetaining,
+        IntPtr pNewUOW,
+        uint hresult);
 
-    void HeuristicDecision([MarshalAs(UnmanagedType.U4)] OletxTransactionHeuristic dwDecision, IntPtr pboidReason, uint hresult);
+    void HeuristicDecision(
+        [MarshalAs(UnmanagedType.U4)] OletxTransactionHeuristic dwDecision,
+        IntPtr pboidReason,
+        uint hresult);
 
     void Indoubt();
 

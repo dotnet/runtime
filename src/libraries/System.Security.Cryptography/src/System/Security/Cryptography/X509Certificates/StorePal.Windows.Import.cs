@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates
                             IntPtr.Zero
                             ))
                         {
-                            Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                            Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                             certStore.Dispose();
                             throw e;
                         }
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.X509Certificates
                                 certStore = Interop.Crypt32.PFXImportCertStore(ref blob2, password, certStoreFlags);
                                 if (certStore == null || certStore.IsInvalid)
                                 {
-                                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                                    Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                                     certStore?.Dispose();
                                     throw e;
                                 }
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.X509Certificates
                                     Interop.Crypt32.DATA_BLOB nullBlob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
                                     if (!Interop.Crypt32.CertSetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
                                     {
-                                        Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                                        Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                                         certStore.Dispose();
                                         throw e;
                                     }
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         if (!Interop.Crypt32.CertAddCertificateLinkToStore(certStore, certContext, Interop.Crypt32.CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                         {
-                            throw Marshal.GetLastWin32Error().ToCryptographicException();
+                            throw Marshal.GetLastPInvokeError().ToCryptographicException();
                         }
                     }
                 }
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography.X509Certificates
             SafeCertStoreHandle certStore = Interop.crypt32.CertOpenStore(CertStoreProvider.CERT_STORE_PROV_SYSTEM_W, Interop.Crypt32.CertEncodingType.All, IntPtr.Zero, certStoreFlags, storeName);
             if (certStore.IsInvalid)
             {
-                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                 certStore.Dispose();
                 throw e;
             }

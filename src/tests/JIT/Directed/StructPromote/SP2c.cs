@@ -30,7 +30,7 @@ class SP2c
         return Foo(i2, l0, s); // r0 <= inarg[4]; r2/r3 <= r0/r1; outarg[0] <= inarg[0]; outarg[8/12] <= r2/r3
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         long res = M(4, 2, 3, 1);
         Console.WriteLine("M(4, 2, 3, 1) is {0}.", res);

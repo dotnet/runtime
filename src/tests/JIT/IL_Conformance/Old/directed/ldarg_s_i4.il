@@ -1649,7 +1649,7 @@ FAIL:
         ret        
 }
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack       2
         call            int32 ldarg_s_i4::test_int32()

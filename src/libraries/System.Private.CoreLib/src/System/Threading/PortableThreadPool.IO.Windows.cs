@@ -241,7 +241,7 @@ namespace System.Threading
                         NativeRuntimeEventSource.Log.ThreadPoolIODequeue(nativeOverlapped);
                     }
 
-                    _IOCompletionCallback.PerformSingleIOCompletionCallback(errorCode, bytesTransferred, nativeOverlapped);
+                    IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(errorCode, bytesTransferred, nativeOverlapped);
                 }
             }
 
@@ -262,7 +262,7 @@ namespace System.Threading
                         errorCode = Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
                     }
 
-                    _IOCompletionCallback.PerformSingleIOCompletionCallback(errorCode, e.bytesTransferred, e.nativeOverlapped);
+                    IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(errorCode, e.bytesTransferred, e.nativeOverlapped);
                 }
             }
 

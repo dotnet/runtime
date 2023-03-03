@@ -558,7 +558,7 @@ namespace System.Data.Common
             }
         }
 
-        private void BuildCache(bool closeConnection, DataRow? dataRow, bool useColumnsForParameterNames)
+        private void BuildCache(bool closeConnection, bool useColumnsForParameterNames)
         {
             // Don't bother building the cache if it's done already; wait for
             // the user to call RefreshSchema first.
@@ -1008,7 +1008,7 @@ namespace System.Data.Common
             {
                 DbSchemaRow row = schemaRows[i];
 
-                if ((null == row) || (0 == row.BaseColumnName.Length) || !IncludeInWhereClause(row, isUpdate))
+                if ((null == row) || (0 == row.BaseColumnName.Length) || !IncludeInWhereClause(row))
                 {
                     continue;
                 }
@@ -1320,7 +1320,7 @@ namespace System.Data.Common
 
         internal DbCommand GetInsertCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
-            BuildCache(true, dataRow, useColumnsForParameterNames);
+            BuildCache(true, useColumnsForParameterNames);
             BuildInsertCommand(GetTableMapping(dataRow), dataRow);
             return InsertCommand!;
         }
@@ -1337,7 +1337,7 @@ namespace System.Data.Common
 
         internal DbCommand GetUpdateCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
-            BuildCache(true, dataRow, useColumnsForParameterNames);
+            BuildCache(true, useColumnsForParameterNames);
             BuildUpdateCommand(GetTableMapping(dataRow), dataRow);
             return UpdateCommand!;
         }
@@ -1354,7 +1354,7 @@ namespace System.Data.Common
 
         internal DbCommand GetDeleteCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
-            BuildCache(true, dataRow, useColumnsForParameterNames);
+            BuildCache(true, useColumnsForParameterNames);
             BuildDeleteCommand(GetTableMapping(dataRow), dataRow);
             return DeleteCommand!;
         }
@@ -1415,7 +1415,7 @@ namespace System.Data.Common
             return (!row.IsAutoIncrement && !row.IsRowVersion && !row.IsHidden && !row.IsReadOnly);
         }
 
-        private bool IncludeInWhereClause(DbSchemaRow row, bool isUpdate)
+        private bool IncludeInWhereClause(DbSchemaRow row)
         {
             bool flag = IncrementWhereCount(row);
             if (flag && row.IsHidden)
@@ -1598,7 +1598,7 @@ namespace System.Data.Common
         {
             // the Update method will close the connection if command was null and returned command.Connection is same as SelectCommand.Connection
             DataRow datarow = rowUpdatingEvent.Row;
-            BuildCache(false, datarow, false);
+            BuildCache(false, false);
 
             DbCommand? command;
             switch (rowUpdatingEvent.StatementType)

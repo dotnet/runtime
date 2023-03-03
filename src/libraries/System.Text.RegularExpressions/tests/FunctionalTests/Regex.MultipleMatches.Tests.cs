@@ -276,6 +276,41 @@ namespace System.Text.RegularExpressions.Tests
                      }
                 };
 
+                yield return new object[]
+                {
+                    engine,
+                    @"\w*\b\w+", "abc def ghij kl m nop qrstuv", RegexOptions.None,
+                    new[]
+                    {
+                        new CaptureData("abc", 0, 3),
+                        new CaptureData("def", 4, 3),
+                        new CaptureData("ghij", 8, 4),
+                        new CaptureData("kl", 13, 2),
+                        new CaptureData("m", 16, 1),
+                        new CaptureData("nop", 18, 3),
+                        new CaptureData("qrstuv", 22, 6),
+                    }
+                };
+
+                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.ECMAScript })
+                {
+                    if (RegexHelpers.IsNonBacktracking(engine))
+                    {
+                        continue;
+                    }
+
+                    yield return new object[]
+                    {
+                        engine,
+                        @"a?\b", "ac", options,
+                        new[]
+                        {
+                            new CaptureData("", 0, 0),
+                            new CaptureData("", 2, 0),
+                        }
+                    };
+                }
+
                 if (!PlatformDetection.IsNetFramework)
                 {
                     // .NET Framework missing fix in https://github.com/dotnet/runtime/pull/1075
@@ -294,6 +329,20 @@ namespace System.Text.RegularExpressions.Tests
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(\b(?!ab|nop)\w*\b)\w+", "abc def ghij kl m nop qrstuv", RegexOptions.None,
+                        new[]
+                        {
+                            new CaptureData("def", 4, 3),
+                            new CaptureData("ghij", 8, 4),
+                            new CaptureData("kl", 13, 2),
+                            new CaptureData("m", 16, 1),
+                            new CaptureData("qrstuv", 22, 6),
+                        }
+                    };
+
                     yield return new object[]
                     {
                         engine,

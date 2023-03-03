@@ -5,7 +5,7 @@ using System;
 using System.Security;
 
 
-internal class Foo
+public class Foo
 {
     public virtual void callee()
     {

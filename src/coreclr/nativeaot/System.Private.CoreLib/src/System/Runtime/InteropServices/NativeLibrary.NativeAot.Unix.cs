@@ -9,11 +9,8 @@ namespace System.Runtime.InteropServices
     {
         private const int LoadWithAlteredSearchPathFlag = 0;
 
-        private static IntPtr LoadLibraryHelper(string libraryName, int flags, ref LoadLibErrorTracker errorTracker)
+        private static IntPtr LoadLibraryHelper(string libraryName, int _ /*flags*/, ref LoadLibErrorTracker errorTracker)
         {
-            // do the Dos/Unix conversion
-            libraryName = libraryName.Replace('\\', '/');
-
             IntPtr ret = Interop.Sys.LoadLibrary(libraryName);
             if (ret == IntPtr.Zero)
             {
@@ -51,10 +48,7 @@ namespace System.Runtime.InteropServices
 
             public void TrackErrorMessage(string? message)
             {
-                if (_errorMessage == null)
-                {
-                    _errorMessage = Environment.NewLine;
-                }
+                _errorMessage ??= Environment.NewLine;
                 if (!_errorMessage.Contains(message))
                 {
                     _errorMessage += message + Environment.NewLine;

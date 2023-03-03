@@ -33,8 +33,8 @@ void removeAll_FindNextFileA_test1()
     wTempPtr = convert((LPSTR)szDirName_02);
     RemoveDirectoryW(wTempPtr);
     free (wTempPtr);
-    DeleteFile(szFindName);
-    DeleteFile(szFindName_02);
+    remove(szFindName);
+    remove(szFindName_02);
 }
 
 

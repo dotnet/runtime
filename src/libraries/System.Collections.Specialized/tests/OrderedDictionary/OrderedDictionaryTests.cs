@@ -38,8 +38,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void PassingEqualityComparers()
         {
-            var eqComp = new CaseInsensitiveEqualityComparer();
-            var d1 = new OrderedDictionary(eqComp);
+            var d1 = new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);
             d1.Add("foo", "bar");
             AssertExtensions.Throws<ArgumentException>(null, () => d1.Add("FOO", "bar"));
 
@@ -59,12 +58,11 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void PassingCapacityAndIEqualityComparer()
         {
-            var eqComp = new CaseInsensitiveEqualityComparer();
-            var d1 = new OrderedDictionary(-1000, eqComp);
-            var d2 = new OrderedDictionary(-1, eqComp);
-            var d3 = new OrderedDictionary(0, eqComp);
-            var d4 = new OrderedDictionary(1, eqComp);
-            var d5 = new OrderedDictionary(1000, eqComp);
+            var d1 = new OrderedDictionary(-1000, StringComparer.InvariantCultureIgnoreCase);
+            var d2 = new OrderedDictionary(-1, StringComparer.InvariantCultureIgnoreCase);
+            var d3 = new OrderedDictionary(0, StringComparer.InvariantCultureIgnoreCase);
+            var d4 = new OrderedDictionary(1, StringComparer.InvariantCultureIgnoreCase);
+            var d5 = new OrderedDictionary(1000, StringComparer.InvariantCultureIgnoreCase);
             Assert.Throws<ArgumentOutOfRangeException>(() => d1.Add("foo", "bar"));
             Assert.Throws<ArgumentOutOfRangeException>(() => d2.Add("foo", "bar"));
             d3.Add("foo", "bar");
@@ -631,8 +629,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void IListedKeysPropertyCanUseCustomEqualityComparer()
         {
-            var eqComp = new CaseInsensitiveEqualityComparer();
-            var orderedDictionary = new OrderedDictionary(eqComp);
+            var orderedDictionary = new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);
             orderedDictionary.Add("KeY", null);
 
             IList list = (IList)orderedDictionary.Keys;

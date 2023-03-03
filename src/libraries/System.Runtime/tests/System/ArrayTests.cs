@@ -1614,7 +1614,7 @@ namespace System.Tests
             yield return new object[] { new object[] { "1" }, new int[1] };
 
             IEquatable<int>[] interfaceArray1 = new IEquatable<int>[10] { 0, 0, 0, 0, new NotInt32(), 0, 0, 0, 0, 0 };
-            yield return new object[] { interfaceArray1, new int[10]};
+            yield return new object[] { interfaceArray1, new int[10] };
 
             IEquatable<int>[] interfaceArray2 = new IEquatable<int>[10] { 0, 0, 0, 0, new NotInt32(), 0, 0, 0, 0, 0 };
             yield return new object[] { interfaceArray2, new int[10] };
@@ -3178,7 +3178,7 @@ namespace System.Tests
 
             // Char
             yield return new object[] { new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7' }, 0, 33, new char[] { '7', '6', '5', '4', '3', '2', '1', 'z', 'y', 'x', 'w', 'v', 'u', 't', 's', 'r', 'q', 'p', 'o', 'n', 'm', 'l', 'k', 'j', 'i', 'h', 'g', 'f', 'e', 'd', 'c', 'b', 'a' } };
-            yield return new object[] { new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q' }, 0, 17, new char[] {  'q', 'p', 'o', 'n', 'm', 'l', 'k', 'j', 'i', 'h', 'g', 'f', 'e', 'd', 'c', 'b', 'a' } };
+            yield return new object[] { new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q' }, 0, 17, new char[] { 'q', 'p', 'o', 'n', 'm', 'l', 'k', 'j', 'i', 'h', 'g', 'f', 'e', 'd', 'c', 'b', 'a' } };
             yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 2, 3, new char[] { '1', '2', '5', '4', '3' } };
             yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 0, 0, new char[] { '1', '2', '3', '4', '5' } };
             yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 5, 0, new char[] { '1', '2', '3', '4', '5' } };
@@ -3225,8 +3225,8 @@ namespace System.Tests
             var enumArray = new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case3, Int32Enum.Case1 };
             yield return new object[] { enumArray, 0, 4, new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case3, Int32Enum.Case2, Int32Enum.Case1 } };
             yield return new object[] { enumArray, 2, 2, new Int32Enum[] { Int32Enum.Case1, Int32Enum.Case2, Int32Enum.Case1, Int32Enum.Case3 } };
-            yield return new object[] { enumArray, 0, 0, enumArray};
-            yield return new object[] { enumArray, 4, 0, enumArray};
+            yield return new object[] { enumArray, 0, 0, enumArray };
+            yield return new object[] { enumArray, 4, 0, enumArray };
 
             // ValueType array
             ComparableValueType[] valueTypeArray = new ComparableValueType[] { new ComparableValueType(0), new ComparableValueType(1) };
@@ -3331,18 +3331,18 @@ namespace System.Tests
                 expectedPartial.SetValue(2, 3);
                 expectedPartial.SetValue(4, 4);
 
-                yield return new object[] { actual,  1, 4, null, expectedFull };
-                yield return new object[] { actual,  1, 4, new IntegerComparer(), expectedFull };
-                yield return new object[] { actual,  2, 2, null, expectedPartial };
-                yield return new object[] { actual,  2, 2, new IntegerComparer(), expectedPartial };
-                yield return new object[] { actual,  1, 0, null, actual };
-                yield return new object[] { actual,  1, 0, new IntegerComparer(), actual };
+                yield return new object[] { actual, 1, 4, null, expectedFull };
+                yield return new object[] { actual, 1, 4, new IntegerComparer(), expectedFull };
+                yield return new object[] { actual, 2, 2, null, expectedPartial };
+                yield return new object[] { actual, 2, 2, new IntegerComparer(), expectedPartial };
+                yield return new object[] { actual, 1, 0, null, actual };
+                yield return new object[] { actual, 1, 0, new IntegerComparer(), actual };
             }
         }
 
         public static IEnumerable<object[]> Sort_SZArray_TestData()
         {
-			     // Int
+            // Int
             yield return new object[] { new int[0], 0, 0, new IntegerComparer(), new int[0] };
             yield return new object[] { new int[] { 5 }, 0, 1, new IntegerComparer(), new int[] { 5 } };
             yield return new object[] { new int[] { 5, 2 }, 0, 2, new IntegerComparer(), new int[] { 2, 5 } };
@@ -3359,7 +3359,7 @@ namespace System.Tests
             yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, new IntegerComparer(), new int[] { 2, 3, 4 } };
             yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, null, new int[] { 2, 3, 4 } };
 
-			     // String
+            // String
             yield return new object[] { new string[0], 0, 0, null, new string[0] };
             yield return new object[] { new string[0], 0, 0, new StringComparer(), new string[0] };
             yield return new object[] { new string[] { "5" }, 0, 1, null, new string[] { "5" } };
@@ -3367,9 +3367,9 @@ namespace System.Tests
             yield return new object[] { new string[] { "5", "2" }, 0, 2, null, new string[] { "2", "5" } };
             yield return new object[] { new string[] { "5", "2" }, 0, 2, new StringComparer(), new string[] { "2", "5" } };
             yield return new object[] { new string[] { "5", "2", "3" }, 0, 3, null, new string[] { "2", "3", "5" } };
-            yield return new object[] { new string[] { "5", "2", "3"}, 0, 3, new StringComparer(), new string[] { "2", "3", "5" } };
-            yield return new object[] { new string[] { "5", "2", null }, 0, 3, null, new string[] {null, "2", "5" } };
-            yield return new object[] { new string[] { "5", "2", null}, 0, 3, new StringComparer(), new string[] { null, "2", "5" } };
+            yield return new object[] { new string[] { "5", "2", "3" }, 0, 3, new StringComparer(), new string[] { "2", "3", "5" } };
+            yield return new object[] { new string[] { "5", "2", null }, 0, 3, null, new string[] { null, "2", "5" } };
+            yield return new object[] { new string[] { "5", "2", null }, 0, 3, new StringComparer(), new string[] { null, "2", "5" } };
             yield return new object[] { new string[] { "5", "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 9, new StringComparer(), new string[] { "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 10, new StringComparer(), new string[] { null, "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 3, 4, new StringComparer(), new string[] { "5", null, "2", "3", "4", "8", "9", "2", "4", "6" } };
@@ -3738,7 +3738,7 @@ namespace System.Tests
             yield return new object[] { new int[] { 3, 1, 2 }, new string[] { "a", "b", "c" }, 0, 3, null, new int[] { 1, 2, 3 }, new string[] { "b", "c", "a" } };
             yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d" }, 1, 2, null, new int[] { 3, 1, 2, 4 }, new string[] { "a", "c", "b", "d" } };
 
-            yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d" }, 0, 4, new ReverseIntegerComparer(), new int[] { 4, 3, 2, 1 }, new string[] { "d", "a", "b", "c" } };
+            yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d" }, 0, 4, Comparer<int>.Create((x, y) => -((int)x).CompareTo((int)y)), new int[] { 4, 3, 2, 1 }, new string[] { "d", "a", "b", "c" } };
 
             yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d", "e", "f" }, 0, 4, new IntegerComparer(), new int[] { 1, 2, 3, 4 }, new string[] { "c", "b", "a", "d", "e", "f" } }; // Items.Length > keys.Length
 
@@ -4446,6 +4446,18 @@ namespace System.Tests
             Assert.Equal(0x7FFFFFC7, Array.MaxLength);
         }
 
+        [Fact]
+        public static void Array_Initialize()
+        {
+            var array = new StructWithDefaultConstructor[10, 10];
+            array.Initialize();
+            Assert.All(array.OfType<StructWithDefaultConstructor>(), a => Assert.True(a.Constructed));
+
+            var array2 = new NonGenericClass1[10];
+            array2.Initialize();
+            Assert.All(array2, Assert.Null);
+        }
+
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
             VerifyArray(array, elementType, lengths, lowerBounds);
@@ -4590,6 +4602,16 @@ namespace System.Tests
             public int z;
         }
 
+        private struct StructWithDefaultConstructor
+        {
+            public StructWithDefaultConstructor()
+            {
+                Constructed = true;
+            }
+
+            public bool Constructed;
+        }
+
         private class IntegerComparer : IComparer, IComparer<int>, IEqualityComparer
         {
             public int Compare(object x, object y) => Compare((int)x, (int)y);
@@ -4599,11 +4621,6 @@ namespace System.Tests
             bool IEqualityComparer.Equals(object x, object y) => ((int)x) == ((int)y);
 
             public int GetHashCode(object obj) => ((int)obj) >> 2;
-        }
-
-        public class ReverseIntegerComparer : IComparer
-        {
-            public int Compare(object x, object y) => -((int)x).CompareTo((int)y);
         }
 
         private class StringComparer : IComparer, IComparer<string>

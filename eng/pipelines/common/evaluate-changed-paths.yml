@@ -12,7 +12,8 @@ parameters:
 
 steps:
   - ${{ if ne(parameters.arguments[0], '') }}:
-    - script: eng/pipelines/evaluate-changed-paths.sh
+    - script: >-
+              eng/pipelines/evaluate-changed-paths.sh
               --azurevariable containsChange
               ${{ join(' ', parameters.arguments) }}
       displayName: Evaluate paths for ${{ parameters.subsetName }}

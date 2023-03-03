@@ -478,7 +478,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         from = args["to"].Value<string>()
                     });
                     if (args["type"].Value<string>() == "prototypeAndProperties")
-                        o.Add("prototype", GetPrototype(objectId, args));
+                        o.Add("prototype", GetPrototype(args));
                     await SendEvent(sessionId, "", o, token);
                     return true;
                 }
@@ -488,7 +488,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         return false;
                     var o = JObject.FromObject(new
                     {
-                        prototype = GetPrototype(objectId, args),
+                        prototype = GetPrototype(args),
                         from = args["to"].Value<string>()
                     });
                     await SendEvent(sessionId, "", o, token);
@@ -614,8 +614,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         {
                             var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
                             JObject retValue = await resolver.Resolve(expression, token);
-                            if (retValue == null)
-                                retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
+                            retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
                             if (retValue["type"].Value<string>() == "object")
                             {
                                 osend["result"] = JObject.FromObject(new
@@ -727,7 +726,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return true;
     }
 
-    private static JObject GetPrototype(DotnetObjectId objectId, JObject args)
+    private static JObject GetPrototype(JObject args)
     {
         var o = JObject.FromObject(new
         {
@@ -839,7 +838,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             isBlackBoxed = false,
             introductionType = "scriptElement",
             resourceType = "source",
-            dotNetUrl = source.DotNetUrl
+            dotNetUrl = source.DotNetUrlEscaped
         });
         JObject sourcesJObj;
         if (!string.IsNullOrEmpty(ctx.GlobalName))
@@ -1015,8 +1014,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
 
         try
         {
-            var uri = new Uri(src_file.Url);
-            string source = $"// Unable to find document {src_file.SourceUri}";
+            string source = $"// Unable to find document {src_file.FileUriEscaped}";
 
             using (Stream data = await src_file.GetSourceAsync(checkHash: false, token: token))
             {
@@ -1033,7 +1031,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             var o = JObject.FromObject(new
             {
                 source = $"// Unable to read document ({e.Message})\n" +
-                $"Local path: {src_file?.SourceUri}\n" +
+                $"Local path: {src_file?.FileUriEscaped}\n" +
                 $"SourceLink path: {src_file?.SourceLinkUri}\n",
                 from = script_id
             });

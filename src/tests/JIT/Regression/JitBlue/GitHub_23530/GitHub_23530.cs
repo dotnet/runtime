@@ -11,7 +11,7 @@ using System.Runtime.Intrinsics.X86;
 
 namespace GitHub_23530
 {
-    class Program
+    public class Program
     {
         struct vec
         {
@@ -33,7 +33,7 @@ namespace GitHub_23530
             return Sse.Add(c, d).ToScalar();
         }
 
-        static int Main(string[] args)
+        public static int Main()
         {
             if (Fma.IsSupported)
             {

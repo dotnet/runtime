@@ -10,8 +10,8 @@ MonoVM includes support for EventPipe and DiagnosticServer components used to ge
 
 Due to differences between runtimes many of the NativeRuntimeEvents won't apply to MonoVM. Only a selected amount of NativeRuntimeEvents will initially be added to MonoVM. Current supported NativeRuntimeEvents can be viewed in MonoVM include file, https://github.com/dotnet/runtime/blob/main/src/mono/mono/eventpipe/gen-eventing-event-inc.lst. Since primary focus is EventPipe and mobile platforms (iOS/Android), ETW and LTTng providers have currently not been integrated/enabled for NativeRuntimeEvents on MonoVM.
 
-MonoVM runs on a variety of platforms and depending on platform capabilities MonoVM support different build configurations of EventPipe and DiagnosticServer. For desktop platforms (Windows, Linux, MacOS), MonoVM build DiagnosticServer using
-`NamedPipes` (Windows) or `UnixDomainSockets` (Linux, MacOS) support. This is in line with CoreCLR build configuration of the DiagnosticServer, working in the same way.
+MonoVM runs on a variety of platforms and depending on platform capabilities MonoVM support different build configurations of EventPipe and DiagnosticServer. For desktop platforms (Windows, Linux, macOS), MonoVM build DiagnosticServer using
+`NamedPipes` (Windows) or `UnixDomainSockets` (Linux, macOS) support. This is in line with CoreCLR build configuration of the DiagnosticServer, working in the same way.
 
 On mobile platforms (Android/iOS) or other remote sandboxed environments, MonoVM DiagnosticServer component can be build using TCP/IP support to better handle remote targets. It also handles the connect scenario (runtime act as TCP/IP client connecting back to tooling), as well as the listening scenario (runtime act as a TCP/IP listener waiting for tooling to connect). Depending on platform, allowed capabilities (some platforms won't allow listening on sockets) and tracing scenarios (startup tracing needs suspended runtime), a combination of these scenarios can be used.
 

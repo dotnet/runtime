@@ -50,48 +50,45 @@ namespace System.Drawing.Imaging
             _entries = new Color[1];
         }
 
-        internal void ConvertFromMemory(IntPtr memory)
+        internal unsafe void ConvertFromMemory(IntPtr memory)
         {
             // Memory layout is:
             //    UINT Flags
             //    UINT Count
             //    ARGB Entries[size]
 
-            _flags = Marshal.ReadInt32(memory);
+            byte* pMemory = (byte*)memory;
 
-            int size;
+            _flags = *(int*)pMemory;
 
-            size = Marshal.ReadInt32((IntPtr)((long)memory + 4));  // Marshal.SizeOf(size.GetType())
+            int size = *(int*)(pMemory + 4);
 
             _entries = new Color[size];
 
             for (int i = 0; i < size; i++)
             {
-                // use Marshal.SizeOf()
-                int argb = Marshal.ReadInt32((IntPtr)((long)memory + 8 + i * 4));
+                int argb = *(int*)(pMemory + 8 + i * 4);
                 _entries[i] = Color.FromArgb(argb);
             }
         }
 
-        internal IntPtr ConvertToMemory()
+        internal unsafe IntPtr ConvertToMemory()
         {
             // Memory layout is:
             //    UINT Flags
             //    UINT Count
             //    ARGB Entries[size]
 
-            // use Marshal.SizeOf()
             int length = _entries.Length;
             IntPtr memory = Marshal.AllocHGlobal(checked(4 * (2 + length)));
+            byte* pMemory = (byte*)memory;
 
-            Marshal.WriteInt32(memory, 0, _flags);
-            // use Marshal.SizeOf()
-            Marshal.WriteInt32((IntPtr)checked((long)memory + 4), 0, length);
+            *(int*)pMemory = _flags;
+            *(int*)(pMemory + 4) = length;
 
             for (int i = 0; i < length; i++)
             {
-                // use Marshal.SizeOf()
-                Marshal.WriteInt32((IntPtr)((long)memory + 4 * (i + 2)), 0, _entries[i].ToArgb());
+                *(int*)(pMemory + 4 * (i + 2)) = _entries[i].ToArgb();
             }
 
             return memory;

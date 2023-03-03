@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
-            int feedbackSize,
+            int _ /*feedbackSizeInBytes*/,
             int paddingSize,
             bool encrypting)
         {
@@ -28,11 +28,9 @@ namespace System.Security.Cryptography
 
         private static ILiteSymmetricCipher CreateLiteCipher(
             CipherMode cipherMode,
-            PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             int blockSize,
-            int feedbackSizeInBytes,
             int paddingSize,
             bool encrypting)
         {
@@ -40,7 +38,7 @@ namespace System.Security.Cryptography
             IntPtr algorithm = GetAlgorithm(cipherMode);
 
             Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
-            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
+            return new OpenSslCipherLite(algorithm, blockSize, paddingSize, key, iv, encrypting);
         }
 
         private static IntPtr GetAlgorithm(CipherMode cipherMode) => cipherMode switch

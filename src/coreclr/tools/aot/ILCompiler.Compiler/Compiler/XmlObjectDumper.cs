@@ -70,7 +70,7 @@ namespace ILCompiler
 
         private string HashData(byte[] data)
         {
-            return BitConverter.ToString(_sha256.ComputeHash(data)).Replace("-", "").ToLower();
+            return BitConverter.ToString(_sha256.ComputeHash(data)).Replace("-", "").ToLowerInvariant();
         }
 
         internal override void End()

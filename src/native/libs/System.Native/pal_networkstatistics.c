@@ -341,7 +341,7 @@ int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
     return 0;
 }
 
-int32_t SystemNative_GetEstimatedTcpConnectionCount()
+int32_t SystemNative_GetEstimatedTcpConnectionCount(void)
 {
     int32_t count;
     size_t oldlenp = sizeof(count);
@@ -455,7 +455,7 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
     return 0;
 }
 
-int32_t SystemNative_GetEstimatedUdpListenerCount()
+int32_t SystemNative_GetEstimatedUdpListenerCount(void)
 {
     int32_t count;
     size_t oldlenp = sizeof(count);
@@ -702,7 +702,7 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
     memset(retStats, 0, sizeof(NativeIPInterfaceStatistics));
     return -1;
 }
-int32_t SystemNative_GetNumRoutes()
+int32_t SystemNative_GetNumRoutes(void)
 {
     int32_t count = 0;
 #if HAVE_RT_MSGHDR2

@@ -3,7 +3,6 @@
 
 using System;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Internal.Text
@@ -43,7 +42,7 @@ namespace Internal.Text
             return (obj is Utf8String) && Equals((Utf8String)obj);
         }
 
-        public unsafe override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
             int length = _value.Length;
             uint hash = (uint)length;

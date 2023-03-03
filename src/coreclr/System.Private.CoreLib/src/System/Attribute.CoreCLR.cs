@@ -614,9 +614,6 @@ namespace System
             if (attrib == null || attrib.Length == 0)
                 return null;
 
-            if (attrib.Length == 0)
-                return null;
-
             if (attrib.Length == 1)
                 return attrib[0];
 

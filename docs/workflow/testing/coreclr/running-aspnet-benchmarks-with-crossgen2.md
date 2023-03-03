@@ -57,7 +57,7 @@ jobs:
       transport: Sockets
       scenario: plaintext
     channel: edge
-    framework: netcoreapp5.0
+    framework: net6.0
     arguments: "--nonInteractive true --scenarios {{scenario}} --server-urls {{protocol}}://[*]:{{serverPort}} --server {{server}} --kestrelTransport {{transport}} --protocol {{protocol}}"
 
 scenarios:

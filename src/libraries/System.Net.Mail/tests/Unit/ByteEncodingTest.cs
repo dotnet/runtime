@@ -66,8 +66,8 @@ namespace System.Net.Mime.Tests
         public void EncodeHeader_Base64Encoding_ShouldSplitBetweenCodepoints()
         {
             // header parts split by max line length in base64 encoding = 70 with respect to codepoints
-            string headerPart1 = "Emoji subject : 🕐🕑🕒🕓🕔🕕";
-            string headerPart2 = "🕖🕗🕘🕙🕚";
+            string headerPart1 = "Emoji subject : \uD83D\uDD50\uD83D\uDD51\uD83D\uDD52\uD83D\uDD53\uD83D\uDD54\uD83D\uDD55";
+            string headerPart2 = "\uD83D\uDD56\uD83D\uDD57\uD83D\uDD58\uD83D\uDD59\uD83D\uDD5A";
             string longEmojiHeader = headerPart1 + headerPart2;
 
             string encodedHeader = MimeBasePart.EncodeHeaderValue(longEmojiHeader, Encoding.UTF8, true);
@@ -85,9 +85,9 @@ namespace System.Net.Mime.Tests
         public void EncodeHeader_QEncoding_ShouldSplitBetweenCodepoints()
         {
             // header parts split by max line length in q-encoding = 70 with respect to codepoints
-            string headerPart1 = "Emoji subject : 🕐🕑🕒";
-            string headerPart2 = "🕓🕔🕕🕖";
-            string headerPart3 = "🕗🕘🕙🕚";
+            string headerPart1 = "Emoji subject : \uD83D\uDD50\uD83D\uDD51\uD83D\uDD52";
+            string headerPart2 = "\uD83D\uDD53\uD83D\uDD54\uD83D\uDD55\uD83D\uDD56";
+            string headerPart3 = "\uD83D\uDD57\uD83D\uDD58\uD83D\uDD59\uD83D\uDD5A";
             string longEmojiHeader = headerPart1 + headerPart2 + headerPart3;
 
             string encodedHeader = MimeBasePart.EncodeHeaderValue(longEmojiHeader, Encoding.UTF8, false);
@@ -104,14 +104,14 @@ namespace System.Net.Mime.Tests
         }
 
         [Theory]
-        [InlineData(false, "🕐11111111111111111111111111111111111111111111:1111")]
-        [InlineData(false, "🕐111111111111111111111111111111111111111111111:111")]
-        [InlineData(false, "🕐1111111111111111111111111111111111111111111111:11")]
-        [InlineData(false, "🕐11111111111111111111111111111111111111111\r\n1111")]
-        [InlineData(false, "🕐111111111111111111111111111111111111111111\r\n111")]
-        [InlineData(false, "🕐1111111111111111111111111111111111111111111\r\n11")]
-        [InlineData(true, "Emoji subject : 🕐🕑🕒🕓🕔🕕:11111")]
-        [InlineData(true, "Emoji subject : 🕐🕑🕒🕓🕔🕕\r\n11")]
+        [InlineData(false, "\uD83D\uDD5011111111111111111111111111111111111111111111:1111")]
+        [InlineData(false, "\uD83D\uDD50111111111111111111111111111111111111111111111:111")]
+        [InlineData(false, "\uD83D\uDD501111111111111111111111111111111111111111111111:11")]
+        [InlineData(false, "\uD83D\uDD5011111111111111111111111111111111111111111\r\n1111")]
+        [InlineData(false, "\uD83D\uDD50111111111111111111111111111111111111111111\r\n111")]
+        [InlineData(false, "\uD83D\uDD501111111111111111111111111111111111111111111\r\n11")]
+        [InlineData(true, "Emoji subject : \uD83D\uDD50\uD83D\uDD51\uD83D\uDD52\uD83D\uDD53\uD83D\uDD54\uD83D\uDD55:11111")]
+        [InlineData(true, "Emoji subject : \uD83D\uDD50\uD83D\uDD51\uD83D\uDD52\uD83D\uDD53\uD83D\uDD54\uD83D\uDD55\r\n11")]
         public void EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(bool useBase64Encoding, string value)
         {
             IEncodableStream streamForEncodeString = EncodedStreamFactory.GetEncoderForHeader(Encoding.UTF8, useBase64Encoding, 0);

@@ -10,7 +10,7 @@ namespace System.Net
         private TimeSpan _drainEntityBody = TimeSpan.Zero;
         private TimeSpan _idleConnection = TimeSpan.Zero;
 
-        internal HttpListenerTimeoutManager(HttpListener listener) { }
+        internal HttpListenerTimeoutManager(HttpListener _) { }
 
         public TimeSpan DrainEntityBody
         {

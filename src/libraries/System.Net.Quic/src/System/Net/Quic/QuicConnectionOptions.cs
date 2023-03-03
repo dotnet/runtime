@@ -18,13 +18,13 @@ public abstract class QuicConnectionOptions
     { }
 
     /// <summary>
-    /// Limit on the number of bidirectional streams the remote peer connection can create on an open connection.
+    /// The maximum number of concurrent bidirectional streams that the remote peer connection can create on an open connection.
     /// Default 0 for client and 100 for server connection.
     /// </summary>
     public int MaxInboundBidirectionalStreams { get; set; }
 
     /// <summary>
-    /// Limit on the number of unidirectional streams the remote peer connection can create on an open connection.
+    /// The maximum number of concurrent unidirectional streams that the remote peer connection can create on an open connection.
     /// Default 0 for client and 10 for server connection.
     /// </summary>
     public int MaxInboundUnidirectionalStreams { get; set; }

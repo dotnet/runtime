@@ -61,8 +61,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public class DebugInfoTableNode : HeaderTableNode
     {
-        public DebugInfoTableNode(TargetDetails target) : base(target) { }
-
         public override int ClassCode => 1000735112;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

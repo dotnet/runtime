@@ -105,7 +105,7 @@ public class GCUtil
 
 public class Test
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         Console.WriteLine("First Alloc");
         GCUtil.Alloc(1024 * 1024 * 4, 30);

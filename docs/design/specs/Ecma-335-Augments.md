@@ -801,7 +801,7 @@ to allow `callvirt` instructions to be made in a uniform way independent of whet
 When followed by the `call` instruction or the `ldftn` instruction,
 the method must refer to a virtual static method defined on an interface. The behavior of the
 `constrained.` prefix is to change the method that the `call` or `ldftn`
-instruction refers to to be the method on `implementorType` which implements the
+instruction refers to be the method on `implementorType` which implements the
 virtual static method (paragraph *II.10.3*).
 
 (Edit the paragraph "Correctness:" second from the bottom of page 316:)

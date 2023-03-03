@@ -115,6 +115,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
+        additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
@@ -140,6 +141,7 @@ jobs:
         runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
+        additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
@@ -162,7 +164,7 @@ jobs:
         projectFile: blazor_perf.proj
         runKind: blazor_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        #additionalSetupParameters: '--latestdotnet' - doesn't do anything, IIUC. see performance-setup.sh
+        additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}

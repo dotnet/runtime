@@ -1,8 +1,0 @@
-# Exposed public in System.IO.Pipes.AccessControl but implemented in System.IO.Pipes
-TypesMustExist : Type 'System.IO.Pipes.AnonymousPipeServerStreamAcl' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.IO.Pipes.NamedPipeServerStreamAcl' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.IO.Pipes.PipeAccessRights' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.IO.Pipes.PipeAccessRule' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.IO.Pipes.PipeAuditRule' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.IO.Pipes.PipesAclExtensions' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.IO.Pipes.PipeSecurity' does not exist in the reference but it does exist in the implementation.

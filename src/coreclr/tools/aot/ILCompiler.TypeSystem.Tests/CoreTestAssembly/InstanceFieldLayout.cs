@@ -3,56 +3,57 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 #pragma warning disable 169
 
 namespace ContainsGCPointers
 {
-    struct NoPointers
+    public struct NoPointers
     {
-        int int1;
-        byte byte1;
-        char char1;
+        public int int1;
+        public byte byte1;
+        public char char1;
     }
 
-    struct StillNoPointers
+    public struct StillNoPointers
     {
-        NoPointers noPointers1;
-        bool bool1;
+        public NoPointers noPointers1;
+        public bool bool1;
     }
 
-    class ClassNoPointers
+    public class ClassNoPointers
     {
-        char char1;
+        public char char1;
     }
 
-    struct HasPointers
+    public struct HasPointers
     {
-        string string1;
+        public string string1;
     }
 
-    struct FieldHasPointers
+    public struct FieldHasPointers
     {
-        HasPointers hasPointers1;
+        public HasPointers hasPointers1;
     }
 
-    class ClassHasPointers
+    public class ClassHasPointers
     {
-        ClassHasPointers classHasPointers1;
+        public ClassHasPointers classHasPointers1;
     }
 
-    class BaseClassHasPointers : ClassHasPointers
+    public class BaseClassHasPointers : ClassHasPointers
     {
     }
 
     public class ClassHasIntArray
     {
-        int[] intArrayField;
+        public int[] intArrayField;
     }
 
     public class ClassHasArrayOfClassType
     {
-        ClassNoPointers[] classTypeArray;
+        public ClassNoPointers[] classTypeArray;
     }
 }
 
@@ -61,29 +62,29 @@ namespace Explicit
     [StructLayout(LayoutKind.Explicit)]
     class Class1
     {
-        static int Stat;
+        public static int Stat;
         [FieldOffset(4)]
-        bool Bar;
+        public bool Bar;
         [FieldOffset(10)]
-        char Baz;
+        public char Baz;
     }
 
     [StructLayout(LayoutKind.Explicit)]
     class Class2 : Class1
     {
         [FieldOffset(0)]
-        int Lol;
+        public int Lol;
         [FieldOffset(20)]
-        byte Omg;
+        public byte Omg;
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 40)]
     class ExplicitSize
     {
         [FieldOffset(0)]
-        int Lol;
+        public int Lol;
         [FieldOffset(20)]
-        byte Omg;
+        public byte Omg;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -123,172 +124,334 @@ namespace Explicit
 namespace Sequential
 {
     [StructLayout(LayoutKind.Sequential)]
-    class Class1
+    public class Class1
     {
-        int MyInt;
-        bool MyBool;
-        char MyChar;
-        string MyString;
-        byte[] MyByteArray;
-        Class1 MyClass1SelfRef;
+        public int MyInt;
+        public bool MyBool;
+        public char MyChar;
+        public string MyString;
+        public byte[] MyByteArray;
+        public Class1 MyClass1SelfRef;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    class Class2 : Class1
+    public class Class2 : Class1
     {
-        int MyInt2;
+        public int MyInt2;
     }
 
     // [StructLayout(LayoutKind.Sequential)] is applied by default by the C# compiler
-    struct Struct0
+    public struct Struct0
     {
-        bool b1;
-        bool b2;
-        bool b3;
-        int i1;
-        string s1;
+        public bool b1;
+        public bool b2;
+        public bool b3;
+        public int i1;
+        public string s1;
     }
 
     // [StructLayout(LayoutKind.Sequential)] is applied by default by the C# compiler
-    struct Struct1
+    public struct Struct1
     {
-        Struct0 MyStruct0;
-        bool MyBool;
+        public Struct0 MyStruct0;
+        public bool MyBool;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public class ClassDoubleBool
     {
-        double double1;
-        bool bool1;
+        public double double1;
+        public bool bool1;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public class ClassBoolDoubleBool
     {
-        bool bool1;
-        double double1;
-        bool bool2;
+        public bool bool1;
+        public double double1;
+        public bool bool2;
+    }
+
+    public struct StructByte
+    {
+        public byte fld1;
+    }
+
+    public struct StructStructByte_StructByteAuto
+    {
+        public StructByte fld1;
+        public Auto.StructByte fld2;
+    }
+    public struct StructStructByte_Struct2BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct2Bytes fld2;
+    }
+    public struct StructStructByte_Struct3BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct3Bytes fld2;
+    }
+    public struct StructStructByte_Struct4BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct4Bytes fld2;
+    }
+    public struct StructStructByte_Struct5BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct5Bytes fld2;
+    }
+    public struct StructStructByte_Struct8BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct8Bytes fld2;
+    }
+    public struct StructStructByte_Struct9BytesAuto
+    {
+        public StructByte fld1;
+        public Auto.Struct9Bytes fld2;
+    }
+
+    public struct StructStructByte_Int128StructAuto
+    {
+        public StructByte fld1;
+        public Auto.Int128Struct fld2;
+    }
+
+    public struct StructStructByte_UInt128StructAuto
+    {
+        public StructByte fld1;
+        public Auto.UInt128Struct fld2;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class16Align
+    {
+        Vector128<byte> vector16Align;
     }
 }
 
 namespace Auto
 {
     [StructLayout(LayoutKind.Auto)]
-    struct StructWithBool
+    public struct StructWithBool
     {
-        bool MyStructBool;
+        public bool MyStructBool;
     }
 
     [StructLayout(LayoutKind.Auto)]
-    struct StructWithIntChar
+    public struct StructWithIntChar
     {
-        char MyStructChar;
-        int MyStructInt;
+        public char MyStructChar;
+        public int MyStructInt;
     }
 
     [StructLayout(LayoutKind.Auto)]
-    struct StructWithChar
+    public struct StructWithChar
     {
-        char MyStructChar;
+        public char MyStructChar;
     }
 
-    class ClassContainingStructs
+    public class ClassContainingStructs
     {
-        static int MyStaticInt;
+        public static int MyStaticInt;
 
-        StructWithBool MyStructWithBool;
-        bool MyBool1;
-        char MyChar1;
-        int MyInt;
-        double MyDouble;
-        long MyLong;
-        byte[] MyByteArray;
-        string MyString1;
-        bool MyBool2;
-        StructWithIntChar MyStructWithIntChar;
-        StructWithChar MyStructWithChar;
+        public StructWithBool MyStructWithBool;
+        public bool MyBool1;
+        public char MyChar1;
+        public int MyInt;
+        public double MyDouble;
+        public long MyLong;
+        public byte[] MyByteArray;
+        public string MyString1;
+        public bool MyBool2;
+        public StructWithIntChar MyStructWithIntChar;
+        public StructWithChar MyStructWithChar;
     }
 
-    class BaseClass7BytesRemaining
+    public class BaseClass7BytesRemaining
     {
-        bool MyBool1;
-        double MyDouble1;
-        long MyLong1;
-        byte[] MyByteArray1;
-        string MyString1;
+        public bool MyBool1;
+        public double MyDouble1;
+        public long MyLong1;
+        public byte[] MyByteArray1;
+        public string MyString1;
     }
 
-    class BaseClass4BytesRemaining
+    public class BaseClass4BytesRemaining
     {
-        long MyLong1;
-        uint MyUint1;
+        public long MyLong1;
+        public uint MyUint1;
     }
 
-    class BaseClass3BytesRemaining
+    public class BaseClass3BytesRemaining
     {
-        int MyInt1;
-        string MyString1;
-        bool MyBool1;
+        public int MyInt1;
+        public string MyString1;
+        public bool MyBool1;
     }
 
-    class OptimizePartial : BaseClass7BytesRemaining
+    public class OptimizePartial : BaseClass7BytesRemaining
     {
-        bool OptBool;
-        char OptChar;
-        long NoOptLong;
-        string NoOptString;
+        public bool OptBool;
+        public char OptChar;
+        public long NoOptLong;
+        public string NoOptString;
     }
 
-    class Optimize7Bools : BaseClass7BytesRemaining
+    public class Optimize7Bools : BaseClass7BytesRemaining
     {
-        bool OptBool1;
-        bool OptBool2;
-        bool OptBool3;
-        bool OptBool4;
-        bool OptBool5;
-        bool OptBool6;
-        bool OptBool7;
-        bool NoOptBool8;
-        string NoOptString;
+        public bool OptBool1;
+        public bool OptBool2;
+        public bool OptBool3;
+        public bool OptBool4;
+        public bool OptBool5;
+        public bool OptBool6;
+        public bool OptBool7;
+        public bool NoOptBool8;
+        public string NoOptString;
     }
 
-    class OptimizeAlignedFields : BaseClass7BytesRemaining
+    public class OptimizeAlignedFields : BaseClass7BytesRemaining
     {
-        bool OptBool1;
-        bool OptBool2;
-        bool OptBool3;
-        bool NoOptBool4;
-        char OptChar1;
-        char OptChar2;
-        string NoOptString;
+        public bool OptBool1;
+        public bool OptBool2;
+        public bool OptBool3;
+        public bool NoOptBool4;
+        public char OptChar1;
+        public char OptChar2;
+        public string NoOptString;
     }
 
-    class OptimizeLargestField : BaseClass4BytesRemaining
+    public class OptimizeLargestField : BaseClass4BytesRemaining
     {
-        bool NoOptBool;
-        char NoOptChar;
-        int OptInt;
-        string NoOptString;
+        public bool NoOptBool;
+        public char NoOptChar;
+        public int OptInt;
+        public string NoOptString;
     }
 
-    class NoOptimizeMisaligned : BaseClass3BytesRemaining
+    public class NoOptimizeMisaligned : BaseClass3BytesRemaining
     {
-        char NoOptChar;
-        int NoOptInt;
-        string NoOptString;
+        public char NoOptChar;
+        public int NoOptInt;
+        public string NoOptString;
     }
 
-    class NoOptimizeCharAtSize2Alignment : BaseClass3BytesRemaining
+    public class NoOptimizeCharAtSize2Alignment : BaseClass3BytesRemaining
     {
-        char NoOptChar;
+        public char NoOptChar;
     }
 
     [StructLayout(LayoutKind.Auto, Pack = 1)]
-    struct MinPacking<T>
+    public struct MinPacking<T>
     {
         public byte _byte;
         public T _value;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct int8x16x2
+    {
+        public Vector128<byte> _0;
+        public Vector128<byte> _1;
+    }
+
+    public struct Wrapper_int8x16x2
+    {
+        public int8x16x2 fld;
+    }
+
+    public struct Wrapper_int8x16x2_2
+    {
+        public bool fld1;
+        public int8x16x2 fld2;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct StructByte
+    {
+        public byte fld1;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct2Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct3Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct4Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+        public byte fld4;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct5Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+        public byte fld4;
+        public byte fld5;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct8Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+        public byte fld4;
+        public byte fld5;
+        public byte fld6;
+        public byte fld7;
+        public byte fld8;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Struct9Bytes
+    {
+        public byte fld1;
+        public byte fld2;
+        public byte fld3;
+        public byte fld4;
+        public byte fld5;
+        public byte fld6;
+        public byte fld7;
+        public byte fld8;
+        public byte fld9;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct UInt128Struct
+    {
+        UInt128 fld1;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct Int128Struct
+    {
+        Int128 fld1;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class Class16Align
+    {
+        Vector128<byte> vector16Align;
     }
 }
 
@@ -296,21 +459,21 @@ namespace IsByRefLike
 {
     public ref struct ByRefLikeStruct
     {
-        ref object ByRef;
+        public ref object ByRef;
     }
 
     public struct NotByRefLike
     {
-        int X;
+        public int X;
     }
 }
 
 namespace EnumAlignment
 {
-    public enum ByteEnum : byte {}
-    public enum ShortEnum : short {}
-    public enum IntEnum : int {}
-    public enum LongEnum : long {}
+    public enum ByteEnum : byte { Val }
+    public enum ShortEnum : short { Val }
+    public enum IntEnum : int { Val }
+    public enum LongEnum : long { Val }
 
     public struct LongIntEnumStruct
     {

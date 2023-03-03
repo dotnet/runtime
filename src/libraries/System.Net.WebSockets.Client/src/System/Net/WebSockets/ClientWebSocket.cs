@@ -73,11 +73,24 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>
+        /// Connects to a WebSocket server as an asynchronous operation.
+        /// </summary>
+        /// <param name="uri">The URI of the WebSocket server to connect to.</param>
+        /// <param name="cancellationToken">A cancellation token used to propagate notification that the operation should be canceled.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
         {
             return ConnectAsync(uri, null, cancellationToken);
         }
 
+        /// <summary>
+        /// Connects to a WebSocket server as an asynchronous operation.
+        /// </summary>
+        /// <param name="uri">The URI of the WebSocket server to connect to.</param>
+        /// <param name="invoker">The <see cref="HttpMessageInvoker" /> instance to use for connecting.</param>
+        /// <param name="cancellationToken">A cancellation token used to propagate notification that the operation should be canceled.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
         public Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(uri);
@@ -134,6 +147,9 @@ namespace System.Net.WebSockets
 
         public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
             ConnectedWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
+
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags, CancellationToken cancellationToken) =>
+            ConnectedWebSocket.SendAsync(buffer, messageType, messageFlags, cancellationToken);
 
         public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken) =>
             ConnectedWebSocket.ReceiveAsync(buffer, cancellationToken);

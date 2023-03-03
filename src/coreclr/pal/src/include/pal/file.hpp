@@ -77,12 +77,6 @@ namespace CorUnix
         );
 
     PAL_ERROR
-    InternalSetEndOfFile(
-        CPalThread *pThread,
-        HANDLE hFile
-        );
-
-    PAL_ERROR
     InternalGetFileSize(
         CPalThread *pThread,
         HANDLE hFile,
@@ -195,19 +189,6 @@ Notes :
  realpath() requires the given path to be valid and GetFullPathName does not.
 --*/
 void FILECanonicalizePath(LPSTR lpUnixPath);
-
-/*++
-Function:
-  FileDosToUnixPathA
-
-Abstract:
-  Change a DOS path to a Unix path. Replace '\' by '/'.
-
-Parameter:
-  IN/OUT lpPath: path to be modified
---*/
-void
-FILEDosToUnixPathA(LPSTR lpPath);
 
 /*++
 Function:

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.CompilerServices;
@@ -28,7 +28,7 @@ namespace Runtime_49489
 
         }
 
-        static int Main(string[] args)
+        public static int Main()
         {
             return Caller();
         }

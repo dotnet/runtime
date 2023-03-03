@@ -52,7 +52,7 @@
 	br LOOP
     }
 
-    .method static int32 Main(class System.String[]) 
+    .method public static int32 Main()
     {
     	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     	    01 00 00 00

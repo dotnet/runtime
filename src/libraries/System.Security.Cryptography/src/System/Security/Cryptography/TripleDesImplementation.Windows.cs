@@ -26,7 +26,6 @@ namespace System.Security.Cryptography
 
         private static ILiteSymmetricCipher CreateLiteCipher(
             CipherMode cipherMode,
-            PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             int blockSize,
@@ -37,7 +36,6 @@ namespace System.Security.Cryptography
             SafeAlgorithmHandle algorithm = TripleDesBCryptModes.GetSharedHandle(cipherMode, feedbackSize);
             return new BasicSymmetricCipherLiteBCrypt(
                 algorithm,
-                cipherMode,
                 blockSize,
                 paddingSize,
                 key,

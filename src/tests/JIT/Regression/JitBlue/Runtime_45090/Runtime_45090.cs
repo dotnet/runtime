@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -261,7 +261,7 @@ namespace Runtime_45090
         }
     }
 
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void TestSkipAllocFrame(AllocFrame scenario)
@@ -269,7 +269,7 @@ namespace Runtime_45090
             scenario.VirtMethodEspBasedFrame();
         }
 
-        static int Main(string[] args)
+        public static int Main()
         {
             TestSkipAllocFrame(new PushReg());
             TestSkipAllocFrame(new SubSp());

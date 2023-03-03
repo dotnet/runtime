@@ -19,8 +19,9 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
     ZeroMemory(buff, bufflen * sizeof(char));
     buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset,
                              ";;Generated from SuperPMI on original input '%s'", cr->repProcessName());
+
     buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n Method Name \"%s\"",
-                             mc->repGetMethodName(info.ftn, nullptr));
+                             getMethodName(mc, info.ftn).c_str());
     WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
 
     ULONG              hotCodeSize;

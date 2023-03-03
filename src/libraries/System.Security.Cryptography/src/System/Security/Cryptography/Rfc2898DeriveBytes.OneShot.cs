@@ -79,10 +79,8 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
-            if (outputLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
+            ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
 
             ValidateHashAlgorithm(hashAlgorithm);
 
@@ -118,8 +116,7 @@ namespace System.Security.Cryptography
             int iterations,
             HashAlgorithmName hashAlgorithm)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             ValidateHashAlgorithm(hashAlgorithm);
 
@@ -209,10 +206,8 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (outputLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             ValidateHashAlgorithm(hashAlgorithm);
 
@@ -256,8 +251,7 @@ namespace System.Security.Cryptography
             int iterations,
             HashAlgorithmName hashAlgorithm)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             ValidateHashAlgorithm(hashAlgorithm);
 

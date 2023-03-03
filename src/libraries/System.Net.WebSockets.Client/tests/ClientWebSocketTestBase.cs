@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Net.Test.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,13 +9,10 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using System.Net.Http;
-using System.Net.WebSockets.Client.Tests;
+using System.Diagnostics;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    /// <summary>
-    /// ClientWebSocket tests that do require a remote server.
-    /// </summary>
     public class ClientWebSocketTestBase
     {
         public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.EchoServers;
@@ -112,7 +108,38 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        protected virtual HttpMessageInvoker? GetInvoker() => null;
+        protected virtual bool UseCustomInvoker => false;
+
+        protected virtual bool UseHttpClient => false;
+
+        protected bool UseSharedHandler => !UseCustomInvoker && !UseHttpClient;
+
+        protected Action<HttpClientHandler>? ConfigureCustomHandler;
+
+        internal HttpMessageInvoker? GetInvoker()
+        {
+            var handler = new HttpClientHandler();
+
+            if (PlatformDetection.IsNotBrowser)
+            {
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            }
+
+            ConfigureCustomHandler?.Invoke(handler);
+
+            if (UseCustomInvoker)
+            {
+                Debug.Assert(!UseHttpClient);
+                return new HttpMessageInvoker(handler);
+            }
+
+            if (UseHttpClient)
+            {
+                return new HttpClient(handler);
+            }
+
+            return null;
+        }
 
         protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: GetInvoker());

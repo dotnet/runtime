@@ -1132,7 +1132,7 @@ MemberLoader::FindMethod(
             ||
             (pCurDeclMD->MightHaveName(targetNameHash)
             // This is done last since it is the most expensive of the IF statement.
-            && StrCompFunc(pszName, pCurDeclMD->GetName()) == 0)
+            && StrCompFunc(pszName, pCurDeclMD->GetNameThrowing()) == 0)
            )
         {
             if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT))

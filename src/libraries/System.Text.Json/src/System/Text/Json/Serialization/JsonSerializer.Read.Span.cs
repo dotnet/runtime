@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -29,8 +30,8 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -62,7 +63,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadFromSpan<object>(utf8Json, jsonTypeInfo);
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -75,11 +76,7 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
-        /// </exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// or when there is remaining data in the buffer.
         /// </exception>
         public static TValue? Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
@@ -89,7 +86,28 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Parses the UTF-8 encoded text representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="utf8Json">JSON text to parse.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid,
+        /// or there is remaining data in the buffer.
+        /// </exception>
+        public static object? Deserialize(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -126,7 +144,41 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
-            return ReadFromSpan<object?>(utf8Json, GetTypeInfo(context, returnType));
+            return ReadFromSpanAsObject(utf8Json, GetTypeInfo(context, returnType));
+        }
+
+        private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo<TValue> jsonTypeInfo, int? actualByteCount = null)
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            var readerState = new JsonReaderState(jsonTypeInfo.Options.GetReaderOptions());
+            var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
+
+            ReadStack state = default;
+            state.Initialize(jsonTypeInfo);
+
+            TValue? value = jsonTypeInfo.Deserialize(ref reader, ref state);
+
+            // The reader should have thrown if we have remaining bytes.
+            Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length));
+            return value;
+        }
+
+        private static object? ReadFromSpanAsObject(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo, int? actualByteCount = null)
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            var readerState = new JsonReaderState(jsonTypeInfo.Options.GetReaderOptions());
+            var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
+
+            ReadStack state = default;
+            state.Initialize(jsonTypeInfo);
+
+            object? value = jsonTypeInfo.DeserializeAsObject(ref reader, ref state);
+
+            // The reader should have thrown if we have remaining bytes.
+            Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length));
+            return value;
         }
     }
 }

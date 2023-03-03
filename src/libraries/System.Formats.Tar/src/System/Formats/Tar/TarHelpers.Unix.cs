@@ -47,57 +47,41 @@ namespace System.Formats.Tar
 
         private static UnixFileMode UMask => s_umask.Value;
 
-        /*
-            Tar files are usually ordered: parent directories come before their child entries.
-
-            They may be unordered. In that case we need to create parent directories before
-            we know the proper permissions for these directories.
-
-            We create these directories with restrictive permissions. If we encounter an entry for
-            the directory later, we store the mode to apply it later.
-
-            If the archive doesn't have an entry for the parent directory, we use the default mask.
-
-            The pending modes to be applied are tracked through a reverse-sorted dictionary.
-            The reverse order is needed to apply permissions to children before their parent.
-            Otherwise we may apply a restrictive mask to the parent, that prevents us from
-            changing a child.
-        */
-
+        // Use a reverse-sorted dictionary to apply permission to children before their parents.
+        // Otherwise we may apply a restrictive mask to the parent, that prevents us from changing a child.
         internal static SortedDictionary<string, UnixFileMode>? CreatePendingModesDictionary()
             => new SortedDictionary<string, UnixFileMode>(s_reverseStringComparer);
 
-        internal static void CreateDirectory(string fullPath, UnixFileMode? mode, bool overwriteMetadata, SortedDictionary<string, UnixFileMode>? pendingModes)
+        internal static void CreateDirectory(string fullPath, UnixFileMode? mode, SortedDictionary<string, UnixFileMode>? pendingModes)
         {
-            // Restrictive mask for creating the missing parent directories while extracting.
+            // Minimal permissions required for extracting.
             const UnixFileMode ExtractPermissions = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
 
             Debug.Assert(pendingModes is not null);
 
             if (Directory.Exists(fullPath))
             {
-                // Apply permissions to an existing directory when we're overwriting metadata
-                // or the directory was created as a missing parent (stored in pendingModes).
+                // Apply permissions to an existing directory.
                 if (mode.HasValue)
                 {
+                    // Ensure we have sufficient permissions to extract in the directory.
                     bool hasExtractPermissions = (mode.Value & ExtractPermissions) == ExtractPermissions;
                     if (hasExtractPermissions)
                     {
-                        bool removed = pendingModes.Remove(fullPath);
-                        if (overwriteMetadata || removed)
-                        {
-                            UnixFileMode umask = UMask;
-                            File.SetUnixFileMode(fullPath, mode.Value & ~umask);
-                        }
+                        pendingModes.Remove(fullPath);
+
+                        UnixFileMode umask = UMask;
+                        File.SetUnixFileMode(fullPath, mode.Value & ~umask);
                     }
-                    else if (overwriteMetadata || pendingModes.ContainsKey(fullPath))
+                    else
                     {
-                            pendingModes[fullPath] = mode.Value;
+                        pendingModes[fullPath] = mode.Value;
                     }
                 }
                 return;
             }
 
+            // If there are missing parents, Directory.CreateDirectory will create them using default permissions.
             if (mode.HasValue)
             {
                 // Ensure we have sufficient permissions to extract in the directory.
@@ -106,28 +90,13 @@ namespace System.Formats.Tar
                     pendingModes[fullPath] = mode.Value;
                     mode = ExtractPermissions;
                 }
+
+                Directory.CreateDirectory(fullPath, mode.Value);
             }
             else
             {
-                pendingModes.Add(fullPath, DefaultDirectoryMode);
-                mode = ExtractPermissions;
+                Directory.CreateDirectory(fullPath);
             }
-
-            string parentDir = Path.GetDirectoryName(fullPath)!;
-            string rootDir = Path.GetPathRoot(parentDir)!;
-            bool hasMissingParents = false;
-            for (string dir = parentDir; dir != rootDir && !Directory.Exists(dir); dir = Path.GetDirectoryName(dir)!)
-            {
-                pendingModes.Add(dir, DefaultDirectoryMode);
-                hasMissingParents = true;
-            }
-
-            if (hasMissingParents)
-            {
-                Directory.CreateDirectory(parentDir, ExtractPermissions);
-            }
-
-            Directory.CreateDirectory(fullPath, mode.Value);
         }
 
         internal static void SetPendingModes(SortedDictionary<string, UnixFileMode>? pendingModes)

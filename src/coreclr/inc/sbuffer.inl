@@ -258,7 +258,8 @@ inline void SBuffer::Set(const BYTE *buffer, COUNT_T size)
     // From the code for Resize, this is clearly impossible.
     PREFIX_ASSUME( (this->m_buffer != NULL) || (size == 0) );
 
-    MoveMemory(m_buffer, buffer, size);
+    if (size != 0)
+        MoveMemory(m_buffer, buffer, size);
 
     RETURN;
 }

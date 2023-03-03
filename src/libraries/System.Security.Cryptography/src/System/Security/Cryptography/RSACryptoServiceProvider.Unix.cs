@@ -21,8 +21,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public RSACryptoServiceProvider(int dwKeySize)
         {
-            if (dwKeySize < 0)
-                throw new ArgumentOutOfRangeException(nameof(dwKeySize), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(dwKeySize);
 
             // This class wraps RSA
             _impl = RSA.Create(dwKeySize);

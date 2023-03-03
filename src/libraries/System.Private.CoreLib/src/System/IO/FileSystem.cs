@@ -24,7 +24,7 @@ namespace System.IO
             ArgumentException.ThrowIfNullOrEmpty(path, argName);
             if (path.Contains('\0'))
             {
-                throw new ArgumentException(SR.Argument_InvalidPathChars, argName);
+                throw new ArgumentException(SR.Argument_NullCharInPath, argName);
             }
         }
 

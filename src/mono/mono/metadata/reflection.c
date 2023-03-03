@@ -29,6 +29,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/sre-internals.h>
 #include <stdio.h>
@@ -187,6 +188,7 @@ clear_cached_object (MonoMemoryManager *mem_manager, gpointer o, MonoClass *klas
 
 	if (mono_conc_g_hash_table_lookup_extended (mem_manager->refobject_hash, &pe, &orig_pe, &orig_value)) {
 		mono_conc_g_hash_table_remove (mem_manager->refobject_hash, &pe);
+		// FIXME: These are mempool allocated, so they are not really freed
 		free_reflected_entry ((ReflectedEntry *)orig_pe);
 	}
 
@@ -215,9 +217,18 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 static MonoReflectionAssemblyHandle
 assembly_object_construct (MonoClass *unused_klass, MonoAssembly *assembly, gpointer user_data, MonoError *error)
 {
+	MonoMemoryManager *mm = m_image_get_mem_manager (assembly->image);
+
 	error_init (error);
 	MonoReflectionAssemblyHandle res = MONO_HANDLE_CAST (MonoReflectionAssembly, mono_object_new_handle (mono_class_get_mono_assembly_class (), error));
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE));
+
+	if (mm->collectible) {
+		MonoObject *loader_alloc = mono_gchandle_get_target_internal (mono_mem_manager_get_loader_alloc (mm));
+		g_assert (loader_alloc);
+		MONO_HANDLE_SETRAW (res, m_keepalive, loader_alloc);
+	}
+
 	MONO_HANDLE_SETVAL (res, assembly, MonoAssembly*, assembly);
 	return res;
 }
@@ -477,9 +488,13 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 			return (MonoReflectionType *)vtable->type;
 	}
 
+	mono_mem_manager_init_reflection_hashes (memory_manager);
 	mono_loader_lock (); /*FIXME mono_class_init_internal and mono_class_vtable acquire it*/
 	mono_mem_manager_lock (memory_manager);
-	res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	if (memory_manager->collectible)
+		res = (MonoReflectionType *)mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
+	else
+		res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
 	mono_mem_manager_unlock (memory_manager);
 	if (res)
 		goto leave;
@@ -497,11 +512,17 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		goto_if_nok (error, leave);
 
 		mono_mem_manager_lock (memory_manager);
-		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+		if (memory_manager->collectible)
+			cached = mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
+		else
+			cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
 		if (cached) {
 			res = cached;
 		} else {
-			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+			if (memory_manager->collectible)
+				mono_weak_hash_table_insert (memory_manager->weak_type_hash, type, res);
+			else
+				mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
 		}
 		mono_mem_manager_unlock (memory_manager);
 		goto leave;
@@ -538,13 +559,24 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	goto_if_nok (error, leave);
 
 	res->type = type;
+	if (memory_manager->collectible) {
+		MonoObject *loader_alloc = mono_gchandle_get_target_internal (mono_mem_manager_get_loader_alloc (memory_manager));
+		g_assert (loader_alloc);
+		MONO_OBJECT_SETREF_INTERNAL (res, m_keepalive, loader_alloc);
+	}
 
 	mono_mem_manager_lock (memory_manager);
-	cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	if (memory_manager->collectible)
+		cached = (MonoReflectionType *)mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
+	else
+		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
 	if (cached) {
 		res = cached;
 	} else {
-		mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		if (memory_manager->collectible)
+			mono_weak_hash_table_insert (memory_manager->weak_type_hash, type, res);
+		else
+			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
 		if (type->type == MONO_TYPE_VOID && !m_type_is_byref (type))
 			domain->typeof_void = (MonoObject*)res;
 	}
@@ -1391,7 +1423,6 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 	MonoMethodSignature *methodsig = mono_method_signature_internal (method);
 
 	MonoTableInfo *constt;
-	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 
 	if (!methodsig->param_count)
@@ -1411,22 +1442,16 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 		return;
 	}
 
-	methodt = &image->tables [MONO_TABLE_METHOD];
 	paramt = &image->tables [MONO_TABLE_PARAM];
 	constt = &image->tables [MONO_TABLE_CONSTANT];
 
 	idx = mono_method_get_index (method);
 	g_assert (idx != 0);
 
-	/* lastp is the starting param index for the next method in the table, or
-	 * one past the last row if this is the last method
-	 */
-	/* FIXME: metadata-update : will this work with added methods ? */
-	param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
-	if (!mono_metadata_table_bounds_check (image, MONO_TABLE_METHOD, idx + 1))
-		lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
-	else
-		lastp = table_info_get_rows (paramt) + 1;
+	param_index = mono_metadata_get_method_params (image, idx, &lastp);
+
+	if (!param_index)
+		return;
 
 	for (i = param_index; i < lastp; ++i) {
 		guint32 paramseq;
@@ -2508,7 +2533,8 @@ mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
 	} else if (strcmp (klass_name, "RuntimePropertyInfo") == 0) {
 		MonoReflectionPropertyHandle p = MONO_HANDLE_CAST (MonoReflectionProperty, obj);
 
-		token = mono_class_get_property_token (MONO_HANDLE_GETVAL (p, property));
+		MonoProperty *prop = MONO_HANDLE_GETVAL (p, property);
+		token = mono_class_get_property_token (prop);
 	} else if (strcmp (klass_name, "RuntimeEventInfo") == 0) {
 		MonoReflectionMonoEventHandle p = MONO_HANDLE_CAST (MonoReflectionMonoEvent, obj);
 

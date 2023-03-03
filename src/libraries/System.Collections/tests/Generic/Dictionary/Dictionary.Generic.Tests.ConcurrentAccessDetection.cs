@@ -67,7 +67,7 @@ namespace Generic.Dictionary
             IEqualityComparer<DummyRefType> customComparer = null;
 
             Dictionary<DummyRefType, DummyRefType> dic = comparerType == null ?
-                new Dictionary<DummyRefType, DummyRefType>() :
+                new Dictionary<DummyRefType, DummyRefType>((customComparer = EqualityComparer<DummyRefType>.Default)) :
                 new Dictionary<DummyRefType, DummyRefType>((customComparer = (IEqualityComparer<DummyRefType>)Activator.CreateInstance(comparerType)));
 
             var keyValueSample = new DummyRefType() { Value = 1 };

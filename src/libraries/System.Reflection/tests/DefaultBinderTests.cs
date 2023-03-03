@@ -167,6 +167,14 @@ namespace System.Reflection.Tests
             Assert.Equal(8, result);
         }
 
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        public static void InvokeWithCreateInstance(string name)
+        {
+            Assert.IsType<Sample>(typeof(Sample).InvokeMember(name, BindingFlags.CreateInstance, null, null, null));
+        }
+
         public class Test
         {
             public void TestMethod(int param1) { }

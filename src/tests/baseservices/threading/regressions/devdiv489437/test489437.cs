@@ -21,7 +21,7 @@ Change description:
 
 class Test
 {
-    static int Main(string[] args)
+    static int Main()
     {
         SemaphoreSlim s = new SemaphoreSlim(initialCount: 1);
 

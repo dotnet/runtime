@@ -32,6 +32,7 @@ set(utils_common_sources
     mono-sha1.c
     mono-logger.c
     mono-logger-internals.h
+    mono-cgroup.c
     mono-codeman.c
     mono-counters.c
     mono-compiler.h

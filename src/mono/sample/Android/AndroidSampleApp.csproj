@@ -47,7 +47,7 @@
 
     <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' != 'true'">
       <_AotOutputType>AsmOnly</_AotOutputType>
-      <_AotModulesTablePath>$(BundleDir)\modules.c</_AotModulesTablePath>
+      <_AotModulesTablePath>$(ApkDir)\modules.c</_AotModulesTablePath>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' == 'true'">

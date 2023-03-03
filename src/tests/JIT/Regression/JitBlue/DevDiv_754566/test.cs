@@ -9,7 +9,7 @@ class Program
         return ((Object) val).ToString();
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         int exitStatus = -1;
 

@@ -15,9 +15,6 @@
     <IncludeWerRelatedKeys>true</IncludeWerRelatedKeys>
     <IncludeBreadcrumbStoreFolder>true</IncludeBreadcrumbStoreFolder>
     <MacOSPackageDescription>The .NET Shared Framework</MacOSPackageDescription>
-
-    <MonoWasmBuildVariant Condition="'$(TargetsBrowser)' == 'true' and '$(MonoWasmBuildVariant)' == '' and '$(WasmEnableThreads)' == 'true'">multithread</MonoWasmBuildVariant>
-    <MonoWasmBuildVariant Condition="'$(TargetsBrowser)' == 'true' and '$(MonoWasmBuildVariant)' == '' and '$(WasmEnablePerfTracing)' == 'true'">perftrace</MonoWasmBuildVariant>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">
@@ -148,7 +145,7 @@
   <Target Name="CreateDotVersionFile"
           DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager"
           BeforeTargets="GetFilesToPublish"
-          Condition="'$(DisableSourceLink)' != 'true'">
+          Condition="'$(EnableSourceControlManagerQueries)' == 'true'">
     <ItemGroup>
       <_VersionFile Include="$(IntermediateOutputPath).version" TargetPath="shared/$(SharedFrameworkName)/$(Version)/" />
     </ItemGroup>

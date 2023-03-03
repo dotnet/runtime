@@ -566,9 +566,18 @@ SingleResponse ::= SEQUENCE {
                         }
                         else if (status == CertStatus.Revoked)
                         {
-                            // Android does not support all precisions for seconds - just omit fractional seconds for testing on Android
                             writer.PushSequence(s_context1);
-                            writer.WriteGeneralizedTime(revokedTime, omitFractionalSeconds: OperatingSystem.IsAndroid());
+
+                            // Fracational seconds "MUST NOT" be used here. Android and macOS 13+ enforce this and
+                            // reject GeneralizedTime's with fractional seconds, so omit them.
+                            // RFC 6960: 4.2.2.1:
+                            // The format for GeneralizedTime is as specified in Section 4.1.2.5.2 of [RFC5280].
+                            // RFC 5280 4.1.2.5.2:
+                            // For the purposes of this profile, GeneralizedTime values MUST be
+                            // expressed in Greenwich Mean Time (Zulu) and MUST include seconds
+                            // (i.e., times are YYYYMMDDHHMMSSZ), even where the number of seconds
+                            // is zero. GeneralizedTime values MUST NOT include fractional seconds.
+                            writer.WriteGeneralizedTime(revokedTime, omitFractionalSeconds: true);
                             writer.PopSequence(s_context1);
                         }
                         else

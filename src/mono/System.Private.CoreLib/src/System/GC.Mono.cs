@@ -55,19 +55,21 @@ namespace System
 
         public static void AddMemoryPressure(long bytesAllocated)
         {
-            if (bytesAllocated <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), SR.ArgumentOutOfRange_NeedPosNum);
-            if (IntPtr.Size == 4 && bytesAllocated > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), SR.ArgumentOutOfRange_MustBeNonNegInt32);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
+            if (IntPtr.Size == 4)
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
+            }
             RecordPressure(bytesAllocated);
         }
 
         public static void RemoveMemoryPressure(long bytesAllocated)
         {
-            if (bytesAllocated <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), SR.ArgumentOutOfRange_NeedPosNum);
-            if (IntPtr.Size == 4 && bytesAllocated > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated), SR.ArgumentOutOfRange_MustBeNonNegInt32);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
+            if (IntPtr.Size == 4)
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
+            }
             RecordPressure(-bytesAllocated);
         }
 
@@ -90,8 +92,7 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
-            if (generation < 0)
-                throw new ArgumentOutOfRangeException(nameof(generation), "generation", SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfNegative(generation);
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
 
@@ -100,8 +101,7 @@ namespace System
 
         public static int CollectionCount(int generation)
         {
-            if (generation < 0)
-                throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfNegative(generation);
             return GetCollectionCount(generation);
         }
 
@@ -196,8 +196,7 @@ namespace System
 
         public static GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return _WaitForFullGCApproach(millisecondsTimeout);
         }
@@ -209,8 +208,7 @@ namespace System
 
         public static GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
             return _WaitForFullGCComplete(millisecondsTimeout);
         }
 

@@ -38,6 +38,14 @@ public class ZExistingClass
     public static DateTime NewStaticField;
 
     public static double NewProp { get; set; }
+
+    public static void ExistingMethod ()
+    {
+        // modified
+        NewStaticField2 = new AnotherAddedClass();
+    }
+
+    public static AnotherAddedClass NewStaticField2;
 }
 
 [AttributeUsage(AttributeTargets.All, AllowMultiple=true, Inherited=false)]
@@ -86,4 +94,23 @@ public interface INewInterface : IExistingInterface {
 
 public enum NewEnum {
     Red, Yellow, Green
+}
+
+public class AnotherAddedClass
+{
+    public struct NewNestedStruct
+    {
+        public double D;
+        public object O;
+    }
+
+    public NewNestedStruct S;
+
+    public AnotherAddedClass()
+    {
+        S = new NewNestedStruct {
+            D = 1234.0,
+            O = "1234",
+        };
+    }
 }

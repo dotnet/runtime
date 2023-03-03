@@ -41,7 +41,7 @@ internal class Program
     private volatile static int s_a = 5;
     private volatile static int s_b = 0;
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         try
         {

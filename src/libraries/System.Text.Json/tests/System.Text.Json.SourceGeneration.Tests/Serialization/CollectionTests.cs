@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
 using System.Threading.Tasks;
@@ -131,8 +132,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]
         [JsonSerializable(typeof(TestClassWithDictionary))]
-        [JsonSerializable(typeof(IReadOnlyDictionary<Uri, int>))]
-        [JsonSerializable(typeof(GenericIReadOnlyDictionaryWrapper<Uri, int>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<JsonNode, int>))]
+        [JsonSerializable(typeof(GenericIReadOnlyDictionaryWrapper<JsonNode, int>))]
         [JsonSerializable(typeof(List<int>))]
         [JsonSerializable(typeof(IReadOnlyDictionary<int, int>))]
         [JsonSerializable(typeof(Dictionary<string, CustomClass>))]
@@ -238,7 +239,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(MyListString))]
         [JsonSerializable(typeof(NetworkWrapper))]
         [JsonSerializable(typeof(Client))]
-        [JsonSerializable(typeof(IReadOnlyDictionary<Uri, int>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<JsonNode, int>))]
         [JsonSerializable(typeof(IEnumerable<IEnumerable>))]
         [JsonSerializable(typeof(GenericIEnumerableWrapper<WrapperForIEnumerable>))]
         [JsonSerializable(typeof(IEnumerable))]
@@ -527,8 +528,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]
         [JsonSerializable(typeof(TestClassWithDictionary))]
-        [JsonSerializable(typeof(IReadOnlyDictionary<Uri, int>))]
-        [JsonSerializable(typeof(GenericIReadOnlyDictionaryWrapper<Uri, int>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<JsonNode, int>))]
+        [JsonSerializable(typeof(GenericIReadOnlyDictionaryWrapper<JsonNode, int>))]
         [JsonSerializable(typeof(List<int>))]
         [JsonSerializable(typeof(IReadOnlyDictionary<int, int>))]
         [JsonSerializable(typeof(Dictionary<string, CustomClass>))]
@@ -634,7 +635,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(MyListString))]
         [JsonSerializable(typeof(NetworkWrapper))]
         [JsonSerializable(typeof(Client))]
-        [JsonSerializable(typeof(IReadOnlyDictionary<Uri, int>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<JsonNode, int>))]
         [JsonSerializable(typeof(IEnumerable<IEnumerable>))]
         [JsonSerializable(typeof(GenericIEnumerableWrapper<WrapperForIEnumerable>))]
         [JsonSerializable(typeof(IEnumerable))]

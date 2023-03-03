@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace Sample
 {
+    // http://localhost:8000/?task=AppStart
     public partial class AppStartTask : BenchTask
     {
         public override string Name => "AppStart";

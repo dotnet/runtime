@@ -19,5 +19,5 @@ ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
 ENV SSLSTRESS_ARGS=''
 
-CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/dotnet exec \
+CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/dotnet exec --roll-forward Major \
     ./bin/$CONFIGURATION/net$VERSION/SslStress.dll $SSLSTRESS_ARGS

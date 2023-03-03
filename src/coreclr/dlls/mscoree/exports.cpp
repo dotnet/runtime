@@ -14,22 +14,19 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#include "../../vm/ceemain.h"
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
 #include "bundle.h"
 #include "pinvokeoverride.h"
+#include <hostinformation.h>
+#include <corehost/host_runtime_contract.h>
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
-
-// Specifies whether coreclr is embedded or standalone
-extern bool g_coreclr_embedded;
-
-// Specifies whether hostpolicy is embedded in executable or standalone
-extern bool g_hostpolicy_embedded;
 
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
@@ -122,7 +119,8 @@ static void ConvertConfigPropertiesToUnicode(
     LPCWSTR** propertyValuesWRef,
     BundleProbeFn** bundleProbe,
     PInvokeOverrideFn** pinvokeOverride,
-    bool* hostPolicyEmbedded)
+    bool* hostPolicyEmbedded,
+    host_runtime_contract** hostContract)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -135,27 +133,67 @@ static void ConvertConfigPropertiesToUnicode(
         propertyKeysW[propertyIndex] = StringToUnicode(propertyKeys[propertyIndex]);
         propertyValuesW[propertyIndex] = StringToUnicode(propertyValues[propertyIndex]);
 
-        if (strcmp(propertyKeys[propertyIndex], "BUNDLE_PROBE") == 0)
+        if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_BUNDLE_PROBE) == 0)
         {
             // If this application is a single-file bundle, the bundle-probe callback
             // is passed in as the value of "BUNDLE_PROBE" property (encoded as a string).
-            *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+            // The function in HOST_RUNTIME_CONTRACT is given priority over this property,
+            // so we only set the bundle probe if it has not already been set.
+            if (*bundleProbe == nullptr)
+                *bundleProbe = (BundleProbeFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
-        else if (strcmp(propertyKeys[propertyIndex], "PINVOKE_OVERRIDE") == 0)
+        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_PINVOKE_OVERRIDE) == 0)
         {
             // If host provides a PInvoke override (typically in a single-file bundle),
             // the override callback is passed in as the value of "PINVOKE_OVERRIDE" property (encoded as a string).
-            *pinvokeOverride = (PInvokeOverrideFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+            // The function in HOST_RUNTIME_CONTRACT is given priority over this property,
+            // so we only set the p/invoke override if it has not already been set.
+            if (*pinvokeOverride == nullptr)
+                *pinvokeOverride = (PInvokeOverrideFn*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
         }
-        else if (strcmp(propertyKeys[propertyIndex], "HOSTPOLICY_EMBEDDED") == 0)
+        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_HOSTPOLICY_EMBEDDED) == 0)
         {
             // The HOSTPOLICY_EMBEDDED property indicates if the executable has hostpolicy statically linked in
             *hostPolicyEmbedded = (wcscmp(propertyValuesW[propertyIndex], W("true")) == 0);
+        }
+        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_RUNTIME_CONTRACT) == 0)
+        {
+            // Host contract is passed in as the value of HOST_RUNTIME_CONTRACT property (encoded as a string).
+            host_runtime_contract* hostContractLocal = (host_runtime_contract*)_wcstoui64(propertyValuesW[propertyIndex], nullptr, 0);
+            *hostContract = hostContractLocal;
+
+            // Functions in HOST_RUNTIME_CONTRACT have priority over the individual properties
+            // for callbacks, so we set them as long as the contract has a non-null function.
+            if (hostContractLocal->bundle_probe != nullptr)
+                *bundleProbe = hostContractLocal->bundle_probe;
+
+            if (hostContractLocal->pinvoke_override != nullptr)
+                *pinvokeOverride = hostContractLocal->pinvoke_override;
         }
     }
 
     *propertyKeysWRef = propertyKeysW;
     *propertyValuesWRef = propertyValuesW;
+}
+
+coreclr_error_writer_callback_fn g_errorWriter = nullptr;
+
+//
+// Set callback for writing error logging
+//
+// Parameters:
+//  errorWriter             - callback that will be called for each line of the error info
+//                          - passing in NULL removes a callback that was previously set
+//
+// Returns:
+//  S_OK
+//
+extern "C"
+DLLEXPORT
+int coreclr_set_error_writer(coreclr_error_writer_callback_fn error_writer)
+{
+    g_errorWriter = error_writer;
+    return S_OK;
 }
 
 #ifdef FEATURE_GDBJIT
@@ -196,6 +234,7 @@ int coreclr_initialize(
     BundleProbeFn* bundleProbe = nullptr;
     bool hostPolicyEmbedded = false;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
+    host_runtime_contract* hostContract = nullptr;
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -205,7 +244,8 @@ int coreclr_initialize(
         &propertyValuesW,
         &bundleProbe,
         &pinvokeOverride,
-        &hostPolicyEmbedded);
+        &hostPolicyEmbedded,
+        &hostContract);
 
 #ifdef TARGET_UNIX
     DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
@@ -220,6 +260,11 @@ int coreclr_initialize(
 #endif
 
     g_hostpolicy_embedded = hostPolicyEmbedded;
+
+    if (hostContract != nullptr)
+    {
+        HostInformation::SetContract(hostContract);
+    }
 
     if (pinvokeOverride != nullptr)
     {
@@ -431,4 +476,17 @@ int coreclr_execute_assembly(
     IfFailRet(hr);
 
     return hr;
+}
+
+void LogErrorToHost(const char* format, ...)
+{
+    if (g_errorWriter != NULL)
+    {
+        char messageBuffer[1024];
+        va_list args;
+        va_start(args, format);
+        _vsnprintf_s(messageBuffer, ARRAY_SIZE(messageBuffer), _TRUNCATE, format, args);
+        g_errorWriter(messageBuffer);
+        va_end(args);
+    }
 }

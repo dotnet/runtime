@@ -8,7 +8,7 @@ using System.Collections;
 using System.IO;
 using System.Text;
 
-class Test_b119294
+public class Test_b119294
 {
     public int[,] m_nSourceDestMap;
     public static int m_coSourceLength = 100;

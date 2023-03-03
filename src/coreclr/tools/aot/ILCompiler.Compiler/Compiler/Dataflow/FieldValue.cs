@@ -16,7 +16,7 @@ namespace ILLink.Shared.TrimAnalysis
     /// <summary>
     /// A representation of a field. Typically a result of ldfld.
     /// </summary>
-    sealed partial record FieldValue : IValueWithStaticType
+    internal sealed partial record FieldValue : IValueWithStaticType
     {
         public FieldValue(FieldDesc field, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {

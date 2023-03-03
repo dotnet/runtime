@@ -5,10 +5,10 @@ namespace QQ
 {
     using System;
 
-    internal class AA
+    public class AA
     {
         private static void Test(TypedReference arg, String result) { }
-        private static int Main()
+        public static int Main()
         {
             DateTime[] t = new DateTime[200];
             t[1] = new DateTime(100, 10, 1);

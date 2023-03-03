@@ -149,7 +149,7 @@ namespace ILCompiler
             return _helperCache.GetOrCreateValue(helper).Symbol;
         }
 
-        class Helper
+        private sealed class Helper
         {
             public ReadyToRunHelper HelperID { get; }
             public ISymbolNode Symbol { get; }
@@ -162,7 +162,8 @@ namespace ILCompiler
         }
 
         private HelperCache _helperCache;
-        class HelperCache : LockFreeReaderHashtable<ReadyToRunHelper, Helper>
+
+        private sealed class HelperCache : LockFreeReaderHashtable<ReadyToRunHelper, Helper>
         {
             private Compilation _compilation;
 
@@ -199,7 +200,7 @@ namespace ILCompiler
         ILScanResults Scan();
     }
 
-    internal class ScannerFailedException : InternalCompilerErrorException
+    internal sealed class ScannerFailedException : InternalCompilerErrorException
     {
         public ScannerFailedException(string message)
             : base(message + " " + "You can work around by running the compilation with scanner disabled.")
@@ -246,7 +247,12 @@ namespace ILCompiler
             return new ScannedMethodImportationErrorProvider(MarkedNodes);
         }
 
-        private class ScannedVTableProvider : VTableSliceProvider
+        public TypePreinit.TypePreinitializationPolicy GetPreinitializationPolicy()
+        {
+            return new ScannedPreinitializationPolicy(_factory.PreinitializationManager, MarkedNodes);
+        }
+
+        private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
 
@@ -288,7 +294,7 @@ namespace ILCompiler
             }
         }
 
-        private class ScannedDictionaryLayoutProvider : DictionaryLayoutProvider
+        private sealed class ScannedDictionaryLayoutProvider : DictionaryLayoutProvider
         {
             private Dictionary<TypeSystemEntity, IEnumerable<GenericLookupResult>> _layouts = new Dictionary<TypeSystemEntity, IEnumerable<GenericLookupResult>>();
             private HashSet<TypeSystemEntity> _entitiesWithForcedLazyLookups = new HashSet<TypeSystemEntity>();
@@ -362,7 +368,7 @@ namespace ILCompiler
             }
         }
 
-        private class ScannedDevirtualizationManager : DevirtualizationManager
+        private sealed class ScannedDevirtualizationManager : DevirtualizationManager
         {
             private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
@@ -571,7 +577,7 @@ namespace ILCompiler
             }
         }
 
-        private class ScannedInliningPolicy : IInliningPolicy
+        private sealed class ScannedInliningPolicy : IInliningPolicy
         {
             private readonly HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
             private readonly CompilationModuleGroup _baseGroup;
@@ -627,6 +633,57 @@ namespace ILCompiler
 
             public override TypeSystemException GetCompilationError(MethodDesc method)
                 => _importationErrors.TryGetValue(method, out var exception) ? exception : null;
+        }
+
+        private sealed class ScannedPreinitializationPolicy : TypePreinit.TypePreinitializationPolicy
+        {
+            private readonly HashSet<TypeDesc> _canonFormsWithCctorChecks = new HashSet<TypeDesc>();
+
+            public ScannedPreinitializationPolicy(PreinitializationManager preinitManager, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            {
+                foreach (var markedNode in markedNodes)
+                {
+                    // If there's a type loader template for a type, we can create new instances
+                    // at runtime that will not be preinitialized.
+                    // This makes sure accessing static bases of template-constructed types
+                    // goes through a cctor check.
+                    if (markedNode is NativeLayoutTemplateTypeLayoutVertexNode typeTemplate)
+                    {
+                        _canonFormsWithCctorChecks.Add(typeTemplate.CanonType);
+                    }
+
+                    // If there's a type for which we have a canonical form that requires
+                    // a cctor check, make sure accessing the static base from a shared generic context
+                    // will trigger the cctor.
+                    // This makes sure that "static object Read<T>() => SomeType<T>.StaticField" will do
+                    // a cctor check if any of the canonically-equivalent SomeType instantiations required
+                    // a cctor check.
+                    if (markedNode is NonGCStaticsNode nonGCStatics
+                        && nonGCStatics.Type.ConvertToCanonForm(CanonicalFormKind.Specific) != nonGCStatics.Type
+                        && nonGCStatics.HasLazyStaticConstructor)
+                    {
+                        _canonFormsWithCctorChecks.Add(nonGCStatics.Type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                    }
+
+                    // Also look at EETypes to cover the cases when the non-GC static base wasn't generated.
+                    // This makes assert around CanPreinitializeAllConcreteFormsForCanonForm happy.
+                    if (markedNode is EETypeNode eeType
+                        && eeType.Type.ConvertToCanonForm(CanonicalFormKind.Specific) != eeType.Type
+                        && preinitManager.HasLazyStaticConstructor(eeType.Type))
+                    {
+                        _canonFormsWithCctorChecks.Add(eeType.Type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                    }
+                }
+            }
+
+            public override bool CanPreinitialize(DefType type) => true;
+
+            public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type)
+            {
+                // The form we're asking about should be canonical, but may not be normalized
+                Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
+                return !_canonFormsWithCctorChecks.Contains(type.NormalizeInstantiation());
+            }
         }
     }
 }

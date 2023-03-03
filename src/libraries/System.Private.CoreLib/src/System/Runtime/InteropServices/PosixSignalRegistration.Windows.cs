@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices
                         // Ignore errors due to the handler no longer being registered; this can happen, for example, with
                         // direct use of Alloc/Attach/FreeConsole which result in the table of control handlers being reset.
                         // Throw for everything else.
-                        int error = Marshal.GetLastWin32Error();
+                        int error = Marshal.GetLastPInvokeError();
                         if (error != Interop.Errors.ERROR_INVALID_PARAMETER)
                         {
                             throw Win32Marshal.GetExceptionForWin32Error(error);

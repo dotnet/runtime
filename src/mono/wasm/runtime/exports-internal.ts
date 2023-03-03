@@ -12,13 +12,16 @@ import { mono_intern_string } from "./strings";
 import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { ws_wasm_create, ws_wasm_open, ws_wasm_send, ws_wasm_receive, ws_wasm_close, ws_wasm_abort } from "./web-socket";
 import { mono_wasm_get_loaded_files } from "./assets";
+import { jiterpreter_dump_stats } from "./jiterpreter";
+import { getOptions, applyOptions } from "./jiterpreter-support";
 
 export function export_internal(): any {
     return {
         // tests
         mono_wasm_exit: (exit_code: number) => { Module.printErr("MONO_WASM: early exit " + exit_code); },
         mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
-        mono_profiler_init_aot: cwraps.mono_profiler_init_aot,
+        mono_wasm_profiler_init_aot: cwraps.mono_wasm_profiler_init_aot,
+        mono_wasm_profiler_init_browser: cwraps.mono_wasm_profiler_init_browser,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
         mono_method_resolve,//MarshalTests.cs
         mono_intern_string,// MarshalTests.cs
@@ -73,6 +76,11 @@ export function export_internal(): any {
         http_wasm_get_response_bytes,
         http_wasm_get_response_length,
         http_wasm_get_streamed_response_bytes,
+
+        // jiterpreter
+        jiterpreter_dump_stats,
+        jiterpreter_apply_options: applyOptions,
+        jiterpreter_get_options: getOptions
     };
 }
 
@@ -81,7 +89,8 @@ export function cwraps_internal(internal: any): void {
     Object.assign(internal, {
         mono_wasm_exit: cwraps.mono_wasm_exit,
         mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
-        mono_profiler_init_aot: cwraps.mono_profiler_init_aot,
+        mono_wasm_profiler_init_aot: cwraps.mono_wasm_profiler_init_aot,
+        mono_wasm_profiler_init_browser: cwraps.mono_wasm_profiler_init_browser,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
     });
 }

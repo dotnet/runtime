@@ -191,7 +191,7 @@ namespace System.Net.WebSockets
         // true: async completion or error
         private unsafe bool ReadAsyncFast(HttpListenerAsyncEventArgs eventArgs)
         {
-            eventArgs.StartOperationCommon(this, _inputStream.InternalHttpContext.RequestQueueBoundHandle);
+            eventArgs.StartOperationCommon(_inputStream.InternalHttpContext.RequestQueueBoundHandle);
             eventArgs.StartOperationReceive();
 
             bool completedAsynchronouslyOrWithError;
@@ -440,7 +440,7 @@ namespace System.Net.WebSockets
         {
             Interop.HttpApi.HTTP_FLAGS flags = Interop.HttpApi.HTTP_FLAGS.NONE;
 
-            eventArgs.StartOperationCommon(this, _outputStream.InternalHttpContext.RequestQueueBoundHandle);
+            eventArgs.StartOperationCommon(_outputStream.InternalHttpContext.RequestQueueBoundHandle);
             eventArgs.StartOperationSend();
 
             uint statusCode;
@@ -927,7 +927,7 @@ namespace System.Net.WebSockets
 
             // Method called to prepare for a native async http.sys call.
             // This method performs the tasks common to all http.sys operations.
-            internal void StartOperationCommon(WebSocketHttpListenerDuplexStream currentStream, ThreadPoolBoundHandle boundHandle)
+            internal void StartOperationCommon(ThreadPoolBoundHandle boundHandle)
             {
                 // Change status to "in-use".
                 if (Interlocked.CompareExchange(ref _operating, InProgress, Free) != Free)

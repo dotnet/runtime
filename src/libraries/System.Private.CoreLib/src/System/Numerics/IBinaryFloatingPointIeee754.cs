@@ -8,7 +8,7 @@ namespace System.Numerics
     public interface IBinaryFloatingPointIeee754<TSelf>
         : IBinaryNumber<TSelf>,
           IFloatingPointIeee754<TSelf>
-        where TSelf : IBinaryFloatingPointIeee754<TSelf>
+        where TSelf : IBinaryFloatingPointIeee754<TSelf>?
     {
     }
 }

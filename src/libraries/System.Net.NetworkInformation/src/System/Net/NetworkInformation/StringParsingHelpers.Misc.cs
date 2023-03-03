@@ -109,22 +109,6 @@ namespace System.Net.NetworkInformation
             return ret;
         }
 
-        internal static long ParseRawLongFile(string filePath)
-        {
-            long ret;
-            if (!long.TryParse(ReadAllText(filePath).Trim(), out ret))
-            {
-                throw ExceptionHelper.CreateForParseFailure();
-            }
-
-            return ret;
-        }
-
-        internal static int ParseRawHexFileAsInt(string filePath)
-        {
-            return Convert.ToInt32(ReadAllText(filePath).Trim(), 16);
-        }
-
         private static int CountOccurrences(string value, string candidate)
         {
             Debug.Assert(candidate != null, "CountOccurrences: Candidate string was null.");

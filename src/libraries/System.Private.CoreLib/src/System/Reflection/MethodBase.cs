@@ -236,16 +236,15 @@ namespace System.Reflection
                 shouldCopyBack[i] = copyBackArg;
                 copyOfParameters[i] = arg;
 
+#pragma warning disable 8500
                 if (isValueType)
                 {
-#if !MONO // Temporary until Mono is updated.
                     Debug.Assert(arg != null);
                     Debug.Assert(
                         arg.GetType() == sigType ||
                         (sigType.IsPointer && (arg.GetType() == typeof(IntPtr) || arg.GetType() == typeof(UIntPtr))) ||
                         (sigType.IsByRef && arg.GetType() == RuntimeTypeHandle.GetElementType(sigType)) ||
                         ((sigType.IsEnum || arg.GetType().IsEnum) && RuntimeType.GetUnderlyingType((RuntimeType)arg.GetType()) == RuntimeType.GetUnderlyingType(sigType)));
-#endif
                     ByReference valueTypeRef = ByReference.Create(ref copyOfParameters[i]!.GetRawData());
                     *(ByReference*)(byrefParameters + i) = valueTypeRef;
                 }
@@ -254,6 +253,7 @@ namespace System.Reflection
                     ByReference objRef = ByReference.Create(ref copyOfParameters[i]);
                     *(ByReference*)(byrefParameters + i) = objRef;
                 }
+#pragma warning restore 8500
             }
         }
 

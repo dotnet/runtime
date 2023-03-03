@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
@@ -105,12 +106,12 @@ namespace System.Reflection.TypeLoading.Ecma
         public static IList<CustomAttributeTypedArgument> ToApiForm(this IList<CustomAttributeTypedArgument<RoType>> catgs)
         {
             int count = catgs.Count;
-            CustomAttributeTypedArgument[] cats = new CustomAttributeTypedArgument[count];
+            CustomAttributeTypedArgument[] cats = count != 0 ? new CustomAttributeTypedArgument[count] : Array.Empty<CustomAttributeTypedArgument>();
             for (int i = 0; i < count; i++)
             {
                 cats[i] = catgs[i].ToApiForm();
             }
-            return cats.ToReadOnlyCollection();
+            return Array.AsReadOnly(cats);
         }
 
         /// <summary>
@@ -136,12 +137,12 @@ namespace System.Reflection.TypeLoading.Ecma
         public static IList<CustomAttributeNamedArgument> ToApiForm(this IList<CustomAttributeNamedArgument<RoType>> cangs, Type attributeType)
         {
             int count = cangs.Count;
-            CustomAttributeNamedArgument[] cans = new CustomAttributeNamedArgument[count];
+            CustomAttributeNamedArgument[] cans = count != 0 ? new CustomAttributeNamedArgument[count] : Array.Empty<CustomAttributeNamedArgument>();
             for (int i = 0; i < count; i++)
             {
                 cans[i] = cangs[i].ToApiForm(attributeType);
             }
-            return cans.ToReadOnlyCollection();
+            return Array.AsReadOnly(cans);
         }
 
         /// <summary>

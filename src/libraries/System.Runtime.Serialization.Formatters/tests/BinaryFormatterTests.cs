@@ -25,6 +25,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/11191", ~RuntimeConfiguration.Release)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/35915", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75281", typeof(PlatformDetection), nameof(PlatformDetection.IsPpc64leProcess))]
         [InlineData(2 * 6_584_983 - 2)] // previous limit
         [InlineData(2 * 7_199_369 - 2)] // last pre-computed prime number
         public void SerializeHugeObjectGraphs(int limit)

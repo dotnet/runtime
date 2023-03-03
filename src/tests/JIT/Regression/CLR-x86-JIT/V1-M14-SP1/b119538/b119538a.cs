@@ -6,7 +6,7 @@ class A
 {
 }
 
-class B
+public class B
 {
     public static int Main()
     {

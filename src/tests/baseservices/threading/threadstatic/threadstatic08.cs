@@ -15,7 +15,7 @@ public class Program
     [ThreadStatic]
     private static Struct TSStruct;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         if(TSStruct.a != 0 || TSStruct.b != 0)
             return 101;

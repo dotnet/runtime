@@ -29,7 +29,7 @@ namespace System.Net.Security
         // defined in winerror.h
         private const int NTE_FAIL = unchecked((int)0x80090020);
 
-        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
+        internal static string QueryContextClientSpecifiedSpn(SafeDeleteContext _ /*securityContext*/)
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
         }
@@ -296,6 +296,7 @@ namespace System.Net.Security
             return status;
         }
 
+#pragma warning disable IDE0060
         internal static SecurityStatusPal AcceptSecurityContext(
             SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteContext? securityContext,
@@ -387,6 +388,7 @@ namespace System.Net.Security
                 negoContext.SetGssContext(contextHandle);
             }
         }
+#pragma warning restore IDE0060
 
         // https://www.gnu.org/software/gss/reference/gss.pdf (page 25)
         private static SecurityStatusPalErrorCode GetErrorCode(Interop.NetSecurityNative.GssApiException exception)
@@ -434,11 +436,13 @@ namespace System.Net.Security
             return new Win32Exception(NTE_FAIL, (statusCode.Exception != null) ? statusCode.Exception.Message : statusCode.ErrorCode.ToString());
         }
 
+#pragma warning disable IDE0060
         internal static int QueryMaxTokenSize(string package)
         {
             // This value is not used on Unix
             return 0;
         }
+#pragma warning restore IDE0060
 
         internal static SafeFreeCredentials AcquireDefaultCredential(string package, bool isServer)
         {
@@ -486,12 +490,14 @@ namespace System.Net.Security
             }
         }
 
+#pragma warning disable IDE0060
         internal static SecurityStatusPal CompleteAuthToken(
             ref SafeDeleteContext? securityContext,
             ReadOnlySpan<byte> incomingBlob)
         {
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
+#pragma warning restore IDE0060
 
         internal static int Encrypt(
             SafeDeleteContext securityContext,

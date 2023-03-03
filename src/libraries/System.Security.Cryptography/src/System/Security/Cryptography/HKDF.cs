@@ -85,8 +85,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(prk);
 
-            if (outputLength <= 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(outputLength);
 
             int hashLength = HashLength(hashAlgorithmName);
 
@@ -210,8 +209,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(ikm);
 
-            if (outputLength <= 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(outputLength);
 
             int hashLength = HashLength(hashAlgorithmName);
             Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");

@@ -116,7 +116,7 @@ namespace System.Drawing.Imaging
             public static ref int GetPinnableReference(WmfPlaceableFileHeader managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.GetPinnableReference());
 
             // All usages in our currently supported scenarios will always go through GetPinnableReference
-            public static int* ConvertToUnmanaged(WmfPlaceableFileHeader managed) => throw new UnreachableException();
+            public static int* ConvertToUnmanaged(WmfPlaceableFileHeader _) => throw new UnreachableException();
         }
 #endif
     }

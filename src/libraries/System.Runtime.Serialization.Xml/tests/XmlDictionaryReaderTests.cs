@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -193,8 +194,10 @@ namespace System.Runtime.Serialization.Xml.Tests
             AssertReadContentFromBinary(8.20788039913184E-304, XmlBinaryNodeType.DoubleText, new byte[] { 8, 7, 6, 5, 4, 3, 2, 1 });
             AssertReadContentFromBinary(guid, XmlBinaryNodeType.GuidText, guid.ToByteArray());
             AssertReadContentFromBinary(new TimeSpan(0x0807060504030201), XmlBinaryNodeType.TimeSpanText, new byte[] { 01, 02, 03, 04, 05, 06, 07, 08 });
-            AssertReadContentFromBinary(new decimal(0x20212223, 0x10111213, 0x01020304, true, scale: 0x1b), XmlBinaryNodeType.DecimalText
-                , new byte[] { 0x0, 0x0, 0x1b, 0x80, 0x4, 0x3, 0x2, 0x1, 0x23, 0x22, 0x21, 0x20, 0x13, 0x12, 0x11, 0x10 });
+            AssertReadContentFromBinary(new decimal(0x20212223, 0x10111213, 0x01020304, true, scale: 0x1b), XmlBinaryNodeType.DecimalText,
+                new byte[] { 0x0, 0x0, 0x1b, 0x80, 0x4, 0x3, 0x2, 0x1, 0x23, 0x22, 0x21, 0x20, 0x13, 0x12, 0x11, 0x10 });
+            AssertReadContentFromBinary(new DateTime(2022, 8, 26, 12, 34, 56, DateTimeKind.Utc), XmlBinaryNodeType.DateTimeText,
+                new byte[] { 0x00, 0x18, 0xdf, 0x61, 0x5f, 0x87, 0xda, 0x48 });
 
             // Double can be represented as float or inte as long as no detail is lost
             AssertReadContentFromBinary((double)0x0100, XmlBinaryNodeType.Int16Text, new byte[] { 0x00, 0x01 });
@@ -205,6 +208,16 @@ namespace System.Runtime.Serialization.Xml.Tests
         public static void BinaryXml_Array_RoundTrip()
         {
             int[] ints = new int[] { -1, 0x01020304, 0x11223344, -1 };
+            float[] floats = new float[] { 1.2345f, 2.3456f };
+            double[] doubles = new double[] { 1.2345678901, 2.3456789012 };
+            decimal[] decimals = new[] {
+                new decimal(0x20212223, 0x10111213, 0x01020304, true, scale: 0x1b),
+                new decimal(0x50515253, 0x40414243, 0x31323334, false, scale: 0x1c)
+            };
+            DateTime[] datetimes = new[] {
+                new DateTime(2022, 8, 26, 12, 34, 56, DateTimeKind.Utc),
+                new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local)
+            };
             TimeSpan[] timespans = new[] { TimeSpan.FromTicks(0x0102030405060708), TimeSpan.FromTicks(0x1011121314151617) };
             // Write more than 4 kb in a single call to ensure we hit path for reading (and writing happens on 512b) large arrays
             long[] longs = Enumerable.Range(0x01020304, 513).Select(i => (long)i | (long)(~i << 32)).ToArray();
@@ -217,6 +230,10 @@ namespace System.Runtime.Serialization.Xml.Tests
             using var writer = XmlDictionaryWriter.CreateBinaryWriter(ms);
             writer.WriteStartElement("root");
             writer.WriteArray(null, "ints", null, ints, 1, 2);
+            writer.WriteArray(null, "floats", null, floats, 0, floats.Length);
+            writer.WriteArray(null, "doubles", null, doubles, 0, doubles.Length);
+            writer.WriteArray(null, "decimals", null, decimals, 0, decimals.Length);
+            writer.WriteArray(null, "datetimes", null, datetimes, 0, datetimes.Length);
             writer.WriteArray(null, "timespans", null, timespans, 0, timespans.Length);
             writer.WriteArray(null, "longs", null, longs, 0, longs.Length);
             writer.WriteArray(null, "guids", null, guids, 0, guids.Length);
@@ -230,6 +247,10 @@ namespace System.Runtime.Serialization.Xml.Tests
             using var reader = XmlDictionaryReader.CreateBinaryReader(ms, XmlDictionaryReaderQuotas.Max);
             reader.ReadStartElement("root");
             int intsRead = reader.ReadArray("ints", string.Empty, actualInts, 1, 3);
+            float[] actualFloats = reader.ReadSingleArray("floats", string.Empty);
+            double[] actualDoubles = reader.ReadDoubleArray("doubles", string.Empty);
+            decimal[] actualDecimals = reader.ReadDecimalArray("decimals", string.Empty);
+            DateTime[] actualDateTimes = reader.ReadDateTimeArray("datetimes", string.Empty);
             TimeSpan[] actualTimeSpans = reader.ReadTimeSpanArray("timespans", string.Empty);
             long[] actualLongs = reader.ReadInt64Array("longs", string.Empty);
             Guid[] actualGuids = reader.ReadGuidArray("guids", string.Empty);
@@ -240,6 +261,10 @@ namespace System.Runtime.Serialization.Xml.Tests
             Assert.Equal(2, intsRead);
             AssertExtensions.SequenceEqual(ints, actualInts);
             AssertExtensions.SequenceEqual(actualLongs, longs);
+            AssertExtensions.SequenceEqual(actualFloats, floats);
+            AssertExtensions.SequenceEqual(actualDoubles, doubles);
+            AssertExtensions.SequenceEqual(actualDecimals, decimals);
+            AssertExtensions.SequenceEqual(actualDateTimes, datetimes);
             AssertExtensions.SequenceEqual(actualTimeSpans, timespans);
             AssertExtensions.SequenceEqual(actualGuids, guids);
         }

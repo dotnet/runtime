@@ -66,10 +66,10 @@ namespace System.Drawing.Drawing2D
         {
             Gdip.CheckStatus(Gdip.GdipClonePath(new HandleRef(this, _nativePath), out IntPtr clonedPath));
 
-            return new GraphicsPath(clonedPath, 0);
+            return new GraphicsPath(clonedPath);
         }
 
-        private GraphicsPath(IntPtr nativePath, int extra)
+        private GraphicsPath(IntPtr nativePath)
         {
             if (nativePath == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(nativePath));

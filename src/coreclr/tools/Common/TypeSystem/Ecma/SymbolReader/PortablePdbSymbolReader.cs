@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -105,8 +104,7 @@ namespace Internal.TypeSystem.Ecma
 
         public override void Dispose()
         {
-            if (_mappedViewAccessor != null)
-                _mappedViewAccessor.Dispose();
+            _mappedViewAccessor?.Dispose();
         }
 
         public override int GetStateMachineKickoffMethod(int methodToken)
@@ -118,6 +116,21 @@ namespace Internal.TypeSystem.Ecma
             var kickoffMethod = debugInformation.GetStateMachineKickoffMethod();
             return kickoffMethod.IsNil ? 0 : MetadataTokens.GetToken(kickoffMethod);
         }
+
+        private Dictionary<DocumentHandle, string> _urlCache;
+
+        private string GetUrl(DocumentHandle handle)
+        {
+            lock (this)
+            {
+                _urlCache ??= new Dictionary<DocumentHandle, string>();
+                if (!_urlCache.TryGetValue(handle, out var url))
+                    _urlCache.Add(handle, url = _reader.GetString(_reader.GetDocument(handle).Name));
+
+                return url;
+            }
+        }
+
 
         public override IEnumerable<ILSequencePoint> GetSequencePointsForMethod(int methodToken)
         {
@@ -142,7 +155,7 @@ namespace Internal.TypeSystem.Ecma
                 }
                 else
                 {
-                    url = _reader.GetString(_reader.GetDocument(sequencePoint.Document).Name);
+                    url = GetUrl(sequencePoint.Document);
                     previousDocumentHandle = sequencePoint.Document;
                     previousDocumentUrl = url;
                 }

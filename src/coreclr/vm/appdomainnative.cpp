@@ -42,7 +42,7 @@ FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
 {
     FCALL_CONTRACT;
 
-    struct _gc
+    struct
     {
         PTRARRAYREF     AsmArray;
     } gc;

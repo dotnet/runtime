@@ -109,11 +109,6 @@ public class WasmAppBuilder : Task
         public WasmEntry(string name) : base(name, "dotnetwasm") { }
     }
 
-    private sealed class CryptoWorkerEntry : AssetEntry
-    {
-        public CryptoWorkerEntry(string name) : base(name, "js-module-crypto") { }
-    }
-
     private sealed class ThreadsWorkerEntry : AssetEntry
     {
         public ThreadsWorkerEntry(string name) : base(name, "js-module-threads") { }
@@ -258,7 +253,7 @@ public class WasmAppBuilder : Task
                 string fullPath = assembly.GetMetadata("Identity");
                 if (string.IsNullOrEmpty(culture))
                 {
-                    Log.LogWarning($"Missing CultureName metadata for satellite assembly {fullPath}");
+                    Log.LogWarning(null, "WASM0002", "", "", 0, 0, 0, 0, $"Missing CultureName metadata for satellite assembly {fullPath}");
                     continue;
                 }
                 // FIXME: validate the culture?
@@ -295,7 +290,7 @@ public class WasmAppBuilder : Task
 
                     if (firstPath == secondPath)
                     {
-                        Log.LogWarning($"Found identical vfs mappings for target path: {targetPath}, source file: {firstPath}. Ignoring.");
+                        Log.LogWarning(null, "WASM0003", "", "", 0, 0, 0, 0, $"Found identical vfs mappings for target path: {targetPath}, source file: {firstPath}. Ignoring.");
                         continue;
                     }
 
@@ -320,7 +315,6 @@ public class WasmAppBuilder : Task
 
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
         config.Assets.Add(new WasmEntry ("dotnet.wasm") );
-        config.Assets.Add(new CryptoWorkerEntry ("dotnet-crypto-worker.js") );
         if (IncludeThreadsWorker)
             config.Assets.Add(new ThreadsWorkerEntry ("dotnet.worker.js") );
 

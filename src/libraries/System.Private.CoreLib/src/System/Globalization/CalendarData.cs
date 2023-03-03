@@ -39,8 +39,7 @@ namespace System.Globalization
         internal string[] saAbbrevMonthGenitiveNames = null!; // Genitive Abbrev Month Names (13)
         internal string[] saLeapYearMonthNames = null!; // Multiple strings for the month names in a leap year.
 
-        // Integers at end to make marshaller happier
-        internal int iTwoDigitYearMax = 2029; // Max 2 digit year (for Y2K bug data entry)
+        internal int iTwoDigitYearMax = 2049; // Max 2 digit year
         private int iCurrentEra;  // current era # (usually 1)
 
         // Use overrides?
@@ -66,7 +65,7 @@ namespace System.Globalization
             invariant.sNativeName = "Gregorian Calendar";  // Calendar Name
 
             // Year
-            invariant.iTwoDigitYearMax = 2029; // Max 2 digit year (for Y2K bug data entry)
+            invariant.iTwoDigitYearMax = 2049; // Max 2 digit year
             invariant.iCurrentEra = 1; // Current era #
 
             // Formats

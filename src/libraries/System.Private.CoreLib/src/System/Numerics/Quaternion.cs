@@ -68,6 +68,10 @@ namespace System.Numerics
             get => new Quaternion(0, 0, 0, 1);
         }
 
+        /// <summary>Gets or sets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to get or set.</param>
+        /// <returns>The element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
             get => GetElement(this, index);
@@ -98,7 +102,7 @@ namespace System.Numerics
         }
 
         /// <summary>Sets the element at the specified index.</summary>
-        /// <param name="quaternion">The vector of the element to get.</param>
+        /// <param name="quaternion">The vector of the element to set.</param>
         /// <param name="index">The index of the element to set.</param>
         /// <param name="value">The value of the element to set.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>

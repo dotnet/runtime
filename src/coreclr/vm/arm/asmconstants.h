@@ -123,9 +123,6 @@ ASMCONSTANTS_C_ASSERT(MethodDesc__mdcClassification == mdcClassification)
 
 #ifdef FEATURE_COMINTEROP
 
-#define MethodDesc__mcComInterop 0x6
-ASMCONSTANTS_C_ASSERT(MethodDesc__mcComInterop == mcComInterop)
-
 #define Stub__m_pCode DBG_FRE(0x10, 0x0c)
 ASMCONSTANTS_C_ASSERT(Stub__m_pCode == sizeof(Stub))
 

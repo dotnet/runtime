@@ -35,20 +35,8 @@ extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 #define CONTEXT_AREA_MASK 0xffff
 #ifdef HOST_X86
 #define CONTEXT_ALL_FLOATING (CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS)
-#elif defined(HOST_AMD64)
-#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
-#elif defined(HOST_ARM)
-#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
-#elif defined(HOST_ARM64)
-#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
-#elif defined(HOST_LOONGARCH64)
-#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
-#elif defined(HOST_S390X)
-#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
-#elif defined(HOST_POWERPC64)
-#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #else
-#error Unexpected architecture.
+#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #endif
 
 #if !HAVE_MACH_EXCEPTIONS
@@ -72,211 +60,253 @@ typedef int __ptrace_request;
 
 #ifdef HOST_AMD64
 #define ASSIGN_CONTROL_REGS \
-        ASSIGN_REG(Rbp)     \
-        ASSIGN_REG(Rip)     \
-        ASSIGN_REG(SegCs)   \
-        ASSIGN_REG(EFlags)  \
-        ASSIGN_REG(Rsp)     \
+    ASSIGN_REG(Rbp)     \
+    ASSIGN_REG(Rip)     \
+    ASSIGN_REG(SegCs)   \
+    ASSIGN_REG(EFlags)  \
+    ASSIGN_REG(Rsp)     \
 
 #define ASSIGN_INTEGER_REGS \
-        ASSIGN_REG(Rdi)     \
-        ASSIGN_REG(Rsi)     \
-        ASSIGN_REG(Rbx)     \
-        ASSIGN_REG(Rdx)     \
-        ASSIGN_REG(Rcx)     \
-        ASSIGN_REG(Rax)     \
-        ASSIGN_REG(R8)     \
-        ASSIGN_REG(R9)     \
-        ASSIGN_REG(R10)     \
-        ASSIGN_REG(R11)     \
-        ASSIGN_REG(R12)     \
-        ASSIGN_REG(R13)     \
-        ASSIGN_REG(R14)     \
-        ASSIGN_REG(R15)     \
+    ASSIGN_REG(Rdi)     \
+    ASSIGN_REG(Rsi)     \
+    ASSIGN_REG(Rbx)     \
+    ASSIGN_REG(Rdx)     \
+    ASSIGN_REG(Rcx)     \
+    ASSIGN_REG(Rax)     \
+    ASSIGN_REG(R8)     \
+    ASSIGN_REG(R9)     \
+    ASSIGN_REG(R10)     \
+    ASSIGN_REG(R11)     \
+    ASSIGN_REG(R12)     \
+    ASSIGN_REG(R13)     \
+    ASSIGN_REG(R14)     \
+    ASSIGN_REG(R15)     \
 
 #elif defined(HOST_X86)
 #define ASSIGN_CONTROL_REGS \
-        ASSIGN_REG(Ebp)     \
-        ASSIGN_REG(Eip)     \
-        ASSIGN_REG(SegCs)   \
-        ASSIGN_REG(EFlags)  \
-        ASSIGN_REG(Esp)     \
-        ASSIGN_REG(SegSs)   \
+    ASSIGN_REG(Ebp)     \
+    ASSIGN_REG(Eip)     \
+    ASSIGN_REG(SegCs)   \
+    ASSIGN_REG(EFlags)  \
+    ASSIGN_REG(Esp)     \
+    ASSIGN_REG(SegSs)   \
 
 #define ASSIGN_INTEGER_REGS \
-        ASSIGN_REG(Edi)     \
-        ASSIGN_REG(Esi)     \
-        ASSIGN_REG(Ebx)     \
-        ASSIGN_REG(Edx)     \
-        ASSIGN_REG(Ecx)     \
-        ASSIGN_REG(Eax)     \
+    ASSIGN_REG(Edi)     \
+    ASSIGN_REG(Esi)     \
+    ASSIGN_REG(Ebx)     \
+    ASSIGN_REG(Edx)     \
+    ASSIGN_REG(Ecx)     \
+    ASSIGN_REG(Eax)     \
 
 #elif defined(HOST_ARM)
 #define ASSIGN_CONTROL_REGS \
-        ASSIGN_REG(Sp)     \
-        ASSIGN_REG(Lr)     \
-        ASSIGN_REG(Pc)   \
-        ASSIGN_REG(Cpsr)  \
+    ASSIGN_REG(Sp)     \
+    ASSIGN_REG(Lr)     \
+    ASSIGN_REG(Pc)   \
+    ASSIGN_REG(Cpsr)  \
 
 #define ASSIGN_INTEGER_REGS \
-        ASSIGN_REG(R0)     \
-        ASSIGN_REG(R1)     \
-        ASSIGN_REG(R2)     \
-        ASSIGN_REG(R3)     \
-        ASSIGN_REG(R4)     \
-        ASSIGN_REG(R5)     \
-        ASSIGN_REG(R6)     \
-        ASSIGN_REG(R7)     \
-        ASSIGN_REG(R8)     \
-        ASSIGN_REG(R9)     \
-        ASSIGN_REG(R10)     \
-        ASSIGN_REG(R11)     \
-        ASSIGN_REG(R12)
+    ASSIGN_REG(R0)     \
+    ASSIGN_REG(R1)     \
+    ASSIGN_REG(R2)     \
+    ASSIGN_REG(R3)     \
+    ASSIGN_REG(R4)     \
+    ASSIGN_REG(R5)     \
+    ASSIGN_REG(R6)     \
+    ASSIGN_REG(R7)     \
+    ASSIGN_REG(R8)     \
+    ASSIGN_REG(R9)     \
+    ASSIGN_REG(R10)     \
+    ASSIGN_REG(R11)     \
+    ASSIGN_REG(R12)
 #elif defined(HOST_ARM64)
 #define ASSIGN_CONTROL_REGS \
-        ASSIGN_REG(Cpsr)    \
-        ASSIGN_REG(Fp)      \
-        ASSIGN_REG(Sp)      \
-        ASSIGN_REG(Lr)      \
-        ASSIGN_REG(Pc)
+    ASSIGN_REG(Cpsr)    \
+    ASSIGN_REG(Fp)      \
+    ASSIGN_REG(Sp)      \
+    ASSIGN_REG(Lr)      \
+    ASSIGN_REG(Pc)
 
 #define ASSIGN_INTEGER_REGS \
-	ASSIGN_REG(X0)      \
-	ASSIGN_REG(X1)      \
-	ASSIGN_REG(X2)      \
-	ASSIGN_REG(X3)      \
-	ASSIGN_REG(X4)      \
-	ASSIGN_REG(X5)      \
-	ASSIGN_REG(X6)      \
-	ASSIGN_REG(X7)      \
-	ASSIGN_REG(X8)      \
-	ASSIGN_REG(X9)      \
-	ASSIGN_REG(X10)     \
-	ASSIGN_REG(X11)     \
-	ASSIGN_REG(X12)     \
-	ASSIGN_REG(X13)     \
-	ASSIGN_REG(X14)     \
-	ASSIGN_REG(X15)     \
-	ASSIGN_REG(X16)     \
-	ASSIGN_REG(X17)     \
-	ASSIGN_REG(X18)     \
-	ASSIGN_REG(X19)     \
-	ASSIGN_REG(X20)     \
-	ASSIGN_REG(X21)     \
-	ASSIGN_REG(X22)     \
-	ASSIGN_REG(X23)     \
-	ASSIGN_REG(X24)     \
-	ASSIGN_REG(X25)     \
-	ASSIGN_REG(X26)     \
-	ASSIGN_REG(X27)     \
-	ASSIGN_REG(X28)
+    ASSIGN_REG(X0)      \
+    ASSIGN_REG(X1)      \
+    ASSIGN_REG(X2)      \
+    ASSIGN_REG(X3)      \
+    ASSIGN_REG(X4)      \
+    ASSIGN_REG(X5)      \
+    ASSIGN_REG(X6)      \
+    ASSIGN_REG(X7)      \
+    ASSIGN_REG(X8)      \
+    ASSIGN_REG(X9)      \
+    ASSIGN_REG(X10)     \
+    ASSIGN_REG(X11)     \
+    ASSIGN_REG(X12)     \
+    ASSIGN_REG(X13)     \
+    ASSIGN_REG(X14)     \
+    ASSIGN_REG(X15)     \
+    ASSIGN_REG(X16)     \
+    ASSIGN_REG(X17)     \
+    ASSIGN_REG(X18)     \
+    ASSIGN_REG(X19)     \
+    ASSIGN_REG(X20)     \
+    ASSIGN_REG(X21)     \
+    ASSIGN_REG(X22)     \
+    ASSIGN_REG(X23)     \
+    ASSIGN_REG(X24)     \
+    ASSIGN_REG(X25)     \
+    ASSIGN_REG(X26)     \
+    ASSIGN_REG(X27)     \
+    ASSIGN_REG(X28)
 
 #elif defined(HOST_LOONGARCH64)
 #define ASSIGN_CONTROL_REGS  \
-        ASSIGN_REG(Fp)      \
-        ASSIGN_REG(Sp)      \
-        ASSIGN_REG(Ra)      \
-        ASSIGN_REG(Pc)
-
+    ASSIGN_REG(Fp)      \
+    ASSIGN_REG(Sp)      \
+    ASSIGN_REG(Ra)      \
+    ASSIGN_REG(Pc)
 
 #define ASSIGN_INTEGER_REGS \
-	ASSIGN_REG(R0)     \
-	ASSIGN_REG(Tp)     \
-	ASSIGN_REG(A0)     \
-	ASSIGN_REG(A1)     \
-	ASSIGN_REG(A2)     \
-	ASSIGN_REG(A3)     \
-	ASSIGN_REG(A4)     \
-	ASSIGN_REG(A5)     \
-	ASSIGN_REG(A6)     \
-	ASSIGN_REG(A7)     \
-	ASSIGN_REG(T0)     \
-	ASSIGN_REG(T1)     \
-	ASSIGN_REG(T2)     \
-	ASSIGN_REG(T3)     \
-	ASSIGN_REG(T4)     \
-	ASSIGN_REG(T5)     \
-	ASSIGN_REG(T6)     \
-	ASSIGN_REG(T7)     \
-	ASSIGN_REG(T8)     \
-	ASSIGN_REG(S0)     \
-	ASSIGN_REG(S1)     \
-	ASSIGN_REG(S2)     \
-	ASSIGN_REG(S3)     \
-	ASSIGN_REG(S4)     \
-	ASSIGN_REG(S5)     \
-	ASSIGN_REG(S6)     \
-	ASSIGN_REG(S7)     \
-	ASSIGN_REG(S8)     \
-	ASSIGN_REG(X0)
+    ASSIGN_REG(R0)     \
+    ASSIGN_REG(Tp)     \
+    ASSIGN_REG(A0)     \
+    ASSIGN_REG(A1)     \
+    ASSIGN_REG(A2)     \
+    ASSIGN_REG(A3)     \
+    ASSIGN_REG(A4)     \
+    ASSIGN_REG(A5)     \
+    ASSIGN_REG(A6)     \
+    ASSIGN_REG(A7)     \
+    ASSIGN_REG(T0)     \
+    ASSIGN_REG(T1)     \
+    ASSIGN_REG(T2)     \
+    ASSIGN_REG(T3)     \
+    ASSIGN_REG(T4)     \
+    ASSIGN_REG(T5)     \
+    ASSIGN_REG(T6)     \
+    ASSIGN_REG(T7)     \
+    ASSIGN_REG(T8)     \
+    ASSIGN_REG(S0)     \
+    ASSIGN_REG(S1)     \
+    ASSIGN_REG(S2)     \
+    ASSIGN_REG(S3)     \
+    ASSIGN_REG(S4)     \
+    ASSIGN_REG(S5)     \
+    ASSIGN_REG(S6)     \
+    ASSIGN_REG(S7)     \
+    ASSIGN_REG(S8)     \
+    ASSIGN_REG(X0)
+
+#elif defined(HOST_RISCV64)
+
+#error "TODO-RISCV64: review this"
+
+// https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-cc.adoc
+
+#define ASSIGN_CONTROL_REGS  \
+    ASSIGN_REG(Ra)      \
+    ASSIGN_REG(Sp)      \
+    ASSIGN_REG(Sp)      \
+    ASSIGN_REG(Gp)      \
+    ASSIGN_REG(Tp)      \
+    ASSIGN_REG(Pc)
+
+#define ASSIGN_INTEGER_REGS \
+    ASSIGN_REG(T0)     \
+    ASSIGN_REG(T1)     \
+    ASSIGN_REG(T2)     \
+    ASSIGN_REG(S0)     \
+    ASSIGN_REG(S1)     \
+    ASSIGN_REG(A0)     \
+    ASSIGN_REG(A1)     \
+    ASSIGN_REG(A2)     \
+    ASSIGN_REG(A3)     \
+    ASSIGN_REG(A4)     \
+    ASSIGN_REG(A5)     \
+    ASSIGN_REG(A6)     \
+    ASSIGN_REG(A7)     \
+    ASSIGN_REG(S2)     \
+    ASSIGN_REG(S3)     \
+    ASSIGN_REG(S4)     \
+    ASSIGN_REG(S5)     \
+    ASSIGN_REG(S6)     \
+    ASSIGN_REG(S7)     \
+    ASSIGN_REG(S8)     \
+    ASSIGN_REG(S9)     \
+    ASSIGN_REG(S10)    \
+    ASSIGN_REG(S11)    \
+    ASSIGN_REG(T3)     \
+    ASSIGN_REG(T4)     \
+    ASSIGN_REG(T5)     \
+    ASSIGN_REG(T6)
 
 #elif defined(HOST_S390X)
 #define ASSIGN_CONTROL_REGS \
-        ASSIGN_REG(PSWMask) \
-        ASSIGN_REG(PSWAddr) \
-        ASSIGN_REG(R15)     \
+    ASSIGN_REG(PSWMask) \
+    ASSIGN_REG(PSWAddr) \
+    ASSIGN_REG(R15)     \
 
 #define ASSIGN_INTEGER_REGS \
-        ASSIGN_REG(R0)      \
-        ASSIGN_REG(R1)      \
-        ASSIGN_REG(R2)      \
-        ASSIGN_REG(R3)      \
-        ASSIGN_REG(R4)      \
-        ASSIGN_REG(R5)      \
-        ASSIGN_REG(R5)      \
-        ASSIGN_REG(R6)      \
-        ASSIGN_REG(R7)      \
-        ASSIGN_REG(R8)      \
-        ASSIGN_REG(R9)      \
-        ASSIGN_REG(R10)     \
-        ASSIGN_REG(R11)     \
-        ASSIGN_REG(R12)     \
-        ASSIGN_REG(R13)     \
-        ASSIGN_REG(R14)
+    ASSIGN_REG(R0)      \
+    ASSIGN_REG(R1)      \
+    ASSIGN_REG(R2)      \
+    ASSIGN_REG(R3)      \
+    ASSIGN_REG(R4)      \
+    ASSIGN_REG(R5)      \
+    ASSIGN_REG(R5)      \
+    ASSIGN_REG(R6)      \
+    ASSIGN_REG(R7)      \
+    ASSIGN_REG(R8)      \
+    ASSIGN_REG(R9)      \
+    ASSIGN_REG(R10)     \
+    ASSIGN_REG(R11)     \
+    ASSIGN_REG(R12)     \
+    ASSIGN_REG(R13)     \
+    ASSIGN_REG(R14)
 
 #elif defined(HOST_POWERPC64)
 #define ASSIGN_CONTROL_REGS \
-        ASSIGN_REG(Nip) \
-        ASSIGN_REG(Msr) \
-        ASSIGN_REG(Ctr) \
-        ASSIGN_REG(Link) \
-        ASSIGN_REG(Xer) \
-        ASSIGN_REG(Ccr) \
-        ASSIGN_REG(R31) \
+    ASSIGN_REG(Nip) \
+    ASSIGN_REG(Msr) \
+    ASSIGN_REG(Ctr) \
+    ASSIGN_REG(Link) \
+    ASSIGN_REG(Xer) \
+    ASSIGN_REG(Ccr) \
+    ASSIGN_REG(R31) \
 
 #define ASSIGN_INTEGER_REGS \
-        ASSIGN_REG(R0)      \
-        ASSIGN_REG(R1)      \
-        ASSIGN_REG(R2)      \
-        ASSIGN_REG(R3)      \
-        ASSIGN_REG(R4)      \
-        ASSIGN_REG(R5)      \
-        ASSIGN_REG(R5)      \
-        ASSIGN_REG(R6)      \
-        ASSIGN_REG(R7)      \
-        ASSIGN_REG(R8)      \
-        ASSIGN_REG(R9)      \
-        ASSIGN_REG(R10)     \
-        ASSIGN_REG(R11)     \
-        ASSIGN_REG(R12)     \
-        ASSIGN_REG(R13)     \
-        ASSIGN_REG(R14)     \
-        ASSIGN_REG(R15)     \
-        ASSIGN_REG(R16)     \
-        ASSIGN_REG(R17)     \
-        ASSIGN_REG(R18)     \
-        ASSIGN_REG(R19)     \
-        ASSIGN_REG(R20)     \
-        ASSIGN_REG(R21)     \
-        ASSIGN_REG(R22)     \
-        ASSIGN_REG(R23)     \
-        ASSIGN_REG(R24)     \
-        ASSIGN_REG(R25)     \
-        ASSIGN_REG(R26)     \
-        ASSIGN_REG(R27)     \
-        ASSIGN_REG(R28)     \
-        ASSIGN_REG(R29)     \
-        ASSIGN_REG(R30)     
+    ASSIGN_REG(R0)      \
+    ASSIGN_REG(R1)      \
+    ASSIGN_REG(R2)      \
+    ASSIGN_REG(R3)      \
+    ASSIGN_REG(R4)      \
+    ASSIGN_REG(R5)      \
+    ASSIGN_REG(R5)      \
+    ASSIGN_REG(R6)      \
+    ASSIGN_REG(R7)      \
+    ASSIGN_REG(R8)      \
+    ASSIGN_REG(R9)      \
+    ASSIGN_REG(R10)     \
+    ASSIGN_REG(R11)     \
+    ASSIGN_REG(R12)     \
+    ASSIGN_REG(R13)     \
+    ASSIGN_REG(R14)     \
+    ASSIGN_REG(R15)     \
+    ASSIGN_REG(R16)     \
+    ASSIGN_REG(R17)     \
+    ASSIGN_REG(R18)     \
+    ASSIGN_REG(R19)     \
+    ASSIGN_REG(R20)     \
+    ASSIGN_REG(R21)     \
+    ASSIGN_REG(R22)     \
+    ASSIGN_REG(R23)     \
+    ASSIGN_REG(R24)     \
+    ASSIGN_REG(R25)     \
+    ASSIGN_REG(R26)     \
+    ASSIGN_REG(R27)     \
+    ASSIGN_REG(R28)     \
+    ASSIGN_REG(R29)     \
+    ASSIGN_REG(R30)
 
 #else
 #error "Don't know how to assign registers on this architecture"
@@ -545,7 +575,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 #undef ASSIGN_REG
 
 #if !HAVE_FPREGS_WITH_CW
-#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X) && !defined(HOST_LOONGARCH64) && !defined(HOST_POWERPC64)
+#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64) && !defined(HOST_POWERPC64)
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
@@ -557,7 +587,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         // whether CONTEXT_FLOATING_POINT is set in the CONTEXT's flags.
         return;
     }
-#endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X && !HOST_LOONGARCH64 && !HOST_POWERPC64
+#endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X && !HOST_LOONGARCH64 && !HOST_RISCV64 && !HOST_POWERPC64
 #endif // !HAVE_FPREGS_WITH_CW
 
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
@@ -623,9 +653,16 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(fp->fprs, lpContext->Fpr, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
+        native->uc_mcontext.__fcsr = lpContext->Fcsr;
         for (int i = 0; i < 32; i++)
         {
             native->uc_mcontext.__fpregs[i].__val64[0] = lpContext->F[i];
+        }
+#elif defined(HOST_RISCV64)
+        native->uc_mcontext.__fpregs.__d.__fcsr = lpContext->Fcsr;
+        for (int i = 0; i < 64; i++)
+        {
+            native->uc_mcontext.__fpregs.__d.__f[i] = lpContext->F[i];
         }
 #endif
     }
@@ -680,7 +717,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #undef ASSIGN_REG
 
 #if !HAVE_FPREGS_WITH_CW
-#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X) && !defined(HOST_LOONGARCH64) && !defined(HOST_POWERPC64)
+#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64) && !defined(HOST_POWERPC64)
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
@@ -702,7 +739,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT or CONTEXT_XSTATE
         return;
     }
-#endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X && !HOST_POWERPC64
+#endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X && !HOST_LOONGARCH64 && !HOST_RISCV64 && !HOST_POWERPC64 && !HOST_POWERPC64
 #endif // !HAVE_FPREGS_WITH_CW
 
     if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
@@ -778,6 +815,12 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         {
             lpContext->F[i] = native->uc_mcontext.__fpregs[i].__val64[0];
         }
+#elif defined(HOST_RISCV64)
+        lpContext->Fcsr = native->uc_mcontext.__fpregs.__d.__fcsr;
+        for (int i = 0; i < 64; i++)
+        {
+            lpContext->F[i] = native->uc_mcontext.__fpregs.__d.__f[i];
+        }
 #endif
     }
 
@@ -823,18 +866,12 @@ LPVOID GetNativeContextPC(const native_context_t *context)
     return (LPVOID)MCREG_Rip(context->uc_mcontext);
 #elif defined(HOST_X86)
     return (LPVOID) MCREG_Eip(context->uc_mcontext);
-#elif defined(HOST_ARM)
-    return (LPVOID) MCREG_Pc(context->uc_mcontext);
-#elif defined(HOST_ARM64)
-    return (LPVOID) MCREG_Pc(context->uc_mcontext);
-#elif defined(HOST_LOONGARCH64)
-    return (LPVOID) MCREG_Pc(context->uc_mcontext);
 #elif defined(HOST_S390X)
     return (LPVOID) MCREG_PSWAddr(context->uc_mcontext);
 #elif defined(HOST_POWERPC64)
     return (LPVOID) MCREG_Nip(context->uc_mcontext);
 #else
-#   error implement me for this architecture
+    return (LPVOID) MCREG_Pc(context->uc_mcontext);
 #endif
 }
 
@@ -857,18 +894,12 @@ LPVOID GetNativeContextSP(const native_context_t *context)
     return (LPVOID)MCREG_Rsp(context->uc_mcontext);
 #elif defined(HOST_X86)
     return (LPVOID) MCREG_Esp(context->uc_mcontext);
-#elif defined(HOST_ARM)
-    return (LPVOID) MCREG_Sp(context->uc_mcontext);
-#elif defined(HOST_ARM64)
-    return (LPVOID) MCREG_Sp(context->uc_mcontext);
-#elif defined(HOST_LOONGARCH64)
-    return (LPVOID) MCREG_Sp(context->uc_mcontext);
 #elif defined(HOST_S390X)
     return (LPVOID) MCREG_R15(context->uc_mcontext);
 #elif defined(HOST_POWERPC64)
     return (LPVOID) MCREG_R31(context->uc_mcontext);
 #else
-#   error implement me for this architecture
+    return (LPVOID) MCREG_Sp(context->uc_mcontext);
 #endif
 }
 
@@ -1398,68 +1429,6 @@ CONTEXT_SetThreadContextOnPort(
     mach_msg_type_number_t StateCount;
     thread_state_flavor_t StateFlavor;
 
-    if (lpContext->ContextFlags & (CONTEXT_CONTROL|CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
-    {
-#ifdef HOST_AMD64
-        x86_thread_state64_t State;
-        StateFlavor = x86_THREAD_STATE64;
-
-        State.__rax = lpContext->Rax;
-        State.__rbx = lpContext->Rbx;
-        State.__rcx = lpContext->Rcx;
-        State.__rdx = lpContext->Rdx;
-        State.__rdi = lpContext->Rdi;
-        State.__rsi = lpContext->Rsi;
-        State.__rbp = lpContext->Rbp;
-        State.__rsp = lpContext->Rsp;
-        State.__r8 = lpContext->R8;
-        State.__r9 = lpContext->R9;
-        State.__r10 = lpContext->R10;
-        State.__r11 = lpContext->R11;
-        State.__r12 = lpContext->R12;
-        State.__r13 = lpContext->R13;
-        State.__r14 = lpContext->R14;
-        State.__r15 = lpContext->R15;
-//        State.ss = lpContext->SegSs;
-        State.__rflags = lpContext->EFlags;
-        State.__rip = lpContext->Rip;
-        State.__cs = lpContext->SegCs;
-//        State.ds = lpContext->SegDs_PAL_Undefined;
-//        State.es = lpContext->SegEs_PAL_Undefined;
-        State.__fs = lpContext->SegFs;
-        State.__gs = lpContext->SegGs;
-#elif defined(HOST_ARM64)
-        arm_thread_state64_t State;
-        StateFlavor = ARM_THREAD_STATE64;
-
-        memcpy(&State.__x[0], &lpContext->X0, 29 * 8);
-        State.__cpsr = lpContext->Cpsr;
-        arm_thread_state64_set_fp(State, lpContext->Fp);
-        arm_thread_state64_set_sp(State, lpContext->Sp);
-        arm_thread_state64_set_lr_fptr(State, lpContext->Lr);
-        arm_thread_state64_set_pc_fptr(State, lpContext->Pc);
-#else
-#error Unexpected architecture.
-#endif
-
-        StateCount = sizeof(State) / sizeof(natural_t);
-
-        do
-        {
-            MachRet = thread_set_state(Port,
-                                       StateFlavor,
-                                       (thread_state_t)&State,
-                                       StateCount);
-        }
-        while (MachRet == KERN_ABORTED);
-
-        if (MachRet != KERN_SUCCESS)
-        {
-            ASSERT("thread_set_state(THREAD_STATE) failed: %d\n", MachRet);
-            goto EXIT;
-        }
-    }
-
     if (lpContext->ContextFlags & CONTEXT_ALL_FLOATING & CONTEXT_AREA_MASK)
     {
 
@@ -1495,26 +1464,6 @@ CONTEXT_SetThreadContextOnPort(
 #else
 #error Unexpected architecture.
 #endif
-
-        // If we're setting only one of the floating point or extended registers (of which Mach supports only
-        // the xmm values) then we don't have values for the other set. This is a problem since Mach only
-        // supports setting both groups as a single unit. So in this case we'll need to fetch the current
-        // values first.
-        if ((lpContext->ContextFlags & CONTEXT_ALL_FLOATING) !=
-            CONTEXT_ALL_FLOATING)
-        {
-            mach_msg_type_number_t StateCountGet = StateCount;
-            MachRet = thread_get_state(Port,
-                                       StateFlavor,
-                                       (thread_state_t)&State,
-                                       &StateCountGet);
-            if (MachRet != KERN_SUCCESS)
-            {
-                ASSERT("thread_get_state(FLOAT_STATE) failed: %d\n", MachRet);
-                goto EXIT;
-            }
-            _ASSERTE(StateCountGet == StateCount);
-        }
 
         if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)
         {
@@ -1565,6 +1514,65 @@ CONTEXT_SetThreadContextOnPort(
         if (MachRet != KERN_SUCCESS)
         {
             ASSERT("thread_set_state(FLOAT_STATE) failed: %d\n", MachRet);
+            goto EXIT;
+        }
+    }
+
+    if (lpContext->ContextFlags & (CONTEXT_CONTROL|CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
+    {
+#ifdef HOST_AMD64
+        x86_thread_state64_t State;
+        StateFlavor = x86_THREAD_STATE64;
+
+        State.__rax = lpContext->Rax;
+        State.__rbx = lpContext->Rbx;
+        State.__rcx = lpContext->Rcx;
+        State.__rdx = lpContext->Rdx;
+        State.__rdi = lpContext->Rdi;
+        State.__rsi = lpContext->Rsi;
+        State.__rbp = lpContext->Rbp;
+        State.__rsp = lpContext->Rsp;
+        State.__r8 = lpContext->R8;
+        State.__r9 = lpContext->R9;
+        State.__r10 = lpContext->R10;
+        State.__r11 = lpContext->R11;
+        State.__r12 = lpContext->R12;
+        State.__r13 = lpContext->R13;
+        State.__r14 = lpContext->R14;
+        State.__r15 = lpContext->R15;
+        State.__rflags = lpContext->EFlags;
+        State.__rip = lpContext->Rip;
+        State.__cs = lpContext->SegCs;
+        State.__fs = lpContext->SegFs;
+        State.__gs = lpContext->SegGs;
+#elif defined(HOST_ARM64)
+        arm_thread_state64_t State;
+        StateFlavor = ARM_THREAD_STATE64;
+
+        memcpy(&State.__x[0], &lpContext->X0, 29 * 8);
+        State.__cpsr = lpContext->Cpsr;
+        arm_thread_state64_set_fp(State, lpContext->Fp);
+        arm_thread_state64_set_sp(State, lpContext->Sp);
+        arm_thread_state64_set_lr_fptr(State, lpContext->Lr);
+        arm_thread_state64_set_pc_fptr(State, lpContext->Pc);
+#else
+#error Unexpected architecture.
+#endif
+
+        StateCount = sizeof(State) / sizeof(natural_t);
+
+        do
+        {
+            MachRet = thread_set_state(Port,
+                                       StateFlavor,
+                                       (thread_state_t)&State,
+                                       StateCount);
+        }
+        while (MachRet == KERN_ABORTED);
+
+        if (MachRet != KERN_SUCCESS)
+        {
+            ASSERT("thread_set_state(THREAD_STATE) failed: %d\n", MachRet);
             goto EXIT;
         }
     }
@@ -1637,10 +1645,7 @@ DBG_FlushInstructionCache(
                           IN LPCVOID lpBaseAddress,
                           IN SIZE_T dwSize)
 {
-#ifndef HOST_ARM
-    // Intrinsic should do the right thing across all platforms (except Linux arm)
-    __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
-#else // HOST_ARM
+#if defined(__linux__) && defined(HOST_ARM)
     // On Linux/arm (at least on 3.10) we found that there is a problem with __do_cache_op (arch/arm/kernel/traps.c)
     // implementing cacheflush syscall. cacheflush flushes only the first page in range [lpBaseAddress, lpBaseAddress + dwSize)
     // and leaves other pages in undefined state which causes random tests failures (often due to SIGSEGV) with no particular pattern.
@@ -1660,6 +1665,8 @@ DBG_FlushInstructionCache(
         __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
         begin = endOrNextPageBegin;
     }
-#endif // HOST_ARM
+#else
+    __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
+#endif
     return TRUE;
 }

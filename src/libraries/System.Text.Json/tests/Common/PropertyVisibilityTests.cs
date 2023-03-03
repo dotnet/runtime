@@ -1177,8 +1177,8 @@ namespace System.Text.Json.Serialization.Tests
             // Only when the collection contains elements.
 
             var dictionary = new Dictionary<object, object>();
-            // Uri is an unsupported dictionary key.
-            dictionary.Add(new Uri("http://foo"), "bar");
+            // ValueTuple is an unsupported dictionary key.
+            dictionary.Add((0, 1), "bar");
 
             var concurrentDictionary = new ConcurrentDictionary<object, object>(dictionary);
 
@@ -2849,6 +2849,162 @@ namespace System.Text.Json.Serialization.Tests
             public Func<string, bool> Func { get; set; }
 
             public Action<bool> Action { get; set; } = (val) => Console.WriteLine();
+        }
+
+        [Fact]
+        public async Task SimpleInterfaceHierarchy_Serialization_ShouldIncludeBaseInterfaceProperties()
+        {
+            var value = new ISimpleInterfaceHierarchy.Implementation
+            {
+                BaseProperty = 0,
+                DerivedProperty = 1,
+                DerivedProperty2 = 2,
+            };
+
+            string json = await Serializer.SerializeWrapper<ISimpleInterfaceHierarchy.IDerivedInterface1>(value);
+            Assert.Equal("""{"DerivedProperty":1,"BaseProperty":0}""", json);
+
+            json = await Serializer.SerializeWrapper<ISimpleInterfaceHierarchy.IDerivedInterface2>(value);
+            Assert.Equal("""{"DerivedProperty2":2,"DerivedProperty":1,"BaseProperty":0}""", json);
+        }
+
+        public interface ISimpleInterfaceHierarchy
+        {
+            public int BaseProperty { get; set; }
+
+            public interface IDerivedInterface1 : ISimpleInterfaceHierarchy
+            {
+                public int DerivedProperty { get; set; }
+            }
+
+            public interface IDerivedInterface2 : IDerivedInterface1
+            {
+                public int DerivedProperty2 { get; set; }
+            }
+
+            public class Implementation : IDerivedInterface2
+            {
+                public int BaseProperty { get; set; }
+                public int DerivedProperty { get; set; }
+                public int DerivedProperty2 { get; set; }
+            }
+        }
+
+        [Fact]
+        public async Task DiamondInterfaceHierarchy_Serialization_ShouldIncludeBaseInterfaceProperties()
+        {
+            var value = new IDiamondInterfaceHierarchy.Implementation
+            {
+                BaseProperty = 0,
+                DerivedProperty = 1,
+                DerivedProperty2 = 2,
+                DerivedProperty3 = 3,
+            };
+
+            string json = await Serializer.SerializeWrapper<IDiamondInterfaceHierarchy.IDerivedInterface1>(value);
+            Assert.Equal("""{"DerivedProperty":1,"BaseProperty":0}""", json);
+
+            json = await Serializer.SerializeWrapper<IDiamondInterfaceHierarchy.IDerivedInterface2>(value);
+            Assert.Equal("""{"DerivedProperty2":2,"BaseProperty":0}""", json);
+
+            json = await Serializer.SerializeWrapper<IDiamondInterfaceHierarchy.IJoinInterface>(value);
+            JsonTestHelper.AssertJsonEqual("""{"DerivedProperty3":3,"DerivedProperty2":2,"DerivedProperty":1,"BaseProperty":0}""", json);
+        }
+
+        public interface IDiamondInterfaceHierarchy
+        {
+            public int BaseProperty { get; set; }
+
+            public interface IDerivedInterface1 : IDiamondInterfaceHierarchy
+            {
+                public int DerivedProperty { get; set; }
+            }
+
+            public interface IDerivedInterface2 : IDiamondInterfaceHierarchy
+            {
+                public int DerivedProperty2 { get; set; }
+            }
+
+            public interface IJoinInterface : IDerivedInterface1, IDerivedInterface2
+            {
+                public int DerivedProperty3 { get; set; }
+            }
+
+            public class Implementation : IJoinInterface
+            {
+                public int BaseProperty { get; set; }
+                public int DerivedProperty { get; set; }
+                public int DerivedProperty2 { get; set; }
+                public int DerivedProperty3 { get; set; }
+            }
+        }
+
+        [Fact]
+        public async Task DiamondInterfaceHierarchyWithNamingConflict_ThrowsJsonException()
+        {
+            var value = new IDiamondInterfaceHierarchyWithNamingConflict.Implementation
+            {
+                DerivedProperty = 1,
+            };
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper<IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface>(value));
+        }
+
+        public interface IDiamondInterfaceHierarchyWithNamingConflict
+        {
+            public interface IDerivedInterface1 : IDiamondInterfaceHierarchyWithNamingConflict
+            {
+                public int DerivedProperty { get; set; }
+            }
+
+            public interface IDerivedInterface2 : IDiamondInterfaceHierarchyWithNamingConflict
+            {
+                public int DerivedProperty { get; set; }
+            }
+
+            public interface IJoinInterface : IDerivedInterface1, IDerivedInterface2
+            {
+            }
+
+            public class Implementation : IJoinInterface
+            {
+                public int DerivedProperty { get; set; }
+            }
+        }
+
+        [Fact]
+        public async Task DiamondInterfaceHierarchyWithNamingConflict_UsingJsonPropertyName_WorksAsExpected()
+        {
+            var value = new IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.Implementation
+            {
+                DerivedProperty = 1,
+            };
+
+            string json = await Serializer.SerializeWrapper<IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface>(value);
+            JsonTestHelper.AssertJsonEqual("""{"DerivedProperty":1,"DerivedProperty2":1}""", json);
+        }
+
+        public interface IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute
+        {
+            public interface IDerivedInterface1 : IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute
+            {
+                public int DerivedProperty { get; set; }
+            }
+
+            public interface IDerivedInterface2 : IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute
+            {
+                [JsonPropertyName("DerivedProperty2")]
+                public int DerivedProperty { get; set; }
+            }
+
+            public interface IJoinInterface : IDerivedInterface1, IDerivedInterface2
+            {
+            }
+
+            public class Implementation : IJoinInterface
+            {
+                public int DerivedProperty { get; set; }
+            }
         }
     }
 }

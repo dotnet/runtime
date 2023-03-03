@@ -14,6 +14,7 @@ set(SOURCES
     handlesprofiler/handlesprofiler.cpp
     inlining/inlining.cpp
     metadatagetdispenser/metadatagetdispenser.cpp
+    moduleload/moduleload.cpp
     multiple/multiple.cpp
     nullprofiler/nullprofiler.cpp
     rejitprofiler/rejitprofiler.cpp

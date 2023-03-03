@@ -67,13 +67,17 @@ internal sealed class BrowserHost
         var runArgsJson = new RunArgumentsJson(applicationArguments: _args.AppArgs,
                                                runtimeArguments: _args.CommonConfig.RuntimeArguments,
                                                environmentVariables: envVars,
-                                               forwardConsole: _args.ForwardConsoleOutput ?? false,
+                                               forwardConsoleToWS: _args.ForwardConsoleOutput ?? false,
                                                debugging: _args.CommonConfig.Debugging);
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
+        string[] urls = envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls)
+                            ? aspnetUrls.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                            : new string[] { $"http://127.0.0.1:{_args.CommonConfig.HostProperties.WebServerPort}", "https://127.0.0.1:0" };
+
         (ServerURLs serverURLs, IWebHost host) = await StartWebServerAsync(_args.CommonConfig.AppPath,
                                                                            _args.ForwardConsoleOutput ?? false,
-                                                                           _args.CommonConfig.HostProperties.WebServerPort,
+                                                                           urls,
                                                                            token);
 
         string[] fullUrls = BuildUrls(serverURLs, _args.AppArgs);
@@ -84,7 +88,7 @@ internal sealed class BrowserHost
         await host.WaitForShutdownAsync(token);
     }
 
-    private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(string appPath, bool forwardConsole, int port, CancellationToken token)
+    private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(string appPath, bool forwardConsole, string[] urls, CancellationToken token)
     {
         WasmTestMessagesProcessor? logProcessor = null;
         if (forwardConsole)
@@ -100,7 +104,7 @@ internal sealed class BrowserHost
             ContentRootPath: Path.GetFullPath(appPath),
             WebServerUseCors: true,
             WebServerUseCrossOriginPolicy: true,
-            Port: port
+            Urls: urls
         );
 
         (ServerURLs serverURLs, IWebHost host) = await WebServer.StartAsync(options, _logger, token);

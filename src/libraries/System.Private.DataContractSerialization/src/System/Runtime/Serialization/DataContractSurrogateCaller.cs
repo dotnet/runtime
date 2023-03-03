@@ -11,6 +11,7 @@ namespace System.Runtime.Serialization
 {
     internal static class DataContractSurrogateCaller
     {
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static Type GetDataContractType(ISerializationSurrogateProvider surrogateProvider, Type type)
         {
@@ -20,6 +21,7 @@ namespace System.Runtime.Serialization
         }
 
         [return: NotNullIfNotNull(nameof(obj))]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static object? GetObjectToSerialize(ISerializationSurrogateProvider surrogateProvider, object? obj, Type objType, Type membertype)
         {
@@ -31,6 +33,7 @@ namespace System.Runtime.Serialization
         }
 
         [return: NotNullIfNotNull(nameof(obj))]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static object? GetDeserializedObject(ISerializationSurrogateProvider surrogateProvider, object? obj, Type objType, Type memberType)
         {
@@ -46,6 +49,7 @@ namespace System.Runtime.Serialization
             return surrogateProvider.GetCustomDataToExport(memberInfo, dataContractType);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static object? GetCustomDataToExport(ISerializationSurrogateProvider2 surrogateProvider, Type clrType, Type dataContractType)
         {
@@ -59,6 +63,7 @@ namespace System.Runtime.Serialization
             surrogateProvider.GetKnownCustomDataTypes(customDataTypes);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static Type? GetReferencedTypeOnImport(ISerializationSurrogateProvider2 surrogateProvider, string typeName, string typeNamespace, object? customData)
         {

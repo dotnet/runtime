@@ -80,7 +80,7 @@ FINISH:
 .try try_start to try_end catch [mscorlib]System.ArithmeticException handler ae to HEnd
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack		20
 	ldc.r4		float32(0xFF800000)

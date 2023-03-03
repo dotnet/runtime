@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal class testout1
+public class testout1
 {
     private static bool s_static_field_bool;
     private static bool s_static_field_bool_false;

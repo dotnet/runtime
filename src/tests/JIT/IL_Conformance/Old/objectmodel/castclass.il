@@ -73,7 +73,7 @@ done:
 .try try_start to try_end catch [mscorlib]System.InvalidCastException handler handler_start to handler_end
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack	10
 

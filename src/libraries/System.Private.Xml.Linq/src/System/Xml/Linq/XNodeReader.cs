@@ -557,10 +557,7 @@ namespace System.Xml.Linq
                 throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             XElement? e = GetElementInAttributeScope();
             if (e != null)
@@ -697,7 +694,7 @@ namespace System.Xml.Linq
             {
                 return;
             }
-            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             XElement? e = GetElementInAttributeScope();
             if (e != null)
             {

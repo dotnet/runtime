@@ -10,7 +10,7 @@ class Program
 {
     private static int returnCode = 100;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int[] testIndices = Enumerable.Range(-50, 50)
                 // also add some corner case values

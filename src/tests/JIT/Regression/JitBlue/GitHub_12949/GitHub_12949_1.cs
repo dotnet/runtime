@@ -39,7 +39,7 @@ public class X<K,V>
     S<K>[] a;
 }
 
-class B
+public class B
 {
     public static int Main()
     {

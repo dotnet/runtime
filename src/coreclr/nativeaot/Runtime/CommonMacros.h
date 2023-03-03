@@ -155,7 +155,11 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 
 #define DATA_ALIGNMENT  8
 #ifndef OS_PAGE_SIZE
+#ifdef HOST_OSX
+#define OS_PAGE_SIZE    0x4000
+#else
 #define OS_PAGE_SIZE    0x1000
+#endif
 #endif
 
 #elif defined(HOST_WASM)
@@ -219,7 +223,7 @@ enum STARTUP_TIMELINE_EVENT_ID
 
 #ifdef PROFILE_STARTUP
 extern unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
-#define STARTUP_TIMELINE_EVENT(eventid) PalQueryPerformanceCounter((LARGE_INTEGER*)&g_startupTimelineEvents[eventid]);
+#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = PalQueryPerformanceCounter();
 #else // PROFILE_STARTUP
 #define STARTUP_TIMELINE_EVENT(eventid)
 #endif // PROFILE_STARTUP

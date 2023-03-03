@@ -14,7 +14,7 @@
 .class public	_ldstr {
 
 
-.method public static int32 main(string[]) {
+.method public static int32 main() {
 .entrypoint
 .locals	(class [mscorlib]System.IO.TextWriter)
 .maxstack	10

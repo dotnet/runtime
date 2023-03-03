@@ -45,42 +45,13 @@ public:
         numValidBytes    = numEntries * sizeof(void *)
     };
 
-    // store next pointer and the entries
+    // store next pointer and the entries - total of 16 pointers
     SLink   m_Link;
     union
     {
         void*   m_pAddr[numEntries];
         BYTE    m_xxx[numValidBytes];
     };
-
-    // init
-    void Init32()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        // initialize cacheline
-        memset(&m_Link,0,32);
-    }
-
-    void Init64()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        // initialize cacheline
-        memset(&m_Link,0,64);
-    }
 
     CacheLine()
     {
@@ -93,9 +64,11 @@ public:
         CONTRACTL_END;
 
         // initialize cacheline
-        memset(&m_Link,0,sizeof(CacheLine));
+        m_Link = {};
+        memset(m_xxx,0,numValidBytes);
     }
 };
+static_assert(sizeof(CacheLine) == (16 * sizeof(void*)), "Cacheline should be exactly 16 pointers in size");
 #include <poppack.h>
 
 typedef CacheLine* LPCacheLine;

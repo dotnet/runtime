@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -111,7 +110,7 @@ namespace ILCompiler
 
         public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
         {
-            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) && 
+            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) &&
                    type.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
 

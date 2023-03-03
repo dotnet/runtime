@@ -272,8 +272,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "UpdateDelegates methods don't have ILLink annotations.")]
         internal T MakeUpdateDelegate()
         {
             Type target = typeof(T);
@@ -281,6 +279,17 @@ namespace System.Runtime.CompilerServices
 
             if (System.Linq.Expressions.LambdaExpression.CanCompileToIL
                 && target.IsGenericType && IsSimpleSignature(invoke, out Type[] args))
+            {
+                return MakeUpdateDelegateWhenCanCompileToIL();
+            }
+
+            s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
+            return CreateCustomUpdateDelegate(invoke);
+
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+                Justification = "UpdateDelegates methods don't have ILLink annotations.")]
+            T MakeUpdateDelegateWhenCanCompileToIL()
             {
                 MethodInfo? method = null;
                 MethodInfo? noMatchMethod = null;
@@ -306,10 +315,10 @@ namespace System.Runtime.CompilerServices
                     s_cachedNoMatch = (T)(object)noMatchMethod!.MakeGenericMethod(args).CreateDelegate(target);
                     return (T)(object)method.MakeGenericMethod(args).CreateDelegate(target);
                 }
-            }
 
-            s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
-            return CreateCustomUpdateDelegate(invoke);
+                s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
+                return CreateCustomUpdateDelegate(invoke);
+            }
         }
 
         private static bool IsSimpleSignature(MethodInfo invoke, out Type[] sig)

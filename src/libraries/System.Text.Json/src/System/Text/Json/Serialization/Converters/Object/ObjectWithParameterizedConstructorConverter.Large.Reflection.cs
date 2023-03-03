@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal override void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            jsonTypeInfo.CreateObjectWithArgs = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo!);
+            jsonTypeInfo.CreateObjectWithArgs = JsonSerializerOptions.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo!);
         }
     }
 }

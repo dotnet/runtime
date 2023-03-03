@@ -9,6 +9,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_StdinReady")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool StdinReady([MarshalAs(UnmanagedType.Bool)] bool distinguishNewLines);
+        internal static partial bool StdinReady();
     }
 }

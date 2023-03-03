@@ -99,7 +99,7 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static StringWithQualityHeaderValue Parse(string? input)
+        public static StringWithQualityHeaderValue Parse(string input)
         {
             int index = 0;
             return (StringWithQualityHeaderValue)GenericHeaderParser.SingleValueStringWithQualityParser.ParseValue(

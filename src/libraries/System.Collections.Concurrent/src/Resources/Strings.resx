@@ -87,9 +87,6 @@
   <data name="Collection_CopyTo_TooManyElems" xml:space="preserve">
     <value>The number of elements in the collection is greater than the available space from index to the end of the destination array.</value>
   </data>
-  <data name="BlockingCollection_ctor_BoundedCapacityRange" xml:space="preserve">
-    <value>The boundedCapacity argument must be positive.</value>
-  </data>
   <data name="BlockingCollection_ctor_CountMoreThanCapacity" xml:space="preserve">
     <value>The collection argument contains more items than are allowed by the boundedCapacity.</value>
   </data>
@@ -158,9 +155,6 @@
   </data>
   <data name="Partitioner_DynamicPartitionsNotSupported" xml:space="preserve">
     <value>Dynamic partitions are not supported by this partitioner.</value>
-  </data>
-  <data name="PartitionerStatic_CanNotCallGetEnumeratorAfterSourceHasBeenDisposed" xml:space="preserve">
-    <value>Can not call GetEnumerator on partitions after the source enumerable is disposed</value>
   </data>
   <data name="PartitionerStatic_CurrentCalledBeforeMoveNext" xml:space="preserve">
     <value>MoveNext must be called at least once before calling Current.</value>

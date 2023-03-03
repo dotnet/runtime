@@ -1,0 +1,12 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UsedNonRequiredTypeIsKeptWithSingleMethod/Unused" preserve="fields" required="false" >
+      <method signature="System.Void PreservedMethod()" />
+    </type>
+
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UsedNonRequiredTypeIsKeptWithSingleMethod/ReallyUnused" preserve="fields" required="false" >
+      <method signature="System.Void PreservedMethod()" />
+    </type>
+
+  </assembly>
+</linker>

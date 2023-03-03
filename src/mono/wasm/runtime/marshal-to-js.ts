@@ -9,13 +9,14 @@ import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
     get_arg_b8, get_arg_date, get_arg_length, set_js_handle, get_arg, set_arg_type,
-    get_signature_arg2_type, get_signature_arg1_type, get_signature_type, cs_to_js_marshalers, js_to_cs_marshalers,
+    get_signature_arg2_type, get_signature_arg1_type, cs_to_js_marshalers,
     get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
-    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, MarshalerType, get_arg_i64_big, get_arg_intptr, get_arg_element_type
+    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, MarshalerType, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize
 } from "./marshal";
 import { conv_string_root } from "./strings";
-import { mono_assert, JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs } from "./types";
+import { mono_assert, JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs } from "./types";
 import { TypedArray } from "./types/emscripten";
+import { get_marshaler_to_cs_by_type } from "./marshal-to-cs";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {
@@ -32,7 +33,7 @@ export function initialize_marshalers_to_js(): void {
         cs_to_js_marshalers.set(MarshalerType.Single, _marshal_float_to_js);
         cs_to_js_marshalers.set(MarshalerType.IntPtr, _marshal_intptr_to_js);
         cs_to_js_marshalers.set(MarshalerType.Double, _marshal_double_to_js);
-        cs_to_js_marshalers.set(MarshalerType.String, _marshal_string_to_js);
+        cs_to_js_marshalers.set(MarshalerType.String, marshal_string_to_js);
         cs_to_js_marshalers.set(MarshalerType.Exception, marshal_exception_to_js);
         cs_to_js_marshalers.set(MarshalerType.JSException, marshal_exception_to_js);
         cs_to_js_marshalers.set(MarshalerType.JSObject, _marshal_js_object_to_js);
@@ -48,98 +49,40 @@ export function initialize_marshalers_to_js(): void {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function generate_arg_marshal_to_js(sig: JSMarshalerType, index: number, arg_offset: number, sig_offset: number, jsname: string, closure: any): {
-    converters: string,
-    call_body: string,
-    marshaler_type: MarshalerType
-} {
-    let converters = "";
-    let converter_types = "";
-    let call_body = "";
-    const converter_name = "converter" + index;
-    let converter_name_arg1 = "null";
-    let converter_name_arg2 = "null";
-    let converter_name_arg3 = "null";
-    let converter_name_res = "null";
-
-    let marshaler_type = get_signature_type(sig);
+export function bind_arg_marshal_to_js(sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToJs | undefined {
     if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void) {
-        return {
-            converters,
-            call_body,
-            marshaler_type
-        };
+        return undefined;
     }
 
+    let res_marshaler: MarshalerToJs | undefined = undefined;
+    let arg1_marshaler: MarshalerToCs | undefined = undefined;
+    let arg2_marshaler: MarshalerToCs | undefined = undefined;
+    let arg3_marshaler: MarshalerToCs | undefined = undefined;
+
+    arg1_marshaler = get_marshaler_to_cs_by_type(get_signature_arg1_type(sig));
+    arg2_marshaler = get_marshaler_to_cs_by_type(get_signature_arg2_type(sig));
+    arg3_marshaler = get_marshaler_to_cs_by_type(get_signature_arg3_type(sig));
     const marshaler_type_res = get_signature_res_type(sig);
-    if (marshaler_type_res !== MarshalerType.None) {
-        const converter = cs_to_js_marshalers.get(marshaler_type_res);
-        mono_assert(converter && typeof converter === "function", () => `Unknow converter for type ${marshaler_type_res} at ${index}`);
-
-        if (marshaler_type != MarshalerType.Nullable) {
-            converter_name_res = "converter" + index + "_res";
-            converters += ", " + converter_name_res;
-            converter_types += " " + MarshalerType[marshaler_type_res];
-            closure[converter_name_res] = converter;
-        } else {
-            marshaler_type = marshaler_type_res;
-        }
+    res_marshaler = get_marshaler_to_js_by_type(marshaler_type_res);
+    if (marshaler_type === MarshalerType.Nullable) {
+        // nullable has nested type information, it's stored in res slot of the signature. The marshaler is the same as for non-nullable primitive type.
+        marshaler_type = marshaler_type_res;
     }
+    const converter = get_marshaler_to_js_by_type(marshaler_type)!;
 
-    const marshaler_type_arg1 = get_signature_arg1_type(sig);
-    if (marshaler_type_arg1 !== MarshalerType.None) {
-        const converter = js_to_cs_marshalers.get(marshaler_type_arg1);
-        mono_assert(converter && typeof converter === "function", () => `Unknow converter for type ${marshaler_type_arg1} at ${index}`);
-
-        converter_name_arg1 = "converter" + index + "_arg1";
-        converters += ", " + converter_name_arg1;
-        converter_types += " " + MarshalerType[marshaler_type_arg1];
-        closure[converter_name_arg1] = converter;
-    }
-
-    const marshaler_type_arg2 = get_signature_arg2_type(sig);
-    if (marshaler_type_arg2 !== MarshalerType.None) {
-        const converter = js_to_cs_marshalers.get(marshaler_type_arg2);
-        mono_assert(converter && typeof converter === "function", () => `Unknow converter for type ${marshaler_type_arg2} at ${index}`);
-
-        converter_name_arg2 = "converter" + index + "_arg2";
-        converters += ", " + converter_name_arg2;
-        converter_types += " " + MarshalerType[marshaler_type_arg2];
-        closure[converter_name_arg2] = converter;
-    }
-
-    const marshaler_type_arg3 = get_signature_arg3_type(sig);
-    if (marshaler_type_arg3 !== MarshalerType.None) {
-        const converter = js_to_cs_marshalers.get(marshaler_type_arg3);
-        mono_assert(converter && typeof converter === "function", () => `Unknow converter for type ${marshaler_type_arg3} at ${index}`);
-
-        converter_name_arg3 = "converter" + index + "_arg3";
-        converters += ", " + converter_name_arg3;
-        converter_types += " " + MarshalerType[marshaler_type_arg3];
-        closure[converter_name_arg3] = converter;
-    }
-
-    const converter = cs_to_js_marshalers.get(marshaler_type);
-    mono_assert(converter && typeof converter === "function", () => `Unknow converter for type ${marshaler_type} at ${index} `);
-
-    converters += ", " + converter_name;
-    converter_types += " " + MarshalerType[marshaler_type];
-    closure[converter_name] = converter;
-
-    if (marshaler_type == MarshalerType.Task) {
-        call_body = `  const ${jsname} = ${converter_name}(args + ${arg_offset}, signature + ${sig_offset}, ${converter_name_res}); // ${converter_types} \n`;
-    } else if (marshaler_type == MarshalerType.Action || marshaler_type == MarshalerType.Function) {
-        call_body = `  const ${jsname} = ${converter_name}(args + ${arg_offset}, signature + ${sig_offset}, ${converter_name_res}, ${converter_name_arg1}, ${converter_name_arg2}, ${converter_name_arg3}); // ${converter_types} \n`;
-    } else {
-        call_body = `  const ${jsname} = ${converter_name}(args + ${arg_offset}, signature + ${sig_offset}); // ${converter_types} \n`;
-    }
-
-    return {
-        converters,
-        call_body,
-        marshaler_type
+    const arg_offset = index * JavaScriptMarshalerArgSize;
+    return (args: JSMarshalerArguments) => {
+        return converter(<any>args + arg_offset, sig, res_marshaler, arg1_marshaler, arg2_marshaler, arg3_marshaler);
     };
+}
+
+export function get_marshaler_to_js_by_type(marshaler_type: MarshalerType): MarshalerToJs | undefined {
+    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void) {
+        return undefined;
+    }
+    const converter = cs_to_js_marshalers.get(marshaler_type);
+    mono_assert(converter && typeof converter === "function", () => `ERR41: Unknown converter for type ${marshaler_type}`);
+    return converter;
 }
 
 function _marshal_bool_to_js(arg: JSMarshalerArgument): boolean | null {
@@ -266,7 +209,7 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType
             // when we arrived here from _marshal_cs_object_to_js
             res_converter = cs_to_js_marshalers.get(type);
         }
-        mono_assert(res_converter, () => `Unknow sub_converter for type ${MarshalerType[type]} `);
+        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]} `);
 
         // this is already resolved
         const val = res_converter(arg);
@@ -297,7 +240,7 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType
             // when we arrived here from _marshal_cs_object_to_js
             res_converter = cs_to_js_marshalers.get(type);
         }
-        mono_assert(res_converter, () => `Unknow sub_converter for type ${MarshalerType[type]}`);
+        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]}`);
 
         const js_value = res_converter!(argInner);
         orig_resolve(js_value);
@@ -329,7 +272,7 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
         else if (value_type !== MarshalerType.Task) {
             // this is already resolved task
             const sub_converter = cs_to_js_marshalers.get(value_type);
-            mono_assert(sub_converter, () => `Unknow sub_converter for type ${MarshalerType[value_type]} `);
+            mono_assert(sub_converter, () => `Unknown sub_converter for type ${MarshalerType[value_type]} `);
             const data = sub_converter(arg_value);
             promise_control.resolve(data);
         }
@@ -353,7 +296,7 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
     set_arg_type(exc, MarshalerType.None);
 }
 
-function _marshal_string_to_js(arg: JSMarshalerArgument): string | null {
+export function marshal_string_to_js(arg: JSMarshalerArgument): string | null {
     const type = get_arg_type(arg);
     if (type == MarshalerType.None) {
         return null;
@@ -383,7 +326,7 @@ export function marshal_exception_to_js(arg: JSMarshalerArgument): Error | null 
     let result = _lookup_js_owned_object(gc_handle);
     if (result === null || result === undefined) {
         // this will create new ManagedError
-        const message = _marshal_string_to_js(arg);
+        const message = marshal_string_to_js(arg);
         result = new ManagedError(message!);
 
         setup_managed_proxy(result, gc_handle);
@@ -438,7 +381,7 @@ function _marshal_cs_object_to_js(arg: JSMarshalerArgument): any {
 
     // other types
     const converter = cs_to_js_marshalers.get(marshaler_type);
-    mono_assert(converter, () => `Unknow converter for type ${MarshalerType[marshaler_type]}`);
+    mono_assert(converter, () => `Unknown converter for type ${MarshalerType[marshaler_type]}`);
     return converter(arg);
 }
 
@@ -462,7 +405,7 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
         result = new Array(length);
         for (let index = 0; index < length; index++) {
             const element_arg = get_arg(<any>buffer_ptr, index);
-            result[index] = _marshal_string_to_js(element_arg);
+            result[index] = marshal_string_to_js(element_arg);
         }
         cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
     }

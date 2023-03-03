@@ -19,8 +19,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly EcmaModule _module;
 
-        public TypesTableNode(TargetDetails target, EcmaModule module)
-            : base(target)
+        public TypesTableNode(EcmaModule module)
         {
             _module = module;
         }

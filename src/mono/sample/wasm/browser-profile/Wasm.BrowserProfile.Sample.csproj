@@ -4,10 +4,10 @@
     <WasmMainJSPath>main.js</WasmMainJSPath>
     <WasmProfilers>aot;</WasmProfilers>
     <WasmBuildNative>true</WasmBuildNative>
+    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 
   <ItemGroup>
-    <WasmExtraConfig Include="enableProfiler" Value="true" />
     <WasmExtraFilesToDeploy Include="index.html" />
   </ItemGroup>
 

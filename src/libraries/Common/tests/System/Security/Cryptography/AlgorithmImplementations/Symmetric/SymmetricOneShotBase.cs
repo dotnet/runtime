@@ -410,7 +410,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public void DecryptOneShot_Cfb8_ToleratesExtraPadding()
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
@@ -470,7 +469,6 @@ namespace System.Security.Cryptography.Tests
         [InlineData(PaddingMode.PKCS7, 2048)]
         [InlineData(PaddingMode.ANSIX923, 2048)]
         [InlineData(PaddingMode.ISO10126, 2048)]
-        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.ECB is not supported on Browser")]
         public void DecryptOneShot_Ecb_InvalidPadding_DoesNotContainPlaintext(PaddingMode paddingMode, int ciphertextSize)
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
@@ -497,7 +495,6 @@ namespace System.Security.Cryptography.Tests
         [InlineData(PaddingMode.PKCS7, 2048)]
         [InlineData(PaddingMode.ANSIX923, 2048)]
         [InlineData(PaddingMode.ISO10126, 2048)]
-        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public void DecryptOneShot_Cfb_InvalidPadding_DoesNotContainPlaintext(PaddingMode paddingMode, int ciphertextSize)
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
@@ -550,7 +547,6 @@ namespace System.Security.Cryptography.Tests
         [InlineData(PaddingMode.PKCS7)]
         [InlineData(PaddingMode.ANSIX923)]
         [InlineData(PaddingMode.ISO10126)]
-        [SkipOnPlatform(TestPlatforms.Browser, "CipherMode.CFB is not supported on Browser")]
         public void DecryptOneShot_Cfb8_TooShortDoesNotContainPlaintext(PaddingMode paddingMode)
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())

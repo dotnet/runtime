@@ -113,9 +113,9 @@ Structs only appear as rvalues in the following contexts:
 * As a call argument
   * In this context, it must be one of: `GT_OBJ`, `GT_LCL_VAR`, `GT_LCL_FLD` or `GT_FIELD_LIST`.
 
-* As an operand to a hardware or SIMD intrinsic (for `TYP_SIMD*` only)
+* As an operand to a hardware intrinsic (for `TYP_SIMD*` only)
   * In this case the struct handle is generally assumed to be unneeded, as it is captured (directly or
-    indirectly) in the `GT_SIMD` or `GT_HWINTRINSIC` node.
+    indirectly) in the `GT_HWINTRINSIC` node.
   * It would simplify both the recognition and optimization of these nodes if they carried a `ClassLayout`.
 
 After morph, a struct-typed value on the RHS of assignment is one of:
@@ -124,7 +124,6 @@ After morph, a struct-typed value on the RHS of assignment is one of:
 * `GT_CALL`
 * `GT_LCL_VAR`
 * `GT_LCL_FLD`
-* `GT_SIMD`
 * `GT_OBJ` nodes can also be used as rvalues when they are call arguments
   * Proposed: `GT_OBJ` nodes can be used in any context where a struct rvalue or lvalue might occur,
     except after morph when the struct is independently promoted.

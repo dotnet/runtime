@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 
 using Internal.Text;
@@ -23,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             _data = new ObjectData(data.Data, data.Relocs, data.Alignment, new ISymbolDefinitionNode[] { this });
         }
 
-        public override ObjectNodeSection Section => _owningMethod.Context.Target.IsWindows
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _owningMethod.Context.Target.IsWindows
             ? ObjectNodeSection.FoldableReadOnlyDataSection
             : ObjectNodeSection.DataSection;
 
@@ -53,4 +52,3 @@ namespace ILCompiler.DependencyAnalysis
 #endif
     }
 }
-

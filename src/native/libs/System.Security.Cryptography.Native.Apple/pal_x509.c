@@ -43,7 +43,7 @@ AppleCryptoNative_X509DemuxAndRetainHandle(CFTypeRef handle, SecCertificateRef* 
 }
 
 #if !defined(TARGET_MACCATALYST)
-static void InitCertificateCopy()
+static void InitCertificateCopy(void)
 {
 #if defined(TARGET_IOS) || defined(TARGET_TVOS)
     // SecCertificateCopyPublicKey on iOS/tvOS has same function prototype as SecCertificateCopyKey

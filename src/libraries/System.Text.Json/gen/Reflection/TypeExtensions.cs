@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
@@ -11,7 +12,7 @@ namespace System.Text.Json.Reflection
         {
             if (type.IsArray)
             {
-                return GetCompilableName(type.GetElementType()) + "[]";
+                return GetCompilableName(type.GetElementType()!) + "[]";
             }
 
             if (type.IsGenericParameter)
@@ -23,7 +24,7 @@ namespace System.Text.Json.Reflection
 
             sb.Append("global::");
 
-            string @namespace = type.Namespace;
+            string? @namespace = type.Namespace;
             if (!string.IsNullOrEmpty(@namespace) && @namespace != JsonConstants.GlobalNamespaceValue)
             {
                 sb.Append(@namespace);
@@ -37,7 +38,7 @@ namespace System.Text.Json.Reflection
 
             static void AppendTypeChain(StringBuilder sb, Type type, Type[] genericArguments, ref int argumentIndex)
             {
-                Type declaringType = type.DeclaringType;
+                Type? declaringType = type.DeclaringType;
                 if (declaringType != null)
                 {
                     AppendTypeChain(sb, declaringType, genericArguments, ref argumentIndex);
@@ -75,7 +76,7 @@ namespace System.Text.Json.Reflection
         {
             if (type.IsArray)
             {
-                return GetTypeInfoPropertyName(type.GetElementType()) + "Array";
+                return GetTypeInfoPropertyName(type.GetElementType()!) + "Array";
             }
             else if (!type.IsGenericType)
             {
@@ -113,7 +114,7 @@ namespace System.Text.Json.Reflection
             return false;
         }
 
-        public static bool IsNullableValueType(this Type type, out Type? underlyingType)
+        public static bool IsNullableValueType(this Type type, [NotNullWhen(true)] out Type? underlyingType)
         {
             if (type.IsGenericType && type.Name.StartsWith("Nullable`1"))
             {

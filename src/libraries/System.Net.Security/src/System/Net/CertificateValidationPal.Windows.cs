@@ -14,7 +14,7 @@ namespace System.Net
     internal static partial class CertificateValidationPal
     {
         internal static SslPolicyErrors VerifyCertificateProperties(
-            SafeDeleteContext? securityContext,
+            SafeDeleteContext? _ /*securityContext*/,
             X509Chain chain,
             X509Certificate2 remoteCertificate,
             bool checkCertName,
@@ -87,6 +87,28 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
             return result;
+        }
+
+        // Check that local certificate was used by schannel.
+        internal static bool IsLocalCertificateUsed(SafeDeleteContext securityContext)
+        {
+            SafeFreeCertContext? localContext = null;
+            try
+            {
+                if (SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_LOCAL_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out localContext) &&
+                    localContext != null)
+                {
+                    return !localContext.IsInvalid;
+                }
+            }
+            finally
+            {
+                localContext?.Dispose();
+            }
+
+            // Some older Windows do not support that. This is only called when client certificate was provided
+            // so assume it was for a reason.
+            return true;
         }
 
         //

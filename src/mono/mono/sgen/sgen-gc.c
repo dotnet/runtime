@@ -3920,7 +3920,7 @@ sgen_gc_init (void)
 }
 
 gboolean
-sgen_gc_initialized ()
+sgen_gc_initialized (void)
 {
 	return gc_initialized > 0;
 }

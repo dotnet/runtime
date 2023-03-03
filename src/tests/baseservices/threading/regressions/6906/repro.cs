@@ -6,7 +6,7 @@ using System.Threading;
 
 public class Beta 
 {
-	public static int Main(string[] args)
+	public static int Main()
 	{
     		int rValue = 100;
 		Console.WriteLine("Setup an Infinite Wait with negative value other than -1");

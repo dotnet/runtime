@@ -406,7 +406,7 @@ namespace System.Globalization
             return DateTime.TryCreate(year, month, day, hour, minute, second, millisecond, out result);
         }
 
-        private const int DefaultTwoDigitYearMax = 2029;
+        private const int DefaultTwoDigitYearMax = 2049;
 
         public override int TwoDigitYearMax
         {
@@ -435,17 +435,8 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(year, MaxYear);
 
             return base.ToFourDigitYear(year);
         }

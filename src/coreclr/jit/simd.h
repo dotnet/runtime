@@ -144,28 +144,6 @@ struct simd32_t
 
 #ifdef FEATURE_SIMD
 
-#ifdef DEBUG
-extern const char* const simdIntrinsicNames[];
-#endif
-
-enum SIMDIntrinsicID : uint16_t
-{
-#define SIMD_INTRINSIC(m, i, id, n, r, ac, arg1, arg2, arg3, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10) SIMDIntrinsic##id,
-#include "simdintrinsiclist.h"
-};
-
-// Static info about a SIMD intrinsic
-struct SIMDIntrinsicInfo
-{
-    SIMDIntrinsicID id;
-    const char*     methodName;
-    bool            isInstMethod;
-    var_types       retType;
-    unsigned char   argCount;
-    var_types       argType[SIMD_INTRINSIC_MAX_MODELED_PARAM_COUNT];
-    var_types       supportedBaseTypes[SIMD_INTRINSIC_MAX_BASETYPE_COUNT];
-};
-
 #ifdef TARGET_XARCH
 // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>
 // These correspond to shuffle immediate byte in shufps SSE2 instruction.

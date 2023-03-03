@@ -371,7 +371,7 @@ namespace System.Data.ProviderBase
                 // connection so it is ready to put back into the pool for
                 // general use.
 
-                TerminateStasis(true);
+                TerminateStasis();
 
                 Deactivate(); // call it one more time just in case
 
@@ -389,7 +389,7 @@ namespace System.Data.ProviderBase
                 // it indicates a closed (or leaked), non-pooled connection so
                 // it is safe to dispose.
 
-                TerminateStasis(false);
+                TerminateStasis();
 
                 Deactivate(); // call it one more time just in case
 
@@ -632,7 +632,7 @@ namespace System.Data.ProviderBase
             PerformanceCounters!.NumberOfStasisConnections.Increment();
         }
 
-        private void TerminateStasis(bool returningToPool)
+        private void TerminateStasis()
         {
             PerformanceCounters!.NumberOfStasisConnections.Decrement();
             _isInStasis = false;

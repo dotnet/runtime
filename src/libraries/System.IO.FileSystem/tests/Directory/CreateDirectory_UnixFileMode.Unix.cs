@@ -39,6 +39,21 @@ namespace System.IO.Tests
             Assert.Equal(initialMode, sameDir.UnixFileMode);
         }
 
+        [Fact]
+        public void MissingParentsHaveDefaultPermissions()
+        {
+            string parent = GetRandomDirPath();
+            string child = Path.Combine(parent, "child");
+
+            const UnixFileMode childMode = UnixFileMode.UserRead | UnixFileMode.UserExecute;
+            DirectoryInfo childDir = Directory.CreateDirectory(child, childMode);
+
+            Assert.Equal(childMode, childDir.UnixFileMode);
+
+            UnixFileMode defaultPermissions = Directory.CreateDirectory(GetRandomDirPath()).UnixFileMode;
+            Assert.Equal(defaultPermissions, File.GetUnixFileMode(parent));
+        }
+
         [Theory]
         [InlineData((UnixFileMode)(1 << 12), false)]
         [InlineData((UnixFileMode)(1 << 12), true)]

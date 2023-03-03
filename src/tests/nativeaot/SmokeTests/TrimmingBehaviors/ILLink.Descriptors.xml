@@ -1,0 +1,9 @@
+<linker>
+  <type fullname="ILLinkDescriptor">
+    <method name="methodKeptViaDescriptor"/>
+    <field name="fieldKeptViaDescriptor"/>
+    <property signature="System.Int32 PropertyKeptViaDescriptor"/>
+    <event signature="System.EventHandler EventKeptViaDescriptor"/>
+  </type>
+  <type fullname="ILLinkDescriptor/NestedTypeKeptViaDescriptor"/>
+</linker>

@@ -4,7 +4,7 @@
 
 ## Which APIs should be reviewed?
 
-The rule of thumb is that we (**dotnet/runtime**) review every API that is being added to the `System.*` namespaces. In some cases, we also review APIs that are added to other namespaces, such as `Microsoft.*`. We mostly do this for high impact APIs, such as Roslyn, and when both the owner of the technology and we feel there is win-win for both sides if we review the APIs. However, we can't scale to review all APIs being added to .NET.
+We review all publicly exposed API proposed to be added to the product components that are built out of this repo. Those are in both the `System.*` and `Microsoft.*` namespaces. In some cases, we also review APIs that are added to other components outside of this repo. We mostly do this for high impact APIs, such as Roslyn, and when both the owner of the technology and we feel there is win-win for both sides if we review the APIs. However, we can't scale to review all APIs being added to the .NET ecosystem.
 
 ## Process
 

@@ -23,7 +23,7 @@
 #define RETURN_BLOCK_SIZE (32)
 
 #define COUNT_FLOAT_ARG_REGISTERS (8)
-#define FLOAT_REGISTER_SIZE (8)
+#define FLOAT_REGISTER_SIZE (16)
 #define FLOAT_ARG_REGISTERS_SIZE (COUNT_FLOAT_ARG_REGISTERS * FLOAT_REGISTER_SIZE)
 
 #define PUSHED_LR_SIZE (8)
@@ -50,7 +50,7 @@
 //
 // RhpUniversalTransition
 //
-// At input to this function, x0-8, d0-7 and the stack may contain any number of arguments.
+// At input to this function, x0-8, q0-7 and the stack may contain any number of arguments.
 //
 // In addition, there are 2 extra arguments passed in the intra-procedure-call scratch register:
 //  xip0 will contain the managed function that is to be called by this transition function
@@ -63,16 +63,16 @@
 //
 // Frame layout is:
 //
-//  {StackPassedArgs}                           ChildSP+0C0     CallerSP+000
-//  {AlignmentPad (0x8 bytes)}                  ChildSP+0B8     CallerSP-008
-//  {IntArgRegs (x0-x8) (0x48 bytes)}           ChildSP+070     CallerSP-050
-//  {ReturnBlock (0x20 bytes)}                  ChildSP+050     CallerSP-070
+//  {StackPassedArgs}                           ChildSP+100     CallerSP+000
+//  {AlignmentPad (0x8 bytes)}                  ChildSP+0F8     CallerSP-008
+//  {IntArgRegs (x0-x8) (0x48 bytes)}           ChildSP+0B0     CallerSP-050
+//  {ReturnBlock (0x20 bytes)}                  ChildSP+090     CallerSP-070
 //   -- The base address of the Return block is the TransitionBlock pointer, the floating point args are
 //      in the neg space of the TransitionBlock pointer.  Note that the callee has knowledge of the exact
 //      layout of all pieces of the frame that lie at or above the pushed floating point registers.
-//  {FpArgRegs (d0-d7) (0x40 bytes)}            ChildSP+010     CallerSP-0B0
-//  {PushedLR}                                  ChildSP+008     CallerSP-0B8
-//  {PushedFP}                                  ChildSP+000     CallerSP-0C0
+//  {FpArgRegs (q0-q7) (0x80 bytes)}            ChildSP+010     CallerSP-0F0
+//  {PushedLR}                                  ChildSP+008     CallerSP-0F8
+//  {PushedFP}                                  ChildSP+000     CallerSP-100
 //
 // NOTE: If the frame layout ever changes, the C++ UniversalTransitionStackFrame structure
 // must be updated as well.
@@ -95,10 +95,10 @@
         PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -STACK_SIZE           // ;; Push down stack pointer and store FP and LR
 
         // Floating point registers
-        stp         d0, d1, [sp, #(FLOAT_ARG_OFFSET       )]
-        stp         d2, d3, [sp, #(FLOAT_ARG_OFFSET + 0x10)]
-        stp         d4, d5, [sp, #(FLOAT_ARG_OFFSET + 0x20)]
-        stp         d6, d7, [sp, #(FLOAT_ARG_OFFSET + 0x30)]
+        stp         q0, q1, [sp, #(FLOAT_ARG_OFFSET       )]
+        stp         q2, q3, [sp, #(FLOAT_ARG_OFFSET + 0x20)]
+        stp         q4, q5, [sp, #(FLOAT_ARG_OFFSET + 0x40)]
+        stp         q6, q7, [sp, #(FLOAT_ARG_OFFSET + 0x60)]
 
         // Space for return buffer data (0x40 bytes)
 
@@ -112,10 +112,10 @@
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
         PREPARE_EXTERNAL_VAR RhpFpTrashValues, x1
 
-        ldp d0,d1, [x1, 0x0]
-        ldp d2,d3, [x1, 0x10]
-        ldp d4,d5, [x1, 0x20]
-        ldp d6,d7, [x1, 0x30]
+        ldp q0,q1, [x1, 0x0]
+        ldp q2,q3, [x1, 0x20]
+        ldp q4,q5, [x1, 0x40]
+        ldp q6,q7, [x1, 0x60]
 
         PREPARE_EXTERNAL_VAR RhpIntegerTrashValues, x1
 
@@ -139,10 +139,10 @@
         mov         x12, x0
 
         // Restore floating point registers
-        ldp         d0, d1, [sp, #(FLOAT_ARG_OFFSET       )]
-        ldp         d2, d3, [sp, #(FLOAT_ARG_OFFSET + 0x10)]
-        ldp         d4, d5, [sp, #(FLOAT_ARG_OFFSET + 0x20)]
-        ldp         d6, d7, [sp, #(FLOAT_ARG_OFFSET + 0x30)]
+        ldp         q0, q1, [sp, #(FLOAT_ARG_OFFSET       )]
+        ldp         q2, q3, [sp, #(FLOAT_ARG_OFFSET + 0x20)]
+        ldp         q4, q5, [sp, #(FLOAT_ARG_OFFSET + 0x40)]
+        ldp         q6, q7, [sp, #(FLOAT_ARG_OFFSET + 0x60)]
 
         // Restore the argument registers
         ldp         x0, x1,  [sp, #(ARGUMENT_REGISTERS_OFFSET       )]

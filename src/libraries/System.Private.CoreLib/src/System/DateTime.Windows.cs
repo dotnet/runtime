@@ -10,21 +10,21 @@ namespace System
 {
     public readonly partial struct DateTime
     {
-        internal static readonly bool s_systemSupportsLeapSeconds = SystemSupportsLeapSeconds();
+        internal static bool SystemSupportsLeapSeconds => LeapSecondCache.s_systemSupportsLeapSeconds;
 
         public static unsafe DateTime UtcNow
         {
             get
             {
                 ulong fileTimeTmp; // mark only the temp local as address-taken
-                s_pfnGetSystemTimeAsFileTime(&fileTimeTmp);
+                LeapSecondCache.s_pfnGetSystemTimeAsFileTime(&fileTimeTmp);
                 ulong fileTime = fileTimeTmp;
 
-                if (s_systemSupportsLeapSeconds)
+                if (LeapSecondCache.s_systemSupportsLeapSeconds)
                 {
                     // Query the leap second cache first, which avoids expensive calls to GetFileTimeAsSystemTime.
 
-                    LeapSecondCache cacheValue = s_leapSecondCache;
+                    LeapSecondCache cacheValue = LeapSecondCache.s_leapSecondCache;
                     ulong ticksSinceStartOfCacheValidityWindow = fileTime - cacheValue.OSFileTimeTicksAtStartOfValidityWindow;
                     if (ticksSinceStartOfCacheValidityWindow < LeapSecondCache.ValidityPeriodInTicks)
                     {
@@ -129,7 +129,16 @@ namespace System
             return new DateTime(ticks);
         }
 
-        private static readonly unsafe delegate* unmanaged[SuppressGCTransition]<ulong*, void> s_pfnGetSystemTimeAsFileTime = GetGetSystemTimeAsFileTimeFnPtr();
+        private static unsafe bool GetSystemSupportsLeapSeconds()
+        {
+            Interop.NtDll.SYSTEM_LEAP_SECOND_INFORMATION slsi;
+
+            return Interop.NtDll.NtQuerySystemInformation(
+                Interop.NtDll.SystemLeapSecondInformation,
+                &slsi,
+                (uint)sizeof(Interop.NtDll.SYSTEM_LEAP_SECOND_INFORMATION),
+                null) == 0 && slsi.Enabled != Interop.BOOLEAN.FALSE;
+        }
 
         private static unsafe delegate* unmanaged[SuppressGCTransition]<ulong*, void> GetGetSystemTimeAsFileTimeFnPtr()
         {
@@ -184,11 +193,11 @@ namespace System
             // OS update occurs and a past leap second is added, this limits the window in which our
             // cache will return incorrect values.
 
-            Debug.Assert(s_systemSupportsLeapSeconds);
+            Debug.Assert(SystemSupportsLeapSeconds);
             Debug.Assert(LeapSecondCache.ValidityPeriodInTicks < TicksPerDay - TicksPerSecond, "Leap second cache validity window should be less than 23:59:59.");
 
             ulong fileTimeNow;
-            s_pfnGetSystemTimeAsFileTime(&fileTimeNow);
+            LeapSecondCache.s_pfnGetSystemTimeAsFileTime(&fileTimeNow);
 
             // If we reached this point, our leap second cache is stale, and we need to update it.
             // First, convert the FILETIME to a SYSTEMTIME.
@@ -292,7 +301,7 @@ namespace System
             // Finally, update the cache and return UtcNow.
 
             Debug.Assert(fileTimeNow - fileTimeAtStartOfValidityWindow < LeapSecondCache.ValidityPeriodInTicks, "We should be within the validity window.");
-            Volatile.Write(ref s_leapSecondCache, new LeapSecondCache()
+            Volatile.Write(ref LeapSecondCache.s_leapSecondCache, new LeapSecondCache()
             {
                 OSFileTimeTicksAtStartOfValidityWindow = fileTimeAtStartOfValidityWindow,
                 DotnetDateDataAtStartOfValidityWindow = dotnetDateDataAtStartOfValidityWindow
@@ -318,11 +327,6 @@ namespace System
             }
         }
 
-        // The leap second cache. May be accessed by multiple threads simultaneously.
-        // Writers must not mutate the object's fields after the reference is published.
-        // Readers are not required to use volatile semantics.
-        private static LeapSecondCache s_leapSecondCache = new LeapSecondCache();
-
         private sealed class LeapSecondCache
         {
             // The length of the validity window. Must be less than 23:59:59.
@@ -333,6 +337,16 @@ namespace System
 
             // The DateTime._dateData value at the beginning of the validity window.
             internal ulong DotnetDateDataAtStartOfValidityWindow;
+
+            // The leap second cache. May be accessed by multiple threads simultaneously.
+            // Writers must not mutate the object's fields after the reference is published.
+            // Readers are not required to use volatile semantics.
+            internal static LeapSecondCache s_leapSecondCache = new LeapSecondCache();
+
+            // The configuration of system leap seconds support is intentionally here to avoid blocking
+            // AOT pre-initialization of public readonly DateTime statics.
+            internal static readonly bool s_systemSupportsLeapSeconds = GetSystemSupportsLeapSeconds();
+            internal static readonly unsafe delegate* unmanaged[SuppressGCTransition]<ulong*, void> s_pfnGetSystemTimeAsFileTime = GetGetSystemTimeAsFileTimeFnPtr();
         }
     }
 }

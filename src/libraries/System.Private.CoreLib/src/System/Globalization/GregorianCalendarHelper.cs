@@ -525,16 +525,11 @@ namespace System.Globalization
 
         public int ToFourDigitYear(int year, int twoDigitYearMax)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year),
-                    SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
 
             if (year < 100)
             {
-                int y = year % 100;
-                return (twoDigitYearMax / 100 - (y > twoDigitYearMax % 100 ? 1 : 0)) * 100 + y;
+                return (twoDigitYearMax / 100 - (year > twoDigitYearMax % 100 ? 1 : 0)) * 100 + year;
             }
 
             if (year < m_minYear || year > m_maxYear)
@@ -543,6 +538,7 @@ namespace System.Globalization
                             nameof(year),
                             SR.Format(SR.ArgumentOutOfRange_Range, m_minYear, m_maxYear));
             }
+
             // If the year value is above 100, just return the year value.  Don't have to do
             // the TwoDigitYearMax comparison.
             return year;

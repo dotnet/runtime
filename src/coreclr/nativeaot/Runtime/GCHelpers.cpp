@@ -18,6 +18,7 @@
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
+#include "interoplibinterface.h"
 
 #include "thread.h"
 #include "RWLock.h"
@@ -131,6 +132,13 @@ COOP_PINVOKE_HELPER(void, RhUnregisterGcCallout, (GcRestrictedCalloutKind eKind,
 {
     RestrictedCallouts::UnregisterGcCallout(eKind, pCallout);
 }
+
+#ifdef FEATURE_OBJCMARSHAL
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhRegisterObjectiveCMarshalBeginEndCallback, (void * pCallback))
+{
+    FC_RETURN_BOOL(ObjCMarshalNative::RegisterBeginEndCallback(pCallback));
+}
+#endif
 
 COOP_PINVOKE_HELPER(int32_t, RhGetLohCompactionMode, ())
 {

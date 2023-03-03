@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -80,6 +79,13 @@ namespace ILCompiler.DependencyAnalysis
                 if (needsNonGcStaticBase)
                 {
                     dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)_field.OwningType), "CCtor context");
+                }
+
+                // For generic types, the reflection mapping table only keeps track of information about offsets
+                // from the static bases. To locate the static base, we need the GenericStaticBaseInfo hashtable.
+                if (_field.OwningType.HasInstantiation)
+                {
+                    dependencies.Add(factory.GenericStaticBaseInfo((MetadataType)_field.OwningType), "Field on a generic type");
                 }
             }
 

@@ -3,94 +3,26 @@
 
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 
 namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static int Max(this IEnumerable<int> source) => MaxInteger(source);
+        public static int Max(this IEnumerable<int> source) => MinMaxInteger<int, MaxCalc<int>>(source);
+
+        public static long Max(this IEnumerable<long> source) => MinMaxInteger<long, MaxCalc<long>>(source);
+
+        private struct MaxCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
+        {
+            public static bool Compare(T left, T right) => left > right;
+            public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Max(left, right);
+            public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Max(left, right);
+        }
 
         public static int? Max(this IEnumerable<int?> source) => MaxInteger(source);
 
-        public static long Max(this IEnumerable<long> source) => MaxInteger(source);
-
         public static long? Max(this IEnumerable<long?> source) => MaxInteger(source);
-
-        private static T MaxInteger<T>(this IEnumerable<T> source) where T : struct, IBinaryInteger<T>
-        {
-            T value;
-
-            if (source.TryGetSpan(out ReadOnlySpan<T> span))
-            {
-                if (span.IsEmpty)
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                // Vectorize the search if possible.
-                int index;
-                if (Vector.IsHardwareAccelerated && span.Length >= Vector<T>.Count * 2)
-                {
-                    // The span is at least two vectors long. Create a vector from the first N elements,
-                    // and then repeatedly compare that against the next vector from the span.  At the end,
-                    // the resulting vector will contain the maximum values found, and we then need only
-                    // to find the max of those.
-                    var maxes = new Vector<T>(span);
-                    index = Vector<T>.Count;
-                    do
-                    {
-                        maxes = Vector.Max(maxes, new Vector<T>(span.Slice(index)));
-                        index += Vector<T>.Count;
-                    }
-                    while (index + Vector<T>.Count <= span.Length);
-
-                    value = maxes[0];
-                    for (int i = 1; i < Vector<T>.Count; i++)
-                    {
-                        if (maxes[i] > value)
-                        {
-                            value = maxes[i];
-                        }
-                    }
-                }
-                else
-                {
-                    value = span[0];
-                    index = 1;
-                }
-
-                // Iterate through the remaining elements, comparing against the max.
-                for (int i = index; (uint)i < (uint)span.Length; i++)
-                {
-                    if (span[i] > value)
-                    {
-                        value = span[i];
-                    }
-                }
-
-                return value;
-            }
-
-            using (IEnumerator<T> e = source.GetEnumerator())
-            {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                value = e.Current;
-                while (e.MoveNext())
-                {
-                    T x = e.Current;
-                    if (x > value)
-                    {
-                        value = x;
-                    }
-                }
-            }
-
-            return value;
-        }
 
         private static T? MaxInteger<T>(this IEnumerable<T?> source) where T : struct, IBinaryInteger<T>
         {
@@ -385,6 +317,17 @@ namespace System.Linq
             }
 
             comparer ??= Comparer<TSource>.Default;
+
+            if (typeof(TSource) == typeof(byte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<byte, MaxCalc<byte>>((IEnumerable<byte>)source);
+            if (typeof(TSource) == typeof(sbyte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<sbyte, MaxCalc<sbyte>>((IEnumerable<sbyte>)source);
+            if (typeof(TSource) == typeof(ushort) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ushort, MaxCalc<ushort>>((IEnumerable<ushort>)source);
+            if (typeof(TSource) == typeof(short) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<short, MaxCalc<short>>((IEnumerable<short>)source);
+            if (typeof(TSource) == typeof(uint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<uint, MaxCalc<uint>>((IEnumerable<uint>)source);
+            if (typeof(TSource) == typeof(int) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<int, MaxCalc<int>>((IEnumerable<int>)source);
+            if (typeof(TSource) == typeof(ulong) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ulong, MaxCalc<ulong>>((IEnumerable<ulong>)source);
+            if (typeof(TSource) == typeof(long) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<long, MaxCalc<long>>((IEnumerable<long>)source);
+            if (typeof(TSource) == typeof(nuint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nuint, MaxCalc<nuint>>((IEnumerable<nuint>)source);
+            if (typeof(TSource) == typeof(nint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nint, MaxCalc<nint>>((IEnumerable<nint>)source);
 
             TSource? value = default;
             using (IEnumerator<TSource> e = source.GetEnumerator())

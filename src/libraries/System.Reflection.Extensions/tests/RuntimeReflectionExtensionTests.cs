@@ -101,6 +101,9 @@ namespace System.Reflection.Tests
             Assert.Contains("CanRead", propertyNames);
             Assert.Contains("CanWrite", propertyNames);
             Assert.Contains("CanSeek", propertyNames);
+
+            List<PropertyInfo> props = typeof(TestClass).GetRuntimeProperties().ToList();
+            Assert.Equal(2, props.Count);
         }
 
         [Fact]
@@ -297,7 +300,7 @@ namespace System.Reflection.Tests
         public void GetRuntimeInterfaceMap()
         {
             AssertExtensions.Throws<ArgumentNullException>("typeInfo", () => default(TypeInfo).GetRuntimeInterfaceMap(typeof(ICloneable)));
-            AssertExtensions.Throws<ArgumentNullException>("ifaceType", () => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(null));
+            AssertExtensions.Throws<ArgumentNullException>("interfaceType", () => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(null));
             Assert.Throws<ArgumentException>(() => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(typeof(ICloneable)));
             Assert.Throws<ArgumentException>(() => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(typeof(string)));
 
@@ -357,6 +360,16 @@ namespace System.Reflection.Tests
         private class TestDerived : TestBase
         {
             public override void Foo() { throw null; }
+        }
+
+        private class TestClassBase
+        {
+            internal int TestClassBaseProperty { get; set; }
+        }
+
+        private class TestClass : TestClassBase
+        {
+            internal int TestClassProperty { get; set; }
         }
 
         abstract class TestTypeBase : IDisposable

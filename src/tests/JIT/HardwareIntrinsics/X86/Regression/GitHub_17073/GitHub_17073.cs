@@ -5,8 +5,9 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-class Program
+public class GitHub_17073
 {
     [MethodImpl(MethodImplOptions.NoInlining)] static bool True() => true;
     [MethodImpl(MethodImplOptions.NoInlining)] static bool False() => false;
@@ -18,7 +19,8 @@ class Program
         return expected == actual;
     }
 
-    static int Main()
+    [Fact]
+    public static void Test()
     {
         bool r = true;
         r &= !Sse.IsSupported || Check(true, Test_Sse_CompareScalarOrderedEqual_Normal(Vector128.Create(42.0f), Vector128.Create(42.0f)));
@@ -891,7 +893,7 @@ class Program
         r &= !Avx.IsSupported || Check(true, Test_Avx_TestNotZAndNotC_LogicalNot_Branch_Swap(Vector256.Create(1.0f), Vector256.Create(1.0f)));
         r &= !Avx.IsSupported || Check(true, Test_Avx_TestNotZAndNotC_LogicalNot_Branch_Swap(Vector256.Create(1.0f), Vector256.Create(-1.0f)));
         r &= !Avx.IsSupported || Check(true, Test_Avx_TestNotZAndNotC_LogicalNot_Branch_Swap(Vector256.Create(-1.0f), Vector256.Create(-1.0f)));
-        return r ? 100 : 42;
+        Assert.Equal(true, r);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

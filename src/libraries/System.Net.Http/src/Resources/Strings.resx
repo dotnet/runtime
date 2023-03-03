@@ -211,6 +211,9 @@
     <value>A request message must be provided. It cannot be null.</value>
   </data>
   <data name="net_http_message_not_success_statuscode" xml:space="preserve">
+    <value>Response status code does not indicate success: {0}.</value>
+  </data>
+  <data name="net_http_message_not_success_statuscode_reason" xml:space="preserve">
     <value>Response status code does not indicate success: {0} ({1}).</value>
   </data>
   <data name="net_http_content_field_too_long" xml:space="preserve">
@@ -354,14 +357,11 @@
   <data name="net_http_buffer_insufficient_length" xml:space="preserve">
     <value>The buffer was not long enough.</value>
   </data>
+  <data name="net_http_request_headers_exceeded_length" xml:space="preserve">
+    <value>The HTTP request headers length exceeded the server limit of {0} bytes.</value>
+  </data>
   <data name="net_http_response_headers_exceeded_length" xml:space="preserve">
     <value>The HTTP response headers length exceeded the set limit of {0} bytes.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedNonNegativeNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
-    <value>Positive number required.</value>
   </data>
   <data name="NotSupported_UnreadableStream" xml:space="preserve">
     <value>Stream does not support reading.</value>

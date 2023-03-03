@@ -383,6 +383,13 @@ namespace System.Reflection.Tests
             const BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
             foreach (MemberInfo mem in type.GetMember("*", MemberTypes.All, bf))
             {
+                // Workaround: Do not try to test Array.Initialize, since one of its locals is a function pointer.
+                // Delete this workaround when https://github.com/dotnet/runtime/issues/69273 is addressed.
+                if (mem.DeclaringType == mem.DeclaringType.Assembly.GetType("System.Array") && mem.Name == "Initialize")
+                {
+                    continue;
+                }
+
                 string s = mem.ToString();
                 Assert.Equal(type, mem.ReflectedType);
                 Type declaringType = mem.DeclaringType;

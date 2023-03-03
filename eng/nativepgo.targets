@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <NativeOptimizationDataSupported Condition="'$(TargetOS)' == 'windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">true</NativeOptimizationDataSupported>
-    <NativeOptimizationDataSupported Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">true</NativeOptimizationDataSupported>
+    <NativeOptimizationDataSupported Condition="'$(TargetOS)' == 'windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86' Or '$(TargetArchitecture)' == 'arm64')">true</NativeOptimizationDataSupported>
+    <NativeOptimizationDataSupported Condition="'$(TargetOS)' == 'Linux' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'arm64')">true</NativeOptimizationDataSupported>
     <NativeOptimizationDataSupported Condition="'$(NoPgoOptimize)' == 'true'">false</NativeOptimizationDataSupported>
     <NativeOptimizationDataSupported Condition="'$(Configuration)' != 'Release'">false</NativeOptimizationDataSupported>
 
@@ -16,14 +16,20 @@
     <PackageReference Include="optimization.windows_nt-x86.PGO.CoreCLR"
       Version="$(optimizationPGOCoreCLRVersion)"
       GeneratePathProperty="true" />
+    <PackageReference Include="optimization.windows_nt-arm64.PGO.CoreCLR"
+      Version="$(optimizationPGOCoreCLRVersion)"
+      GeneratePathProperty="true" />
     <PackageReference Include="optimization.linux-x64.PGO.CoreCLR"
+      Version="$(optimizationPGOCoreCLRVersion)"
+      GeneratePathProperty="true" />
+    <PackageReference Include="optimization.linux-arm64.PGO.CoreCLR"
       Version="$(optimizationPGOCoreCLRVersion)"
       GeneratePathProperty="true" />
   </ItemGroup>
 
 
   <!--                                                                       -->
-  <!-- Task: GetPgoDataPackagePath                                          -->
+  <!-- Task: GetPgoDataPackagePath                                           -->
   <!--                                                                       -->
   <!-- Notes:                                                                -->
   <!--                                                                       -->

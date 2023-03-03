@@ -11,7 +11,7 @@ using System.Threading;
 /************************
  * Regression test for bug Bug 749068:WatsonCrash: coreclr.dll!Thread::DoAppropriateWaitWorker -- APPLICATION_HANG_BlockedOn_EventHandle c0000194
  *
- * Should be run with complus_GCStress=3
+ * Should be run with DOTNET_GCStress=3
  *
  * During GC, no IO completion threads are created. So if there was no IO completion thread to begin with,
  * there will be no threads monitoring the event which signals to schedule the corresponding callback,
@@ -90,7 +90,7 @@ namespace Prog
 
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             Callback obj = new Callback();
 

@@ -12,7 +12,7 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetTokenInformation(
-            SafeAccessTokenHandle TokenHandle,
+            SafeTokenHandle TokenHandle,
             TOKEN_INFORMATION_CLASS TokenInformationClass,
             void* TokenInformation,
             uint TokenInformationLength,

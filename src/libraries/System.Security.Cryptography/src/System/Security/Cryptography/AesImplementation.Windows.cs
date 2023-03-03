@@ -37,7 +37,6 @@ namespace System.Security.Cryptography
 
             return new BasicSymmetricCipherLiteBCrypt(
                 algorithm,
-                cipherMode,
                 blockSize,
                 paddingSize,
                 key,

@@ -498,7 +498,7 @@ namespace System.Numerics.Tests
             Assert.Throws<FormatException>(() => b.ToString("G000001000000000"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
         [OuterLoop("Takes a long time, allocates a lot of memory")]
         public static void ToString_ValidLargeFormat()
         {

@@ -46,7 +46,7 @@ namespace GenerateRegexCasingTable
                                 textInfo.ToLower(equivalence) != equivalenceMapEntry.Key &&
                                 textInfo.ToUpper(equivalence) != equivalenceMapEntry.Key)
                             {
-                                Console.WriteLine($"There shouldn't be a mapping between \\u{((ushort)equivalenceMapEntry.Key).ToString("X4")} and \\u{((ushort)equivalence).ToString("X4")}");
+                                Console.WriteLine($"There shouldn't be a mapping between \\u{((ushort)equivalenceMapEntry.Key):X4} and \\u{((ushort)equivalence):X4}");
                             }
                         }
                     }

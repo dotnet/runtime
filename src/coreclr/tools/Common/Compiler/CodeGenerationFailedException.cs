@@ -19,7 +19,7 @@ namespace ILCompiler
         }
 
         public CodeGenerationFailedException(MethodDesc method, Exception inner)
-            : base(String.Format(MessageText, method), inner)
+            : base(string.Format(MessageText, method), inner)
         {
             Method = method;
         }

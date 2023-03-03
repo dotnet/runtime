@@ -333,7 +333,7 @@ internal static class KeyParser
             _ when char.IsAsciiLetterLower(single) => ConsoleKey.A + single - 'a',
             _ when char.IsAsciiLetterUpper(single) => UppercaseCharacter(single, out isShift),
             _ when char.IsAsciiDigit(single) => ConsoleKey.D0 + single - '0', // We can't distinguish DX and Ctrl+DX as they produce same values. Limitation: Ctrl+DX can't be mapped.
-            _ when char.IsBetween(single, (char)1, (char)26) => ControlAndLetterPressed(single, out keyChar, out isCtrl),
+            _ when char.IsBetween(single, (char)1, (char)26) => ControlAndLetterPressed(single, isAlt, out keyChar, out isCtrl),
             _ when char.IsBetween(single, (char)28, (char)31) => ControlAndDigitPressed(single, out keyChar, out isCtrl),
             '\u0000' => ControlAndDigitPressed(single, out keyChar, out isCtrl),
             _ => default
@@ -359,7 +359,7 @@ internal static class KeyParser
             return ConsoleKey.A + single - 'A';
         }
 
-        static ConsoleKey ControlAndLetterPressed(char single, out char keyChar, out bool isCtrl)
+        static ConsoleKey ControlAndLetterPressed(char single, bool isAlt, out char keyChar, out bool isCtrl)
         {
             // Ctrl+(a-z) characters are mapped to values from 1 to 26.
             // Ctrl+H is mapped to 8, which also maps to Ctrl+Backspace.
@@ -370,7 +370,9 @@ internal static class KeyParser
             Debug.Assert(single != 'b' && single != '\t' && single != '\n' && single != '\r');
 
             isCtrl = true;
-            keyChar = default; // we could use the letter here, but it's impossible to distinguish upper vs lowercase (and Windows doesn't do it as well)
+            // Preserve the original character the same way Windows does (#75795),
+            // but only when Alt was not pressed at the same time.
+            keyChar = isAlt ? default : single;
             return ConsoleKey.A + single - 1;
         }
 

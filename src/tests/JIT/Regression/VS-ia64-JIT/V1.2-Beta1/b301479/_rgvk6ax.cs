@@ -35,7 +35,7 @@ public struct AA
 [StructLayout(LayoutKind.Sequential)]
 public class App
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

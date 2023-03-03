@@ -5,11 +5,11 @@ namespace Test
 {
     using System;
 
-    internal class App
+    public class App
     {
         private static void Func(TypedReference tr) { }
 
-        private static int Main()
+        public static int Main()
         {
             bool b = false;
             TypedReference tr = __makeref(b);

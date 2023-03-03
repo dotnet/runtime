@@ -111,9 +111,9 @@ namespace System.Diagnostics
         ///     Returns the memory address of the function that was called when the associated
         ///     thread was started.
         /// </devdoc>
-        public IntPtr StartAddress
+        public unsafe IntPtr StartAddress
         {
-            get { return _threadInfo._startAddress; }
+            get { return (IntPtr)_threadInfo._startAddress; }
         }
 
         /// <devdoc>

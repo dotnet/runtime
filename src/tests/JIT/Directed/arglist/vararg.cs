@@ -4441,6 +4441,26 @@ namespace NativeVarargTest
             return equal;
         }
 
+        // Miscellaneous tests
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool TestEchoFourDoubleStructViaParameterAssign()
+        {
+            FourDoubleStruct arg = new FourDoubleStruct();
+            arg.a = 1.0;
+            arg.b = 2.0;
+            arg.c = 3.0;
+            arg.d = 4.0;
+
+            FourDoubleStruct returnValue = ManagedNativeVarargTests.TestEchoFourDoubleStructViaParameterAssign(arg, __arglist());
+            bool equal = arg.a == returnValue.a &&
+                         arg.b == returnValue.b &&
+                         arg.c == returnValue.c &&
+                         arg.d == returnValue.d;
+
+            return equal;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Report Failure
         ////////////////////////////////////////////////////////////////////////
@@ -5064,6 +5084,9 @@ namespace NativeVarargTest
 
             // Parameter address tests
             success = ReportFailure(TestEchoFourDoubleStructManagedViaAddress(), "TestEchoFourDoubleStructManagedViaAddress()", success, 155);
+
+            // Miscellaneous tests
+            success = ReportFailure(TestEchoFourDoubleStructViaParameterAssign(), "TestEchoFourDoubleStructViaParameterAssign()", success, 156);
 
             printf("\n", __arglist());
             printf("%d Tests run. %d Passed, %d Failed.\n", __arglist(m_testCount, m_passCount, m_failCount));

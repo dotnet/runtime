@@ -71,7 +71,7 @@ public partial class Program
         IsFalse(typeof(SimpleEnum_uint).IsAssignableTo(typeof(float)));
         IsFalse(typeof(ValueType).IsAssignableTo(typeof(SimpleEnum_uint)));
 
-        // Covariance/Contravariance 
+        // Covariance/Contravariance
         IsTrue (typeof(List<string>).IsAssignableTo(typeof(IEnumerable<object>)));
         IsTrue (typeof(List<ClassB>).IsAssignableTo(typeof(IEnumerable<ClassA>)));
         IsTrue (typeof(IList<ClassB>).IsAssignableTo(typeof(IEnumerable<ClassA>)));
@@ -165,6 +165,20 @@ public partial class Program
         IsFalse(typeof(Vector4).IsAssignableTo(typeof(Vector128<float>)));
         IsFalse(typeof(Vector<float>).IsAssignableTo(typeof(Vector128<float>)));
         IsFalse(typeof(Vector<float>).IsAssignableTo(typeof(Vector256<float>)));
+
+        // null type
+        IsFalse(typeof(int).IsAssignableTo(null));
+        IsFalse(typeof(object).IsAssignableTo(null));
+        ThrowsNRE(() => { _ = ((Type)null).IsAssignableTo(typeof(int)); });
+        ThrowsNRE(() => { _ = ((Type)null).IsAssignableTo(typeof(object)); });
+        ThrowsNRE(() => { _ = ((Type)null).IsAssignableTo(null); });
+        ThrowsNRE(() => { _ = ((Type)null).IsAssignableTo(null); });
+        IsFalse(typeof(int).IsAssignableTo(__reftype(default)));
+        IsFalse(typeof(object).IsAssignableTo(__reftype(default)));
+        ThrowsNRE(() => { _ = __reftype(default).IsAssignableTo(typeof(int)); });
+        ThrowsNRE(() => { _ = __reftype(default).IsAssignableTo(typeof(object)); });
+        ThrowsNRE(() => { _ = __reftype(default).IsAssignableTo(__reftype(default)); });
+        ThrowsNRE(() => { _ = __reftype(default).IsAssignableTo(__reftype(default)); });
 
         // System.__Canon
         IsTrue (IsAssignableTo<KeyValuePair<IDisposable, IDisposable>, KeyValuePair<IDisposable, IDisposable>>());

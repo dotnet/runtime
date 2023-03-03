@@ -25,6 +25,8 @@ public class ZExistingClass
         public event EventHandler<string> E;
         public void R() { E(this,"123"); }
     }
+
+    public static void ExistingMethod () {}
 }
 
 [AttributeUsage(AttributeTargets.All, AllowMultiple=true, Inherited=false)]

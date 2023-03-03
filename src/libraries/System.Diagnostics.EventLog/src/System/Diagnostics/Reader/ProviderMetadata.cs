@@ -63,7 +63,7 @@ namespace System.Diagnostics.Eventing.Reader
             _cultureInfo = targetCultureInfo;
             _logFilePath = logFilePath;
 
-            _handle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, _providerName, _logFilePath, 0, 0);
+            _handle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, _providerName, _logFilePath, 0);
 
             _syncObject = new object();
         }
@@ -205,7 +205,7 @@ namespace System.Diagnostics.Eventing.Reader
                                 {
                                     if (_defaultProviderHandle.IsInvalid)
                                     {
-                                        _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0, 0);
+                                        _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0);
                                     }
 
                                     channelRefDisplayName = NativeWrapper.EvtFormatMessage(_defaultProviderHandle, unchecked((uint)channelRefMessageId));
@@ -358,7 +358,7 @@ namespace System.Diagnostics.Eventing.Reader
                         {
                             if (_defaultProviderHandle.IsInvalid)
                             {
-                                _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0, 0);
+                                _defaultProviderHandle = NativeWrapper.EvtOpenProviderMetadata(_session.Handle, null, null, 0);
                             }
 
                             generalDisplayName = objectTypeName switch

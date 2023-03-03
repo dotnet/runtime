@@ -458,7 +458,7 @@ namespace System.ServiceProcess
             }
         }
 
-        private void DeferredPowerEvent(int eventType, IntPtr eventData)
+        private void DeferredPowerEvent(int eventType)
         {
             // Note: The eventData pointer might point to an invalid location
             // This might happen because, between the time the eventData ptr was
@@ -699,7 +699,7 @@ namespace System.ServiceProcess
             {
                 case ControlOptions.CONTROL_POWEREVENT:
                     {
-                        ThreadPool.QueueUserWorkItem(_ => DeferredPowerEvent(eventType, eventData));
+                        ThreadPool.QueueUserWorkItem(_ => DeferredPowerEvent(eventType));
                         break;
                     }
 

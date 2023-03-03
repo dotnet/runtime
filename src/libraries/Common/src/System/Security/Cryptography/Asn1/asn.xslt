@@ -47,6 +47,13 @@
     </xsl:choose>
   </xsl:variable>
 
+  <xsl:variable name="hasRebind" xml:space="default">
+    <xsl:choose>
+      <xsl:when test="not(/*[@rebind='false'])">1</xsl:when>
+      <xsl:otherwise>0</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+
   <xsl:template match="asn:Sequence">// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -95,7 +102,7 @@ namespace <xsl:value-of select="@namespace" />
             {
                 AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, encoded, out <xsl:value-of select="@name" /> decoded);
+                DecodeCore(ref reader, expectedTag, <xsl:if test="$hasRebind &gt; 0">encoded, </xsl:if>out <xsl:value-of select="@name" /> decoded);
                 reader.ThrowIfNotEmpty();
                 return decoded;
             }
@@ -105,16 +112,16 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
+        internal static void Decode(ref AsnValueReader reader,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
         {
-            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, <xsl:if test="$hasRebind &gt; 0">rebind, </xsl:if>out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
         {
             try
             {
-                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+                DecodeCore(ref reader, expectedTag, <xsl:if test="$hasRebind &gt; 0">rebind, </xsl:if>out decoded);
             }
             catch (AsnContentException e)
             {
@@ -122,7 +129,7 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);<xsl:if test="*[@explicitTag]">
@@ -188,7 +195,7 @@ namespace <xsl:value-of select="@namespace" />
             {
                 AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-                DecodeCore(ref reader, encoded, out <xsl:value-of select="@name" /> decoded);
+                DecodeCore(ref reader, <xsl:if test="not(@rebind='false')">encoded, </xsl:if>out <xsl:value-of select="@name" /> decoded);
                 reader.ThrowIfNotEmpty();
                 return decoded;
             }
@@ -198,11 +205,11 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
+        internal static void Decode(ref AsnValueReader reader, <xsl:if test="not(@rebind='false')">ReadOnlyMemory&lt;byte&gt; rebind, </xsl:if>out <xsl:value-of select="@name" /> decoded)
         {
             try
             {
-                DecodeCore(ref reader, rebind, out decoded);
+                DecodeCore(ref reader, <xsl:if test="not(@rebind='false')">rebind, </xsl:if>out decoded);
             }
             catch (AsnContentException e)
             {
@@ -210,7 +217,7 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory&lt;byte&gt; rebind, out <xsl:value-of select="@name" /> decoded)
+        private static void DecodeCore(ref AsnValueReader reader, <xsl:if test="not(@rebind='false')">ReadOnlyMemory&lt;byte&gt; rebind, </xsl:if>out <xsl:value-of select="@name" /> decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();<xsl:if test="*[@explicitTag]">
@@ -443,11 +450,11 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:choose>
       <xsl:when test="@optional | parent::asn:Choice" xml:space="preserve">
             <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/> tmp<xsl:value-of select="@name"/>;
-            <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/>.Decode(ref <xsl:value-of select="$readerName"/><xsl:call-template name="MaybeImplicitCallS"/>, rebind, out tmp<xsl:value-of select="@name"/>);
+            <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/>.Decode(ref <xsl:value-of select="$readerName"/><xsl:call-template name="MaybeImplicitCallS"/>, <xsl:if test="not(@rebind='false')">rebind, </xsl:if>out tmp<xsl:value-of select="@name"/>);
             <xsl:value-of select="$indent"/><xsl:value-of select="$name"/> = tmp<xsl:value-of select="@name"/>;
 </xsl:when>
       <xsl:otherwise xml:space="preserve">
-            <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/>.Decode(ref <xsl:value-of select="$readerName"/><xsl:call-template name="MaybeImplicitCallS"/>, rebind, out <xsl:value-of select="$name"/>);</xsl:otherwise>
+            <xsl:value-of select="$indent"/><xsl:value-of select="@typeName"/>.Decode(ref <xsl:value-of select="$readerName"/><xsl:call-template name="MaybeImplicitCallS"/>, <xsl:if test="not(@rebind='false')">rebind, </xsl:if>out <xsl:value-of select="$name"/>);</xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 

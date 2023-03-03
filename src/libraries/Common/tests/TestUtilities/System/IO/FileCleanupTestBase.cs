@@ -1,24 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Microsoft.Win32.SafeHandles;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Text;
+using System.Threading;
+using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System.IO
 {
     /// <summary>Base class for test classes the use temporary files that need to be cleaned up.</summary>
     public abstract partial class FileCleanupTestBase : IDisposable
     {
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
-
         private string fallbackGuid = Guid.NewGuid().ToString("N").Substring(0, 10);
-
-        protected static bool IsProcessElevated => s_isElevated.Value;
 
         /// <summary>Initialize the test class base.  This creates the associated test directory.</summary>
         protected FileCleanupTestBase(string tempDirectory = null)

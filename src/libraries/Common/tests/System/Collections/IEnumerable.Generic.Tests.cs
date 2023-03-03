@@ -63,6 +63,18 @@ namespace System.Collections.Tests
         protected virtual bool Enumerator_Current_UndefinedOperation_Throws => false;
 
         /// <summary>
+        /// When calling Current of the empty enumerator before the first MoveNext, after the end of the collection,
+        /// or after modification of the enumeration, the resulting behavior is undefined. Tests are included
+        /// to cover two behavioral scenarios:
+        ///   - Throwing an InvalidOperationException
+        ///   - Returning an undefined value.
+        ///
+        /// If this property is set to true, the tests ensure that the exception is thrown. The default value is
+        /// <see cref="Enumerator_Current_UndefinedOperation_Throws"/>.
+        /// </summary>
+        protected virtual bool Enumerator_Empty_Current_UndefinedOperation_Throws => Enumerator_Current_UndefinedOperation_Throws;
+
+        /// <summary>
         /// When calling MoveNext or Reset after modification of the enumeration, the resulting behavior is
         /// undefined. Tests are included to cover two behavioral scenarios:
         ///   - Throwing an InvalidOperationException
@@ -590,7 +602,8 @@ namespace System.Collections.Tests
             IEnumerable<T> enumerable = GenericIEnumerableFactory(count);
             using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
             {
-                if (Enumerator_Current_UndefinedOperation_Throws)
+                if (Enumerator_Current_UndefinedOperation_Throws ||
+                    (count == 0 && Enumerator_Empty_Current_UndefinedOperation_Throws))
                     Assert.Throws<InvalidOperationException>(() => enumerator.Current);
                 else
                     current = enumerator.Current;
@@ -606,7 +619,8 @@ namespace System.Collections.Tests
             using (IEnumerator<T> enumerator = enumerable.GetEnumerator())
             {
                 while (enumerator.MoveNext()) ;
-                if (Enumerator_Current_UndefinedOperation_Throws)
+                if (Enumerator_Current_UndefinedOperation_Throws ||
+                    (count == 0 && Enumerator_Empty_Current_UndefinedOperation_Throws))
                     Assert.Throws<InvalidOperationException>(() => enumerator.Current);
                 else
                     current = enumerator.Current;

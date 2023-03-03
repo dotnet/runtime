@@ -646,7 +646,17 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
     return temp;
 }
 
-const char* refCntWtd2str(weight_t refCntWtd)
+//------------------------------------------------------------------------
+// refCntWtd2str: Return a string representation of a weighted ref count
+//
+// Arguments:
+//    refCntWtd - weight to format
+//    padForDecimalPlaces - (default: false) If true, pad any integral or non-numeric
+//                          output on the right with three spaces, representing space
+//                          for ".00". This makes "1" line up with "2.34" at the "2" column.
+//                          This is used for formatting the BasicBlock list.
+//
+const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces)
 {
     const int    bufSize = 17;
     static char  num1[bufSize];
@@ -655,11 +665,17 @@ const char* refCntWtd2str(weight_t refCntWtd)
 
     char* temp = nump;
 
+    const char* strDecimalPaddingString = "";
+    if (padForDecimalPlaces)
+    {
+        strDecimalPaddingString = "   ";
+    }
+
     nump = (nump == num1) ? num2 : num1;
 
     if (refCntWtd >= BB_MAX_WEIGHT)
     {
-        sprintf_s(temp, bufSize, "MAX   ");
+        sprintf_s(temp, bufSize, "MAX%s", strDecimalPaddingString);
     }
     else
     {
@@ -678,7 +694,7 @@ const char* refCntWtd2str(weight_t refCntWtd)
         {
             if (intPart == scaledWeight)
             {
-                sprintf_s(temp, bufSize, "%lld   ", (long long)intPart);
+                sprintf_s(temp, bufSize, "%lld%s", (long long)intPart, strDecimalPaddingString);
             }
             else
             {
@@ -1399,7 +1415,10 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
             case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
-            case CORINFO_HELP_READYTORUN_STATIC_BASE:
+            case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+            case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+            case CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
 
                 // These may invoke static class constructors
@@ -1627,7 +1646,7 @@ MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(null
         }
 
         // Ignore lines starting with leading ";" "#" "//".
-        if ((0 == _strnicmp(buffer, ";", 1)) || (0 == _strnicmp(buffer, "#", 1)) || (0 == _strnicmp(buffer, "//", 2)))
+        if ((0 == strncmp(buffer, ";", 1)) || (0 == strncmp(buffer, "#", 1)) || (0 == strncmp(buffer, "//", 2)))
         {
             continue;
         }
@@ -2446,7 +2465,6 @@ double FloatingPointUtils::minimum(double val1, double val2)
 // Return Value:
 //    Either val1 or val2
 //
-
 float FloatingPointUtils::minimum(float val1, float val2)
 {
     if (val1 != val2 && !isNaN(val1))
@@ -2454,6 +2472,42 @@ float FloatingPointUtils::minimum(float val1, float val2)
         return val1 < val2 ? val1 : val2;
     }
     return isNegative(val1) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// normalize: Normalize a floating point value.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    Normalized value.
+//
+// Remarks:
+//   This is a no-op on all host platforms but x86. On x86 floats are returned on
+//   the x87 stack. Since `fld` will automatically quiet signalling NaNs this
+//   means that it is very easy for a float to nondeterministically change bit
+//   representation if it is a snan, depending on whether a function that
+//   returns the value is inlined or not by the C++ compiler. To get around the
+//   nondeterminism we quiet the NaNs ahead of time as a best-effort fix.
+//
+double FloatingPointUtils::normalize(double value)
+{
+#ifdef HOST_X86
+    if (!isNaN(value))
+    {
+        return value;
+    }
+
+    uint64_t bits;
+    static_assert_no_msg(sizeof(bits) == sizeof(value));
+    memcpy(&bits, &value, sizeof(value));
+    bits |= 1ull << 51;
+    memcpy(&value, &bits, sizeof(bits));
+    return value;
+#else
+    return value;
+#endif
 }
 
 namespace MagicDivide

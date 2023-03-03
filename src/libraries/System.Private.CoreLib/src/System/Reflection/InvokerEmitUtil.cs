@@ -65,8 +65,11 @@ namespace System.Reflection
             }
 
             // Invoke the method.
-#if !MONO
-            il.Emit(OpCodes.Call, Methods.NextCallReturnAddress()); // For CallStack reasons, don't inline target method.
+            // For CallStack reasons, don't inline target method.
+#if MONO
+            il.Emit(OpCodes.Call, Methods.DisableInline());
+#else
+            il.Emit(OpCodes.Call, Methods.NextCallReturnAddress());
             il.Emit(OpCodes.Pop);
 #endif
 
@@ -182,7 +185,11 @@ namespace System.Reflection
             public static MethodInfo Type_GetTypeFromHandle() =>
                 s_Type_GetTypeFromHandle ??= typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), new[] { typeof(RuntimeTypeHandle) })!;
 
-#if !MONO
+#if MONO
+            private static MethodInfo? s_DisableInline;
+            public static MethodInfo DisableInline() =>
+                s_DisableInline ??= typeof(System.Runtime.CompilerServices.JitHelpers).GetMethod(nameof(System.Runtime.CompilerServices.JitHelpers.DisableInline), BindingFlags.NonPublic | BindingFlags.Static)!;
+#else
             private static MethodInfo? s_NextCallReturnAddress;
             public static MethodInfo NextCallReturnAddress() =>
                 s_NextCallReturnAddress ??= typeof(System.StubHelpers.StubHelpers).GetMethod(nameof(System.StubHelpers.StubHelpers.NextCallReturnAddress), BindingFlags.NonPublic | BindingFlags.Static)!;

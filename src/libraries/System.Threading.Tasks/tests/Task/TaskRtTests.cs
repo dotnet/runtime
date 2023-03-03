@@ -512,6 +512,21 @@ namespace System.Threading.Tasks.Tests
             Assert.Same(Task.FromResult(UIntPtr.Zero), Task.FromResult(UIntPtr.Zero));
             Assert.Equal(UIntPtr.Zero, Task.FromResult(UIntPtr.Zero).Result);
 
+            Assert.Same(Task.FromResult((Half)default), Task.FromResult((Half)default));
+            Assert.Equal((Half)default, Task.FromResult((Half)default).Result);
+
+            Assert.Same(Task.FromResult((float)default), Task.FromResult((float)default));
+            Assert.Equal((float)default, Task.FromResult((float)default).Result);
+
+            Assert.Same(Task.FromResult((double)default), Task.FromResult((double)default));
+            Assert.Equal((double)default, Task.FromResult((double)default).Result);
+
+            Assert.Same(Task.FromResult((TimeSpan)default), Task.FromResult((TimeSpan)default));
+            Assert.Equal((TimeSpan)default, Task.FromResult((TimeSpan)default).Result);
+
+            Assert.Same(Task.FromResult((DateTime)default), Task.FromResult((DateTime)default));
+            Assert.Equal((DateTime)default, Task.FromResult((DateTime)default).Result);
+
             Assert.Same(Task.FromResult((object)null), Task.FromResult((object)null));
             Assert.Null(Task.FromResult((object)null).Result);
 
@@ -526,10 +541,11 @@ namespace System.Threading.Tasks.Tests
                 Assert.Equal(i, Task.FromResult(i).Result);
             }
 
-            Assert.NotSame(Task.FromResult((double)0), Task.FromResult((double)0));
-            Assert.NotSame(Task.FromResult((float)0), Task.FromResult((float)0));
-            Assert.NotSame(Task.FromResult((decimal)0), Task.FromResult((decimal)0));
-            Assert.NotSame(Task.FromResult((Half)0), Task.FromResult((Half)0));
+            Assert.NotSame(Task.FromResult((double)(+0.0)), Task.FromResult((double)(-0.0)));
+            Assert.NotSame(Task.FromResult((float)(+0.0)), Task.FromResult((float)(-0.0)));
+            Assert.NotSame(Task.FromResult((Half)(+0.0)), Task.FromResult((Half)(-0.0)));
+
+            Assert.NotSame(Task.FromResult((decimal)default), Task.FromResult((decimal)default));
         }
 
         [Fact]

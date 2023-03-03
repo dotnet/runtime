@@ -48,8 +48,11 @@ namespace Microsoft.Extensions.Configuration.Xml
         }
 
         /// <summary>
-        /// Returns an XmlReader that decrypts data transparently.
+        /// Creates an <see cref="XmlReader"/> that decrypts data transparently.
         /// </summary>
+        /// <param name="input">The input <see cref="Stream"/> to read the XML configuration data from.</param>
+        /// <param name="settings">The settings for the new <see cref="XmlReader"/> instance.</param>
+        /// <returns>An <see cref="XmlReader"/> that decrypts data transparently.</returns>
         public XmlReader CreateDecryptingXmlReader(Stream input, XmlReaderSettings? settings)
         {
             // XML-based configurations aren't really all that big, so we can buffer

@@ -85,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        protected override string GetName(NodeFactory factory) => $"{Method.ToString()} backed by {CanonicalMethodNode.GetMangledName(factory.NameMangler)}";
+        protected override string GetName(NodeFactory factory) => $"{Method} backed by {CanonicalMethodNode.GetMangledName(factory.NameMangler)}";
 
         public sealed override bool HasConditionalStaticDependencies => false;
         public sealed override bool HasDynamicDependencies => false;

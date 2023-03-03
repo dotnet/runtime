@@ -362,8 +362,6 @@ namespace System.Reflection
          * The idea behind this optimization is to use a pair of delegates to simulate the same effect of doing a reflection call.
          * The first delegate cast the this argument to the right type and the second does points to the target method.
          */
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern",
-            Justification = "MethodInfo used with MakeGenericMethod doesn't have DynamicallyAccessedMembers generic parameters")]
         [DynamicDependency("GetterAdapterFrame`2")]
         [DynamicDependency("StaticGetterAdapterFrame`1")]
         private static GetterAdapter CreateGetterDelegate(MethodInfo method)
@@ -502,7 +500,7 @@ namespace System.Reflection
         internal static PropertyInfo GetPropertyFromHandle(RuntimePropertyHandle handle, RuntimeTypeHandle reflectedType)
         {
             if (handle.Value == IntPtr.Zero)
-                throw new ArgumentException("The handle is invalid.");
+                throw new ArgumentException(SR.Argument_InvalidHandle);
             PropertyInfo pi = internal_from_handle_type(handle.Value, reflectedType.Value);
             if (pi == null)
                 throw new ArgumentException("The property handle and the type handle are incompatible.");

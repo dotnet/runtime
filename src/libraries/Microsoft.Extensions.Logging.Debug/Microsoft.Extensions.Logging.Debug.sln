@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.0", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj", "{B974A465-1912-4E4A-ADA6-B2BAF9DDE89D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.4", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj", "{93655DA5-BC50-4F07-85B3-509076003CBD}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{16E075F3-372C-4A98-BDAF-FF615B8A9855}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{3DDCFBB7-A438-46BB-9094-A1A39060DD2A}"
@@ -89,6 +91,10 @@ Global
 		{B974A465-1912-4E4A-ADA6-B2BAF9DDE89D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B974A465-1912-4E4A-ADA6-B2BAF9DDE89D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B974A465-1912-4E4A-ADA6-B2BAF9DDE89D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93655DA5-BC50-4F07-85B3-509076003CBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93655DA5-BC50-4F07-85B3-509076003CBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93655DA5-BC50-4F07-85B3-509076003CBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93655DA5-BC50-4F07-85B3-509076003CBD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{16E075F3-372C-4A98-BDAF-FF615B8A9855}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{16E075F3-372C-4A98-BDAF-FF615B8A9855}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{16E075F3-372C-4A98-BDAF-FF615B8A9855}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -175,6 +181,7 @@ Global
 		{A3AE4326-5EB6-454C-8276-93B1E5FA5A84} = {FC2F4F53-DFE7-4A0B-A85C-D266FDD51526}
 		{6D60A144-E901-4BCB-8DE6-148B56157771} = {B1578203-268C-45C3-B62C-3D5CFC340AB4}
 		{B974A465-1912-4E4A-ADA6-B2BAF9DDE89D} = {B1578203-268C-45C3-B62C-3D5CFC340AB4}
+		{93655DA5-BC50-4F07-85B3-509076003CBD} = {B1578203-268C-45C3-B62C-3D5CFC340AB4}
 		{04FB7C63-ACEF-41F4-98E4-35F5635B4D73} = {B1578203-268C-45C3-B62C-3D5CFC340AB4}
 		{635C575E-2759-4F37-A7CA-2A51BDCC84C5} = {B1578203-268C-45C3-B62C-3D5CFC340AB4}
 	EndGlobalSection

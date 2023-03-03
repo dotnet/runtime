@@ -32,7 +32,7 @@ namespace System.Speech.Internal.ObjectTokens
         {
             // Check if the token is for a voice
             string tokenName = keyName;
-            if (!string.IsNullOrEmpty(tokenName) && tokenName.IndexOf("HKEY_", StringComparison.Ordinal) != 0)
+            if (!string.IsNullOrEmpty(tokenName) && !tokenName.StartsWith("HKEY_", StringComparison.Ordinal))
             {
                 tokenName = string.Format(CultureInfo.InvariantCulture, @"{0}\Tokens\{1}", Id, tokenName);
             }

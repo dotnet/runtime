@@ -224,7 +224,7 @@ enum GcInfoDecoderFlags
 enum GcInfoHeaderFlags
 {
     GC_INFO_IS_VARARG                   = 0x1,
-    GC_INFO_HAS_SECURITY_OBJECT         = 0x2,
+    // unused                           = 0x2, // was GC_INFO_HAS_SECURITY_OBJECT
     GC_INFO_HAS_GS_COOKIE               = 0x4,
     GC_INFO_HAS_PSP_SYM                 = 0x8,
     GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK   = 0x30,
@@ -528,7 +528,6 @@ public:
     // Miscellaneous method information
     //------------------------------------------------------------------------
 
-    INT32   GetSecurityObjectStackSlot();
     INT32   GetGSCookieStackSlot();
     UINT32  GetGSCookieValidRangeStart();
     UINT32  GetGSCookieValidRangeEnd();
@@ -571,7 +570,6 @@ private:
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool    m_HasTailCalls;
 #endif // TARGET_AMD64
-    INT32   m_SecurityObjectStackSlot;
     INT32   m_GSCookieStackSlot;
     INT32   m_ReversePInvokeFrameStackSlot;
     UINT32  m_ValidRangeStart;

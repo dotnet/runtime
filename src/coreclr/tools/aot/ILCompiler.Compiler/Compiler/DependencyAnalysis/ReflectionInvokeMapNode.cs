@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -51,8 +51,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(factory.MetadataManager.IsReflectionInvokable(method));
 
-            if (dependencies == null)
-                dependencies = new DependencyList();
+            dependencies ??= new DependencyList();
 
             dependencies.Add(factory.MaximallyConstructableType(method.OwningType), "Reflection invoke");
 

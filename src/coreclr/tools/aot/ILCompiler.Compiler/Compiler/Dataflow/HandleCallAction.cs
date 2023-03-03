@@ -14,13 +14,13 @@ using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    partial struct HandleCallAction
+    internal partial struct HandleCallAction
     {
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 
-        readonly ReflectionMarker _reflectionMarker;
-        readonly MethodDesc _callingMethod;
-        readonly Origin _memberWithRequirements;
+        private readonly ReflectionMarker _reflectionMarker;
+        private readonly MethodDesc _callingMethod;
+        private readonly Origin _memberWithRequirements;
 
         public HandleCallAction(
             FlowAnnotations annotations,
@@ -75,15 +75,17 @@ namespace ILLink.Shared.TrimAnalysis
             return false;
         }
 
+#pragma warning disable IDE0060
         private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
         {
             // TODO: niche APIs that we probably shouldn't even have added
             // We have to issue a warning, otherwise we could break the app without a warning.
             // This is not the ideal warning, but it's good enough for now.
-            _diagnosticContext.AddDiagnostic(DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameterDisplayName(1), calledMethod.GetDisplayName());
+            _diagnosticContext.AddDiagnostic(DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameter((ParameterIndex)(1 + (calledMethod.HasImplicitThis() ? 1 : 0))).GetDisplayName(), calledMethod.GetDisplayName());
             resolvedType = default;
             return false;
         }
+#pragma warning restore IDE0060
 
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type);
@@ -98,10 +100,10 @@ namespace ILLink.Shared.TrimAnalysis
             => _reflectionMarker.MarkPropertiesOnTypeHierarchy(_diagnosticContext.Origin, type.Type, p => p.Name == name, _memberWithRequirements, bindingFlags);
 
         private partial void MarkPublicParameterlessConstructorOnType(TypeProxy type)
-            => _reflectionMarker.MarkConstructorsOnType(_diagnosticContext.Origin, type.Type, m => m.IsPublic() && m.Signature.Length == 0, _memberWithRequirements);
+            => _reflectionMarker.MarkConstructorsOnType(_diagnosticContext.Origin, type.Type, m => m.IsPublic() && !m.HasMetadataParameters(), _memberWithRequirements);
 
         private partial void MarkConstructorsOnType(TypeProxy type, BindingFlags? bindingFlags, int? parameterCount)
-            => _reflectionMarker.MarkConstructorsOnType(_diagnosticContext.Origin, type.Type, parameterCount == null ? null : m => m.Signature.Length == parameterCount, _memberWithRequirements, bindingFlags);
+            => _reflectionMarker.MarkConstructorsOnType(_diagnosticContext.Origin, type.Type, parameterCount == null ? null : m => m.GetMetadataParametersCount() == parameterCount, _memberWithRequirements, bindingFlags);
 
         private partial void MarkMethod(MethodProxy method)
             => _reflectionMarker.MarkMethod(_diagnosticContext.Origin, method.Method, _memberWithRequirements);

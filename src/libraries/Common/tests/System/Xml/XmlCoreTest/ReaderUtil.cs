@@ -10,13 +10,11 @@
 /// out to end at the buffer boundary.
 ///
 using System;
-using System.Xml;
-using System.Text;
-using System.IO;
-
-using System.Globalization;
 using System.Diagnostics;
-
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Xml;
 using OLEDB.Test.ModuleCore;
 
 namespace XmlCoreTest.Common

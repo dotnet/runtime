@@ -7,7 +7,7 @@ namespace System.Data
 {
     internal static partial class SafeNativeMethods
     {
-        internal static IntPtr LocalAlloc(IntPtr initialSize)
+        internal static IntPtr LocalAlloc(nint initialSize)
         {
             var handle = Marshal.AllocHGlobal(initialSize);
             ZeroMemory(handle, (int)initialSize);

@@ -35,6 +35,7 @@ static const Entry s_sysNative[] =
 {
     DllImportEntry(SystemNative_FStat)
     DllImportEntry(SystemNative_GetWindowSize)
+    DllImportEntry(SystemNative_SetWindowSize)
     DllImportEntry(SystemNative_IsATty)
     DllImportEntry(SystemNative_InitializeTerminalAndSignalHandling)
     DllImportEntry(SystemNative_SetKeypadXmit)
@@ -245,6 +246,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_UTimensat)
     DllImportEntry(SystemNative_FUTimens)
     DllImportEntry(SystemNative_GetTimestamp)
+    DllImportEntry(SystemNative_GetBootTimeTicks)
     DllImportEntry(SystemNative_GetCpuUtilization)
     DllImportEntry(SystemNative_GetPwUidR)
     DllImportEntry(SystemNative_GetPwNamR)

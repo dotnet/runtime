@@ -56,7 +56,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets a value indicating whether the lookup needs to be performed by calling a helper method. 
+        /// Gets a value indicating whether the lookup needs to be performed by calling a helper method.
         /// </summary>
         public bool UseHelper
         {

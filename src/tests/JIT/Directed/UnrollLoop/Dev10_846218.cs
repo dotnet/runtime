@@ -46,7 +46,7 @@ namespace Test
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int Main(string[] args)
+        private static int Main()
         {
             DoSomething doSomething = new DoSomething();
             Test(doSomething);

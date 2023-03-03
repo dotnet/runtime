@@ -250,7 +250,7 @@ exit:
 			CloseHandle (mapping);
 		if (error_message) {
 			gchar *win32_error_string = format_win32_error_string (win32_error);
-			*error_message = g_strdup_printf ("%s failed file:%s length:0x%IX offset:0x%I64X function:%s error:%s(0x%X)\n",
+			*error_message = g_strdup_printf ("%s failed file:%s length:0x%zX offset:0x%llX function:%s error:%s(0x%X)\n",
 				__func__, filepath ? filepath : "", length, offset, failed_function, win32_error_string, win32_error);
 			g_free (win32_error_string);
 		}

@@ -794,7 +794,7 @@ namespace System
             0x8e679c2f5e44ff8f, 0x570f09eaa7ea7648
         };
 
-        private static void AccumulateDecimalDigitsIntoBigInteger(ref NumberBuffer number, uint firstIndex, uint lastIndex, out BigInteger result)
+        private static void AccumulateDecimalDigitsIntoBigInteger(scoped ref NumberBuffer number, uint firstIndex, uint lastIndex, out BigInteger result)
         {
             BigInteger.SetZero(out result);
 

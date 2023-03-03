@@ -81,5 +81,77 @@ namespace DebuggerTests
                      ncs_dt0 = TDateTime(new DateTime(3412, 4, 6, 8, 0, 2))
                  }, "locals");
               });
+
+        [Theory]
+        [InlineData("Run", 246, 16, 252, 16, "RunCSharpScope")]
+        [InlineData("RunContinueWith", 277, 20, 283, 20, "RunContinueWithSameVariableName")]
+        [InlineData("RunNestedContinueWith", 309, 24, 315, 24, "RunNestedContinueWithSameVariableName.AnonymousMethod__1")]
+        [InlineData("RunNonAsyncMethod", 334, 16, 340, 16, "RunNonAsyncMethodSameVariableName")]
+        public async Task InspectLocalsWithSameNameInDifferentScopesInAsyncMethod_CSharp(string method_to_run, int line1, int col1, int line2, int col2, string func_to_pause)
+            => await InspectLocalsWithSameNameInDifferentScopesInAsyncMethod(
+                        $"[debugger-test] DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes:{method_to_run}",
+                        "dotnet://debugger-test.dll/debugger-async-test.cs",
+                        line1,
+                        col1,
+                        line2,
+                        col2,
+                        $"DebuggerTests.AsyncTests.VariablesWithSameNameDifferentScopes.{func_to_pause}",
+                        "testCSharpScope");
+
+        [Theory]
+        [InlineData("[debugger-test-vb] DebuggerTestVB.TestVbScope:Run", 14, 12, 22, 12, "DebuggerTestVB.TestVbScope.RunVBScope", "testVbScope")]
+        public async Task InspectLocalsWithSameNameInDifferentScopesInAsyncMethod_VB(string method_to_run, int line1, int col1, int line2, int col2, string func_to_pause, string variable_to_inspect)
+            => await InspectLocalsWithSameNameInDifferentScopesInAsyncMethod(
+                        method_to_run,
+                        "dotnet://debugger-test-vb.dll/debugger-test-vb.vb",
+                        line1,
+                        col1,
+                        line2,
+                        col2,
+                        func_to_pause,
+                        variable_to_inspect);
+
+        private async Task InspectLocalsWithSameNameInDifferentScopesInAsyncMethod(string method_to_run, string source_to_pause, int line1, int col1, int line2, int col2, string func_to_pause, string variable_to_inspect)
+        {
+            var expression = $"{{ invoke_static_method('{method_to_run}'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                source_to_pause, line1, col1,
+                func_to_pause,
+                locals_fn: async (locals) =>
+                {
+                    await CheckString(locals, variable_to_inspect, "hello");
+                    await CheckString(locals, "onlyInFirstScope", "only-in-first-scope");
+                    Assert.False(locals.Any(jt => jt["name"]?.Value<string>() == "onlyInSecondScope"));
+                }
+            );
+            await StepAndCheck(StepKind.Resume, source_to_pause, line2, col2, func_to_pause,
+                locals_fn: async (locals) =>
+                {
+                    await CheckString(locals, variable_to_inspect, "hi");
+                    await CheckString(locals, "onlyInSecondScope", "only-in-second-scope");
+                    Assert.False(locals.Any(jt => jt["name"]?.Value<string>() == "onlyInFirstScope"));
+                }
+            );
+        }
+
+        [Fact]
+        public async Task InspectLocalsInAsyncVBMethod()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test-vb] DebuggerTestVB.TestVbScope:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test-vb.dll/debugger-test-vb.vb", 14, 12,
+                "DebuggerTestVB.TestVbScope.RunVBScope",
+                locals_fn: async (locals) =>
+                {
+                    await CheckString(locals, "testVbScope", "hello");
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "data", 10);
+                }
+            );
+        }
     }
 }

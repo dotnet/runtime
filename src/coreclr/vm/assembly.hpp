@@ -29,12 +29,8 @@ class DomainAssembly;
 class DomainModule;
 class SystemDomain;
 class ClassLoader;
-class ComDynamicWrite;
-class AssemblySink;
 class AssemblyNative;
 class AssemblySpec;
-class ISharedSecurityDescriptor;
-class SecurityTransparencyBehavior;
 class Pending;
 class AllocMemTracker;
 class FriendAssemblyDescriptor;
@@ -134,7 +130,7 @@ public:
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName()
+    LPCUTF8 GetDebugName()
     {
         WRAPPER_NO_CONTRACT;
         return GetPEAssembly()->GetDebugName();
@@ -255,13 +251,6 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         m_debuggerFlags = flags;
-    }
-
-    void SetCopiedPDBs()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_debuggerFlags = (DebuggerAssemblyControlFlags) (m_debuggerFlags | DACF_PDBS_COPIED);
     }
 
     ULONG HashIdentity()

@@ -606,15 +606,22 @@ struct GuardedDevirtualizationCandidateInfo : HandleHistogramProfileCandidateInf
 //
 struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
 {
-    CORINFO_METHOD_INFO    methInfo;
-    CORINFO_METHOD_HANDLE  ilCallerHandle; // the logical IL caller of this inlinee.
+    CORINFO_METHOD_INFO methInfo;
+
+    // the logical IL caller of this inlinee.
+    CORINFO_METHOD_HANDLE  ilCallerHandle;
     CORINFO_CLASS_HANDLE   clsHandle;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
-    GenTree*               retExpr;
-    unsigned               preexistingSpillTemp;
-    unsigned               clsAttr;
-    unsigned               methAttr;
-    IL_OFFSET              ilOffset; // actual IL offset of instruction that resulted in this inline candidate
+
+    // The GT_RET_EXPR node linking back to the inline candidate.
+    GenTreeRetExpr* retExpr;
+
+    unsigned preexistingSpillTemp;
+    unsigned clsAttr;
+    unsigned methAttr;
+
+    // actual IL offset of instruction that resulted in this inline candidate
+    IL_OFFSET              ilOffset;
     CorInfoInitClassResult initClassResult;
     var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
@@ -678,8 +685,6 @@ struct InlineInfo
 
     InlineResult* inlineResult;
 
-    GenTree*             retExpr; // The return expression of the inlined candidate.
-    BasicBlock*          retBB;   // The basic block of the return expression of the inlined candidate.
     CORINFO_CLASS_HANDLE retExprClassHnd;
     bool                 retExprClassHndIsExact;
 

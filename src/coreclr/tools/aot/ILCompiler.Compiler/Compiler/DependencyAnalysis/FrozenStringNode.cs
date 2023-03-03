@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class FrozenStringNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public sealed class FrozenStringNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private string _data;
         private int _syncBlockSize;
@@ -72,7 +72,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // Null-terminate for friendliness with interop
             dataBuilder.EmitShort(0);
-
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -85,17 +84,14 @@ namespace ILCompiler.DependencyAnalysis
             };
         }
 
-        protected override void OnMarked(NodeFactory factory)
-        {
-            factory.FrozenSegmentRegion.AddEmbeddedObject(this);
-        }
-
         public override int ClassCode => -1733946122;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return string.CompareOrdinal(_data, ((FrozenStringNode)other)._data);
         }
+
+        public string Data => _data;
 
         public override string ToString() => $"\"{_data}\"";
     }

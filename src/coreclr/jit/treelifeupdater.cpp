@@ -167,44 +167,21 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
 // UpdateLifeVar: Update live sets for a given tree.
 //
 // Arguments:
-//    tree - the tree which affects liveness.
+//    tree       - the tree which affects liveness
+//    lclVarTree - the local tree
+//
+// Notes:
+//    Most commonly "tree" and "lclVarTree" will be the same, however,
+//    that will not be true for indirect defs ("STOREIND(LCL_ADDR, ...)")
+//    and uses ("OBJ(LCL_ADDR)")
 //
 template <bool ForCodeGen>
-void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
+void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarCommon* lclVarTree)
 {
-    GenTree* indirAddrLocal = compiler->fgIsIndirOfAddrOfLocal(tree);
-    assert(tree->OperIsNonPhiLocal() || indirAddrLocal != nullptr);
+    assert(lclVarTree->OperIsNonPhiLocal() || lclVarTree->OperIsLocalAddr());
 
-    // Get the local var tree -- if "tree" is "Ldobj(addr(x))", or "ind(addr(x))" this is "x", else it's "tree".
-    GenTree* lclVarTree = indirAddrLocal;
-    if (lclVarTree == nullptr)
-    {
-        lclVarTree = tree;
-    }
-    unsigned int lclNum = lclVarTree->AsLclVarCommon()->GetLclNum();
+    unsigned int lclNum = lclVarTree->GetLclNum();
     LclVarDsc*   varDsc = compiler->lvaGetDesc(lclNum);
-
-#ifdef DEBUG
-#if !defined(TARGET_AMD64)
-    // There are no addr nodes on ARM and we are experimenting with encountering vars in 'random' order.
-    // Struct fields are not traversed in a consistent order, so ignore them when
-    // verifying that we see the var nodes in execution order
-    if (ForCodeGen)
-    {
-        if (tree->OperIsIndir())
-        {
-            assert(indirAddrLocal != NULL);
-        }
-        else if (tree->gtNext != NULL && tree->gtNext->gtOper == GT_ADDR &&
-                 ((tree->gtNext->gtNext == NULL || !tree->gtNext->gtNext->OperIsIndir())))
-        {
-            assert(tree->IsLocal()); // Can only take the address of a local.
-            // The ADDR might occur in a context where the address it contributes is eventually
-            // dereferenced, so we can't say that this is not a use or def.
-        }
-    }
-#endif // !TARGET_AMD64
-#endif // DEBUG
 
     compiler->compCurLifeTree = tree;
     VarSetOps::Assign(compiler, newLife, compiler->compCurLife);
@@ -225,7 +202,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
     bool isMultiRegLocal = lclVarTree->IsMultiRegLclVar();
     if (isMultiRegLocal)
     {
-        // We should never have an 'IndirOfAddrOfLocal' for a multi-reg.
+        // We should never have an indirect reference for a multi-reg.
         assert(lclVarTree == tree);
         assert((lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
         isBorn = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0);
@@ -312,12 +289,13 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
             // *deadTrackedFieldVars indicates which tracked field vars are dying.
             bool hasDeadTrackedFieldVars = false;
 
-            if (indirAddrLocal != nullptr && isDying)
+            // TODO-Review: the code below does not look right. We can have last uses for simple LCL_VARs
+            // as well as indirect uses.
+            if ((tree != lclVarTree) && isDying)
             {
-                assert(!isBorn); // GTF_VAR_DEATH only set for LDOBJ last use.
+                assert(!isBorn); // GTF_VAR_DEATH only set for non-partial last use.
                 VARSET_TP* deadTrackedFieldVars = nullptr;
-                hasDeadTrackedFieldVars =
-                    compiler->LookupPromotedStructDeathVars(indirAddrLocal, &deadTrackedFieldVars);
+                hasDeadTrackedFieldVars = compiler->LookupPromotedStructDeathVars(lclVarTree, &deadTrackedFieldVars);
                 if (hasDeadTrackedFieldVars)
                 {
                     VarSetOps::Assign(compiler, varDeltaSet, *deadTrackedFieldVars);
@@ -475,12 +453,22 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
         return;
     }
 
-    if (!tree->OperIsNonPhiLocal() && compiler->fgIsIndirOfAddrOfLocal(tree) == nullptr)
+    // Note that after lowering, we can see indirect uses and definitions of tracked variables.
+    // TODO-Bug: we're not handling calls with return buffers here properly.
+    GenTreeLclVarCommon* lclVarTree = nullptr;
+    if (tree->OperIsNonPhiLocal())
     {
-        return;
+        lclVarTree = tree->AsLclVarCommon();
+    }
+    else if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIsLocalAddr())
+    {
+        lclVarTree = tree->AsIndir()->Addr()->AsLclVarCommon();
     }
 
-    UpdateLifeVar(tree);
+    if (lclVarTree != nullptr)
+    {
+        UpdateLifeVar(tree, lclVarTree);
+    }
 }
 
 template class TreeLifeUpdater<true>;

@@ -416,7 +416,7 @@ jobs:
         nameSuffix: MACiOSAndroidMauiNet7
         isOfficialBuild: false
         pool:
-          vmImage: 'macos-11'
+          vmImage: 'macos-12'
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps-net7.yml
         extraStepsParameters:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
@@ -440,7 +440,7 @@ jobs:
         nameSuffix: MACiOSAndroidMauiNet6
         isOfficialBuild: false
         pool:
-          vmImage: 'macos-11'
+          vmImage: 'macos-12'
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps-net6.yml
         extraStepsParameters:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'

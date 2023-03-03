@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Text.Json.Nodes
 {
     public partial class JsonNode
@@ -194,6 +196,7 @@ namespace System.Text.Json.Nodes
         /// </summary>
         /// <param name="value">A <see cref="string"/> to implicitly convert.</param>
         /// <returns>A <see cref="JsonNode"/> instance converted from the <paramref name="value"/> parameter.</returns>
+        [return: NotNullIfNotNull(nameof(value))]
         public static implicit operator JsonNode?(string? value) => JsonValue.Create(value);
 
         /// <summary>

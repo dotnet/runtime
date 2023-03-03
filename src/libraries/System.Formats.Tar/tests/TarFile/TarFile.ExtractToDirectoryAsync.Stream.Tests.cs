@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,7 +45,7 @@ namespace System.Formats.Tar.Tests
             {
                 using (WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true))
                 {
-                    await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
+                    await Assert.ThrowsAsync<ArgumentException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
                 }
             }
         }
@@ -93,6 +94,42 @@ namespace System.Formats.Tar.Tests
                     Assert.True(Directory.Exists(Path.Join(root.Path, secondSegment)));
                     Assert.True(File.Exists(Path.Join(root.Path, fileWithTwoSegments)));
                 }
+            }
+        }
+
+        [Fact]
+        public async Task ExtractEntry_DockerImageTarWithFileTypeInDirectoriesInMode_SuccessfullyExtracts_Async()
+        {
+            using (TempDirectory root = new TempDirectory())
+            {
+                await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "misc", "docker-hello-world");
+                await TarFile.ExtractToDirectoryAsync(archiveStream, root.Path, overwriteFiles: true);
+
+                Assert.True(File.Exists(Path.Join(root.Path, "manifest.json")));
+                Assert.True(File.Exists(Path.Join(root.Path, "repositories")));
+            }
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public async Task ExtractEntry_PodmanImageTarWithRelativeSymlinksPointingInExtractDirectory_SuccessfullyExtracts_Async()
+        {
+            using (TempDirectory root = new TempDirectory())
+            {
+                await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "misc", "podman-hello-world");
+                await TarFile.ExtractToDirectoryAsync(archiveStream, root.Path, overwriteFiles: true);
+
+                Assert.True(File.Exists(Path.Join(root.Path, "manifest.json")));
+                Assert.True(File.Exists(Path.Join(root.Path, "repositories")));
+                Assert.True(File.Exists(Path.Join(root.Path, "efb53921da3394806160641b72a2cbd34ca1a9a8345ac670a85a04ad3d0e3507.tar")));
+
+                string symlinkPath = Path.Join(root.Path, "e7fc2b397c1ab5af9938f18cc9a80d526cccd1910e4678390157d8cc6c94410d/layer.tar");
+                Assert.True(File.Exists(symlinkPath));
+
+                FileInfo? fileInfo = new(symlinkPath);
+                Assert.Equal("../efb53921da3394806160641b72a2cbd34ca1a9a8345ac670a85a04ad3d0e3507.tar", fileInfo.LinkTarget);
+
+                FileSystemInfo? symlinkTarget = File.ResolveLinkTarget(symlinkPath, returnFinalTarget: true);
+                Assert.True(File.Exists(symlinkTarget.FullName));
             }
         }
 
@@ -173,6 +210,64 @@ namespace System.Formats.Tar.Tests
                     Assert.Equal(2, Directory.GetFileSystemEntries(baseDir).Count());
                 }
             }
+        }
+
+        [Theory]
+        [InlineData(512)]
+        [InlineData(512 + 1)]
+        [InlineData(512 + 512 - 1)]
+        public async Task Extract_UnseekableStream_BlockAlignmentPadding_DoesNotAffectNextEntries_Async(int contentSize)
+        {
+            byte[] fileContents = new byte[contentSize];
+            Array.Fill<byte>(fileContents, 0x1);
+
+            using var archive = new MemoryStream();
+            using (var compressor = new GZipStream(archive, CompressionMode.Compress, leaveOpen: true))
+            {
+                using var writer = new TarWriter(compressor);
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file");
+                entry1.DataStream = new MemoryStream(fileContents);
+                await writer.WriteEntryAsync(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "next-file");
+                await writer.WriteEntryAsync(entry2);
+            }
+
+            archive.Position = 0;
+            using var decompressor = new GZipStream(archive, CompressionMode.Decompress);
+            using var reader = new TarReader(decompressor);
+
+            using TempDirectory destination = new TempDirectory();
+            await TarFile.ExtractToDirectoryAsync(decompressor, destination.Path, overwriteFiles: true);
+
+            Assert.Equal(2, Directory.GetFileSystemEntries(destination.Path, "*", SearchOption.AllDirectories).Count());
+        }
+
+        [Fact]
+        public async Task PaxNameCollision_DedupInExtendedAttributesAsync()
+        {
+            using TempDirectory root = new();
+
+            string sharedRootFolders = Path.Join(root.Path, "folder with spaces", new string('a', 100));
+            string path1 = Path.Join(sharedRootFolders, "entry 1 with spaces.txt");
+            string path2 = Path.Join(sharedRootFolders, "entry 2 with spaces.txt");
+
+            await using MemoryStream stream = new();
+            await using (TarWriter writer = new(stream, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                // Paths don't fit in the standard 'name' field, but they differ in the filename,
+                // which is fully stored as an extended attribute
+                PaxTarEntry entry1 = new(TarEntryType.RegularFile, path1);
+                await writer.WriteEntryAsync(entry1);
+                PaxTarEntry entry2 = new(TarEntryType.RegularFile, path2);
+                await writer.WriteEntryAsync(entry2);
+            }
+            stream.Position = 0;
+
+            await TarFile.ExtractToDirectoryAsync(stream, root.Path, overwriteFiles: true);
+
+            Assert.True(File.Exists(path1));
+            Assert.True(Path.Exists(path2));
         }
     }
 }

@@ -344,41 +344,6 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
     return StatusCode::Success;
 }
 
-//
-// Returns available SDKs and frameworks.
-//
-// Resolves the existing SDKs and frameworks from a dotnet root directory (if
-// any), or the global default location. If multi-level lookup is enabled and
-// the dotnet root location is different than the global location, the SDKs and
-// frameworks will be enumerated from both locations.
-//
-// The SDKs are sorted in ascending order by version, multi-level lookup
-// locations are put before private ones.
-//
-// The frameworks are sorted in ascending order by name followed by version,
-// multi-level lookup locations are put before private ones.
-//
-// Parameters:
-//    dotnet_root
-//      The path to a directory containing a dotnet executable.
-//
-//    reserved
-//      Reserved for future parameters.
-//
-//    result
-//      Callback invoke to return the list of SDKs and frameworks.
-//      Structs and their elements are valid for the duration of the call.
-//
-//    result_context
-//      Additional context passed to the result callback.
-//
-// Return value:
-//   0 on success, otherwise failure.
-//
-// String encoding:
-//   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
-//
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     const pal::char_t* dotnet_root,
     void* reserved,

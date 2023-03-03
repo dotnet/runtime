@@ -8,6 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting
 {
+    /// <summary>
+    /// Provides extension methods for the <see cref="IHost"/> from the hosting abstractions package.
+    /// </summary>
     public static class HostingAbstractionsHostExtensions
     {
         /// <summary>

@@ -461,7 +461,7 @@ public:
     // Get a time stamp with a low precision
     // Return:
     //  Time stamp in milliseconds
-    static uint32_t GetLowPrecisionTimeStamp();
+    static uint64_t GetLowPrecisionTimeStamp();
 
     // Gets the total number of processors on the machine, not taking
     // into account current process affinity.

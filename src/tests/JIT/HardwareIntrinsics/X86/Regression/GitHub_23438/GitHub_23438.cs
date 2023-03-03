@@ -2,6 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace GitHub_23438
 {
@@ -10,7 +11,8 @@ namespace GitHub_23438
         private const int Pass = 100;
         private const int Fail = 0;
 
-        public static int Main(string[] args)
+        [Fact]
+        public static void Test()
         {
             bool succeeded = true;
 
@@ -42,7 +44,7 @@ namespace GitHub_23438
                 succeeded &= TestSse41X64Insert_UInt64();
             }
 
-            return succeeded ? Pass : Fail;
+            Assert.True(succeeded);
         }
 
         private static bool AreEqual(long expectedResult, long actualResult, [CallerMemberName] string methodName = "")

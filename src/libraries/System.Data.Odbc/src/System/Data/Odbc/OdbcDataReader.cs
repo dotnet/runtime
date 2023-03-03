@@ -1716,7 +1716,7 @@ namespace System.Data.Odbc
         /// <returns>false if value is DbNull, true otherwise</returns>
         private bool GetData(int i, ODBC32.SQL_C sqlctype, int cb, out int cbLengthOrIndicator)
         {
-            IntPtr cbActual;  // Length or an indicator value
+            nint cbActual;  // Length or an indicator value
 
             if (IsCancelingCommand)
             {
@@ -1769,7 +1769,7 @@ namespace System.Data.Odbc
                     if (cbActual == (IntPtr)ODBC32.SQL_NO_TOTAL)
                     {
                         // ensure SQL_NO_TOTAL value gets replaced with zero if the driver has fully consumed the current column
-                        cbActual = (IntPtr)0;
+                        cbActual = 0;
                     }
                     break;
 
@@ -2311,7 +2311,7 @@ namespace System.Data.Odbc
             string columnname;
             int ordinal;
             int keyColumns = 0;
-            IntPtr cbActual;
+            nint cbActual;
 
             if (IsClosed || (_cmdWrapper == null))
             {
@@ -2482,8 +2482,8 @@ namespace System.Data.Odbc
             bool partialcolumnset = false;
             int ordinal;
             int indexordinal;
-            IntPtr cbIndexLen;
-            IntPtr cbColnameLen;
+            nint cbIndexLen;
+            nint cbColnameLen;
             int keyColumns = 0;
 
             // devnote: this test is already done by calling method ...

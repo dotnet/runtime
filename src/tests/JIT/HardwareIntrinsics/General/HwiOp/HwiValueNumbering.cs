@@ -5,48 +5,23 @@ using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Tests that we value number certain intrinsics correctly.
 //
 unsafe class HwiValueNumbering
 {
-    public static int Main()
+    [Fact]
+    public static void TestProblemWithLoadLow_Sse()
     {
-        if (Sse.IsSupported && ProblemWithLoadLow_Sse())
+        if (Sse.IsSupported)
         {
-            return 101;
+            ProblemWithLoadLow_Sse();
         }
-
-        if (Sse2.IsSupported && ProblemWithLoadLow_Sse2())
-        {
-            return 102;
-        }
-
-        if (Sse.IsSupported && ProblemWithLoadHigh_Sse())
-        {
-            return 103;
-        }
-
-        if (Sse2.IsSupported && ProblemWithLoadHigh_Sse2())
-        {
-            return 104;
-        }
-
-        if (Avx.IsSupported && ProblemWithMaskLoad_Avx())
-        {
-            return 105;
-        }
-
-        if (Avx2.IsSupported && ProblemWithMaskLoad_Avx2())
-        {
-            return 106;
-        }
-
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool ProblemWithLoadLow_Sse()
+    private static void ProblemWithLoadLow_Sse()
     {
         var data = stackalloc float[2];
         data[0] = 1;
@@ -58,25 +33,26 @@ unsafe class HwiValueNumbering
         Vector128<float> c = Sse.LoadLow(a, data + 1);
 
         // Make sure we take into account the address operand.
-        if (b.AsInt32().GetElement(0) == c.AsInt32().GetElement(0))
-        {
-            return true;
-        }
+        Assert.NotEqual(b.AsInt32().GetElement(0), c.AsInt32().GetElement(0));
 
         // Make sure we take the heap state into account.
         b = Sse.LoadLow(a, data);
         data[0] = 3;
         c = Sse.LoadLow(a, data);
-        if (b.AsInt32().GetElement(0) == c.AsInt32().GetElement(0))
-        {
-            return true;
-        }
+        Assert.NotEqual(b.AsInt32().GetElement(0), c.AsInt32().GetElement(0));
+    }
 
-        return false;
+    [Fact]
+    public static void TestProblemWithLoadLow_Sse2()
+    {
+        if (Sse2.IsSupported)
+        {
+            ProblemWithLoadLow_Sse2();
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool ProblemWithLoadLow_Sse2()
+    private static void ProblemWithLoadLow_Sse2()
     {
         var data = stackalloc double[2];
         data[0] = 1;
@@ -88,25 +64,26 @@ unsafe class HwiValueNumbering
         Vector128<double> c = Sse2.LoadLow(a, data + 1);
 
         // Make sure we take into account the address operand.
-        if (b.AsInt64().GetElement(0) == c.AsInt64().GetElement(0))
-        {
-            return true;
-        }
+        Assert.NotEqual(b.AsInt64().GetElement(0), c.AsInt64().GetElement(0));
 
         // Make sure we take the heap state into account.
         b = Sse2.LoadLow(a, data);
         data[0] = 3;
         c = Sse2.LoadLow(a, data);
-        if (b.AsInt64().GetElement(0) == c.AsInt64().GetElement(0))
-        {
-            return true;
-        }
+        Assert.NotEqual(b.AsInt64().GetElement(0), c.AsInt64().GetElement(0));
+    }
 
-        return false;
+    [Fact]
+    public static void TestProblemWithLoadHigh_Sse()
+    {
+        if (Sse.IsSupported)
+        {
+            ProblemWithLoadHigh_Sse();
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool ProblemWithLoadHigh_Sse()
+    private static void ProblemWithLoadHigh_Sse()
     {
         var data = stackalloc float[2];
         data[0] = 1;
@@ -118,25 +95,27 @@ unsafe class HwiValueNumbering
         Vector128<float> c = Sse.LoadHigh(a, data + 1);
 
         // Make sure we take into account the address operand.
-        if (b.AsInt64().GetElement(1) == c.AsInt64().GetElement(1))
-        {
-            return true;
-        }
+        Assert.NotEqual(b.AsInt64().GetElement(1), c.AsInt64().GetElement(1));
 
         // Make sure we take the heap state into account.
         b = Sse.LoadHigh(a, data);
         data[0] = 3;
         c = Sse.LoadHigh(a, data);
-        if (b.AsInt64().GetElement(1) == c.AsInt64().GetElement(1))
-        {
-            return true;
-        }
-
-        return false;
+        Assert.NotEqual(b.AsInt64().GetElement(1), c.AsInt64().GetElement(1));
     }
 
+    [Fact]
+    public static void TestProblemWithLoadHigh_Sse2()
+    {
+        if (Sse2.IsSupported)
+        {
+            ProblemWithLoadHigh_Sse2();
+        }
+    }
+
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool ProblemWithLoadHigh_Sse2()
+    private static void ProblemWithLoadHigh_Sse2()
     {
         var data = stackalloc double[2];
         data[0] = 1;
@@ -148,25 +127,26 @@ unsafe class HwiValueNumbering
         Vector128<double> c = Sse2.LoadHigh(a, data + 1);
 
         // Make sure we take into account the address operand.
-        if (b.AsInt64().GetElement(1) == c.AsInt64().GetElement(1))
-        {
-            return true;
-        }
+        Assert.NotEqual(b.AsInt64().GetElement(1), c.AsInt64().GetElement(1));
 
         // Make sure we take the heap state into account.
         b = Sse2.LoadHigh(a, data);
         data[0] = 3;
         c = Sse2.LoadHigh(a, data);
-        if (b.AsInt64().GetElement(1) == c.AsInt64().GetElement(1))
-        {
-            return true;
-        }
+        Assert.NotEqual(b.AsInt64().GetElement(1), c.AsInt64().GetElement(1));
+    }
 
-        return false;
+    [Fact]
+    public static void TestProblemWithMaskLoad_Avx()
+    {
+        if (Avx.IsSupported)
+        {
+            ProblemWithMaskLoad_Avx();
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool ProblemWithMaskLoad_Avx()
+    private static void ProblemWithMaskLoad_Avx()
     {
         const double Mask = -0.0;
 
@@ -180,17 +160,21 @@ unsafe class HwiValueNumbering
         if (v1.GetElement(0) == 0)
         {
             var v2 = Avx.MaskLoad(data, Vector128.Create(Mask, 0));
-            if (v2.GetElement(0) == 0)
-            {
-                return true;
-            }
+            Assert.NotEqual(v2.GetElement(0), 0);
         }
+    }
 
-        return false;
+    [Fact]
+    public static void TestProblemWithMaskLoad_Avx2()
+    {
+        if (Avx2.IsSupported)
+        {
+            ProblemWithMaskLoad_Avx2();
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool ProblemWithMaskLoad_Avx2()
+    private static void ProblemWithMaskLoad_Avx2()
     {
         const long Mask = -0x8000000000000000;
 
@@ -204,13 +188,8 @@ unsafe class HwiValueNumbering
         if (v1.GetElement(0) == 0)
         {
             var v2 = Avx2.MaskLoad(data, Vector128.Create(Mask, 0));
-            if (v2.GetElement(0) == 0)
-            {
-                return true;
-            }
+            Assert.NotEqual(v2.GetElement(0), 0);
         }
-
-        return false;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

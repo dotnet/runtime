@@ -102,7 +102,15 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
             assert(fgFirstColdBlock != nullptr); // There better be a cold section!
 
             *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(fgFirstColdBlock));
-            *ppEndLoc   = nullptr; // nullptr end location means the end of the code
+
+            if (fgFirstFuncletBB != nullptr)
+            {
+                *ppEndLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(fgFirstFuncletBB));
+            }
+            else
+            {
+                *ppEndLoc = nullptr; // nullptr end location means the end of the code
+            }
         }
     }
     else
@@ -392,7 +400,7 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
                 printf("    CodeOffset: 0x%02X Op: AdjustCfaOffset Offset:0x%X\n", codeOffset, offset);
                 break;
             default:
-                printf("    Unrecognized CFI_CODE: 0x%IX\n", *(UINT64*)pCode);
+                printf("    Unrecognized CFI_CODE: 0x%llX\n", *(UINT64*)pCode);
                 break;
         }
     }

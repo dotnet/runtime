@@ -10,7 +10,7 @@ namespace DefaultNamespace
 {
     public class cinfo
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             Console.Out.WriteLine("Char Class tests");
 

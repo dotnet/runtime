@@ -9,7 +9,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
     public delegate bool CheckMethod<T>(T x, T y, T z, ref T c);
 
@@ -2061,7 +2061,7 @@ namespace IntelHardwareIntrinsicTest
         Sse2MultiplyHorizontalAdd = 1,
     }
 
-    internal static partial class Program
+    public partial class Program
     {
         private static void PrintErrorHeaderTu<T>(string functionName, string testFuncString) where T : struct
         {

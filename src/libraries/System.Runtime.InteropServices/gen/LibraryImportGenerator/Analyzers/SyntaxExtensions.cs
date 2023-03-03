@@ -33,7 +33,17 @@ namespace Microsoft.Interop.Analyzers
                 switch (attributeTarget.Identifier.Kind())
                 {
                     case SyntaxKind.ReturnKeyword:
-                        return ((IMethodSymbol)targetSymbol).GetReturnTypeAttributes().First(attributeSyntaxLocationMatches);
+                        if (targetSymbol is IMethodSymbol method)
+                        {
+                            // Sometimes an attribute is put on a symbol that is nested within the containing symbol.
+                            // For example, the ContainingSymbol for an AttributeSyntax on a local function has a ContainingSymbol of the method.
+                            // Since this method is internal and the callers don't care about attributes on local functions,
+                            // we just allow this method to return null in those cases.
+                            return method.GetReturnTypeAttributes().FirstOrDefault(attributeSyntaxLocationMatches);
+                        }
+                        // An attribute on the return value of a delegate type's Invoke method has a ContainingSymbol of the delegate type.
+                        // We don't care about the attributes in this case for the callers, so we'll just return null.
+                        return null;
                     case SyntaxKind.AssemblyKeyword:
                         return targetSymbol.ContainingAssembly.GetAttributes().First(attributeSyntaxLocationMatches);
                     case SyntaxKind.ModuleKeyword:
@@ -43,7 +53,8 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
             // Sometimes an attribute is put on a symbol that is nested within the containing symbol.
-            // For example, the ContainingSymbol for an AttributeSyntax on a parameter have a ContainingSymbol of the method.
+            // For example, the ContainingSymbol for an AttributeSyntax on a parameter has a ContainingSymbol of the method
+            // and an AttributeSyntax on a local function has a ContainingSymbol of the containing method.
             // Since this method is internal and the callers don't care about attributes on parameters, we just allow
             // this method to return null in those cases.
             return targetSymbol.GetAttributes().FirstOrDefault(attributeSyntaxLocationMatches);

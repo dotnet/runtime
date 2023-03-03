@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static uint[] m_au = new uint[2];
         static void Main1()
@@ -18,7 +18,7 @@ namespace Test
             } while (D == 0);
             throw new Exception();
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

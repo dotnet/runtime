@@ -17,7 +17,7 @@ public:
     bool UpdateLifeFieldVar(GenTreeLclVar* lclNode, unsigned multiRegIndex);
 
 private:
-    void UpdateLifeVar(GenTree* tree);
+    void UpdateLifeVar(GenTree* tree, GenTreeLclVarCommon* lclVarTree);
 
 private:
     Compiler* compiler;

@@ -13,8 +13,8 @@ FreeBSD|Linux|NetBSD|OpenBSD|SunOS|Android)
 Darwin)
     os=OSX ;;
 *)
-    echo "Unsupported OS $OSName detected, configuring as if for Linux"
-    os=Linux ;;
+    echo "Unsupported OS $OSName detected!"
+    exit 1 ;;
 esac
 
 # On Solaris, `uname -m` is discouraged, see https://docs.oracle.com/cd/E36784_01/html/E36870/uname-1.html
@@ -68,13 +68,13 @@ case "$CPUName" in
 
     s390x)
         arch=s390x
-	;;
+        ;;
 
     ppc64le)
-	arch=ppc64le
-	;;
+        arch=ppc64le
+        ;;
     *)
-        echo "Unknown CPU $CPUName detected, configuring as if for x64"
-        arch=x64
+        echo "Unknown CPU $CPUName detected!"
+        exit 1
         ;;
 esac

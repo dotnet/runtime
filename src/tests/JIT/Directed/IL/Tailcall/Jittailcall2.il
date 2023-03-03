@@ -167,7 +167,7 @@
       IL_0028:  ret
     } // end of method 'dotailcall::goo'
 
-    .method public static int32 Main(class [mscorlib]System.String[] Args) il managed
+    .method public static int32 Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

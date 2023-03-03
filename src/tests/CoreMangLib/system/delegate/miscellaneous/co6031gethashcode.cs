@@ -5,7 +5,7 @@ using System;
 delegate int Int32_VoidDelegate();
 public class TestClass
 {
-	public static int Main(string[] args) 
+	public static int Main() 
 	{
 		int iTestCount= 0;
 		int iErrorCount= 0;

@@ -25,6 +25,18 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(dictionary, deserializedDictionary);
         }
 
+        [Theory]
+        [MemberData(nameof(GetTestDictionaries))]
+        public async Task TestDictionaryKey_CustomConverter_ComposingWithDefaultConverter<TKey, TValue>(Dictionary<TKey, TValue> dictionary, string expectedJson)
+        {
+            var options = new JsonSerializerOptions { Converters = { new CustomPropertyNameConverter<TKey>() } };
+            string json = await Serializer.SerializeWrapper(dictionary, options);
+            Assert.Equal(expectedJson, json);
+
+            Dictionary<TKey, TValue> deserializedDictionary = await Serializer.DeserializeWrapper<Dictionary<TKey, TValue>>(json, options);
+            Assert.Equal(dictionary, deserializedDictionary);
+        }
+
         public static IEnumerable<object[]> GetTestDictionaries()
         {
             yield return WrapArgs(true, 1);
@@ -32,11 +44,18 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(char.MaxValue, char.MaxValue, expectedJson: @"{""\uFFFF"":""\uFFFF""}");
             yield return WrapArgs(DateTime.MaxValue, 1, expectedJson: $@"{{""{DateTime.MaxValue:O}"":1}}");
             yield return WrapArgs(DateTimeOffset.MaxValue, 1, expectedJson: $@"{{""{DateTimeOffset.MaxValue:O}"":1}}");
+            yield return WrapArgs(TimeSpan.MaxValue, 1, expectedJson: $@"{{""{TimeSpan.MaxValue}"":1}}");
+#if NET6_0_OR_GREATER
+            yield return WrapArgs(DateOnly.MaxValue, 1, expectedJson: $@"{{""{DateOnly.MaxValue:O}"":1}}");
+            yield return WrapArgs(TimeOnly.MaxValue, 1, expectedJson: $@"{{""{TimeOnly.MaxValue:O}"":1}}");
+#endif
             yield return WrapArgs(decimal.MaxValue, 1, expectedJson: $@"{{""{JsonSerializer.Serialize(decimal.MaxValue)}"":1}}");
             yield return WrapArgs(double.MaxValue, 1, expectedJson: $@"{{""{JsonSerializer.Serialize(double.MaxValue)}"":1}}");
             yield return WrapArgs(MyEnum.Foo, 1);
             yield return WrapArgs(MyEnumFlags.Foo | MyEnumFlags.Bar, 1);
             yield return WrapArgs(Guid.NewGuid(), 1);
+            yield return WrapArgs(new Version(8, 0, 0), 1);
+            yield return WrapArgs(new Uri("http://dot.net/"), 1);
             yield return WrapArgs(short.MaxValue, 1);
             yield return WrapArgs(int.MaxValue, 1);
             yield return WrapArgs(long.MaxValue, 1);
@@ -53,6 +72,28 @@ namespace System.Text.Json.Serialization.Tests
                 expectedJson ??= $"{{\"{key}\":{value}}}";
                 return new object[] { dictionary, expectedJson };
             }
+        }
+
+        public class CustomPropertyNameConverter<T> : JsonConverter<T>
+        {
+            private readonly JsonConverter<T> _defaultConverter;
+
+            public CustomPropertyNameConverter()
+            {
+                _defaultConverter = (JsonConverter<T>)JsonSerializerOptions.Default.GetConverter(typeof(T));
+            }
+
+            public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => _defaultConverter.Read(ref reader, typeToConvert, options);
+
+            public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => _defaultConverter.ReadAsPropertyName(ref reader, typeToConvert, options);
+
+            public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+                => _defaultConverter.Write(writer, value, options);
+
+            public override void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+                => _defaultConverter.WriteAsPropertyName(writer, value, options);
         }
 
         [Theory]
@@ -80,9 +121,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return WrapArgs(new MyPublicClass(), 0);
             yield return WrapArgs(new MyPublicStruct(), 0);
-            yield return WrapArgs(new Uri("http://foo"), 0);
             yield return WrapArgs(new object(), 0);
-            yield return WrapArgs((object)new Uri("http://foo"), 0);
+            yield return WrapArgs((object)new MyPublicStruct(), 0);
 
             static object[] WrapArgs<TKey, TValue>(TKey key, TValue value) => new object[] { new Dictionary<TKey, TValue>() { [key] = value } };
         }
@@ -487,4 +527,4 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 #endif
-}
+        }

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -12,13 +12,13 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class SslStreamDisposeTest
+    public class SslStreamDisposeTest
     {
         [Fact]
         public async Task DisposeAsync_NotConnected_ClosesStream()
         {
             bool disposed = false;
-            var stream = new SslStream(new DelegateStream(disposeFunc: _ => disposed = true), false, delegate { return true; });
+            var stream = new SslStream(new DelegateStream(disposeFunc: _ => disposed = true, canReadFunc: () => true, canWriteFunc: () => true), false, delegate { return true; });
 
             Assert.False(disposed);
             await stream.DisposeAsync();
@@ -49,6 +49,58 @@ namespace System.Net.Security.Tests
             Assert.Equal(0, trackingStream2.TimesCalled(nameof(Stream.DisposeAsync)));
             await serverStream.DisposeAsync();
             Assert.NotEqual(0, trackingStream2.TimesCalled(nameof(Stream.DisposeAsync)));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Dispose_PendingReadAsync_ThrowsODE(bool bufferedRead)
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams(leaveInnerStreamOpen: true);
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = serverCertificate,
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, default),
+                                server.AuthenticateAsServerAsync(serverOptions, default));
+
+                await TestHelper.PingPong(client, server, cts.Token);
+
+                await server.WriteAsync("PINGPONG"u8.ToArray(), cts.Token);
+                var readBuffer = new byte[1024];
+
+                Task<int>? task = null;
+                if (bufferedRead)
+                {
+                    // This will read everything into internal buffer. Following ReadAsync will not need IO.
+                    task = client.ReadAsync(readBuffer, 0, 4, cts.Token);
+                    client.Dispose();
+                    int readLength = await task.ConfigureAwait(false);
+                    Assert.Equal(4, readLength);
+                }
+                else
+                {
+                    client.Dispose();
+                }
+
+                await Assert.ThrowsAnyAsync<ObjectDisposedException>(() => client.ReadAsync(readBuffer, cts.Token).AsTask());
+            }
         }
     }
 }

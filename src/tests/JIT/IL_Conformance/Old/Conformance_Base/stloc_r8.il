@@ -22,7 +22,7 @@
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack		10
 .locals	(float64,float64,float64)

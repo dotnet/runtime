@@ -34,7 +34,7 @@ namespace System
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct DateTimeOffset
+    public readonly partial struct DateTimeOffset
         : IComparable,
           ISpanFormattable,
           IComparable<DateTimeOffset>,
@@ -123,7 +123,7 @@ namespace System
             _offsetMinutes = ValidateOffset(offset);
 
             int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            if (second == 60 && DateTime.SystemSupportsLeapSeconds)
             {
                 // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
                 second = 59;
@@ -139,13 +139,13 @@ namespace System
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
-        // minute, second, millsecond and offset
+        // minute, second, millisecond and offset
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, TimeSpan offset)
         {
             _offsetMinutes = ValidateOffset(offset);
 
             int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            if (second == 60 && DateTime.SystemSupportsLeapSeconds)
             {
                 // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
                 second = 59;
@@ -161,13 +161,13 @@ namespace System
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
-        // minute, second, millsecond, Calendar and offset.
+        // minute, second, millisecond, Calendar and offset.
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, TimeSpan offset)
         {
             _offsetMinutes = ValidateOffset(offset);
 
             int originalSecond = second;
-            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            if (second == 60 && DateTime.SystemSupportsLeapSeconds)
             {
                 // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
                 second = 59;
@@ -321,10 +321,6 @@ namespace System
             _dateTime = _dateTime.AddMicroseconds(microsecond);
         }
 
-        // Returns a DateTimeOffset representing the current date and time. The
-        // resolution of the returned value depends on the system timer.
-        public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
-
         public static DateTimeOffset UtcNow
         {
             get
@@ -420,6 +416,11 @@ namespace System
         public int Month => ClockDateTime.Month;
 
         public TimeSpan Offset => new TimeSpan(0, _offsetMinutes, 0);
+
+        /// <summary>
+        /// Gets the total number of minutes representing the time's offset from Coordinated Universal Time (UTC).
+        /// </summary>
+        public int TotalOffsetMinutes => _offsetMinutes;
 
         // Returns the second part of this DateTimeOffset. The returned value is
         // an integer between 0 and 59.

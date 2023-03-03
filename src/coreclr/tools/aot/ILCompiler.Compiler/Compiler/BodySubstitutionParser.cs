@@ -114,7 +114,7 @@ namespace ILCompiler
                 return;
             }
 
-            if (String.Equals(GetAttribute(fieldNav, "initialize"), "true", StringComparison.InvariantCultureIgnoreCase))
+            if (string.Equals(GetAttribute(fieldNav, "initialize"), "true", StringComparison.InvariantCultureIgnoreCase))
             {
                 // We would need to also mess with the cctor of the type to set the field to this value:
                 //
@@ -128,7 +128,7 @@ namespace ILCompiler
             _fieldSubstitutions[field] = substitution;
         }
 
-        static MethodDesc FindMethod(TypeDesc type, string signature)
+        private static MethodDesc FindMethod(TypeDesc type, string signature)
         {
             foreach (MethodDesc meth in type.GetMethods())
                 if (signature == GetMethodSignature(meth, includeGenericParameters: true))
@@ -136,7 +136,7 @@ namespace ILCompiler
             return null;
         }
 
-        private object TryCreateSubstitution(TypeDesc type, string value)
+        private static object TryCreateSubstitution(TypeDesc type, string value)
         {
             switch (type.UnderlyingType.Category)
             {
@@ -148,7 +148,7 @@ namespace ILCompiler
                     break;
 
                 case TypeFlags.Boolean:
-                    if (String.IsNullOrEmpty(value))
+                    if (string.IsNullOrEmpty(value))
                         return 0;
                     else if (bool.TryParse(value, out bool bvalue))
                         return bvalue ? 1 : 0;

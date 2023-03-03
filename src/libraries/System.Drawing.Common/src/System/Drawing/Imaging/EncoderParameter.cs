@@ -16,7 +16,7 @@ namespace System.Drawing.Imaging
 
         ~EncoderParameter()
         {
-            Dispose(false);
+            DisposeInternal();
         }
 
         /// <summary>
@@ -69,12 +69,12 @@ namespace System.Drawing.Imaging
 
         public void Dispose()
         {
-            Dispose(true);
+            DisposeInternal();
             GC.KeepAlive(this);
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        private void DisposeInternal()
         {
             if (_parameterValue != IntPtr.Zero)
                 Marshal.FreeHGlobal(_parameterValue);

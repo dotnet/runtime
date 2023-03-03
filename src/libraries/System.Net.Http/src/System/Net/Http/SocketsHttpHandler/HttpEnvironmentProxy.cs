@@ -125,9 +125,33 @@ namespace System.Net.Http
             {
                 return null;
             }
+
+            int hostIndex = 0;
+            string protocol = "http";
+
             if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
             {
-                value = value.Substring(7);
+                hostIndex = 7;
+            }
+            else if (value.StartsWith("socks4://", StringComparison.OrdinalIgnoreCase))
+            {
+                hostIndex = 9;
+                protocol = "socks4";
+            }
+            else if (value.StartsWith("socks5://", StringComparison.OrdinalIgnoreCase))
+            {
+                hostIndex = 9;
+                protocol = "socks5";
+            }
+            else if (value.StartsWith("socks4a://", StringComparison.OrdinalIgnoreCase))
+            {
+                hostIndex = 10;
+                protocol = "socks4a";
+            }
+
+            if (hostIndex > 0)
+            {
+                value = value.Substring(hostIndex);
             }
 
             string? user = null;
@@ -193,7 +217,7 @@ namespace System.Net.Http
 
             try
             {
-                UriBuilder ub = new UriBuilder("http", host, port);
+                UriBuilder ub = new UriBuilder(protocol, host, port);
                 if (user != null)
                 {
                     ub.UserName = Uri.EscapeDataString(user);
@@ -210,10 +234,11 @@ namespace System.Net.Http
                 // UriBuilder does not handle that now e.g. does not distinguish between empty and missing.
                 if (user == "" && password == "")
                 {
-                    string[] tokens = uri.ToString().Split('/', 3);
-                    if (tokens.Length == 3)
+                    Span<Range> tokens = stackalloc Range[3];
+                    ReadOnlySpan<char> uriSpan = uri.ToString();
+                    if (uriSpan.Split(tokens, '/') == 3)
                     {
-                        uri = new Uri($"{tokens[0]}//:@{tokens[2]}");
+                        uri = new Uri($"{uriSpan[tokens[0]]}//:@{uriSpan[tokens[2]]}");
                     }
                 }
 

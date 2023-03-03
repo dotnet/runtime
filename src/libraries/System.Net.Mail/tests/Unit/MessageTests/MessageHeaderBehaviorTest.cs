@@ -17,7 +17,7 @@ namespace System.Net.Mail.Tests
             _message.From = new MailAddress("test@example.com");
             _message.HeadersEncoding = Encoding.UTF8;
 
-            _message.PrepareEnvelopeHeaders(true, false);
+            _message.PrepareEnvelopeHeaders(false);
             _message.EncodeHeaders(_message.Headers, false);
 
             Assert.Equal("test@networking.com", _message.Headers["X-Sender"]);
@@ -29,7 +29,7 @@ namespace System.Net.Mail.Tests
             _message.From = new MailAddress("test@example.com");
             _message.HeadersEncoding = Encoding.UTF8;
 
-            _message.PrepareEnvelopeHeaders(true, false);
+            _message.PrepareEnvelopeHeaders(false);
             _message.EncodeHeaders(_message.Headers, false);
             _message.EncodeHeaders(_message.EnvelopeHeaders, false);
 
@@ -45,7 +45,7 @@ namespace System.Net.Mail.Tests
             _message.To.Add(new MailAddress("to@example.com"));
             _message.HeadersEncoding = Encoding.UTF8;
 
-            _message.PrepareEnvelopeHeaders(true, false);
+            _message.PrepareEnvelopeHeaders(false);
             Assert.NotNull(_message.EnvelopeHeaders.GetValues("X-Receiver"));
             _message.EncodeHeaders(_message.EnvelopeHeaders, false);
             _message.EncodeHeaders(_message.Headers, false);
@@ -62,7 +62,7 @@ namespace System.Net.Mail.Tests
             _message.HeadersEncoding = Encoding.UTF8;
             _message.Bcc.Add("shouldbeset@example.com");
 
-            _message.PrepareEnvelopeHeaders(true, false);
+            _message.PrepareEnvelopeHeaders(false);
             string[] xReceivers = _message.EnvelopeHeaders.GetValues("X-Receiver");
             Assert.True(xReceivers.Length == 2);
         }
@@ -99,7 +99,7 @@ namespace System.Net.Mail.Tests
             _message.Bcc.Add(new MailAddress(validBcc));
             _message.ReplyToList.Add(new MailAddress(validReplyTo));
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             string[] fromHeaders = _message.Headers.GetValues("From");
             string[] toHeaders = _message.Headers.GetValues("To");
@@ -131,7 +131,7 @@ namespace System.Net.Mail.Tests
             _message.Headers.Add("Importance", "low");
             _message.Headers.Add("X-Priority", "5");
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal(MailPriority.Normal, _message.Priority);
 
@@ -150,7 +150,7 @@ namespace System.Net.Mail.Tests
             _message.From = new MailAddress("from@example.com");
             _message.Headers.Add("Subject", "should be removed");
             _message.Subject = "correct subject";
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal("correct subject", _message.Subject);
             Assert.True(_message.Headers.GetValues("Subject").Length == 1);
@@ -163,7 +163,7 @@ namespace System.Net.Mail.Tests
             _message.From = new MailAddress("from@example.com");
             _message.Headers.Add("Subject", "should be removed");
             _message.Subject = string.Empty;
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal(string.Empty, _message.Subject);
             Assert.Null(_message.Headers["Subject"]);
@@ -179,7 +179,7 @@ namespace System.Net.Mail.Tests
 
             Assert.Equal(Encoding.UTF8, _message.SubjectEncoding);
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal(input, _message.Subject);
             Assert.Equal("=?utf-8?B?SGkgw5wgQm9i?=", _message.Headers["Subject"]);
@@ -195,7 +195,7 @@ namespace System.Net.Mail.Tests
 
             Assert.Equal(Encoding.UTF8, _message.SubjectEncoding);
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal("Hi \u00DC Bob", _message.Subject);
             Assert.Equal(input, _message.Headers["Subject"]);
@@ -211,7 +211,7 @@ namespace System.Net.Mail.Tests
 
             Assert.Null(_message.SubjectEncoding);
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal(input, _message.Subject);
             Assert.Equal(input, _message.Headers["Subject"]);
@@ -227,7 +227,7 @@ namespace System.Net.Mail.Tests
 
             Assert.Null(_message.SubjectEncoding);
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal(input, _message.Subject);
             Assert.Equal(input, _message.Headers["Subject"]);
@@ -243,7 +243,7 @@ namespace System.Net.Mail.Tests
 
             Assert.Equal(Encoding.UTF8, _message.SubjectEncoding);
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal("Hi \u00DC Bob", _message.Subject);
             Assert.Equal("=?utf-8?B?SGkgw5wgQm9i?=", _message.Headers["Subject"]);
@@ -254,7 +254,7 @@ namespace System.Net.Mail.Tests
         {
             _message.From = new MailAddress("from@example.com");
             _message.Headers.Add("Content-Type", "should be removed");
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             // Content type header should be removed.
             Assert.Null(_message.Headers["Content-Type"]);

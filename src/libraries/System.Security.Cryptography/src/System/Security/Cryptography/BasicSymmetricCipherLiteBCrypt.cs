@@ -18,7 +18,6 @@ namespace System.Security.Cryptography
 
         public BasicSymmetricCipherLiteBCrypt(
             SafeAlgorithmHandle algorithm,
-            CipherMode cipherMode,
             int blockSizeInBytes,
             int paddingSizeInBytes,
             ReadOnlySpan<byte> key,

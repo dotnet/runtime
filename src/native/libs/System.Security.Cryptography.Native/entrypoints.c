@@ -271,6 +271,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_X509StoreCtxReset)
     DllImportEntry(CryptoNative_X509StoreCtxResetForSignatureError)
     DllImportEntry(CryptoNative_X509StoreCtxSetVerifyCallback)
+    DllImportEntry(CryptoNative_X509StoreCtxGetAppData)
     DllImportEntry(CryptoNative_X509StoreDestroy)
     DllImportEntry(CryptoNative_X509StoreSetRevocationFlag)
     DllImportEntry(CryptoNative_X509StoreSetVerifyTime)

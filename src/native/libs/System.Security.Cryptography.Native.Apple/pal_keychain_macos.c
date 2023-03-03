@@ -16,7 +16,10 @@ int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItemRef item, S
 
     if (itemType == SecKeyGetTypeID() || itemType == SecIdentityGetTypeID() || itemType == SecCertificateGetTypeID())
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         OSStatus status = SecKeychainItemCopyKeychain(item, pKeychainOut);
+#pragma clang diagnostic pop
 
         if (status == noErr)
         {
@@ -40,12 +43,18 @@ int32_t AppleCryptoNative_SecKeychainCreate(const char* pathName,
                                             const uint8_t* passphraseUtf8,
                                             SecKeychainRef* pKeychainOut)
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return SecKeychainCreate(pathName, passphraseLength, passphraseUtf8, false, NULL, pKeychainOut);
+#pragma clang diagnostic pop
 }
 
 int32_t AppleCryptoNative_SecKeychainDelete(SecKeychainRef keychain)
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return SecKeychainDelete(keychain);
+#pragma clang diagnostic pop
 }
 
 int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut)
@@ -53,7 +62,10 @@ int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut)
     if (pKeychainOut != NULL)
         *pKeychainOut = NULL;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return SecKeychainCopyDefault(pKeychainOut);
+#pragma clang diagnostic pop
 }
 
 int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut)
@@ -64,12 +76,18 @@ int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeycha
     if (pszKeychainPath == NULL)
         return errSecParam;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return SecKeychainOpen(pszKeychainPath, pKeychainOut);
+#pragma clang diagnostic pop
 }
 
 int32_t AppleCryptoNative_SecKeychainUnlock(SecKeychainRef keychain, uint32_t passphraseLength, const uint8_t* passphraseUtf8)
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return SecKeychainUnlock(keychain, passphraseLength, passphraseUtf8, true);
+#pragma clang diagnostic pop
 }
 
 int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychain)
@@ -81,7 +99,10 @@ int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychain)
         .lockInterval = INT_MAX,
     };
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return SecKeychainSetSettings(keychain, &settings);
+#pragma clang diagnostic pop
 }
 
 static int32_t
@@ -262,7 +283,7 @@ static bool IsCertInKeychain(CFTypeRef needle, SecKeychainRef haystack)
     {
         ret = false;
     }
-    
+
     if (result != NULL)
     {
         CFRelease(result);
@@ -355,7 +376,10 @@ int32_t AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecK
     // keychain back to disk.
     if (status == noErr && privateKey != NULL)
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         status = SecKeychainItemCreateCopy((SecKeychainItemRef)privateKey, keychain, NULL, &itemCopy);
+#pragma clang diagnostic pop
     }
 
     if (status == errSecDuplicateItem)
@@ -374,7 +398,10 @@ int32_t AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecK
 
     if (status == noErr && cert != NULL)
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         status = SecKeychainItemCreateCopy((SecKeychainItemRef)cert, keychain, NULL, &itemCopy);
+#pragma clang diagnostic pop
     }
 
     if (status == errSecDuplicateItem)

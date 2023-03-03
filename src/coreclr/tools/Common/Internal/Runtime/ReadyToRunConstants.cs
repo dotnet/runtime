@@ -80,7 +80,7 @@ namespace Internal.ReadyToRunConstants
     }
 
     [Flags]
-    enum ReadyToRunCrossModuleInlineFlags : uint
+    internal enum ReadyToRunCrossModuleInlineFlags : uint
     {
         CrossModuleInlinee  = 0x1,
         HasCrossModuleInliners = 0x2,

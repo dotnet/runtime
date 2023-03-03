@@ -504,8 +504,7 @@ namespace System.Runtime.Serialization
         {
             if (node.Id != Globals.NewObjectId && (node.Value == null || !node.IsFinalValue))
             {
-                if (_deserializedDataNodes == null)
-                    _deserializedDataNodes = new Queue<IDataNode>();
+                _deserializedDataNodes ??= new Queue<IDataNode>();
                 _deserializedDataNodes.Enqueue(node);
             }
         }
@@ -518,8 +517,7 @@ namespace System.Runtime.Serialization
                 handled = (_cache[node] != null);
                 if (handled)
                 {
-                    if (_nextElement == null)
-                        _nextElement = GetNextElement();
+                    _nextElement ??= GetNextElement();
                     _nextElement.attributeCount = 0;
                     _nextElement.AddAttribute(Globals.SerPrefix, Globals.SerializationNamespace, Globals.RefLocalName, node.Id.ToString(NumberFormatInfo.InvariantInfo));
                     _nextElement.AddAttribute(Globals.XsiPrefix, Globals.SchemaInstanceNamespace, Globals.XsiNilLocalName, Globals.True);

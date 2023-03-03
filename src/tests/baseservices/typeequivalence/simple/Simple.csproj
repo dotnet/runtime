@@ -15,6 +15,7 @@
     <ProjectReference Include="../impl/TypeImpl.csproj" />
     <ProjectReference Include="../impl/PunningLib.ilproj" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="../pia/PIAContract.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(TypeEquivalence.targets))" />
 </Project>

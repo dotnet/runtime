@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Found by Antigen
@@ -87,7 +87,7 @@ public class SwitchWithSideEffects
             return;
         }
     }
-    public static int Main(string[] args)
+    public static int Main()
     {
         new SwitchWithSideEffects().Method0();
         return 100;
@@ -96,9 +96,9 @@ public class SwitchWithSideEffects
 /*
 Environment:
 
-set COMPlus_TieredCompilation=0
-set COMPlus_TailCallLoopOpt=0
-set COMPlus_JitStressRegs=4
+set DOTNET_TieredCompilation=0
+set DOTNET_TailCallLoopOpt=0
+set DOTNET_JitStressRegs=4
 
 Assert failure(PID 103568 [0x00019490], Thread: 7492 [0x1d44]): Assertion failed 'gtOper < GT_COUNT' in 'TestClass:Method7(S1,S2,byref,byref,S1,byref,S2,S2):short:this' during 'Assertion prop' (IL size 61)
     File: D:\git\dotnet-runtime\src\coreclr\jit\gentree.h Line: 1041

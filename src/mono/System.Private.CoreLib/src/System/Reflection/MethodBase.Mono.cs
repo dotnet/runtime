@@ -19,7 +19,7 @@ namespace System.Reflection
 
             Type? declaringType = m.DeclaringType;
             if (declaringType != null && declaringType.IsGenericType)
-                throw new ArgumentException(string.Format(SR.Argument_MethodDeclaringTypeGeneric,
+                throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric,
                                                             m, declaringType.GetGenericTypeDefinition()));
 
             return m;

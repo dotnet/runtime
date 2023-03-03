@@ -47,7 +47,7 @@ namespace System
 
         public override bool Equals(object? o)
         {
-            throw new NotSupportedException("ArgIterator does not support Equals.");
+            throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
         public override int GetHashCode()
@@ -59,7 +59,7 @@ namespace System
         public TypedReference GetNextArg()
         {
             if (num_args == next_arg)
-                throw new InvalidOperationException("Invalid iterator position.");
+                throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
             TypedReference result = default;
             unsafe
             {
@@ -75,7 +75,7 @@ namespace System
         public TypedReference GetNextArg(RuntimeTypeHandle rth)
         {
             if (num_args == next_arg)
-                throw new InvalidOperationException("Invalid iterator position.");
+                throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
             TypedReference result = default;
             unsafe
             {
@@ -90,7 +90,7 @@ namespace System
         public RuntimeTypeHandle GetNextArgType()
         {
             if (num_args == next_arg)
-                throw new InvalidOperationException("Invalid iterator position.");
+                throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
             return new RuntimeTypeHandle(IntGetNextArgType());
         }
 

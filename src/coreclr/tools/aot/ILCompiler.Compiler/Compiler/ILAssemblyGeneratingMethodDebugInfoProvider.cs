@@ -61,7 +61,7 @@ namespace ILCompiler
             var disasm = new ILDisassembler(methodIL);
             var fmt = new ILDisassembler.ILTypeNameFormatter(null);
 
-            ArrayBuilder<ILSequencePoint> sequencePoints = new ArrayBuilder<ILSequencePoint>();
+            ArrayBuilder<ILSequencePoint> sequencePoints = default(ArrayBuilder<ILSequencePoint>);
 
             _tw.Write(".method ");
             // TODO: accessibility, specialname, calling conventions etc.
@@ -146,7 +146,7 @@ namespace ILCompiler
             _tw.Dispose();
         }
 
-        private class SyntheticMethodDebugInformation : MethodDebugInformation
+        private sealed class SyntheticMethodDebugInformation : MethodDebugInformation
         {
             private readonly ILSequencePoint[] _sequencePoints;
 

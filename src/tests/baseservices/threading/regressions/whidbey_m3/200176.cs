@@ -6,7 +6,7 @@ using System.Threading;
 
 public class Stop {
 
-    public static int Main(String[] args) {              
+    public static int Main() {              
 
         Stop tm = new Stop();
 	try

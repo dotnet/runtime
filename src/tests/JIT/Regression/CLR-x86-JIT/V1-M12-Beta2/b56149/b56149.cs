@@ -26,7 +26,7 @@ namespace Test
                 }
             }
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

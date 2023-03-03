@@ -148,6 +148,7 @@ static unsigned long GetCpuCapabilityFlagsFromCpuInfo()
 }
 #endif // defined(HOST_ARM64) && defined(__linux__)
 
+#if defined(HOST_ARM64) && defined(TARGET_ARM64)
 PALIMPORT
 VOID
 PALAPI
@@ -155,7 +156,6 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 {
     _ASSERTE(flags);
 
-#if defined(HOST_ARM64)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
@@ -294,10 +294,5 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
     flags->Set(InstructionSet_AdvSimd);
     //    flags->Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
 #endif // HAVE_AUXV_HWCAP_H
-#elif defined(TARGET_ARM64)
-    // Enable ARM64 based flags by default so we always crossgen
-    // ARM64 intrinsics for Linux
-    flags->Set(InstructionSet_ArmBase);
-    flags->Set(InstructionSet_AdvSimd);
-#endif // defined(HOST_ARM64)
 }
+#endif // HOST_ARM64 && TARGET_ARM64

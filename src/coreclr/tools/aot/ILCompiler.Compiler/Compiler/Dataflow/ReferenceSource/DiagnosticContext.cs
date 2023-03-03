@@ -19,5 +19,12 @@ namespace ILLink.Shared.TrimAnalysis
 			if (DiagnosticsEnabled)
 				_context.LogWarning (Origin, id, args);
 		}
+
+#pragma warning disable IDE0060, CA1822
+		public partial void AddDiagnostic (DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)
+		{
+			AddDiagnostic (id, args);
+		}
+#pragma warning restore IDE0060, CA1822
 	}
 }

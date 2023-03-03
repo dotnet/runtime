@@ -6,7 +6,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Represents an Exception initiated from the JavaScript interop code.
+    /// Represents an exception initiated from the JavaScript interop code.
     /// </summary>
     [SupportedOSPlatform("browser")] // @kg: Do we really need to platform-lock JSException?
     public sealed class JSException : Exception

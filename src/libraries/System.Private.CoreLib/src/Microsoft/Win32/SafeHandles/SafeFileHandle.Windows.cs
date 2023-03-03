@@ -296,7 +296,7 @@ namespace Microsoft.Win32.SafeHandles
                 // a) IsDevice can modify last error (not true today, but can be in the future),
                 // b) DeviceIoControl can succeed (last error set to ERROR_SUCCESS) but return fewer bytes than requested.
                 // The error is stored and in such cases exception for the first failure is going to be thrown.
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
 
                 if (Path is null || !PathInternal.IsDevice(Path))
                 {

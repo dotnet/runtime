@@ -815,6 +815,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
                     if (minAge > thisAge)
                         minAge = thisAge;
 
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
                     GCToEEInterface::WalkAsyncPinned(*pValue, &minAge,
                         [](Object*, Object* to, void* ctx)
                         {
@@ -825,6 +826,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
                                 *minAge = generation;
                             }
                         });
+#endif
                }
             }
             _ASSERTE(FitsInU1(minAge));
@@ -966,12 +968,15 @@ void BlockVerifyAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sc
                 if (!HndIsNullOrDestroyedHandle(*pValue))
                 {
                     VerifyObjectAndAge((*pValue), (*pValue), minAge);
+
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
                     GCToEEInterface::WalkAsyncPinned(*pValue, &minAge,
                         [](Object* from, Object* object, void* age)
                         {
                             uint8_t* minAge = reinterpret_cast<uint8_t*>(age);
                             VerifyObjectAndAge(from, object, *minAge);
                         });
+#endif
 
                     if (uType == HNDTYPE_DEPENDENT)
                     {

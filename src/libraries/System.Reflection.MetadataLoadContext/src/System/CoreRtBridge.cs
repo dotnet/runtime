@@ -16,8 +16,6 @@ namespace System.Reflection.Runtime.TypeInfos
     {
         internal static RoType CastToRuntimeTypeInfo(this Type t) => (RoType)t;
 
-        internal static bool CanBrowseWithoutMissingMetadataExceptions(this Type t) => true;
-
         internal static Type[] GetGenericTypeParameters(this Type t)
         {
             Debug.Assert(t.IsGenericTypeDefinition);
@@ -33,7 +31,7 @@ namespace Internal.Reflection.Core.Execution
         internal static class ExecutionDomain
         {
             // We'll never actually reach this since Ro type objects cannot trigger missing metadata exceptions.
-            internal static Exception CreateMissingMetadataException(Type t) => new Exception();
+            internal static Exception CreateMissingMetadataException() => new Exception();
         }
     }
 }

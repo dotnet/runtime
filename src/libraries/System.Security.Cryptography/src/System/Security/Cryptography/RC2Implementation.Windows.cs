@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
-            int feedbackSize,
+            int _ /*feedbackSize*/,
             int paddingSize,
             bool encrypting)
         {
@@ -28,11 +28,9 @@ namespace System.Security.Cryptography
 
         private static ILiteSymmetricCipher CreateLiteCipher(
             CipherMode cipherMode,
-            PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             int blockSize,
-            int feedbackSizeInBytes,
             int paddingSize,
             bool encrypting)
         {
@@ -41,7 +39,6 @@ namespace System.Security.Cryptography
                 // The BasicSymmetricCipherBCrypt ctor will increase algorithm reference count and take ownership.
                 return new BasicSymmetricCipherLiteBCrypt(
                     algorithm,
-                    cipherMode,
                     blockSize,
                     paddingSize,
                     key,

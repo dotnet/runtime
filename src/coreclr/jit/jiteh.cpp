@@ -2512,9 +2512,13 @@ bool Compiler::fgNormalizeEHCase2()
 //     EH filter that performs "catchArg isinst T!!" and in case of success forwards to the
 //     original EH handler.
 //
-
-void Compiler::fgCreateFiltersForGenericExceptions()
+// Returns:
+//     True if any changes were made
+//
+bool Compiler::fgCreateFiltersForGenericExceptions()
 {
+    bool madeChanges = false;
+
     for (unsigned ehNum = 0; ehNum < compHndBBtabCount; ehNum++)
     {
         EHblkDsc* eh = ehGetDsc(ehNum);
@@ -2589,8 +2593,12 @@ void Compiler::fgCreateFiltersForGenericExceptions()
                 fgDumpBlock(filterBb);
             }
 #endif // DEBUG
+
+            madeChanges = true;
         }
     }
+
+    return madeChanges;
 }
 
 bool Compiler::fgNormalizeEHCase3()

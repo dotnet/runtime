@@ -11,11 +11,13 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <assert.h>
-#if HAVE_GETIFADDRS && !defined(TARGET_ANDROID)
+#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
 #include <ifaddrs.h>
 #endif
-#ifdef TARGET_ANDROID
-#include "pal_ifaddrs.h"
+#ifdef ANDROID_GETIFADDRS_WORKAROUND
+#include <dlfcn.h>
+#include <pthread.h>
+#include "pal_ifaddrs.h" // fallback for Android API 21-23
 #endif
 #include <net/if.h>
 #include <netinet/in.h>
@@ -100,12 +102,56 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
     return len;
 }
 
+#ifdef ANDROID_GETIFADDRS_WORKAROUND
+// This workaround is necessary as long as we support Android API 21-23 and it can be removed once
+// we drop support for these old Android versions.
+static int (*getifaddrs)(struct ifaddrs**) = NULL;
+static void (*freeifaddrs)(struct ifaddrs*) = NULL;
+
+static void try_loading_getifaddrs()
+{
+    if (android_get_device_api_level() >= 24)
+    {
+        // Bionic on API 24+ contains the getifaddrs/freeifaddrs functions but the NDK doesn't expose those functions
+        // in ifaddrs.h when the minimum supported SDK is lower than 24 and therefore we need to load them manually
+        void *libc = dlopen("libc.so", RTLD_NOW);
+        if (libc)
+        {
+            getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
+            freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
+        }
+    }
+    else
+    {
+        // Bionic on API 21-23 doesn't contain the implementation of getifaddrs/freeifaddrs at all
+        // and we need to reimplement it using netlink (see pal_ifaddrs)
+        getifaddrs = _netlink_getifaddrs;
+        freeifaddrs = _netlink_freeifaddrs;
+    }
+}
+
+static bool ensure_getifaddrs_is_loaded()
+{
+    static pthread_once_t getifaddrs_is_loaded = PTHREAD_ONCE_INIT;
+    pthread_once(&getifaddrs_is_loaded, try_loading_getifaddrs);
+    return getifaddrs != NULL && freeifaddrs != NULL;
+}
+#endif
+
 int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                IPv4AddressFound onIpv4Found,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
-#if HAVE_GETIFADDRS || defined(TARGET_ANDROID)
+#ifdef ANDROID_GETIFADDRS_WORKAROUND
+    if (!ensure_getifaddrs_is_loaded())
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -250,7 +296,15 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
-#if HAVE_GETIFADDRS || defined(TARGET_ANDROID)
+#ifdef ANDROID_GETIFADDRS_WORKAROUND
+    if (!ensure_getifaddrs_is_loaded())
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;
@@ -289,7 +343,16 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     // To save allocation need for separate free() we will allocate one memory chunk
     // where we first write out NetworkInterfaceInfo entries immediately followed by
     // IpAddressInfo list.
-    void * memoryBlock = calloc((size_t)count, sizeof(NetworkInterfaceInfo));
+#ifdef TARGET_ANDROID
+    // Since Android API 30, getifaddrs returns only AF_INET and AF_INET6 addresses and we do not
+    // get any AF_PACKET addresses and so count == ip4count + ip6count. We need to make sure that
+    // the memoryBlock is large enough to hold all interfaces (up to `count` entries) and all
+    // addresses (ip4count + ip6count) without any overlap between interfaceList and addressList.
+    int entriesCount = count + ip4count + ip6count;
+#else
+    int entriesCount = count;
+#endif
+    void * memoryBlock = calloc((size_t)entriesCount, sizeof(NetworkInterfaceInfo));
     if (memoryBlock == NULL)
     {
         errno = ENOMEM;
@@ -300,7 +363,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     ifaddrsEntry = head;
     *interfaceList = nii = (NetworkInterfaceInfo*)memoryBlock;
     // address of first IpAddressInfo after all NetworkInterfaceInfo entries.
-    *addressList = ai = (IpAddressInfo*)(nii + (count - ip4count - ip6count));
+    *addressList = ai = (IpAddressInfo*)(nii + (entriesCount - ip4count - ip6count));
 
     while (ifaddrsEntry != NULL)
     {
@@ -324,7 +387,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             memcpy(nii->Name, ifaddrsEntry->ifa_name, sizeof(nii->Name));
             nii->InterfaceIndex = if_nametoindex(ifaddrsEntry->ifa_name);
             nii->Speed = -1;
-            nii->HardwareType = NetworkInterfaceType_Unknown;
+            nii->HardwareType = ((ifaddrsEntry->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) ? NetworkInterfaceType_Loopback : NetworkInterfaceType_Unknown;
 
             // Get operational state and multicast support.
             if ((ifaddrsEntry->ifa_flags & (IFF_MULTICAST|IFF_ALLMULTI)) != 0)

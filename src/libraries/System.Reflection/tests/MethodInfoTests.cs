@@ -763,7 +763,7 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => method.Invoke(null, new object?[] { Type.Missing }));
         }
 
-        public static IEnumerable<object[]> MethodNameAndArgumetns()
+        public static IEnumerable<object[]> MethodNameAndArguments()
         {
             yield return new object[] { nameof(Sample.DefaultString), "Hello", "Hi" };
             yield return new object[] { nameof(Sample.DefaultNullString), null, "Hi" };
@@ -772,7 +772,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MethodNameAndArgumetns))]
+        [MemberData(nameof(MethodNameAndArguments))]
         public static void InvokeCopiesBackMissingArgument(string methodName, object defaultValue, object passingValue)
         {
             MethodInfo method = typeof(Sample).GetMethod(methodName);

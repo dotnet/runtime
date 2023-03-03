@@ -19,7 +19,7 @@ internal class Sample4
         }
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         try
         {

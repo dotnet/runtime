@@ -25,6 +25,8 @@ struct hostpolicy_init_t
     pal::string_t host_command;
     host_startup_info_t host_info;
 
+    std::unordered_map<pal::string_t, std::vector<pal::string_t>> root_rid_fallback_graph;
+
     static bool init(const host_interface_t* input, hostpolicy_init_t* init);
 
     static void init_host_command(const host_interface_t* input, hostpolicy_init_t* init);

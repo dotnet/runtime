@@ -1,0 +1,32 @@
+[
+    {
+        "assembly": "copyassembly.dll",
+        "entryPoint": "CustomEntryPoint",
+        "fullName": "Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.Dependencies.CanOutputPInvokes_CopyAssembly Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.Dependencies.CanOutputPInvokes_CopyAssembly::CustomEntryPoint()",
+        "moduleName": "lib_copyassembly"
+    },
+    {
+        "assembly": "copyassembly.dll",
+        "entryPoint": "FooEntryPoint",
+        "fullName": "Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.Dependencies.CanOutputPInvokes_CopyAssembly Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.Dependencies.CanOutputPInvokes_CopyAssembly::FooEntryPoint()",
+        "moduleName": "lib_copyassembly"
+    },
+    {
+        "assembly": "test.exe",
+        "entryPoint": "CustomEntryPoint",
+        "fullName": "Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.CanOutputPInvokes\/Foo Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.CanOutputPInvokes::CustomEntryPoint()",
+        "moduleName": "lib"
+    },
+    {
+        "assembly": "test.exe",
+        "entryPoint": "CustomEntryPoint",
+        "fullName": "Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.CanOutputPInvokes\/Foo Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.CanOutputPInvokes::CustomEntryPoint0()",
+        "moduleName": "lib"
+    },
+    {
+        "assembly": "test.exe",
+        "entryPoint": "FooEntryPoint",
+        "fullName": "Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.CanOutputPInvokes\/Foo Mono.Linker.Tests.Cases.Interop.PInvoke.Individual.CanOutputPInvokes::FooEntryPoint()",
+        "moduleName": "lib"
+    }
+]

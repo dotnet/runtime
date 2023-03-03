@@ -13,7 +13,6 @@
 3.2  Other Notes
 
 4.   ADDITIONAL NOTES ON TESTING/SPECIFIC TEST CASE ISSUES
-     C_runtime: _fdopen testing issues
      File_IO: getfilesize/test1, setfilepointer/test(5,6,7)
      File_IO: gettempfilename(a,w)/test2
      File_IO: setfileattributesa/test(1,4), setfileattributesw/test(1,4)
@@ -52,33 +51,6 @@ See notes in section 4 on the following test cases if running automated tests:
 
 4. ADDITIONAL NOTES ON TESTING/SPECIFIC TEST CASE ISSUES
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-C Runtime: _fdopen testing issues
-
-There is a very specific manner in which _fdopen has been documented to work,
-this will determine how the function will be tested.
-
-_fdopen takes a parameter of a c run-time file handle, to open a stream to the
-file. This file handle can only be returned from the _open_osfhandle function.
-The Rotor documentation states that _open_osfhandle will only return a
-READ-ONLY file handle, from an operating-system file handle returned from
-CreatePipe().
-
-With these restrictions _fdopen will only be tested with a mode of read(r).
-The other modes are not possible to test. _open_osfhandle returns an error
-when attempting to open a write pipe handle in a mode of read-only. As well,
-it is not possible to read and write to the same handle that is returned from
-CreatePipe().
-
-The modes that will not be tested are as follows:
-
-    "w" -  Opens an empty file for writing.
-    "a" -  Opens for writing at the end of the file (appending).
-    "r+" - Opens for both reading and writing.
-    "w+" - Opens an empty file for both reading and writing.
-    "a+" - Opens for reading and appending.
-
-
 
 File_IO: getfilesize/test1, getfilesizeex/test1 setfilepointer/test(5,6,7)
 

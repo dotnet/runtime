@@ -4,7 +4,7 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-#define DATA_SLOT(stub, field) (C_FUNC(stub##Code\PAGE_SIZE) + \PAGE_SIZE + stub##Data__##field)
+#define DATA_SLOT(stub, field) . - (. - C_FUNC(stub##Code\PAGE_SIZE)) + \PAGE_SIZE + stub##Data__##field
 
     .irp PAGE_SIZE, 4096, 8192, 16384, 32768, 65536
 

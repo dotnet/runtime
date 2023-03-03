@@ -5,7 +5,7 @@ using TestLibrary;
 
 public class ArrayInit {
 
-	public static int Main(string[] args)
+	public static int Main()
 	{
 
         ArrayInit ai = new ArrayInit();

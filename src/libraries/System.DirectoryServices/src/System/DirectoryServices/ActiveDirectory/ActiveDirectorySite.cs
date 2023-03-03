@@ -1303,7 +1303,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 var dsListDomainsInSiteW = (delegate* unmanaged<IntPtr, char*, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListDomainsInSiteW");
                 if (dsListDomainsInSiteW == null)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
 
                 fixed (char* distinguishedName = (string)PropertyManager.GetPropertyValue(context, cachedEntry, PropertyManager.DistinguishedName)!)
@@ -1347,7 +1347,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                     if (dsFreeNameResultW == null)
                     {
-                        throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                        throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                     }
 
                     dsFreeNameResultW(info);

@@ -445,6 +445,7 @@ public:
 
 #ifdef TARGET_XARCH
         SetUseVEXEncoding(false);
+        SetUseEvexEncoding(false);
 #endif // TARGET_XARCH
 
         emitDataSecCur = nullptr;
@@ -563,7 +564,7 @@ protected:
         unsigned          idNum;
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        size_t            idMemCookie;   // for display of method name  (also used by switch table)
+        size_t            idMemCookie;   // compile time handle (check idFlags)
         GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
@@ -1728,9 +1729,6 @@ protected:
     const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
     const char* emitFloatRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
 
-    const char* emitFldName(CORINFO_FIELD_HANDLE fieldVal);
-    const char* emitFncName(CORINFO_METHOD_HANDLE callVal);
-
     // GC Info changes are not readily available at each instruction.
     // We use debug-only sets to track the per-instruction state, and to remember
     // what the state was at the last time it was output (instruction or label).
@@ -1747,8 +1745,11 @@ protected:
     void emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);
-    void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
-    void emitDispIGlist(bool verbose = false);
+    void emitDispIG(insGroup* ig,
+                    insGroup* igPrev              = nullptr,
+                    bool      displayInstructions = false,
+                    bool      displayLocation     = true);
+    void emitDispIGlist(bool displayInstructions = false);
     void emitDispGCinfo();
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
@@ -1937,8 +1938,6 @@ public:
 #ifdef PSEUDORANDOM_NOP_INSERTION
     bool emitInInstrumentation;
 #endif // PSEUDORANDOM_NOP_INSERTION
-
-    unsigned emitMaxTmpSize;
 
 #ifdef DEBUG
     bool emitChkAlign; // perform some alignment checks
@@ -2178,6 +2177,20 @@ private:
     }
 
     instrDesc* emitLastIns;
+
+    // Check if a peephole optimization involving emitLastIns is safe.
+    //
+    // We must have a lastInstr to consult.
+    // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
+    // The final check prevents looking across an IG boundary unless we're in an extension IG.
+    bool emitCanPeepholeLastIns()
+    {
+        return (emitLastIns != nullptr) &&                 // there is an emitLastInstr
+               !emitForceNewIG &&                          // and we're not about to start a new IG
+               ((emitCurIGinsCnt > 0) ||                   // and we're not at the start of a new IG
+                ((emitCurIG->igFlags & IGF_EXTEND) != 0)); //    or we are at the start of a new IG,
+                                                           //    and it's an extension IG
+    }
 
 #ifdef TARGET_ARMARCH
     instrDesc* emitLastMemBarrier;
@@ -3343,20 +3356,6 @@ inline BYTE* emitter::emitCodeWithInstructionSize(BYTE* codePtrBefore, BYTE* new
     assert(!callInstrSizeSafe.IsOverflow());
     *instrSize = callInstrSizeSafe.Value();
     return newCodePointer;
-}
-
-/*****************************************************************************
- *
- *  Add a new IG to the current list, and get it ready to receive code.
- */
-
-inline void emitter::emitNewIG()
-{
-    insGroup* ig = emitAllocAndLinkIG();
-
-    /* It's linked in. Now, set it up to accept code */
-
-    emitGenIG(ig);
 }
 
 /*****************************************************************************/

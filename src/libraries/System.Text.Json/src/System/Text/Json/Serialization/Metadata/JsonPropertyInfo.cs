@@ -20,8 +20,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonTypeInfo? ParentTypeInfo { get; private set; }
         private JsonTypeInfo? _jsonTypeInfo;
 
-        internal ConverterStrategy ConverterStrategy { get; private protected set; }
-
         /// <summary>
         /// Converter after applying CustomConverter (i.e. JsonConverterAttribute)
         /// </summary>
@@ -268,7 +266,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private protected void VerifyMutable()
         {
-            if (_isConfigured)
+            if (ParentTypeInfo?.IsReadOnly == true)
             {
                 ThrowHelper.ThrowInvalidOperationException_PropertyInfoImmutable();
             }
@@ -424,7 +422,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            if ((ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) != 0)
+            if ((EffectiveConverter.ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) != 0)
             {
                 // Properties of collections types that only have setters are not supported.
                 if (Get == null && Set != null && !_isUserSpecifiedSetter)
@@ -501,7 +499,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Type potentialNumberType;
             if (!EffectiveConverter.IsInternalConverter ||
-                ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & ConverterStrategy) == 0)
+                ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & EffectiveConverter.ConverterStrategy) == 0)
             {
                 potentialNumberType = PropertyType;
             }
@@ -802,8 +800,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // This could potentially be double initialized
                 Debug.Assert(_jsonTypeInfo == null || _jsonTypeInfo == value);
-                // Ensure the right strategy is surfaced in PropertyInfoForTypeInfo early
-                ConverterStrategy = value?.Converter.ConverterStrategy ?? default;
                 _jsonTypeInfo = value;
             }
         }

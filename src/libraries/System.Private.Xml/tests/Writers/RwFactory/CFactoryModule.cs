@@ -4,7 +4,7 @@
 using OLEDB.Test.ModuleCore;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.RwFactoryWriterTests
 {
     public partial class CFactoryModule : CXmlDriverModule
     {

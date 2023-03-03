@@ -277,21 +277,6 @@ namespace System.Runtime
             }
         }
 
-        [RuntimeExport("RhMemberwiseClone")]
-        public static unsafe object RhMemberwiseClone(object src)
-        {
-            object objClone;
-
-            if (src.GetMethodTable()->IsArray)
-                objClone = RhNewArray(src.GetMethodTable(), Unsafe.As<Array>(src).Length);
-            else
-                objClone = RhNewObject(src.GetMethodTable());
-
-            InternalCalls.RhpCopyObjectContents(objClone, src);
-
-            return objClone;
-        }
-
         [RuntimeExport("RhGetCurrentThreadStackTrace")]
         [MethodImpl(MethodImplOptions.NoInlining)] // Ensures that the RhGetCurrentThreadStackTrace frame is always present
         public static unsafe int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer)

@@ -3202,13 +3202,15 @@ void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
 
     EX_TRY
     {
-        struct _gc
+        struct
         {
             PTRARRAYREF Array;
             OBJECTREF   InnerDelegate;
             OBJECTREF   EventArgs;
         } gc;
-        ZeroMemory(&gc, sizeof(gc));
+        gc.Array = NULL;
+        gc.InnerDelegate = NULL;
+        gc.EventArgs = NULL;
 
         GCPROTECT_BEGIN(gc);
 

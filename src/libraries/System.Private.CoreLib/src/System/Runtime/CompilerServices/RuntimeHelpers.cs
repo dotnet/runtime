@@ -104,6 +104,9 @@ namespace System.Runtime.CompilerServices
         // Feel free to add more overloads on demand
 #pragma warning disable IDE0060
         [Intrinsic]
+        internal static bool IsKnownConstant(Type? t) => false;
+
+        [Intrinsic]
         internal static bool IsKnownConstant(string? t) => false;
 
         [Intrinsic]

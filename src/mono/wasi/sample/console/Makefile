@@ -1,7 +1,7 @@
 include ../../Makefile.variable
 include ../SampleMakefile.variable
 
-BIN_DIR=WasiConsoleApp/bin/Debug/net7.0
+BIN_DIR=WasiConsoleApp/bin/Debug/net8.0
 
 all: console.wasm $(BIN_DIR)/WasiConsoleApp.dll
 

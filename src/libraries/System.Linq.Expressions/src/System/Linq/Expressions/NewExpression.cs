@@ -213,7 +213,7 @@ namespace System.Linq.Expressions
             {
                 throw Error.TypeMissingDefaultConstructor(type, nameof(type));
             }
-            return new NewValueTypeExpression(type, EmptyReadOnlyCollection<Expression>.Instance, null);
+            return new NewValueTypeExpression(type, ReadOnlyCollection<Expression>.Empty, null);
         }
 
         [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]

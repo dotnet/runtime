@@ -21,10 +21,10 @@ public class ContentType
 }
 
 
-class My
+public class My
 {
 
-    static int Main()
+    public static int Main()
     {
 
         new ContentType();

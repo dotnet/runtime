@@ -257,9 +257,9 @@ If we confidently could identify the top N% of methods (say 5%) then one could i
 R2R methods bypass Tier0 and so don't get instrumentation in the current TieredPGO prototype. We probably don't want to instrument the code in the R2R image. And many of these R2R methods are key framework methods that are important for performance. So we need to find a way to get data for these methods.
 
 There are a few basic ideas:
-* Leverage IBC. If there is IBC data in the R2R image then we can make that data available to the JIT. It may not be as relevant as in-process collected data, but it's quite likely better than synthetic data or no data.
-* Sampled instrumentation for R2R methods. Produce an instrumented version and run it every so often before the method gets promoted to Tier1. This may be costly, especially if we have to use unoptimized methods for instrumentation, as we'll do quite a bit of extra jitting.
-* Make R2R methods go through Tier0 on their way to Tier1. Likely introduces an unacceptable perf hit.
+1) Leverage IBC. If there is IBC data in the R2R image then we can make that data available to the JIT. It may not be as relevant as in-process collected data, but it's quite likely better than synthetic data or no data.
+2) Sampled instrumentation for R2R methods. Produce an instrumented version and run it every so often before the method gets promoted to Tier1. This may be costly, especially if we have to use unoptimized methods for instrumentation, as we'll do quite a bit of extra jitting.
+3) Make R2R methods go through a separate instrumentation tier on their way to Tier1, see [DynamicPgo-InstrumentedTiers.md](DynamicPgo-InstrumentedTiers.md) prototype.
 
 #### Dynamic PGO, QuickJitForLoops, OSR
 

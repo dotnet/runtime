@@ -60,7 +60,7 @@ namespace System.IO.MemoryMappedFiles
             if (((viewInfo.State & Interop.Kernel32.MemOptions.MEM_RESERVE) != 0) || ((ulong)viewSize < (ulong)nativeSize))
             {
                 Interop.VirtualAlloc(
-                    viewHandle, (UIntPtr)(nativeSize != MemoryMappedFile.DefaultSize ? nativeSize : viewSize),
+                    viewHandle, (nuint)(nativeSize != MemoryMappedFile.DefaultSize ? nativeSize : viewSize),
                     Interop.Kernel32.MemOptions.MEM_COMMIT, MemoryMappedFile.GetPageAccess(access));
                 int lastError = Marshal.GetLastPInvokeError();
                 if (viewHandle.IsInvalid)

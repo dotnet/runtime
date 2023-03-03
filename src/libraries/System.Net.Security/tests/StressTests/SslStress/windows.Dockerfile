@@ -23,5 +23,5 @@ ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
 ENV SSLSTRESS_ARGS=""
 
-CMD & C:/live-runtime-artifacts/testhost/net$env:VERSION-windows-$env:CONFIGURATION-x64/dotnet.exe exec `
+CMD & C:/live-runtime-artifacts/testhost/net$env:VERSION-windows-$env:CONFIGURATION-x64/dotnet.exe exec --roll-forward Major `
     ./bin/$env:CONFIGURATION/net$env:VERSION/SslStress.dll $env:SSLSTRESS_ARGS.Split()

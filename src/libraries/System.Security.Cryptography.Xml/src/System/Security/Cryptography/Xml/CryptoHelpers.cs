@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.Xml
     {
         private static readonly char[] _invalidChars = new char[] { ',', '`', '[', '*', '&' };
 
-        public static object CreateFromKnownName(string name) =>
+        public static object? CreateFromKnownName(string name) =>
             name switch
             {
                 "http://www.w3.org/TR/2001/REC-xml-c14n-20010315" => new XmlDsigC14NTransform(),
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Xml
                 _ => null,
             };
 
-        public static T CreateFromName<T>(string name) where T : class
+        public static T? CreateFromName<T>(string? name) where T : class
         {
             if (name == null || name.IndexOfAny(_invalidChars) >= 0)
             {

@@ -9,6 +9,14 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs"
              Link="Common\SourceGenerators\LiveReferencePack.cs" />
+    <Compile Include="..\Common\TestUtils.cs"
+            Link="Common\TestUtils.cs" />
+    <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs"
+            Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
+    <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs"
+            Link="Common\CustomStructMarshallingCodeSnippets.cs" />
+    <Compile Include="..\Common\ICustomMarshallingSignatureTestProvider.cs"
+            Link="ICustomMarshallingSignatureTestProvider.cs" />
   </ItemGroup>
 
   <ItemGroup>

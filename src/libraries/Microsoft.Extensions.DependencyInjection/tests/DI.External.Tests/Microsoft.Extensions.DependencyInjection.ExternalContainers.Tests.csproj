@@ -15,16 +15,16 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj" />
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="7.2.0" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="5.1.0" />
-    <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="3.4.1" />
+    <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="3.5.0" />
     <PackageReference Include="Grace.DependencyInjection.Extensions" Version="7.1.0" />
-    <PackageReference Include="Stashbox.Extensions.Dependencyinjection" Version="3.2.1" />
+    <PackageReference Include="Stashbox.Extensions.Dependencyinjection" Version="4.2.3" />
   </ItemGroup>
 
   <!-- These packages don't support .NETFramework -->
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <PackageReference Include="Lamar.Microsoft.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Lamar.Microsoft.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
 
 </Project>

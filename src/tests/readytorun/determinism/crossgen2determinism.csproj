@@ -19,12 +19,12 @@ set CoreRT_DeterminismSeed=1
 set CoreRT_DeterminismSeed=2
 %Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:..\..\crossgen2\crossgen2smoke\helperdll.dll -r:..\..\crossgen2\crossgen2smoke\helperildll.dll -o:crossgen2smoke2.ildll ..\..\crossgen2\crossgen2smoke\crossgen2smoke.dll
 ]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 export CoreRT_DeterminismSeed=1
 $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../../crossgen2/crossgen2smoke/helperdll.dll -r:../../crossgen2/crossgen2smoke/helperildll.dll -o:crossgen2smoke1.ildll ../../crossgen2/crossgen2smoke/crossgen2smoke.dll
 export CoreRT_DeterminismSeed=2
 $CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../../crossgen2/crossgen2smoke/helperdll.dll -r:../../crossgen2/crossgen2smoke/helperildll.dll -o:crossgen2smoke2.ildll ../../crossgen2/crossgen2smoke/crossgen2smoke.dll
-]]></BashCLRTestPreCommands>
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 </Project>

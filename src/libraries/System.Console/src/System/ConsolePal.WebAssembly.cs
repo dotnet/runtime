@@ -7,6 +7,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices.JavaScript;
 
 #pragma warning disable CS0612 // using obsolete members until we finish https://github.com/dotnet/runtime/pull/66304/
+#pragma warning disable IDE0060
 
 namespace System
 {

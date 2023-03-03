@@ -29,8 +29,8 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(this JsonNode? node, JsonSerializerOptions? options = null)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadNode<TValue>(node, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return ReadFromNode(node, jsonTypeInfo);
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadNode<object?>(node, jsonTypeInfo);
+            return ReadFromNodeAsObject(node, jsonTypeInfo);
         }
 
         /// <summary>
@@ -73,10 +73,6 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// <typeparamref name="TValue" /> is not compatible with the JSON.
         /// </exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         public static TValue? Deserialize<TValue>(this JsonNode? node, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             if (jsonTypeInfo is null)
@@ -85,7 +81,27 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return ReadNode<TValue>(node, jsonTypeInfo);
+            return ReadFromNode(node, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Converts the <see cref="JsonNode"/> representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="node">The <see cref="JsonNode"/> to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        public static object? Deserialize(this JsonNode? node, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return ReadFromNodeAsObject(node, jsonTypeInfo);
         }
 
         /// <summary>
@@ -132,10 +148,10 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadNode<object?>(node, jsonTypeInfo);
+            return ReadFromNodeAsObject(node, jsonTypeInfo);
         }
 
-        private static TValue? ReadNode<TValue>(JsonNode? node, JsonTypeInfo jsonTypeInfo)
+        private static TValue? ReadFromNode<TValue>(JsonNode? node, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
@@ -153,7 +169,28 @@ namespace System.Text.Json
                 }
             }
 
-            return ReadFromSpan<TValue>(output.WrittenMemory.Span, jsonTypeInfo);
+            return ReadFromSpan(output.WrittenMemory.Span, jsonTypeInfo);
+        }
+
+        private static object? ReadFromNodeAsObject(JsonNode? node, JsonTypeInfo jsonTypeInfo)
+        {
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+
+            // For performance, share the same buffer across serialization and deserialization.
+            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
+            {
+                if (node is null)
+                {
+                    writer.WriteNullValue();
+                }
+                else
+                {
+                    node.WriteTo(writer, options);
+                }
+            }
+
+            return ReadFromSpanAsObject(output.WrittenMemory.Span, jsonTypeInfo);
         }
     }
 }

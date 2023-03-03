@@ -6,7 +6,7 @@ using System.Globalization;
 
 public static class Program
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         CultureInfo culture;
         int result = 1;

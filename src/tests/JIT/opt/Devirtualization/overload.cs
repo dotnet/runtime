@@ -14,7 +14,7 @@ public class Z : Io<string, string>
     string Io<string, string>.FromU(string s) { return "U"; }
     string Io<string, string>.FromS(string s) { return "S"; }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         string fromU = ((Io<string, string>) new Z()).FromU("u");
         string fromS = ((Io<string, string>) new Z()).FromS("s");

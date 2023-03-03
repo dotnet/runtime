@@ -7,15 +7,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Avx2
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void AddSaturate()
         {
             int testResult = Pass;
 
@@ -110,51 +109,7 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
-
-        public unsafe struct TestTable<T1, T2, T3> : IDisposable where T1 : struct where T2 : struct where T3 : struct
-        {
-            public T1[] inArray1;
-            public T2[] inArray2;
-            public T3[] outArray;
-
-            public void* inArray1Ptr => inHandle1.AddrOfPinnedObject().ToPointer();
-            public void* inArray2Ptr => inHandle2.AddrOfPinnedObject().ToPointer();
-            public void* outArrayPtr => outHandle.AddrOfPinnedObject().ToPointer();
-
-            GCHandle inHandle1;
-            GCHandle inHandle2;
-            GCHandle outHandle;
-            public TestTable(T1[] a, T2[] b, T3[] c)
-            {
-                this.inArray1 = a;
-                this.inArray2 = b;
-                this.outArray = c;
-
-                inHandle1 = GCHandle.Alloc(inArray1, GCHandleType.Pinned);
-                inHandle2 = GCHandle.Alloc(inArray2, GCHandleType.Pinned);
-                outHandle = GCHandle.Alloc(outArray, GCHandleType.Pinned);
-            }
-            public bool CheckResult(Func<T1, T2, T3, bool> check)
-            {
-                for (int i = 0; i < inArray1.Length; i++)
-                {
-                    if (!check(inArray1[i], inArray2[i], outArray[i]))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            public void Dispose()
-            {
-                inHandle1.Free();
-                inHandle2.Free();
-                outHandle.Free();
-            }
-        }
-
     }
 }

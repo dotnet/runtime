@@ -9,7 +9,7 @@ namespace Repro
 {
     public class Program
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             Tst a = new Tst();
             a.f30();

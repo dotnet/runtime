@@ -17,8 +17,10 @@ namespace System.Security.Cryptography
     {
         public sealed partial class RSASecurityTransforms
         {
+#pragma warning disable IDE0060
             private static RSAParameters ExportParametersFromLegacyKey(SecKeyPair keys, bool includePrivateParameters)
                 => throw new CryptographicException();
+#pragma warning restore IDE0060
         }
     }
 }

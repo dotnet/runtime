@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
-
-using AssemblyName = System.Reflection.AssemblyName;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs.StartupCode
@@ -175,14 +173,11 @@ namespace Internal.IL.Stubs.StartupCode
         {
             get
             {
-                if (_signature == null)
-                {
-                    _signature = new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0,
+                _signature ??= new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0,
                             Context.GetWellKnownType(WellKnownType.Int32),
                             new TypeDesc[2] {
                                 Context.GetWellKnownType(WellKnownType.Int32),
                                 Context.GetWellKnownType(WellKnownType.IntPtr) });
-                }
 
                 return _signature;
             }
@@ -204,7 +199,7 @@ namespace Internal.IL.Stubs.StartupCode
         /// environment without it being fully initialized. (In particular, the unhandled exception experience
         /// won't be initialized, making this difficult to diagnose.)
         /// </summary>
-        private partial class MainMethodWrapper : ILStubMethod
+        private sealed partial class MainMethodWrapper : ILStubMethod
         {
             public MainMethodWrapper(TypeDesc owningType, MethodDesc mainMethod)
             {

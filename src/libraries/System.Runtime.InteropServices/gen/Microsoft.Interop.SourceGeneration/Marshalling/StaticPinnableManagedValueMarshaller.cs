@@ -28,7 +28,7 @@ namespace Microsoft.Interop
         {
             if (IsPinningPathSupported(info, context))
             {
-                if (AsNativeType(info) is PointerTypeSyntax pointerType
+                if (AsNativeType(info).Syntax is PointerTypeSyntax pointerType
                     && pointerType.ElementType is PredefinedTypeSyntax predefinedType
                     && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword))
                 {
@@ -42,7 +42,7 @@ namespace Microsoft.Interop
             return _innerMarshallingGenerator.GetValueBoundaryBehavior(info, context);
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             return _innerMarshallingGenerator.AsNativeType(info);
         }

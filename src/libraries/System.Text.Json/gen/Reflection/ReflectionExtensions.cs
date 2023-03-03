@@ -11,7 +11,7 @@ namespace System.Text.Json.Reflection
 {
     internal static partial class ReflectionExtensions
     {
-        public static CustomAttributeData GetCustomAttributeData(this MemberInfo memberInfo, Type type)
+        public static CustomAttributeData? GetCustomAttributeData(this MemberInfo memberInfo, Type type)
         {
             return memberInfo.CustomAttributes.FirstOrDefault(a => type.IsAssignableFrom(a.AttributeType));
         }

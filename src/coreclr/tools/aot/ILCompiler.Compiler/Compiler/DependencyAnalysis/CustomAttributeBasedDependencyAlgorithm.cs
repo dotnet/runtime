@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Computes the list of dependencies that are necessary to generate metadata for a custom attribute, but also the dependencies to
     /// make the custom attributes usable by the reflection stack at runtime.
     /// </summary>
-    internal class CustomAttributeBasedDependencyAlgorithm
+    internal static class CustomAttributeBasedDependencyAlgorithm
     {
         public static void AddDependenciesDueToCustomAttributes(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
@@ -133,7 +133,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (AddDependenciesFromCustomAttributeBlob(caDependencies, factory, constructor.OwningType, decodedValue))
                     {
-                        dependencies = dependencies ?? new DependencyList();
+                        dependencies ??= new DependencyList();
                         dependencies.AddRange(caDependencies);
                         dependencies.Add(factory.CustomAttributeMetadata(new ReflectableCustomAttribute(module, caHandle)), "Attribute metadata");
                     }
@@ -156,8 +156,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private static bool AddDependenciesFromCustomAttributeBlob(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, CustomAttributeValue<TypeDesc> value)
         {
-            MetadataManager mdManager = factory.MetadataManager;
-
             foreach (CustomAttributeTypedArgument<TypeDesc> decodedArgument in value.FixedArguments)
             {
                 if (!AddDependenciesFromCustomAttributeArgument(dependencies, factory, decodedArgument.Type, decodedArgument.Value))

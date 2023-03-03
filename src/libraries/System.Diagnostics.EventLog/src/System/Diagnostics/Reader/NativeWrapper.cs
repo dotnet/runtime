@@ -116,7 +116,6 @@ namespace System.Diagnostics.Eventing.Reader
                             EventLogHandle session,
                             string ProviderId,
                             string logFilePath,
-                            int locale,
                             int flags)
         {
             // ignore locale and pass 0 instead: that way, the thread locale will be retrieved in the API layer

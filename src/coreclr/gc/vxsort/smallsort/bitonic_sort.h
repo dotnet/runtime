@@ -18,16 +18,8 @@ using namespace std;
 // In contract, release/optimizing compilers, turn that very specific instruction pair to
 // a more reasonable: vpmovsxbq ymm0, dword [rax*4 + mask_table_4], eliminating the 128-bit
 // load completely and effectively reading 4/8 (depending if the instruction is vpmovsxb[q,d]
-#if !defined(__has_feature)
-#define __has_feature(a)    (0)
-#endif
-#if !__has_feature(address_sanitizer)
-const int M4_SIZE = 16;
-const int M8_SIZE = 64;
-#else
 const int M4_SIZE = 16 + 12;
 const int M8_SIZE = 64 + 8;
-#endif
 
 extern "C" const uint8_t mask_table_4[M4_SIZE];
 extern "C" const uint8_t mask_table_8[M8_SIZE];

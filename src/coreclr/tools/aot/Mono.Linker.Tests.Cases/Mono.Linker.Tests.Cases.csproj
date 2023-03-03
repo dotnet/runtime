@@ -8,7 +8,12 @@
     <DefineConstants>$(DefineConstants);INCLUDE_EXPECTATIONS</DefineConstants>
     <WarningLevel>0</WarningLevel>
     <AnalysisLevel>0</AnalysisLevel>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DynamicDependencies\Dependencies\FacadeAssembly.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />

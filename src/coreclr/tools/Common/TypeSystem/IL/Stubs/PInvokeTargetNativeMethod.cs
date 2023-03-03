@@ -14,7 +14,7 @@ namespace Internal.IL.Stubs
     {
         private readonly MethodDesc _declMethod;
         private readonly MethodSignature _signature;
-        
+
         public MethodDesc Target
         {
             get

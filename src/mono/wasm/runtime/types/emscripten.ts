@@ -52,6 +52,8 @@ export declare interface EmscriptenModule {
     FS_readFile(filename: string, opts: any): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
+    addFunction(fn: Function, signature: string): number;
+    getWasmTableEntry(index: number): any;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;

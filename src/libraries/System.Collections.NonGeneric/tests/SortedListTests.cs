@@ -109,7 +109,7 @@ namespace System.Collections.Tests
                 // Create a hashtable in the correctly sorted order
                 for (int i = 0; i < count; i++)
                 {
-                    hashtable.Add("Key_" + i.ToString("D2"), "Value_" + i.ToString("D2"));
+                    hashtable.Add($"Key_{i:D2}", $"Value_{i:D2}");
                 }
             }
             else
@@ -117,7 +117,7 @@ namespace System.Collections.Tests
                 // Create a hashtable in the wrong order and make sure it is sorted
                 for (int i = count - 1; i >= 0; i--)
                 {
-                    hashtable.Add("Key_" + i.ToString("D2"), "Value_" + i.ToString("D2"));
+                    hashtable.Add($"Key_{i:D2}", $"Value_{i:D2}");
                 }
             }
 
@@ -163,7 +163,7 @@ namespace System.Collections.Tests
                 // Create a hashtable in the correctly sorted order
                 for (int i = count - 1; i >= 0; i--)
                 {
-                    hashtable.Add("Key_" + i.ToString("D2"), "Value_" + i.ToString("D2"));
+                    hashtable.Add($"Key_{i:D2}", $"Value_{i:D2}");
                 }
             }
             else
@@ -171,7 +171,7 @@ namespace System.Collections.Tests
                 // Create a hashtable in the wrong order and make sure it is sorted
                 for (int i = 0; i < count; i++)
                 {
-                    hashtable.Add("Key_" + i.ToString("D2"), "Value_" + i.ToString("D2"));
+                    hashtable.Add($"Key_{i:D2}", $"Value_{i:D2}");
                 }
             }
 
@@ -182,9 +182,9 @@ namespace System.Collections.Tests
 
             for (int i = 0; i < count; i++)
             {
-                string key = "Key_" + i.ToString("D2");
-                string value = "Value_" + i.ToString("D2");
-                string expectedValue = "Value_" + (count - i - 1).ToString("D2");
+                string key = $"Key_{i:D2}";
+                string value = $"Value_{i:D2}";
+                string expectedValue = $"Value_{count - i - 1:D2}";
 
                 Assert.Equal(sortList.GetByIndex(i), expectedValue);
                 Assert.Equal(hashtable[key], sortList[key]);
@@ -212,7 +212,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentNullException>("d", () => new SortedList(null, new CustomComparer())); // Dictionary is null
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute_Empty()
         {
             Assert.Equal("Count = 0", DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList()));
@@ -266,7 +266,7 @@ namespace System.Collections.Tests
             const int MinCapacity = InitialCapacity * 2 + 1;
             var sortedList = new SortedList(InitialCapacity);
 
-            MethodInfo ensureCapacity = sortedList.GetType().GetMethod("EnsureCapacity", BindingFlags.NonPublic | BindingFlags.Instance);
+            MethodInfo ensureCapacity = typeof(SortedList).GetMethod("EnsureCapacity", BindingFlags.NonPublic | BindingFlags.Instance);
             ensureCapacity.Invoke(sortedList, new object[] { MinCapacity });
 
             Assert.Equal(MinCapacity, sortedList.Capacity);

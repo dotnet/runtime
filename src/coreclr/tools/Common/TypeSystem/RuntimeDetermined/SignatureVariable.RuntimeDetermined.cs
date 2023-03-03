@@ -5,7 +5,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
-    partial class SignatureVariable
+    public partial class SignatureVariable
     {
         public sealed override bool IsRuntimeDeterminedSubtype
         {

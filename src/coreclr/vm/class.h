@@ -376,7 +376,9 @@ class EEClassLayoutInfo
             // The size of the struct is explicitly specified in the meta-data.
             e_HAS_EXPLICIT_SIZE               = 0x08,
             // The type recursively has a field that is LayoutKind.Auto and not an enum.
-            e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10
+            e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10,
+            // Type type recursively has a field which is an Int128
+            e_IS_OR_HAS_INT128_FIELD          = 0x20,
         };
 
         BYTE        m_bFlags;
@@ -426,6 +428,12 @@ class EEClassLayoutInfo
             return (m_bFlags & e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT) == e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT;
         }
 
+        BOOL IsInt128OrHasInt128Fields() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_IS_OR_HAS_INT128_FIELD) == e_IS_OR_HAS_INT128_FIELD;
+        }
+
         BYTE GetPackingSize() const
         {
             LIMITED_METHOD_CONTRACT;
@@ -466,6 +474,13 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = hasAutoLayoutField ? (m_bFlags | e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT)
                                        : (m_bFlags & ~e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT);
+        }
+
+        void SetIsInt128OrHasInt128Fields(BOOL hasInt128Field)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasInt128Field ? (m_bFlags | e_IS_OR_HAS_INT128_FIELD)
+                                       : (m_bFlags & ~e_IS_OR_HAS_INT128_FIELD);
         }
 };
 
@@ -1410,6 +1425,9 @@ public:
     BOOL HasExplicitSize();
 
     BOOL IsAutoLayoutOrHasAutoLayoutField();
+    
+    // Only accurate on non-auto layout types
+    BOOL IsInt128OrHasInt128Fields(); 
 
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
@@ -2103,6 +2121,15 @@ inline BOOL EEClass::IsAutoLayoutOrHasAutoLayoutField()
     LIMITED_METHOD_CONTRACT;
     // If this type is not auto
     return !HasLayout() || GetLayoutInfo()->HasAutoLayoutField();
+}
+
+inline BOOL EEClass::IsInt128OrHasInt128Fields()
+{
+    // The name of this type is a slight misnomer as it doesn't detect Int128 fields on 
+    // auto layout types, but since we only need this for interop scenarios, it works out.
+    LIMITED_METHOD_CONTRACT;
+    // If this type is not auto
+    return HasLayout() && GetLayoutInfo()->IsInt128OrHasInt128Fields();
 }
 
 //==========================================================================

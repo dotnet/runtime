@@ -136,13 +136,13 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     if (dumpChanges> 0) {
         SString fn;
         int ec;
-        fn.Printf(W("ApplyChanges.%d.dmeta"), m_applyChangesCount);
+        fn.Printf("ApplyChanges.%d.dmeta", m_applyChangesCount);
         FILE *fp;
         ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaMD, 1, cbDeltaMD, fp);
         fclose(fp);
-        fn.Printf(W("ApplyChanges.%d.dil"), m_applyChangesCount);
+        fn.Printf("ApplyChanges.%d.dil", m_applyChangesCount);
         ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaIL, 1, cbDeltaIL, fp);

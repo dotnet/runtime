@@ -6,9 +6,9 @@ using Internal.TypeSystem;
 namespace ILCompiler
 {
     // Functionality related to deterministic ordering of types and members
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
-        partial class BoxedValueType
+        private partial class BoxedValueType
         {
             protected override int ClassCode => 1062019524;
 
@@ -18,7 +18,7 @@ namespace ILCompiler
             }
         }
 
-        partial class GenericUnboxingThunk
+        private partial class GenericUnboxingThunk
         {
             protected override int ClassCode => -247515475;
 
@@ -29,7 +29,7 @@ namespace ILCompiler
             }
         }
 
-        partial class UnboxingThunk
+        private partial class UnboxingThunk
         {
             protected override int ClassCode => 446545583;
 
@@ -40,7 +40,7 @@ namespace ILCompiler
             }
         }
 
-        partial class ValueTypeInstanceMethodWithHiddenParameter
+        internal partial class ValueTypeInstanceMethodWithHiddenParameter
         {
             protected override int ClassCode => 2131875345;
 
@@ -51,7 +51,7 @@ namespace ILCompiler
             }
         }
 
-        partial class DefaultInterfaceMethodImplementationInstantiationThunk
+        private partial class DefaultInterfaceMethodImplementationInstantiationThunk
         {
             protected override int ClassCode => -789598;
 
@@ -67,7 +67,7 @@ namespace ILCompiler
             }
         }
 
-        partial class DefaultInterfaceMethodImplementationWithHiddenParameter
+        internal partial class DefaultInterfaceMethodImplementationWithHiddenParameter
         {
             protected override int ClassCode => 4903209;
 

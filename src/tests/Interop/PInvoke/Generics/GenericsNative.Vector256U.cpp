@@ -8,7 +8,7 @@
 
 #if defined(TARGET_XARCH)
     #include <immintrin.h>
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     // Intentionally empty
 #else
     #error Unsupported target architecture

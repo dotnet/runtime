@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         public static BB[] m_axField4 = new BB[7];
         public double m_dField3 = 0.0d;
@@ -14,7 +14,7 @@ namespace Test
         {
             return ((object)(m_axField4[2].m_dField3));
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

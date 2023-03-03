@@ -17,7 +17,7 @@ namespace DefaultNamespace {
             this.p = p;
         }
 
-        public static int Main(String [] args)
+        public static int Main()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
 

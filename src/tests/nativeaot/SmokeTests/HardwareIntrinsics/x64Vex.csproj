@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
     if [[ "$OSTYPE" == "darwin"* ]]; then
         sysctl -a
 
@@ -30,7 +30,7 @@ $(BashCLRTestPreCommands)
           exit 0
         fi
     fi
-]]></BashCLRTestPreCommands>
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 
   <ItemGroup>
