@@ -234,7 +234,7 @@ export type RuntimeHelpers = {
     javaScriptExports: JavaScriptExports,
     loadedFiles: string[],
     memoryIsLoaded: boolean,
-    configurationHash: number,
+    subtle: SubtleCrypto | null,
     preferredIcuAsset: string | null,
     timezone: string | null,
     updateGlobalBufferAndViews: (buffer: ArrayBufferLike) => void

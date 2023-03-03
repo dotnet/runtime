@@ -17,7 +17,7 @@ import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController } from "./promise-controller";
-import { get_hash_code, string_decoder } from "./strings";
+import { string_decoder } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
@@ -357,7 +357,7 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
 
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
         if (config.cacheMemory && !runtimeHelpers.memoryIsLoaded) {
-            await storeMemory(runtimeHelpers.configurationHash, Module.HEAP8.buffer);
+            await storeMemory(Module.HEAP8.buffer);
         }
         bindings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
@@ -475,7 +475,7 @@ async function instantiate_wasm_module(
         const assetToLoad = resolve_asset_path("dotnetwasm");
 
         if (config.cacheMemory && config.assetsHash) {
-            memoryBytes = await getMemory(runtimeHelpers.configurationHash);
+            memoryBytes = await getMemory();
             runtimeHelpers.memoryIsLoaded = !!memoryBytes;
         }
         beforeInstantiateWasm.promise_control.resolve();
@@ -676,17 +676,7 @@ function normalizeConfig() {
             console.info("MONO_WASM: failed to detect timezone, will fallback to UTC");
         }
     }
-
-    if (config.cacheMemory) {
-        // calculate hash of things which affect the memory snapshot
-        const configCopy = Object.assign({}, config) as any;
-        configCopy.assets = null; // we have config.assetsHash for this
-        configCopy.preferredIcuAsset = runtimeHelpers.preferredIcuAsset;
-        configCopy.timezone = runtimeHelpers.timezone;
-        runtimeHelpers.configurationHash = get_hash_code(JSON.stringify(configCopy));
-    }
 }
-
 
 export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: number, assembly_len: number, pdb_ptr: number, pdb_len: number): void {
     // Only trigger this codepath for assemblies loaded after app is ready

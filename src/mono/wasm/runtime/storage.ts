@@ -3,6 +3,7 @@
 
 import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
+import { runtimeHelpers } from "./imports";
 
 // adapted from Blazor's WebAssemblyResourceLoader.ts
 async function open(): Promise<Cache | null> {
@@ -39,9 +40,13 @@ async function open(): Promise<Cache | null> {
     }
 }
 const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
-export async function getMemory(configurationHash: number): Promise<ArrayBuffer | undefined> {
+export async function getMemory(): Promise<ArrayBuffer | undefined> {
     try {
-        const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${configurationHash}`;
+        const inputsHash = await getInputsHash();
+        if (!inputsHash) {
+            return undefined;
+        }
+        const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${inputsHash}`;
         const cache = await open();
         if (!cache) {
             return undefined;
@@ -56,9 +61,13 @@ export async function getMemory(configurationHash: number): Promise<ArrayBuffer 
     }
 }
 
-export async function storeMemory(configurationHash: number, memory: ArrayBuffer) {
+export async function storeMemory(memory: ArrayBuffer) {
     try {
-        const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${configurationHash}`;
+        const inputsHash = await getInputsHash();
+        if (!inputsHash) {
+            return;
+        }
+        const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${inputsHash}`;
         const cache = await open();
         if (!cache) {
             return;
@@ -94,4 +103,24 @@ export async function cleanupMemory(protectKey: string) {
     } catch (ex) {
         return;
     }
+}
+
+// calculate hash of things which affect the memory snapshot
+export async function getInputsHash(): Promise<string | null> {
+    if (!runtimeHelpers.subtle) {
+        return null;
+    }
+    const inputs = Object.assign({}, runtimeHelpers.config) as any;
+    // above already has env variables, runtime options, etc
+    // above also already has config.assetsHash for this. It has all the asserts (DLLs, ICU, .wasms, etc). 
+    // So we could remove assets collectionfrom the hash.
+    inputs.assets = null;
+    // some things are calculated at runtime, so we need to add them to the hash
+    inputs.preferredIcuAsset = runtimeHelpers.preferredIcuAsset;
+    inputs.timezone = runtimeHelpers.timezone;
+    const inputsJson = JSON.stringify(inputs);
+    const sha256Buffer = await runtimeHelpers.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));
+    const uint8ViewOfHash = new Uint8Array(sha256Buffer);
+    const hashAsString = Array.from(uint8ViewOfHash).map((b) => b.toString(16).padStart(2, "0")).join("");
+    return hashAsString;
 }
