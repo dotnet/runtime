@@ -232,6 +232,7 @@ export type RuntimeHelpers = {
     quit: Function,
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
+    loadedFiles: string[],
     memoryIsLoaded: boolean,
     configurationHash: number,
     preferredIcuAsset: string | null,
