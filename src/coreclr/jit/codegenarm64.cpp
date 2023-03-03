@@ -3511,7 +3511,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     // this will set both the Z and V flags only when dividendReg is MinInt
                     //
                     emit->emitIns_R_R_R(INS_adds, size, REG_ZR, dividendReg, dividendReg);
-                    inst_JMP(EJ_ne, sdivLabel);                   // goto sdiv if the Z flag is clear
                     genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
                                                                   // ArithmeticException
 
