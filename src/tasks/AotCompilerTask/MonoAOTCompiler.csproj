@@ -5,7 +5,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
 
     <!-- Ignore nullable warnings on net4* -->
     <NoWarn Condition="$(TargetFramework.StartsWith('net4'))">$(NoWarn),CS8604,CS8602</NoWarn>
