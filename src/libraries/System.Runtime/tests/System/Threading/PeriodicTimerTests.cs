@@ -51,7 +51,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public async void Period_AffectsPendingWaits()
+        public async Task Period_AffectsPendingWaits()
         {
             using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromDays(40));
 

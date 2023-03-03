@@ -438,12 +438,12 @@ class COMException : public HRException
  public:
     COMException();
     COMException(HRESULT hr) ;
+#ifdef FEATURE_COMINTEROP
     COMException(HRESULT hr, IErrorInfo *pErrorInfo);
     ~COMException();
 
     // Virtual overrides
     IErrorInfo *GetErrorInfo();
-#ifdef FEATURE_COMINTEROP
     void GetMessage(SString &result);
 #endif
 
@@ -451,7 +451,11 @@ class COMException : public HRException
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
+#ifdef FEATURE_COMINTEROP
         return new COMException(m_hr, m_pErrorInfo);
+#else
+        return new COMException(m_hr);
+#endif
     }
 };
 
@@ -1274,12 +1278,14 @@ inline COMException::COMException(HRESULT hr)
     LIMITED_METHOD_CONTRACT;
 }
 
+#ifdef FEATURE_COMINTEROP
 inline COMException::COMException(HRESULT hr, IErrorInfo *pErrorInfo)
   : HRException(hr),
   m_pErrorInfo(pErrorInfo)
 {
     LIMITED_METHOD_CONTRACT;
 }
+#endif // FEATURE_COMINTEROP
 
 inline SEHException::SEHException()
 {
