@@ -9671,7 +9671,7 @@ DONE_MORPHING_CHILDREN:
         case GT_MOD:
 #endif
             if (!varTypeIsFloating(tree->gtType))
-            {              
+            {
                 // We do not need to throw if the second operand is a non-(negative one) constant.
                 if (!op2->IsIntegralConst() || op2->IsIntegralConst(-1))
                 {

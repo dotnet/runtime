@@ -3507,11 +3507,10 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     regNumber dividendReg = dividendOp->GetRegNum();
                     // At this point the divisor is known to be -1
                     //
-                    // Issue the 'adds  zr, dividendReg, dividendReg' instruction
-                    // this will set both the Z and V flags only when dividendReg is MinInt
+                    // Issue the 'subs  zr, dividendReg,1' instruction
+                    // this will set the V flags only when dividendReg is MinInt
                     //
-                    emit->emitIns_R_R_R(INS_adds, size, REG_ZR, dividendReg, dividendReg);
-                    inst_JMP(EJ_ne, sdivLabel); // goto sdiv if the Z flag is clear
+                    emit->emitIns_R_R_I(INS_subs, size, REG_ZR, dividendReg, 1);
                     genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
                                                                   // ArithmeticException
 
