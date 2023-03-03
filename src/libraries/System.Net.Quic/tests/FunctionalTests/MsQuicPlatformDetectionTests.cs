@@ -23,7 +23,8 @@ namespace System.Net.Quic.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73290", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82885", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.SupportsTls13))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void SupportedWindowsPlatforms_IsSupportedIsTrue()
         {
             Assert.True(QuicListener.IsSupported);
@@ -31,7 +32,8 @@ namespace System.Net.Quic.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine314), nameof(PlatformDetection.IsInContainer))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public async Task SupportedLinuxPlatformsWithMsQuic_IsSupportedIsTrue()
         {
             using Process find = new Process();
@@ -61,7 +63,8 @@ namespace System.Net.Quic.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsRaspbian10), nameof(PlatformDetection.IsArmv6Process), nameof(PlatformDetection.IsInContainer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu2004), nameof(PlatformDetection.IsPpc64leProcess))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82154", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu2004), nameof(PlatformDetection.IsS390xProcess))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux), nameof(PlatformDetection.IsInHelix))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInHelix))]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void SupportedLinuxPlatforms_IsSupportedIsTrue()
         {
             _output.WriteLine($"Running on {PlatformDetection.GetDistroVersionString()}");
