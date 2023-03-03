@@ -1308,7 +1308,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 // genCodeForJTrue: Produce code for a GT_JTRUE node.
 //
 // Arguments:
-//    tree - the node
+//    jtrue - the node
 //
 void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 {
