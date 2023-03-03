@@ -5780,7 +5780,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             GenTreeCall* call;
             call = tree->AsCall();
 
-
             // Evaluate the arguments
 
             lvl2 = gtSetCallArgsOrder(&call->gtArgs, /* lateArgs */ false, &costEx, &costSz);
