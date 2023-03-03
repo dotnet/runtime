@@ -44,7 +44,7 @@ namespace System.Buffers.Text
 
                 case Utf8Constants.Plus:
                     srcIndex++;
-                    if (srcIndex == source.Length)
+                    if (srcIndex >= source.Length)
                     {
                         bytesConsumed = 0;
                         return false;
