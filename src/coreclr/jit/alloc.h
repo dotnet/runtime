@@ -235,6 +235,16 @@ public:
 
         void* p = m_arena->allocateMemory(count * sizeof(T));
 
+#if defined(_MSC_VER)
+        // MSVC does not handle the other pattern correctly to recognize this fact.
+        __assume(p != nullptr);
+#elif !defined(DEBUG)
+        if (p == nullptr)
+        {
+            UNREACHABLE();
+        }
+#endif
+
         // Ensure that the allocator returned sizeof(size_t) aligned memory.
         assert((size_t(p) & (sizeof(size_t) - 1)) == 0);
 
