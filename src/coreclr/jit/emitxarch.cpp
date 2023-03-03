@@ -504,157 +504,42 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
     bool result = false;
 
-    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
-        switch ((ID_OPS)emitFmtToOps[id->idInsFmt()])
+    emitPeepholeIterateLastInstrs(
+        [&](instrDesc* id)
         {
-            // This is conservative.
-            case ID_OP_CALL:
-                return PEEPHOLE_ABORT;
-
-            default:
-                break;
-        }
-
-        // This is a special case for idiv, div, imul, and mul.
-        // They always write to RAX and RDX.
-        if (instrHasImplicitRegPairDest(id->idIns()))
-        {
-            if (reg == REG_RAX || reg == REG_RDX)
+            if (emitIsInstrWritingToReg(id, reg))
             {
-                result = (id->idOpSize() == EA_4BYTE);
-                return PEEPHOLE_ABORT;
-            }
-        }
-
-        // This is a special case for cdq/cwde/cmpxchg.
-        if (instrHasImplicitRegSingleDest(id->idIns()))
-        {
-            switch (id->idIns())
-            {
-                case INS_cwde:
-                case INS_cmpxchg:
+                switch (id->idIns())
                 {
-                    if (reg == REG_RAX)
-                    {
+                    // Conservative.
+                    case INS_call:
                         return PEEPHOLE_ABORT;
-                    }
-                    break;
-                }
 
-                case INS_cdq:
-                {
-                    if (reg == REG_RDX)
-                    {
+                    // These instructions sign-extend.
+                    case INS_cwde:
+                    case INS_cdq:
+                    case INS_movsx:
+                    case INS_movsxd:
                         return PEEPHOLE_ABORT;
-                    }
-                    break;
-                }
 
-                default:
-                    break;
-            }
-        }
+                    // movzx always zeroes the upper 32 bits.
+                    case INS_movzx:
+                        result = true;
+                        return PEEPHOLE_ABORT;
 
-        switch (id->idInsFmt())
-        {
-            case IF_RWR:
-            case IF_RRW:
-
-            case IF_RWR_CNS:
-            case IF_RRW_CNS:
-            case IF_RRW_SHF:
-
-            case IF_RWR_RRD:
-            case IF_RRW_RRD:
-            case IF_RRW_RRW:
-            case IF_RRW_RRW_CNS:
-
-            case IF_RWR_RRD_RRD:
-            case IF_RWR_RRD_RRD_CNS:
-
-            case IF_RWR_RRD_RRD_RRD:
-
-            case IF_RWR_MRD:
-            case IF_RRW_MRD:
-            case IF_RRW_MRD_CNS:
-
-            case IF_RWR_RRD_MRD:
-            case IF_RWR_MRD_CNS:
-            case IF_RWR_RRD_MRD_CNS:
-            case IF_RWR_RRD_MRD_RRD:
-            case IF_RWR_MRD_OFF:
-
-            case IF_RWR_SRD:
-            case IF_RRW_SRD:
-            case IF_RRW_SRD_CNS:
-
-            case IF_RWR_RRD_SRD:
-            case IF_RWR_SRD_CNS:
-            case IF_RWR_RRD_SRD_CNS:
-            case IF_RWR_RRD_SRD_RRD:
-
-            case IF_RWR_ARD:
-            case IF_RRW_ARD:
-            case IF_RRW_ARD_CNS:
-
-            case IF_RWR_RRD_ARD:
-            case IF_RWR_ARD_CNS:
-            case IF_RWR_ARD_RRD:
-            case IF_RWR_RRD_ARD_CNS:
-            case IF_RWR_RRD_ARD_RRD:
-            {
-                if (id->idReg1() != reg)
-                {
-                    switch (id->idInsFmt())
-                    {
-                        // Handles instructions who write to two registers.
-                        case IF_RRW_RRW:
-                        case IF_RRW_RRW_CNS:
-                        {
-                            if (id->idReg2() == reg)
-                            {
-                                result = (id->idOpSize() == EA_4BYTE);
-                                return PEEPHOLE_ABORT;
-                            }
-                            break;
-                        }
-
-                        default:
-                            break;
-                    }
-
-                    return PEEPHOLE_CONTINUE;
-                }
-
-                // movsx always sign extends to 8 bytes.
-                if (id->idIns() == INS_movsx)
-                {
-                    return PEEPHOLE_ABORT;
-                }
-
-                if (id->idIns() == INS_movsxd)
-                {
-                    return PEEPHOLE_ABORT;
-                }
-
-                // movzx always zeroes the upper 32 bits.
-                if (id->idIns() == INS_movzx)
-                {
-                    result = true;
-                    return PEEPHOLE_ABORT;
+                    default:
+                        break;
                 }
 
                 // otherwise rely on operation size.
                 result = (id->idOpSize() == EA_4BYTE);
                 return PEEPHOLE_ABORT;
             }
-
-            default:
+            else
             {
                 return PEEPHOLE_CONTINUE;
             }
-        }
-    });
+        });
 
     return result;
 }
