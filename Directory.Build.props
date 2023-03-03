@@ -195,27 +195,19 @@
     <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_packageOS>
     <_packageOS Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)</_packageOS>
 
-    <_toolsRID>$(_packageOS)-$(_hostArch)</_toolsRID>
-    <_toolsRID Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-musl'">linux-$(_hostArch)</_toolsRID>
-    <_toolsRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_portableOS)-x64</_toolsRID>
-
-    <!-- There are no WebAssembly tools, so use the default ones -->
-    <_toolsRID Condition="'$(_portableOS)' == 'browser' or '$(_portableOS)' == 'wasi'">linux-x64</_toolsRID>
-    <_toolsRID Condition="('$(_portableOS)' == 'browser' or '$(_portableOS)' == 'wasi') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="('$(_portableOS)' == 'browser' or '$(_portableOS)' == 'wasi') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
-
-    <!-- There are no Android tools, so use the default ones -->
-    <_toolsRID Condition="'$(_portableOS)' == 'android' or '$(_portableOS)' == 'linux-bionic'">linux-x64</_toolsRID>
-    <_toolsRID Condition="('$(_portableOS)' == 'android' or '$(_portableOS)' == 'linux-bionic') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="('$(_portableOS)' == 'android' or '$(_portableOS)' == 'linux-bionic') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
-
-    <!-- There are no Mac Catalyst, iOS or tvOS tools and it can be built on OSX only, so use that -->
-    <_toolsRID Condition="'$(_portableOS)' == 'maccatalyst' or '$(_portableOS)' == 'ios' or '$(_portableOS)' == 'iossimulator' or '$(_portableOS)' == 'tvos' or '$(_portableOS)' == 'tvossimulator'">osx-x64</_toolsRID>
-
-    <ToolsRID Condition="'$(ToolsRID)' == ''">$(_toolsRID)</ToolsRID>
-    <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
-
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
+  </PropertyGroup>
+
+  <!-- These are the rids used for consuming prebuilt packages. -->
+  <PropertyGroup Label="CalculateToolsRID">
+    <_portableHostOS>$(_hostOS)</_portableHostOS>
+    <_portableHostOS Condition="'$(_portableHostOS)' == 'windows'">win</_portableHostOS>
+    <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_portableHostOS>
+    <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-bionic'">linux-bionic</_portableHostOS>
+    <_portableHostOS Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)</_portableHostOS>
+
+    <ToolsRID Condition="'$(ToolsRID)' == ''">$(_portableHostOS)-$(_hostArch)</ToolsRID>
+    <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
   </PropertyGroup>
 
   <!-- OutputRid names the packages for the target platform. -->
