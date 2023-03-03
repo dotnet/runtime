@@ -180,19 +180,6 @@ fi
         <Description>Set CORE_ROOT to the specified value before running the test.</Description>
       </BashCLRTestExecutionScriptArgument>
 
-      <BashCLRTestExecutionScriptArgument Include="watcher">
-        <HasParam>true</HasParam>
-        <ParamText>=*</ParamText> <!-- Bash specific -->
-        <ParamName>watcherFullPath</ParamName>
-        <Command><![CDATA[        export _WatcherFullPath="${i#*=}"
-        if [ ! -f "$_WatcherFullPath" ]
-        then
-            echo "The Watcher FullPath %5C%22${_WatcherFullPath}%5C%22 does not exist"
-            usage
-        fi]]></Command>
-        <Description>Path to the test watcher that will look over the test.</Description>
-      </BashCLRTestExecutionScriptArgument>
-
       <BashCLRTestExecutionScriptArgument Include="e;env">
         <HasParam>true</HasParam>
         <ParamText>=*</ParamText> <!-- Bash specific -->
@@ -205,6 +192,12 @@ fi
         fi
         export __DotEnvArg=-e ${__DotEnv}]]></Command>
         <Description>A dotenv file to pass to corerun to set environment variables for the test run.</Description>
+      </BashCLRTestExecutionScriptArgument>
+
+      <BashCLRTestExecutionScriptArgument Include="usewatcher">
+        <HasParam>false</HasParam>
+        <Command><![CDATA[        _RunWithWatcher=1]]></Command>
+        <Description>Run the tests using the test watcher.</Description>
       </BashCLRTestExecutionScriptArgument>
     </ItemGroup>
 
@@ -263,11 +256,11 @@ then
     exit 1
   fi
 
-  # Copy CORECLR native binaries and the test watcher (if provided) to $LinkBin,
+  # Copy CORECLR native binaries and the test watcher to $LinkBin,
   # so that we can run the test based on that directory
   cp $CORE_ROOT/*.so $LinkBin/
   cp $CORE_ROOT/corerun $LinkBin/
-  cp $_WatcherFullPath $LinkBin/
+  cp $CORE_ROOT/watchdog $LinkBin/
 
   # Copy some files that may be arguments
   for f in *.txt;
@@ -277,7 +270,6 @@ then
 
   ExePath=$LinkBin/$(InputAssemblyName)
   export CORE_ROOT=$PWD/$LinkBin
-  export _WatcherFullPath=$PWD/$LinkBin/watchdog
 fi
 ]]>
           </BashLinkerTestLaunchCmds>
@@ -298,7 +290,7 @@ fi
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
-      <WatcherRunFile>"$_WatcherFullPath" 300</WatcherRunFile>
+      <WatcherRunFile>"$CORE_ROOT/watchdog" 300</WatcherRunFile>
 
       <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
@@ -334,7 +326,7 @@ fi
 if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
-elif [ ! -z "$_WatcherFullPath" ]
+elif [ "$_RunWithWatcher" == 1 ];
 then
     LAUNCHER="$(WatcherRunFile) $(CLRTestRunFile)"
 else
@@ -365,7 +357,7 @@ $(BashLinkerTestLaunchCmds)
 if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
-elif [ ! -z "$_WatcherFullPath" ]
+elif [ "$_RunWithWatcher" == 1 ];
 then
     LAUNCHER="$(WatcherRunFile) $(CLRTestRunFile)"
 else
@@ -556,6 +548,7 @@ ReleaseLock()
 }
 cd "$%28dirname "${BASH_SOURCE[0]}")"
 LockFile="lock"
+_RunWithWatcher=0
 
 
 # The __TestEnv variable may be used to specify a script to source before the test.

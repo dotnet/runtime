@@ -376,9 +376,6 @@
 
       <!-- On Windows, you need to "call" a script or else the cmd.exe instance it is running in will exit, and the HelixPostCommands will not execute. -->
       <_MergedWrapperRunScriptPrefix Condition="'$(TestWrapperTargetsWindows)' == 'true'">call </_MergedWrapperRunScriptPrefix>
-
-      <_MergedWrapperRunScriptWatcherArgs Condition="'$(TestWrapperTargetsWindows)' != 'true'">-watcher=./watchdog</_MergedWrapperRunScriptWatcherArgs>
-      <_MergedWrapperRunScriptWatcherArgs Condition="'$(TestWrapperTargetsWindows)' == 'true'">/watcher=.\watchdog.exe</_MergedWrapperRunScriptWatcherArgs>
     </PropertyGroup>
 
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
@@ -414,8 +411,8 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
-      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) $(_MergedWrapperRunScriptWatcherArgs) --aot-lazy-assembly-load" />
-      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) $(_MergedWrapperRunScriptWatcherArgs)" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher --aot-lazy-assembly-load" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher" />
       <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
     </ItemGroup>
 
@@ -721,17 +718,11 @@
     <XUnitRunnerDll>$CORE_ROOT/xunit/xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <TestWatcherDirectory>$(ArtifactsDir)obj/coreclr/$(OSPlatformConfig)/test-watchdog/</TestWatcherDirectory>
-    <TestWatcherDirectory>$([MSBuild]::NormalizePath($(TestWatcherDirectory)))</TestWatcherDirectory>
-  </PropertyGroup>
-
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
     <!-- Browser-Wasm follows a very different workflow, which is currently out of scope of the Log Checker and Test Watcher. -->
     <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true'" />
-    <HelixCorrelationPayload Include="$(TestWatcherDirectory)" Condition="'$(TargetsBrowser)' != 'true'" />
 
     <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
     <LegacyPayloads Update="@(LegacyPayloads)">

@@ -217,18 +217,12 @@ Exit /b 0
         <Description>Set CORE_ROOT to the specified value before running the test.</Description>
       </BatchCLRTestExecutionScriptArgument>
 
-      <BatchCLRTestExecutionScriptArgument Include="watcher">
-        <HasParam>true</HasParam>
-        <ParamName>watcherFullPath</ParamName>
+      <BatchCLRTestExecutionScriptArgument Include="usewatcher">
+        <HasParam>false</HasParam>
         <Command><![CDATA[
-    IF EXIST "%2" (
-        set _WatcherFullPath=%2
-    ) ELSE (
-        ECHO The Watcher FullPath "%2" does not exist
-        GOTO :USAGE
-    )
+    set /A _RunWithWatcher=1
         ]]></Command>
-        <Description>Path to the test watcher that will look over the test.</Description>
+        <Description>Run the tests using the test watcher.</Description>
       </BatchCLRTestExecutionScriptArgument>
     </ItemGroup>
 
@@ -274,19 +268,18 @@ IF defined DoLink (
       Exit /b 1
     )
 
-    REM Copy CORECLR native binaries and the test watcher (if provided) to %LinkBin%, so that we can run the test based on that directory
+    REM Copy CORECLR native binaries and the test watcher to %LinkBin%, so that we can run the test based on that directory
     copy %CORE_ROOT%\clrjit.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\coreclr.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\mscorrc.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\CoreRun.exe %LinkBin% > nul 2> nul
-    copy %_WatcherFullPath% %LinkBin% > nul 2> nul
+    copy %CORE_ROOT%\watchdog.exe %LinkBin% > nul 2> nul
 
     REM Copy some files that may be arguments
     copy *.txt %LinkBin% > nul 2> nul
 
     set ExePath=%LinkBin%\$(InputAssemblyName)
     set CORE_ROOT=%scriptPath%\%LinkBin%
-    set _WatcherFullPath=%scriptPath%\%LinkBin%\watchdog.exe
 )
 ]]>
           </BatchLinkerTestLaunchCmds>
@@ -305,7 +298,7 @@ if defined DoLink (
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
-      <WatcherRunFile>"%_WatcherFullPath%" 300</WatcherRunFile>
+      <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" 300</WatcherRunFile>
 
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
@@ -319,7 +312,7 @@ $(BatchCopyCoreShimLocalCmds)
 
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
-) ELSE IF NOT "%_WatcherFullPath%"=="" (
+) ELSE IF %_RunWithWatcher% EQU 1 (
   set LAUNCHER=$(WatcherRunFile) $(CLRTestRunFile)
 ) ELSE (
   set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
