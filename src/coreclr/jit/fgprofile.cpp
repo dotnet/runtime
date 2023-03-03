@@ -596,6 +596,26 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
            (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
     uint8_t* addrOfCurrentExecutionCount = entry.Offset + profileMemory;
 
+#ifdef DEBUG
+    if (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0)
+    {
+        // Write the current synthesized count as the profile data
+        //
+        weight_t blockWeight = block->bbWeight;
+
+        if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount)
+        {
+            *((uint32_t*)addrOfCurrentExecutionCount) = (uint32_t)blockWeight;
+        }
+        else
+        {
+            *((uint64_t*)addrOfCurrentExecutionCount) = (uint64_t)blockWeight;
+        }
+
+        return;
+    }
+#endif
+
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
 
@@ -1742,6 +1762,32 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 
         uint8_t* addrOfCurrentExecutionCount = profileMemory + entry.Offset;
 
+#ifdef DEBUG
+        if (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0)
+        {
+            // Write the current synthesized count as the profile data
+            //
+            // Todo: handle pseudo edges!
+            FlowEdge* const edge = m_comp->fgGetPredForBlock(source, target);
+
+            if (edge != nullptr)
+            {
+                weight_t edgeWeight = edge->getLikelyWeight();
+
+                if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount)
+                {
+                    *((uint32_t*)addrOfCurrentExecutionCount) = (uint32_t)edgeWeight;
+                }
+                else
+                {
+                    *((uint64_t*)addrOfCurrentExecutionCount) = (uint64_t)edgeWeight;
+                }
+            }
+
+            return;
+        }
+#endif
+
         // Determine where to place the probe.
         //
         BasicBlock* instrumentedBlock = nullptr;
@@ -2428,7 +2474,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     }
 
 #ifdef DEBUG
-    // Optionally just run synthesis
+    // Optionally run synthesis
     //
     if ((JitConfig.JitSynthesizeCounts() > 0) && !compIsForInlining())
     {
@@ -2438,6 +2484,17 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
             return PhaseStatus::MODIFIED_EVERYTHING;
         }
+    }
+
+    // Or run synthesis and save the data out as the actual profile data
+    //
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) &&
+        (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !compIsForInlining())
+    {
+        JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+        fgPgoHaveWeights = false;
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 #endif
 
@@ -4845,15 +4902,8 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //   (or nearly so)
 //
 // Notes:
-//   For each profiled block, check that the flow of counts into
-//   the block matches the flow of counts out of the block.
-//
-//   We ignore EH flow as we don't have explicit edges and generally
-//   we expect EH edge counts to be small, so errors from ignoring
-//   them should be rare.
-//
-//   There's no point checking until we've built pred lists, as
-//   we can't easily reason about consistency without them.
+//   Does nothing, if profile checks are disabled, or there are
+//   no profile weights or pred lists.
 //
 void Compiler::fgDebugCheckProfileWeights()
 {
@@ -4865,13 +4915,37 @@ void Compiler::fgDebugCheckProfileWeights()
         return;
     }
 
+    fgDebugCheckProfileWeights((ProfileChecks)JitConfig.JitProfileChecks());
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckProfileWeights: verify profile weights are self-consistent
+//   (or nearly so)
+//
+// Arguments:
+//   checks - checker options
+//
+// Notes:
+//   For each profiled block, check that the flow of counts into
+//   the block matches the flow of counts out of the block.
+//
+//   We ignore EH flow as we don't have explicit edges and generally
+//   we expect EH edge counts to be small, so errors from ignoring
+//   them should be rare.
+//
+//   There's no point checking until we've built pred lists, as
+//   we can't easily reason about consistency without them.
+//
+void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
+{
     // We can check classic (min/max, late computed) weights
     //   and/or
     // new likelyhood based weights.
     //
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && (JitConfig.JitProfileChecks() & 0x1) == 0x1;
-    const bool verifyLikelyWeights  = (JitConfig.JitProfileChecks() & 0x2) == 0x2;
-    const bool assertOnFailure      = (JitConfig.JitProfileChecks() & 0x4) == 0x4;
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
+    const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
@@ -4891,7 +4965,7 @@ void Compiler::fgDebugCheckProfileWeights()
     //
     for (BasicBlock* const block : Blocks())
     {
-        if (!block->hasProfileWeight())
+        if (!block->hasProfileWeight() && !checkAllBlocks)
         {
             unprofiledBlocks++;
             continue;
@@ -4929,8 +5003,11 @@ void Compiler::fgDebugCheckProfileWeights()
         //
         if (block->KindIs(BBJ_RETURN, BBJ_THROW))
         {
-            exitWeight += blockWeight;
-            exitProfiled   = !opts.IsOSR();
+            if (BasicBlock::sameHndRegion(block, fgFirstBB))
+            {
+                exitWeight += blockWeight;
+                exitProfiled = !opts.IsOSR();
+            }
             verifyOutgoing = false;
         }
 
@@ -4969,12 +5046,12 @@ void Compiler::fgDebugCheckProfileWeights()
 
         if (verifyIncoming)
         {
-            incomingConsistent = fgDebugCheckIncomingProfileData(block);
+            incomingConsistent = fgDebugCheckIncomingProfileData(block, checks);
         }
 
         if (verifyOutgoing)
         {
-            outgoingConsistent = fgDebugCheckOutgoingProfileData(block);
+            outgoingConsistent = fgDebugCheckOutgoingProfileData(block, checks);
         }
 
         if (!incomingConsistent || !outgoingConsistent)
@@ -4987,7 +5064,13 @@ void Compiler::fgDebugCheckProfileWeights()
     //
     if (entryProfiled && exitProfiled)
     {
-        if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
+        // Note these may not agree, if fgEntryBB is a loop header.
+        //
+        if (fgFirstBB->bbRefs > 1)
+        {
+            JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n");
+        }
+        else if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
         {
             problemBlocks++;
             JITDUMP("  Method entry " FMT_WT " method exit " FMT_WT " weight mismatch\n", entryWeight, exitWeight);
@@ -5025,7 +5108,8 @@ void Compiler::fgDebugCheckProfileWeights()
 //   block matches the profile weight of the block.
 //
 // Arguments:
-//   block - block to check
+//   block  - block to check
+//   checks - checker options
 //
 // Returns:
 //   true if counts consistent or checking disabled, false otherwise.
@@ -5033,10 +5117,10 @@ void Compiler::fgDebugCheckProfileWeights()
 // Notes:
 //   Only useful to call on blocks with predecessors.
 //
-bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
+bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && (JitConfig.JitProfileChecks() & 0x1) == 0x1;
-    const bool verifyLikelyWeights  = (JitConfig.JitProfileChecks() & 0x2) == 0x2;
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
@@ -5056,7 +5140,10 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
         incomingWeightMax += predEdge->edgeWeightMax();
         if (predEdge->hasLikelihood())
         {
-            incomingLikelyWeight += predEdge->getLikelyWeight();
+            if (BasicBlock::sameHndRegion(block, predEdge->getSourceBlock()))
+            {
+                incomingLikelyWeight += predEdge->getLikelyWeight();
+            }
         }
         else
         {
@@ -5122,6 +5209,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
 //
 // Arguments:
 //   block - block to check
+//   checks - checker options
 //
 // Returns:
 //   true if counts consistent or checking disabled, false otherwise.
@@ -5129,10 +5217,10 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
 // Notes:
 //   Only useful to call on blocks with successors.
 //
-bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
+bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && (JitConfig.JitProfileChecks() & 0x1) == 0x1;
-    const bool verifyLikelyWeights  = (JitConfig.JitProfileChecks() & 0x2) == 0x2;
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
