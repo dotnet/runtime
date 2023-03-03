@@ -1529,6 +1529,10 @@
             <Issue>Static virtual methods are not yet implemented in the Mono runtime.</Issue>
         </ExcludeList>
 
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/InlineArray/**">
+            <Issue>InlineArray support is not yet implemented in the Mono runtime.</Issue>
+        </ExcludeList>
+
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
