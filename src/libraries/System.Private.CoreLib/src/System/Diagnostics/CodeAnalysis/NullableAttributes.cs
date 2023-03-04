@@ -128,7 +128,7 @@ namespace System.Diagnostics.CodeAnalysis
 #endif
 
     /// <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor, Inherited = false, AllowMultiple = true)]
 #if SYSTEM_PRIVATE_CORELIB
     public
 #else
