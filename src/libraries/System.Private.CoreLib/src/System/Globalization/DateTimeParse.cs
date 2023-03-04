@@ -3296,7 +3296,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             result = -1;
             if (str.GetNext())
             {
-                if (dtfi.CultureName == "")
+                if (ReferenceEquals(dtfi, DateTimeFormat.InvariantFormatInfo))
                 {
                     // Invariant data. Do a fast lookup on the known abbreviated month names.
                     ReadOnlySpan<char> span = str.Value.Slice(str.Index);
@@ -3398,7 +3398,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             result = -1;
             if (str.GetNext())
             {
-                if (dtfi.CultureName == "")
+                if (ReferenceEquals(dtfi, DateTimeFormat.InvariantFormatInfo))
                 {
                     // Invariant data. Do a fast lookup on the known month names.
                     ReadOnlySpan<char> span = str.Value.Slice(str.Index);
@@ -3499,7 +3499,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             result = -1;
             if (str.GetNext())
             {
-                if (dtfi.CultureName == "")
+                if (ReferenceEquals(dtfi, DateTimeFormat.InvariantFormatInfo))
                 {
                     // Invariant data. Do a fast lookup on the known abbreviated day names.
                     ReadOnlySpan<char> span = str.Value.Slice(str.Index);
@@ -3566,7 +3566,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             result = -1;
             if (str.GetNext())
             {
-                if (dtfi.CultureName == "")
+                if (ReferenceEquals(dtfi, DateTimeFormat.InvariantFormatInfo))
                 {
                     // Invariant data. Do a fast lookup on the known day names.
                     ReadOnlySpan<char> span = str.Value.Slice(str.Index);
