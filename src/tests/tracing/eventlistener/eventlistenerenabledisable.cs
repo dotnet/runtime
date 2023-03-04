@@ -21,7 +21,7 @@ namespace Tracing.Tests
         internal void TestEvent() { this.WriteEvent(1); }
 
         [NonEvent]
-        protected override OnEventCommand(EventCommandEventArgs command)
+        protected override void OnEventCommand(EventCommandEventArgs command)
         {
             base.OnEventCommand(command);
 
@@ -58,14 +58,15 @@ namespace Tracing.Tests
             DisableEvents(_target);
         }
 
-        public bool Dispose(bool disableEvents)
+        public void Dispose(bool disableEvents)
         {
+            base.Dispose();
+
             if (disableEvents)
             {
+                // Dispose should call DisableEvents for us, this should be ignored after Dispose()
                 Disable();
             }
-
-            base.Dispose();
         }
     }
 
@@ -77,8 +78,14 @@ namespace Tracing.Tests
         static int Main()
         {
             bool pass = false;
-            using(var source = new EnableDisableEventSource()
+            using(var source = new EnableDisableEventSource())
             {
+                // Testing three scenarios:
+                //      listener1 calls EnableEvents but never calls DisableEvents
+                //      listener2 calls EnableEvents and calls DisableEvents outside of Dispose
+                //      listener3 calls EnableEvents and calls DisableEvents inside of Dispose
+                // 
+                // We should get an Enable and Disable for all of them
                 using (var listener1 = new EnableDisableListener())
                 using (var listener2 = new EnableDisableListener())
                 {
@@ -87,7 +94,6 @@ namespace Tracing.Tests
                     listener3.Dispose(true);
 
                     listener2.Disable();
-                    listener1.Disable();
                 }
 
                 if (source._enables == 3 && source._disables == 3)

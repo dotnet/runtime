@@ -4219,6 +4219,23 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        // If an EventListener calls Dispose without calling DisableEvents first we want to issue the Disable command now
+        private static void CallDisableEventsIfNecessary(EventDispatcher eventDispatcher, EventSource eventSource)
+        {
+            if (eventDispatcher.m_EventEnabled == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < eventDispatcher.m_EventEnabled.Length; ++i)
+            {
+                if (eventDispatcher.m_EventEnabled[i])
+                {
+                    eventDispatcher.m_Listener.DisableEvents(eventSource);
+                }
+            }
+        }
+
         /// <summary>
         /// Helper used in code:Dispose that removes any references to 'listenerToRemove' in any of the
         /// eventSources in the appdomain.
@@ -4237,7 +4254,10 @@ namespace System.Diagnostics.Tracing
                     Debug.Assert(eventSource.m_Dispatchers != null);
                     // Is the first output dispatcher the dispatcher we are removing?
                     if (eventSource.m_Dispatchers.m_Listener == listenerToRemove)
+                    {
+                        CallDisableEventsIfNecessary(eventSource.m_Dispatchers!, eventSource);
                         eventSource.m_Dispatchers = eventSource.m_Dispatchers.m_Next;
+                    }
                     else
                     {
                         // Remove 'listenerToRemove' from the eventSource.m_Dispatchers linked list.
@@ -4252,6 +4272,7 @@ namespace System.Diagnostics.Tracing
                             }
                             if (cur.m_Listener == listenerToRemove)
                             {
+                                CallDisableEventsIfNecessary(cur!, eventSource);
                                 prev.m_Next = cur.m_Next;       // Remove entry.
                                 break;
                             }
