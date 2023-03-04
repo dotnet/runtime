@@ -74,7 +74,6 @@ if (CMAKE_USE_PTHREADS)
     add_linker_flag(-pthread)
 endif()
 
-
 if (LOCAL_BUILD)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_static.c)
