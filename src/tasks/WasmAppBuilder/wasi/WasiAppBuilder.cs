@@ -82,6 +82,8 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
         if (!DeployFiles(FilesToIncludeInFileSystem, nameof(FilesToIncludeInFileSystem)))
             return false;
 
+        Directory.CreateDirectory(Path.Combine(AppDir, "tmp"));
+
         UpdateRuntimeConfigJson();
         return !Log.HasLoggedErrors;
 
