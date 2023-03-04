@@ -16212,18 +16212,19 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
     return true;
 }
 
-void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
+void Compiler::gtSplitTree(
+    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
 {
     class Splitter final : public GenTreeVisitor<Splitter>
     {
         BasicBlock* m_bb;
-        Statement* m_splitStmt;
-        GenTree* m_splitNode;
+        Statement*  m_splitStmt;
+        GenTree*    m_splitNode;
 
         struct UseInfo
         {
             GenTree** Use;
-            GenTree* User;
+            GenTree*  User;
         };
         ArrayStack<UseInfo> m_useStack;
 
@@ -16235,16 +16236,21 @@ void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoi
             UseExecutionOrder = true
         };
 
-        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode) : GenTreeVisitor(compiler), m_bb(bb), m_splitStmt(stmt), m_splitNode(splitNode), m_useStack(compiler->getAllocator(CMK_ArrayStack))
+        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode)
+            : GenTreeVisitor(compiler)
+            , m_bb(bb)
+            , m_splitStmt(stmt)
+            , m_splitNode(splitNode)
+            , m_useStack(compiler->getAllocator(CMK_ArrayStack))
         {
         }
 
         Statement* FirstStatement = nullptr;
-        GenTree** SplitNodeUse = nullptr;
+        GenTree**  SplitNodeUse   = nullptr;
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            m_useStack.Push(UseInfo{ use, user });
+            m_useStack.Push(UseInfo{use, user});
             return WALK_CONTINUE;
         }
 
@@ -16280,8 +16286,8 @@ void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoi
     private:
         void SplitOutUse(const UseInfo& useInf)
         {
-            GenTree** use = useInf.Use;
-            GenTree* user = useInf.User;
+            GenTree** use  = useInf.Use;
+            GenTree*  user = useInf.User;
 
             if ((*use)->IsInvariant())
             {
@@ -16304,7 +16310,7 @@ void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoi
                 if ((*use)->OperIsUnary())
                 {
                     user = *use;
-                    use = &(*use)->AsUnOp()->gtOp1;
+                    use  = &(*use)->AsUnOp()->gtOp1;
                 }
                 else
                 {
@@ -16313,7 +16319,8 @@ void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoi
             }
 
             Statement* stmt = nullptr;
-            if (!(*use)->IsValue() || (*use)->OperIs(GT_ASG) || (user == nullptr) || (user->OperIs(GT_COMMA) && user->gtGetOp1() == *use))
+            if (!(*use)->IsValue() || (*use)->OperIs(GT_ASG) || (user == nullptr) ||
+                (user->OperIs(GT_COMMA) && user->gtGetOp1() == *use))
             {
                 GenTree* sideEffects = nullptr;
                 m_compiler->gtExtractSideEffList(*use, &sideEffects);
@@ -16326,9 +16333,9 @@ void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoi
             else
             {
                 unsigned lclNum = m_compiler->lvaGrabTemp(true, "Spilling to split statement for tree");
-                GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
-                stmt = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
-                *use = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
+                GenTree* asg    = m_compiler->gtNewTempAssign(lclNum, *use);
+                stmt            = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
+                *use            = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
             }
 
             if (stmt != nullptr)
@@ -16337,7 +16344,9 @@ void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoi
                 {
                     FirstStatement = m_splitStmt;
                 }
-
+                m_compiler->gtUpdateStmtSideEffects(stmt);
+                m_compiler->gtSetStmtInfo(stmt);
+                m_compiler->fgSetStmtSeq(stmt);
                 m_compiler->fgInsertStmtBefore(m_bb, FirstStatement, stmt);
                 FirstStatement = stmt;
             }
