@@ -7076,10 +7076,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
         {
-            size_t     curInstrAddr = (size_t)cp;
-            instrDesc* curInstrDesc = id;
 #ifdef DEBUG
-
             if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
                 (id->idCodeSize() > 0))
             {
@@ -7106,16 +7103,20 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     ++nextMapping;
                 }
             }
-
 #endif
-
             size_t insSize = emitIssue1Instr(ig, id, &cp);
             emitAdvanceInstrDesc(&id, insSize);
+        }
 
-            // Print the alignment boundary
-            if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
-                (INDEBUG(emitComp->opts.disAddr ||) emitComp->opts.disAlignment))
+        // Print the alignment boundary
+        if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
+            (INDEBUG(emitComp->opts.disAddr ||) emitComp->opts.disAlignment))
+        {
+            for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
             {
+                size_t     curInstrAddr = (size_t)cp;
+                instrDesc* curInstrDesc = id;
+
                 size_t      afterInstrAddr   = (size_t)cp;
                 instruction curIns           = curInstrDesc->idIns();
                 bool        isJccAffectedIns = false;
