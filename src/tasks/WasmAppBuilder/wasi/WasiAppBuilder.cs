@@ -62,6 +62,7 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
             }
         }
 
+        // TODO: Files on disk are not solved for IsSingleFileBundle yet
         foreach (ITaskItem item in NativeAssets)
         {
             string dest = Path.Combine(AppDir, Path.GetFileName(item.ItemSpec));
@@ -81,6 +82,8 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
             return false;
         if (!DeployFiles(FilesToIncludeInFileSystem, nameof(FilesToIncludeInFileSystem)))
             return false;
+
+        Directory.CreateDirectory(Path.Combine(AppDir, "tmp"));
 
         UpdateRuntimeConfigJson();
         return !Log.HasLoggedErrors;
