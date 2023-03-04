@@ -2294,13 +2294,14 @@ namespace Internal.JitInterface
                     Debug.Assert(field.Offset.AsInt == 0);
                     int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;
                     int elementLayoutSize = fieldType.GetElementSize().AsInt / PointerSize;
+                    int gcPointersInElement = result;
                     for (int offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
                     {
                         Buffer.MemoryCopy(gcPtrs, gcPtrs + offset, elementLayoutSize, elementLayoutSize);
-                        result += elementLayoutSize;
+                        result += gcPointersInElement;
                     }
 
-                    // value array has only one element field
+                    // inline array has only one element field
                     break;
                 }
             }

@@ -2194,13 +2194,14 @@ static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
             _ASSERTE(pFD->GetOffset() == 0);
             DWORD totalLayoutSize = pMT->GetNumInstanceFieldBytes() / TARGET_POINTER_SIZE;
             DWORD elementLayoutSize = pFD->GetSize() / TARGET_POINTER_SIZE;
+            DWORD gcPointersInElement = result;
             for (DWORD offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
             {
                 memcpy(gcPtrs + offset, gcPtrs, elementLayoutSize);
-                result += elementLayoutSize;
+                result += gcPointersInElement;
             }
 
-            // value array has only one element field
+            // inline array has only one element field
             break;
         }
     }
