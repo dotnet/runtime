@@ -9453,9 +9453,10 @@ public:
         bool optRepeat; // Repeat optimizer phases k times
 #endif
 
-        bool disAsm;      // Display native code as it is generated
-        bool dspDiffable; // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
-        bool disDiffable; // Makes the Disassembly code 'diff-able'
+        bool disAsm;       // Display native code as it is generated
+        bool dspDiffable;  // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
+        bool disDiffable;  // Makes the Disassembly code 'diff-able'
+        bool disAlignment; // Display alignment boundaries in disassembly code
 #ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated
@@ -9468,7 +9469,6 @@ public:
         bool disAsmSpilled;            // Display native code when any register spilling occurs
         bool disasmWithGC;             // Display GC info interleaved with disassembly.
         bool disAddr;                  // Display process address next to each instruction in disassembly code
-        bool disAlignment;             // Display alignment boundaries in disassembly code
         bool disAsm2;                  // Display native code after it is generated using external disassembler
         bool dspOrder;                 // Display names of each of the methods that we ngen/jit
         bool dspUnwind;                // Display the unwind info output
