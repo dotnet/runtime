@@ -71,11 +71,15 @@ namespace System.Diagnostics.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(ProcessWindowStyle.Normal)]
-        [InlineData(ProcessWindowStyle.Hidden)]
-        [InlineData(ProcessWindowStyle.Minimized)]
-        [InlineData(ProcessWindowStyle.Maximized)]
-        public void TestWindowStyleUseShellExecuteFalse(ProcessWindowStyle windowStyle)
+        [InlineData(ProcessWindowStyle.Normal, true)]
+        [InlineData(ProcessWindowStyle.Normal, false)]
+        [InlineData(ProcessWindowStyle.Hidden, true)]
+        [InlineData(ProcessWindowStyle.Hidden, false)]
+        [InlineData(ProcessWindowStyle.Minimized, true)]
+        [InlineData(ProcessWindowStyle.Minimized, false)]
+        [InlineData(ProcessWindowStyle.Maximized, true)]
+        [InlineData(ProcessWindowStyle.Maximized, false)]
+        public void TestWindowStyle(ProcessWindowStyle windowStyle, bool useShellExecute)
         {
             // "x y" where x is the expected dwFlags & 0x1 result and y is the wShowWindow value
             (int expectedDwFlag, int expectedWindowFlag) = windowStyle switch
@@ -83,20 +87,23 @@ namespace System.Diagnostics.Tests
                 ProcessWindowStyle.Hidden => (1, 0),
                 ProcessWindowStyle.Minimized => (1, 2),
                 ProcessWindowStyle.Maximized => (1, 3),
-                _ => (0, 0),
+                // UseShellExecute always sets the flag but no shell does not for Normal.
+                _ => useShellExecute ? (1, 1) : (0, 0),
             };
 
             using Process p = CreateProcess((string procArg) =>
             {
-                Interop.GetStartupInfoW(out STARTUPINFO si);
+                Interop.GetStartupInfoW(out Interop.STARTUPINFO si);
 
+                string[] argSplit = procArg.Split(" ");
+                int expectedDwFlag = int.Parse(argSplit[0]);
+                short expectedWindowFlag = short.Parse(argSplit[1]);
 
                 Assert.Equal(expectedDwFlag, si.dwFlags);
                 Assert.Equal(expectedWindowFlag, si.wShowWindow);
-                
                 return RemoteExecutor.SuccessExitCode;
-            }, procArg);
-            p.StartInfo.UseShellExecute  = false;
+            }, $"{expectedDwFlag} {expectedWindowFlag}");
+            p.StartInfo.UseShellExecute  = useShellExecute;
             p.StartInfo.WindowStyle = windowStyle;
             p.Start();
 

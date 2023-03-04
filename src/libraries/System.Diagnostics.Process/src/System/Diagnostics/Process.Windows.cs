@@ -497,12 +497,7 @@ namespace System.Diagnostics
 
                     if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
                     {
-                        startupInfo.wShowWindow = startInfo.WindowStyle switch
-                        {
-                            ProcessWindowStyle.Minimized => (short)Interop.Shell32.SW_SHOWMINIMIZED,
-                            ProcessWindowStyle.Maximized => (short)Interop.Shell32.SW_SHOWMAXIMIZED,
-                            _ => (short)Interop.Shell32.SW_HIDE,
-                        };
+                        startupInfo.wShowWindow = (short)GetShowWindowFromWindowStyle(startInfo.WindowStyle);
                         startupInfo.dwFlags |= Interop.Advapi32.StartupInfoOptions.STARTF_USESHOWWINDOW;
                     }
 
