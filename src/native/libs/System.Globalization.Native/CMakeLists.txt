@@ -112,9 +112,6 @@ if (GEN_SHARED_LIB)
         include(CMakeFindFrameworks)
         find_library(FOUNDATION Foundation REQUIRED)
     endif()
-    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-        find_library(ICUCORE icucore REQUIRED)
-    endif()
 
     add_library(System.Globalization.Native
         SHARED
@@ -125,7 +122,6 @@ if (GEN_SHARED_LIB)
     target_link_libraries(System.Globalization.Native
         dl
         ${FOUNDATION}
-        ${ICUCORE}
     )
 
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
