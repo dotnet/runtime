@@ -78,30 +78,23 @@ namespace System.Diagnostics.Tests
         public void TestWindowStyleUseShellExecuteFalse(ProcessWindowStyle windowStyle)
         {
             // "x y" where x is the expected dwFlags & 0x1 result and y is the wShowWindow value
-            string procArg = windowStyle switch
+            (int expectedDwFlag, int expectedWindowFlag) = windowStyle switch
             {
-                ProcessWindowStyle.Hidden => "1 0",
-                ProcessWindowStyle.Minimized => "1 2",
-                ProcessWindowStyle.Maximized => "1 3",
-                _ => "0 0",
+                ProcessWindowStyle.Hidden => (1, 0),
+                ProcessWindowStyle.Minimized => (1, 2),
+                ProcessWindowStyle.Maximized => (1, 3),
+                _ => (0, 0),
             };
 
-            Process p = CreateProcess((string procArg) =>
+            using Process p = CreateProcess((string procArg) =>
             {
-                Interop.GetStartupInfoW(out var si);
+                Interop.GetStartupInfoW(out STARTUPINFO si);
 
-                string[] argSplit = procArg.Split(" ");
-                int expectedFlags = int.Parse(argSplit[0]);
-                short expectedWindow = short.Parse(argSplit[1]);
 
-                if ((si.dwFlags & 0x00000001) == expectedFlags && si.wShowWindow == expectedWindow)
-                {
-                    return RemoteExecutor.SuccessExitCode;
-                }
-                else
-                {
-                    return -1;
-                }
+                Assert.Equal(expectedDwFlag, si.dwFlags);
+                Assert.Equal(expectedWindowFlag, si.wShowWindow);
+                
+                return RemoteExecutor.SuccessExitCode;
             }, procArg);
             p.StartInfo.UseShellExecute  = false;
             p.StartInfo.WindowStyle = windowStyle;
