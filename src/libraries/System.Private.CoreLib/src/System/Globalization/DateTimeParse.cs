@@ -13,10 +13,6 @@ namespace System
     {
         internal const int MaxDateTimeNumberDigits = 8;
 
-        internal delegate bool MatchNumberDelegate(ref __DTString str, int digitLen, out int result);
-
-        private static readonly MatchNumberDelegate s_hebrewNumberParser = new MatchNumberDelegate(MatchHebrewDigits);
-
         internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = default; // The buffer to store the parsing result.
@@ -3071,7 +3067,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static bool MatchHebrewDigits(ref __DTString str, int digitLen, out int number)
+        internal static bool MatchHebrewDigits(ref __DTString str, out int number)
         {
             number = 0;
 
@@ -3919,12 +3915,21 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 case 's':       // Sortable format (in local time)
                 case 'o':
                 case 'O':       // Round Trip Format
-                    ConfigureFormatOS(ref dtfi, ref parseInfo);
+                    parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
+                    dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
+
                 case 'r':
                 case 'R':       // RFC 1123 Standard.  (in Universal time)
-                    ConfigureFormatR(ref dtfi, ref parseInfo, ref result);
+                    parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
+                    dtfi = DateTimeFormatInfo.InvariantInfo;
+
+                    if ((result.flags & ParseFlags.CaptureOffset) != 0)
+                    {
+                        result.flags |= ParseFlags.Rfc1123Pattern;
+                    }
                     break;
+
                 case 'u':       // Universal time format in sortable format.
                     parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
                     dtfi = DateTimeFormatInfo.InvariantInfo;
@@ -3934,6 +3939,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         result.flags |= ParseFlags.UtcSortPattern;
                     }
                     break;
+
                 case 'U':       // Universal time format with culture-dependent format.
                     parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
                     result.flags |= ParseFlags.TimeZoneUsed;
@@ -3969,22 +3975,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
 
             return true;
-        }
-
-        private static void ConfigureFormatR(scoped ref DateTimeFormatInfo dtfi, scoped ref ParsingInfo parseInfo, scoped ref DateTimeResult result)
-        {
-            parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
-            dtfi = DateTimeFormatInfo.InvariantInfo;
-            if ((result.flags & ParseFlags.CaptureOffset) != 0)
-            {
-                result.flags |= ParseFlags.Rfc1123Pattern;
-            }
-        }
-
-        private static void ConfigureFormatOS(scoped ref DateTimeFormatInfo dtfi, scoped ref ParsingInfo parseInfo)
-        {
-            parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
-            dtfi = DateTimeFormatInfo.InvariantInfo;
         }
 
         // Given a specified format character, parse and update the parsing result.
@@ -4025,9 +4015,9 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         }
                         parseResult = ParseDigits(ref str, tokenLen, out tempYear);
                     }
-                    if (!parseResult && parseInfo.fCustomNumberParser)
+                    if (!parseResult && parseInfo.fUseHebrewNumberParser)
                     {
-                        parseResult = parseInfo.parseNumberDelegate(ref str, tokenLen, out tempYear);
+                        parseResult = MatchHebrewDigits(ref str, out tempYear);
                     }
                     if (!parseResult)
                     {
@@ -4045,8 +4035,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     {
                         if (!ParseDigits(ref str, tokenLen, out tempMonth))
                         {
-                            if (!parseInfo.fCustomNumberParser ||
-                                !parseInfo.parseNumberDelegate(ref str, tokenLen, out tempMonth))
+                            if (!parseInfo.fUseHebrewNumberParser ||
+                                !MatchHebrewDigits(ref str, out tempMonth))
                             {
                                 result.SetBadDateTimeFailure();
                                 return false;
@@ -4087,8 +4077,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
                         if (!ParseDigits(ref str, tokenLen, out tempDay))
                         {
-                            if (!parseInfo.fCustomNumberParser ||
-                                !parseInfo.parseNumberDelegate(ref str, tokenLen, out tempDay))
+                            if (!parseInfo.fUseHebrewNumberParser ||
+                                !MatchHebrewDigits(ref str, out tempDay))
                             {
                                 result.SetBadDateTimeFailure();
                                 return false;
@@ -4583,10 +4573,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             DateTimeFormatInfo dtfi,
             scoped ref DateTimeResult result)
         {
-            ParsingInfo parseInfo = default;
-            parseInfo.Init();
-
-            parseInfo.calendar = dtfi.Calendar;
+            var parseInfo = new ParsingInfo(dtfi.Calendar);
             parseInfo.fAllowInnerWhite = ((styles & DateTimeStyles.AllowInnerWhite) != 0);
             parseInfo.fAllowTrailingWhite = ((styles & DateTimeStyles.AllowTrailingWhite) != 0);
 
@@ -4597,17 +4584,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 // Fast-paths for common and important formats/configurations.
                 if (styles == DateTimeStyles.None)
                 {
-                    switch (formatParamChar)
+                    switch (formatParamChar | 0x20)
                     {
-                        case 'R':
                         case 'r':
-                            ConfigureFormatR(ref dtfi, ref parseInfo, ref result);
-                            return ParseFormatR(s, ref parseInfo, ref result);
+                            return TryParseFormatR(s, ref result);
 
-                        case 'O':
                         case 'o':
-                            ConfigureFormatOS(ref dtfi, ref parseInfo);
-                            return ParseFormatO(s, ref result);
+                            return TryParseFormatO(s, ref result);
                     }
                 }
 
@@ -4623,11 +4606,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
             result.calendar = parseInfo.calendar;
 
-            if (parseInfo.calendar.ID == CalendarId.HEBREW)
-            {
-                parseInfo.parseNumberDelegate = s_hebrewNumberParser;
-                parseInfo.fCustomNumberParser = true;
-            }
+            parseInfo.fUseHebrewNumberParser = parseInfo.calendar.ID == CalendarId.HEBREW;
 
             // Reset these values to negative one so that we could throw exception
             // if we have parsed every item twice.
@@ -4787,7 +4766,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return DetermineTimeZoneAdjustments(ref result, styles, bTimeOnly);
         }
 
-        private static bool ParseFormatR(ReadOnlySpan<char> source, scoped ref ParsingInfo parseInfo, scoped ref DateTimeResult result)
+        private static bool TryParseFormatR(ReadOnlySpan<char> source, scoped ref DateTimeResult result)
         {
             // Example:
             // Tue, 03 Jan 2017 08:08:05 GMT
@@ -4965,8 +4944,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
 
-            // Validate that the parsed date is valid according to the calendar.
-            if (!parseInfo.calendar.TryToDateTime(year, month, day, hour, minute, second, 0, 0, out result.parsedDate))
+            // Validate that the parsed date is valid.
+            if (!DateTime.TryCreate(year, month, day, hour, minute, second, 0, out result.parsedDate))
             {
                 result.SetFailure(ParseFailureKind.Format_BadDateTimeCalendar);
                 return false;
@@ -4982,7 +4961,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static bool ParseFormatO(ReadOnlySpan<char> source, scoped ref DateTimeResult result)
+        private static bool TryParseFormatO(ReadOnlySpan<char> source, scoped ref DateTimeResult result)
         {
             // Examples:
             // 2017-06-12T05:30:45.7680000        (interpreted as local time wrt to current time zone)
@@ -6186,11 +6165,11 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal bool fUseTwoDigitYear;
         internal bool fAllowInnerWhite;
         internal bool fAllowTrailingWhite;
-        internal bool fCustomNumberParser;
-        internal DateTimeParse.MatchNumberDelegate parseNumberDelegate;
+        internal bool fUseHebrewNumberParser;
 
-        internal void Init()
+        public ParsingInfo(Calendar calendar)
         {
+            this.calendar = calendar;
             dayOfWeek = -1;
             timeMark = DateTimeParse.TM.NotSet;
         }
