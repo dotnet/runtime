@@ -38,12 +38,14 @@ static void log_icu_error(const char* name, UErrorCode status)
     log_shim_error("ICU call %s failed with error #%d '%s'.", name, status, statusText);
 }
 
+#if defined(ICU_TRACING)
 static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int32_t level, const char* fmt, va_list args)
 {
     char buf[1000];
     utrace_vformat(buf, sizeof(buf), 0, fmt, args);
     printf("[ICUDT] %s: %s\n", utrace_functionName(fnNumber), buf);
 }
+#endif
 
 static int32_t load_icu_data(const void* pData);
 

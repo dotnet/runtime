@@ -14,9 +14,6 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     add_compile_options(-Wno-extra-semi-stmt)
     add_compile_options(-Wno-unknown-warning-option)
 
-    # pal_icushim_static.c(41,24): error G026380BD: unused function 'icu_trace_data'
-    add_compile_options(-Wno-unused-function)
-
     if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED CMAKE_ICU_DIR)
         if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
             execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
