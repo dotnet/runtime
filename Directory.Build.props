@@ -183,9 +183,6 @@
     <_portableOS Condition="'$(_portableOS)' == 'windows'">win</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableOS)' == 'linux-musl'">linux-musl</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableOS)' == 'linux-bionic'">linux-bionic</_portableOS>
-
-    <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
-    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
   </PropertyGroup>
 
   <!-- PackageRID is used for packages needed for the target. -->
@@ -231,6 +228,8 @@
     <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
     <TargetsSolaris Condition="'$(TargetOS)' == 'solaris'">true</TargetsSolaris>
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
+    <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
+    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>
