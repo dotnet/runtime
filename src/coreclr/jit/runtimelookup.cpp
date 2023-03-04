@@ -124,7 +124,9 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 // We've just split a block (e.g. in the middle of it) into two blocks.
                 // We have to do the same for the current statement - move all side effects before the runtime
                 // lookup to prevBb
-                gtSplitTree(block, stmt, call);
+                Statement* firstNewStmt;
+                GenTree** callUse;
+                gtSplitTree(block, stmt, call, &firstNewStmt, &callUse);
 
                 // Define a local for the result
                 const unsigned rtLookupLclNum   = lvaGrabTemp(true DEBUGARG("runtime lookup"));

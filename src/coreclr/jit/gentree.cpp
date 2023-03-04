@@ -16212,29 +16212,157 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
     return true;
 }
 
-void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoint)
+void Compiler::gtSplitTree(BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
 {
-    class SideEffectSeparator final : public GenTreeVisitor<SideEffectSeparator>
+    class Splitter final : public GenTreeVisitor<Splitter>
     {
+        BasicBlock* m_bb;
+        Statement* m_splitStmt;
+        GenTree* m_splitNode;
+
+        struct UseInfo
+        {
+            GenTree** Use;
+            GenTree* User;
+        };
+        ArrayStack<UseInfo> m_useStack;
+
     public:
         enum
         {
             DoPreOrder        = true,
+            DoPostOrder       = true,
             UseExecutionOrder = true
         };
 
-        SideEffectSeparator(Compiler* compiler) : GenTreeVisitor(compiler)
+        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode) : GenTreeVisitor(compiler), m_bb(bb), m_splitStmt(stmt), m_splitNode(splitNode), m_useStack(compiler->getAllocator(CMK_ArrayStack))
         {
-            // TODO:
         }
+
+        Statement* FirstStatement = nullptr;
+        GenTree** SplitNodeUse = nullptr;
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            return Compiler::WALK_SKIP_SUBTREES;
+            m_useStack.Push(UseInfo{ use, user });
+            return WALK_CONTINUE;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            if (*use == m_splitNode)
+            {
+                GenTree* ancestor = *use;
+                while (!m_useStack.Empty())
+                {
+                    while (m_useStack.Top(0).User == ancestor)
+                    {
+                        SplitOutUse(m_useStack.Pop());
+                    }
+
+                    assert(*m_useStack.Top(0).Use == ancestor);
+                    ancestor = m_useStack.Pop().User;
+                }
+
+                SplitNodeUse = use;
+
+                return WALK_ABORT;
+            }
+
+            while (m_useStack.Top(0).Use != use)
+            {
+                m_useStack.Pop();
+            }
+
+            return WALK_CONTINUE;
+        }
+
+    private:
+        void SplitOutUse(const UseInfo& useInf)
+        {
+            GenTree** use = useInf.Use;
+            GenTree* user = useInf.User;
+
+            if ((*use)->IsInvariant())
+            {
+                return;
+            }
+
+            assert((user == nullptr) || !user->OperIs(GT_ADDR));
+
+            if ((user != nullptr) && user->OperIs(GT_ASG) && (use == &user->AsOp()->gtOp1))
+            {
+                // ASGs are special -- the evaluation of the immediate first
+                // operand happens as part of the assignment, but its children
+                // are still evaluated 'as normal'.
+                //
+                // ADDR is the same but we never expect to have to handle it
+                // here -- it is a unary node, so it cannot be a sibling to the
+                // node we are splitting out.
+                //
+                assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
+                if ((*use)->OperIsUnary())
+                {
+                    user = *use;
+                    use = &(*use)->AsUnOp()->gtOp1;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            Statement* stmt = nullptr;
+            if (!(*use)->IsValue() || (*use)->OperIs(GT_ASG) || (user == nullptr) || (user->OperIs(GT_COMMA) && user->gtGetOp1() == *use))
+            {
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(*use, &sideEffects);
+                if (sideEffects != nullptr)
+                {
+                    stmt = m_compiler->fgNewStmtFromTree(sideEffects, m_splitStmt->GetDebugInfo());
+                }
+                *use = m_compiler->gtNewNothingNode();
+            }
+            else
+            {
+                unsigned lclNum = m_compiler->lvaGrabTemp(true, "Spilling to split statement for tree");
+                GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
+                stmt = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
+                *use = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
+            }
+
+            if (stmt != nullptr)
+            {
+                if (FirstStatement == nullptr)
+                {
+                    FirstStatement = m_splitStmt;
+                }
+
+                m_compiler->fgInsertStmtBefore(m_bb, FirstStatement, stmt);
+                FirstStatement = stmt;
+            }
         }
     };
-    SideEffectSeparator extractor(this);
-    extractor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+
+    GenTree* rootNode = stmt->GetRootNode();
+    if (rootNode == splitPoint)
+    {
+        *firstNewStmt = nullptr;
+        *splitNodeUse = stmt->GetRootNodePointer();
+        return;
+    }
+
+    if (rootNode->OperIs(GT_ASG) && rootNode->gtGetOp1()->OperIs(GT_LCL_VAR) && rootNode->gtGetOp2() == splitPoint)
+    {
+        *firstNewStmt = nullptr;
+        *splitNodeUse = &rootNode->AsOp()->gtOp2;
+        return;
+    }
+
+    Splitter splitter(this, block, stmt, splitPoint);
+    splitter.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    *firstNewStmt = splitter.FirstStatement;
+    *splitNodeUse = splitter.SplitNodeUse;
 }
 
 //------------------------------------------------------------------------
