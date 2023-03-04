@@ -3,7 +3,8 @@
 
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigError, MonoConfigInternal } from "./types";
+import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
+import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -18,21 +19,22 @@ import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController } from "./promise-controller";
 import { string_decoder } from "./strings";
 import { init_managed_exports } from "./managed-exports";
-import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_internal } from "./exports-internal";
-import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
 import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download, wait_for_all_assets } from "./assets";
-import { BINDING, MONO } from "./net6-legacy/imports";
 import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 
+// legacy
+import { init_legacy_exports } from "./net6-legacy/corebindings";
+import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
+import { BINDING, MONO } from "./net6-legacy/imports";
+
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
-let isCustomStartup = false;
 export const dotnetReady = createPromiseController<any>();
 export const afterConfigLoaded = createPromiseController<MonoConfig>();
 export const afterInstantiateWasm = createPromiseController<void>();
@@ -58,8 +60,6 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     const userpostRun: (() => void)[] = !module.postRun ? [] : typeof module.postRun === "function" ? [module.postRun] : module.postRun as any;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     const userOnRuntimeInitialized: () => void = module.onRuntimeInitialized ? module.onRuntimeInitialized : () => { };
-    // when assets don't contain DLLs it means this is Blazor or another custom startup
-    isCustomStartup = !module.configSrc && (!module.config || !module.config.assets || module.config.assets.findIndex(a => a.behavior === "assembly") == -1); // like blazor
 
     // execution order == [0] ==
     // - default or user Module.instantiateWasm (will start downloading dotnet.wasm)
@@ -156,11 +156,11 @@ function preInit(userPreInit: (() => void)[]) {
     (async () => {
         try {
             await mono_wasm_pre_init_essential_async();
-            if (!isCustomStartup) {
-                // - download Module.config from configSrc
-                // - start download assets like DLLs
-                await mono_wasm_pre_init_full();
-            }
+
+            // - download Module.config from configSrc
+            // - start download assets like DLLs
+            await mono_wasm_pre_init_full();
+
             endMeasure(mark, MeasuredBlock.preInit);
         } catch (err) {
             abort_startup(err, true);
@@ -234,11 +234,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
     // signal this stage, this will allow pending assets to allocate memory
     beforeOnRuntimeInitialized.promise_control.resolve();
     try {
-        if (!isCustomStartup) {
-            await wait_for_all_assets();
-            // load runtime
-            await mono_wasm_before_user_runtime_initialized();
-        }
+        await wait_for_all_assets();
+        // load runtime
+        await mono_wasm_before_user_runtime_initialized();
+
         if (config.runtimeOptions) {
             mono_wasm_set_runtime_options(config.runtimeOptions);
         }
@@ -306,9 +305,10 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     // init_polyfills() is already called from export.ts
     init_c_exports();
     cwraps_internal(INTERNAL);
-    cwraps_mono_api(MONO);
-    cwraps_binding_api(BINDING);
-
+    if (WasmEnableLegacyJsInterop) {
+        cwraps_mono_api(MONO);
+        cwraps_binding_api(BINDING);
+    }
     // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
     // emscripten - on a worker since we don't have any other dependencies that causes run() to get
     // called too soon; and then it will get called a second time when dotnet.js calls it directly.
@@ -488,10 +488,14 @@ async function instantiate_wasm_module(
 async function _apply_configuration_from_args() {
     try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        mono_wasm_setenv("TZ", tz || "UTC");
+        if (tz) mono_wasm_setenv("TZ", tz);
     } catch {
-        mono_wasm_setenv("TZ", "UTC");
+        console.info("MONO_WASM: failed to detect timezone, will fallback to UTC");
     }
+
+    // create /usr/share folder which is SpecialFolder.CommonApplicationData
+    Module["FS_createPath"]("/", "usr", true, true);
+    Module["FS_createPath"]("/", "usr/share", true, true);
 
     for (const k in config.environmentVariables) {
         const v = config.environmentVariables![k];
@@ -556,7 +560,9 @@ export function bindings_init(): void {
     try {
         const mark = startMeasure();
         init_managed_exports();
-        init_legacy_exports();
+        if (WasmEnableLegacyJsInterop) {
+            init_legacy_exports();
+        }
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
         runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
@@ -698,15 +704,4 @@ export async function mono_wasm_pthread_worker_init(module: DotnetModule, export
 
     await afterPreInit.promise;
     return exportedAPI.Module;
-}
-
-/**
-* @deprecated
-*/
-export async function mono_load_runtime_and_bcl_args(cfg?: MonoConfig | MonoConfigError | undefined): Promise<void> {
-    config = Module.config = runtimeHelpers.config = Object.assign(runtimeHelpers.config || {}, cfg || {}) as any;
-    await mono_download_assets();
-    if (!isCustomStartup) {
-        await wait_for_all_assets();
-    }
 }

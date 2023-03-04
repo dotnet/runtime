@@ -681,7 +681,7 @@ Add Pattern Recognition (SampleStep2 shelveset):
 ### COMPlus Variables
 - COMPlus_JitDump={method-list} – lots of info about what the JIT is doing
 - COMPlus_JitDisasm={method-list} – disassembly listing of each method
-- COMPlus_JitDiffableDasm – avoid printing pointer values that can change from one invocation to the next, so that the disassembly can be more easily diffed.
+- COMPlus_JitDisasmDiffable – avoid printing pointer values that can change from one invocation to the next, so that the disassembly can be more easily diffed.
 - COMPlus_JITGCDump={method-list} – this dumps the GC information.
 - COMPlus_JitUnwindDump={method-list} – dumps the unwind tables.
 - COMPlus_JitEHDump={method-list} – dumps the exception handling tables.

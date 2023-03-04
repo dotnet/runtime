@@ -181,7 +181,7 @@ Below are some of the most useful `COMPlus` variables. Where {method-list} is sp
 * `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
 * `COMPlus_JitDumpASCII`={1 or 0} - Specifies whether the JIT dump should be ASCII only (Defaults to 1). Disabling this generates more readable expression trees.
 * `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
-* `COMPlus_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
+* `COMPlus_JitDisasmDiffable` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
 * `COMPlus_JitGCDump`={method-list} – dump the GC information.
 * `COMPlus_JitUnwindDump`={method-list} – dump the unwind tables.
 * `COMPlus_JitEHDump`={method-list} – dump the exception handling tables.

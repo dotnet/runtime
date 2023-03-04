@@ -632,24 +632,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
 				// So it doesn't matter that the annotations are not in-sync since the access will validate
 				// the annotations on the implementation method - it doesn't even see the base method in this case.
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				public static Type AbstractMethod<T> (Type type) => null;
 
 				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				public static Type VirtualMethod<T> (Type type) => null;
 			}
 
 			class ImplIDamOnAllMismatch : IDamOnAll
 			{
 				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type AbstractMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -659,9 +659,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{ return null; }
 
 				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type VirtualMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -705,9 +705,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			class ImplIDamOnNoneMismatch : IDamOnNone
 			{
 				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type AbstractMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -717,9 +717,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{ return null; }
 
 				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type VirtualMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -748,7 +748,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			class ImplIAnnotatedMethodsMismatch : Library.IAnnotatedMethods
 			{
 				// NativeAOT doesn't always validate static overrides when accessed through reflection because it's a direct call (non-virtual)
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				public static void GenericWithMethodsStatic<T> () { }
 
 				[ExpectedWarning ("IL2092")]
@@ -770,7 +770,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			class ImplIUnannotatedMethodsMismatch : Library.IUnannotatedMethods
 			{
 				// NativeAOT doesn't always validate static overrides when accessed through reflection because it's a direct call (non-virtual)
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				public static void GenericStatic<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
 
 				[ExpectedWarning ("IL2092")]
@@ -946,7 +946,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			interface IDerivedWithDefault : IBaseWithDefault
 			{
 				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Analyzer)] // https://github.com/dotnet/linker/issues/3121
+				[ExpectedWarning ("IL2092", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/linker/issues/3121
 				void IBaseWithDefault.DefaultMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
 			}
 
@@ -968,9 +968,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			class ImplIGvmBase : IGvmBase
 			{
 				// NativeAOT doesn't validate overrides when it can resolve them as direct calls
-				[ExpectedWarning ("IL2092", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2093", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2095", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2092", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2093", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2095", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				public Type UnannotatedGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
 

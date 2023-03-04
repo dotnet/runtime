@@ -19,7 +19,6 @@ MonoArray* mono_wasm_obj_array_new (int size);
 void mono_wasm_obj_array_set (MonoArray *array, int idx, MonoObject *obj);
 MonoArray* mono_wasm_string_array_new (int size);
 MonoString *mono_wasm_string_from_js (const char *str);
-int mono_wasm_array_length(MonoArray* array);
 char *mono_wasm_string_get_utf8 (MonoString *str);
 
 MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespace, const char* type_name, const char* method_name, int num_params);

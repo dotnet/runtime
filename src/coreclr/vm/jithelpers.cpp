@@ -5438,22 +5438,27 @@ static unsigned HandleHistogramProfileRand()
 }
 
 template<typename T>
-FORCEINLINE static bool CheckSample(T index, size_t* sampleIndex)
+FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
 {
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
     static_assert_no_msg(N >= S);
     static_assert_no_msg((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
-    // If table is not yet full, just add entries in.
+    // If table is not yet full, just add entries in
+    // and increment the table index.
     //
+    T const index = *pIndex;
+
     if (index < S)
     {
         *sampleIndex = static_cast<size_t>(index);
+        *pIndex = index + 1;
         return true;
     }
 
-    unsigned x = HandleHistogramProfileRand();
+    unsigned const x = HandleHistogramProfileRand();
+
     // N is the sampling window size,
     // it should be larger than the table size.
     //
@@ -5484,7 +5489,7 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* c
     VALIDATEOBJECTREF(objRef);
 
     size_t sampleIndex;
-    if (!CheckSample(classProfile->Count++, &sampleIndex) || objRef == NULL)
+    if (!CheckSample(&classProfile->Count, &sampleIndex) || objRef == NULL)
     {
         return;
     }
@@ -5519,7 +5524,7 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* c
     VALIDATEOBJECTREF(objRef);
 
     size_t sampleIndex;
-    if (!CheckSample(classProfile->Count++, &sampleIndex) || objRef == NULL)
+    if (!CheckSample(&classProfile->Count, &sampleIndex) || objRef == NULL)
     {
         return;
     }
@@ -5549,7 +5554,7 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     VALIDATEOBJECTREF(objRef);
 
     size_t methodSampleIndex;
-    if (!CheckSample(methodProfile->Count++, &methodSampleIndex) || objRef == NULL)
+    if (!CheckSample(&methodProfile->Count, &methodSampleIndex) || objRef == NULL)
     {
         return;
     }
@@ -5596,7 +5601,7 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     VALIDATEOBJECTREF(objRef);
 
     size_t methodSampleIndex;
-    if (!CheckSample(methodProfile->Count++, &methodSampleIndex) || objRef == NULL)
+    if (!CheckSample(&methodProfile->Count, &methodSampleIndex) || objRef == NULL)
     {
         return;
     }
@@ -5642,7 +5647,7 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     VALIDATEOBJECTREF(objRef);
 
     size_t methodSampleIndex;
-    if (!CheckSample(methodProfile->Count++, &methodSampleIndex) || objRef == NULL)
+    if (!CheckSample(&methodProfile->Count, &methodSampleIndex) || objRef == NULL)
     {
         return;
     }
@@ -5691,7 +5696,7 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     VALIDATEOBJECTREF(objRef);
 
     size_t methodSampleIndex;
-    if (!CheckSample(methodProfile->Count++, &methodSampleIndex) || objRef == NULL)
+    if (!CheckSample(&methodProfile->Count, &methodSampleIndex) || objRef == NULL)
     {
         return;
     }

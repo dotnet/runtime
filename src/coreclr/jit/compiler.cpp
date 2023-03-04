@@ -2828,9 +2828,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
 
-    opts.disAsm      = false;
-    opts.disDiffable = false;
-    opts.dspDiffable = false;
+    opts.disAsm       = false;
+    opts.disDiffable  = false;
+    opts.dspDiffable  = false;
+    opts.disAlignment = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2838,7 +2839,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dmpHex          = false;
     opts.disAsmSpilled   = false;
     opts.disAddr         = false;
-    opts.disAlignment    = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -2932,24 +2932,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
-        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDiffableDasm=1
-        if (JitConfig.DiffableDasm() != 0)
-        {
-            opts.disDiffable = true;
-            opts.dspDiffable = true;
-        }
-
         // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
         if (JitConfig.JitDasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
-
-        if (JitConfig.JitDasmWithAlignmentBoundaries() != 0)
-        {
-            opts.disAlignment = true;
-        }
-
         if (JitConfig.JitLongAddress() != 0)
         {
             opts.compLongAddress = true;
@@ -3043,6 +3030,34 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.disAsm = true;
     }
 #endif // !DEBUG
+
+#ifndef DEBUG
+    if (opts.disAsm)
+#endif
+    {
+        if (JitConfig.JitDisasmWithAlignmentBoundaries())
+        {
+            opts.disAlignment = true;
+        }
+        if (JitConfig.JitDisasmDiffable())
+        {
+            opts.disDiffable = true;
+            opts.dspDiffable = true;
+        }
+    }
+
+// These are left for backward compatibility, to be removed
+#ifdef DEBUG
+    if (JitConfig.JitDasmWithAlignmentBoundaries())
+    {
+        opts.disAlignment = true;
+    }
+    if (JitConfig.JitDiffableDasm())
+    {
+        opts.disDiffable = true;
+        opts.dspDiffable = true;
+    }
+#endif // DEBUG
 
 //-------------------------------------------------------------------------
 

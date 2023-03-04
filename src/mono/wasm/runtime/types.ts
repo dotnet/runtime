@@ -119,6 +119,10 @@ export type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number,
+    /**
+     * hash of assets
+     */
+    assetsHash?: string,
 };
 
 export type MonoConfigInternal = MonoConfig & {
@@ -138,12 +142,6 @@ export type RunArguments = {
     environmentVariables?: { [name: string]: string },
     runtimeOptions?: string[],
     diagnosticTracing?: boolean,
-}
-
-export type MonoConfigError = {
-    isError: true,
-    message: string,
-    error: any
 }
 
 export interface ResourceRequest {
@@ -230,6 +228,7 @@ export type RuntimeHelpers = {
     quit: Function,
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
+    loadedFiles: string[],
 }
 
 export type GlobalizationMode =
