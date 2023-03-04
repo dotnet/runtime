@@ -221,6 +221,7 @@ internal sealed class Xcode
             .Append("-S.")
             .Append(" -B").Append(projectName)
             .Append(" -GXcode")
+            .Append(" -DTARGETS_APPLE_MOBILE=1")
             .Append(" -DCMAKE_SYSTEM_NAME=").Append(targetName)
             .Append(deployTarget);
 

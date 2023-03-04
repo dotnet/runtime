@@ -45,7 +45,7 @@ internal sealed class AndroidProject
 
     public void GenerateCMake(string workingDir, string apiLevel = DefaultMinApiLevel, bool stripDebugSymbols = false)
     {
-        string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchainPath} -DANDROID_ABI=\"{Abi}\" -DANDROID_STL=none " +
+        string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchainPath} -DANDROID_ABI=\"{Abi}\" -DANDROID_STL=none -DTARGETS_ANDROID=1 " +
             $"-DANDROID_PLATFORM=android-{apiLevel} -B {projectName}";
 
         if (stripDebugSymbols)

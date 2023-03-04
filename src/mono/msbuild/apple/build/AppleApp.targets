@@ -11,6 +11,11 @@
     <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AppleGenerateAppBundle>
   </PropertyGroup>
 
+  <Target Name="_CleanPublish" 
+          BeforeTargets="Build">
+    <RemoveDir Directories="$(PublishDir)" />
+  </Target>
+
   <Target Name="AppleBuildApp" AfterTargets="$(AppleBuildAppAfterThisTarget)" />
 
   <Target Name="_AppleCoreBuild" BeforeTargets="AppleBuildApp" DependsOnTargets="$(AppleBuildAppDependsOn)" />
@@ -49,13 +54,13 @@
         Include="$(RuntimeComponents)" />
 
       <_RuntimeLibraries 
-        Include="$(AndroidAppDir)\*-stub-static.a" />
+        Include="$(AppleAppDir)\*-stub-static.a" />
       <_RuntimeLibraries 
-        Include="$(AndroidAppDir)\*.a"
-        Exclude="$(AndroidAppDir)\*-static.a" />
+        Include="$(AppleAppDir)\*.a"
+        Exclude="$(AppleAppDir)\*-static.a" />
 
-      <_RuntimeLibraries Remove="$(AndroidAppDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
-      <_RuntimeLibraries Include="$(AndroidAppDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
+      <_RuntimeLibraries Remove="$(AppleAppDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Include="$(AppleAppDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
     </ItemGroup>
   </Target>
 

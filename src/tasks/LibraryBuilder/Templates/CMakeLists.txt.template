@@ -12,6 +12,7 @@ set(DOTNET_AOT_OBJECTS
 )
 set(DOTNET_EXTRA_SOURCES
     %ExtraSources%
+    assembly_list.c
 )
 
 include_directories("%MonoInclude%")
@@ -31,11 +32,26 @@ add_library(
     ${DOTNET_EXTRA_SOURCES}
 )
 
+if(TARGETS_ANDROID)
+    set(MOBILE_SYSTEM_LIBS
+        libz.so
+        log    
+    )
+else()
+    set(MOBILE_SYSTEM_LIBS
+        "-framework Foundation"
+        "-framework Security"
+        "-framework UIKit"
+        "-lz"
+        "-lc++"
+        "-liconv"
+    )
+endif()
+
 target_link_libraries(
     %LIBRARY_NAME%
     PUBLIC
     aot_library
-    libz.so
-    log
+    ${MOBILE_SYSTEM_LIBS}
     %LIBRARY_LINKER_ARGS%
 )

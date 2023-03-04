@@ -122,6 +122,7 @@ public class LibraryBuilderTask : AppBuilderTask
     private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
     {
         List<string> exportedSymbols = new List<string>();
+        List<string> exportedAssemblies = new List<string>();
         bool hasExports = false;
 
         foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
@@ -140,13 +141,11 @@ public class LibraryBuilderTask : AppBuilderTask
             {
                 hasExports = true;
 
-                if (TargetOS == "android")
+                int symbolsAdded = GatherExportedSymbols(compiledAssembly.ExportsFile, exportedSymbols);
+
+                if (symbolsAdded > 0)
                 {
-                    GatherExportedSymbols(compiledAssembly.ExportsFile, exportedSymbols);
-                }
-                else
-                {
-                    WriteExportedSymbolsArg(compiledAssembly.ExportsFile, linkerArgs);
+                    exportedAssemblies.Add(Path.GetFileName(compiledAssembly.Path));
                 }
             }
         }
@@ -167,6 +166,8 @@ public class LibraryBuilderTask : AppBuilderTask
             );
             WriteExportedSymbolsArg(MobileSymbolFileName, linkerArgs);
         }
+
+        WriteAssembliesToLoadList(exportedAssemblies);
 
         foreach (ITaskItem item in ExtraSources)
         {
@@ -194,12 +195,17 @@ public class LibraryBuilderTask : AppBuilderTask
         }
     }
 
-    private static void GatherExportedSymbols(string exportsFile, List<string> exportedSymbols)
+    private static int GatherExportedSymbols(string exportsFile, List<string> exportedSymbols)
     {
+        int count = 0;
+
         foreach (string symbol in File.ReadLines(exportsFile))
         {
             exportedSymbols.Add(symbol);
+            count++;
         }
+
+        return count;
     }
 
     private static void WriteExportedSymbolsArg(string exportsFile, StringBuilder linkerArgs)
@@ -233,6 +239,33 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%AotObjects%", aotObjects)
                 .Replace("%ExtraSources%", extraSources)
                 .Replace("%LIBRARY_LINKER_ARGS%", linkerArgs));
+    }
+
+    private void WriteAssembliesToLoadList(List<string> assemblies)
+    {
+        string content;
+
+        if (assemblies.Count == 0)
+        {
+            content = "    return NULL;";
+        }
+        else
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"    char** assembly_list = (char**)malloc({assemblies.Count.ToString()} * sizeof(char*));");
+
+            for (int i = 0; i < assemblies.Count; i++)
+            {
+                sb.AppendLine($"    assembly_list[{i.ToString()}] = \"{assemblies[i]}\";");
+            }
+
+            sb.AppendLine("    return assembly_list;");
+            content = sb.ToString();
+        }
+
+        File.WriteAllText(Path.Combine(OutputDirectory, "assembly_list.c"),
+            Utils.GetEmbeddedResource("assembly_list.c")
+                .Replace("%LOADABLE_ASSEMBLIES%", content));
     }
 
     private string BuildLibrary()
