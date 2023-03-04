@@ -3798,31 +3798,6 @@ max_d (double lhs, double rhs)
 		return fmax (lhs, rhs);
 }
 
-#ifdef HOST_BROWSER
-MONO_ALWAYS_INLINE static ptrdiff_t
-mono_interp_tier_enter_jiterpreter (
-	JiterpreterThunk thunk, InterpFrame *frame, unsigned char *locals, ThreadContext *context,
-	const guint16 *ip
-)
-{
-	// g_assert(thunk);
-	ptrdiff_t offset = thunk(frame, locals);
-	/*
-	* Verify that the offset returned by the thunk is not total garbage
-	* FIXME: These constants might actually be too small since a method
-	*  could have massive amounts of IL - maybe we should disable the jiterpreter
-	*  for methods that big
-	*/
-	// g_assertf((offset >= -0xFFFFF) && (offset <= 0xFFFFF), "thunk returned an obviously invalid offset: %i", offset);
-#ifdef ENABLE_EXPERIMENT_TIERED
-	if (offset < 0) {
-		mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
-	}
-#endif
-	return offset;
-}
-#endif // HOST_BROWSER
-
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -7780,9 +7755,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						// now execute the trace
 						// this isn't important for performance, but it makes it easier to use the
 						//  jiterpreter early in automated tests where code only runs once
-						offset = mono_interp_tier_enter_jiterpreter (
-							prepare_result, frame, locals, context, ip
-						);
+						offset = prepare_result(frame, locals);
 						ip = (guint16*) (((guint8*)ip) + offset);
 						break;
 				}
@@ -7795,9 +7768,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
 			JiterpreterThunk thunk = (void*)READ32(ip + 1);
-			ptrdiff_t offset = mono_interp_tier_enter_jiterpreter (
-				thunk, frame, locals, context, ip
-			);
+			ptrdiff_t offset = thunk(frame, locals);
 			ip = (guint16*) (((guint8*)ip) + offset);
 			MINT_IN_BREAK;
 		}
