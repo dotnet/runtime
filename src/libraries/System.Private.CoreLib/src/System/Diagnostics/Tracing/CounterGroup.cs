@@ -79,6 +79,12 @@ namespace System.Diagnostics.Tracing
                     // Should only be enable or disable
                     Debug.Assert(false);
                 }
+
+                // Sanity checks. It is possible that an EventSource could be enabled without the counter group being enabled,
+                // so we can't assert that. But we know if the counter group is enabled the EventSource must be.
+                Debug.Assert((s_counterGroupEnabledList == null && _refCount == 0)
+                                || (s_counterGroupEnabledList!.Contains(this) && _refCount > 0 && _eventSource.IsEnabled())
+                                || (!s_counterGroupEnabledList!.Contains(this) && _refCount == 0));
             }
         }
 
