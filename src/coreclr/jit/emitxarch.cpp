@@ -591,7 +591,16 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 }
 #endif // TARGET_64BIT
 
-    
+//------------------------------------------------------------------------
+// emitDoesInsModifyFlags: checks if the given instruction modifies flags
+//
+// Arguments:
+//    iins - instruction of interest
+//
+// Return Value:
+//    true if the instruction modifies flags.
+//    false if it did not.
+//
 bool emitter::emitDoesInsModifyFlags(instruction ins)
 {
     return (CodeGenInterface::instInfo[ins] &
@@ -600,8 +609,24 @@ bool emitter::emitDoesInsModifyFlags(instruction ins)
              Writes_ZF | Restore_SF_ZF_AF_PF_CF));
 }
 
+//------------------------------------------------------------------------
+// emitIsInstrWritingToReg: checks if the given register is being written to
+//
+// Arguments:
+//    id - instruction of interest
+//    reg - register of interest
+//
+// Return Value:
+//    true if the instruction writes to the given register.
+//    false if it did not.
+//
+// Note: This only handles integer registers. Also, an INS_call will always return true.
+//
 bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
 {
+    // This only handles integer registers for now.
+    assert(genIsValidIntReg(reg));
+
     instruction ins = id->idIns();
 
     // These are special cases since they modify one or more register(s) implicitly.
@@ -616,7 +641,7 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         case INS_div:
         case INS_imulEAX:
         case INS_mulEAX:
-            if (reg == REG_RAX || reg == REG_RDX)
+            if ((reg == REG_RAX) || (reg == REG_RDX))
             {
                 return true;
             }
@@ -625,6 +650,50 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         // Always writes to RAX.
         case INS_cmpxchg:
             if (reg == REG_RAX)
+            {
+                return true;
+            }
+            break;
+
+        case INS_movsb:
+        case INS_movsd:
+#ifdef TARGET_AMD64
+        case INS_movsq:
+#endif // TARGET_AMD64
+            if ((reg == REG_RDI) || (reg == REG_RSI))
+            {
+                return true;
+            }
+            break;
+
+        case INS_stosb:
+        case INS_stosd:
+#ifdef TARGET_AMD64
+        case INS_stosq:
+#endif // TARGET_AMD64
+            if (reg == REG_RDI)
+            {
+                return true;
+            }
+            break;
+
+        case INS_r_movsb:
+        case INS_r_movsd:
+#ifdef TARGET_AMD64
+        case INS_r_movsq:
+#endif // TARGET_AMD64
+            if ((reg == REG_RDI) || (reg == REG_RSI) || (reg == REG_RCX))
+            {
+                return true;
+            }
+            break;
+
+        case INS_r_stosb:
+        case INS_r_stosd:
+#ifdef TARGET_AMD64
+        case INS_r_stosq:
+#endif // TARGET_AMD64
+            if ((reg == REG_RDI) || (reg == REG_RCX))
             {
                 return true;
             }
