@@ -6,7 +6,7 @@ using System.Data.Common;
 
 namespace System.Data.Tests.Common
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Not supported on Browser/Wasi.")]
     public class DbProviderFactoryTest
     {
         [Fact]
