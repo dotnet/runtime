@@ -16330,6 +16330,20 @@ void Compiler::gtSplitTree(
                 }
                 *use = m_compiler->gtNewNothingNode();
             }
+            else if ((*use)->OperIs(GT_FIELD_LIST))
+            {
+                GenTreeFieldList*     fieldList   = (*use)->AsFieldList();
+                ArrayStack<GenTree**> fieldsStack = m_compiler->getAllocator(CMK_ArrayStack);
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    fieldsStack.Push(&use.NodeRef());
+                }
+                while (!fieldsStack.Empty())
+                {
+                    SplitOutUse(UseInfo{fieldsStack.Pop(), fieldList});
+                }
+                return;
+            }
             else
             {
                 unsigned lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling to split statement for tree"));
