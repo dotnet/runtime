@@ -16332,7 +16332,7 @@ void Compiler::gtSplitTree(
             }
             else
             {
-                unsigned lclNum = m_compiler->lvaGrabTemp(true, "Spilling to split statement for tree");
+                unsigned lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling to split statement for tree"));
                 GenTree* asg    = m_compiler->gtNewTempAssign(lclNum, *use);
                 stmt            = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
                 *use            = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
