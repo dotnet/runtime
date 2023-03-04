@@ -2346,6 +2346,25 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	} else {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
 	}
+
+	/* Initialize exported methods since they can be called without being loaded */
+	if (!amodule->out_of_date && info->n_exported_methods) {
+		guint32 *exported = (guint32*)(amodule->blob + info->exported_methods);
+
+		for (guint32 i = 0; i < info->n_exported_methods; ++i) {
+			ERROR_DECL (load_error);
+			guint32 token = exported [i];
+			MonoMethod *m = mono_get_method_checked (assembly->image, token, NULL, NULL, load_error);
+			mono_error_cleanup (load_error); /* FIXME don't swallow the error */
+			error_init (load_error);
+			if (m) {
+				mono_class_init_internal (m->klass);
+				mono_aot_get_method (m, load_error);
+				mono_error_cleanup (load_error); /* FIXME don't swallow the error */
+				error_init (load_error);
+			}
+		}
+	}
 }
 
 /*
@@ -4492,8 +4511,6 @@ inst_is_private (MonoGenericInst *inst)
 gboolean
 mono_aot_can_dedup (MonoMethod *method)
 {
-	// Dedup enabled for wasm and iOS
-#if defined(TARGET_WASM) || defined(TARGET_IOS)
 	/* Use a set of wrappers/instances which work and useful */
 	switch (method->wrapper_type) {
 	case MONO_WRAPPER_RUNTIME_INVOKE:
@@ -4541,12 +4558,6 @@ mono_aot_can_dedup (MonoMethod *method)
 		return TRUE;
 	}
 	return FALSE;
-#else
-	gboolean not_normal_gshared = method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE);
-	gboolean extra_method = (method->wrapper_type != MONO_WRAPPER_NONE) || not_normal_gshared;
-
-	return extra_method;
-#endif
 }
 
 

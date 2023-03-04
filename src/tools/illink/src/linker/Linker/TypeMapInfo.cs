@@ -144,7 +144,7 @@ namespace Mono.Linker
 						continue;
 
 					// TODO-NICE: if the interface method is implemented explicitly (with an override),
-					// we shouldn't need to run the below logic. This results in linker potentially
+					// we shouldn't need to run the below logic. This results in ILLink potentially
 					// keeping more methods than needed.
 
 					if (!resolvedInterfaceMethod.IsVirtual
@@ -269,7 +269,7 @@ namespace Mono.Linker
 
 		// Returns a list of default implementations of the given interface method on this type.
 		// Note that this returns a list to potentially cover the diamond case (more than one
-		// most specific implementation of the given interface methods). Linker needs to preserve
+		// most specific implementation of the given interface methods). ILLink needs to preserve
 		// all the implementations so that the proper exception can be thrown at runtime.
 		IEnumerable<InterfaceImplementation> GetDefaultInterfaceImplementations (TypeDefinition type, MethodDefinition interfaceMethod)
 		{

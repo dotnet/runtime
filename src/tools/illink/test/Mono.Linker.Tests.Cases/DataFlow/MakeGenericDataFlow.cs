@@ -7,6 +7,7 @@ using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targetted at AOT scenarios")]
@@ -84,7 +85,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType), ProducedBy = Tool.Trimmer)]
 			static void TestWithUnknownTypeArray (Type[] types)
 			{
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (types);
@@ -99,7 +100,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType), ProducedBy = Tool.Trimmer)]
 			static void TestWithArrayUnknownLengthSet (int arrayLen)
 			{
 				Type[] types = new Type[arrayLen];
@@ -423,17 +424,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer)]
 			static void TestUnknownMethod (MethodInfo mi)
 			{
 				mi.MakeGenericMethod (typeof (TestType));
 			}
 
 			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer)]
 			static void TestUnknownMethodButNoTypeArguments (MethodInfo mi)
 			{
-				// Thechnically linker could figure this out, but it's not worth the complexity - such call will always fail at runtime.
+				// Technically trimming could figure this out, but it's not worth the complexity - such call will always fail at runtime.
 				mi.MakeGenericMethod (Type.EmptyTypes);
 			}
 
@@ -541,7 +542,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer)]
 			static void TestWithUnknownTypeArray (Type[] types)
 			{
 				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
@@ -557,8 +558,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (types);
 			}
 
-			// https://github.com/dotnet/linker/issues/2158 - analyzer doesn't work the same as linker, it simply doesn't handle refs
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = ProducedBy.Trimmer)]
+			// https://github.com/dotnet/linker/issues/2158 - analyzer doesn't work the same as ILLink, it simply doesn't handle refs
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer)]
 			static void TestWithArrayUnknownIndexSetByRef (int indexToSet)
 			{
 				Type[] types = new Type[1];
@@ -570,7 +571,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer)]
 			static void TestWithArrayUnknownLengthSet (int arrayLen)
 			{
 				Type[] types = new Type[arrayLen];

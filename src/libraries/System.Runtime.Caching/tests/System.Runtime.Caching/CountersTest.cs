@@ -28,7 +28,7 @@ namespace MonoTests.System.Runtime.Caching
     {
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Wasm is single-threaded, which makes TestEventListener ineffective.")]
-        public async void Basic_Counters()
+        public async Task Basic_Counters()
         {
             string cacheName = "Basic_Counters_Test";
             var cip = new CacheItemPolicy() { /* _absExpiry = ObjectCache.InfiniteAbsoluteExpiration */ };

@@ -119,10 +119,6 @@
   <Target Name="CreateProjectWithColonInSourceName"
     Condition="!$([MSBuild]::IsOSPlatform('windows'))">
     <PropertyGroup>
-        <CsprojContent>
-            <Project Sdk="Microsoft.NET.Sdk">
-            </Project>
-        </CsprojContent>
         <CsContent>
             namespace DebuggerTests
             {
@@ -136,10 +132,6 @@
             }
         </CsContent>
     </PropertyGroup>
-    <WriteLinesToFile
-        File="../tests/debugger-test-with-colon-in-source-name/debugger-test-with-colon-in-source-name.csproj"
-        Lines="$(CsprojContent)"
-        Overwrite="true"/>
     <WriteLinesToFile
         File="../tests/debugger-test-with-colon-in-source-name/test:.cs"
         Lines="$(CsContent)"

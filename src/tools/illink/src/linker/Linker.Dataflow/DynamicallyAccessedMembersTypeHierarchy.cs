@@ -226,8 +226,8 @@ namespace Mono.Linker.Dataflow
 
 			// Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
 			// annotations to interfaces separately if dealing with DAMT.All or DAMT.Interfaces.
-			if (annotation.HasFlag (DynamicallyAccessedMemberTypesOverlay.Interfaces) && type.HasInterfaces) {
-				var annotationToApplyToInterfaces = annotation == DynamicallyAccessedMemberTypes.All ? annotation : DynamicallyAccessedMemberTypesOverlay.Interfaces;
+			if (annotation.HasFlag (DynamicallyAccessedMemberTypes.Interfaces) && type.HasInterfaces) {
+				var annotationToApplyToInterfaces = annotation == DynamicallyAccessedMemberTypes.All ? annotation : DynamicallyAccessedMemberTypes.Interfaces;
 				foreach (var iface in type.Interfaces) {
 					var interfaceType = _context.TryResolve (iface.InterfaceType);
 					if (interfaceType == null)

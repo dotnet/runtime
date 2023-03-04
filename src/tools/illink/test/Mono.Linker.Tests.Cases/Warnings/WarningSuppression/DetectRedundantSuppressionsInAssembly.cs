@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-[assembly: ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+[assembly: ExpectedWarning ("IL2121", "IL2071", ProducedBy = Tool.Trimmer)]
 [assembly: UnconditionalSuppressMessage ("Test", "IL2071:Redundant suppression, warning is not issued in this assembly")]
 
 

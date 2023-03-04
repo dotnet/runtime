@@ -91,8 +91,6 @@
              Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="ProductionCode\Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"

@@ -20,7 +20,12 @@ namespace System
 {
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Boolean : IComparable, IConvertible, IComparable<bool>, IEquatable<bool>
+    public readonly struct Boolean
+        : IComparable,
+          IConvertible,
+          IComparable<bool>,
+          IEquatable<bool>,
+          ISpanParsable<bool>
     {
         //
         // Member Variables
@@ -397,5 +402,21 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
+
+        //
+        // IParsable
+        //
+
+        static bool IParsable<bool>.Parse(string s, IFormatProvider? provider) => Parse(s);
+
+        static bool IParsable<bool>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out bool result) => TryParse(s, out result);
+
+        //
+        // ISpanParsable
+        //
+
+        static bool ISpanParsable<bool>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
+
+        static bool ISpanParsable<bool>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out bool result) => TryParse(s, out result);
     }
 }
