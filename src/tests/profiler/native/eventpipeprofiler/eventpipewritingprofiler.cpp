@@ -185,7 +185,7 @@ HRESULT EventPipeWritingProfiler::Shutdown()
     else
     {
         // failures were printed earlier when _failures was incremented
-        printf("EventPipe profiler test failed, check log for more info.\n");
+        printf("EventPipe profiler test failed, check log for more info. _enables=%d _disables=%d\n", _enables.load(), _disables.load());
     }
     fflush(stdout);
 
@@ -220,6 +220,9 @@ void EventPipeWritingProfiler::ProviderCallback(
     COR_PRF_FILTER_DATA *filter_data,
     void *callback_data)
 {
+    // The callback contract is is_enabled will be true if any session has this provider active
+    // so if is_enabled == true the way you can tell if a session is closing is by checking
+    // if source_id == null
     if (is_enabled && source_id != nullptr)
     {
         ++_enables;
