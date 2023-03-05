@@ -9478,7 +9478,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         if (!usesHelper)
                         {
-                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_OBJ));
+                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_OBJ) ||
+                                   ((fieldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED) &&
+                                    op1->OperIs(GT_LCL_VAR)));
                             op1->gtFlags |= GTF_IND_VOLATILE;
                         }
                     }
@@ -9487,7 +9489,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         if (!usesHelper)
                         {
-                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_OBJ));
+                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_OBJ) ||
+                                   ((fieldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED) &&
+                                    op1->OperIs(GT_LCL_VAR)));
                             op1->gtFlags |= GTF_IND_UNALIGNED;
                         }
                     }
