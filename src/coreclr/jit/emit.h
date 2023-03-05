@@ -2079,6 +2079,10 @@ private:
     void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void spillIntArgRegsToShadowSlots();
 
+#ifdef TARGET_XARCH
+    bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
+#endif // TARGET_XARCH
+
     /************************************************************************/
     /*      The logic that creates and keeps track of instruction groups    */
     /************************************************************************/
