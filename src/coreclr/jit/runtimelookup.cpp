@@ -24,10 +24,6 @@ static void* GetConstantPointer(Compiler* comp, GenTree* tree)
 // Save expression to a local and append as the last statement in prevBb
 static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprBlock, DebugInfo& debugInfo)
 {
-    if (expr->IsInvariant())
-    {
-        return comp->gtCloneExpr(expr);
-    }
     unsigned const tmpNum         = comp->lvaGrabTemp(true DEBUGARG("spilling expr"));
     comp->lvaTable[tmpNum].lvType = expr->TypeGet();
     Statement* asgStmt            = comp->fgNewStmtAtEnd(exprBlock, comp->gtNewTempAssign(tmpNum, expr));
@@ -49,7 +45,7 @@ static BasicBlock* CreateBlockFromTree(
     stmt->SetDebugInfo(debugInfo);
     comp->gtSetStmtInfo(stmt);
     comp->fgSetStmtSeq(stmt);
-    comp->gtUpdateTreeAncestorsSideEffects(tree);
+    comp->gtUpdateStmtSideEffects(stmt);
     newBlock->bbCodeOffs    = insertAfter->bbCodeOffsEnd;
     newBlock->bbCodeOffsEnd = insertAfter->bbCodeOffsEnd;
     return newBlock;
@@ -97,7 +93,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
     if (!doesMethodHaveExpRuntimeLookup())
     {
-
 #ifdef DEBUG
         // To make sure doesMethodHaveExpRuntimeLookup() is not lying to us:
         for (BasicBlock* block : Blocks())
@@ -114,6 +109,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         JITDUMP("Current method doesn't have runtime lookups - bail out.")
         return result;
     }
+
+    INDEBUG(bool irIsPrinted = false);
 
     // Find all calls with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag
     for (BasicBlock* block : Blocks())
@@ -140,8 +137,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 if (call->IsTailCall())
                 {
-                    // It is very unlikely to happen and is impossible to represent in C#, but just in case
-                    // let's don't expand it:
+                    // It is very unlikely to happen and is impossible to represent in C#
                     continue;
                 }
 
@@ -158,6 +154,17 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     assert(!"can't restore signature argument value");
                     continue;
                 }
+
+#ifdef DEBUG
+                // Print full IR before any changes we're goint to make
+                if (!irIsPrinted && verbose)
+                {
+                    irIsPrinted = true;
+                    printf("\n*************** Before fgExpandRuntimeLookups()\n");
+                    fgDispBasicBlocks(true);
+                    printf("\n");
+                }
+#endif
 
                 // Restore runtimeLookup using signature argument via a global dictionary
                 CORINFO_RUNTIME_LOOKUP runtimeLookup = {};
@@ -185,12 +192,11 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 lvaTable[rtLookupLclNum].lvType = TYP_I_IMPL;
                 GenTreeLclVar* rtLookupLcl      = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
 
-                // Save signature and generic context trees to locals if needed:
-                GenTree* ctxTree = SpillExpression(this, call->gtArgs.GetArgByIndex(0)->GetNode(), prevBb, debugInfo);
-                GenTree* sigNode = SpillExpression(this, call->gtArgs.GetArgByIndex(1)->GetNode(), prevBb, debugInfo);
+                GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
+                GenTree* sigNode = call->gtArgs.GetArgByIndex(1)->GetNode();
 
                 // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
-                GenTree* slotPtrTree   = gtClone(ctxTree);
+                GenTree* slotPtrTree   = gtCloneExpr(ctxTree);
                 GenTree* indOffTree    = nullptr;
                 GenTree* lastIndOfTree = nullptr;
                 for (WORD i = 0; i < runtimeLookup.indirections; i++)
@@ -198,7 +204,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     if ((i == 1 && runtimeLookup.indirectFirstOffset) || (i == 2 && runtimeLookup.indirectSecondOffset))
                     {
                         indOffTree  = SpillExpression(this, slotPtrTree, prevBb, debugInfo);
-                        slotPtrTree = gtClone(indOffTree);
+                        slotPtrTree = gtCloneExpr(indOffTree);
                     }
 
                     // The last indirection could be subject to a size check (dynamic dictionary expansion)
@@ -222,7 +228,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                         if (isLastIndirectionWithSizeCheck)
                         {
                             lastIndOfTree = SpillExpression(this, slotPtrTree, prevBb, debugInfo);
-                            slotPtrTree   = gtClone(lastIndOfTree);
+                            slotPtrTree   = gtCloneExpr(lastIndOfTree);
                         }
                         slotPtrTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree,
                                                     gtNewIconNode(runtimeLookup.offsets[i], TYP_I_IMPL));
@@ -317,7 +323,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 // Replace call with rtLookupLclNum local and update side effects
                 call->BashToLclVar(this, rtLookupLclNum);
                 gtSetEvalOrder(call);
-                gtUpdateTreeAncestorsSideEffects(call);
                 gtUpdateStmtSideEffects(stmt);
                 gtSetStmtInfo(stmt);
                 fgSetStmtSeq(stmt);

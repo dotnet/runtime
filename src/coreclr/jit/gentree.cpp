@@ -16328,6 +16328,20 @@ void Compiler::gtSplitTree(
                 return;
             }
 
+            // Don't spill some locals we know they never change
+            if (node->OperIs(GT_LCL_VAR))
+            {
+                unsigned   lclNum = node->AsLclVar()->GetLclNum();
+                LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lclNum);
+
+                // Generic context
+                if (lclDsc->lvIsParam && !lclDsc->IsAddressExposed() &&
+                    (m_compiler->compMap2ILvarNum(lclNum) == (unsigned)ICorDebugInfo::TYPECTXT_ILNUM))
+                {
+                    return;
+                }
+            }
+
             assert((user == nullptr) || !user->OperIs(GT_ADDR));
 
             Statement* stmt = nullptr;
@@ -16346,13 +16360,13 @@ void Compiler::gtSplitTree(
                     // The first use will be the COMMA --- op1 edge, which we
                     // expect to be handled by simple side effect extraction in
                     // the recursive call.
-                    UseInfo use1 { &node->AsOp()->gtOp1, node };
+                    UseInfo use1{&node->AsOp()->gtOp1, node};
 
                     // For the second use we will update the ASG to be ASG(op2, rhs)
                     // so that we get the proper location treatment. The edge will
                     // then be the ASG --- op2 edge.
                     *use = node->gtGetOp2();
-                    UseInfo use2 { use, user };
+                    UseInfo use2{use, user};
 
                     if (node->IsReverseOp())
                     {
@@ -16402,7 +16416,7 @@ void Compiler::gtSplitTree(
             }
             else if ((*use)->OperIs(GT_FIELD_LIST))
             {
-                GenTreeFieldList*     fieldList   = (*use)->AsFieldList();
+                GenTreeFieldList*     fieldList = (*use)->AsFieldList();
                 ArrayStack<GenTree**> fieldsStack(m_compiler->getAllocator(CMK_ArrayStack));
                 for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
@@ -16431,21 +16445,6 @@ void Compiler::gtSplitTree(
             }
         }
     };
-
-    GenTree* rootNode = stmt->GetRootNode();
-    if (rootNode == splitPoint)
-    {
-        *firstNewStmt = nullptr;
-        *splitNodeUse = stmt->GetRootNodePointer();
-        return;
-    }
-
-    if (rootNode->OperIs(GT_ASG) && rootNode->gtGetOp1()->OperIs(GT_LCL_VAR) && rootNode->gtGetOp2() == splitPoint)
-    {
-        *firstNewStmt = nullptr;
-        *splitNodeUse = &rootNode->AsOp()->gtOp2;
-        return;
-    }
 
     Splitter splitter(this, block, stmt, splitPoint);
     splitter.WalkTree(stmt->GetRootNodePointer(), nullptr);
