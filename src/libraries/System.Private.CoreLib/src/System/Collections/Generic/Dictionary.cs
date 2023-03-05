@@ -339,7 +339,7 @@ namespace System.Collections.Generic
         public Enumerator GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
-            Count == 0 ? SZGenericArrayEnumerator<KeyValuePair<TKey, TValue>>.Empty :
+            Count == 0 ? GenericEmptyEnumerator<KeyValuePair<TKey, TValue>>.Instance :
             GetEnumerator();
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)

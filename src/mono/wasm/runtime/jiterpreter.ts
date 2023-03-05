@@ -231,17 +231,22 @@ export let traceImports : Array<[string, string, Function]> | undefined;
 export let _wrap_trace_function: Function;
 
 const mathOps1 = [
-    "acos",
-    "cos",
-    "sin",
     "asin",
+    "acos",
+    "atan",
+    "cos",
+    "exp",
+    "log",
+    "log2",
+    "log10",
+    "sin",
     "tan",
-    "atan"
 ];
 
 const mathOps2 = [
     "rem",
     "atan2",
+    "pow",
 ];
 
 function getTraceImports () {
@@ -278,6 +283,7 @@ function getTraceImports () {
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
         importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
+        importDef("fma", getRawCwrap("mono_jiterp_math_fma")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -409,6 +415,13 @@ function initialize_builder (builder: WasmBuilder) {
         "mathop_dd_d", {
             "lhs": WasmValtype.f64,
             "rhs": WasmValtype.f64,
+        }, WasmValtype.f64, true
+    );
+    builder.defineType(
+        "fma", {
+            "x": WasmValtype.f64,
+            "y": WasmValtype.f64,
+            "z": WasmValtype.f64,
         }, WasmValtype.f64, true
     );
     builder.defineType(

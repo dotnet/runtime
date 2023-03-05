@@ -75,7 +75,7 @@
 
 #define UNKNOWN_POINTER_TYPE SIZE_T
 
-DEFINE_DACVAR_VOLATILE(PTR_RangeSection, ExecutionManager__m_CodeRangeList, ExecutionManager::m_CodeRangeList)
+DEFINE_DACVAR(PTR_RangeSectionMap, ExecutionManager__g_codeRangeMap, ExecutionManager::g_codeRangeMap)
 DEFINE_DACVAR(PTR_EECodeManager, ExecutionManager__m_pDefaultCodeMan, ExecutionManager::m_pDefaultCodeMan)
 DEFINE_DACVAR_VOLATILE(LONG, ExecutionManager__m_dwReaderCount, ExecutionManager::m_dwReaderCount)
 DEFINE_DACVAR_VOLATILE(LONG, ExecutionManager__m_dwWriterLock, ExecutionManager::m_dwWriterLock)

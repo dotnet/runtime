@@ -6111,7 +6111,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     }
 #endif
 
-    // Check for COMPlus_AggressiveInlining
+    // Check for DOTNET_AggressiveInlining
     if (compDoAggressiveInlining)
     {
         methAttr |= CORINFO_FLG_FORCEINLINE;

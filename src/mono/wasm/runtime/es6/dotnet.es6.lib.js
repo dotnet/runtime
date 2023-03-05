@@ -4,13 +4,9 @@
 
 "use strict";
 
-#if USE_PTHREADS
-const usePThreads = true;
-const isPThread = `ENVIRONMENT_IS_PTHREAD`;
-#else
-const usePThreads = false;
-const isPThread = `false`;
-#endif
+const monoWasmThreads = process.env.MonoWasmThreads == "true";
+const WasmEnableLegacyJsInterop = process.env.WasmEnableLegacyJsInterop === "true";
+const isPThread = monoWasmThreads ? "ENVIRONMENT_IS_PTHREAD" : "false";
 
 const DotnetSupportLib = {
     $DOTNET: {},
@@ -22,8 +18,8 @@ const DotnetSupportLib = {
     // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
     // We also replace implementation of fetch
     $DOTNET__postset: `
-let __dotnet_replacement_PThread = ${usePThreads} ? {} : undefined;
-${usePThreads ? `
+let __dotnet_replacement_PThread = ${monoWasmThreads} ? {} : undefined;
+${monoWasmThreads ? `
 __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
 __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
 __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
@@ -45,7 +41,7 @@ if (ENVIRONMENT_IS_NODE) {
     });
 }
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
-${usePThreads ? `
+${monoWasmThreads ? `
 PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
 PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTLS;
 PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocateUnusedWorker;
@@ -55,7 +51,7 @@ PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocat
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with exports.ts ---
-const linked_functions = [
+let linked_functions = [
     // mini-wasm.c
     "mono_set_timeout",
 
@@ -74,7 +70,6 @@ const linked_functions = [
     "mono_wasm_profiler_leave",
 
     // driver.c
-    "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
     "mono_wasm_event_pipe_early_startup_callback",
 
@@ -88,16 +83,7 @@ const linked_functions = [
     "mono_jiterp_do_jit_call_indirect",
 
     // corebindings.c
-    "mono_wasm_invoke_js_with_args_ref",
-    "mono_wasm_get_object_property_ref",
-    "mono_wasm_set_object_property_ref",
-    "mono_wasm_get_by_index_ref",
-    "mono_wasm_set_by_index_ref",
-    "mono_wasm_get_global_object_ref",
-    "mono_wasm_create_cs_owned_object_ref",
     "mono_wasm_release_cs_owned_object",
-    "mono_wasm_typed_array_to_array_ref",
-    "mono_wasm_typed_array_from_ref",
     "mono_wasm_bind_js_function",
     "mono_wasm_invoke_bound_function",
     "mono_wasm_invoke_import",
@@ -106,16 +92,32 @@ const linked_functions = [
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
-
-    #if USE_PTHREADS
-    /// mono-threads-wasm.c
-    "mono_wasm_pthread_on_pthread_attached",
-    // diagnostics_server.c
-    "mono_wasm_diagnostic_server_on_server_thread_created",
-    "mono_wasm_diagnostic_server_on_runtime_server_init",
-    "mono_wasm_diagnostic_server_stream_signal_work_available",
-    #endif
 ];
+
+if (monoWasmThreads) {
+    linked_functions = [...linked_functions,
+        /// mono-threads-wasm.c
+        "mono_wasm_pthread_on_pthread_attached",
+        // diagnostics_server.c
+        "mono_wasm_diagnostic_server_on_server_thread_created",
+        "mono_wasm_diagnostic_server_on_runtime_server_init",
+        "mono_wasm_diagnostic_server_stream_signal_work_available",
+    ]
+}
+if (WasmEnableLegacyJsInterop) {
+    linked_functions = [...linked_functions,
+        "mono_wasm_invoke_js_with_args_ref",
+        "mono_wasm_get_object_property_ref",
+        "mono_wasm_set_object_property_ref",
+        "mono_wasm_get_by_index_ref",
+        "mono_wasm_set_by_index_ref",
+        "mono_wasm_get_global_object_ref",
+        "mono_wasm_create_cs_owned_object_ref",
+        "mono_wasm_typed_array_to_array_ref",
+        "mono_wasm_typed_array_from_ref",
+        "mono_wasm_invoke_js_blazor",
+    ]
+}
 
 // -- this javascript file is evaluated by emcc during compilation! --
 // we generate simple proxy for each exported function so that emcc will include them in the final output
