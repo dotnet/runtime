@@ -231,17 +231,22 @@ export let traceImports : Array<[string, string, Function]> | undefined;
 export let _wrap_trace_function: Function;
 
 const mathOps1 = [
-    "acos",
-    "cos",
-    "sin",
     "asin",
+    "acos",
+    "atan",
+    "cos",
+    "exp",
+    "log",
+    "log2",
+    "log10",
+    "sin",
     "tan",
-    "atan"
 ];
 
 const mathOps2 = [
     "rem",
     "atan2",
+    "pow",
 ];
 
 function getTraceImports () {
@@ -261,6 +266,7 @@ function getTraceImports () {
         ["ckovr_i4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_i4")],
         ["ckovr_u4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_u4")],
         importDef("newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")),
+        importDef("newstr", getRawCwrap("mono_jiterp_try_newstr")),
         importDef("ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")),
         importDef("ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")),
         importDef("conv", getRawCwrap("mono_jiterp_conv")),
@@ -271,11 +277,13 @@ function getTraceImports () {
         importDef("hascsize", getRawCwrap("mono_jiterp_object_has_component_size")),
         importDef("hasflag", getRawCwrap("mono_jiterp_enum_hasflag")),
         importDef("array_rank", getRawCwrap("mono_jiterp_get_array_rank")),
+        ["a_elesize", "array_rank", getRawCwrap("mono_jiterp_get_array_element_size")],
         importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
         importDef("transfer", getRawCwrap("mono_jiterp_trace_transfer")),
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
         importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
+        importDef("fma", getRawCwrap("mono_jiterp_math_fma")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -410,6 +418,13 @@ function initialize_builder (builder: WasmBuilder) {
         }, WasmValtype.f64, true
     );
     builder.defineType(
+        "fma", {
+            "x": WasmValtype.f64,
+            "y": WasmValtype.f64,
+            "z": WasmValtype.f64,
+        }, WasmValtype.f64, true
+    );
+    builder.defineType(
         "trace_eip", {
             "traceId": WasmValtype.i32,
             "eip": WasmValtype.i32,
@@ -419,6 +434,12 @@ function initialize_builder (builder: WasmBuilder) {
         "newobj_i", {
             "ppDestination": WasmValtype.i32,
             "vtable": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "newstr", {
+            "ppDestination": WasmValtype.i32,
+            "length": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
     builder.defineType(

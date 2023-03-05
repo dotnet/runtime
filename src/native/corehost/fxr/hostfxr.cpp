@@ -647,6 +647,8 @@ namespace
             return coreclr_delegate_type::load_assembly_and_get_function_pointer;
         case hostfxr_delegate_type::hdt_get_function_pointer:
             return coreclr_delegate_type::get_function_pointer;
+        case hostfxr_delegate_type::hdt_load_assembly:
+            return coreclr_delegate_type::load_assembly;
         }
         return coreclr_delegate_type::invalid;
     }

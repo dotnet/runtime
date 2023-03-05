@@ -560,7 +560,7 @@ private:
 
 // UnwindFragmentInfo: represents all the unwind information for a single fragment of a function or funclet.
 // A fragment is a section with a code size less than the maximum unwind code size: either 512K bytes, or
-// that specified by COMPlus_JitSplitFunctionSize. In most cases, there will be exactly one fragment.
+// that specified by DOTNET_JitSplitFunctionSize. In most cases, there will be exactly one fragment.
 
 class UnwindFragmentInfo : public UnwindBase
 {

@@ -1441,10 +1441,10 @@ namespace System.IO.Packaging
         private string CompatibilityUri => _compatibilityUri ??= Reader.NameTable.Add(MarkupCompatibilityURI);
         #endregion Private Properties
         #region Nested Classes
-        private struct NamespaceElementPair
+        private readonly struct NamespaceElementPair
         {
-            public string namespaceName;
-            public string itemName;
+            public readonly string namespaceName;
+            public readonly string itemName;
 
             public NamespaceElementPair(string namespaceName, string itemName)
             {

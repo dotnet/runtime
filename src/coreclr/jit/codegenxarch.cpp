@@ -4931,17 +4931,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     {
         GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
     }
-
-    // Updating variable liveness after instruction was emitted
-    if (targetReg != REG_NA)
-    {
-        genProduceReg(tree);
-    }
-    else
-    {
-        genUpdateLife(tree);
-        varDsc->SetRegNum(REG_STK);
-    }
+    genUpdateLifeStore(tree, targetReg, varDsc);
 }
 
 //------------------------------------------------------------------------
@@ -5060,16 +5050,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                                 emitTypeSize(targetType));
             }
         }
-        // Updating variable liveness after instruction was emitted
-        if (targetReg != REG_NA)
-        {
-            genProduceReg(lclNode);
-        }
-        else
-        {
-            genUpdateLife(lclNode);
-            varDsc->SetRegNum(REG_STK);
-        }
+        genUpdateLifeStore(lclNode, targetReg, varDsc);
     }
 }
 
@@ -8942,7 +8923,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
 /*****************************************************************************
 * Unit testing of the XArch emitter: generate a bunch of instructions into the prolog
-* (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late
+* (it's as good a place as any), then use DOTNET_JitLateDisasm=* to see if the late
 * disassembler thinks the instructions as the same as we do.
 */
 

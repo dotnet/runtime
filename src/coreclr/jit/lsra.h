@@ -712,7 +712,7 @@ public:
 #ifdef DEBUG
 private:
     //------------------------------------------------------------------------
-    // Should we stress lsra? This uses the COMPlus_JitStressRegs variable.
+    // Should we stress lsra? This uses the DOTNET_JitStressRegs variable.
     //
     // The mask bits are currently divided into fields in which each non-zero value
     // is a distinct stress option (e.g. 0x3 is not a combination of 0x1 and 0x2).
