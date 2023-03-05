@@ -202,6 +202,9 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
+  <data name="Arg_ByteArrayTooSmallForValue" xml:space="preserve">
+    <value>The array starting from the specified index is not long enough to read a value of the specified type.</value>
+  </data>
   <data name="Arg_ArrayTypeMismatchException" xml:space="preserve">
     <value>Attempted to access an element as a type incompatible with the array.</value>
   </data>
