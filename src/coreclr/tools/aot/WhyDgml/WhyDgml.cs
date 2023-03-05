@@ -68,7 +68,7 @@ class Program
             {
                 matchedCount++;
                 Console.WriteLine($"**** Match {matchedCount} ****");
-                Dump(nameToNode[key], new Stack<Node>());
+                Dump(nameToNode[key]);
             }
         }
 
@@ -76,22 +76,14 @@ class Program
             Console.WriteLine($"No nodes matching: '{goal}'.");
     }
 
-    static void Dump(Node current, Stack<Node> stack, int indent = 0, string reason = "")
+    static void Dump(Node current, int indent = 0, string reason = "")
     {
         Console.WriteLine($"{new string(' ', indent)}({reason}) {current.Name}");
-        stack.Push(current);
+
         foreach (var edge in current.Edges)
         {
-            if (stack.Contains(edge.Node))
-            {
-                Console.WriteLine("Cyclic reference detected. Continue.");
-                continue;
-            }
-
-            Dump(edge.Node, stack, indent + 2, edge.Label);
+            Dump(edge.Node, indent + 2, edge.Label);
         }
-
-        stack.Pop();
     }
 
     private static string WildCardToRegular(string value)
