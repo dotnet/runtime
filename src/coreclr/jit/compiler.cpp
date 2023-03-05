@@ -5297,8 +5297,8 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
 
 PhaseStatus Compiler::StressSplitTree()
 {
-    //if (!compStressCompile(STRESS_SPLIT_TREE, 10))
-    //    return PhaseStatus::MODIFIED_NOTHING;
+    if (opts.OptimizationDisabled())
+        return PhaseStatus::MODIFIED_NOTHING;
 
     CLRRandom rng;
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
@@ -5311,15 +5311,19 @@ PhaseStatus Compiler::StressSplitTree()
             int numTrees = 0;
             for (GenTree* tree : stmt->TreeList())
             {
+                if (tree->OperIs(GT_JTRUE))
+                {
+                    continue;
+                }
+
                 if (varTypeIsSIMD(tree))
                 {
+                    // Cannot always create locals for these due to bug in gtGetStructHandleForSIMD
                     skip = true;
                     break;
                 }
-                if (!tree->OperIs(GT_JTRUE)) // due to relop invariant
-                {
-                    numTrees++;
-                }
+
+                numTrees++;
             }
 
             if (skip)
@@ -5328,6 +5332,9 @@ PhaseStatus Compiler::StressSplitTree()
             int splitTree = rng.Next(numTrees);
             for (GenTree* tree : stmt->TreeList())
             {
+                if (tree->OperIs(GT_JTRUE))
+                    continue;
+
                 if (splitTree == 0)
                 {
                     JITDUMP("Splitting " FMT_STMT " at [%06u]\n", stmt->GetID(), dspTreeID(tree));
@@ -5337,10 +5344,7 @@ PhaseStatus Compiler::StressSplitTree()
                     break;
                 }
 
-                if (!tree->OperIs(GT_JTRUE))
-                {
-                    splitTree--;
-                }
+                splitTree--;
             }
         }
     }
