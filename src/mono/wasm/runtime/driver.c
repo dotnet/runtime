@@ -472,7 +472,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "5000", 0);
 #endif
 
-	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+	// monoeg_g_setenv ("DOTNET_DebugWriteToStdErr", "1", 0);
 
 #ifdef DEBUG
 	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);

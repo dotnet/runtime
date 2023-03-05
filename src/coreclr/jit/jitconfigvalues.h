@@ -17,7 +17,7 @@
 CONFIG_INTEGER(AltJitLimit, W("AltJitLimit"), 0)               // Max number of functions to use altjit for (decimal)
 CONFIG_INTEGER(AltJitSkipOnAssert, W("AltJitSkipOnAssert"), 0) // If AltJit hits an assert, fall back to the fallback
                                                                // JIT. Useful in conjunction with
-                                                               // COMPlus_ContinueOnAssert=1
+                                                               // DOTNET_ContinueOnAssert=1
 CONFIG_INTEGER(BreakOnDumpToken, W("BreakOnDumpToken"), 0xffffffff) // Breaks when using internal logging on a
                                                                     // particular token value.
 CONFIG_INTEGER(DebugBreakOnVerificationFailure, W("DebugBreakOnVerificationFailure"), 0) // Halts the jit on
@@ -122,7 +122,7 @@ CONFIG_INTEGER(JitMinOptsLvRefCount, W("JITMinOptsLvRefcount"), DEFAULT_MIN_OPTS
 CONFIG_INTEGER(JitNoCSE, W("JitNoCSE"), 0)
 CONFIG_INTEGER(JitNoCSE2, W("JitNoCSE2"), 0)
 CONFIG_INTEGER(JitNoForceFallback, W("JitNoForceFallback"), 0) // Set to non-zero to prevent NOWAY assert testing.
-                                                               // Overrides COMPlus_JitForceFallback and JIT stress
+                                                               // Overrides DOTNET_JitForceFallback and JIT stress
                                                                // flags.
 CONFIG_INTEGER(JitNoForwardSub, W("JitNoForwardSub"), 0)       // Disables forward sub
 CONFIG_INTEGER(JitNoHoist, W("JitNoHoist"), 0)

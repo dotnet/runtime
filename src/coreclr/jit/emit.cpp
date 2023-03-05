@@ -6118,7 +6118,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
     }
     else
     {
-        // For non-adaptive, just take whatever is supplied using COMPlus_ variables
+        // For non-adaptive, just take whatever is supplied using DOTNET_ variables
         maxLoopSize = emitComp->opts.compJitAlignLoopMaxCodeSize;
     }
 
