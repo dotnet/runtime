@@ -6,6 +6,7 @@
 #pragma hdrstop
 #endif
 
+// Obtain constant pointer from a tree
 static void* GetConstantPointer(Compiler* comp, GenTree* tree)
 {
     void* cns = nullptr;
@@ -20,7 +21,7 @@ static void* GetConstantPointer(Compiler* comp, GenTree* tree)
     return cns;
 }
 
-// Save expression to a local and append as the last statement in prevBb
+// Save expression to a local and append it as the last statement in exprBlock
 static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprBlock, DebugInfo& debugInfo)
 {
     unsigned const tmpNum         = comp->lvaGrabTemp(true DEBUGARG("spilling expr"));
@@ -32,6 +33,7 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
     return comp->gtNewLclvNode(tmpNum, expr->TypeGet());
 };
 
+// Create block from the given tree
 static BasicBlock* CreateBlockFromTree(
     Compiler* comp, BasicBlock* insertAfter, BBjumpKinds blockKind, GenTree* tree, DebugInfo& debugInfo)
 {
@@ -50,40 +52,17 @@ static BasicBlock* CreateBlockFromTree(
     return newBlock;
 }
 
-static BasicBlock* SplitBlockBeforeTree(
-    Compiler* comp, BasicBlock* block, Statement* stmt, GenTree* splitPoint, BasicBlock** prevBlock, GenTree*** callUse)
-{
-    Statement* firstNewStmt;
-    comp->gtSplitTree(block, stmt, splitPoint, &firstNewStmt, callUse);
-
-    BasicBlockFlags originalFlags = block->bbFlags;
-    BasicBlock*     prevBb        = block;
-
-    if (stmt == block->firstStmt())
-    {
-        block = comp->fgSplitBlockAtBeginning(prevBb);
-    }
-    else
-    {
-        assert(stmt->GetPrevStmt() != block->lastStmt());
-        JITDUMP("Splitting " FMT_BB " after statement " FMT_STMT "\n", prevBb->bbNum, stmt->GetPrevStmt()->GetID())
-        block = comp->fgSplitBlockAfterStatement(prevBb, stmt->GetPrevStmt());
-    }
-
-    // We split a block, possibly, in the middle - we need to propagate some flags
-    prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-    block->bbFlags |=
-        originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
-
-    *prevBlock = prevBb;
-    return block;
-}
-
 //------------------------------------------------------------------------------
 // fgExpandRuntimeLookups : partially expand runtime lookups helper calls
 //                          to add a nullcheck [+ size check] and a fast path
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
+//
+// Notes:
+//    The runtime lookup itself is needed to access a handle in code shared between
+//    generic instantiations. The lookup depends on the typeContext which is only available at
+//    runtime, and not at compile - time. See ASCII block diagrams in comments below for
+//    better understanding how this phase expands runtime lookups.
 //
 PhaseStatus Compiler::fgExpandRuntimeLookups()
 {
@@ -186,9 +165,9 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 assert(runtimeLookup.testForNull);
 
                 // Split block right before the call tree
-                BasicBlock* prevBb  = nullptr;
+                BasicBlock* prevBb  = block;
                 GenTree**   callUse = nullptr;
-                block               = SplitBlockBeforeTree(this, block, stmt, call, &prevBb, &callUse);
+                block               = fgSplitBlockBeforeTree(block, stmt, call, &callUse);
                 assert(prevBb != nullptr && block != nullptr);
 
                 // Define a local for the result

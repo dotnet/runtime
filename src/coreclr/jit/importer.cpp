@@ -1886,6 +1886,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
     GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
 
+    // Partially inline it later in fgExpandRuntimeLookups. Although, keep the QMARK path below for Tier0
+    // as it demonstrates better CQ and TP for Tier0.
     if (opts.OptimizationEnabled() || (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK))
     {
         // No need to perform CSE/hoisting for signature node - it is expected to end up in a rarely-taken block after
