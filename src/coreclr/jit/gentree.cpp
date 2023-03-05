@@ -16277,8 +16277,6 @@ void Compiler::gtSplitTree(
         {
             if (*use == m_splitNode)
             {
-                GenTree* ancestor = nullptr;
-
                 // Split all siblings and ancestor siblings.
                 int i;
                 for (i = 0; i < m_useStack.Height() - 1; i++)
