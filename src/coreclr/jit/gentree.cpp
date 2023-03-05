@@ -16337,7 +16337,8 @@ void Compiler::gtSplitTree(
                     return true;
                 }
 
-                if (useInf.User->OperIs(GT_STORE_DYN_BLK) && !(*useInf.Use)->OperIs(GT_CNS_INT, GT_INIT_VAL) && (useInf.Use == &useInf.User->AsStoreDynBlk()->Data()))
+                if (useInf.User->OperIs(GT_STORE_DYN_BLK) && !(*useInf.Use)->OperIs(GT_CNS_INT, GT_INIT_VAL) &&
+                    (useInf.Use == &useInf.User->AsStoreDynBlk()->Data()))
                 {
                     return true;
                 }
@@ -16448,7 +16449,7 @@ void Compiler::gtSplitTree(
             {
                 for (GenTree** operandUse : (*use)->UseEdges())
                 {
-                    SplitOutUse(UseInfo{ operandUse, *use }, false);
+                    SplitOutUse(UseInfo{operandUse, *use}, false);
                 }
                 return;
             }
@@ -16461,15 +16462,15 @@ void Compiler::gtSplitTree(
                     assert(layout != nullptr);
                     if (layout->IsBlockLayout())
                     {
-                        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
-                        dsc->lvType = TYP_BLK;
+                        LclVarDsc* dsc   = m_compiler->lvaGetDesc(lclNum);
+                        dsc->lvType      = TYP_BLK;
                         dsc->lvExactSize = max(layout->GetSize(), 1);
                         m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
 
                         GenTreeLclFld* fldDst = m_compiler->gtNewLclFldNode(lclNum, TYP_STRUCT, 0);
                         fldDst->SetLayout(layout);
                         GenTree* asg = m_compiler->gtNewAssignNode(fldDst, *use);
-                        stmt = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
+                        stmt         = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
 
                         GenTreeLclFld* fldSrc = m_compiler->gtNewLclFldNode(lclNum, TYP_STRUCT, 0);
                         fldSrc->SetLayout(layout);
@@ -16480,8 +16481,8 @@ void Compiler::gtSplitTree(
                 if (stmt == nullptr)
                 {
                     GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
-                    stmt = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
-                    *use = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
+                    stmt         = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
+                    *use         = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
                 }
             }
 

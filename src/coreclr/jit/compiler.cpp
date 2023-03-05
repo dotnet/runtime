@@ -5297,9 +5297,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
 
 PhaseStatus Compiler::StressSplitTree()
 {
-    if (opts.OptimizationDisabled())
-        return PhaseStatus::MODIFIED_NOTHING;
-
+#ifdef DEBUG
     CLRRandom rng;
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
@@ -5307,8 +5305,8 @@ PhaseStatus Compiler::StressSplitTree()
     {
         for (Statement* stmt : block->NonPhiStatements())
         {
-            bool skip = false;
-            int numTrees = 0;
+            bool skip     = false;
+            int  numTrees = 0;
             for (GenTree* tree : stmt->TreeList())
             {
                 if (tree->OperIs(GT_JTRUE))
@@ -5339,7 +5337,7 @@ PhaseStatus Compiler::StressSplitTree()
                 {
                     JITDUMP("Splitting " FMT_STMT " at [%06u]\n", stmt->GetID(), dspTreeID(tree));
                     Statement* firstNewStmt;
-                    GenTree** use;
+                    GenTree**  use;
                     gtSplitTree(block, stmt, tree, &firstNewStmt, &use);
                     break;
                 }
@@ -5348,6 +5346,7 @@ PhaseStatus Compiler::StressSplitTree()
             }
         }
     }
+#endif
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
