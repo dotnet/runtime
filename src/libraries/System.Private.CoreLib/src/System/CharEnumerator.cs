@@ -19,12 +19,15 @@ namespace System
         public bool MoveNext()
         {
             int index = _index + 1;
-            if (index < _str.Length)
+            int length = _str.Length;
+
+            if (index < length)
             {
                 _index = index;
                 return true;
             }
 
+            _index = length;
             return false;
         }
 
