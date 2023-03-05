@@ -16433,6 +16433,18 @@ void Compiler::gtSplitTree(
                 }
             }
 
+#ifndef TARGET_64BIT
+            // GT_MUL with GTF_MUL_64RSLT is required to stay with casts on the
+            // operands. Note that one operand may also be a constant, but we
+            // would have exited early above for that case.
+            if ((user != nullptr) && user->OperIs(GT_MUL) && user->Is64RsltMul())
+            {
+                assert((*use)->OperIs(GT_CAST));
+                user = *use;
+                use = &(*use)->AsCast()->gtOp1;
+            }
+#endif
+
             Statement* stmt = nullptr;
             if (!(*use)->IsValue() || (*use)->OperIs(GT_ASG) || (user == nullptr) ||
                 (user->OperIs(GT_COMMA) && (user->gtGetOp1() == *use)))
