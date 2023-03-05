@@ -2619,19 +2619,44 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
 
-            // Simple cases
+            // These may lead to early dead code elimination
+            case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsEnum:
+            case NI_System_Type_get_IsByRefLike:
+            case NI_System_Type_IsAssignableFrom:
+            case NI_System_Type_IsAssignableTo:
+
+            // Lightweight intrinsics
             case NI_System_String_get_Chars:
             case NI_System_String_get_Length:
             case NI_System_Span_get_Item:
             case NI_System_Span_get_Length:
             case NI_System_ReadOnlySpan_get_Item:
             case NI_System_ReadOnlySpan_get_Length:
+            case NI_System_BitConverter_DoubleToInt64Bits:
+            case NI_System_BitConverter_Int32BitsToSingle:
+            case NI_System_BitConverter_Int64BitsToDouble:
+            case NI_System_BitConverter_SingleToInt32Bits:
+            case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
+            case NI_System_Type_GetEnumUnderlyingType:
+
+            // Most atomics are compiled to single instructions
+            case NI_System_Threading_Interlocked_And:
+            case NI_System_Threading_Interlocked_Or:
+            case NI_System_Threading_Interlocked_CompareExchange:
+            case NI_System_Threading_Interlocked_Exchange:
+            case NI_System_Threading_Interlocked_ExchangeAdd:
+            case NI_System_Threading_Interlocked_MemoryBarrier:
+            case NI_System_Threading_Interlocked_ReadMemoryBarrier:
+
                 betterToExpand = true;
                 break;
 
             default:
                 // Unsafe.* are all small enough to prefer expansions.
-                betterToExpand = ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
+                betterToExpand |= ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
+                // Same for these
+                betterToExpand |= ni >= NI_PRIMITIVE_START && ni <= NI_PRIMITIVE_END;
                 break;
         }
     }
