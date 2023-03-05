@@ -1886,20 +1886,39 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
     GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
 
-    // No need to perform CSE/hoisting for signature node - it is expected to end up in a rarely-taken block after
-    // "Expand runtime lookups" phase.
-    // argNode->gtFlags |= GTF_DONT_CSE;
-
-    // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
-    // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
-    impInlineRoot()->setMethodHasExpRuntimeLookup();
-    helperCall->SetExpRuntimeLookup();
-    if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
+    if (opts.OptimizationEnabled() || (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK))
     {
-        JITDUMP("Registering %p in SignatureToLookupInfoMap\n", pRuntimeLookup->signature)
-        impInlineRoot()->GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, *pRuntimeLookup);
+        // No need to perform CSE/hoisting for signature node - it is expected to end up in a rarely-taken block after
+        // "Expand runtime lookups" phase.
+        argNode->gtFlags |= GTF_DONT_CSE;
+
+        // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
+        // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
+        impInlineRoot()->setMethodHasExpRuntimeLookup();
+        helperCall->SetExpRuntimeLookup();
+        if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
+        {
+            JITDUMP("Registering %p in SignatureToLookupInfoMap\n", pRuntimeLookup->signature)
+            impInlineRoot()->GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, *pRuntimeLookup);
+        }
+        return helperCall;
     }
-    return helperCall;
+
+    // Extract the handle
+    GenTree* handleForNullCheck = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
+    handleForNullCheck->gtFlags |= GTF_IND_NONFAULTING;
+
+    // Check for null and possibly call helper
+    GenTree* nullCheck       = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
+    GenTree* handleForResult = gtCloneExpr(handleForNullCheck);
+
+    GenTreeColon* colonNullCheck = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, handleForResult, helperCall);
+    GenTree*      result         = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
+
+    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling Runtime Lookup tree"));
+
+    impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
+    return gtNewLclvNode(tmp, TYP_I_IMPL);
 }
 
 struct RecursiveGuard

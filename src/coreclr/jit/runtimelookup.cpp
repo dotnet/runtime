@@ -113,9 +113,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
     // Find all calls with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag
     for (BasicBlock* block : Blocks())
     {
-    VISIT_BLOCK_AGAIN:
         for (Statement* const stmt : block->Statements())
         {
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
+            {
+                // TP: Stmt has no calls - bail out
+                continue;
+            }
+
             for (GenTree* const tree : stmt->TreeList())
             {
                 // We only need calls with IsExpRuntimeLookup() flag
@@ -414,8 +419,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 // We don't try to re-use expansions for the same lookups in the current block here - CSE is responsible
                 // for that
                 result = PhaseStatus::MODIFIED_EVERYTHING;
-                block  = prevBb;
-                goto VISIT_BLOCK_AGAIN;
             }
         }
     }
