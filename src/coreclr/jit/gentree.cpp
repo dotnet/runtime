@@ -16277,16 +16277,31 @@ void Compiler::gtSplitTree(
         {
             if (*use == m_splitNode)
             {
-                GenTree* ancestor = *use;
-                while (!m_useStack.Empty())
+                GenTree* ancestor = nullptr;
+
+                // Split all siblings and ancestor siblings.
+                int i;
+                for (i = 0; i < m_useStack.Height() - 1; i++)
                 {
-                    while (m_useStack.Top(0).User == ancestor)
+                    const UseInfo& useInf = m_useStack.BottomRef(i);
+                    if (useInf.Use == use)
                     {
-                        SplitOutUse(m_useStack.Pop());
+                        break;
                     }
 
-                    assert(*m_useStack.Top(0).Use == ancestor);
-                    ancestor = m_useStack.Pop().User;
+                    if (m_useStack.BottomRef(i + 1).User == useInf.User)
+                    {
+                        SplitOutUse(useInf);
+                    }
+                }
+
+                assert(m_useStack.Bottom(i).Use == use);
+
+                // Split operands.
+                for (i++; i < m_useStack.Height(); i++)
+                {
+                    assert(m_useStack.BottomRef(i).User == *use);
+                    SplitOutUse(m_useStack.BottomRef(i));
                 }
 
                 SplitNodeUse = use;
@@ -16330,24 +16345,27 @@ void Compiler::gtSplitTree(
                     //   rhs
                     // And we want to split out the comma.
                     //
-                    // For the first use we will update the ASG to be ASG(op2, rhs)
+                    // The first use will be the COMMA --- op1 edge, which we
+                    // expect to be handled by simple side effect extraction in
+                    // the recursive call.
+                    UseInfo use1 { &node->AsOp()->gtOp1, node };
+
+                    // For the second use we will update the ASG to be ASG(op2, rhs)
                     // so that we get the proper location treatment. The edge will
                     // then be the ASG --- op2 edge.
                     *use = node->gtGetOp2();
-                    UseInfo useA { use, user };
-
-                    // The second use will be the COMMA --- op1 edge, which we
-                    // expect to be handled by simple side effect extraction in
-                    // the recursive call.
-                    UseInfo useB { &node->AsOp()->gtOp1, node };
+                    UseInfo use2 { use, user };
 
                     if (node->IsReverseOp())
                     {
-                        std::swap(useA, useB);
+                        SplitOutUse(use2);
+                        SplitOutUse(use1);
                     }
-
-                    SplitOutUse(useA);
-                    SplitOutUse(useB);
+                    else
+                    {
+                        SplitOutUse(use1);
+                        SplitOutUse(use2);
+                    }
                     return;
                 }
 
@@ -16390,11 +16408,7 @@ void Compiler::gtSplitTree(
                 ArrayStack<GenTree**> fieldsStack(m_compiler->getAllocator(CMK_ArrayStack));
                 for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
-                    fieldsStack.Push(&use.NodeRef());
-                }
-                while (!fieldsStack.Empty())
-                {
-                    SplitOutUse(UseInfo{fieldsStack.Pop(), fieldList});
+                    SplitOutUse(UseInfo{&use.NodeRef(), fieldList});
                 }
                 return;
             }
@@ -16410,13 +16424,12 @@ void Compiler::gtSplitTree(
             {
                 if (FirstStatement == nullptr)
                 {
-                    FirstStatement = m_splitStmt;
+                    FirstStatement = stmt;
                 }
                 m_compiler->gtUpdateStmtSideEffects(stmt);
                 m_compiler->gtSetStmtInfo(stmt);
                 m_compiler->fgSetStmtSeq(stmt);
-                m_compiler->fgInsertStmtBefore(m_bb, FirstStatement, stmt);
-                FirstStatement = stmt;
+                m_compiler->fgInsertStmtBefore(m_bb, m_splitStmt, stmt);
             }
         }
     };
