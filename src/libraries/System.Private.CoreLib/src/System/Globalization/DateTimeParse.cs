@@ -5660,17 +5660,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         internal bool Match(string str)
         {
-            if (++Index >= Length)
-            {
-                return false;
-            }
-
-            if (str.Length > (Value.Length - Index))
-            {
-                return false;
-            }
-
-            if (m_info.Compare(Value.Slice(Index, str.Length), str, CompareOptions.Ordinal) == 0)
+            if (++Index < Length && Value.Slice(Index).StartsWith(str))
             {
                 // Update the Index to the end of the matching string.
                 // So the following GetNext()/Match() operation will get
@@ -5678,6 +5668,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 Index += (str.Length - 1);
                 return true;
             }
+
             return false;
         }
 

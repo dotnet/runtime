@@ -21,9 +21,6 @@ namespace System.Xml.Xsl.Runtime
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static class XsltFunctions
     {
-        private static readonly CompareInfo s_compareInfo = CultureInfo.InvariantCulture.CompareInfo;
-
-
         //------------------------------------------------
         // Xslt/XPath functions
         //------------------------------------------------
@@ -37,14 +34,14 @@ namespace System.Xml.Xsl.Runtime
         public static bool Contains(string s1, string s2)
         {
             //return collation.IndexOf(s1, s2) >= 0;
-            return s_compareInfo.IndexOf(s1, s2, CompareOptions.Ordinal) >= 0;
+            return s1.Contains(s2);
         }
 
         public static string SubstringBefore(string s1, string s2)
         {
             if (s2.Length == 0) { return s2; }
             //int idx = collation.IndexOf(s1, s2);
-            int idx = s_compareInfo.IndexOf(s1, s2, CompareOptions.Ordinal);
+            int idx = s1.AsSpan().IndexOf(s2);
             return (idx < 1) ? string.Empty : s1.Substring(0, idx);
         }
 
@@ -52,7 +49,7 @@ namespace System.Xml.Xsl.Runtime
         {
             if (s2.Length == 0) { return s1; }
             //int idx = collation.IndexOf(s1, s2);
-            int idx = s_compareInfo.IndexOf(s1, s2, CompareOptions.Ordinal);
+            int idx = s1.AsSpan().IndexOf(s2);
             return (idx < 0) ? string.Empty : s1.Substring(idx + s2.Length);
         }
 
