@@ -1,62 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: Enumerates the characters on a string.  skips range
-**          checks.
-**
-**
-============================================================*/
-
 using System.Collections;
 using System.Collections.Generic;
 
 namespace System
 {
+    /// <summary>Supports iterating over a <see cref="string"/> object and reading its individual characters.</summary>
     public sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable, ICloneable
     {
-        private string? _str;
-        private int _index;
-        private char _currentElement;
+        private string _str; // null after disposal
+        private int _index = -1;
 
-        internal CharEnumerator(string str)
-        {
-            _str = str;
-            _index = -1;
-        }
+        internal CharEnumerator(string str) => _str = str;
 
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public object Clone() => MemberwiseClone();
 
         public bool MoveNext()
         {
             int index = _index + 1;
-            string s = _str!;
-
-            if ((uint)index < (uint)s.Length)
+            if (index < _str.Length)
             {
-                _currentElement = s[index];
                 _index = index;
                 return true;
             }
 
-            _index = s.Length;
             return false;
         }
 
-        public void Dispose()
-        {
-            if (_str != null)
-            {
-                _index = _str.Length;
-                _str = null;
-            }
-        }
+        public void Dispose() => _str = null!;
 
         object? IEnumerator.Current => Current;
 
@@ -64,19 +36,17 @@ namespace System
         {
             get
             {
-                if ((uint)_index >= _str!.Length)
+                int index = _index;
+                string s = _str;
+                if ((uint)index >= (uint)s.Length)
                 {
                     ThrowHelper.ThrowInvalidOperationException_EnumCurrent(_index);
                 }
 
-                return _currentElement;
+                return s[index];
             }
         }
 
-        public void Reset()
-        {
-            _currentElement = (char)0;
-            _index = -1;
-        }
+        public void Reset() => _index = -1;
     }
 }
