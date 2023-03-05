@@ -16213,6 +16213,303 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
 }
 
 //------------------------------------------------------------------------
+// gtSplitTree: Split a statement into multiple statements such that a
+// specified tree is the first executed non-invariant node in the statement.
+//
+// Arguments:
+//    block        - The block containing the statement.
+//    stmt         - The statement containing the tree.
+//    splitPoint   - A tree inside the statement.
+//    firstNewStmt - [out] The first new statement that was introduced.
+//                   [firstNewStmt..stmt) are the statements added by this function.
+//    splitNodeUse - The use of the tree to split at.
+//
+// Notes:
+//   This method turns all non-invariant nodes that would be executed before
+//   the split point into new separate statements. If those nodes were values
+//   this involves introducing new locals for those values, such that they can
+//   be used in the original statement.
+//
+void Compiler::gtSplitTree(
+    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
+{
+    class Splitter final : public GenTreeVisitor<Splitter>
+    {
+        BasicBlock* m_bb;
+        Statement*  m_splitStmt;
+        GenTree*    m_splitNode;
+
+        struct UseInfo
+        {
+            GenTree** Use;
+            GenTree*  User;
+        };
+        ArrayStack<UseInfo> m_useStack;
+
+    public:
+        enum
+        {
+            DoPreOrder        = true,
+            DoPostOrder       = true,
+            UseExecutionOrder = true
+        };
+
+        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode)
+            : GenTreeVisitor(compiler)
+            , m_bb(bb)
+            , m_splitStmt(stmt)
+            , m_splitNode(splitNode)
+            , m_useStack(compiler->getAllocator(CMK_ArrayStack))
+        {
+        }
+
+        Statement* FirstStatement = nullptr;
+        GenTree**  SplitNodeUse   = nullptr;
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            assert(!(*use)->OperIs(GT_QMARK));
+            m_useStack.Push(UseInfo{use, user});
+            return WALK_CONTINUE;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            if (*use == m_splitNode)
+            {
+                bool userIsLocation = false;
+                // Split all siblings and ancestor siblings.
+                int i;
+                for (i = 0; i < m_useStack.Height() - 1; i++)
+                {
+                    const UseInfo& useInf = m_useStack.BottomRef(i);
+                    if (useInf.Use == use)
+                    {
+                        break;
+                    }
+
+                    // If this has the same user as the next node then it is a
+                    // sibling of an ancestor -- and thus not on the "path"
+                    // that contains the split node.
+                    if (m_useStack.BottomRef(i + 1).User == useInf.User)
+                    {
+                        SplitOutUse(useInf, IsLocation(useInf, userIsLocation));
+                    }
+                    else
+                    {
+                        // This is an ancestor of the node we're splitting on.
+                        userIsLocation = IsLocation(useInf, userIsLocation);
+                    }
+                }
+
+                assert(m_useStack.Bottom(i).Use == use);
+                userIsLocation = IsLocation(m_useStack.BottomRef(i), userIsLocation);
+
+                // The remaining nodes should be operands of the split node.
+                for (i++; i < m_useStack.Height(); i++)
+                {
+                    const UseInfo& useInf = m_useStack.BottomRef(i);
+                    assert(useInf.User == *use);
+                    bool isLocation = IsLocation(useInf, userIsLocation);
+                    SplitOutUse(useInf, isLocation);
+                }
+
+                SplitNodeUse = use;
+
+                return WALK_ABORT;
+            }
+
+            while (m_useStack.Top(0).Use != use)
+            {
+                m_useStack.Pop();
+            }
+
+            return WALK_CONTINUE;
+        }
+
+    private:
+        bool IsLocation(const UseInfo& useInf, bool userIsLocation)
+        {
+            if (useInf.User != nullptr)
+            {
+                if (useInf.User->OperIs(GT_ADDR, GT_ASG) && (useInf.Use == &useInf.User->AsUnOp()->gtOp1))
+                {
+                    return true;
+                }
+
+                if (useInf.User->OperIs(GT_STORE_DYN_BLK) && !(*useInf.Use)->OperIs(GT_CNS_INT, GT_INIT_VAL) && (useInf.Use == &useInf.User->AsStoreDynBlk()->Data()))
+                {
+                    return true;
+                }
+
+                if (userIsLocation && useInf.User->OperIs(GT_COMMA) && (useInf.Use == &useInf.User->AsOp()->gtOp2))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void SplitOutUse(const UseInfo& useInf, bool isLocation)
+        {
+            GenTree** use  = useInf.Use;
+            GenTree*  user = useInf.User;
+
+            if ((*use)->IsInvariant())
+            {
+                return;
+            }
+
+            if ((*use)->OperIs(GT_LCL_VAR) && !m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->IsAddressExposed())
+            {
+                // The splitting we do here should always guarantee that we
+                // only introduce locals for the tree edges that overlap the
+                // split point, so it should be ok to avoid creating statements
+                // for locals that aren't address exposed. Note that this
+                // relies on it being illegal IR to have a tree edge for a
+                // register candidate that overlaps with an interfering node.
+                //
+                // For example, this optimization would be problematic if IR
+                // like the following could occur:
+                //
+                // CALL
+                //   LCL_VAR V00
+                //   CALL
+                //     ASG(V00, ...) (setup)
+                //     LCL_VAR V00
+                //
+                return;
+            }
+
+            if (isLocation)
+            {
+                if ((*use)->OperIs(GT_COMMA))
+                {
+                    // We have:
+                    // User
+                    //   COMMA
+                    //     op1
+                    //     op2
+                    //   rhs
+                    // where the comma is a location, and we want to split it out.
+                    //
+                    // The first use will be the COMMA --- op1 edge, which we
+                    // expect to be handled by simple side effect extraction in
+                    // the recursive call.
+                    UseInfo use1{&(*use)->AsOp()->gtOp1, *use};
+
+                    // For the second use we will update the user to use op2
+                    // directly instead of the comma so that we get the proper
+                    // location treatment. The edge will then be the User ---
+                    // op2 edge.
+                    *use = (*use)->gtGetOp2();
+                    UseInfo use2{use, user};
+
+                    if ((*use)->IsReverseOp())
+                    {
+                        SplitOutUse(use2, true);
+                        SplitOutUse(use1, false);
+                    }
+                    else
+                    {
+                        SplitOutUse(use1, false);
+                        SplitOutUse(use2, true);
+                    }
+                    return;
+                }
+
+                // Only a handful of nodes can be location, and htey are all unary or nullary.
+                assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
+                if ((*use)->OperIsUnary())
+                {
+                    user = *use;
+                    use  = &(*use)->AsUnOp()->gtOp1;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            Statement* stmt = nullptr;
+            if (!(*use)->IsValue() || (*use)->OperIs(GT_ASG) || (user == nullptr) ||
+                (user->OperIs(GT_COMMA) && (user->gtGetOp1() == *use)))
+            {
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(*use, &sideEffects);
+                if (sideEffects != nullptr)
+                {
+                    stmt = m_compiler->fgNewStmtFromTree(sideEffects, m_splitStmt->GetDebugInfo());
+                }
+                *use = m_compiler->gtNewNothingNode();
+            }
+            else if ((*use)->OperIs(GT_FIELD_LIST, GT_INIT_VAL))
+            {
+                for (GenTree** operandUse : (*use)->UseEdges())
+                {
+                    SplitOutUse(UseInfo{ operandUse, *use }, false);
+                }
+                return;
+            }
+            else
+            {
+                unsigned lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling to split statement for tree"));
+                if ((*use)->TypeIs(TYP_STRUCT))
+                {
+                    ClassLayout* layout = (*use)->GetLayout(m_compiler);
+                    assert(layout != nullptr);
+                    if (layout->IsBlockLayout())
+                    {
+                        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
+                        dsc->lvType = TYP_BLK;
+                        dsc->lvExactSize = max(layout->GetSize(), 1);
+                        m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
+
+                        GenTreeLclFld* fldDst = m_compiler->gtNewLclFldNode(lclNum, TYP_STRUCT, 0);
+                        fldDst->SetLayout(layout);
+                        GenTree* asg = m_compiler->gtNewAssignNode(fldDst, *use);
+                        stmt = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
+
+                        GenTreeLclFld* fldSrc = m_compiler->gtNewLclFldNode(lclNum, TYP_STRUCT, 0);
+                        fldSrc->SetLayout(layout);
+                        *use = fldSrc;
+                    }
+                }
+
+                if (stmt == nullptr)
+                {
+                    GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
+                    stmt = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
+                    *use = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
+                }
+            }
+
+            if (stmt != nullptr)
+            {
+                if (FirstStatement == nullptr)
+                {
+                    FirstStatement = stmt;
+                }
+                m_compiler->gtUpdateStmtSideEffects(stmt);
+                m_compiler->gtSetStmtInfo(stmt);
+                m_compiler->fgSetStmtSeq(stmt);
+                m_compiler->fgInsertStmtBefore(m_bb, m_splitStmt, stmt);
+            }
+        }
+    };
+
+    Splitter splitter(this, block, stmt, splitPoint);
+    splitter.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    *firstNewStmt = splitter.FirstStatement;
+    *splitNodeUse = splitter.SplitNodeUse;
+
+    gtUpdateStmtSideEffects(stmt);
+    gtSetStmtInfo(stmt);
+    fgSetStmtSeq(stmt);
+}
+
+//------------------------------------------------------------------------
 // gtExtractSideEffList: Extracts side effects from the given expression.
 //
 // Arguments:

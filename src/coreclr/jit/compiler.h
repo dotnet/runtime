@@ -2929,6 +2929,9 @@ public:
                               GenTreeFlags GenTreeFlags = GTF_SIDE_EFFECT,
                               bool         ignoreRoot   = false);
 
+    void gtSplitTree(
+        BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse);
+
     // Static fields of struct types (and sometimes the types that those are reduced to) are represented by having the
     // static field contain an object pointer to the boxed struct.  This simplifies the GC implementation...but
     // complicates the JIT somewhat.  This predicate returns "true" iff a node with type "fieldNodeType", representing
@@ -5228,6 +5231,7 @@ public:
     // Initialize the per-block variable sets (used for liveness analysis).
     void fgInitBlockVarSets();
 
+    PhaseStatus StressSplitTree();
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -9690,6 +9694,7 @@ public:
         STRESS_MODE(PROMOTE_FEWER_STRUCTS)/* Don't promote some structs that can be promoted */ \
         STRESS_MODE(VN_BUDGET)/* Randomize the VN budget */                                     \
         STRESS_MODE(SSA_INFO) /* Select lower thresholds for "complex" SSA num encoding */      \
+        STRESS_MODE(SPLIT_TREE)                                                                 \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \

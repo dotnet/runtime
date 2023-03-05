@@ -4950,6 +4950,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDomsComputed    = false;
     optLoopTableValid = false;
 
+#ifdef DEBUG
+    DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
+#endif
+
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
@@ -5290,6 +5294,59 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 #endif
+
+PhaseStatus Compiler::StressSplitTree()
+{
+    //if (!compStressCompile(STRESS_SPLIT_TREE, 10))
+    //    return PhaseStatus::MODIFIED_NOTHING;
+
+    CLRRandom rng;
+    rng.Init(info.compMethodHash() ^ 0x077cc4d4);
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            bool skip = false;
+            int numTrees = 0;
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (varTypeIsSIMD(tree))
+                {
+                    skip = true;
+                    break;
+                }
+                if (!tree->OperIs(GT_JTRUE)) // due to relop invariant
+                {
+                    numTrees++;
+                }
+            }
+
+            if (skip)
+                continue;
+
+            int splitTree = rng.Next(numTrees);
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (splitTree == 0)
+                {
+                    JITDUMP("Splitting " FMT_STMT " at [%06u]\n", stmt->GetID(), dspTreeID(tree));
+                    Statement* firstNewStmt;
+                    GenTree** use;
+                    gtSplitTree(block, stmt, tree, &firstNewStmt, &use);
+                    break;
+                }
+
+                if (!tree->OperIs(GT_JTRUE))
+                {
+                    splitTree--;
+                }
+            }
+        }
+    }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
 
 //------------------------------------------------------------------------
 // generatePatchpointInfo: allocate and fill in patchpoint info data,
