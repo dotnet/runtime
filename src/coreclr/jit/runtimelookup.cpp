@@ -8,17 +8,16 @@
 
 static void* GetConstantPointer(Compiler* comp, GenTree* tree)
 {
-    void* signature = nullptr;
+    void* cns = nullptr;
     if (tree->gtEffectiveVal()->IsCnsIntOrI())
     {
-        signature = (void*)tree->gtEffectiveVal()->AsIntCon()->IconValue();
+        cns = (void*)tree->gtEffectiveVal()->AsIntCon()->IconValue();
     }
     else if (comp->vnStore->IsVNConstant(tree->gtVNPair.GetLiberal()))
     {
-        // signature is not a constant (CSE'd?) - let's see if we can access it via VN
-        signature = (void*)comp->vnStore->CoercedConstantValue<ssize_t>(tree->gtVNPair.GetLiberal());
+        cns = (void*)comp->vnStore->CoercedConstantValue<ssize_t>(tree->gtVNPair.GetLiberal());
     }
-    return signature;
+    return cns;
 }
 
 // Save expression to a local and append as the last statement in prevBb
@@ -52,11 +51,10 @@ static BasicBlock* CreateBlockFromTree(
 }
 
 static BasicBlock* SplitBlockBeforeTree(
-    Compiler* comp, BasicBlock* block, Statement* stmt, GenTree* splitPoint, BasicBlock** prevBlock)
+    Compiler* comp, BasicBlock* block, Statement* stmt, GenTree* splitPoint, BasicBlock** prevBlock, GenTree*** callUse)
 {
     Statement* firstNewStmt;
-    GenTree**  callUse;
-    comp->gtSplitTree(block, stmt, splitPoint, &firstNewStmt, &callUse);
+    comp->gtSplitTree(block, stmt, splitPoint, &firstNewStmt, callUse);
 
     BasicBlockFlags originalFlags = block->bbFlags;
     BasicBlock*     prevBb        = block;
@@ -183,8 +181,9 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 assert(runtimeLookup.testForNull);
 
                 // Split block right before the call tree
-                BasicBlock* prevBb = nullptr;
-                block              = SplitBlockBeforeTree(this, block, stmt, call, &prevBb);
+                BasicBlock* prevBb  = nullptr;
+                GenTree**   callUse = nullptr;
+                block               = SplitBlockBeforeTree(this, block, stmt, call, &prevBb, &callUse);
                 assert(prevBb != nullptr && block != nullptr);
 
                 // Define a local for the result
@@ -267,9 +266,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                                         debugInfo);
 
                 // Fallback basic block
-                GenTreeCall* fallbackCall     = gtCloneExpr(call)->AsCall();
-                GenTree*     asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), fallbackCall);
-                BasicBlock*  fallbackBb = CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFallbackValue, debugInfo);
+                GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
+                BasicBlock* fallbackBb = CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFallbackValue, debugInfo);
 
                 // Fast-path basic block
                 GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
@@ -321,7 +319,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
 
                 // Replace call with rtLookupLclNum local and update side effects
-                call->BashToLclVar(this, rtLookupLclNum);
+                *callUse = gtClone(rtLookupLcl);
                 gtSetEvalOrder(call);
                 gtUpdateStmtSideEffects(stmt);
                 gtSetStmtInfo(stmt);
