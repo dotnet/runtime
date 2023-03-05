@@ -1009,6 +1009,9 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define TYPE_F32 0
 #define TYPE_F64 1
 
+/* NEON :: move SIMD register*/
+#define arm_neon_mov(p, rd, rn) arm_neon_orr ((p), VREG_FULL, (rd), (rn), (rn))
+
 /* NEON :: AES */ 
 #define arm_neon_aes_opcode(p, size, opcode, rd, rn) arm_neon_opcode_2reg ((p), VREG_FULL, 0b00001110001010000000100000000000 | (size) << 22 | (opcode) << 12, (rd), (rn))
 #define arm_neon_aese(p, rd, rn) 		arm_neon_aes_opcode ((p), 0b00, 0b00100, (rd), (rn))

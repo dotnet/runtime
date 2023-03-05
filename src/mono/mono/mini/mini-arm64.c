@@ -3504,7 +3504,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
 		case OP_XMOVE:
-			arm_movw (code, dreg, sreg1);
+			arm_neon_mov (code, dreg, sreg1);
 			break;
 		case OP_XCONST: {
 			if (cfg->compile_aot && cfg->code_exec_only) {
