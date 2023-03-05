@@ -16345,7 +16345,7 @@ void Compiler::gtSplitTree(
             else if ((*use)->OperIs(GT_FIELD_LIST))
             {
                 GenTreeFieldList*     fieldList   = (*use)->AsFieldList();
-                ArrayStack<GenTree**> fieldsStack = m_compiler->getAllocator(CMK_ArrayStack);
+                ArrayStack<GenTree**> fieldsStack(m_compiler->getAllocator(CMK_ArrayStack));
                 for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
                     fieldsStack.Push(&use.NodeRef());
