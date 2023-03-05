@@ -452,7 +452,7 @@ const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
 //    type        - A (wide) string indicating the type of dump, "dot" or "xml"
 //
 // Notes:
-// The filename to use to write the data comes from the COMPlus_JitDumpFgFile or COMPlus_NgenDumpFgFile
+// The filename to use to write the data comes from the DOTNET_JitDumpFgFile or DOTNET_NgenDumpFgFile
 // configuration. If unset, use "default". The "type" argument is used as a filename extension,
 // e.g., "default.dot".
 //
@@ -731,29 +731,29 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 //    MSAGL has also been open-sourced to https://github.com/Microsoft/automatic-graph-layout.
 //
 //    Here are the config values that control it:
-//      COMPlus_JitDumpFg              A string (ala the COMPlus_JitDump string) indicating what methods to dump
+//      DOTNET_JitDumpFg              A string (ala the DOTNET_JitDump string) indicating what methods to dump
 //                                     flowgraphs for.
-//      COMPlus_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
-//      COMPlus_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
+//      DOTNET_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
+//      DOTNET_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
-//      COMPlus_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
+//      DOTNET_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
 //                                     Set to the short name of a phase to see the flowgraph after that phase.
 //                                     Leave unset to dump after COLD-BLK (determine first cold block) or set to *
 //                                     for all phases.
-//      COMPlus_JitDumpFgPrePhase      Phase(s) before which to dump the flowgraph.
-//      COMPlus_JitDumpFgDot           0 for xml format, non-zero for dot format. (Default is dot format.)
-//      COMPlus_JitDumpFgEH            (dot only) 0 for no exception-handling information; non-zero to include
+//      DOTNET_JitDumpFgPrePhase      Phase(s) before which to dump the flowgraph.
+//      DOTNET_JitDumpFgDot           0 for xml format, non-zero for dot format. (Default is dot format.)
+//      DOTNET_JitDumpFgEH            (dot only) 0 for no exception-handling information; non-zero to include
 //                                     exception-handling regions.
-//      COMPlus_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
-//      COMPlus_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
+//      DOTNET_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
+//      DOTNET_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
 //                                     mostly lexical block linear layout.
-//      COMPlus_JitDumpFgBlockId       Display blocks with block ID, not just bbNum.
+//      DOTNET_JitDumpFgBlockId       Display blocks with block ID, not just bbNum.
 //
 // Example:
 //
 // If you want to dump just before and after a single phase, say loop cloning, use:
-//      set COMPlus_JitDumpFgPhase=LP-CLONE
-//      set COMPlus_JitDumpFgPrePhase=LP-CLONE
+//      set DOTNET_JitDumpFgPhase=LP-CLONE
+//      set DOTNET_JitDumpFgPrePhase=LP-CLONE
 //
 bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 {
