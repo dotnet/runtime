@@ -37,6 +37,16 @@ namespace System.Net.Quic;
 /// </remarks>
 public sealed partial class QuicConnection : IAsyncDisposable
 {
+#if DEBUG
+    /// <summary>
+    /// Name of file where secrets should be stored.
+    ///</summary>
+    private static readonly string? KeyLogFile = Environment.GetEnvironmentVariable("SSLKEYLOGFILE");
+
+    /// The actual secret structure wrapper passed to MsQuic
+    private MsQuicTlsSecret? _tlsSecret;
+#endif
+
     /// <summary>
     /// Returns <c>true</c> if QUIC is supported on the current machine and can be used; otherwise, <c>false</c>.
     /// </summary>
@@ -139,7 +149,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
-
     /// <summary>
     /// The remote endpoint used for this connection.
     /// </summary>
@@ -186,6 +195,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 &handle),
                 "ConnectionOpen failed");
             _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Connection);
+
+#if DEBUG
+            if (KeyLogFile != null)
+            {
+                _tlsSecret = new MsQuicTlsSecret(_handle);
+            }
+#endif
         }
         catch
         {
@@ -219,6 +235,12 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         _remoteEndPoint = info->RemoteAddress->ToIPEndPoint();
         _localEndPoint = info->LocalAddress->ToIPEndPoint();
+#if DEBUG
+        if (KeyLogFile != null)
+        {
+            _tlsSecret = new MsQuicTlsSecret(_handle);
+        }
+#endif
     }
 
     private async ValueTask FinishConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
@@ -455,6 +477,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
             NetEventSource.Info(this, $"{this} Received event CONNECTED {LocalEndPoint} -> {RemoteEndPoint}");
         }
 
+#if DEBUG
+        if (KeyLogFile != null && _tlsSecret != null)
+        {
+            _tlsSecret.WriteSecret(KeyLogFile);
+            _tlsSecret.Dispose();
+        }
+#endif
         _connectedTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
@@ -619,6 +648,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return;
         }
 
+#if DEBUG
+        _tlsSecret?.Dispose();
+#endif
         // Check if the connection has been shut down and if not, shut it down silently.
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {
