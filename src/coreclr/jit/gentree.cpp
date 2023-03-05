@@ -16268,6 +16268,7 @@ void Compiler::gtSplitTree(
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
+            assert(!(*use)->OperIs(GT_QMARK));
             m_useStack.Push(UseInfo{use, user});
             return WALK_CONTINUE;
         }
@@ -16307,7 +16308,9 @@ void Compiler::gtSplitTree(
             GenTree** use  = useInf.Use;
             GenTree*  user = useInf.User;
 
-            if ((*use)->IsInvariant())
+            GenTree* node = *use;
+
+            if (node->IsInvariant())
             {
                 return;
             }
@@ -16317,14 +16320,35 @@ void Compiler::gtSplitTree(
             Statement* stmt = nullptr;
             if ((user != nullptr) && user->OperIs(GT_ASG) && (use == &user->AsOp()->gtOp1))
             {
-                if ((*use)->OperIs(GT_COMMA))
+                if (node->OperIs(GT_COMMA))
                 {
-                    GenTree* sideEffects = nullptr;
-                    m_compiler->gtExtractSideEffList(*use, &sideEffects);
-                    if (sideEffects != nullptr)
+                    // We have:
+                    // ASG
+                    //   COMMA
+                    //     op1
+                    //     op2
+                    //   rhs
+                    // And we want to split out the comma.
+                    //
+                    // For the first use we will update the ASG to be ASG(op2, rhs)
+                    // so that we get the proper location treatment. The edge will
+                    // then be the ASG --- op2 edge.
+                    *use = node->gtGetOp2();
+                    UseInfo useA { use, user };
+
+                    // The second use will be the COMMA --- op1 edge, which we
+                    // expect to be handled by simple side effect extraction in
+                    // the recursive call.
+                    UseInfo useB { &node->AsOp()->gtOp1, node };
+
+                    if (node->IsReverseOp())
                     {
-                        stmt = m_compiler->fgNewStmtFromTree(sideEffects, m_splitStmt->GetDebugInfo());
+                        std::swap(useA, useB);
                     }
+
+                    SplitOutUse(useA);
+                    SplitOutUse(useB);
+                    return;
                 }
 
                 // ASGs are special -- the evaluation of the immediate first
@@ -16336,7 +16360,7 @@ void Compiler::gtSplitTree(
                 // node we are splitting out.
                 //
 
-                assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD, GT_COMMA));
+                assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
                 if ((*use)->OperIsUnary())
                 {
                     user = *use;
