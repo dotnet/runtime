@@ -834,12 +834,19 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 #endif
 
 #elif defined(_LIBUNWIND_ARM_EHABI)
-    uc.setInfoBasedOnIPRegister(true);
+    // If there is ARM EHABI unwind info, look there next.
+    if (uwInfoSections.arm_section == 0 || !this->getInfoFromEHABISection(pc, uwInfoSections))
+    {
+        return false;
+    }
+
     int stepRet = uc.step();
     if ((stepRet != UNW_STEP_SUCCESS) && (stepRet != UNW_STEP_END))
     {
         return false;
     }
+#else
+    PORTABILITY_ASSERT("StepFrame");
 #endif
 
     return true;
@@ -854,20 +861,12 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, UnwindInfoSections &uwInfoSectio
 bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 {
     UnwindInfoSections uwInfoSections;
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     uintptr_t ip = regs->GetIP();
     if (!_addressSpace.findUnwindSections(ip, uwInfoSections))
     {
         return false;
     }
     return DoTheStep(ip, uwInfoSections, regs);
-#elif defined(_LIBUNWIND_ARM_EHABI)
-    // unwind section is located later for ARM
-    // pc will be taked from regs parameter
-    return DoTheStep(0, uwInfoSections, regs);
-#else
-    PORTABILITY_ASSERT("StepFrame");
-#endif
 }
 
 bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
@@ -889,21 +888,20 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, UnwindInfoSections &uwInfoSectio
 
 #if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
     // If there is a compact unwind encoding table, look there first.
-    if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(pc, uwInfoSections)) {
-        unw_proc_info_t procInfo;
+    if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(ip, uwInfoSections)) {
         uc.getInfo(procInfo);
 
 #if defined(TARGET_ARM64)
-        if ((procInfo.format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
+        if ((procInfo->format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
             return true;
         } else {
-            dwarfOffsetHint = procInfo.format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
+            dwarfOffsetHint = procInfo->format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
         }
 #elif defined(TARGET_AMD64)
-        if ((procInfo.format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
+        if ((procInfo->format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
             return true;
         } else {
-            dwarfOffsetHint = procInfo.format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
+            dwarfOffsetHint = procInfo->format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
         }
 #else
         PORTABILITY_ASSERT("GetUnwindProcInfo");
@@ -919,7 +917,7 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, UnwindInfoSections &uwInfoSectio
 
 #elif defined(_LIBUNWIND_ARM_EHABI)
     // If there is ARM EHABI unwind info, look there next.
-    if (sects.arm_section == 0 || !this->getInfoFromEHABISection(pc, sects))
+    if (uwInfoSections.arm_section == 0 || !this->getInfoFromEHABISection(ip, uwInfoSections))
     {
         return false;
     }
