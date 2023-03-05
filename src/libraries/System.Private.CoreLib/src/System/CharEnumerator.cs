@@ -35,22 +35,27 @@ namespace System
 
         public bool MoveNext()
         {
-            if (_index < (_str!.Length - 1))
+            int index = _index + 1;
+            string s = _str!;
+
+            if ((uint)index < (uint)s.Length)
             {
-                _index++;
-                _currentElement = _str[_index];
+                _currentElement = s[index];
+                _index = index;
                 return true;
             }
-            else
-                _index = _str.Length;
+
+            _index = s.Length;
             return false;
         }
 
         public void Dispose()
         {
             if (_str != null)
+            {
                 _index = _str.Length;
-            _str = null;
+                _str = null;
+            }
         }
 
         object? IEnumerator.Current => Current;
@@ -59,10 +64,11 @@ namespace System
         {
             get
             {
-                if (_index == -1)
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                if (_index >= _str!.Length)
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                if ((uint)_index >= _str!.Length)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_EnumCurrent(_index);
+                }
+
                 return _currentElement;
             }
         }
