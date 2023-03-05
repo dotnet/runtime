@@ -27,7 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 extern ICorJitHost* g_jitHost;
 
 #if defined(DEBUG)
-// Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
+// Column settings for DOTNET_JitDumpIR.  We could(should) make these programmable.
 #define COLUMN_OPCODE 30
 #define COLUMN_OPERANDS (COLUMN_OPCODE + 25)
 #define COLUMN_KINDS 110
@@ -2039,7 +2039,7 @@ void Compiler::compDoComponentUnitTestsOnce()
 //
 // Return Value:
 //    An unsigned char value used to initizalize memory allocated by the JIT.
-//    The default value is taken from COMPLUS_JitDefaultFill,  if is not set
+//    The default value is taken from DOTNET_JitDefaultFill,  if is not set
 //    the value will be 0xdd.  When JitStress is active a random value based
 //    on the method hash is used.
 //
@@ -2319,7 +2319,7 @@ bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool suppor
 
 #ifdef PROFILING_SUPPORTED
 // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
-// These are used when complus_JitEltHookEnabled=1
+// These are used when DOTNET_JitEltHookEnabled=1
 #ifdef TARGET_AMD64
 void DummyProfilerELTStub(UINT_PTR ProfilerHandle, UINT_PTR callerSP)
 {
@@ -2585,7 +2585,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #endif // !DEBUG
 
-    // Take care of COMPlus_AltJitExcludeAssemblies.
+    // Take care of DOTNET_AltJitExcludeAssemblies.
     if (opts.altJit)
     {
         // First, initialize the AltJitExcludeAssemblies list, but only do it once.
@@ -2622,9 +2622,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     bool altJitConfig = !pfAltJit->isEmpty();
 
     //  If we have a non-empty AltJit config then we change all of these other
-    //  config values to refer only to the AltJit. Otherwise, a lot of COMPlus_* variables
+    //  config values to refer only to the AltJit. Otherwise, a lot of DOTNET_* variables
     //  would apply to both the altjit and the normal JIT, but we only care about
-    //  debugging the altjit if the COMPlus_AltJit configuration is set.
+    //  debugging the altjit if the DOTNET_AltJit configuration is set.
     //
     if (compIsForImportOnly() && (!altJitConfig || opts.altJit))
     {
@@ -2932,7 +2932,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
-        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
+        // This one applies to both Ngen/Jit Disasm output: DOTNET_JitDasmWithAddress=1
         if (JitConfig.JitDasmWithAddress() != 0)
         {
             opts.disAddr = true;
@@ -3108,7 +3108,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         compProfilerMethHndIndirected = false;
     }
 
-    // Honour COMPlus_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
+    // Honour DOTNET_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
     // only if VM has not asked us to generate profiler hooks in the first place.
     // That is, override VM only if it hasn't asked for a profiler callback for this method.
     // Don't run this stress mode when pre-JITing, as we would need to emit a relocation
@@ -3280,7 +3280,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // is nothing preventing that.
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
         {
-            printf("OPTIONS: Tier-0 compilation (set COMPlus_TieredCompilation=0 to disable)\n");
+            printf("OPTIONS: Tier-0 compilation (set DOTNET_TieredCompilation=0 to disable)\n");
         }
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1))
         {
@@ -3505,7 +3505,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
         }
     }
 
-    // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
+    // 0:   No stress (Except when explicitly set in DOTNET_JitStressModeNames)
     // !=2: Vary stress. Performance will be slightly/moderately degraded
     // 2:   Check-all stress. Performance will be REALLY horrible
     const int stressLevel = getJitStressLevel();
@@ -3940,7 +3940,7 @@ _SetMinOpts:
         }
 
 #if !defined(TARGET_AMD64)
-        // The VM sets JitFlags::JIT_FLAG_FRAMED for two reasons: (1) the COMPlus_JitFramed variable is set, or
+        // The VM sets JitFlags::JIT_FLAG_FRAMED for two reasons: (1) the DOTNET_JitFramed variable is set, or
         // (2) the function is marked "noinline". The reason for #2 is that people mark functions
         // noinline to ensure the show up on in a stack walk. But for AMD64, we don't need a frame
         // pointer for the frame to show up in stack walk.
@@ -6402,7 +6402,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     if (!compIsForInlining() && !opts.altJit && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
-        // We're an altjit, but the COMPlus_AltJit configuration did not say to compile this method,
+        // We're an altjit, but the DOTNET_AltJit configuration did not say to compile this method,
         // so skip it.
         return CORJIT_SKIPPED;
     }
@@ -6417,7 +6417,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
 #endif
 
-    // Check for COMPlus_AggressiveInlining
+    // Check for DOTNET_AggressiveInlining
     if (JitConfig.JitAggressiveInlining())
     {
         compDoAggressiveInlining = true;
