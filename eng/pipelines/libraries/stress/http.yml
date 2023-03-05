@@ -32,11 +32,11 @@ extends:
       jobs:
       - job: linux
         displayName: Docker Linux
-        timeoutInMinutes: 180
+        timeoutInMinutes: 240
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
         pool:
-          name: NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-ubuntu-1804-open
 
         steps:
@@ -102,7 +102,7 @@ extends:
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
         pool:
-          name: NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
 
         steps:
@@ -129,6 +129,18 @@ extends:
             Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
           name: disableFirewall
           displayName: Disable Firewall
+
+        - powershell: |
+            cd '$(httpStressProject)'
+            $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
+            $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
+            New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
+            New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
+            $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            docker-compose up --abort-on-container-exit --no-color
+          displayName: Run HttpStress - HTTP 3.0
+          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
         - powershell: |
             cd '$(httpStressProject)'

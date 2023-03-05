@@ -377,6 +377,8 @@ public:
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
     void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory) override;
+
+    static GenTree* CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType);
 };
 
 //------------------------------------------------------------------------
@@ -522,6 +524,10 @@ void BlockCountInstrumentor::RelocateProbes()
                 {
                     m_comp->fgRemoveRefPred(pred, block);
                     m_comp->fgAddRefPred(intermediary, block);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+                    m_comp->fgFixFinallyTargetFlags(pred, block, intermediary);
+#endif
                 }
             }
         }
@@ -586,19 +592,12 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     assert(block->bbCodeOffs == (IL_OFFSET)entry.ILOffset);
     assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
            (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
-    size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
+    uint8_t* addrOfCurrentExecutionCount = entry.Offset + profileMemory;
 
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
-    // Read Basic-Block count value
-    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
-    // Increment value by 1
-    GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
-
-    // Write new Basic-Block count value
-    GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-    GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
+    GenTree* incCount = CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
 
     if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
     {
@@ -616,16 +615,16 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
             JITDUMP("Placing copy of block probe for " FMT_BB " in pred " FMT_BB "\n", block->bbNum, pred->bbNum);
             if (!first)
             {
-                asgNode = m_comp->gtCloneExpr(asgNode);
+                incCount = m_comp->gtCloneExpr(incCount);
             }
-            m_comp->fgNewStmtAtBeg(pred, asgNode);
+            m_comp->fgNewStmtAtBeg(pred, incCount);
             pred->bbFlags &= ~BBF_MARKED;
             first = false;
         }
     }
     else
     {
-        m_comp->fgNewStmtAtBeg(block, asgNode);
+        m_comp->fgNewStmtAtBeg(block, incCount);
     }
 
     m_instrCount++;
@@ -712,6 +711,47 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* prof
     //
     m_comp->fgEnsureFirstBBisScratch();
     m_comp->fgInsertStmtAtEnd(m_comp->fgFirstBB, stmt);
+}
+
+//------------------------------------------------------------------------
+// BlockCountInstrumentor::CreateCounterIncrement: create a tree that increments a profile counter.
+//
+// Arguments:
+//   comp        - compiler instance
+//   counterAddr - address of counter to increment
+//   countType   - type of counter
+//
+// Returns:
+//   A node that increments the specified count.
+//
+GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType)
+{
+    if (JitConfig.JitInterlockedProfiling() > 0)
+    {
+        // Form counter address
+        GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+
+        // Interlocked increment
+        GenTree* xAddNode = comp->gtNewOperNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
+
+        return xAddNode;
+    }
+    else
+    {
+        // Read Basic-Block count value
+        GenTree* valueNode =
+            comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
+
+        // Increment value by 1
+        GenTree* rhsNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
+
+        // Write new Basic-Block count value
+        GenTree* lhsNode =
+            comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
+        GenTree* asgNode = comp->gtNewAssignNode(lhsNode, rhsNode);
+
+        return asgNode;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1448,34 +1488,12 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         JITDUMP("Could not find " FMT_BB " -> " FMT_BB " edge to instrument\n", block->bbNum,
                                 target->bbNum);
 
-                        // If we're optimizing, assume this edge got folded away
-                        //
-                        if (m_comp->opts.IsInstrumentedOptimized())
-                        {
-                            JITDUMP(" -- assuming this edge was folded away by the importer\n");
+                        JITDUMP(" -- assuming this edge was folded away by the importer\n");
 
-                            // Placate the asserts below
-                            //
-                            instrumentedBlock = source;
-                            edgesIgnored++;
-                        }
-                        // If the source block is a partial compilation patchpoint
-                        // then the edge will have been removed.
+                        // Placate the asserts below
                         //
-                        else if ((block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT) ==
-                                 BBF_PARTIAL_COMPILATION_PATCHPOINT)
-                        {
-                            JITDUMP(" -- source block is partial compilation patchpoint\n");
-
-                            // Placate the asserts below
-                            //
-                            instrumentedBlock = source;
-                            edgesIgnored++;
-                        }
-                        else
-                        {
-                            assert(found);
-                        }
+                        instrumentedBlock = source;
+                        edgesIgnored++;
                     }
 
                     // Delete the critical edge probe
@@ -1720,7 +1738,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount) ||
                (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount));
 
-        size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
+        uint8_t* addrOfCurrentExecutionCount = profileMemory + entry.Offset;
 
         // Determine where to place the probe.
         //
@@ -1754,33 +1772,8 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         var_types typ =
             entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
 
-        if (JitConfig.JitInterlockedProfiling() > 0)
-        {
-            // Form counter address
-            GenTree* addressNode = m_comp->gtNewIconHandleNode(addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR);
-
-            // Interlocked increment
-            GenTree* xAddNode = m_comp->gtNewOperNode(GT_XADD, typ, addressNode, m_comp->gtNewIconNode(1, typ));
-
-            // Ignore result.
-            m_comp->fgNewStmtAtBeg(instrumentedBlock, xAddNode);
-        }
-        else
-        {
-            // Read Basic-Block count value
-            GenTree* valueNode =
-                m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-
-            // Increment value by 1
-            GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
-
-            // Write new Basic-Block count value
-            GenTree* lhsNode =
-                m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-            GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
-
-            m_comp->fgNewStmtAtBeg(instrumentedBlock, asgNode);
-        }
+        GenTree* incCount = BlockCountInstrumentor::CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
+        m_comp->fgNewStmtAtBeg(instrumentedBlock, incCount);
 
         if (probe->kind != EdgeKind::Duplicate)
         {

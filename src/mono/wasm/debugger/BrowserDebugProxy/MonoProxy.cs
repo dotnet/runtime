@@ -22,7 +22,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         internal List<string> UrlSymbolServerList { get; private set; }
         internal string CachePathSymbolServer { get; private set; }
-        private HashSet<SessionId> sessions = new HashSet<SessionId>();
+        private readonly HashSet<SessionId> sessions = new HashSet<SessionId>();
         private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
@@ -183,6 +183,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected async Task<bool> OnDebuggerPaused(SessionId sessionId, JObject args, CancellationToken token)
         {
+            if (args?["callFrames"]?.Value<JArray>()?.Count == 0) //new browser version can send pause of type "instrumentation" with an empty callstack
+                return false;
+
             if (args["asyncStackTraceId"] != null)
             {
                 if (!contexts.TryGetValue(sessionId, out ExecutionContext context))

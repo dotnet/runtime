@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace System.Xml.Xsl
 {
     [DebuggerDisplay("({Line},{Pos})")]
-    internal struct Location
+    internal readonly struct Location
     {
         private readonly ulong _value;
 

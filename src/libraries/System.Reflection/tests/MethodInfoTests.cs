@@ -896,7 +896,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]        
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/82272", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]        
         private static unsafe void TestFunctionPointers()
         {
             void* fn = FunctionPointerMethods.GetFunctionPointer();

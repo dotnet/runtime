@@ -421,7 +421,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
         catch (ChannelClosedException ex) when (ex.InnerException is not null)
         {
-            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            ExceptionDispatchInfo.Throw(ex.InnerException);
             throw;
         }
         finally
@@ -637,7 +637,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
 
     /// <summary>
-    /// If not closed explicitly by <see cref="CloseAsync(long, CancellationToken)" />, closes the connection silently (leading to idle timeout on the peer side).
+    /// If not closed explicitly by <see cref="CloseAsync(long, CancellationToken)" />, closes the connection with the <see cref="QuicConnectionOptions.DefaultCloseErrorCode"/>.
     /// And releases all resources associated with the connection.
     /// </summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
@@ -651,7 +651,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 #if DEBUG
         _tlsSecret?.Dispose();
 #endif
-        // Check if the connection has been shut down and if not, shut it down silently.
+        // Check if the connection has been shut down and if not, shut it down.
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {
             unsafe

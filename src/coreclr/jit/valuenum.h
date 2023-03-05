@@ -341,6 +341,7 @@ private:
     template <typename T>
     static bool IsIntZero(T v);
 
+public:
     // Given an constant value number return its value.
     int GetConstantInt32(ValueNum argVN);
     INT64 GetConstantInt64(ValueNum argVN);
@@ -348,15 +349,15 @@ private:
     float GetConstantSingle(ValueNum argVN);
 
 #if defined(FEATURE_SIMD)
-public:
     simd8_t GetConstantSimd8(ValueNum argVN);
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
+#if defined(TARGET_XARCH)
     simd32_t GetConstantSimd32(ValueNum argVN);
-
-private:
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
+private:
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
     // Assume that "CanEvalForConstantArgs(vnf)" is true.
@@ -435,7 +436,9 @@ public:
     ValueNum VNForSimd8Con(simd8_t cnsVal);
     ValueNum VNForSimd12Con(simd12_t cnsVal);
     ValueNum VNForSimd16Con(simd16_t cnsVal);
+#if defined(TARGET_XARCH)
     ValueNum VNForSimd32Con(simd32_t cnsVal);
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 #ifdef TARGET_64BIT
@@ -521,7 +524,14 @@ public:
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
     ValueNum VNOneForType(var_types typ);
 
+    // Returns the value number for AllBitsSet of the given "typ".
+    // It has an unreached() for a "typ" that has no all bits set value, such as TYP_VOID.
+    ValueNum VNAllBitsForType(var_types typ);
+
 #ifdef FEATURE_SIMD
+    // Returns the value number for one of the given "simdType" and "simdBaseType".
+    ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
+
     // A helper function for constructing VNF_SimdType VNs.
     ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
 #endif // FEATURE_SIMD
@@ -1724,7 +1734,7 @@ private:
 #ifdef DEBUG
     // This helps test some performance pathologies related to "evaluation" of VNF_MapSelect terms,
     // especially relating to GcHeap/ByrefExposed.  We count the number of applications of such terms we consider,
-    // and if this exceeds a limit, indicated by a COMPlus_ variable, we assert.
+    // and if this exceeds a limit, indicated by a DOTNET_ variable, we assert.
     unsigned m_numMapSels;
 #endif
 };
@@ -1773,12 +1783,14 @@ struct ValueNumStore::VarTypConv<TYP_SIMD16>
     typedef simd16_t Type;
     typedef simd16_t Lang;
 };
+#if defined(TARGET_XARCH)
 template <>
 struct ValueNumStore::VarTypConv<TYP_SIMD32>
 {
     typedef simd32_t Type;
     typedef simd32_t Lang;
 };
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 template <>
@@ -1840,12 +1852,14 @@ FORCEINLINE simd16_t ValueNumStore::SafeGetConstantValue<simd16_t>(Chunk* c, uns
     return reinterpret_cast<VarTypConv<TYP_SIMD16>::Lang*>(c->m_defs)[offset];
 }
 
+#if defined(TARGET_XARCH)
 template <>
 FORCEINLINE simd32_t ValueNumStore::SafeGetConstantValue<simd32_t>(Chunk* c, unsigned offset)
 {
     assert(c->m_typ == TYP_SIMD32);
     return reinterpret_cast<VarTypConv<TYP_SIMD32>::Lang*>(c->m_defs)[offset];
 }
+#endif // TARGET_XARCH
 
 template <>
 FORCEINLINE simd8_t ValueNumStore::ConstantValueInternal<simd8_t>(ValueNum vn DEBUGARG(bool coerce))
@@ -1889,6 +1903,7 @@ FORCEINLINE simd16_t ValueNumStore::ConstantValueInternal<simd16_t>(ValueNum vn 
     return SafeGetConstantValue<simd16_t>(c, offset);
 }
 
+#if defined(TARGET_XARCH)
 template <>
 FORCEINLINE simd32_t ValueNumStore::ConstantValueInternal<simd32_t>(ValueNum vn DEBUGARG(bool coerce))
 {
@@ -1902,6 +1917,7 @@ FORCEINLINE simd32_t ValueNumStore::ConstantValueInternal<simd32_t>(ValueNum vn 
 
     return SafeGetConstantValue<simd32_t>(c, offset);
 }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 // Inline functions.

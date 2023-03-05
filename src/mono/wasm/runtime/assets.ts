@@ -5,7 +5,6 @@ import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
-import { MONO } from "./net6-legacy/imports";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
@@ -47,6 +46,37 @@ const skipInstantiateByAssetTypes: {
     "dotnetwasm": true,
 };
 
+export function get_preferred_icu_asset(): string | null {
+    if (!runtimeHelpers.config.assets)
+        return null;
+
+    // By setting <WasmIcuDataFileName> user can define what ICU source file they want to load.
+    // There is no need to check application's culture when <WasmIcuDataFileName> is set.
+    // If it was not set, then we have 3 "icu" assets in config and we should choose
+    // only one for loading, the one that matches the application's locale.
+    const icuAssets = runtimeHelpers.config.assets.filter(a => a["behavior"] == "icu");
+    if (icuAssets.length === 1)
+        return icuAssets[0].name;
+
+    // reads the browsers locale / the OS's locale
+    const preferredCulture = ENVIRONMENT_IS_WEB ? navigator.language : Intl.DateTimeFormat().resolvedOptions().locale;
+    const prefix = preferredCulture.split("-")[0];
+    const CJK = "icudt_CJK.dat";
+    const EFIGS = "icudt_EFIGS.dat";
+    const OTHERS = "icudt_no_CJK.dat";
+
+    // not all "fr-*", "it-*", "de-*", "es-*" are in EFIGS, only the one that is mostly used
+    if (prefix == "en" || ["fr", "fr-FR", "it", "it-IT", "de", "de-DE", "es", "es-ES"].includes(preferredCulture))
+        return EFIGS;
+    if (["zh", "ko", "ja"].includes(prefix))
+        return CJK;
+    return OTHERS;
+}
+
+export function shouldLoadIcuAsset(asset: AssetEntryInternal, preferredIcuAsset: string | null): boolean {
+    return !(asset.behavior == "icu" && asset.name != preferredIcuAsset);
+}
+
 export function resolve_asset_path(behavior: AssetBehaviours) {
     const asset: AssetEntryInternal | undefined = runtimeHelpers.config.assets?.find(a => a.behavior == behavior);
     mono_assert(asset, () => `Can't find asset for ${behavior}`);
@@ -56,6 +86,7 @@ export function resolve_asset_path(behavior: AssetBehaviours) {
     return asset;
 }
 export async function mono_download_assets(): Promise<void> {
+    const preferredIcuAsset = get_preferred_icu_asset();
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     runtimeHelpers.enableDownloadRetry = runtimeHelpers.config.enableDownloadRetry || runtimeHelpers.enableDownloadRetry;
@@ -70,10 +101,10 @@ export async function mono_download_assets(): Promise<void> {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (!skipInstantiateByAssetTypes[asset.behavior]) {
+            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                 expected_instantiated_assets_count++;
             }
-            if (!skipDownloadsByAssetTypes[asset.behavior]) {
+            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                 expected_downloaded_assets_count++;
                 promises_of_assets.push(start_asset_download(asset));
             }
@@ -101,10 +132,10 @@ export async function mono_download_assets(): Promise<void> {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
                         mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                        if (!skipDownloadsByAssetTypes[asset.behavior]) {
+                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                             expected_downloaded_assets_count--;
                         }
-                        if (!skipInstantiateByAssetTypes[asset.behavior]) {
+                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                             expected_instantiated_assets_count--;
                         }
                     } else {
@@ -261,6 +292,14 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
             return response;
         }
         catch (err) {
+            if (!response) {
+                response = {
+                    ok: false,
+                    url: attemptUrl,
+                    status: 0,
+                    statusText: "" + err,
+                } as any;
+            }
             continue; //next source
         }
     }
@@ -481,11 +520,6 @@ export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): b
     data = data.slice(manifestSize + 8);
 
     // Create the folder structure
-    // /usr/share/zoneinfo
-    // /usr/share/zoneinfo/Africa
-    // /usr/share/zoneinfo/Asia
-    // ..
-
     const folders = new Set<string>();
     manifest.filter(m => {
         const file = m[0];
@@ -513,12 +547,12 @@ export async function wait_for_all_assets() {
     if (runtimeHelpers.config.assets) {
         mono_assert(actual_downloaded_assets_count == expected_downloaded_assets_count, () => `Expected ${expected_downloaded_assets_count} assets to be downloaded, but only finished ${actual_downloaded_assets_count}`);
         mono_assert(actual_instantiated_assets_count == expected_instantiated_assets_count, () => `Expected ${expected_instantiated_assets_count} assets to be in memory, but only instantiated ${actual_instantiated_assets_count}`);
-        loaded_files.forEach(value => MONO.loaded_files.push(value.url));
+        loaded_files.forEach(value => runtimeHelpers.loadedFiles.push(value.url));
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: all assets are loaded in wasm memory");
     }
 }
 
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
-    return MONO.loaded_files;
+    return runtimeHelpers.loadedFiles;
 }

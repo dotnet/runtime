@@ -2043,7 +2043,7 @@ void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
 // so the fragment size will fit in the unwind data "Function Length" field.
 // The LOONGARCH Exception Data specification "Function Fragments" section describes this.
 // We split the function so that it is no larger than 512K bytes, or the value of
-// the COMPlus_JitSplitFunctionSize value, if defined (and smaller). We must determine
+// the DOTNET_JitSplitFunctionSize value, if defined (and smaller). We must determine
 // how to split the function/funclet before we issue the instructions, so we can
 // reserve the unwind space with the VM. The instructions issued may shrink (but not
 // expand!) during issuing (although this is extremely rare in any case, and may not
@@ -2063,7 +2063,7 @@ void UnwindInfo::Split()
     maxFragmentSize = UW_MAX_FRAGMENT_SIZE_BYTES;
 
 #ifdef DEBUG
-    // Consider COMPlus_JitSplitFunctionSize
+    // Consider DOTNET_JitSplitFunctionSize
     unsigned splitFunctionSize = (unsigned)JitConfig.JitSplitFunctionSize();
 
     if (splitFunctionSize != 0)
@@ -2147,7 +2147,7 @@ void UnwindInfo::Split()
 
 #ifdef DEBUG
     // Did the emitter split the function/funclet into as many fragments as we asked for?
-    // It might be fewer if the COMPlus_JitSplitFunctionSize was used, but it better not
+    // It might be fewer if the DOTNET_JitSplitFunctionSize was used, but it better not
     // be fewer if we're splitting into 512K blocks!
 
     unsigned fragCount = 0;
@@ -2164,7 +2164,7 @@ void UnwindInfo::Split()
 
         // If this fires, then we split into fewer fragments than we asked for, and we are using
         // the default, unwind-data-defined 512K maximum fragment size. We won't be able to fit
-        // this fragment into the unwind data! If you set COMPlus_JitSplitFunctionSize to something
+        // this fragment into the unwind data! If you set DOTNET_JitSplitFunctionSize to something
         // small, we might not be able to split into as many fragments as asked for, because we
         // can't split prologs or epilogs.
         assert(maxFragmentSize != UW_MAX_FRAGMENT_SIZE_BYTES);

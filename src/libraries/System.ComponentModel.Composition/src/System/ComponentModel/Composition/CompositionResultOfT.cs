@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Composition
 {
-    internal struct CompositionResult<T>
+    internal readonly struct CompositionResult<T>
     {
         private readonly IEnumerable<CompositionError>? _errors;
         private readonly T? _value;

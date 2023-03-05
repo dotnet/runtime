@@ -135,7 +135,7 @@ namespace
     }
 }
 
-int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
+int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
 {
     application = args.managed_application;
     host_mode = hostpolicy_init.host_mode;
@@ -159,10 +159,6 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         trace::error(_X("Error initializing the dependency resolver: %s"), resolver_errors.c_str());
         return StatusCode::ResolverInitFailure;
     }
-
-    // Store the root framework's rid fallback graph so that we can
-    // use it for future dependency resolutions
-    hostpolicy_init.root_rid_fallback_graph = resolver.get_root_deps().get_rid_fallback_graph();
 
     probe_paths_t probe_paths;
 
