@@ -204,8 +204,8 @@
     <_portableHostOS Condition="'$(_portableHostOS)' == 'windows'">win</_portableHostOS>
     <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_portableHostOS>
     <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-bionic'">linux-bionic</_portableHostOS>
-    <_portableHostOS Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)</_portableHostOS>
 
+    <ToolsRID Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)-$(_hostArch)</ToolsRID>
     <ToolsRID Condition="'$(ToolsRID)' == ''">$(_portableHostOS)-$(_hostArch)</ToolsRID>
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
   </PropertyGroup>
