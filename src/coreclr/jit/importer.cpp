@@ -14422,11 +14422,13 @@ GenTree* Compiler::impThreadLocalFieldRead(CORINFO_RESOLVED_TOKEN& token,
 
     GenTreeQmark* threadStaticBlockNullQmark =
         gtNewQmarkNode(fieldType, threadStaticBlockNullCond, threadStaticBlockColon);
+    threadStaticBlockNullQmark->gtFlags |= GTF_FLD_TLS_MANAGED;
 
     GenTreeColon* maxThreadStaticBlockColon =
         new (this, GT_COLON) GenTreeColon(TYP_VOID, slowPathForMaxThreadStaticBlock, threadStaticBlockNullQmark);
     GenTreeQmark* maxThreadStaticBlocksQmark =
         gtNewQmarkNode(fieldType, maxThreadStaticBlocksCond, maxThreadStaticBlockColon);
+    maxThreadStaticBlocksQmark->gtFlags |= GTF_FLD_TLS_MANAGED;
 
     const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("TLS field access"));
     impAssignTempGen(tmpNum, maxThreadStaticBlocksQmark, token.hClass, CHECK_SPILL_ALL);
@@ -14582,12 +14584,13 @@ GenTree* Compiler::impThreadLocalFieldWrite(CORINFO_RESOLVED_TOKEN& token,
 
     GenTreeQmark* threadStaticBlockValueQmark =
         gtNewQmarkNode(TYP_I_IMPL, threadStaticBlockNullCond, threadStaticBlockColon);
+    threadStaticBlockValueQmark->gtFlags |= GTF_FLD_TLS_MANAGED;
 
     GenTreeColon* maxThreadStaticBlockColon =
         new (this, GT_COLON) GenTreeColon(TYP_VOID, slowPathForMaxThreadStaticBlock, threadStaticBlockValueQmark);
     GenTreeQmark* maxThreadStaticBlocksQmark =
         gtNewQmarkNode(TYP_I_IMPL, maxThreadStaticBlocksCond, maxThreadStaticBlockColon);
-
+    maxThreadStaticBlocksQmark->gtFlags |= GTF_FLD_TLS_MANAGED;
 
     // finalQmarkNode is the one that has static block address
     // 
