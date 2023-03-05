@@ -12,7 +12,8 @@ namespace System.Threading
     /// <remarks>
     /// This timer is intended to be used only by a single consumer at a time: only one call to <see cref="WaitForNextTickAsync" />
     /// may be in flight at any given moment.  <see cref="Dispose"/> may be used concurrently with an active <see cref="WaitForNextTickAsync"/>
-    /// to interrupt it and cause it to return false.
+    /// to interrupt it and cause it to return false. Similarly, <see cref="Period"/> may be used concurrently with a consumer accessing
+    /// <see cref="WaitForNextTickAsync"/> in order to change the timer's period.
     /// </remarks>
     public sealed class PeriodicTimer : IDisposable
     {
