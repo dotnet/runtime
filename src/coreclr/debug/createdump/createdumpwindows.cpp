@@ -18,7 +18,7 @@ typedef struct _PROCESS_BASIC_INFORMATION_ {
 // The Windows create dump code
 //
 bool
-CreateDump(CreateDumpOptions& options)
+CreateDump(const CreateDumpOptions& options)
 {
     HANDLE hFile = INVALID_HANDLE_VALUE;
     HANDLE hProcess = NULL;

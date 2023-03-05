@@ -8,7 +8,7 @@ CrashInfo* g_crashInfo;
 
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
 
-CrashInfo::CrashInfo(CreateDumpOptions& options) :
+CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_ref(1),
     m_pid(options.Pid),
     m_ppid(-1),

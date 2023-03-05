@@ -128,7 +128,7 @@ typedef struct
 #define MAX_LONGPATH   1024
 #endif
 
-extern bool CreateDump(CreateDumpOptions& options);
+extern bool CreateDump(const CreateDumpOptions& options);
 extern bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
 
 extern std::string GetLastErrorString();

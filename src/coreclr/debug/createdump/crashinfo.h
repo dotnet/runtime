@@ -84,7 +84,7 @@ private:
     void operator=(const CrashInfo&) = delete;
 
 public:
-    CrashInfo(CreateDumpOptions& options);
+    CrashInfo(const CreateDumpOptions& options);
     virtual ~CrashInfo();
 
     // Memory usage stats

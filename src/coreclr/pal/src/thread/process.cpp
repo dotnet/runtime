@@ -2013,7 +2013,7 @@ PROCFormatInt(ULONG32 value)
 Function:
     PROCFormatInt64
 
-    Helper function to format an ULONG32 as a string.
+    Helper function to format an ULONG64 as a string.
 
 --*/
 char*

@@ -11,7 +11,7 @@ long g_pageSize = 0;
 // The Linux/MacOS create dump code
 //
 bool
-CreateDump(CreateDumpOptions& options)
+CreateDump(const CreateDumpOptions& options)
 {
     ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(options);
     DumpWriter dumpWriter(*crashInfo);
