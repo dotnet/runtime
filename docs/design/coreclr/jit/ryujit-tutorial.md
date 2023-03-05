@@ -678,7 +678,7 @@ Add Pattern Recognition (SampleStep2 shelveset):
 
 ## Backup
 
-### COMPlus Variables
+### Environment Variables
 - DOTNET_JitDump={method-list} – lots of info about what the JIT is doing
 - DOTNET_JitDisasm={method-list} – disassembly listing of each method
 - DOTNET_JitDisasmDiffable – avoid printing pointer values that can change from one invocation to the next, so that the disassembly can be more easily diffed.
