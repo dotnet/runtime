@@ -16265,6 +16265,7 @@ void Compiler::gtSplitTree(
 
         Statement* FirstStatement = nullptr;
         GenTree**  SplitNodeUse   = nullptr;
+        bool MadeChanges = false;
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -16456,6 +16457,7 @@ void Compiler::gtSplitTree(
                     stmt = m_compiler->fgNewStmtFromTree(sideEffects, m_splitStmt->GetDebugInfo());
                 }
                 *use = m_compiler->gtNewNothingNode();
+                MadeChanges = true;
             }
             else if ((*use)->OperIs(GT_FIELD_LIST, GT_INIT_VAL))
             {
@@ -16468,6 +16470,7 @@ void Compiler::gtSplitTree(
             else
             {
                 unsigned lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling to split statement for tree"));
+
                 if ((*use)->TypeIs(TYP_STRUCT))
                 {
                     ClassLayout* layout = (*use)->GetLayout(m_compiler);
@@ -16487,6 +16490,7 @@ void Compiler::gtSplitTree(
                         GenTreeLclFld* fldSrc = m_compiler->gtNewLclFldNode(lclNum, TYP_STRUCT, 0);
                         fldSrc->SetLayout(layout);
                         *use = fldSrc;
+                        MadeChanges = true;
                     }
                 }
 
@@ -16495,6 +16499,7 @@ void Compiler::gtSplitTree(
                     GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
                     stmt         = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
                     *use         = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
+                    MadeChanges = true;
                 }
             }
 
@@ -16504,7 +16509,7 @@ void Compiler::gtSplitTree(
                 {
                     FirstStatement = stmt;
                 }
-                m_compiler->gtUpdateStmtSideEffects(stmt);
+
                 m_compiler->gtSetStmtInfo(stmt);
                 m_compiler->fgSetStmtSeq(stmt);
                 m_compiler->fgInsertStmtBefore(m_bb, m_splitStmt, stmt);
@@ -16517,10 +16522,12 @@ void Compiler::gtSplitTree(
     *firstNewStmt = splitter.FirstStatement;
     *splitNodeUse = splitter.SplitNodeUse;
 
-    gtUpdateStmtSideEffects(stmt);
-    gtSetStmtInfo(stmt);
-    fgSetStmtSeq(stmt);
-    fgMorphBlockStmt(block, stmt DEBUGARG("Original statement"));
+    if (splitter.MadeChanges)
+    {
+        gtUpdateStmtSideEffects(stmt);
+        // We may have introduced new LCL_VAR struct uses that need to go through block morphing.
+        fgMorphBlockStmt(block, stmt DEBUGARG("gtSplitTree"));
+    }
 }
 
 //------------------------------------------------------------------------
