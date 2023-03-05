@@ -14,8 +14,6 @@ class UnwindHelpers
 {
 public:
     static bool StepFrame(REGDISPLAY *regs, libunwind::UnwindInfoSections &uwInfoSections);
-    static bool GetUnwindProcInfo(PCODE ip, libunwind::UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo);
-
     static bool StepFrame(REGDISPLAY *regs);
-    static bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo);
+    static bool GetUnwindProcInfo(PCODE ip, libunwind::UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo);
 };

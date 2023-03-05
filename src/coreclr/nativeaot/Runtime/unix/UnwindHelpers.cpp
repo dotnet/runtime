@@ -851,6 +851,25 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, UnwindInfoSections &uwInfoSectio
     return DoTheStep(pc, uwInfoSections, regs);
 }
 
+bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
+{
+    UnwindInfoSections uwInfoSections;
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
+    uintptr_t ip = regs->GetIP();
+    if (!_addressSpace.findUnwindSections(ip, uwInfoSections))
+    {
+        return false;
+    }
+    return DoTheStep(ip, uwInfoSections, regs);
+#elif defined(_LIBUNWIND_ARM_EHABI)
+    // unwind section is located later for ARM
+    // pc will be taked from regs parameter
+    return DoTheStep(0, uwInfoSections, regs);
+#else
+    PORTABILITY_ASSERT("StepFrame");
+#endif
+}
+
 bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
 {
 #if defined(TARGET_AMD64)
@@ -904,38 +923,10 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, UnwindInfoSections &uwInfoSectio
     {
         return false;
     }
+#else
+    PORTABILITY_ASSERT("GetUnwindProcInfo");
 #endif
 
     uc.getInfo(procInfo);
     return true;
-}
-
-bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
-{
-    UnwindInfoSections uwInfoSections;
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    uintptr_t ip = regs->GetIP();
-    if (!_addressSpace.findUnwindSections(ip, uwInfoSections))
-    {
-        return false;
-    }
-    return DoTheStep(ip, uwInfoSections, regs);
-#elif defined(_LIBUNWIND_ARM_EHABI)
-    // unwind section is located later for ARM
-    // pc will be taked from regs parameter
-    return DoTheStep(0, uwInfoSections, regs);
-#else
-    PORTABILITY_ASSERT("StepFrame");
-#endif
-
-}
-
-bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
-{
-    UnwindInfoSections uwInfoSections;
-    if (!_addressSpace.findUnwindSections(ip, uwInfoSections))
-    {
-        return false;
-    }
-    return GetUnwindProcInfo(ip, uwInfoSections, procInfo);
 }

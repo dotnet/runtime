@@ -47,6 +47,7 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
       m_pvManagedCodeStartRange(pvManagedCodeStartRange), m_cbManagedCodeRange(cbManagedCodeRange),
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
+    // Cache the location of unwind sections
     libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections(
         (uintptr_t)pvManagedCodeStartRange, m_UnwindInfoSections);
 }
@@ -75,17 +76,10 @@ bool UnixNativeCodeManager::FindProcInfo(uintptr_t controlPC, uintptr_t* startAd
 {
     unw_proc_info_t procInfo;
 
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     if (!UnwindHelpers::GetUnwindProcInfo((PCODE)controlPC, m_UnwindInfoSections, &procInfo))
     {
         return false;
     }
-#else
-    if (!UnwindHelpers::GetUnwindProcInfo((PCODE)controlPC, &procInfo))
-    {
-        return false;
-    }
-#endif
 
     assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
 

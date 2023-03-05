@@ -18,9 +18,7 @@ class UnixNativeCodeManager : public ICodeManager
     PTR_PTR_VOID m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
 
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     libunwind::UnwindInfoSections m_UnwindInfoSections;
-#endif
 
     bool VirtualUnwind(REGDISPLAY* pRegisterSet);
     bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda);
