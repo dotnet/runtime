@@ -16520,6 +16520,7 @@ void Compiler::gtSplitTree(
     gtUpdateStmtSideEffects(stmt);
     gtSetStmtInfo(stmt);
     fgSetStmtSeq(stmt);
+    fgMorphBlockStmt(block, stmt DEBUGARG("Original statement"));
 }
 
 //------------------------------------------------------------------------
