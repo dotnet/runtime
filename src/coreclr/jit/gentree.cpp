@@ -16296,8 +16296,19 @@ void Compiler::gtSplitTree(
 
             assert((user == nullptr) || !user->OperIs(GT_ADDR));
 
+            Statement* stmt = nullptr;
             if ((user != nullptr) && user->OperIs(GT_ASG) && (use == &user->AsOp()->gtOp1))
             {
+                if ((*use)->OperIs(GT_COMMA))
+                {
+                    GenTree* sideEffects = nullptr;
+                    m_compiler->gtExtractSideEffList(*use, &sideEffects);
+                    if (sideEffects != nullptr)
+                    {
+                        stmt = m_compiler->fgNewStmtFromTree(sideEffects, m_splitStmt->GetDebugInfo());
+                    }
+                }
+
                 // ASGs are special -- the evaluation of the immediate first
                 // operand happens as part of the assignment, but its children
                 // are still evaluated 'as normal'.
@@ -16306,7 +16317,8 @@ void Compiler::gtSplitTree(
                 // here -- it is a unary node, so it cannot be a sibling to the
                 // node we are splitting out.
                 //
-                assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
+
+                assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD, GT_COMMA));
                 if ((*use)->OperIsUnary())
                 {
                     user = *use;
@@ -16318,7 +16330,7 @@ void Compiler::gtSplitTree(
                 }
             }
 
-            Statement* stmt = nullptr;
+            stmt = nullptr;
             if (!(*use)->IsValue() || (*use)->OperIs(GT_ASG) || (user == nullptr) ||
                 (user->OperIs(GT_COMMA) && user->gtGetOp1() == *use))
             {

@@ -6,6 +6,85 @@
 #pragma hdrstop
 #endif
 
+static void* GetConstantPointer(Compiler* comp, GenTree* tree)
+{
+    void* signature = nullptr;
+    if (tree->gtEffectiveVal()->IsCnsIntOrI())
+    {
+        signature = (void*)tree->gtEffectiveVal()->AsIntCon()->IconValue();
+    }
+    else if (comp->vnStore->IsVNConstant(tree->gtVNPair.GetLiberal()))
+    {
+        // signature is not a constant (CSE'd?) - let's see if we can access it via VN
+        signature = (void*)comp->vnStore->CoercedConstantValue<ssize_t>(tree->gtVNPair.GetLiberal());
+    }
+    return signature;
+}
+
+// Save expression to a local and append as the last statement in prevBb
+static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprBlock, DebugInfo& debugInfo)
+{
+    if (expr->IsInvariant())
+    {
+        return comp->gtCloneExpr(expr);
+    }
+    unsigned const tmpNum         = comp->lvaGrabTemp(true DEBUGARG("spilling expr"));
+    comp->lvaTable[tmpNum].lvType = expr->TypeGet();
+    Statement* asgStmt            = comp->fgNewStmtAtEnd(exprBlock, comp->gtNewTempAssign(tmpNum, expr));
+    asgStmt->SetDebugInfo(debugInfo);
+    comp->gtSetStmtInfo(asgStmt);
+    comp->fgSetStmtSeq(asgStmt);
+    return comp->gtNewLclvNode(tmpNum, expr->TypeGet());
+};
+
+static BasicBlock* CreateBlockFromTree(
+    Compiler* comp, BasicBlock* insertAfter, BBjumpKinds blockKind, GenTree* tree, DebugInfo& debugInfo)
+{
+    // Fast-path basic block
+    BasicBlock* newBlock = comp->fgNewBBafter(blockKind, insertAfter, true);
+    newBlock->bbFlags |= BBF_INTERNAL;
+    comp->gtSetEvalOrder(tree);
+    Statement* stmt = comp->fgNewStmtFromTree(tree);
+    comp->fgInsertStmtAtEnd(newBlock, stmt);
+    stmt->SetDebugInfo(debugInfo);
+    comp->gtSetStmtInfo(stmt);
+    comp->fgSetStmtSeq(stmt);
+    comp->gtUpdateTreeAncestorsSideEffects(tree);
+    newBlock->bbCodeOffs    = insertAfter->bbCodeOffsEnd;
+    newBlock->bbCodeOffsEnd = insertAfter->bbCodeOffsEnd;
+    return newBlock;
+}
+
+static BasicBlock* SplitBlockBeforeTree(
+    Compiler* comp, BasicBlock* block, Statement* stmt, GenTree* splitPoint, BasicBlock** prevBlock)
+{
+    Statement* firstNewStmt;
+    GenTree**  callUse;
+    comp->gtSplitTree(block, stmt, splitPoint, &firstNewStmt, &callUse);
+
+    BasicBlockFlags originalFlags = block->bbFlags;
+    BasicBlock*     prevBb        = block;
+
+    if (stmt == block->firstStmt())
+    {
+        block = comp->fgSplitBlockAtBeginning(prevBb);
+    }
+    else
+    {
+        assert(stmt->GetPrevStmt() != block->lastStmt());
+        JITDUMP("Splitting " FMT_BB " after statement " FMT_STMT "\n", prevBb->bbNum, stmt->GetPrevStmt()->GetID())
+        block = comp->fgSplitBlockAfterStatement(prevBb, stmt->GetPrevStmt());
+    }
+
+    // We split a block, possibly, in the middle - we need to propagate some flags
+    prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+    block->bbFlags |=
+        originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
+
+    *prevBlock = prevBb;
+    return block;
+}
+
 //------------------------------------------------------------------------------
 // fgExpandRuntimeLookups : partially expand runtime lookups helper calls
 //                          to add a nullcheck [+ size check] and a fast path
@@ -39,7 +118,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
     // Find all calls with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag
     for (BasicBlock* block : Blocks())
     {
-    TRAVERSE_BLOCK_AGAIN:
+    VISIT_BLOCK_AGAIN:
         for (Statement* const stmt : block->Statements())
         {
             for (GenTree* const tree : stmt->TreeList())
@@ -50,46 +129,37 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     continue;
                 }
                 assert(tree->IsHelperCall());
-
                 JITDUMP("Expanding runtime lookup for [%06d] in " FMT_BB ":\n", dspTreeID(tree), block->bbNum)
                 DISPTREE(tree)
                 JITDUMP("\n")
 
                 GenTreeCall* call = tree->AsCall();
+
+                // Clear ExpRuntimeLookup flag so we won't miss any runtime lookup that needs partial expansion
                 call->ClearExpRuntimeLookup();
-                assert(call->gtArgs.CountArgs() == 2);
 
                 if (call->IsTailCall())
                 {
-                    // It is very unlikely to happen but just in case
+                    // It is very unlikely to happen and is impossible to represent in C#, but just in case
+                    // let's don't expand it:
                     continue;
                 }
 
-                // call(ctx, signature);
-                GenTree* sigTree = call->gtArgs.GetArgByIndex(1)->GetNode();
-
-                void* signature = nullptr;
-                if (sigTree->gtEffectiveVal()->IsCnsIntOrI())
+                assert(call->gtArgs.CountArgs() == 2);
+                // The call has the following signature:
+                //
+                //   type = call(genericCtx, signatureCns);
+                //
+                void* signature = GetConstantPointer(this, call->gtArgs.GetArgByIndex(1)->GetNode());
+                if (signature == nullptr)
                 {
-                    signature = (void*)sigTree->gtEffectiveVal()->AsIntCon()->IconValue();
+                    // Technically, it is possible (e.g. it was CSE'd and then VN was erased), but for Debug mode we
+                    // want to catch such cases as we really don't want to emit just a fallback call - it's too slow
+                    assert(!"can't restore signature argument value");
+                    continue;
                 }
-                else
-                {
-                    // signature is not a constant (CSE'd?) - let's see if we can access it via VN
-                    if (vnStore->IsVNConstant(sigTree->gtVNPair.GetLiberal()))
-                    {
-                        signature = (void*)vnStore->CoercedConstantValue<ssize_t>(sigTree->gtVNPair.GetLiberal());
-                    }
-                    else
-                    {
-                        // Technically, it is possible (e.g. it was CSE'd and then VN was erased), but for Debug mode we
-                        // want to catch such cases as we really don't want to emit just a fallback call - it's too slow
-                        assert(!"can't restore signature argument value");
-                        continue;
-                    }
-                }
-                assert(signature != nullptr);
 
+                // Restore runtimeLookup using signature argument via a global dictionary
                 CORINFO_RUNTIME_LOOKUP runtimeLookup = {};
                 const bool             lookupFound   = GetSignatureToLookupInfoMap()->Lookup(signature, &runtimeLookup);
                 assert(lookupFound);
@@ -105,58 +175,19 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 assert(runtimeLookup.indirections != 0);
                 assert(runtimeLookup.testForNull);
 
-                Statement* firstNewStmt = nullptr;
-                GenTree**  callUse      = nullptr;
-                gtSplitTree(block, stmt, call, &firstNewStmt, &callUse);
-
-                BasicBlockFlags originalFlags = block->bbFlags;
-                BasicBlock*     prevBb        = block;
-
-                if (stmt == block->firstStmt())
-                {
-                    block = fgSplitBlockAtBeginning(prevBb);
-                }
-                else
-                {
-                    assert(stmt->GetPrevStmt() != block->lastStmt());
-                    JITDUMP("Splitting " FMT_BB " after statement " FMT_STMT "\n", prevBb->bbNum,
-                            stmt->GetPrevStmt()->GetID())
-                    block = fgSplitBlockAfterStatement(prevBb, stmt->GetPrevStmt());
-                }
-
-                // We split a block, possibly, in the middle - we need to propagate some flags
-                prevBb->bbFlags =
-                    originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
-                block->bbFlags |= originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT |
-                                                   BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
+                // Split block right before the call tree
+                BasicBlock* prevBb = nullptr;
+                block              = SplitBlockBeforeTree(this, block, stmt, call, &prevBb);
+                assert(prevBb != nullptr && block != nullptr);
 
                 // Define a local for the result
                 const unsigned rtLookupLclNum   = lvaGrabTemp(true DEBUGARG("runtime lookup"));
                 lvaTable[rtLookupLclNum].lvType = TYP_I_IMPL;
                 GenTreeLclVar* rtLookupLcl      = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
 
-                // Save expression to a local and append as the last statement in prevBb
-                auto spillExpr = [&](GenTree* expr) -> GenTree* {
-                    unsigned const tmpNum   = lvaGrabTemp(false DEBUGARG("spilling expr"));
-                    lvaTable[tmpNum].lvType = expr->TypeGet();
-                    Statement* asgStmt      = fgNewStmtAtEnd(prevBb, gtNewTempAssign(tmpNum, expr));
-                    asgStmt->SetDebugInfo(debugInfo);
-                    gtSetStmtInfo(asgStmt);
-                    fgSetStmtSeq(asgStmt);
-                    gtUpdateStmtSideEffects(asgStmt);
-                    return gtNewLclvNode(tmpNum, expr->TypeGet());
-                };
-
-                GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
-                GenTree* sigNode = call->gtArgs.GetArgByIndex(1)->GetNode();
-                if (!ctxTree->OperIs(GT_LCL_VAR))
-                {
-                    ctxTree = spillExpr(ctxTree);
-                }
-                if (!sigNode->OperIs(GT_LCL_VAR, GT_CNS_INT))
-                {
-                    sigNode = spillExpr(sigNode);
-                }
+                // Save signature and generic context trees to locals if needed:
+                GenTree* ctxTree = SpillExpression(this, call->gtArgs.GetArgByIndex(0)->GetNode(), prevBb, debugInfo);
+                GenTree* sigNode = SpillExpression(this, call->gtArgs.GetArgByIndex(1)->GetNode(), prevBb, debugInfo);
 
                 // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
                 GenTree* slotPtrTree   = gtClone(ctxTree);
@@ -166,13 +197,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 {
                     if ((i == 1 && runtimeLookup.indirectFirstOffset) || (i == 2 && runtimeLookup.indirectSecondOffset))
                     {
-                        indOffTree  = spillExpr(slotPtrTree);
+                        indOffTree  = SpillExpression(this, slotPtrTree, prevBb, debugInfo);
                         slotPtrTree = gtClone(indOffTree);
                     }
 
                     // The last indirection could be subject to a size check (dynamic dictionary expansion)
                     const bool isLastIndirectionWithSizeCheck = (i == runtimeLookup.indirections - 1) && needsSizeCheck;
-
                     if (i != 0)
                     {
                         slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
@@ -187,15 +217,13 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     {
                         slotPtrTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, indOffTree, slotPtrTree);
                     }
-
                     if (runtimeLookup.offsets[i] != 0)
                     {
                         if (isLastIndirectionWithSizeCheck)
                         {
-                            lastIndOfTree = spillExpr(slotPtrTree);
+                            lastIndOfTree = SpillExpression(this, slotPtrTree, prevBb, debugInfo);
                             slotPtrTree   = gtClone(lastIndOfTree);
                         }
-
                         slotPtrTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree,
                                                     gtNewIconNode(runtimeLookup.offsets[i], TYP_I_IMPL));
                     }
@@ -222,47 +250,25 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 //
 
                 // null-check basic block
-                BasicBlock* nullcheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
-                nullcheckBb->bbFlags |= BBF_INTERNAL;
-
                 GenTree* fastPathValue = gtNewOperNode(GT_IND, TYP_I_IMPL, gtCloneExpr(slotPtrTree));
                 fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
-
-                GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
-
                 // Save dictionary slot to a local (to be used by fast path)
+                GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
                 GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
-                gtSetEvalOrder(nullcheckOp);
-                Statement* nullcheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp));
-                nullcheckStmt->SetDebugInfo(debugInfo);
-                gtSetStmtInfo(nullcheckStmt);
-                fgSetStmtSeq(nullcheckStmt);
-                fgInsertStmtAtEnd(nullcheckBb, nullcheckStmt);
+                BasicBlock* nullcheckBb =
+                    CreateBlockFromTree(this, prevBb, BBJ_COND, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
+                                        debugInfo);
 
                 // Fallback basic block
-                BasicBlock* fallbackBb = fgNewBBafter(BBJ_NONE, nullcheckBb, true);
-                fallbackBb->bbFlags |= BBF_INTERNAL;
-
-                GenTreeCall* fallbackCall = gtCloneExpr(call)->AsCall();
-                assert(!fallbackCall->IsExpRuntimeLookup());
-                assert(ctxTree->OperIs(GT_LCL_VAR));
-                Statement* asgFallbackStmt = fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), fallbackCall));
-                asgFallbackStmt->SetDebugInfo(debugInfo);
-                fgInsertStmtAtBeg(fallbackBb, asgFallbackStmt);
-                gtSetStmtInfo(asgFallbackStmt);
-                fgSetStmtSeq(asgFallbackStmt);
-                gtUpdateTreeAncestorsSideEffects(fallbackCall);
+                GenTreeCall* fallbackCall     = gtCloneExpr(call)->AsCall();
+                GenTree*     asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), fallbackCall);
+                BasicBlock*  fallbackBb = CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFallbackValue, debugInfo);
 
                 // Fast-path basic block
-                BasicBlock* fastPathBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
-                fastPathBb->bbFlags |= BBF_INTERNAL;
-                Statement* asgFastPathValueStmt =
-                    fgNewStmtFromTree(gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone));
-                asgFastPathValueStmt->SetDebugInfo(debugInfo);
-                fgInsertStmtAtBeg(fastPathBb, asgFastPathValueStmt);
-                gtSetStmtInfo(asgFastPathValueStmt);
-                fgSetStmtSeq(asgFastPathValueStmt);
+                GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
+                BasicBlock* fastPathBb =
+                    CreateBlockFromTree(this, nullcheckBb, BBJ_ALWAYS, asgFastpathValue, debugInfo);
 
                 BasicBlock* sizeCheckBb = nullptr;
                 if (needsSizeCheck)
@@ -291,9 +297,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     //     use(rtLookupLcl);
                     //
 
-                    sizeCheckBb = fgNewBBbefore(BBJ_COND, nullcheckBb, true);
-                    sizeCheckBb->bbFlags |= BBF_INTERNAL;
-
                     // sizeValue = dictionary[pRuntimeLookup->sizeOffset]
                     GenTreeIntCon* sizeOffset = gtNewIconNode(runtimeLookup.sizeOffset, TYP_I_IMPL);
                     assert(lastIndOfTree != nullptr);
@@ -306,19 +309,22 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                         gtNewIconNode(runtimeLookup.offsets[runtimeLookup.indirections - 1], TYP_I_IMPL);
                     GenTree* sizeCheck = gtNewOperNode(GT_LE, TYP_INT, sizeValue, offsetValue);
                     sizeCheck->gtFlags |= GTF_RELOP_JMP_USED;
-                    gtSetEvalOrder(sizeCheck);
-                    Statement* sizeCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck));
-                    sizeCheckStmt->SetDebugInfo(debugInfo);
-                    gtSetStmtInfo(sizeCheckStmt);
-                    fgSetStmtSeq(sizeCheckStmt);
-                    fgInsertStmtAtEnd(sizeCheckBb, sizeCheckStmt);
+
+                    GenTree* jtrue = gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
+                    sizeCheckBb    = CreateBlockFromTree(this, prevBb, BBJ_COND, jtrue, debugInfo);
                 }
 
-                // Replace call with rtLookupLclNum local
+                // Replace call with rtLookupLclNum local and update side effects
                 call->BashToLclVar(this, rtLookupLclNum);
+                gtSetEvalOrder(call);
                 gtUpdateTreeAncestorsSideEffects(call);
+                gtUpdateStmtSideEffects(stmt);
+                gtSetStmtInfo(stmt);
+                fgSetStmtSeq(stmt);
 
-                // Connect all new blocks together
+                //
+                // Update preds in all new blocks
+                //
                 fgRemoveRefPred(block, prevBb);
                 fgAddRefPred(block, fastPathBb);
                 fgAddRefPred(block, fallbackBb);
@@ -327,19 +333,15 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 if (needsSizeCheck)
                 {
-                    // Size check is the first block after prevBb
+                    // sizeCheckBb is the first block after prevBb
                     fgAddRefPred(sizeCheckBb, prevBb);
-
                     // sizeCheckBb flows into nullcheckBb in case if the size check passes
                     fgAddRefPred(nullcheckBb, sizeCheckBb);
-
                     // fallbackBb is reachable from both nullcheckBb and sizeCheckBb
                     fgAddRefPred(fallbackBb, nullcheckBb);
                     fgAddRefPred(fallbackBb, sizeCheckBb);
-
                     // fastPathBb is only reachable from successful nullcheckBb
                     fgAddRefPred(fastPathBb, nullcheckBb);
-
                     // sizeCheckBb fails - jump to fallbackBb
                     sizeCheckBb->bbJumpDest = fallbackBb;
                 }
@@ -347,61 +349,40 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 {
                     // nullcheckBb is the first block after prevBb
                     fgAddRefPred(nullcheckBb, prevBb);
-
                     // No size check, nullcheckBb jumps to fast path
                     fgAddRefPred(fastPathBb, nullcheckBb);
-
                     // fallbackBb is only reachable from nullcheckBb (jump destination)
                     fgAddRefPred(fallbackBb, nullcheckBb);
                 }
 
-                // Some quick validation
-                assert(prevBb->NumSucc() == 1);
-                if (needsSizeCheck)
-                {
-                    assert(prevBb->GetSucc(0) == sizeCheckBb);
-                    assert(sizeCheckBb->NumSucc() == 2);
-                }
-                else
-                {
-                    assert(prevBb->GetSucc(0) == nullcheckBb);
-                }
-                assert(nullcheckBb->NumSucc() == 2);
-                assert(fastPathBb->NumSucc() == 1);
-                assert(fallbackBb->NumSucc() == 1);
-                assert(fastPathBb->GetSucc(0) == block);
-                assert(fallbackBb->GetSucc(0) == block);
-
+                //
                 // Re-distribute weights (see '[weight: X]' on the diagrams above)
-
+                // TODO: consider marking fallbackBb as rarely-taken
+                //
                 block->inheritWeight(prevBb);
-
                 if (needsSizeCheck)
                 {
                     sizeCheckBb->inheritWeight(prevBb);
-
                     // 80% chance we pass nullcheck
                     nullcheckBb->inheritWeightPercentage(sizeCheckBb, 80);
-
                     // 64% (0.8 * 0.8) chance we pass both nullcheck and sizecheck
                     fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
-
                     // 100-64=36% chance we fail either nullcheck or sizecheck
                     fallbackBb->inheritWeightPercentage(sizeCheckBb, 36);
                 }
                 else
                 {
                     nullcheckBb->inheritWeight(prevBb);
-
                     // 80% chance we pass nullcheck
                     fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
-
                     // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
                     fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
                 }
 
-                // Update loop info
-                if (prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+                //
+                // Update loop info if loop table is known to be valid
+                //
+                if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
                 {
                     nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
                     fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
@@ -410,16 +391,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     {
                         sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
                     }
-
                     // Update lpBottom after block split
                     if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
                     {
                         optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
                     }
                 }
-                gtUpdateStmtSideEffects(stmt);
-                gtSetStmtInfo(stmt);
-                fgSetStmtSeq(stmt);
 
                 // All blocks are expected to be in the same EH region
                 assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -435,7 +412,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 // for that
                 result = PhaseStatus::MODIFIED_EVERYTHING;
                 block  = prevBb;
-                goto TRAVERSE_BLOCK_AGAIN;
+                goto VISIT_BLOCK_AGAIN;
             }
         }
     }
@@ -456,6 +433,5 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         }
 #endif
     }
-
     return result;
 }
