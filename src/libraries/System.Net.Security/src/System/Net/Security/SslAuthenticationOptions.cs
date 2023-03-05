@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -49,19 +50,11 @@ namespace System.Net.Security
             return false;
         }
 
-        private static unsafe bool IsSafeDnsString(ReadOnlySpan<char> name)
-        {
-            for (int i = 0; i < name.Length; i++)
-            {
-                if (!char.IsAsciiLetterOrDigit(name[i]) && name[i] != '.' && name[i] != '-' && name[i] != '_')
-                {
-                    return false;
-                }
-            }
+        private static readonly IndexOfAnyValues<char> s_safeDnsChars =
+            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
-            return true;
-        }
-
+        private static bool IsSafeDnsString(ReadOnlySpan<char> name) =>
+            name.IndexOfAnyExcept(s_safeDnsChars) < 0;
 
         internal SslAuthenticationOptions()
         {
@@ -116,13 +109,8 @@ namespace System.Net.Security
                     {
                         TargetHost = s_idnMapping.GetAscii(targetHost);
                     }
-                    catch (ArgumentException)
+                    catch (ArgumentException) when (IsSafeDnsString(targetHost))
                     {
-                        if (!IsSafeDnsString(targetHost))
-                        {
-                            throw;
-                        }
-
                         // Seems like name that does not confrom to IDN but apers somewhat valid according to orogional DNS rfc.
                         TargetHost = targetHost;
                     }
