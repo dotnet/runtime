@@ -16287,6 +16287,9 @@ void Compiler::gtSplitTree(
                         break;
                     }
 
+                    // If this has the same user as the next node then it is a
+                    // sibling of an ancestor -- and thus not on the "path"
+                    // that contains the split node.
                     if (m_useStack.BottomRef(i + 1).User == useInf.User)
                     {
                         SplitOutUse(useInf);
@@ -16295,7 +16298,7 @@ void Compiler::gtSplitTree(
 
                 assert(m_useStack.Bottom(i).Use == use);
 
-                // Split operands.
+                // The remaining nodes should be operands of the split node.
                 for (i++; i < m_useStack.Height(); i++)
                 {
                     assert(m_useStack.BottomRef(i).User == *use);
@@ -16328,18 +16331,25 @@ void Compiler::gtSplitTree(
                 return;
             }
 
-            // Don't spill some locals we know they never change
-            if (node->OperIs(GT_LCL_VAR))
+            if (node->OperIs(GT_LCL_VAR) && !m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed())
             {
-                unsigned   lclNum = node->AsLclVar()->GetLclNum();
-                LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lclNum);
-
-                // Generic context
-                if (lclDsc->lvIsParam && !lclDsc->IsAddressExposed() &&
-                    (m_compiler->compMap2ILvarNum(lclNum) == (unsigned)ICorDebugInfo::TYPECTXT_ILNUM))
-                {
-                    return;
-                }
+                // The splitting we do here should always guarantee that we
+                // only introduce locals for the tree edges that overlap the
+                // split point, so it should be ok to avoid creating statements
+                // for locals that aren't address exposed. Note that this
+                // relies on it being illegal IR to have a tree edge for a
+                // register candidate that overlaps with an interfering node.
+                //
+                // For example, this optimization would be problematic if it
+                // could occur:
+                //
+                // CALL
+                //   LCL_VAR V00
+                //   CALL
+                //     ASG(V00, ...) (setup)
+                //     LCL_VAR V00
+                //
+                return;
             }
 
             assert((user == nullptr) || !user->OperIs(GT_ADDR));
