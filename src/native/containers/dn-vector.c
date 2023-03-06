@@ -62,7 +62,7 @@ ensure_capacity (
 
 	vector->data = data;
 
-	if (vector->data && !check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT)) {
+	if (vector->data && check_attribute (vector, DN_VECTOR_ATTRIBUTE_MEMORY_INIT)) {
 		// Checks already verified that element_offset won't overflow.
 		// new_capacity > vector capacity, so new_capacity - vector capacity won't underflow.
 		// dn_safe_size_t_multiply already verified element_length won't overflow.
@@ -164,7 +164,7 @@ _dn_vector_erase (
 
 	vector->size --;
 
-	if (!check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT))
+	if (check_attribute (vector, DN_VECTOR_ATTRIBUTE_MEMORY_INIT))
 		memset (element_offset(vector, vector->size), 0, element_length (vector, 1));
 
 	return true;
@@ -191,7 +191,7 @@ _dn_vector_erase_fast (
 
 	vector->size --;
 
-	if (!check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT))
+	if (check_attribute (vector, DN_VECTOR_ATTRIBUTE_MEMORY_INIT))
 		memset (element_offset(vector, vector->size), 0, element_length (vector, 1));
 
 	return true;
@@ -344,7 +344,7 @@ dn_vector_custom_resize (
 				dispose_func (element_offset (vector, i));
 		}
 
-		if (!check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT))
+		if (check_attribute (vector, DN_VECTOR_ATTRIBUTE_MEMORY_INIT))
 			memset (element_offset(vector, size), 0, element_length (vector, vector->size - size));
 
 	}
@@ -365,7 +365,7 @@ dn_vector_custom_pop_back (
 	if (dispose_func)
 		dispose_func (element_offset (vector, vector->size));
 
-	if (!check_attribute (vector, DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT))
+	if (check_attribute (vector, DN_VECTOR_ATTRIBUTE_MEMORY_INIT))
 		memset (element_offset (vector, vector->size), 0, vector->_internal._element_size);
 }
 

@@ -230,6 +230,33 @@ RESULT
 test_vector_ptr_resize (void)
 {
 	dn_vector_ptr_t *vector= dn_vector_ptr_alloc ();
+	uint32_t grow_length = 50;
+
+	dn_vector_ptr_push_back (vector, (char *)test_vector_ptr_items [0]);
+	dn_vector_ptr_push_back (vector, (char *)test_vector_ptr_items [1]);
+	dn_vector_ptr_resize (vector, grow_length);
+
+	if (vector->size != grow_length) {
+		return FAILED ("vector size should be 50, it is %d", vector->size);
+	} else if (*dn_vector_ptr_index (vector, 0) != test_vector_ptr_items [0]) {
+		return FAILED ("item 0 was overwritten, should be %s", test_vector_ptr_items [0]);
+	} else if (*dn_vector_ptr_index (vector, 1) != test_vector_ptr_items [1]) {
+		return FAILED ("item 1 was overwritten, should be %s", test_vector_ptr_items [1]);
+	}
+
+	dn_vector_ptr_free (vector);
+
+	return OK;
+}
+
+static
+RESULT
+test_vector_ptr_resize_2 (void)
+{
+	dn_vector_ptr_custom_alloc_params_t params = {0,};
+	params.attributes = DN_VECTOR_ATTRIBUTE_MEMORY_INIT;
+
+	dn_vector_ptr_t *vector= dn_vector_ptr_custom_alloc (&params);
 	uint32_t i, grow_length = 50;
 
 	dn_vector_ptr_push_back (vector, (char *)test_vector_ptr_items [0]);
@@ -941,6 +968,7 @@ static Test dn_vector_ptr_tests [] = {
 	{"test_vector_ptr_for_iterate", test_vector_ptr_for_iterate},
 	{"test_vector_ptr_foreach_iterate", test_vector_ptr_foreach_iterate},
 	{"test_vector_ptr_resize", test_vector_ptr_resize},
+	{"test_vector_ptr_resize_2", test_vector_ptr_resize_2},
 	{"test_vector_ptr_erase", test_vector_ptr_erase},
 	{"test_vector_ptr_erase_fast", test_vector_ptr_erase_fast},
 	{"test_vector_ptr_capacity", test_vector_ptr_capacity},
