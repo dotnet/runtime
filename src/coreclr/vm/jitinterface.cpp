@@ -11056,7 +11056,7 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unw
     _ASSERTE_MSG(m_theUnwindBlock == NULL,
         "reserveUnwindInfo() can only be called before allocMem(), but allocMem() has already been called. "
         "This may indicate the JIT has hit a NO_WAY assert after calling allocMem(), and is re-JITting. "
-        "Set COMPlus_JitBreakOnBadCode=1 and rerun to get the real error.");
+        "Set DOTNET_JitBreakOnBadCode=1 and rerun to get the real error.");
 
     uint32_t currentSize  = unwindSize;
 
@@ -11949,7 +11949,11 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     size_t roDataAlignment = sizeof(void*);
-    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
+    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN)!= 0)
+    {
+        roDataAlignment = 64;
+    }
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
     {
         roDataAlignment = 32;
     }
@@ -14346,10 +14350,10 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     if (pRS == NULL)
         goto Invalid;
 
-    if (!pRS->pjit->JitCodeToMethodInfo(pRS, codeAddress, &m_pMD, this))
+    if (!pRS->_pjit->JitCodeToMethodInfo(pRS, codeAddress, &m_pMD, this))
         goto Invalid;
 
-    m_pJM = pRS->pjit;
+    m_pJM = pRS->_pjit;
     return;
 
 Invalid:

@@ -10779,9 +10779,17 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         return node;
     }
 
+#if defined(TARGET_XARCH)
+    // TODO-XArch-AVX512: Enable for simd64 once GenTreeVecCon supports gtSimd64Val.
+    if (node->TypeGet() == TYP_SIMD64)
+    {
+        return node;
+    }
+#endif // TARGET_XARCH
+
     simd32_t simd32Val = {};
 
-    if (GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val))
+    if (GenTreeVecCon::IsHWIntrinsicCreateConstant<simd32_t>(node, simd32Val))
     {
         GenTreeVecCon* vecCon = gtNewVconNode(node->TypeGet());
 

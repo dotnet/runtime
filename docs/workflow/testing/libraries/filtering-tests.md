@@ -302,7 +302,7 @@ SkipOnCoreClr(string reason, TestPlatforms testPlatforms, RuntimeConfiguration r
 **Disable using multiple attributes:**
 
 This attribute can be used multiple times, in which case the test is disabled for any of the conditions. In this example,
-only Release builds where `COMPlus_JITMinOpts` is not set would run the test.
+only Release builds where `DOTNET_JITMinOpts` is not set would run the test.
 ```cs
 [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/67886", ~RuntimeConfiguration.Release)]
 [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/67886", RuntimeTestModes.JitMinOpts)]

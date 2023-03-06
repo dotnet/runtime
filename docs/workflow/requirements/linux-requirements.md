@@ -4,7 +4,6 @@
 * [Environment](#environment)
   * [Toolchain Setup](#toolchain-setup)
     * [Additional Requirements for Cross-Building](#additional-requirements-for-cross-building)
-      * [Alpine ARM Cross-Building Requirements](#alpine-arm-cross-building-requirements)
   * [Gentoo Special Case](#gentoo-special-case)
 
 This guide will walk you through the requirements to build _dotnet/runtime_ on Linux. Before building there is environment setup that needs to happen to pull in all the dependencies required by the build.

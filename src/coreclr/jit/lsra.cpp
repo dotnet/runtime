@@ -437,7 +437,7 @@ regMaskTP LinearScan::getConstrainedRegMask(regMaskTP regMaskActual, regMaskTP r
 //    mask      - The current mask of register candidates for a node
 //
 // Return Value:
-//    A possibly-modified mask, based on the value of COMPlus_JitStressRegs.
+//    A possibly-modified mask, based on the value of DOTNET_JitStressRegs.
 //
 // Notes:
 //    This is the method used to implement the stress options that limit
@@ -733,16 +733,11 @@ LinearScan::LinearScan(Compiler* theCompiler)
             availableRegs[i] = &availableDoubleRegs;
         }
 #ifdef FEATURE_SIMD
-#if defined(TARGET_XARCH)
-        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD32))
-#else
-        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD16))
-#endif // TARGET_XARCH
-
+        else if (varTypeIsSIMD(thisType))
         {
             availableRegs[i] = &availableDoubleRegs;
         }
-#endif
+#endif // FEATURE_SIMD
         else
         {
             availableRegs[i] = &availableIntRegs;
@@ -1602,6 +1597,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         case TYP_SIMD16:
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
+        case TYP_SIMD64:
 #endif // TARGET_XARCH
         {
             return !varDsc->lvPromoted;
@@ -2205,7 +2201,7 @@ VarToRegMap LinearScan::setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarT
 //    same tree. However, now that last uses are computed as RefPositions are created,
 //    that is no longer necessary, and this method is simply retained as a check.
 //    The exception to the check-only behavior is when LSRA_EXTEND_LIFETIMES if set via
-//    COMPlus_JitStressRegs. In that case, this method is required, because even though
+//    DOTNET_JitStressRegs. In that case, this method is required, because even though
 //    the RefPositions will not be marked lastUse in that case, we still need to correctly
 //    mark the last uses on the tree nodes, which is done by this method.
 //
@@ -5085,6 +5081,13 @@ void LinearScan::allocateRegisters()
                 {
                     allocate = false;
                 }
+#if defined(TARGET_XARCH)
+                else if (lclVarInterval->registerType == TYP_SIMD64)
+                {
+                    allocate                           = false;
+                    lclVarInterval->isPartiallySpilled = true;
+                }
+#endif // TARGET_XARCH
                 else
                 {
                     lclVarInterval->isPartiallySpilled = true;
@@ -8644,7 +8647,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     {
                         // Spill "targetReg" to the stack and add its eventual target (otherTargetReg)
                         // to "targetRegsFromStack", which will be handled below.
-                        // NOTE: This condition is very rare.  Setting COMPlus_JitStressRegs=0x203
+                        // NOTE: This condition is very rare.  Setting DOTNET_JitStressRegs=0x203
                         // has been known to trigger it in JIT SH.
 
                         // First, spill "otherInterval" from targetReg to the stack.
