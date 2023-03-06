@@ -7,6 +7,8 @@
 #pragma hdrstop
 #endif
 
+#include "fgprofilesynthesis.h"
+
 // Flowgraph Profile Support
 
 //------------------------------------------------------------------------
@@ -2424,6 +2426,20 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgApplyProfileScale();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
+
+#ifdef DEBUG
+    // Optionally just run synthesis
+    //
+    if ((JitConfig.JitSynthesizeCounts() > 0) && !compIsForInlining())
+    {
+        if ((JitConfig.JitSynthesizeCounts() == 1) || ((JitConfig.JitSynthesizeCounts() == 2) && !fgHaveProfileData()))
+        {
+            JITDUMP("Synthesizing profile data\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+            return PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+#endif
 
     // Do we have profile data?
     //

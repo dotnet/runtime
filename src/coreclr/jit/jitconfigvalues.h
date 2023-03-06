@@ -592,7 +592,10 @@ CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualiza
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
 CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts"), 0) // Collect 64-bit counts randomly
                                                                                      // for some methods.
-#endif                                                                               // debug
+// 1: profile synthesis for root methods
+// 2: profile synthesis for root methods w/o pgo data
+CONFIG_INTEGER(JitSynthesizeCounts, W("JitSynthesizeCounts"), 0)
+#endif
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
 CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)
