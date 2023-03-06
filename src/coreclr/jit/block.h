@@ -1080,7 +1080,8 @@ struct BasicBlock : private LIR::Range
         void* bbSparseProbeList; // Used early on by fgInstrument
     };
 
-    unsigned bbPostOrderNum; // the block's post order number in the graph.
+    unsigned bbPreorderNum;  // the block's  preorder number in the graph (1...fgMaxBBNum]
+    unsigned bbPostorderNum; // the block's postorder number in the graph (1...fgMaxBBNum]
 
     IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
     IL_OFFSET bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
@@ -1944,28 +1945,6 @@ inline PredBlockList::iterator& PredBlockList::iterator::operator++()
     m_pred = next;
     return *this;
 }
-
-// This enum represents a pre/post-visit action state to emulate a depth-first
-// spanning tree traversal of a tree or graph.
-enum DfsStackState
-{
-    DSS_Invalid, // The initialized, invalid error state
-    DSS_Pre,     // The DFS pre-order (first visit) traversal state
-    DSS_Post     // The DFS post-order (last visit) traversal state
-};
-
-// These structs represents an entry in a stack used to emulate a non-recursive
-// depth-first spanning tree traversal of a graph. The entry contains either a
-// block pointer or a block number depending on which is more useful.
-struct DfsBlockEntry
-{
-    DfsStackState dfsStackState; // The pre/post traversal action for this entry
-    BasicBlock*   dfsBlock;      // The corresponding block for the action
-
-    DfsBlockEntry(DfsStackState state, BasicBlock* basicBlock) : dfsStackState(state), dfsBlock(basicBlock)
-    {
-    }
-};
 
 /*****************************************************************************
  *

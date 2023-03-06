@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import cwraps from "../cwraps";
+import { legacy_c_functions as cwraps } from "../cwraps";
 import { mono_wasm_runtime_ready } from "../debug";
 import { mono_wasm_load_icu_data } from "../icu";
 import { runtimeHelpers } from "../imports";
@@ -16,6 +16,7 @@ import { mono_bind_static_method, mono_call_assembly_entry_point } from "./metho
 import { mono_wasm_load_runtime } from "../startup";
 import { BINDINGType, MONOType } from "./export-types";
 import { mono_wasm_load_data_archive } from "../assets";
+import { mono_method_resolve } from "./method-binding";
 
 export function export_mono_api(): MONOType {
     return {
@@ -72,6 +73,12 @@ export function cwraps_mono_api(mono: MONOType): void {
     Object.assign(mono, {
         mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
     });
+}
+
+export function export_internal_api(): any {
+    return {
+        mono_method_resolve,//MarshalTests.cs
+    };
 }
 
 export function export_binding_api(): BINDINGType {

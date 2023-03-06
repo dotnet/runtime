@@ -4355,7 +4355,7 @@ void Module::RunEagerFixupsUnlocked()
     ExecutionManager::AddCodeRange(
         base, base + (TADDR)pNativeImage->GetVirtualSize(),
         ExecutionManager::GetReadyToRunJitManager(),
-        RangeSection::RANGE_SECTION_READYTORUN,
+        RangeSection::RANGE_SECTION_NONE,
         this /* pHeapListOrZapModule */);
 }
 #endif // !DACCESS_COMPILE

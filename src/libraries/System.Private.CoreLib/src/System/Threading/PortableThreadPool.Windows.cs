@@ -8,6 +8,20 @@ namespace System.Threading
 {
     internal sealed partial class PortableThreadPool
     {
+        private static partial class WorkerThread
+        {
+            private static bool IsIOPending
+            {
+                get
+                {
+                    bool success =
+                        Interop.Kernel32.GetThreadIOPendingFlag(Interop.Kernel32.GetCurrentThread(), out Interop.BOOL isIOPending);
+                    Debug.Assert(success);
+                    return !success || isIOPending != Interop.BOOL.FALSE;
+                }
+            }
+        }
+
         private struct CpuUtilizationReader
         {
             public long _idleTime;

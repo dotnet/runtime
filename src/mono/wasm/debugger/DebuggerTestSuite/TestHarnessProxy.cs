@@ -132,7 +132,7 @@ namespace DebuggerTests
             s_statusTable[id] = status;
             // we have the explicit state now, so we can drop the reference
             // to the proxy
-            s_proxyTable.TryRemove(id, out WeakReference<DebuggerProxyBase> _);
+            s_proxyTable.TryRemove(id, out _);
 
             if (s_exitHandlers.TryRemove(intId, out WeakReference<Action<RunLoopExitState>>? handlerRef)
                 && handlerRef.TryGetTarget(out Action<RunLoopExitState>? handler))
