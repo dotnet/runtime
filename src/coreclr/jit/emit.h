@@ -511,21 +511,18 @@ protected:
 
     enum opSize : unsigned
     {
-        OPSZ1 = 0,
-        OPSZ2 = 1,
-        OPSZ4 = 2,
-        OPSZ8 = 3,
+        OPSZ1  = 0,
+        OPSZ2  = 1,
+        OPSZ4  = 2,
+        OPSZ8  = 3,
+        OPSZ16 = 4,
 
-#if !defined(FEATURE_SIMD)
-        OPSZ_COUNT = 4,
-#elif !defined(TARGET_XARCH)
-        OPSZ16     = 4,
-        OPSZ_COUNT = 5,
-#else
-        OPSZ16     = 4,
+#if defined(TARGET_XARCH)
         OPSZ32     = 5,
         OPSZ64     = 6,
         OPSZ_COUNT = 7,
+#else
+        OPSZ_COUNT = 5,
 #endif
 
 #ifdef TARGET_AMD64
