@@ -187,12 +187,10 @@
 
   <!-- PackageRID is used for packages needed for the target. -->
   <PropertyGroup Label="CalculatePackageRID">
-    <_packageOS Condition="'$(CrossBuild)' != 'true'">$(_portableOS)</_packageOS>
-    <_packageOS Condition="'$(CrossBuild)' != 'true' and '$(RuntimeOS)' != ''">$(RuntimeOS)</_packageOS>
+    <_packageOS>$(_portableOS)</_packageOS>
+    <_packageOS Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)</_packageOS>
 
-    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)</_packageOS>
-    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_packageOS>
-    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-bionic'">linux-bionic</_packageOS>
+    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' != 'linux-musl' and '$(_portableOS)' != 'linux-bionic'">$(_hostOS)</_packageOS>
 
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
