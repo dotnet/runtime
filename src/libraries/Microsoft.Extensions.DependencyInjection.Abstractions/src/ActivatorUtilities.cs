@@ -467,7 +467,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
-        private struct ConstructorMatcher
+        private readonly struct ConstructorMatcher
         {
             private readonly ConstructorInfo _constructor;
             private readonly ParameterInfo[] _parameters;

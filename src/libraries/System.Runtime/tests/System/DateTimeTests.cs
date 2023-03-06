@@ -2626,6 +2626,26 @@ namespace System.Tests
             VerifyDateTime(DateTime.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         }
 
+        [Fact]
+        public static void ParseExact_InvariantName_RespectsCustomNames()
+        {
+            var c = new CultureInfo("");
+            c.DateTimeFormat.DayNames = new[] { "A", "B", "C", "D", "E", "F", "G" };
+            c.DateTimeFormat.AbbreviatedDayNames = new[] { "abc", "bcd", "cde", "def", "efg", "fgh", "ghi" };
+            c.DateTimeFormat.MonthNames = new[] { "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "" };
+            c.DateTimeFormat.AbbreviatedMonthNames = new[] { "hij", "ijk", "jkl", "klm", "lmn", "mno", "nop", "opq", "pqr", "qrs", "rst", "stu", "" };
+
+            DateTime expected = new DateTime(2023, 3, 4, 9, 30, 12, DateTimeKind.Utc);
+
+            Assert.Equal(expected, DateTime.ParseExact("Saturday, March 4, 2023 9:30:12 AM", "dddd, MMMM d, yyyy h':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("G, J 4, 2023 9:30:12 AM", "dddd, MMMM d, yyyy h':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Equal(expected, DateTime.ParseExact("G, J 4, 2023 9:30:12 AM", "dddd, MMMM d, yyyy h':'mm':'ss tt", c, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+
+            Assert.Equal(expected, DateTime.ParseExact("Sat, 04 Mar 2023 09:30:12 GMT", "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("ghi, 04 jkl 2023 09:30:12 GMT", "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Equal(expected, DateTime.ParseExact("ghi, 04 jkl 2023 09:30:12 GMT", "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", c, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+        }
+
         public enum DateTimeUnits
         {
             Microsecond,

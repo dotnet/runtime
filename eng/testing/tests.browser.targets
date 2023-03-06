@@ -8,9 +8,6 @@
   <PropertyGroup>
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == ''">true</IsBrowserWasmProject>
 
-    <!-- some tests require full ICU data, force it for all the tests -->
-    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
-
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
 
@@ -33,6 +30,14 @@
 
     <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetRuntimePackNuGetsToBuild;_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
+  </PropertyGroup>
+
+  <!-- We expect WASM users to indicate they would like to have bigger download size by adding WasmIncludeFullIcuData, -->
+  <!-- by default we make their icu small by sharding. -->
+  <!-- Trimming test InvariantGlobalizationFalse requires full ICU data. -->
+  <!-- ToDo: edit after https://github.com/dotnet/runtime/issues/82819 is merged -->
+  <PropertyGroup Condition="'$(TestTrimming)' == 'true'">
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
