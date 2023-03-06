@@ -17,7 +17,7 @@ Such subsequent start is significantly faster.
     - after loading all the DLLs into memory.
     - after loading ICU and timezone data
     - after applying environment variables and other runtime options.
-    - before any worker threads init
+    - before any worker threads initialization
     - before any JavaScript interop initialization
     - before any Managed code initialization
     - therefore we do not expect to store any application state in the snapshot.
