@@ -145,6 +145,9 @@ namespace System.Configuration
 
         public static object GetSection(string sectionName)
         {
+            if (DisableConfigurationManager)
+                throw new ArgumentException(SR.ConfigurationManagerDisabled);
+
             // Avoid unintended AV's by ensuring sectionName is not empty.
             // For compatibility, we cannot throw an InvalidArgumentException.
             if (string.IsNullOrEmpty(sectionName)) return null;
@@ -157,6 +160,9 @@ namespace System.Configuration
 
         public static void RefreshSection(string sectionName)
         {
+            if (DisableConfigurationManager)
+                throw new ArgumentException(SR.ConfigurationManagerDisabled);
+
             // Avoid unintended AV's by ensuring sectionName is not empty.
             // For consistency with GetSection, we should not throw an InvalidArgumentException.
             if (string.IsNullOrEmpty(sectionName)) return;
@@ -201,6 +207,9 @@ namespace System.Configuration
         private static Configuration OpenExeConfigurationImpl(ConfigurationFileMap fileMap, bool isMachine,
             ConfigurationUserLevel userLevel, string exePath, bool preLoad = false)
         {
+            if (DisableConfigurationManager)
+                throw new ArgumentException(SR.ConfigurationManagerDisabled);
+
             // exePath must be specified if not running inside ClientConfigurationSystem
             if (!isMachine &&
                 (((fileMap == null) && (exePath == null)) ||
@@ -241,6 +250,15 @@ namespace System.Configuration
             // Load child section groups.
             foreach (ConfigurationSectionGroup childSectionGroup in sectionGroup.SectionGroups)
                 PreloadConfigurationSectionGroup(childSectionGroup);
+        }
+
+        private static bool s_disableConfigurationManager;
+        private static bool DisableConfigurationManager
+        {
+            get
+            {
+                return AppContext.TryGetSwitch(@"Switch.System.Configuration.ConfigurationManager.DisableConfigurationManager", out s_disableConfigurationManager) ? s_disableConfigurationManager : false;
+            }
         }
 
         private enum InitState

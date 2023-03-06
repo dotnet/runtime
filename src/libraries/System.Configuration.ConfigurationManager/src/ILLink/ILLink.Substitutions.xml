@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="System.Configuration.ConfigurationManager">
+    <type fullname="System.Configuration.ConfigurationManager">
+      <method signature="System.Boolean get_DisableConfigurationManager()" body="stub" value="true" feature="Switch.System.Configuration.ConfigurationManager.DisableConfigurationManager" featurevalue="true" />
+    </type>
+  </assembly>
+</linker>

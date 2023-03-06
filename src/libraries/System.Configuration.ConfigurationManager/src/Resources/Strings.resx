@@ -694,4 +694,7 @@
   <data name="TL_InitializeData_NotSpecified" xml:space="preserve">
     <value>initializeData needs to be valid for this TraceListener.</value>
   </data>
+  <data name="ConfigurationManagerDisabled" xml:space="preserve">
+    <value>Working with ConfigurationManager is disabled.</value>
+  </data>
 </root>
