@@ -7053,6 +7053,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             lvaAllocLocalAndSetVirtualOffset(lvaInlinedPInvokeFrameVar, lvaLclSize(lvaInlinedPInvokeFrameVar), stkOffs);
     }
 
+#ifdef JIT32_GCENCODER
+    // JIT32 encoder cannot handle GS cookie at fp+0 since NO_GS_COOKIE == 0.
+    // Add some padding if it is the last allocated local.
+    if ((lvaGSSecurityCookie != BAD_VAR_NUM) && (lvaGetDesc(lvaGSSecurityCookie)->GetStackOffset() == stkOffs))
+    {
+        lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+        stkOffs -= TARGET_POINTER_SIZE;
+    }
+#endif
+
     if (mustDoubleAlign)
     {
         if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)

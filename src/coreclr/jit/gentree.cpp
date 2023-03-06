@@ -15798,6 +15798,7 @@ GenTree* Compiler::gtNewTempAssign(
             if (varTypeIsSIMD(dstTyp))
             {
                 varDsc->lvExactSize = genTypeSize(dstTyp);
+                varDsc->lvSIMDType = 1;
             }
             else
             {
