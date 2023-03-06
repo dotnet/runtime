@@ -1665,8 +1665,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX_LoadVector256:
         case NI_Vector128_Load:
         case NI_Vector256_Load:
+        case NI_Vector512_Load:
         case NI_Vector128_LoadUnsafe:
         case NI_Vector256_LoadUnsafe:
+        case NI_Vector512_LoadUnsafe:
         {
             if (sig->numArgs == 2)
             {
@@ -1698,6 +1700,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_LoadAligned:
         case NI_Vector256_LoadAligned:
+        case NI_Vector512_LoadAligned:
         {
             assert(sig->numArgs == 1);
 
@@ -1716,6 +1719,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_LoadAlignedNonTemporal:
         case NI_Vector256_LoadAlignedNonTemporal:
+        case NI_Vector512_LoadAlignedNonTemporal:
         {
             assert(sig->numArgs == 1);
 
