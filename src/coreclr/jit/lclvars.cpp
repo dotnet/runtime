@@ -2285,10 +2285,6 @@ Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORIN
 //
 bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& fieldInfo)
 {
-    // Size of TYP_BLK, TYP_FUNC, TYP_VOID and TYP_STRUCT is zero.
-    // Early out if field type is other than TYP_STRUCT.
-    // This is a defensive check as we don't expect a struct to have
-    // fields of TYP_BLK, TYP_FUNC or TYP_VOID.
     if (fieldInfo.fldType != TYP_STRUCT)
     {
         return false;
@@ -2387,7 +2383,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     varDsc->lvCustomLayout  = structPromotionInfo.customLayout;
 
 #ifdef DEBUG
-    // Don't change the source to a TYP_BLK either.
+    // Don't stress this in LCL_FLD stress.
     varDsc->lvKeepType = 1;
 #endif
 
@@ -3873,7 +3869,7 @@ var_types LclVarDsc::GetSimdBaseType() const
 }
 #endif // FEATURE_SIMD
 
-unsigned LclVarDsc::lvSize() const // Size needed for storage representation. Only used for structs or TYP_BLK.
+unsigned LclVarDsc::lvSize() const // Size needed for storage representation. Only used for structs.
 {
     // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
     // where the struct itself is no longer used because all access is via its member fields.
@@ -8288,6 +8284,8 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // Converting tail calls to loops may require insertion of explicit
         // zero initialization for IL locals. The JIT does not support this for
         // TYP_BLK locals.
+        // TODO-Cleanup: Can probably be removed now since TYP_BLK does not
+        // exist anymore.
         if (pComp->compMayConvertTailCallToLoop)
         {
             varDsc->lvNoLclFldStress = true;

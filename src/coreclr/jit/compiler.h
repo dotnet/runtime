@@ -3304,7 +3304,7 @@ public:
 
 #if !defined(FEATURE_EH_FUNCLETS)
     // This is used for the callable handlers
-    unsigned lvaShadowSPslotsVar; // TYP_BLK variable for all the shadow SP slots
+    unsigned lvaShadowSPslotsVar; // Block-layout TYP_STRUCT variable for all the shadow SP slots
 #endif                            // FEATURE_EH_FUNCLETS
 
     int lvaCachedGenericContextArgOffs;
