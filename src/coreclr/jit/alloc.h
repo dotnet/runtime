@@ -235,14 +235,10 @@ public:
 
         void* p = m_arena->allocateMemory(count * sizeof(T));
 
-#if defined(_MSC_VER)
-        // MSVC does not handle the other pattern correctly to recognize this fact.
-        __assume(p != nullptr);
-#elif !defined(DEBUG)
-        if (p == nullptr)
-        {
-            UNREACHABLE();
-        }
+#ifndef DEBUG
+        // Could be in DEBUG too, but COMPILER_ASSUME in debug builds has extra
+        // cruft in it that we'd like to avoid in checked builds.
+        COMPILER_ASSUME(p != nullptr);
 #endif
 
         // Ensure that the allocator returned sizeof(size_t) aligned memory.
