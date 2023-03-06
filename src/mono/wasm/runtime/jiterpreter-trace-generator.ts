@@ -1337,7 +1337,8 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
         if (traceNullCheckOptimizations)
             console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, fresh null check)`);
         cknullOffset = localOffset;
-    }
+    } else
+        cknullOffset = -1;
 }
 
 const ldcTable : { [opcode: number]: [WasmOpcode, number] } = {
@@ -1585,8 +1586,8 @@ function emit_fieldop (
 
             builder.local("pLocals");
             builder.i32_const(fieldOffset);
-            builder.i32_const(objectOffset);
-            builder.i32_const(localOffset);
+            builder.i32_const(objectOffset); // dest
+            builder.i32_const(localOffset); // src
             builder.callImport("stfld_o");
 
             if (!notNull) {
@@ -1595,11 +1596,15 @@ function emit_fieldop (
                 append_bailout(builder, ip, BailoutReason.NullCheck);
                 builder.endBlock();
             } else {
+                if (traceNullCheckOptimizations)
+                    console.log(`(0x${(<any>ip).toString(16)}) locals[${objectOffset}] not null since 0x${notNullSince.get(objectOffset)!.toString(16)}`);
+
                 builder.appendU8(WasmOpcode.drop);
                 counters.nullChecksEliminated++;
 
                 if (nullCheckValidation) {
-                    builder.local("cknull_ptr");
+                    // cknull_ptr was not used here so all we can do is verify that the target object is not null
+                    append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     builder.i32_const(builder.base);
                     builder.i32_const(ip);
