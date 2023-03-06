@@ -74,7 +74,7 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 //
 // Arguments:
 //    comp     - Compiler object
-//    simdType - Vector type, either TYP_SIMD32 (xarch only) or TYP_SIMD16
+//    simdType - Vector type, TYP_SIMD64 (xarch only), TYP_SIMD32 (xarch only) or TYP_SIMD16
 //    cns      - Constant data
 //
 // Return Value:
@@ -82,9 +82,11 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 //
 static GenTreeVecCon* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
 {
-#if defined(TARGET_XARCH)
-    if (simdType == TYP_SIMD32)
+#ifdef TARGET_XARCH
+    if (simdType >= TYP_SIMD32)
     {
+        assert((simdType == TYP_SIMD32) || (simdType == TYP_SIMD64));
+        // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
         simd32_t       simd32Val = {};
         GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
 

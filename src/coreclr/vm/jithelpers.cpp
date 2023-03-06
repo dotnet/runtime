@@ -4348,7 +4348,7 @@ void DoJITFailFast ()
 
 #ifdef _DEBUG
     if (g_pConfig->fAssertOnFailFast())
-        _ASSERTE(!"About to FailFast. set ComPlus_AssertOnFailFast=0 if this is expected");
+        _ASSERTE(!"About to FailFast. set DOTNET_AssertOnFailFast=0 if this is expected");
 #endif
 
 #ifndef TARGET_UNIX
@@ -6046,17 +6046,17 @@ void InitJITHelpers2()
 // *****************************************************************************
 //  JitHelperLogging usage:
 //      1) Ngen using:
-//              COMPlus_HardPrejitEnabled=0
+//              DOTNET_HardPrejitEnabled=0
 //
 //         This allows us to instrument even ngen'd image calls to JIT helpers.
 //         Remember to clear the key after ngen-ing and before actually running
 //         the app you want to log.
 //
 //      2) Then set:
-//              COMPlus_JitHelperLogging=1
-//              COMPlus_LogEnable=1
-//              COMPlus_LogLevel=1
-//              COMPlus_LogToFile=1
+//              DOTNET_JitHelperLogging=1
+//              DOTNET_LogEnable=1
+//              DOTNET_LogLevel=1
+//              DOTNET_LogToFile=1
 //
 //      3) Run the app that you want to log; Results will be in COMPLUS.LOG(.X)
 //

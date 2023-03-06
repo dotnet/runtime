@@ -157,36 +157,23 @@ const char* CodeGen::genSizeStr(emitAttr attr)
     static
     const char * const sizes[] =
     {
-        "",
         "byte  ptr ",
         "word  ptr ",
-        nullptr,
         "dword ptr ",
-        nullptr,
-        nullptr,
-        nullptr,
         "qword ptr ",
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
         "xmmword ptr ",
-        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-        "ymmword ptr"
+        "ymmword ptr",
+        "zmmword ptr"
     };
     // clang-format on
 
     unsigned size = EA_SIZE(attr);
 
-    assert(size == 0 || size == 1 || size == 2 || size == 4 || size == 8 || size == 16 || size == 32);
+    assert(genMaxOneBit(size) && (size <= 64));
 
     if (EA_ATTR(size) == attr)
     {
-        return sizes[size];
+        return (size > 0) ? sizes[genLog2(size)] : "";
     }
     else if (attr == EA_GCREF)
     {
@@ -804,6 +791,12 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 
 #if defined(TARGET_XARCH)
                     case TYP_SIMD32:
+                    {
+                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
+                        return OperandDesc(emit->emitSimd32Const(constValue));
+                    }
+
+                    case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
                     {
                         simd32_t constValue = op->AsVecCon()->gtSimd32Val;
                         return OperandDesc(emit->emitSimd32Const(constValue));

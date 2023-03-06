@@ -7629,7 +7629,8 @@ public:
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         assert(type != TYP_STRUCT);
-        return (type == TYP_SIMD32);
+        assert((type < TYP_SIMD32) || (type == TYP_SIMD32) || (type == TYP_SIMD64));
+        return type >= TYP_SIMD32;
     }
 #elif defined(TARGET_ARM64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
@@ -8328,6 +8329,11 @@ private:
 #if defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
+            if (compOpportunisticallyDependsOn(InstructionSet_Vector512))
+            {
+                return SIMD_Vector512_Supported;
+            }
+
             return SIMD_AVX2_Supported;
         }
 
@@ -8443,12 +8449,26 @@ private:
         CORINFO_CLASS_HANDLE Vector256ULongHandle;
         CORINFO_CLASS_HANDLE Vector256NIntHandle;
         CORINFO_CLASS_HANDLE Vector256NUIntHandle;
+
+        CORINFO_CLASS_HANDLE Vector512FloatHandle;
+        CORINFO_CLASS_HANDLE Vector512DoubleHandle;
+        CORINFO_CLASS_HANDLE Vector512IntHandle;
+        CORINFO_CLASS_HANDLE Vector512UShortHandle;
+        CORINFO_CLASS_HANDLE Vector512UByteHandle;
+        CORINFO_CLASS_HANDLE Vector512ShortHandle;
+        CORINFO_CLASS_HANDLE Vector512ByteHandle;
+        CORINFO_CLASS_HANDLE Vector512LongHandle;
+        CORINFO_CLASS_HANDLE Vector512UIntHandle;
+        CORINFO_CLASS_HANDLE Vector512ULongHandle;
+        CORINFO_CLASS_HANDLE Vector512NIntHandle;
+        CORINFO_CLASS_HANDLE Vector512NUIntHandle;
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
         CORINFO_CLASS_HANDLE CanonicalSimd8Handle;
         CORINFO_CLASS_HANDLE CanonicalSimd16Handle;
         CORINFO_CLASS_HANDLE CanonicalSimd32Handle;
+        CORINFO_CLASS_HANDLE CanonicalSimd64Handle;
 
         SIMDHandlesCache()
         {
@@ -8515,6 +8535,7 @@ private:
 
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
+                case TYP_SIMD64:
                     break;
 #endif // TARGET_XARCH
 
@@ -8622,7 +8643,10 @@ private:
 #if defined(TARGET_XARCH)
             case TYP_SIMD32:
                 return m_simdHandleCache->CanonicalSimd32Handle;
+            case TYP_SIMD64:
+                return m_simdHandleCache->CanonicalSimd64Handle;
 #endif // TARGET_XARCH
+
             default:
                 unreached();
         }
@@ -8757,7 +8781,8 @@ private:
     var_types getSIMDVectorType()
     {
 #if defined(TARGET_XARCH)
-        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
+        // TODO-XArch-AVX512 : Return TYP_SIMD64 once Vector<T> supports AVX512.
+        if (getSIMDSupportLevel() >= SIMD_AVX2_Supported)
         {
             return TYP_SIMD32;
         }
@@ -8798,7 +8823,8 @@ private:
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(TARGET_XARCH)
-        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
+        // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
+        if (getSIMDSupportLevel() >= SIMD_AVX2_Supported)
         {
             return YMM_REGSIZE_BYTES;
         }
@@ -8829,6 +8855,10 @@ private:
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+            {
+                return ZMM_REGSIZE_BYTES;
+            }
             return YMM_REGSIZE_BYTES;
         }
         else
@@ -8870,6 +8900,10 @@ public:
         {
             simdType = TYP_SIMD32;
         }
+        else if (size == 64)
+        {
+            simdType = TYP_SIMD64;
+        }
 #endif // TARGET_XARCH
         else
         {
@@ -8906,7 +8940,7 @@ public:
             // otherwise cause the highest level of instruction set support to be reported to crossgen2.
             // and this api is only ever used as an optimization or assert, so no reporting should
             // ever happen.
-            return YMM_REGSIZE_BYTES;
+            return ZMM_REGSIZE_BYTES;
         }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         unsigned vectorRegSize = maxSIMDStructBytes();
@@ -9066,6 +9100,38 @@ private:
         // Report intent to use the ISA to the EE
         compExactlyDependsOn(isa);
         return opts.compSupportsISA.HasInstructionSet(isa);
+    }
+
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // IsBaselineVector512IsaSupportedDebugOnly - Does the target have isa support required for Vector512.
+    //
+    // Returns:
+    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //
+    bool IsBaselineVector512IsaSupportedDebugOnly() const
+    {
+#ifdef TARGET_AMD64
+        return (compIsaSupportedDebugOnly(InstructionSet_Vector512));
+#else
+        return false;
+#endif
+    }
+#endif // DEBUG
+
+    //------------------------------------------------------------------------
+    // IsBaselineVector512IsaSupported - Does the target have isa support required for Vector512.
+    //
+    // Returns:
+    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //
+    bool IsBaselineVector512IsaSupported() const
+    {
+#ifdef TARGET_AMD64
+        return (compExactlyDependsOn(InstructionSet_Vector512));
+#else
+        return false;
+#endif
     }
 
     bool canUseVexEncoding() const
@@ -9453,9 +9519,10 @@ public:
         bool optRepeat; // Repeat optimizer phases k times
 #endif
 
-        bool disAsm;      // Display native code as it is generated
-        bool dspDiffable; // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
-        bool disDiffable; // Makes the Disassembly code 'diff-able'
+        bool disAsm;       // Display native code as it is generated
+        bool dspDiffable;  // Makes the Jit Dump 'diff-able' (currently uses same DOTNET_* flag as disDiffable)
+        bool disDiffable;  // Makes the Disassembly code 'diff-able'
+        bool disAlignment; // Display alignment boundaries in disassembly code
 #ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated
@@ -9468,7 +9535,6 @@ public:
         bool disAsmSpilled;            // Display native code when any register spilling occurs
         bool disasmWithGC;             // Display GC info interleaved with disassembly.
         bool disAddr;                  // Display process address next to each instruction in disassembly code
-        bool disAlignment;             // Display alignment boundaries in disassembly code
         bool disAsm2;                  // Display native code after it is generated using external disassembler
         bool dspOrder;                 // Display names of each of the methods that we ngen/jit
         bool dspUnwind;                // Display the unwind info output
@@ -9555,7 +9621,7 @@ public:
 
 #if defined(TARGET_ARM64)
         // Decision about whether to save FP/LR registers with callee-saved registers (see
-        // COMPlus_JitSaveFpLrWithCalleSavedRegisters).
+        // DOTNET_JitSaveFpLrWithCalleSavedRegisters).
         int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif // defined(TARGET_ARM64)
 
@@ -10158,7 +10224,7 @@ public:
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
     // have them run within this method.  They will be run only once per process, and only
-    // in debug.  (Perhaps should be under the control of a COMPlus_ flag.)
+    // in debug.  (Perhaps should be under the control of a DOTNET_ flag.)
     // These should fail by asserting.
     void compDoComponentUnitTestsOnce();
 #endif // DEBUG
@@ -10540,7 +10606,7 @@ public:
     static fgWalkPreFn gsReplaceShadowParams;     // Shadow param replacement tree-walk
 
 #define DEFAULT_MAX_INLINE_SIZE 100 // Methods with >  DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.
-                                    // This can be overwritten by setting complus_JITInlineSize env variable.
+                                    // This can be overwritten by setting DOTNET_JITInlineSize env variable.
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
 

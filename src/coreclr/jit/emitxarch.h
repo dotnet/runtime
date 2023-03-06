@@ -285,6 +285,10 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vfnmsub231sd:
         case INS_unpcklpd:
         case INS_vpermilpdvar:
+        case INS_movdqu16:
+        case INS_movdqu64:
+        case INS_vinsertf64x4:
+        case INS_vinserti64x4:
         {
             return true; // W1
         }
@@ -398,6 +402,10 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vpdpbusds:
         case INS_vpdpwssds:
         case INS_vpermilpsvar:
+        case INS_movdqu8:
+        case INS_movdqu32:
+        case INS_vinsertf32x8:
+        case INS_vinserti32x8:
         {
             return false; // W0
         }
@@ -614,14 +622,14 @@ void SetContainsAVX(bool value)
     containsAVXInstruction = value;
 }
 
-bool contains256bitAVXInstruction = false;
-bool Contains256bitAVX()
+bool contains256bitOrMoreAVXInstruction = false;
+bool Contains256bitOrMoreAVX()
 {
-    return contains256bitAVXInstruction;
+    return contains256bitOrMoreAVXInstruction;
 }
-void SetContains256bitAVX(bool value)
+void SetContains256bitOrMoreAVX(bool value)
 {
-    contains256bitAVXInstruction = value;
+    contains256bitOrMoreAVXInstruction = value;
 }
 
 bool IsDstDstSrcAVXInstruction(instruction ins);
@@ -661,6 +669,7 @@ void emitDispShift(instruction ins, int cnt = 0);
 
 const char* emitXMMregName(unsigned reg);
 const char* emitYMMregName(unsigned reg);
+const char* emitZMMregName(unsigned reg);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -722,7 +731,7 @@ inline emitter::opSize emitEncodeScale(size_t scale)
 {
     assert(scale == 1 || scale == 2 || scale == 4 || scale == 8);
 
-    return emitSizeEncode[scale - 1];
+    return static_cast<emitter::opSize>(genLog2((unsigned int)scale));
 }
 
 inline emitAttr emitDecodeScale(unsigned ensz)
