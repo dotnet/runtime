@@ -473,7 +473,7 @@ namespace System.Xml
             return defaultPrefix;
         }
 
-        private object? GetNodeValue()
+        private string? GetNodeValue()
         {
             return _currentNode!.Value;
         }

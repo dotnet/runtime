@@ -184,7 +184,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static IDictionary<string, object?> GetPartMetadataForType(this Type type, CreationPolicy creationPolicy)
         {
-            IDictionary<string, object?> dictionary = new Dictionary<string, object?>(StringComparers.MetadataKeyNames);
+            var dictionary = new Dictionary<string, object?>(StringComparers.MetadataKeyNames);
 
             if (creationPolicy != CreationPolicy.Any)
             {

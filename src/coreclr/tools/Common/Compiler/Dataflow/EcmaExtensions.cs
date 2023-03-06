@@ -111,6 +111,7 @@ namespace ILCompiler.Dataflow
                 MetadataType type => type.ContainingType,
                 PropertyPseudoDesc property => property.OwningType,
                 EventPseudoDesc @event => @event.OwningType,
+                ModuleDesc => null,
                 _ => throw new NotImplementedException("Unexpected type system entity")
             };
         }

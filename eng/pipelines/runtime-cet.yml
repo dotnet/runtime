@@ -74,7 +74,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
           platforms:
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: innerloop
 

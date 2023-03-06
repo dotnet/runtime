@@ -1696,7 +1696,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         //     table. This satisfies the vast majority of practical cases where the total amount of loaded native image memory
         //     does not exceed approximately 2 GB.
         //   - The code heap allocator for the JIT can allocate from this address space. Beyond this reservation, one can use
-        //     the COMPlus_CodeHeapReserveForJumpStubs environment variable to reserve space for jump stubs.
+        //     the DOTNET_CodeHeapReserveForJumpStubs environment variable to reserve space for jump stubs.
         sizeOfAllocation = MaxExecutableMemorySize;
         m_startAddress = ReserveVirtualMemory(pthrCurrent, nullptr, sizeOfAllocation, MEM_RESERVE_EXECUTABLE);
         if (m_startAddress == nullptr)

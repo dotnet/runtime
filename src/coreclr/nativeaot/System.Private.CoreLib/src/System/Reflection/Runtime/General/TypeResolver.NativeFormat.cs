@@ -17,6 +17,7 @@ using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
+using NativeFormatModifiedType = global::Internal.Metadata.NativeFormat.ModifiedType;
 
 namespace System.Reflection.Runtime.General
 {
@@ -45,7 +46,7 @@ namespace System.Reflection.Runtime.General
                 return typeDefRefOrSpec.ToTypeSpecificationHandle(reader).TryResolveTypeSignature(reader, typeContext, ref exception);
             else if (handleType == HandleType.ModifiedType)
             {
-                ModifiedType modifiedType = typeDefRefOrSpec.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                NativeFormatModifiedType modifiedType = typeDefRefOrSpec.ToModifiedTypeHandle(reader).GetModifiedType(reader);
                 return modifiedType.Type.TryResolve(reader, typeContext, ref exception);
             }
             else
@@ -133,7 +134,7 @@ namespace System.Reflection.Runtime.General
                                 return null;
                             genericTypeArguments.Add(genericTypeArgument);
                         }
-                        return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments.ToArray());
+                        return genericTypeDefinition.GetConstructedGenericTypeNoConstraintCheck(genericTypeArguments.ToArray());
                     }
 
                 case HandleType.TypeReference:
@@ -185,13 +186,13 @@ namespace System.Reflection.Runtime.General
             if (outerTypeInfo != null)
             {
                 // It was a nested type. We've already resolved the containing type recursively - just find the nested among its direct children.
-                TypeInfo? resolvedTypeInfo = outerTypeInfo.GetDeclaredNestedType(name);
-                if (resolvedTypeInfo == null)
+                Type? resolvedType = outerTypeInfo.GetNestedType(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                if (resolvedType == null)
                 {
                     exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly);
                     return null;
                 }
-                return resolvedTypeInfo.CastToRuntimeTypeInfo();
+                return resolvedType.CastToRuntimeTypeInfo();
             }
 
 

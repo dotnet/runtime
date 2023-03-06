@@ -2072,7 +2072,7 @@ namespace System.Xml
             }
         }
 
-        private static Exception InvalidCharsException(string name, int badCharIndex)
+        private static ArgumentException InvalidCharsException(string name, int badCharIndex)
         {
             string[] badCharArgs = XmlException.BuildCharExceptionArgs(name, badCharIndex);
             string[] args = new string[3];

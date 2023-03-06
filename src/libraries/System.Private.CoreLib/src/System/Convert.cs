@@ -102,8 +102,6 @@ namespace System
         // Need to special case Enum because typecode will be underlying type, e.g. Int32
         private static readonly Type EnumType = typeof(Enum);
 
-        internal const string Base64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-
         private const int Base64LineBreakPosition = 76;
         private const int Base64VectorizationLengthThreshold = 16;
 
@@ -2535,8 +2533,8 @@ namespace System
             // Convert three bytes at a time to base64 notation.  This will consume 4 chars.
             int i;
 
-            // get a pointer to the Base64Table to avoid unnecessary range checking
-            fixed (char* base64 = Base64Table)
+            // get a pointer to the base64 table to avoid unnecessary range checking
+            fixed (byte* base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="u8)
             {
                 for (i = offset; i < calcLength; i += 3)
                 {
@@ -2550,10 +2548,10 @@ namespace System
                         }
                         charcount += 4;
                     }
-                    outChars[j] = base64[(inData[i] & 0xfc) >> 2];
-                    outChars[j + 1] = base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                    outChars[j + 2] = base64[((inData[i + 1] & 0x0f) << 2) | ((inData[i + 2] & 0xc0) >> 6)];
-                    outChars[j + 3] = base64[inData[i + 2] & 0x3f];
+                    outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
+                    outChars[j + 1] = (char)base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
+                    outChars[j + 2] = (char)base64[((inData[i + 1] & 0x0f) << 2) | ((inData[i + 2] & 0xc0) >> 6)];
+                    outChars[j + 3] = (char)base64[inData[i + 2] & 0x3f];
                     j += 4;
                 }
 
@@ -2569,17 +2567,17 @@ namespace System
                 switch (lengthmod3)
                 {
                     case 2: // One character padding needed
-                        outChars[j] = base64[(inData[i] & 0xfc) >> 2];
-                        outChars[j + 1] = base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                        outChars[j + 2] = base64[(inData[i + 1] & 0x0f) << 2];
-                        outChars[j + 3] = base64[64]; // Pad
+                        outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
+                        outChars[j + 1] = (char)base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
+                        outChars[j + 2] = (char)base64[(inData[i + 1] & 0x0f) << 2];
+                        outChars[j + 3] = (char)base64[64]; // Pad
                         j += 4;
                         break;
                     case 1: // Two character padding needed
-                        outChars[j] = base64[(inData[i] & 0xfc) >> 2];
-                        outChars[j + 1] = base64[(inData[i] & 0x03) << 4];
-                        outChars[j + 2] = base64[64]; // Pad
-                        outChars[j + 3] = base64[64]; // Pad
+                        outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
+                        outChars[j + 1] = (char)base64[(inData[i] & 0x03) << 4];
+                        outChars[j + 2] = (char)base64[64]; // Pad
+                        outChars[j + 3] = (char)base64[64]; // Pad
                         j += 4;
                         break;
                 }

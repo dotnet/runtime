@@ -35,8 +35,6 @@ namespace Microsoft.NET.HostModel.Bundle
             Arch = arch ?? RuntimeInformation.OSArchitecture;
             FrameworkVersion = targetFrameworkVersion ?? Environment.Version;
 
-            Debug.Assert(IsLinux || IsOSX || IsWindows);
-
             if (FrameworkVersion.Major >= 6)
             {
                 BundleMajorVersion = 6u;
@@ -79,7 +77,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public bool IsNativeBinary(string filePath)
         {
-            return IsLinux ? ElfUtils.IsElfImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : PEUtils.IsPEImage(filePath);
+            return IsWindows ? PEUtils.IsPEImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : ElfUtils.IsElfImage(filePath);
         }
 
         public string GetAssemblyName(string hostName)
@@ -91,15 +89,16 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public override string ToString()
         {
-            string os = IsWindows ? "win" : IsLinux ? "linux" : "osx";
+            string os = IsWindows ? "win" : OS.ToString().ToLowerInvariant();
             string arch = Arch.ToString().ToLowerInvariant();
             return $"OS: {os} Arch: {arch} FrameworkVersion: {FrameworkVersion}";
         }
 
-        private static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
-                                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX : OSPlatform.Windows;
+        private static readonly OSPlatform s_freebsdOSPlatform = OSPlatform.Create("FREEBSD");
 
-        public bool IsLinux => OS.Equals(OSPlatform.Linux);
+        private static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
+                                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX : RuntimeInformation.IsOSPlatform(s_freebsdOSPlatform) ? s_freebsdOSPlatform : OSPlatform.Windows;
+
         public bool IsOSX => OS.Equals(OSPlatform.OSX);
         public bool IsWindows => OS.Equals(OSPlatform.Windows);
 
@@ -116,7 +115,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public bool ShouldExclude(string relativePath) =>
             (FrameworkVersion.Major != 3) && (relativePath.Equals(HostFxr) || relativePath.Equals(HostPolicy));
 
-        private string HostFxr => IsWindows ? "hostfxr.dll" : IsLinux ? "libhostfxr.so" : "libhostfxr.dylib";
-        private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsLinux ? "libhostpolicy.so" : "libhostpolicy.dylib";
+        private string HostFxr => IsWindows ? "hostfxr.dll" : IsOSX ? "libhostfxr.dylib" : "libhostfxr.so";
+        private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsOSX ? "libhostpolicy.dylib" : "libhostpolicy.so";
     }
 }

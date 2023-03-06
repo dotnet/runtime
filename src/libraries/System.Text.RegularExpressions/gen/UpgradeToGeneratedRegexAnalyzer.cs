@@ -193,7 +193,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     try
                     {
-                        _ = RegexParser.ParseOptionsInPattern(argument.Value.ConstantValue.Value as string, RegexOptions.None);
+                        _ = RegexParser.ParseOptionsInPattern((string)argument.Value.ConstantValue.Value!, RegexOptions.None);
                     }
                     catch (RegexParseException)
                     {

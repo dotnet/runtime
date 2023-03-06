@@ -98,9 +98,12 @@ namespace Microsoft.Extensions.Primitives
                 {
                     return;
                 }
-
                 IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
-
+                if (token.HasChanged && token.ActiveChangeCallbacks)
+                {
+                    registraton?.Dispose();
+                    return;
+                }
                 SetDisposable(registraton);
             }
 

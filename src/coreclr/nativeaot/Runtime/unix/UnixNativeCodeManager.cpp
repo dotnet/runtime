@@ -278,6 +278,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 }
 
 bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
+                                             uint32_t        flags,
                                              REGDISPLAY *    pRegisterSet,                 // in/out
                                              PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
@@ -314,10 +315,16 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         }
 
         *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
-        return true;
-    }
 
-    *ppPreviousTransitionFrame = NULL;
+        if ((flags & USFF_StopUnwindOnTransitionFrame) != 0)
+        {
+            return true;
+        }
+    }
+    else
+    {
+        *ppPreviousTransitionFrame = NULL;
+    }
 
     if (!VirtualUnwind(pRegisterSet)) 
     {

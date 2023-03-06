@@ -26,13 +26,13 @@ build.sh --os browser
 For Apple targets:
 
 ```console
-build.sh --os MacCatalyst -s Mono+Libs
+build.sh --os maccatalyst -s mono+libs
 ```
 
 or
 
 ```console
-build.sh --os iOSSimulator -s Mono+Libs
+build.sh --os iossimulator -s mono+libs
 ```
 
 ## Running

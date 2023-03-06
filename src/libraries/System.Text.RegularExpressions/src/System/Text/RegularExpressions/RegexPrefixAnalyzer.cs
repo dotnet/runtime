@@ -484,7 +484,7 @@ namespace System.Text.RegularExpressions
                             // and it is primarily meant for disambiguation of ASCII letters.
                             if (c < 128)
                             {
-                                sum += s_frequency[c];
+                                sum += Frequency[c];
                             }
                         }
                         return sum;
@@ -928,7 +928,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
-        private static readonly float[] s_frequency = new float[]
+        private static ReadOnlySpan<float> Frequency => new float[]
         {
             0.000f /* '\x00' */, 0.000f /* '\x01' */, 0.000f /* '\x02' */, 0.000f /* '\x03' */, 0.000f /* '\x04' */, 0.000f /* '\x05' */, 0.000f /* '\x06' */, 0.000f /* '\x07' */,
             0.000f /* '\x08' */, 0.001f /* '\x09' */, 0.000f /* '\x0A' */, 0.000f /* '\x0B' */, 0.000f /* '\x0C' */, 0.000f /* '\x0D' */, 0.000f /* '\x0E' */, 0.000f /* '\x0F' */,
@@ -972,7 +972,7 @@ namespace System.Text.RegularExpressions
         // long total = counts.Sum(i => i.Value);
         //
         // Console.WriteLine("/// <summary>Percent occurrences in source text (100 * char count / total count).</summary>");
-        // Console.WriteLine("private static readonly float[] s_frequency = new float[]");
+        // Console.WriteLine("private static ReadOnlySpan<float> Frequency => new float[]");
         // Console.WriteLine("{");
         // int i = 0;
         // for (int row = 0; row < 16; row++)

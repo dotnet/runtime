@@ -144,7 +144,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs"
              Link="Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'Wasi'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Browser.cs"
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Browser.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs"

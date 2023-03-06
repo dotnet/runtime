@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates
             return FromBlobOrFile(ReadOnlySpan<byte>.Empty, fileName, password, keyStorageFlags);
         }
 
-        private static ICertificatePal FromBlobOrFile(ReadOnlySpan<byte> rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static CertificatePal FromBlobOrFile(ReadOnlySpan<byte> rawData, string? fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(!rawData.IsEmpty || fileName != null);
             Debug.Assert(password != null);

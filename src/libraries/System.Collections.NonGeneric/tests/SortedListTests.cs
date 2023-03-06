@@ -218,7 +218,7 @@ namespace System.Collections.Tests
             Assert.Equal("Count = 0", DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute_NormalList()
         {
             var list = new SortedList() { { "a", 1 }, { "b", 2 } };
@@ -228,7 +228,7 @@ namespace System.Collections.Tests
             Assert.Equal(list.Count, items.Length);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute_SynchronizedList()
         {
             var list = SortedList.Synchronized(new SortedList() { { "a", 1 }, { "b", 2 } });
@@ -238,7 +238,7 @@ namespace System.Collections.Tests
             Assert.Equal(list.Count, items.Length);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute_NullSortedList_ThrowsArgumentNullException()
         {
             bool threwNull = false;

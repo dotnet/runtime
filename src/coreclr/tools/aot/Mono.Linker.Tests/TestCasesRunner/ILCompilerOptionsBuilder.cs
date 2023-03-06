@@ -68,6 +68,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkXmlFile (string file)
 		{
+			Options.Descriptors.Add (file);
 		}
 
 		public virtual void AddResponseFile (NPath path)
@@ -161,6 +162,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			if (flag == "--feature") {
 				Options.FeatureSwitches.Add (values[0], bool.Parse (values[1]));
+			}
+			else if (flag == "--singlewarn") {
+				Options.SingleWarn = true;
 			}
 		}
 

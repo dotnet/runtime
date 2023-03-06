@@ -466,43 +466,6 @@ namespace System.Threading
             }
         }
 
-        // The upper bits of t_currentProcessorIdCache are the currentProcessorId. The lower bits of
-        // the t_currentProcessorIdCache are counting down to get it periodically refreshed.
-        // TODO: Consider flushing the currentProcessorIdCache on Wait operations or similar
-        // actions that are likely to result in changing the executing core
-        [ThreadStatic]
-        private static int t_currentProcessorIdCache;
-
-        private const int ProcessorIdCacheShift = 16;
-        private const int ProcessorIdCacheCountDownMask = (1 << ProcessorIdCacheShift) - 1;
-        private const int ProcessorIdRefreshRate = 5000;
-
-        private static int RefreshCurrentProcessorId()
-        {
-            int currentProcessorId = ComputeCurrentProcessorId();
-
-            // Add offset to make it clear that it is not guaranteed to be 0-based processor number
-            currentProcessorId += 100;
-
-            Debug.Assert(ProcessorIdRefreshRate <= ProcessorIdCacheCountDownMask);
-
-            // Mask with int.MaxValue to ensure the execution Id is not negative
-            t_currentProcessorIdCache = ((currentProcessorId << ProcessorIdCacheShift) & int.MaxValue) + ProcessorIdRefreshRate;
-
-            return currentProcessorId;
-        }
-
-        // Cached processor id used as a hint for which per-core stack to access. It is periodically
-        // refreshed to trail the actual thread core affinity.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetCurrentProcessorId()
-        {
-            int currentProcessorIdCache = t_currentProcessorIdCache--;
-            if ((currentProcessorIdCache & ProcessorIdCacheCountDownMask) == 0)
-                return RefreshCurrentProcessorId();
-            return (currentProcessorIdCache >> ProcessorIdCacheShift);
-        }
-
         internal static void IncrementRunningForeground()
         {
             Interlocked.Increment(ref s_foregroundRunningCount);

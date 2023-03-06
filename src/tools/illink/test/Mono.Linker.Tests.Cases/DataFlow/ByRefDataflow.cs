@@ -44,12 +44,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		// Trimmer and analyzer use different formats for ref parameters: https://github.com/dotnet/linker/issues/2406
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", ProducedBy = ProducedBy.Analyzer)]
-		[ExpectedWarning ("IL2069", nameof (s_typeWithPublicParameterlessConstructor), "parameter 'type'", nameof (MethodWithRefParameter), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2069", nameof (s_typeWithPublicParameterlessConstructor), "parameter 'type'", nameof (MethodWithRefParameter), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		// MethodWithRefParameter (ref x)
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", ProducedBy = Tool.Analyzer)]
 		public static void PassRefToField ()
 		{
 			MethodWithRefParameter (ref s_typeWithPublicParameterlessConstructor);
@@ -59,8 +59,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		// Trimmer and analyzer use different formats for ref parameters: https://github.com/dotnet/linker/issues/2406
-		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", ProducedBy = Tool.Analyzer)]
 		public static void PassRefToParameter (Type parameter)
 		{
 			MethodWithRefParameter (ref parameter);
@@ -180,8 +180,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[Kept]
 			// https://github.com/dotnet/linker/issues/2874
-			[ExpectedWarning ("IL2069", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2069", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL2069", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2069", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			public static void Test ()
 			{
 				TwoOutRefs (out _publicMethodsField, out _publicPropertiesField);

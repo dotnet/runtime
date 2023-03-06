@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
-  <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
-  </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
+  </ItemGroup>
 </Project>

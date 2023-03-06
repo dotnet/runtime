@@ -1545,10 +1545,10 @@ GenTree* DecomposeLongs::DecomposeSelect(LIR::Use& use)
 
     // Normally GT_SELECT is responsible for evaluating the condition into
     // flags, but for the "upper half" we treat the lower GT_SELECT similar to
-    // other flag producing nodes and reuse them. GT_SELECT_HI is the variant
+    // other flag producing nodes and reuse them. GT_SELECTCC is the variant
     // that uses existing flags and has no condition as part of it.
     select->gtFlags |= GTF_SET_FLAGS;
-    GenTree* hiSelect = m_compiler->gtNewOperNode(GT_SELECT_HI, TYP_INT, hiOp1, hiOp2);
+    GenTree* hiSelect = m_compiler->gtNewOperCC(GT_SELECTCC, TYP_INT, GenCondition::NE, hiOp1, hiOp2);
 
     Range().InsertAfter(select, hiSelect);
 

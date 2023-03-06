@@ -17,7 +17,6 @@
 #include "thread.h"
 #include "holder.h"
 #include "rhbinder.h"
-#include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "RuntimeInstance.h"

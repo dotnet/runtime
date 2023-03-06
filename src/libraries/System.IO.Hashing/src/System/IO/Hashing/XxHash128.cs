@@ -181,8 +181,9 @@ namespace System.IO.Hashing
                 fixed (byte* secret = _state.Secret)
                 {
                     DigestLong(ref _state, accumulators, secret);
-                    current.Low64 = MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, _state.TotalLength * Prime64_1);
-                    current.High64 = MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(_state.TotalLength * Prime64_2));
+                    current = new Hash128(
+                        low64: MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, _state.TotalLength * Prime64_1),
+                        high64: MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(_state.TotalLength * Prime64_2)));
                 }
             }
             else
@@ -223,7 +224,6 @@ namespace System.IO.Hashing
             Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest0, new IntPtr(sizeof(ulong))), low);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Hash128 HashLength0To16(byte* source, uint length, ulong seed)
         {
             if (length > 8)
@@ -402,10 +402,9 @@ namespace System.IO.Hashing
 
                 HashInternalLoop(accumulators, source, length, secret);
 
-                Hash128 h128;
-                h128.Low64 = MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, length * Prime64_1);
-                h128.High64 = MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(length * Prime64_2));
-                return h128;
+                return new Hash128(
+                    low64:  MergeAccumulators(accumulators, secret + SecretMergeAccsStartBytes, length * Prime64_1),
+                    high64: MergeAccumulators(accumulators, secret + SecretLengthBytes - AccumulatorCount * sizeof(ulong) - SecretMergeAccsStartBytes, ~(length * Prime64_2)));
             }
         }
 
@@ -431,10 +430,10 @@ namespace System.IO.Hashing
         }
 
         [DebuggerDisplay("Low64: {" + nameof(Low64) + "}, High64: {" + nameof(High64) + "}")]
-        private struct Hash128
+        private readonly struct Hash128
         {
-            public ulong Low64;
-            public ulong High64;
+            public readonly ulong Low64;
+            public readonly ulong High64;
 
             public Hash128(ulong low64, ulong high64)
             {

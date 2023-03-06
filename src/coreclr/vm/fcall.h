@@ -1304,7 +1304,7 @@ public:
 //      FC_RETURN_BOOL(ret);    // return statements should be FC_RETURN_BOOL
 // FCIMPLEND
 
-// This rules are verified in binder.cpp if COMPlus_ConsistencyCheck is set.
+// This rules are verified in binder.cpp if DOTNET_ConsistencyCheck is set.
 
 #ifdef _PREFAST_
 

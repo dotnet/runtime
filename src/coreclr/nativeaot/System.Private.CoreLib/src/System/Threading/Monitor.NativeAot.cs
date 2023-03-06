@@ -93,8 +93,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             int resultOrIndex = ObjectHeader.TryAcquire(obj);
             if (resultOrIndex < 0)

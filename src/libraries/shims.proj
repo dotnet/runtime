@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS.ToLowerInvariant())</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
   </PropertyGroup>
 
   <!-- Reference the source project shims which themselves then reference their corresponding ref project, if it exists. -->

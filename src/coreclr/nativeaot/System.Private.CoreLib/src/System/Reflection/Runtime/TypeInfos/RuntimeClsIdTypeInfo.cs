@@ -34,6 +34,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override string Namespace => BaseType.Namespace;
         public sealed override StructLayoutAttribute StructLayoutAttribute => BaseType.StructLayoutAttribute;
         public sealed override string ToString() => BaseType.ToString();
+        public sealed override bool IsByRefLike => false;
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes
         {

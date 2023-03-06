@@ -1700,7 +1700,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
 
                 indir->gtFlags |= GTF_ORDER_SIDEEFF | GTF_IND_NONFAULTING;
                 indir->gtFlags &= ~GTF_EXCEPT;
-                assert(!fgStmtListThreaded);
+                assert(fgNodeThreading == NodeThreading::None);
                 gtUpdateStmtSideEffects(stmt);
 
                 JITDUMP("After:\n");
@@ -3156,7 +3156,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
 
 //----------------------------------------------------------------------------
 // optLoopCloningEnabled: Determine whether loop cloning is allowed. It is allowed
-// in release builds. For debug builds, use the value of the COMPlus_JitCloneLoops
+// in release builds. For debug builds, use the value of the DOTNET_JitCloneLoops
 // flag (which defaults to 1, or allowed).
 //
 // Return Value:
@@ -3286,9 +3286,8 @@ PhaseStatus Compiler::optCloneLoops()
     if (optLoopsCloned > 0)
     {
         JITDUMP("Recompute reachability and dominators after loop cloning\n");
-        constexpr bool computePreds = false;
         // TODO: recompute the loop table, to include the slow loop path in the table?
-        fgUpdateChangedFlowGraph(computePreds);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
 #ifdef DEBUG

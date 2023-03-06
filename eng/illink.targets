@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
+    <!-- Don't use SDK's trimming functionality. -->
+    <_IsTrimmingEnabled>false</_IsTrimmingEnabled>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
 

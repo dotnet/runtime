@@ -1267,13 +1267,14 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
     if(m_wzResourceFile)
     {
+        MAKE_UTF8PTR_FROMWIDE(szResourceFileUtf8, m_wzResourceFile);
 #ifdef TARGET_UNIX
-        report->msg("Warning: The Win32 resource file '%S' is ignored and not emitted on xPlatform.\n", m_wzResourceFile);
+        report->msg("Warning: The Win32 resource file '%s' is ignored and not emitted on xPlatform.\n", szResourceFileUtf8);
 #else
         if (FAILED(hr=m_pCeeFileGen->SetResourceFileName(m_pCeeFile, m_wzResourceFile)))
         {
-            report->msg("Warning: failed to set Win32 resource file name '%S', hr=0x%8.8X\n         The Win32 resource is not emitted.\n",
-                        m_wzResourceFile, hr);
+            report->msg("Warning: failed to set Win32 resource file name '%s', hr=0x%8.8X\n         The Win32 resource is not emitted.\n",
+                        szResourceFileUtf8, hr);
         }
 #endif
     }
@@ -1565,12 +1566,12 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             }
             else
             {
-                report->msg("Error: failed to open mgd resource file '%ls'\n",m_pManifest->m_wzMResName[i]);
+                report->msg("Error: failed to open mgd resource file '%s'\n",sz);
                 mrfail = TRUE;
             }
             if(sizeread < L)
             {
-                report->msg("Error: failed to read expected %d bytes from mgd resource file '%ls'\n",L,m_pManifest->m_wzMResName[i]);
+                report->msg("Error: failed to read expected %d bytes from mgd resource file '%s'\n",L,sz);
                 mrfail = TRUE;
                 L -= sizeread;
                 memset(ptr,0,L);

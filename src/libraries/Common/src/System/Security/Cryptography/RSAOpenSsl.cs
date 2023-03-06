@@ -902,7 +902,7 @@ namespace System.Security.Cryptography
 
         static partial void ThrowIfNotSupported();
 
-        private static Exception PaddingModeNotSupported() =>
+        private static CryptographicException PaddingModeNotSupported() =>
             new CryptographicException(SR.Cryptography_InvalidPaddingMode);
     }
 }

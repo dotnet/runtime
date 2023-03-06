@@ -10,10 +10,17 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Text.RegularExpressions;
+#if !READYTORUN
+using System.Xml;
+#endif
 using System.Xml.Linq;
 using System.Xml.XPath;
 
 using ILCompiler.Dataflow;
+#if !READYTORUN
+using ILCompiler.Logging;
+using ILLink.Shared;
+#endif
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -46,13 +53,16 @@ namespace ILCompiler
 
         protected readonly string _xmlDocumentLocation;
         private readonly XPathNavigator _document;
+        private readonly Logger _logger;
         protected readonly ModuleDesc? _owningModule;
+        protected readonly bool _globalAttributeRemoval;
         private readonly IReadOnlyDictionary<string, bool> _featureSwitchValues;
         protected readonly TypeSystemContext _context;
 
-        protected ProcessLinkerXmlBase(TypeSystemContext context, Stream documentStream, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        protected ProcessLinkerXmlBase(Logger logger, TypeSystemContext context, Stream documentStream, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
         {
             _context = context;
+            _logger = logger;
             using (documentStream)
             {
                 _document = XDocument.Load(documentStream, LoadOptions.SetLineInfo).CreateNavigator();
@@ -61,10 +71,11 @@ namespace ILCompiler
             _featureSwitchValues = featureSwitchValues;
         }
 
-        protected ProcessLinkerXmlBase(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
-            : this(context, documentStream, xmlDocumentLocation, featureSwitchValues)
+        protected ProcessLinkerXmlBase(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval = false)
+            : this(logger, context, documentStream, xmlDocumentLocation, featureSwitchValues)
         {
             _owningModule = resourceAssembly;
+            _globalAttributeRemoval = globalAttributeRemoval;
         }
 
         protected virtual bool ShouldProcessElement(XPathNavigator nav) => FeatureSettings.ShouldProcessElement(nav, _featureSwitchValues);
@@ -78,7 +89,7 @@ namespace ILCompiler
             {
                 XPathNavigator nav = _document.CreateNavigator();
 
-                // Initial structure check - ignore XML document which don't look like linker XML format
+                // Initial structure check - ignore XML document which don't look like ILLink XML format
                 if (!nav.MoveToChild(LinkerElementName, XmlNamespace))
                     return;
 
@@ -100,8 +111,11 @@ namespace ILCompiler
             }
             catch (Exception ex)
             {
-                // throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(null, DiagnosticId.ErrorProcessingXmlLocation, _xmlDocumentLocation), ex);
+#if READYTORUN
                 throw ex;
+#else
+                throw new NativeAotFatalErrorException(MessageContainer.CreateErrorMessage(null, DiagnosticId.ErrorProcessingXmlLocation, _xmlDocumentLocation), ex);
+#endif
             }
         }
 
@@ -121,46 +135,54 @@ namespace ILCompiler
         {
             foreach (XPathNavigator assemblyNav in nav.SelectChildren("assembly", ""))
             {
-                // Errors for invalid assembly names should show up even if this element will be
-                // skipped due to feature conditions.
-                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
-                if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
-                {
-                    //LogWarning(assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
-                    continue;
-                }
-
-                ModuleDesc? assemblyToProcess = null;
-                if (!AllowedAssemblySelector.HasFlag(AllowedAssemblies.AnyAssembly))
-                {
-                    Debug.Assert(!processAllAssemblies);
-                    Debug.Assert(_owningModule != null);
-                    if (_owningModule.Assembly.GetName().Name != name!.Name)
-                    {
-                        //LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _resource.Value.Assembly.Name.Name, name.ToString());
-                        continue;
-                    }
-                    assemblyToProcess = _owningModule;
-                }
-
                 if (!ShouldProcessElement(assemblyNav))
                     continue;
 
-                if (processAllAssemblies)
+                // Errors for invalid assembly names should show up even if this element will be
+                // skipped due to feature conditions.
+                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
+                if (processAllAssemblies && !_globalAttributeRemoval)
                 {
-                    throw new NotImplementedException();
-                    // We could avoid loading all references in this case: https://github.com/dotnet/linker/issues/1708
-                    //foreach (ModuleDesc assembly in GetReferencedAssemblies())
-                    //    ProcessAssembly(assembly, assemblyNav, warnOnUnresolvedTypes: false);
+#if !READYTORUN
+                    if (AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
+                        LogWarning(assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
+#endif
+                    continue;
+                }
+                else if (!processAllAssemblies && _globalAttributeRemoval)
+                {
+                    continue;
+                }
+                else if (processAllAssemblies && _globalAttributeRemoval)
+                {
+                    Debug.Assert(_owningModule != null);
+                    ProcessAssembly(_owningModule, assemblyNav, warnOnUnresolvedTypes: false);
                 }
                 else
                 {
+                    ModuleDesc? assemblyToProcess = null;
+                    if (!AllowedAssemblySelector.HasFlag(AllowedAssemblies.AnyAssembly))
+                    {
+                        Debug.Assert(!processAllAssemblies);
+                        Debug.Assert(_owningModule != null);
+                        if (_owningModule.Assembly.GetName().Name != name!.Name)
+                        {
+#if !READYTORUN
+                            LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _owningModule.Assembly.GetName().Name ?? "", name.ToString());
+#endif
+                            continue;
+                        }
+                        assemblyToProcess = _owningModule;
+                    }
+
                     Debug.Assert(!processAllAssemblies);
-                    ModuleDesc? assembly = assemblyToProcess ?? _context.ResolveAssembly(name!);
+                    ModuleDesc? assembly = assemblyToProcess ?? _context.ResolveAssembly(name!, false);
 
                     if (assembly == null)
                     {
-                        //LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name);
+#if !READYTORUN
+                        LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name ?? "");
+#endif
                         continue;
                     }
 
@@ -190,16 +212,14 @@ namespace ILCompiler
 
                 // TODO: Process exported types
 
-                // TODO: Semantics differ and xml format is cecil specific, therefore they are discrepancies on things like nested types
-                // for now just hack replacing / for + to support basic resolving of nested types
-                // https://github.com/dotnet/runtime/issues/73083
-                fullname = fullname.Replace("/", "+");
-                TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, fullname, throwIfNotFound: false);
+                TypeDesc? type = CecilCompatibleTypeParser.GetType(assembly, fullname);
 
                 if (type == null)
                 {
-                    //if (warnOnUnresolvedTypes)
-                    //    LogWarning(typeNav, DiagnosticId.XmlCouldNotResolveType, fullname);
+#if !READYTORUN
+                    if (warnOnUnresolvedTypes)
+                        LogWarning(typeNav, DiagnosticId.XmlCouldNotResolveType, fullname);
+#endif
                     continue;
                 }
 
@@ -256,7 +276,9 @@ namespace ILCompiler
                 FieldDesc? field = GetField(type, signature);
                 if (field == null)
                 {
-                    //LogWarning(nav, DiagnosticId.XmlCouldNotFindFieldOnType, signature, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.XmlCouldNotFindFieldOnType, signature, type.GetDisplayName());
+#endif
                     return;
                 }
 
@@ -279,7 +301,9 @@ namespace ILCompiler
 
                 if (!foundMatch)
                 {
-                    // LogWarning(nav, DiagnosticId.XmlCouldNotFindFieldOnType, name, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.XmlCouldNotFindFieldOnType, name, type.GetDisplayName());
+#endif
                 }
             }
         }
@@ -318,7 +342,9 @@ namespace ILCompiler
                 MethodDesc? method = GetMethod(type, signature);
                 if (method == null)
                 {
-                    //LogWarning(nav, DiagnosticId.XmlCouldNotFindMethodOnType, signature, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.XmlCouldNotFindMethodOnType, signature, type.GetDisplayName());
+#endif
                     return;
                 }
 
@@ -339,7 +365,9 @@ namespace ILCompiler
                 }
                 if (!foundMatch)
                 {
-                    // LogWarning(nav, DiagnosticId.XmlCouldNotFindMethodOnType, name, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.XmlCouldNotFindMethodOnType, name, type.GetDisplayName());
+#endif
                 }
             }
         }
@@ -366,7 +394,9 @@ namespace ILCompiler
                 EventPseudoDesc? @event = GetEvent(type, signature);
                 if (@event is null)
                 {
-                    // LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, signature, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, signature, type.GetDisplayName());
+#endif
                     return;
                 }
 
@@ -389,7 +419,9 @@ namespace ILCompiler
 
                 if (!foundMatch)
                 {
-                    // LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, name, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, name, type.GetDisplayName());
+#endif
                 }
             }
         }
@@ -422,7 +454,9 @@ namespace ILCompiler
                 PropertyPseudoDesc? property = GetProperty(type, signature);
                 if (property is null)
                 {
-                    // LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, signature, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, signature, type.GetDisplayName());
+#endif
                     return;
                 }
 
@@ -435,13 +469,15 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (PropertyPseudoDesc property in type.GetPropertiesOnTypeHierarchy(p => p.Name == name))
                 {
-                   foundMatch = true;
-                   ProcessProperty(type, property, nav, customData, false);
+                    foundMatch = true;
+                    ProcessProperty(type, property, nav, customData, false);
                 }
 
                 if (!foundMatch)
                 {
-                    //LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, name, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, name, type.GetDisplayName());
+#endif
                 }
             }
         }
@@ -506,21 +542,21 @@ namespace ILCompiler
             return sb.ToString();
         }
 
-#if false
+#if !READYTORUN
         protected MessageOrigin GetMessageOriginForPosition(XPathNavigator position)
         {
             return (position is IXmlLineInfo lineInfo)
-                    ? new MessageOrigin(_xmlDocumentLocation, lineInfo.LineNumber, lineInfo.LinePosition, _resource?.Assembly)
-                    : new MessageOrigin(_xmlDocumentLocation, 0, 0, _resource?.Assembly);
+                    ? new MessageOrigin(_xmlDocumentLocation, lineInfo.LineNumber, lineInfo.LinePosition, _owningModule)
+                    : new MessageOrigin(_xmlDocumentLocation, 0, 0, _owningModule);
         }
         protected void LogWarning(string message, int warningCode, XPathNavigator position)
         {
-            _context.LogWarning(message, warningCode, GetMessageOriginForPosition(position));
+            _logger.LogWarning(message, warningCode, GetMessageOriginForPosition(position));
         }
 
         protected void LogWarning(XPathNavigator position, DiagnosticId id, params string[] args)
         {
-            _context.LogWarning(GetMessageOriginForPosition(position), id, args);
+            _logger.LogWarning(GetMessageOriginForPosition(position), id, args);
         }
 #endif
 
@@ -711,6 +747,58 @@ namespace ILCompiler
                 return false;
             }
 #endif
+        }
+    }
+
+    public class CecilCompatibleTypeParser
+    {
+        public static TypeDesc? GetType(ModuleDesc assembly, string fullName)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(fullName));
+            var position = fullName.IndexOf('/');
+            if (position > 0)
+                return GetNestedType(assembly, fullName);
+            string @namespace, name;
+            SplitFullName(fullName, out @namespace, out name);
+
+            return assembly.GetType(@namespace, name, throwIfNotFound: false);
+        }
+
+        private static MetadataType? GetNestedType(ModuleDesc assembly, string fullName)
+        {
+            var names = fullName.Split('/');
+            var type = GetType(assembly, names[0]);
+
+            if (type == null)
+                return null;
+
+            MetadataType typeReference = (MetadataType)type;
+            for (int i = 1; i < names.Length; i++)
+            {
+                var nested_type = typeReference.GetNestedType(names[i]);
+                if (nested_type == null)
+                    return null;
+
+                typeReference = nested_type;
+            }
+
+            return typeReference;
+        }
+
+        public static void SplitFullName(string fullName, out string @namespace, out string name)
+        {
+            var last_dot = fullName.LastIndexOf('.');
+
+            if (last_dot == -1)
+            {
+                @namespace = string.Empty;
+                name = fullName;
+            }
+            else
+            {
+                @namespace = fullName.Substring(0, last_dot);
+                name = fullName.Substring(last_dot + 1);
+            }
         }
     }
 }

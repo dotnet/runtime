@@ -81,7 +81,7 @@ namespace System.Text
         /// </summary>
         /// <returns>An ASCII byte is defined as 0x00 - 0x7F, inclusive.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nuint GetIndexOfFirstNonAsciiByte(byte* pBuffer, nuint bufferLength)
+        internal static unsafe nuint GetIndexOfFirstNonAsciiByte(byte* pBuffer, nuint bufferLength)
         {
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
             // code below. This has two benefits: (a) we can take advantage of specific instructions like
@@ -617,7 +617,7 @@ namespace System.Text
         /// </summary>
         /// <returns>An ASCII char is defined as 0x0000 - 0x007F, inclusive.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nuint GetIndexOfFirstNonAsciiChar(char* pBuffer, nuint bufferLength /* in chars */)
+        internal static unsafe nuint GetIndexOfFirstNonAsciiChar(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // If SSE2/ASIMD is supported, use those specific intrinsics instead of the generic vectorized
             // code below. This has two benefits: (a) we can take advantage of specific instructions like
@@ -1152,7 +1152,7 @@ namespace System.Text
         /// or once <paramref name="elementCount"/> elements have been converted. Returns the total number
         /// of elements that were able to be converted.
         /// </summary>
-        private static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
+        internal static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             nuint currentOffset = 0;
 
@@ -1576,7 +1576,7 @@ namespace System.Text
         /// or once <paramref name="elementCount"/> elements have been converted. Returns the total number
         /// of elements that were able to be converted.
         /// </summary>
-        private static unsafe nuint WidenAsciiToUtf16(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
+        internal static unsafe nuint WidenAsciiToUtf16(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
             // Intrinsified in mono interpreter
             nuint currentOffset = 0;

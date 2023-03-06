@@ -33,6 +33,7 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 extern const std::string GetFileName(const std::string& fileName);
 extern const std::string GetDirectory(const std::string& fileName);
 extern std::string FormatString(const char* format, ...);
+extern std::string ConvertString(const WCHAR* str);
 extern std::string FormatGuid(const GUID* guid);
 
 class CrashInfo : public ICLRDataEnumMemoryRegionsCallback, public ICLRDataLoggingCallback,
@@ -57,6 +58,7 @@ private:
 #ifdef __APPLE__
     vm_map_t m_task;                                // the mach task for the process
 #else
+    siginfo_t m_siginfo;                            // signal info (if any)
     bool m_canUseProcVmReadSyscall;
     int m_fdMem;                                    // /proc/<pid>/mem handle
     int m_fdPagemap;                                // /proc/<pid>/pagemap handle
@@ -82,7 +84,7 @@ private:
     void operator=(const CrashInfo&) = delete;
 
 public:
-    CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal);
+    CrashInfo(const CreateDumpOptions& options);
     virtual ~CrashInfo();
 
     // Memory usage stats
@@ -126,6 +128,7 @@ public:
 #ifndef __APPLE__
     inline const std::vector<elf_aux_entry>& AuxvEntries() const { return m_auxvEntries; }
     inline size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
+    inline const siginfo_t* SigInfo() const { return &m_siginfo; }
 #endif
 
     // IUnknown

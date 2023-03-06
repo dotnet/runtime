@@ -3,12 +3,14 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
-    <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
+    <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iossimulator</TargetOS>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
-    <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
+    <iOSLikeDedup Condition="'$(TargetOS)' == 'ios'">true</iOSLikeDedup>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
+    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -16,8 +18,8 @@
     <TrimMode>Link</TrimMode>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
-    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
+  <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
+    <DevTeamProvisioning Condition="'$(TargetOS)' == 'maccatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
     <EnableAppSandbox Condition="'$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
   </PropertyGroup>
 
@@ -41,6 +43,19 @@
 
     <RemoveDir Directories="$(AppDir)" />
 
+    <PropertyGroup Condition="'$(iOSLikeDedup)' == 'true'">
+      <_iOSLikeDedupAssembly>$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.dll</_iOSLikeDedupAssembly>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(iOSLikeDedup)' == 'true'" File="$(MSBuildThisFileDirectory)$(PublishDir)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
+    <Csc Condition="'$(iOSLikeDedup)' == 'true'"
+      Sources="$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.cs"
+      OutputAssembly="$(_iOSLikeDedupAssembly)"
+      TargetType="library"
+      Deterministic="true"
+      References="@(ReferencePath)"
+      ToolExe="$(CscToolExe)"
+      ToolPath="$(CscToolPath)" />
+
     <ItemGroup>
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
       <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
@@ -50,17 +65,18 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' != 'maccatalyst'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'maccatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'maccatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
     </PropertyGroup>
 
     <MonoAOTCompiler
         Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
         Mode="$(AOTMode)"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
+        DedupAssembly="$(_iOSLikeDedupAssembly)"
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         OutputDir="$(PublishDir)"
@@ -79,7 +95,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="$(AppName)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\native\include\mono-2.0"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS)-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="Program.dll"
         GenerateXcodeProject="True"
@@ -92,6 +108,7 @@
         RuntimeComponents="$(RuntimeComponents)"
         EnableAppSandbox="$(EnableAppSandbox)"
         DiagnosticPorts="$(DiagnosticPorts)"
+        StripSymbolTable="$(StripDebugSymbols)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
@@ -107,11 +124,11 @@
     <!-- FIXME: only run if the TargetArchitecture matches the current architecture -->
 
     <!-- install and run on ios simulator or device -->
-    <Exec Condition="'$(TargetOS)' == 'iOSSimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
-    <Exec Condition="'$(TargetOS)' == 'iOS'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
 
     <!-- run on MacCatalyst -->
-    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="open -W $(AppBundlePath)" />
+    <Exec Condition="'$(TargetOS)' == 'maccatalyst'" Command="open -W $(AppBundlePath)" />
 
   </Target>
 

@@ -35,10 +35,10 @@ namespace System.Net
                 }
                 else if ((value[i] == ',') && !inquote)
                 {
-                    string singleValue = value.SubstringTrim(startIndex, length);
+                    ReadOnlySpan<char> singleValue = value.AsSpan(startIndex, length).Trim();
                     if (!isSetCookie || !IsDuringExpiresAttributeParsing(singleValue))
                     {
-                        tempStringCollection.Add(singleValue);
+                        tempStringCollection.Add(singleValue.ToString());
                         startIndex = i + 1;
                         length = 0;
                         continue;
@@ -50,7 +50,7 @@ namespace System.Net
             // Now add the last of the header values to the string table.
             if (startIndex < value.Length && length > 0)
             {
-                tempStringCollection.Add(value.SubstringTrim(startIndex, length));
+                tempStringCollection.Add(value.AsSpan(startIndex, length).Trim().ToString());
             }
 
             return tempStringCollection.ToArray();
@@ -60,18 +60,25 @@ namespace System.Net
         // for Set-Cookie header. It needs to check two conditions: 1. If current attribute
         // is Expires. 2. Have we finished parsing it yet. Because the Expires attribute
         // will contain exactly one comma, no comma means we are still parsing it.
-        private static bool IsDuringExpiresAttributeParsing(string singleValue)
+        private static bool IsDuringExpiresAttributeParsing(ReadOnlySpan<char> singleValue)
         {
-            // Current cookie doesn't contain any attributes.
-            if (!singleValue.Contains(';')) return false;
+            int semiPos = singleValue.LastIndexOf(';');
+            if (semiPos >= 0)
+            {
+                ReadOnlySpan<char> lastElement = singleValue.Slice(semiPos + 1);
+                if (!lastElement.Contains(','))
+                {
+                    int equalsPos = lastElement.IndexOf('=');
+                    if (equalsPos < 0)
+                    {
+                        equalsPos = lastElement.Length;
+                    }
 
-            string lastElement = singleValue.Split(';')[^1];
-            bool noComma = !lastElement.Contains(',');
+                    return lastElement.Slice(0, equalsPos).Trim().Equals("Expires", StringComparison.OrdinalIgnoreCase);
+                }
+            }
 
-            string lastAttribute = lastElement.Split('=')[0].Trim();
-            bool isExpires = string.Equals(lastAttribute, "Expires", StringComparison.OrdinalIgnoreCase);
-
-            return (isExpires && noComma);
+            return false;
         }
 
         private static Hashtable CreateHeaderHashtable()

@@ -117,9 +117,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo "Response file: $__ResponseFile"
         cat $__ResponseFile
 
-        # Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+        # Suppress some DOTNET variables for the duration of Crossgen2 execution
         export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
-        export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
 
         echo "Running CrossGen2: $__Command"
         $__Command
@@ -130,7 +129,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __r2rDumpExitCode=$?
 
         export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
-        export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
         date +%H:%M:%S
       }
 
@@ -278,16 +276,10 @@ if defined RunCrossGen2 (
     set "DOTNET_GCStress="
     set "DOTNET_HeapVerify="
     set "DOTNET_ReadyToRun="
-    set "COMPlus_GCName="
-    set "COMPlus_GCStress="
-    set "COMPlus_HeapVerify="
-    set "COMPlus_ReadyToRun="
 
     REM work around problems in 6.0 OSR
     set "DOTNET_TC_OnStackReplacement="
     set "DOTNET_TC_PartialCompilation="
-    set "COMPlus_TC_OnStackReplacement="
-    set "COMPlus_TC_PartialCompilation="
 
     echo "!__Command!"
     call !__Command!

@@ -4,6 +4,8 @@
     <CLRTestPriority>1</CLRTestPriority>
     <CLRTestExitCode>134</CLRTestExitCode>
     <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-2146232797</CLRTestExitCode>
+    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/80356 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ParallelCrash.cs" />

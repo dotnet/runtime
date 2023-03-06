@@ -581,7 +581,6 @@ namespace System.Reflection.Emit.Tests
             if (PlatformDetection.IsRareEnumsSupported)
             {
                 yield return new object[] { Enum.GetValues(CreateEnum(typeof(char), 'a')).GetValue(0) };
-                yield return new object[] { Enum.GetValues(CreateEnum(typeof(bool), true)).GetValue(0) };
             }
         }
 

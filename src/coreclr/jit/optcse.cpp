@@ -785,9 +785,9 @@ bool Compiler::optValnumCSE_Locate()
 
         compCurBB = block;
 
-        /* Ensure that the BBF_VISITED and BBF_MARKED flag are clear */
-        /* Everyone who uses these flags are required to clear afterwards */
-        noway_assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
+        // Ensure that the BBF_MARKED flag is clear.
+        // Everyone who uses this flag is required to clear it afterwards.
+        noway_assert((block->bbFlags & BBF_MARKED) == 0);
 
         /* Walk the statement trees in this basic block */
         for (Statement* const stmt : block->NonPhiStatements())
@@ -2232,8 +2232,8 @@ public:
     //------------------------------------------------------------------------
     // optConfigBiasedCSE:
     //     Stress mode to shuffle the decision to CSE or not using environment
-    //     variable COMPlus_JitStressBiasedCSE (= 0 to 100%). When the bias value
-    //     is not specified but COMPlus_JitStress is ON, generate a random bias.
+    //     variable DOTNET_JitStressBiasedCSE (= 0 to 100%). When the bias value
+    //     is not specified but DOTNET_JitStress is ON, generate a random bias.
     //
     // Return Value:
     //      0 -- This method is indifferent about this CSE (no bias specified and no stress)
@@ -2244,13 +2244,13 @@ public:
     //     A debug stress only method that returns "1" with probability (P)
     //     defined by:
     //
-    //         P = (COMPlus_JitStressBiasedCSE / 100) (or)
-    //         P = (random(100) / 100) when COMPlus_JitStress is specified and
-    //                                 COMPlus_JitStressBiasedCSE is unspecified.
+    //         P = (DOTNET_JitStressBiasedCSE / 100) (or)
+    //         P = (random(100) / 100) when DOTNET_JitStress is specified and
+    //                                 DOTNET_JitStressBiasedCSE is unspecified.
     //
     //     When specified, the bias is reinterpreted as a decimal number between 0
     //     to 100.
-    //     When bias is not specified, a bias is randomly generated if COMPlus_JitStress
+    //     When bias is not specified, a bias is randomly generated if DOTNET_JitStress
     //     is non-zero.
     //
     //     Callers are supposed to call this method for each CSE promotion decision
@@ -2655,9 +2655,10 @@ public:
                 //
                 int spillSimdRegInProlog = 1;
 
+#if defined(TARGET_XARCH)
                 // If we have a SIMD32 that is live across a call we have even higher spill costs
                 //
-                if (candidate->Expr()->TypeGet() == TYP_SIMD32)
+                if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
                 {
                     // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
                     // (to hold the upper half of the simd32 register that isn't preserved across the call)
@@ -2669,6 +2670,7 @@ public:
                     //
                     cse_use_cost += 2;
                 }
+#endif // TARGET_XARCH
 
                 extra_yes_cost = (BB_UNITY_WEIGHT_UNSIGNED * spillSimdRegInProlog) * 3;
             }
@@ -3749,7 +3751,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 //
 bool Compiler::optConfigDisableCSE()
 {
-    // Next check if COMPlus_JitNoCSE is set and applies to this method
+    // Next check if DOTNET_JitNoCSE is set and applies to this method
     //
     unsigned jitNoCSE = JitConfig.JitNoCSE();
 
@@ -3870,11 +3872,11 @@ void Compiler::optOptimizeCSEs()
 
 void Compiler::optCleanupCSEs()
 {
-    // We must clear the BBF_VISITED and BBF_MARKED flags.
+    // We must clear the BBF_MARKED flag.
     for (BasicBlock* const block : Blocks())
     {
-        // And clear all the "visited" bits on the block.
-        block->bbFlags &= ~(BBF_VISITED | BBF_MARKED);
+        // And clear the "marked" flag on the block.
+        block->bbFlags &= ~BBF_MARKED;
 
         // Walk the statement trees in this basic block.
         for (Statement* const stmt : block->NonPhiStatements())
@@ -3900,7 +3902,7 @@ void Compiler::optEnsureClearCSEInfo()
 {
     for (BasicBlock* const block : Blocks())
     {
-        assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
+        assert((block->bbFlags & BBF_MARKED) == 0);
 
         for (Statement* const stmt : block->NonPhiStatements())
         {

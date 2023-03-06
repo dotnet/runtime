@@ -62,6 +62,7 @@ namespace System.Text.Json.SourceGeneration
         public bool CanBeNull { get; private set; }
 
         public JsonNumberHandling? NumberHandling { get; private set; }
+        public JsonUnmappedMemberHandling? UnmappedMemberHandling { get; private set; }
 
         public List<PropertyGenerationSpec>? PropertyGenSpecList { get; private set; }
 
@@ -129,6 +130,7 @@ namespace System.Text.Json.SourceGeneration
             JsonSourceGenerationMode generationMode,
             ClassType classType,
             JsonNumberHandling? numberHandling,
+            JsonUnmappedMemberHandling? unmappedMemberHandling,
             List<PropertyGenerationSpec>? propertyGenSpecList,
             ParameterGenerationSpec[]? ctorParamGenSpecArray,
             List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList,
@@ -153,6 +155,7 @@ namespace System.Text.Json.SourceGeneration
             CanBeNull = !IsValueType || nullableUnderlyingTypeMetadata != null;
             IsPolymorphic = isPolymorphic;
             NumberHandling = numberHandling;
+            UnmappedMemberHandling = unmappedMemberHandling;
             PropertyGenSpecList = propertyGenSpecList;
             PropertyInitializerSpecList = propertyInitializerSpecList;
             CtorParamGenSpecArray = ctorParamGenSpecArray;
@@ -181,7 +184,7 @@ namespace System.Text.Json.SourceGeneration
 
             castingRequiredForProps = false;
             serializableProperties = new Dictionary<string, PropertyGenerationSpec>();
-            Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
+            HashSet<string>? ignoredMembers = null;
 
             for (int i = 0; i < PropertyGenSpecList.Count; i++)
             {
@@ -242,7 +245,7 @@ namespace System.Text.Json.SourceGeneration
                                 other.ClrName == memberName ||
                                 // Was a property with the same CLR name ignored? That property hid the current property,
                                 // thus, if it was ignored, the current property should be ignored too.
-                                ignoredMembers?.ContainsKey(memberName) == true;
+                                ignoredMembers?.Contains(memberName) == true;
                         }
                         else
                         {
@@ -268,7 +271,7 @@ namespace System.Text.Json.SourceGeneration
 
                 if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
                 {
-                    (ignoredMembers ??= new()).Add(memberName, propGenSpec);
+                    (ignoredMembers ??= new()).Add(memberName);
                 }
             }
 
