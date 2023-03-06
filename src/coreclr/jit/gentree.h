@@ -6312,12 +6312,7 @@ private:
 //
 struct GenTreeVecCon : public GenTree
 {
-    union {
-        simd8_t  gtSimd8Val;
-        simd12_t gtSimd12Val;
-        simd16_t gtSimd16Val;
-        simd32_t gtSimd32Val;
-    };
+    simd_t gtSimdVal;
 
 #if defined(FEATURE_HW_INTRINSICS)
     static unsigned ElementCount(unsigned simdSize, var_types simdBaseType);
@@ -6537,30 +6532,45 @@ struct GenTreeVecCon : public GenTree
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-            case TYP_SIMD8:
+#if defined(TARGET_XARCH)
+            case TYP_SIMD64:
             {
-                return (gtSimd8Val.u64[0] == 0xFFFFFFFFFFFFFFFF);
+                if ((gtSimdVal.u64[7] != 0xFFFFFFFFFFFFFFFF) || (gtSimdVal.u64[6] != 0xFFFFFFFFFFFFFFFF) ||
+                    (gtSimdVal.u64[5] != 0xFFFFFFFFFFFFFFFF) || (gtSimdVal.u64[4] != 0xFFFFFFFFFFFFFFFF))
+                {
+                    return false;
+                }
+                FALLTHROUGH;
+            }
+
+            case TYP_SIMD32:
+            {
+                if ((gtSimdVal.u64[3] != 0xFFFFFFFFFFFFFFFF) || (gtSimdVal.u64[2] != 0xFFFFFFFFFFFFFFFF))
+                {
+                    return false;
+                }
+                FALLTHROUGH;
+            }
+#endif // TARGET_XARCH
+
+            case TYP_SIMD16:
+            {
+                return ((gtSimdVal.u64[1] == 0xFFFFFFFFFFFFFFFF) && (gtSimdVal.u64[0] == 0xFFFFFFFFFFFFFFFF));
             }
 
             case TYP_SIMD12:
             {
-                return (gtSimd12Val.u32[0] == 0xFFFFFFFF) && (gtSimd12Val.u32[1] == 0xFFFFFFFF) &&
-                       (gtSimd12Val.u32[2] == 0xFFFFFFFF);
+                if (gtSimdVal.u32[2] != 0xFFFFFFFF)
+                {
+                    return false;
+                }
+                FALLTHROUGH;
             }
 
-            case TYP_SIMD16:
+            case TYP_SIMD8:
             {
-                return (gtSimd16Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd16Val.u64[1] == 0xFFFFFFFFFFFFFFFF);
+                return (gtSimdVal.u64[0] == 0xFFFFFFFFFFFFFFFF);
             }
-
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
-            {
-                return (gtSimd32Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[1] == 0xFFFFFFFFFFFFFFFF) &&
-                       (gtSimd32Val.u64[2] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[3] == 0xFFFFFFFFFFFFFFFF);
-            }
-#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -6582,34 +6592,49 @@ struct GenTreeVecCon : public GenTree
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-            case TYP_SIMD8:
+#if defined(TARGET_XARCH)
+            case TYP_SIMD64:
             {
-                return (left->gtSimd8Val.u64[0] == right->gtSimd8Val.u64[0]);
+                if ((left->gtSimdVal.u64[7] != right->gtSimdVal.u64[7]) ||
+                    (left->gtSimdVal.u64[6] != right->gtSimdVal.u64[6]) ||
+                    (left->gtSimdVal.u64[5] != right->gtSimdVal.u64[5]) ||
+                    (left->gtSimdVal.u64[4] != right->gtSimdVal.u64[4]))
+                {
+                    return false;
+                }
+                FALLTHROUGH;
+            }
+
+            case TYP_SIMD32:
+            {
+                if ((left->gtSimdVal.u64[3] != right->gtSimdVal.u64[3]) ||
+                    (left->gtSimdVal.u64[2] != right->gtSimdVal.u64[2]))
+                {
+                    return false;
+                }
+                FALLTHROUGH;
+            }
+#endif // TARGET_XARCH
+
+            case TYP_SIMD16:
+            {
+                return (left->gtSimdVal.u64[1] == right->gtSimdVal.u64[1]) &&
+                       (left->gtSimdVal.u64[0] == right->gtSimdVal.u64[0]);
             }
 
             case TYP_SIMD12:
             {
-                return (left->gtSimd12Val.u32[0] == right->gtSimd12Val.u32[0]) &&
-                       (left->gtSimd12Val.u32[1] == right->gtSimd12Val.u32[1]) &&
-                       (left->gtSimd12Val.u32[2] == right->gtSimd12Val.u32[2]);
+                if (left->gtSimdVal.u32[3] != right->gtSimdVal.u32[3])
+                {
+                    return false;
+                }
+                FALLTHROUGH;
             }
 
-            case TYP_SIMD16:
+            case TYP_SIMD8:
             {
-                return (left->gtSimd16Val.u64[0] == right->gtSimd16Val.u64[0]) &&
-                       (left->gtSimd16Val.u64[1] == right->gtSimd16Val.u64[1]);
+                return (left->gtSimdVal.u64[0] == right->gtSimdVal.u64[0]);
             }
-
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
-            {
-                return (left->gtSimd32Val.u64[0] == right->gtSimd32Val.u64[0]) &&
-                       (left->gtSimd32Val.u64[1] == right->gtSimd32Val.u64[1]) &&
-                       (left->gtSimd32Val.u64[2] == right->gtSimd32Val.u64[2]) &&
-                       (left->gtSimd32Val.u64[3] == right->gtSimd32Val.u64[3]);
-            }
-#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -6624,30 +6649,45 @@ struct GenTreeVecCon : public GenTree
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-            case TYP_SIMD8:
+#if defined(TARGET_XARCH)
+            case TYP_SIMD64:
             {
-                return (gtSimd8Val.u64[0] == 0x0000000000000000);
+                if ((gtSimdVal.u64[7] != 0x0000000000000000) || (gtSimdVal.u64[6] != 0x0000000000000000) ||
+                    (gtSimdVal.u64[5] != 0x0000000000000000) || (gtSimdVal.u64[4] != 0x0000000000000000))
+                {
+                    return false;
+                }
+                FALLTHROUGH;
+            }
+
+            case TYP_SIMD32:
+            {
+                if ((gtSimdVal.u64[3] != 0x0000000000000000) || (gtSimdVal.u64[2] != 0x0000000000000000))
+                {
+                    return false;
+                }
+                FALLTHROUGH;
+            }
+#endif // TARGET_XARCH
+
+            case TYP_SIMD16:
+            {
+                return ((gtSimdVal.u64[1] == 0x0000000000000000) && (gtSimdVal.u64[0] == 0x0000000000000000));
             }
 
             case TYP_SIMD12:
             {
-                return (gtSimd12Val.u32[0] == 0x00000000) && (gtSimd12Val.u32[1] == 0x00000000) &&
-                       (gtSimd12Val.u32[2] == 0x00000000);
+                if (gtSimdVal.u32[2] != 0x00000000)
+                {
+                    return false;
+                }
+                FALLTHROUGH;
             }
 
-            case TYP_SIMD16:
+            case TYP_SIMD8:
             {
-                return (gtSimd16Val.u64[0] == 0x0000000000000000) && (gtSimd16Val.u64[1] == 0x0000000000000000);
+                return (gtSimdVal.u64[0] == 0x0000000000000000);
             }
-
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
-            {
-                return (gtSimd32Val.u64[0] == 0x0000000000000000) && (gtSimd32Val.u64[1] == 0x0000000000000000) &&
-                       (gtSimd32Val.u64[2] == 0x0000000000000000) && (gtSimd32Val.u64[3] == 0x0000000000000000);
-            }
-#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -9050,44 +9090,44 @@ inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index, var_types s
         {
             case TYP_BYTE:
             {
-                return node->gtSimd32Val.i8[index];
+                return node->gtSimdVal.i8[index];
             }
 
             case TYP_UBYTE:
             {
-                return node->gtSimd32Val.u8[index];
+                return node->gtSimdVal.u8[index];
             }
 
             case TYP_SHORT:
             {
-                return node->gtSimd32Val.i16[index];
+                return node->gtSimdVal.i16[index];
             }
 
             case TYP_USHORT:
             {
-                return node->gtSimd32Val.u16[index];
+                return node->gtSimdVal.u16[index];
             }
 
             case TYP_INT:
             case TYP_FLOAT:
             {
-                return node->gtSimd32Val.i32[index];
+                return node->gtSimdVal.i32[index];
             }
 
             case TYP_UINT:
             {
-                return node->gtSimd32Val.u32[index];
+                return node->gtSimdVal.u32[index];
             }
 
             case TYP_LONG:
             case TYP_DOUBLE:
             {
-                return node->gtSimd32Val.i64[index];
+                return node->gtSimdVal.i64[index];
             }
 
             case TYP_ULONG:
             {
-                return node->gtSimd32Val.u64[index];
+                return node->gtSimdVal.u64[index];
             }
 
             default:

@@ -123,6 +123,7 @@ struct simd16_t
     }
 };
 
+#if defined(TARGET_XARCH)
 struct simd32_t
 {
     union {
@@ -181,6 +182,11 @@ struct simd64_t
         return (v256[0] != other.v256[0]) || (v256[1] != other.v256[1]);
     }
 };
+
+typedef simd64_t simd_t;
+#else
+typedef simd16_t simd_t;
+#endif
 
 template <typename TBase>
 TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)

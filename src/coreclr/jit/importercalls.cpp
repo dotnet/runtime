@@ -3522,11 +3522,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (callJitType == CORINFO_TYPE_FLOAT)
                 {
-                    vecCon->gtSimd16Val.f32[0] = (float)op1->AsDblCon()->DconValue();
+                    vecCon->gtSimdVal.f32[0] = (float)op1->AsDblCon()->DconValue();
                 }
                 else
                 {
-                    vecCon->gtSimd16Val.f64[0] = op1->AsDblCon()->DconValue();
+                    vecCon->gtSimdVal.f64[0] = op1->AsDblCon()->DconValue();
                 }
 
                 op1 = vecCon;

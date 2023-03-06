@@ -3981,7 +3981,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                     if (hwAccelerated)
                     {
                         GenTreeVecCon* vec = gtNewVconNode(simdType);
-                        memcpy(&vec->gtSimd32Val, buffer, totalSize);
+                        memcpy(&vec->gtSimdVal, buffer, totalSize);
                         return vec;
                     }
                 }
