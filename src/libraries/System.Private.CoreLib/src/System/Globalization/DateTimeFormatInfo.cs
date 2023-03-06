@@ -150,7 +150,7 @@ namespace System.Globalization
 
         private DateTimeFormatFlags formatFlags = DateTimeFormatFlags.NotInitialized;
 
-        internal string CultureName => _name ??= _cultureData.CultureName;
+        private string CultureName => _name ??= _cultureData.CultureName;
 
         private CultureInfo Culture => _cultureInfo ??= CultureInfo.GetCultureInfo(CultureName);
 

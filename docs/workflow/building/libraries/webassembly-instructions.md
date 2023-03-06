@@ -133,7 +133,7 @@ L: GC_MAJOR: (user request) time 3.00ms, stw 3.00ms los size: 0K in use: 0K
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
-    monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+    monoeg_g_setenv ("DOTNET_DebugWriteToStdErr", "1", 0);
 ```
 
 ## Updating Emscripten version in Docker image

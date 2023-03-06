@@ -351,7 +351,8 @@ enum emitAttr : unsigned
                 EA_8BYTE         = 0x008,
                 EA_16BYTE        = 0x010,
                 EA_32BYTE        = 0x020,
-                EA_SIZE_MASK     = 0x03F,
+                EA_64BYTE        = 0x040,
+                EA_SIZE_MASK     = 0x07F,
 
 #ifdef TARGET_64BIT
                 EA_PTRSIZE       = EA_8BYTE,
@@ -359,14 +360,14 @@ enum emitAttr : unsigned
                 EA_PTRSIZE       = EA_4BYTE,
 #endif
 
-                EA_OFFSET_FLG    = 0x040,
+                EA_OFFSET_FLG    = 0x080,
                 EA_OFFSET        = EA_OFFSET_FLG | EA_PTRSIZE,       /* size ==  0 */
-                EA_GCREF_FLG     = 0x080,
+                EA_GCREF_FLG     = 0x100,
                 EA_GCREF         = EA_GCREF_FLG |  EA_PTRSIZE,       /* size == -1 */
-                EA_BYREF_FLG     = 0x100,
+                EA_BYREF_FLG     = 0x200,
                 EA_BYREF         = EA_BYREF_FLG |  EA_PTRSIZE,       /* size == -2 */
-                EA_DSP_RELOC_FLG = 0x200, // Is the displacement of the instruction relocatable?
-                EA_CNS_RELOC_FLG = 0x400, // Is the immediate of the instruction relocatable?
+                EA_DSP_RELOC_FLG = 0x400, // Is the displacement of the instruction relocatable?
+                EA_CNS_RELOC_FLG = 0x800, // Is the immediate of the instruction relocatable?
 };
 
 #define EA_ATTR(x)                  ((emitAttr)(x))

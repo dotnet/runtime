@@ -598,6 +598,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
             case TYP_SIMD16:
 #if defined(TARGET_XARCH)
             case TYP_SIMD32:
+            case TYP_SIMD64:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
             {
