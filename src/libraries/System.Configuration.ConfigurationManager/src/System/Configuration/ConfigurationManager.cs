@@ -257,7 +257,7 @@ namespace System.Configuration
         {
             get
             {
-                return AppContext.TryGetSwitch(@"Switch.System.Configuration.ConfigurationManager.DisableConfigurationManager", out s_disableConfigurationManager) ? s_disableConfigurationManager : false;
+                return AppContext.TryGetSwitch(@"System.Configuration.ConfigurationManager.DisableConfigurationManager", out s_disableConfigurationManager) ? s_disableConfigurationManager : false;
             }
         }
 
