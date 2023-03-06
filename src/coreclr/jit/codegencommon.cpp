@@ -1741,7 +1741,11 @@ void CodeGen::genGenerateMachineCode()
         }
         else if (compiler->info.genCPU == CPU_X64)
         {
-            if (compiler->canUseVexEncoding())
+            if (compiler->canUseEvexEncoding())
+            {
+                printf("X64 CPU with AVX512");
+            }
+            else if (compiler->canUseVexEncoding())
             {
                 printf("X64 CPU with AVX");
             }

@@ -9109,13 +9109,10 @@ private:
 #endif
     }
 
+#ifdef TARGET_XARCH
     bool canUseVexEncoding() const
     {
-#ifdef TARGET_XARCH
         return compOpportunisticallyDependsOn(InstructionSet_AVX);
-#else
-        return false;
-#endif
     }
 
     //------------------------------------------------------------------------
@@ -9126,8 +9123,6 @@ private:
     //
     bool canUseEvexEncoding() const
     {
-#ifdef TARGET_XARCH
-
 #ifdef DEBUG
         if (JitConfig.JitForceEVEXEncoding())
         {
@@ -9136,9 +9131,6 @@ private:
 #endif // DEBUG
 
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
-#else
-        return false;
-#endif
     }
 
     //------------------------------------------------------------------------
@@ -9149,7 +9141,7 @@ private:
     //
     bool DoJitStressEvexEncoding() const
     {
-#if defined(TARGET_XARCH) && defined(DEBUG)
+#ifdef DEBUG
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
         // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
@@ -9159,14 +9151,11 @@ private:
         {
             return true;
         }
-        if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-        {
-            return true;
-        }
-#endif // TARGET_XARCH && DEBUG
+#endif // DEBUG
 
         return false;
     }
+#endif // TARGET_XARCH
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
