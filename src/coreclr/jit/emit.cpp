@@ -2613,7 +2613,7 @@ void emitter::emitSetFrameRangeArgs(int offsLo, int offsHi)
  */
 
 const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {
-    EA_1BYTE, EA_2BYTE, EA_4BYTE, EA_8BYTE, EA_16BYTE,
+    EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE, EA_16BYTE,
 #if defined(TARGET_XARCH)
     EA_32BYTE, EA_64BYTE,
 #endif // TARGET_XARCH
