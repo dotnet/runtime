@@ -1131,9 +1131,9 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 }
 
 //------------------------------------------------------------------------
-// LIR::Range::GetTreeRange: Computes the subrange that includes all nodes
-//                           in the dataflow trees rooted at a particular
-//                           set of nodes.
+// LIR::Range::GetMarkedRange:
+//   Computes the subrange that includes all nodes in the dataflow trees rooted
+//   at a particular set of nodes.
 //
 // This method logically uses the following algorithm to compute the
 // range:
