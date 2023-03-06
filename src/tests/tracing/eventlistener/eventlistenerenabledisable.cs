@@ -70,11 +70,8 @@ namespace Tracing.Tests
         }
     }
 
-    class EventPipeSmoke
+    class EventListenerEnableDisableTest
     {
-        private static int messageIterations = 100;
-        private static readonly DateTime ThePast = DateTime.UtcNow;
-
         static int Main()
         {
             bool pass = false;
