@@ -7,14 +7,22 @@
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
-
   <ItemGroup>
-    <Compile Include="PatchExclusionListInApks.cs" />
-    <Compile Include="../AndroidAppBuilder/ApkBuilder.cs" />
-    <Compile Include="../Common/Builders/AndroidProject.cs" />
-    <Compile Include="../Common/Utils.cs" />
+    <EmbeddedResource Include="Templates\*.*" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="LibraryBuilder.cs" />
+    <Compile Include="..\Common\Utils.cs" />
+    <Compile Include="..\Common\Builders\AppBuilderTask.cs" />
+    <Compile Include="..\Common\Builders\AndroidProject.cs" />
+    <Compile Include="..\Common\Builders\CompiledAssembly.cs" />
+    <Compile Include="..\AppleAppBuilder\TargetOS.cs" />
+    <Compile Include="..\AppleAppBuilder\Xcode.cs" />
+  </ItemGroup>
+
+  <Target Name="GetFilesToPackage" />
+
 </Project>
