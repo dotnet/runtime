@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 import {
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
@@ -10,6 +11,22 @@ import { Module } from "./imports";
 import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 
 type SigLine = [lazy: boolean, name: string, returnType: string | null, argTypes?: string[], opts?: any];
+
+const legacy_interop_cwraps: SigLine[] = !WasmEnableLegacyJsInterop ? [] : [
+    [true, "mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
+    [true, "mono_wasm_obj_array_new_ref", "void", ["number", "number"]],
+    [true, "mono_wasm_obj_array_set_ref", "void", ["number", "number", "number"]],
+    [true, "mono_wasm_try_unbox_primitive_and_get_type_ref", "number", ["number", "number", "number"]],
+    [true, "mono_wasm_box_primitive_ref", "void", ["number", "number", "number", "number"]],
+    [true, "mono_wasm_string_array_new_ref", "void", ["number", "number"]],
+    [true, "mono_wasm_typed_array_new_ref", "void", ["number", "number", "number", "number", "number"]],
+    [true, "mono_wasm_get_delegate_invoke_ref", "number", ["number"]],
+    [true, "mono_wasm_get_type_name", "string", ["number"]],
+    [true, "mono_wasm_get_type_aqn", "string", ["number"]],
+    [true, "mono_wasm_obj_array_new", "number", ["number"]],
+    [true, "mono_wasm_obj_array_set", "void", ["number", "number", "number"]],
+    [true, "mono_wasm_array_length_ref", "number", ["number"]],
+];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
 const fn_signatures: SigLine[] = [
@@ -34,31 +51,14 @@ const fn_signatures: SigLine[] = [
     // BINDING
     [true, "mono_wasm_get_corlib", "number", []],
     [true, "mono_wasm_assembly_load", "number", ["string"]],
-    [true, "mono_wasm_find_corlib_class", "number", ["string", "string"]],
     [true, "mono_wasm_assembly_find_class", "number", ["number", "string", "string"]],
     [true, "mono_wasm_runtime_run_module_cctor", "void", ["number"]],
-    [true, "mono_wasm_find_corlib_type", "number", ["string", "string"]],
-    [true, "mono_wasm_assembly_find_type", "number", ["number", "string", "string"]],
     [true, "mono_wasm_assembly_find_method", "number", ["number", "string", "number"]],
     [false, "mono_wasm_invoke_method_ref", "void", ["number", "number", "number", "number", "number"]],
     [true, "mono_wasm_string_from_utf16_ref", "void", ["number", "number", "number"]],
-    [true, "mono_wasm_array_length_ref", "number", ["number"]],
-    [true, "mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
-    [false, "mono_wasm_obj_array_new", "number", ["number"]],
-    [false, "mono_wasm_obj_array_new_ref", "void", ["number", "number"]],
-    [false, "mono_wasm_obj_array_set", "void", ["number", "number", "number"]],
-    [false, "mono_wasm_obj_array_set_ref", "void", ["number", "number", "number"]],
-    [true, "mono_wasm_register_bundled_satellite_assemblies", "void", []],
-    [false, "mono_wasm_try_unbox_primitive_and_get_type_ref", "number", ["number", "number", "number"]],
-    [true, "mono_wasm_box_primitive_ref", "void", ["number", "number", "number", "number"]],
     [true, "mono_wasm_intern_string_ref", "void", ["number"]],
     [true, "mono_wasm_assembly_get_entry_point", "number", ["number"]],
-    [true, "mono_wasm_get_delegate_invoke_ref", "number", ["number"]],
-    [true, "mono_wasm_string_array_new_ref", "void", ["number", "number"]],
-    [true, "mono_wasm_typed_array_new_ref", "void", ["number", "number", "number", "number", "number"]],
     [true, "mono_wasm_class_get_type", "number", ["number"]],
-    [true, "mono_wasm_get_type_name", "string", ["number"]],
-    [true, "mono_wasm_get_type_aqn", "string", ["number"]],
 
     // MONO.diagnostics
     [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
@@ -116,7 +116,25 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_debug_count", "number", []],
     [true, "mono_jiterp_get_trace_hit_count", "number", ["number"]],
     [true, "mono_jiterp_get_polling_required_address", "number", []],
+    ...legacy_interop_cwraps
 ];
+
+export interface t_LegacyCwraps {
+    // legacy interop
+    mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
+    mono_wasm_obj_array_new_ref(size: number, result: MonoObjectRef): void;
+    mono_wasm_obj_array_set_ref(array: MonoObjectRef, idx: number, obj: MonoObjectRef): void;
+    mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
+    mono_wasm_box_primitive_ref(klass: MonoClass, value: VoidPtr, value_size: number, result: MonoObjectRef): void;
+    mono_wasm_string_array_new_ref(size: number, result: MonoObjectRef): void;
+    mono_wasm_typed_array_new_ref(arr: VoidPtr, length: number, size: number, type: number, result: MonoObjectRef): void;
+    mono_wasm_get_delegate_invoke_ref(delegate: MonoObjectRef): MonoMethod;
+    mono_wasm_get_type_name(ty: MonoType): string;
+    mono_wasm_get_type_aqn(ty: MonoType): string;
+    mono_wasm_obj_array_new(size: number): MonoArray;
+    mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
+    mono_wasm_array_length_ref(array: MonoObjectRef): number;
+}
 
 export interface t_Cwraps {
     // MONO
@@ -140,38 +158,14 @@ export interface t_Cwraps {
     // BINDING
     mono_wasm_get_corlib(): MonoAssembly;
     mono_wasm_assembly_load(name: string): MonoAssembly;
-    mono_wasm_find_corlib_class(namespace: string, name: string): MonoClass;
     mono_wasm_assembly_find_class(assembly: MonoAssembly, namespace: string, name: string): MonoClass;
-    mono_wasm_find_corlib_type(namespace: string, name: string): MonoType;
-    mono_wasm_assembly_find_type(assembly: MonoAssembly, namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_method(klass: MonoClass, name: string, args: number): MonoMethod;
     mono_wasm_invoke_method_ref(method: MonoMethod, this_arg: MonoObjectRef, params: VoidPtr, out_exc: MonoObjectRef, out_result: MonoObjectRef): void;
     mono_wasm_string_from_utf16_ref(str: CharPtr, len: number, result: MonoObjectRef): void;
-
-    mono_wasm_array_length_ref(array: MonoObjectRef): number;
-    mono_wasm_array_get_ref(array: MonoObjectRef, idx: number, result: MonoObjectRef): void;
-    mono_wasm_obj_array_new_ref(size: number, result: MonoObjectRef): void;
-    mono_wasm_obj_array_set_ref(array: MonoObjectRef, idx: number, obj: MonoObjectRef): void;
-    mono_wasm_register_bundled_satellite_assemblies(): void;
-    mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
-    mono_wasm_box_primitive_ref(klass: MonoClass, value: VoidPtr, value_size: number, result: MonoObjectRef): void;
-    mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
-    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly, idx: number): MonoMethod;
-    mono_wasm_string_array_new_ref(size: number, result: MonoObjectRef): void;
-    mono_wasm_typed_array_new_ref(arr: VoidPtr, length: number, size: number, type: number, result: MonoObjectRef): void;
     mono_wasm_class_get_type(klass: MonoClass): MonoType;
-    mono_wasm_get_delegate_invoke_ref(delegate: MonoObjectRef): MonoMethod;
-    mono_wasm_get_type_name(ty: MonoType): string;
-    mono_wasm_get_type_aqn(ty: MonoType): string;
+    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly, idx: number): MonoMethod;
+    mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
 
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    mono_wasm_obj_array_new(size: number): MonoArray;
-    /**
-     * @deprecated Not GC or thread safe
-     */
-    mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
 
     // MONO.diagnostics
     mono_wasm_event_pipe_enable(outputPath: string | null, stream: VoidPtr, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
@@ -239,6 +233,7 @@ export interface t_Cwraps {
 const wrapped_c_functions: t_Cwraps = <any>{};
 
 export default wrapped_c_functions;
+export const legacy_c_functions: t_LegacyCwraps & t_Cwraps = wrapped_c_functions as any;
 
 // see src/mono/wasm/driver.c I52_ERROR_xxx
 export const enum I52Error {

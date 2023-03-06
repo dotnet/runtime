@@ -5,7 +5,6 @@ import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
-import { MONO } from "./net6-legacy/imports";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
@@ -548,12 +547,12 @@ export async function wait_for_all_assets() {
     if (runtimeHelpers.config.assets) {
         mono_assert(actual_downloaded_assets_count == expected_downloaded_assets_count, () => `Expected ${expected_downloaded_assets_count} assets to be downloaded, but only finished ${actual_downloaded_assets_count}`);
         mono_assert(actual_instantiated_assets_count == expected_instantiated_assets_count, () => `Expected ${expected_instantiated_assets_count} assets to be in memory, but only instantiated ${actual_instantiated_assets_count}`);
-        loaded_files.forEach(value => MONO.loaded_files.push(value.url));
+        loaded_files.forEach(value => runtimeHelpers.loadedFiles.push(value.url));
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: all assets are loaded in wasm memory");
     }
 }
 
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
-    return MONO.loaded_files;
+    return runtimeHelpers.loadedFiles;
 }

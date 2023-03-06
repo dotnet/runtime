@@ -3,6 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
@@ -18,17 +19,19 @@ import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController } from "./promise-controller";
 import { string_decoder } from "./strings";
 import { init_managed_exports } from "./managed-exports";
-import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_internal } from "./exports-internal";
-import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
 import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download, wait_for_all_assets } from "./assets";
-import { BINDING, MONO } from "./net6-legacy/imports";
 import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
+
+// legacy
+import { init_legacy_exports } from "./net6-legacy/corebindings";
+import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
+import { BINDING, MONO } from "./net6-legacy/imports";
 
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
@@ -302,9 +305,10 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     // init_polyfills() is already called from export.ts
     init_c_exports();
     cwraps_internal(INTERNAL);
-    cwraps_mono_api(MONO);
-    cwraps_binding_api(BINDING);
-
+    if (WasmEnableLegacyJsInterop) {
+        cwraps_mono_api(MONO);
+        cwraps_binding_api(BINDING);
+    }
     // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
     // emscripten - on a worker since we don't have any other dependencies that causes run() to get
     // called too soon; and then it will get called a second time when dotnet.js calls it directly.
@@ -556,7 +560,9 @@ export function bindings_init(): void {
     try {
         const mark = startMeasure();
         init_managed_exports();
-        init_legacy_exports();
+        if (WasmEnableLegacyJsInterop) {
+            init_legacy_exports();
+        }
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
         runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);

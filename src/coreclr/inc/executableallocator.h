@@ -80,7 +80,7 @@ class ExecutableAllocator
     static BYTE* g_preferredRangeMin;
     static BYTE* g_preferredRangeMax;
 
-    // Caches the COMPlus_EnableWXORX setting
+    // Caches the DOTNET_EnableWXORX setting
     static bool g_isWXorXEnabled;
 
     // Head of the linked list of all RX blocks that were allocated by this allocator
