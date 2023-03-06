@@ -86,6 +86,7 @@ class CSE_DataFlow;          // defined in OptCSE.cpp
 class OptBoolsDsc;           // defined in optimizer.cpp
 struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
 struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
+class ProfileSynthesis;      // defined in profilesynthesis.h
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -1993,6 +1994,7 @@ class Compiler
     friend class SharedTempsScope;
     friend class CallArgs;
     friend class IndirectCallTransformer;
+    friend class ProfileSynthesis;
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
