@@ -1164,14 +1164,26 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 // occurring before uses).
 //
 // Arguments:
-//    root        - The root of the dataflow tree.
-//    isClosed    - An output parameter that is set to true if the returned
-//                  range contains only nodes in the dataflow tree and false
-//                  otherwise.
+//    markFlagsOperands - Whether the dataflow algorithm should also try to
+//                        mark operands that are defining flags. For example,
+//                        GT_JCC implicitly consumes the flags defined by the
+//                        previous node in linear order. If this argument is
+//                        true, then the algorithm will also include the flags
+//                        definition (which is e.g. a CMP node) in the returned
+//                        range.
+//                        This works on a best-effort basis; the user should not
+//                        rely on all flags defs to be found.
+//    root              - The root of the dataflow tree.
+//    isClosed          - An output parameter that is set to true if the returned
+//                        range contains only nodes in the dataflow tree and false
+//                        otherwise.
+//
+// Type arguments:
 //
 // Returns:
 //    The computed subrange.
 //
+template <bool     markFlagsOperands>
 LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                                               GenTree*  start,
                                               bool*     isClosed,
@@ -1181,6 +1193,11 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
     assert(start != nullptr);
     assert(isClosed != nullptr);
     assert(sideEffects != nullptr);
+
+#ifndef DEBUG
+    // The treatment of flags definitions is on a best-effort basis; it should be used debug purposes only.
+    static_assert_no_msg(!markFlagsOperands);
+#endif
 
     bool     sawUnmarkedNode    = false;
     unsigned sideEffectsInRange = 0;
@@ -1202,6 +1219,17 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                 markCount++;
                 return GenTree::VisitResult::Continue;
             });
+
+            if (markFlagsOperands && firstNode->OperConsumesFlags())
+            {
+                GenTree* prev = firstNode->gtPrev;
+                if ((prev != nullptr) && ((prev->gtFlags & GTF_SET_FLAGS) != 0) &&
+                    ((prev->gtLIRFlags & LIR::Flags::Mark) == 0))
+                {
+                    prev->gtLIRFlags |= LIR::Flags::Mark;
+                    markCount++;
+                }
+            }
 
             // Unmark the node and update `firstNode`
             firstNode->gtLIRFlags &= ~LIR::Flags::Mark;
@@ -1283,11 +1311,10 @@ LIR::ReadOnlyRange LIR::Range::GetTreeRange(GenTree* root, bool* isClosed, unsig
 }
 
 //------------------------------------------------------------------------
-// LIR::Range::GetTreeRangeWithFlags: Computes the subrange that includes all nodes
-//                                    in the dataflow tree rooted at a particular
-//                                    range of node, taking into account that the root
-//                                    node may also implicitly consume flags defined by
-//                                    non-operands.
+// LIR::Range::GetTreeRangeWithFlags:
+// Computes the subrange that includes all nodes in the dataflow tree rooted at
+// a particular node, taking into account that the nodes may also implicitly
+// consume flags defined by non-operands.
 //
 // Arguments:
 //    root        - The root of the dataflow tree range of nodes.
@@ -1301,27 +1328,12 @@ LIR::ReadOnlyRange LIR::Range::GetTreeRange(GenTree* root, bool* isClosed, unsig
 //    The computed subrange.
 LIR::ReadOnlyRange LIR::Range::GetTreeRangeWithFlags(GenTree* root, bool* isClosed, unsigned* sideEffects) const
 {
+    assert(root != nullptr);
+
     unsigned markCount = 1;
     root->gtLIRFlags |= LIR::Flags::Mark;
 
-    GenTree* flagsNode = root;
-    while (flagsNode->OperConsumesFlags())
-    {
-        assert(flagsNode->gtPrev != nullptr);
-
-        do
-        {
-            flagsNode = flagsNode->gtPrev;
-            if ((flagsNode->gtFlags & GTF_SET_FLAGS) != 0)
-            {
-                markCount++;
-                flagsNode->gtLIRFlags |= LIR::Flags::Mark;
-                break;
-            }
-        } while (flagsNode->gtPrev != nullptr);
-    }
-
-    return GetMarkedRange(markCount, root, isClosed, sideEffects);
+    return GetMarkedRange<true>(markCount, root, isClosed, sideEffects);
 }
 
 //------------------------------------------------------------------------
@@ -1774,35 +1786,6 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
     }
 
     blockRange.InsertBefore(insertionPoint, std::move(range));
-}
-
-//------------------------------------------------------------------------
-// LIR::EarliestNode:
-//   Given two nodes, find the earliest of the two nodes.
-//
-// Arguments:
-//    node1 - The first node
-//    node2 - The second node
-//
-// Returns:
-//    Either node1 or node2, depending on which is earliest
-//
-GenTree* LIR::EarliestNode(GenTree* node1, GenTree* node2)
-{
-    GenTree* node1Cursor = node1;
-    GenTree* node2Cursor = node2;
-
-    while (true)
-    {
-        if ((node1Cursor == node2) || (node2Cursor == nullptr))
-            return node2;
-
-        if ((node2Cursor == node1) || (node1Cursor == nullptr))
-            return node1;
-
-        node1Cursor = node1Cursor->gtPrev;
-        node2Cursor = node2Cursor->gtPrev;
-    }
 }
 
 #ifdef DEBUG

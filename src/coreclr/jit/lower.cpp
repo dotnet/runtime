@@ -3357,6 +3357,10 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
     GenTree* cond = jtrue->gtGetOp1();
 
+    JITDUMP("Lowering JTRUE:\n");
+    DISPTREERANGE(BlockRange(), jtrue);
+    JITDUMP("\n");
+
 #if defined(TARGET_ARM64)
     if (cond->OperIsCompare() && cond->gtGetOp2()->IsCnsIntOrI())
     {
@@ -3389,6 +3393,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             relopOp2->SetContained();
 
             BlockRange().Remove(cond);
+            JITDUMP("Lowered to JCMP\n");
             return nullptr;
         }
     }
@@ -3400,6 +3405,10 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         jtrue->SetOper(GT_JCC);
         jtrue->AsCC()->gtCondition = condCode;
     }
+
+    JITDUMP("Result:\n");
+    DISPTREERANGE(BlockRange(), jtrue);
+    JITDUMP("\n");
 
     return nullptr;
 }
@@ -3448,6 +3457,10 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         }
     }
 
+    JITDUMP("Lowering select:\n");
+    DISPTREERANGE(BlockRange(), select);
+    JITDUMP("\n");
+
     // Do not transform GT_SELECT with GTF_SET_FLAGS into GT_SELECTCC; this
     // node is used by decomposition on x86.
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
@@ -3460,6 +3473,9 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         GenTreeOpCC* newSelect = select->AsOpCC();
         newSelect->gtCondition = selectCond;
         ContainCheckSelect(newSelect);
+        JITDUMP("Converted to SELECTCC:\n");
+        DISPTREERANGE(BlockRange(), newSelect);
+        JITDUMP("\n");
         return newSelect->gtNext;
     }
 
