@@ -1062,11 +1062,7 @@ inline
 uint8_t *
 ep_rt_valloc0 (size_t buffer_size)
 {
-	uint8_t *buffer = (uint8_t *)mono_valloc (NULL, buffer_size, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_PROFILER);
-
-	if (buffer)
-		memset (buffer, 0, buffer_size);
-	return buffer;
+	return (uint8_t *)mono_valloc (NULL, buffer_size, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_PROFILER);
 }
 
 static
