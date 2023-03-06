@@ -64,12 +64,13 @@
         <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
       </PropertyGroup>
 
-      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
-            EchoOff="true"
+      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>stderr.txt"
+            EchoOff="false"
             ConsoleToMsBuild="true"
             StandardOutputImportance="Low">
         <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
       </Exec>
+      <Exec Command="cat stderr.txt" StandardOutputImportance="High" />
   </Target>
 
 </Project>

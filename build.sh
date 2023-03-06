@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 source="${BASH_SOURCE[0]}"
 
 function is_cygwin_or_mingw()

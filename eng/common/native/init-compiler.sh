@@ -125,12 +125,21 @@ if [ -z "$CC" ]; then
     exit 1
 fi
 
+>&2 echo HERE
+>&2 echo $complier
+>&2 echo $majorVersion
+>&2 echo $CC
+>&2 echo $CXX
+>&2 "$CC" -fuse-ld=lld -Wl,--version
 # Only lld version >= 9 can be considered stable. lld doesn't support s390x.
 if [ "$compiler" = "clang" ] && [ -n "$majorVersion" ] && [ "$majorVersion" -ge 9 ] && [ "$build_arch" != "s390x" ]; then
+    >&2 echo HERE2
     if "$CC" -fuse-ld=lld -Wl,--version >/dev/null 2>&1; then
+        >&2 echo HERE3
         LDFLAGS="-fuse-ld=lld"
     fi
 fi
+# exit 23
 
 SCAN_BUILD_COMMAND="$(command -v "scan-build$desired_version")"
 
