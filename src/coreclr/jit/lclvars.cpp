@@ -8301,7 +8301,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_SKIP_SUBTREES;
         }
 
-        // Can't have GC ptrs in TYP_BLK.
+        // Can't have GC ptrs in block layouts.
         if (!varTypeIsArithmetic(lclType))
         {
             varDsc->lvNoLclFldStress = true;
@@ -8338,7 +8338,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     else
     {
         // Do the morphing
-        noway_assert(varType == lclType);
+        noway_assert((varType == lclType) || ((varType == TYP_STRUCT) && varDsc->GetLayout()->IsBlockLayout()));
 
         // Calculate padding
         unsigned padding = pComp->lvaStressLclFldPadding(lclNum);
@@ -8351,14 +8351,17 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         padding   = roundUp(padding, alignment);
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
-        // Change the variable to a block struct
-        varDsc->lvExactSize = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
-        varDsc->lvType      = TYP_STRUCT;
-        varDsc->SetLayout(pComp->typGetBlkLayout(varDsc->lvExactSize));
-        pComp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::STRESS_LCL_FLD));
+        if (varType != TYP_STRUCT)
+        {
+            // Change the variable to a block struct
+            varDsc->lvExactSize = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
+            varDsc->lvType      = TYP_STRUCT;
+            varDsc->SetLayout(pComp->typGetBlkLayout(varDsc->lvExactSize));
+            pComp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::STRESS_LCL_FLD));
 
-        JITDUMP("Converting V%02u to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum, varDsc->lvExactSize,
-                padding);
+            JITDUMP("Converting V%02u to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
+                    varDsc->lvExactSize, padding);
+        }
 
         tree->gtFlags |= GTF_GLOB_REF;
 
