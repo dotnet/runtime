@@ -9,37 +9,32 @@ class StaticReadonlyStructWithGC
 {
     static int Main()
     {
-        for (int i = 0; i < 100; i++)
-        {
-            if (!Test1()) throw new Exception("Test1 failed");
-            if (!Test2()) throw new Exception("Test2 failed");
-            if (!Test3()) throw new Exception("Test3 failed");
-            if (!Test4()) throw new Exception("Test4 failed");
-            if (!Test5()) throw new Exception("Test5 failed");
-            if (!Test6()) throw new Exception("Test6 failed");
-            if (!Test7()) throw new Exception("Test7 failed");
-            if (!Test8()) throw new Exception("Test8 failed");
-            if (!Test9()) throw new Exception("Test9 failed");
+        // Pre-initialize host type
+        RuntimeHelpers.RunClassConstructor(typeof(StaticReadonlyStructWithGC).TypeHandle);
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            Thread.Sleep(16);
-        }
+        if (!Test1()) throw new Exception("Test1 failed");
+        if (!Test2()) throw new Exception("Test2 failed");
+        if (!Test3()) throw new Exception("Test3 failed");
+        if (!Test4()) throw new Exception("Test4 failed");
+        if (!Test5()) throw new Exception("Test5 failed");
+        if (!Test6()) throw new Exception("Test6 failed");
+        if (!Test7()) throw new Exception("Test7 failed");
+        if (!Test8()) throw new Exception("Test8 failed");
+        if (!Test9()) throw new Exception("Test9 failed");
         return 100;
     }
 
     static readonly MyStruct MyStructFld = new()
-        {
-            A = "A",
-            B = 111111.ToString(), // non-literal
-            C = new MyStruct2 { A = "AA" },
-            D = typeof(int),
-            E = () => 42,
-            F = new MyStruct3 { A = typeof(double), B = typeof(string) },
-            G = new int[0],
-            H = null
-        };
+    {
+        A = "A",
+        B = 111111.ToString(), // non-literal
+        C = new MyStruct2 { A = "AA" },
+        D = typeof(int),
+        E = () => 42,
+        F = new MyStruct3 { A = typeof(double), B = typeof(string) },
+        G = new int[0],
+        H = null
+    };
 
     [MethodImpl(MethodImplOptions.NoInlining)] static bool Test1() => MyStructFld.A == "A";
     [MethodImpl(MethodImplOptions.NoInlining)] static bool Test2() => MyStructFld.B == "111111";
