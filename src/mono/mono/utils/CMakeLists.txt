@@ -166,12 +166,6 @@ set(utils_common_sources
     mono-conc-hashtable.c
     json.h
     json.c
-    networking.c
-    networking-posix.c
-    networking-fallback.c
-    networking-missing.c
-    networking-windows.c
-    networking.h
     mono-rand.c
     mono-rand-windows.c
     mono-rand.h

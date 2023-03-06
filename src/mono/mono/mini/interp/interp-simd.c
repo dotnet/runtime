@@ -147,13 +147,13 @@ interp_v128_i4_op_negation (gpointer res, gpointer v1)
 static void
 interp_v128_i1_op_left_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i1*)res = *(v128_i1*)v1 << (*(gint32*)s1 & 0x7);
+	*(v128_i1*)res = *(v128_i1*)v1 << (*(gint32*)s1 & 7);
 }
 
 static void
 interp_v128_i2_op_left_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i2*)res = *(v128_i2*)v1 << (*(gint32*)s1 & 0x15);
+	*(v128_i2*)res = *(v128_i2*)v1 << (*(gint32*)s1 & 15);
 }
 
 static void

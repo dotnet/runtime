@@ -3350,157 +3350,6 @@ struct GenTreeStrCon : public GenTree
 #endif
 };
 
-// GenTreeVecCon -- vector  constant (GT_CNS_VEC)
-//
-struct GenTreeVecCon : public GenTree
-{
-    union {
-        simd8_t  gtSimd8Val;
-        simd12_t gtSimd12Val;
-        simd16_t gtSimd16Val;
-        simd32_t gtSimd32Val;
-    };
-
-#if defined(FEATURE_HW_INTRINSICS)
-    static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val);
-
-    static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, simd32_t& simd32Val, var_types baseType);
-#endif // FEATURE_HW_INTRINSICS
-
-    bool IsAllBitsSet() const
-    {
-        switch (gtType)
-        {
-#if defined(FEATURE_SIMD)
-            case TYP_SIMD8:
-            {
-                return (gtSimd8Val.u64[0] == 0xFFFFFFFFFFFFFFFF);
-            }
-
-            case TYP_SIMD12:
-            {
-                return (gtSimd12Val.u32[0] == 0xFFFFFFFF) && (gtSimd12Val.u32[1] == 0xFFFFFFFF) &&
-                       (gtSimd12Val.u32[2] == 0xFFFFFFFF);
-            }
-
-            case TYP_SIMD16:
-            {
-                return (gtSimd16Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd16Val.u64[1] == 0xFFFFFFFFFFFFFFFF);
-            }
-
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            {
-                return (gtSimd32Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[1] == 0xFFFFFFFFFFFFFFFF) &&
-                       (gtSimd32Val.u64[2] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[3] == 0xFFFFFFFFFFFFFFFF);
-            }
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-
-            default:
-            {
-                unreached();
-            }
-        }
-    }
-
-    static bool Equals(const GenTreeVecCon* left, const GenTreeVecCon* right)
-    {
-        var_types gtType = left->TypeGet();
-
-        if (gtType != right->TypeGet())
-        {
-            return false;
-        }
-
-        switch (gtType)
-        {
-#if defined(FEATURE_SIMD)
-            case TYP_SIMD8:
-            {
-                return (left->gtSimd8Val.u64[0] == right->gtSimd8Val.u64[0]);
-            }
-
-            case TYP_SIMD12:
-            {
-                return (left->gtSimd12Val.u32[0] == right->gtSimd12Val.u32[0]) &&
-                       (left->gtSimd12Val.u32[1] == right->gtSimd12Val.u32[1]) &&
-                       (left->gtSimd12Val.u32[2] == right->gtSimd12Val.u32[2]);
-            }
-
-            case TYP_SIMD16:
-            {
-                return (left->gtSimd16Val.u64[0] == right->gtSimd16Val.u64[0]) &&
-                       (left->gtSimd16Val.u64[1] == right->gtSimd16Val.u64[1]);
-            }
-
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            {
-                return (left->gtSimd32Val.u64[0] == right->gtSimd32Val.u64[0]) &&
-                       (left->gtSimd32Val.u64[1] == right->gtSimd32Val.u64[1]) &&
-                       (left->gtSimd32Val.u64[2] == right->gtSimd32Val.u64[2]) &&
-                       (left->gtSimd32Val.u64[3] == right->gtSimd32Val.u64[3]);
-            }
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-
-            default:
-            {
-                unreached();
-            }
-        }
-    }
-
-    bool IsZero() const
-    {
-        switch (gtType)
-        {
-#if defined(FEATURE_SIMD)
-            case TYP_SIMD8:
-            {
-                return (gtSimd8Val.u64[0] == 0x0000000000000000);
-            }
-
-            case TYP_SIMD12:
-            {
-                return (gtSimd12Val.u32[0] == 0x00000000) && (gtSimd12Val.u32[1] == 0x00000000) &&
-                       (gtSimd12Val.u32[2] == 0x00000000);
-            }
-
-            case TYP_SIMD16:
-            {
-                return (gtSimd16Val.u64[0] == 0x0000000000000000) && (gtSimd16Val.u64[1] == 0x0000000000000000);
-            }
-
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            {
-                return (gtSimd32Val.u64[0] == 0x0000000000000000) && (gtSimd32Val.u64[1] == 0x0000000000000000) &&
-                       (gtSimd32Val.u64[2] == 0x0000000000000000) && (gtSimd32Val.u64[3] == 0x0000000000000000);
-            }
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-
-            default:
-            {
-                unreached();
-            }
-        }
-    }
-
-    GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
-    {
-        assert(varTypeIsSIMD(type));
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeVecCon() : GenTree()
-    {
-    }
-#endif
-};
-
 // Encapsulates the SSA info carried by local nodes. Most local nodes have simple 1-to-1
 // relationships with their SSA refs. However, defs of promoted structs can represent
 // many SSA defs at the same time, and we need to efficiently encode that.
@@ -6459,6 +6308,367 @@ private:
 };
 #endif // FEATURE_HW_INTRINSICS
 
+// GenTreeVecCon -- vector  constant (GT_CNS_VEC)
+//
+struct GenTreeVecCon : public GenTree
+{
+    union {
+        simd8_t  gtSimd8Val;
+        simd12_t gtSimd12Val;
+        simd16_t gtSimd16Val;
+        simd32_t gtSimd32Val;
+    };
+
+#if defined(FEATURE_HW_INTRINSICS)
+    static unsigned ElementCount(unsigned simdSize, var_types simdBaseType);
+
+    template <typename simdTypename>
+    static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simdTypename& simdVal)
+    {
+        NamedIntrinsic intrinsic    = node->GetHWIntrinsicId();
+        var_types      simdType     = node->TypeGet();
+        var_types      simdBaseType = node->GetSimdBaseType();
+        unsigned       simdSize     = node->GetSimdSize();
+
+        size_t argCnt    = node->GetOperandCount();
+        size_t cnsArgCnt = 0;
+
+        switch (intrinsic)
+        {
+            case NI_Vector128_Create:
+            case NI_Vector128_CreateScalar:
+            case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+            case NI_Vector512_Create:
+            case NI_Vector256_CreateScalar:
+            case NI_Vector256_CreateScalarUnsafe:
+#elif defined(TARGET_ARM64)
+            case NI_Vector64_Create:
+            case NI_Vector64_CreateScalar:
+            case NI_Vector64_CreateScalarUnsafe:
+#endif
+            {
+                // Zero out the simdVal
+                simdVal = {};
+
+                // These intrinsics are meant to set the same value to every element.
+                if ((argCnt == 1) && HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(1), 0, simdVal, simdBaseType))
+                {
+// CreateScalar leaves the upper bits as zero
+
+#if defined(TARGET_XARCH)
+                    if ((intrinsic != NI_Vector128_CreateScalar) && (intrinsic != NI_Vector256_CreateScalar))
+#elif defined(TARGET_ARM64)
+                    if ((intrinsic != NI_Vector64_CreateScalar) && (intrinsic != NI_Vector128_CreateScalar))
+#endif
+                    {
+                        // Now assign the rest of the arguments.
+                        for (unsigned i = 1; i < ElementCount(simdSize, simdBaseType); i++)
+                        {
+                            HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(1), i, simdVal, simdBaseType);
+                        }
+                    }
+
+                    cnsArgCnt = 1;
+                }
+                else
+                {
+                    for (unsigned i = 1; i <= argCnt; i++)
+                    {
+                        if (HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(i), i - 1, simdVal, simdBaseType))
+                        {
+                            cnsArgCnt++;
+                        }
+                    }
+                }
+
+                assert((argCnt == 1) || (argCnt == ElementCount(simdSize, simdBaseType)));
+                return argCnt == cnsArgCnt;
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------
+    // HandleArgForHWIntrinsicCreate: Processes an argument for the GenTreeVecCon::IsHWIntrinsicCreateConstant method
+    //
+    //  Arguments:
+    //     arg       - The argument to process
+    //     argIdx    - The index of the argument being processed
+    //     simdVal - The vector constant being constructed
+    //     baseType  - The base type of the vector constant
+    //
+    //  Returns:
+    //     true if arg was a constant; otherwise, false
+    template <typename simdTypename>
+    static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, simdTypename& simdVal, var_types baseType)
+    {
+        switch (baseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                if (arg->IsCnsIntOrI())
+                {
+                    simdVal.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the constant to have been already zeroed
+                    assert(simdVal.i8[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                if (arg->IsCnsIntOrI())
+                {
+                    simdVal.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the constant to have been already zeroed
+                    assert(simdVal.i16[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                if (arg->IsCnsIntOrI())
+                {
+                    simdVal.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+                else
+                {
+                    // We expect the constant to have been already zeroed
+                    assert(simdVal.i32[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+#if defined(TARGET_64BIT)
+                if (arg->IsCnsIntOrI())
+                {
+                    simdVal.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->gtIconVal);
+                    return true;
+                }
+#else
+                if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
+                {
+                    // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
+                    // We need to reconstruct the 64-bit value in order to handle this
+
+                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+                    gtLconVal <<= 32;
+                    gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->gtIconVal;
+
+                    simdVal.i64[argIdx] = gtLconVal;
+                    return true;
+                }
+#endif // TARGET_64BIT
+                else
+                {
+                    // We expect the constant to have been already zeroed
+                    assert(simdVal.i64[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                if (arg->IsCnsFltOrDbl())
+                {
+                    simdVal.f32[argIdx] = static_cast<float>(arg->AsDblCon()->DconValue());
+                    return true;
+                }
+                else
+                {
+                    // We expect the constant to have been already zeroed
+                    // We check against the i32, rather than f32, to account for -0.0
+                    assert(simdVal.i32[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                if (arg->IsCnsFltOrDbl())
+                {
+                    simdVal.f64[argIdx] = static_cast<double>(arg->AsDblCon()->DconValue());
+                    return true;
+                }
+                else
+                {
+                    // We expect the constant to have been already zeroed
+                    // We check against the i64, rather than f64, to account for -0.0
+                    assert(simdVal.i64[argIdx] == 0);
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        return false;
+    }
+
+#endif // FEATURE_HW_INTRINSICS
+
+    bool IsAllBitsSet() const
+    {
+        switch (gtType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                return (gtSimd8Val.u64[0] == 0xFFFFFFFFFFFFFFFF);
+            }
+
+            case TYP_SIMD12:
+            {
+                return (gtSimd12Val.u32[0] == 0xFFFFFFFF) && (gtSimd12Val.u32[1] == 0xFFFFFFFF) &&
+                       (gtSimd12Val.u32[2] == 0xFFFFFFFF);
+            }
+
+            case TYP_SIMD16:
+            {
+                return (gtSimd16Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd16Val.u64[1] == 0xFFFFFFFFFFFFFFFF);
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+            {
+                return (gtSimd32Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[1] == 0xFFFFFFFFFFFFFFFF) &&
+                       (gtSimd32Val.u64[2] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[3] == 0xFFFFFFFFFFFFFFFF);
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    static bool Equals(const GenTreeVecCon* left, const GenTreeVecCon* right)
+    {
+        var_types gtType = left->TypeGet();
+
+        if (gtType != right->TypeGet())
+        {
+            return false;
+        }
+
+        switch (gtType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                return (left->gtSimd8Val.u64[0] == right->gtSimd8Val.u64[0]);
+            }
+
+            case TYP_SIMD12:
+            {
+                return (left->gtSimd12Val.u32[0] == right->gtSimd12Val.u32[0]) &&
+                       (left->gtSimd12Val.u32[1] == right->gtSimd12Val.u32[1]) &&
+                       (left->gtSimd12Val.u32[2] == right->gtSimd12Val.u32[2]);
+            }
+
+            case TYP_SIMD16:
+            {
+                return (left->gtSimd16Val.u64[0] == right->gtSimd16Val.u64[0]) &&
+                       (left->gtSimd16Val.u64[1] == right->gtSimd16Val.u64[1]);
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+            {
+                return (left->gtSimd32Val.u64[0] == right->gtSimd32Val.u64[0]) &&
+                       (left->gtSimd32Val.u64[1] == right->gtSimd32Val.u64[1]) &&
+                       (left->gtSimd32Val.u64[2] == right->gtSimd32Val.u64[2]) &&
+                       (left->gtSimd32Val.u64[3] == right->gtSimd32Val.u64[3]);
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    bool IsZero() const
+    {
+        switch (gtType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                return (gtSimd8Val.u64[0] == 0x0000000000000000);
+            }
+
+            case TYP_SIMD12:
+            {
+                return (gtSimd12Val.u32[0] == 0x00000000) && (gtSimd12Val.u32[1] == 0x00000000) &&
+                       (gtSimd12Val.u32[2] == 0x00000000);
+            }
+
+            case TYP_SIMD16:
+            {
+                return (gtSimd16Val.u64[0] == 0x0000000000000000) && (gtSimd16Val.u64[1] == 0x0000000000000000);
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+            {
+                return (gtSimd32Val.u64[0] == 0x0000000000000000) && (gtSimd32Val.u64[1] == 0x0000000000000000) &&
+                       (gtSimd32Val.u64[2] == 0x0000000000000000) && (gtSimd32Val.u64[3] == 0x0000000000000000);
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
+    {
+        assert(varTypeIsSIMD(type));
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeVecCon() : GenTree()
+    {
+    }
+#endif
+};
+
 // GenTreeIndexAddr: Given an array object and an index, checks that the index is within the bounds of the array if
 //                   necessary and produces the address of the value at that index of the array.
 //
@@ -8772,6 +8982,7 @@ inline bool GenTree::IsVectorCreate() const
             case NI_Vector128_Create:
 #if defined(TARGET_XARCH)
             case NI_Vector256_Create:
+            case NI_Vector512_Create:
 #elif defined(TARGET_ARMARCH)
             case NI_Vector64_Create:
 #endif

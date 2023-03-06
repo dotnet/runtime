@@ -28908,7 +28908,8 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
         return;
     }
 
-    set_region_plan_gen_num_sip (current_region, current_plan_gen_num);
+    decide_on_demotion_pin_surv (current_region);
+
     if (!heap_segment_swept_in_plan (current_region))
     {
         heap_segment_plan_allocated (current_region) = generation_allocation_pointer (consing_gen);

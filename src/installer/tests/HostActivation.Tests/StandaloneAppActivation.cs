@@ -85,7 +85,7 @@ namespace HostActivation.Tests
                 .Should().Pass()
                 .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
                 .And.HaveStdErrContaining($"Runtime config does not exist at [{fixture.TestProject.RuntimeConfigJson}]")
-                .And.HaveStdErrContaining($"Could not locate the dependencies manifest file [{fixture.TestProject.DepsJson}]");
+                .And.HaveStdErrContaining($"Dependencies manifest does not exist at [{fixture.TestProject.DepsJson}]");
         }
 
         [Fact]
