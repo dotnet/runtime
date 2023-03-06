@@ -24838,11 +24838,11 @@ bool GenTree::CanDivisionPossiblyOverflow(Compiler* comp) const
 
     if (op1->IsIntegralConst())
     {
-        if (op1->TypeIs(TYP_INT) && !op1->IsIntegralConst(INT32_MIN))
+        if (this->TypeIs(TYP_INT) && !op1->IsIntegralConst(INT32_MIN))
         {
             return false;
         }
-        else if (op1->TypeIs(TYP_LONG) && !op1->IsIntegralConst(INT64_MIN))
+        else if (this->TypeIs(TYP_LONG) && !op1->IsIntegralConst(INT64_MIN))
         {
             return false;
         }
