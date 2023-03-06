@@ -101,10 +101,21 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
 
+        public const string System_Guid = "System.Guid";
+
+        public const string System_Runtime_CompilerServices_RuntimeHelpers = "System.Runtime.CompilerServices.RuntimeHelpers";
+
         public const string GeneratedComInterfaceAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute";
+
         public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
+
         public const string ComInterfaceTypeAttribute = "System.Runtime.InteropServices.ComInterfaceType";
+
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
+
+        public const string IIUnknownInterfaceType = "System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType";
+        public const string IUnknownDerivedAttribute = "System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute";
+
         public const string ComWrappersUnwrapper = "System.Runtime.InteropServices.Marshalling.ComWrappersUnwrapper";
         public const string UnmanagedObjectUnwrapperAttribute = "System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapperAttribute`1";
 

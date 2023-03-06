@@ -21,7 +21,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task SingleComInterface()
         {
-            string source = $$"""
+            string source = """
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
@@ -36,6 +36,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.ComInterfaceGenerator());
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
             // We'll create one syntax tree for the new interface.
             Assert.Equal(comp.SyntaxTrees.Count() + 1, newComp.SyntaxTrees.Count());
 
@@ -66,6 +67,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.ComInterfaceGenerator());
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
             // We'll create one syntax tree per user-defined interface.
             Assert.Equal(comp.SyntaxTrees.Count() + 2, newComp.SyntaxTrees.Count());
 
@@ -73,42 +75,35 @@ namespace ComInterfaceGenerator.Unit.Tests
             VerifyShape(newComp, "J");
         }
 
-        private static void VerifyShape(Compilation newComp, string userDefinedInterfaceMetadataName)
+        private static void VerifyShape(Compilation comp, string userDefinedInterfaceMetadataName)
         {
-            INamedTypeSymbol? userDefinedInterface = newComp.Assembly.GetTypeByMetadataName(userDefinedInterfaceMetadataName);
+            INamedTypeSymbol? userDefinedInterface = comp.Assembly.GetTypeByMetadataName(userDefinedInterfaceMetadataName);
             Assert.NotNull(userDefinedInterface);
 
-            AttributeData? iUnknownDerivedAttribute = userDefinedInterface.GetAttributes().FirstOrDefault(attr => attr.AttributeClass?.MetadataName == "System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute`2");
+            INamedTypeSymbol? iUnknownDerivedAttributeType = comp.GetTypeByMetadataName("System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute`2");
 
-            Assert.NotNull(iUnknownDerivedAttribute);
+            Assert.NotNull(iUnknownDerivedAttributeType);
+
+            AttributeData iUnknownDerivedAttribute = Assert.Single(
+                userDefinedInterface.GetAttributes(),
+                attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass?.OriginalDefinition, iUnknownDerivedAttributeType));
 
             Assert.Collection(Assert.IsAssignableFrom<INamedTypeSymbol>(iUnknownDerivedAttribute.AttributeClass).TypeArguments,
                 infoType =>
                 {
-                    var source = (TypeDeclarationSyntax)infoType.DeclaringSyntaxReferences[0].GetSyntax();
-                    Assert.Contains(SyntaxFactory.Token(SyntaxKind.FileKeyword), source.Modifiers, TokenKindEqualityComparer.Instance);
+                    Assert.True(Assert.IsAssignableFrom<INamedTypeSymbol>(infoType).IsFileLocal);
                 },
                 implementationType =>
                 {
-                    var source = (TypeDeclarationSyntax)implementationType.DeclaringSyntaxReferences[0].GetSyntax();
-                    Assert.Contains(SyntaxFactory.Token(SyntaxKind.FileKeyword), source.Modifiers, TokenKindEqualityComparer.Instance);
+                    Assert.True(Assert.IsAssignableFrom<INamedTypeSymbol>(implementationType).IsFileLocal);
                     Assert.Contains(userDefinedInterface, implementationType.Interfaces, SymbolEqualityComparer.Default);
-                    Assert.Contains(implementationType.GetAttributes(), attr => attr.AttributeClass?.MetadataName == typeof(DynamicInterfaceCastableImplementationAttribute).FullName);
+                    Assert.Contains(implementationType.GetAttributes(), attr => attr.AttributeClass?.ToDisplayString() == typeof(DynamicInterfaceCastableImplementationAttribute).FullName);
                     Assert.All(userDefinedInterface.GetMembers().OfType<IMethodSymbol>().Where(method => method.IsAbstract && !method.IsStatic),
                         method =>
                         {
                             Assert.NotNull(implementationType.FindImplementationForInterfaceMember(method));
                         });
                 });
-        }
-
-        private sealed class TokenKindEqualityComparer : EqualityComparer<SyntaxToken>
-        {
-            public static readonly EqualityComparer<SyntaxToken> Instance = new TokenKindEqualityComparer();
-
-            private TokenKindEqualityComparer() { }
-            public override bool Equals(SyntaxToken x, SyntaxToken y) => x.IsKind(y.Kind());
-            public override int GetHashCode([DisallowNull] SyntaxToken obj) => obj.Kind().GetHashCode();
         }
     }
 }
