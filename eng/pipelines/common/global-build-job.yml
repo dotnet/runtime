@@ -73,7 +73,7 @@ jobs:
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
-          value: /p:PortableOS=linux-bionic
+          value: /p:RuntimeOS=linux-bionic
 
       # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
       - name: _crossBuildPropertyArg

@@ -176,21 +176,21 @@
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
 
-  <!-- PortableOS is the portable OS corresponding to the target platform. -->
+  <!-- _portableOS is the portable OS corresponding to the target platform. -->
   <PropertyGroup Label="CalculatePortableOS">
-    <PortableOS>$(TargetOS.ToLowerInvariant())</PortableOS>
-    <PortableOS Condition="'$(PortableOS)' == 'anyos'">$(__PortableOS)</PortableOS>
-    <PortableOS Condition="'$(PortableOS)' == 'windows'">win</PortableOS>
-    <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableOS)' == 'linux-musl'">linux-musl</PortableOS>
-    <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableOS)' == 'linux-bionic'">linux-bionic</PortableOS>
+    <_portableOS>$(TargetOS.ToLowerInvariant())</_portableOS>
+    <_portableOS Condition="'$(_portableOS)' == 'anyos'">$(__PortableOS)</_portableOS>
+    <_portableOS Condition="'$(_portableOS)' == 'windows'">win</_portableOS>
+    <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableOS)' == 'linux-musl'">linux-musl</_portableOS>
+    <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableOS)' == 'linux-bionic'">linux-bionic</_portableOS>
+    <_portableOS Condition="'$(RuntimeOS)' == 'linux-bionic'">linux-bionic</_portableOS>
   </PropertyGroup>
 
   <!-- PackageRID is used for packages needed for the target. -->
   <PropertyGroup Label="CalculatePackageRID">
-    <_packageOS>$(PortableOS)</_packageOS>
-    <_packageOS Condition="'$(CrossBuild)' != 'true' and '$(RuntimeOS)' != ''">$(RuntimeOS)</_packageOS>
-
-    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(PortableOS)' != 'linux-musl' and '$(PortableOS)' != 'linux-bionic'">$(_hostOS)</_packageOS>
+    <_packageOS>$(_portableOS)</_packageOS>
+    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' != 'linux-musl' and '$(_portableOS)' != 'linux-bionic'">$(_hostOS)</_packageOS>
+    <_packageOS Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)</_packageOS>
 
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
@@ -201,11 +201,12 @@
           note: for CrossBuilds, we're unable to determine if the host is linux-musl or linux-bionic. -->
     <_portableHostOS>$(_hostOS)</_portableHostOS>
     <_portableHostOS Condition="'$(_portableHostOS)' == 'windows'">win</_portableHostOS>
-    <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(PortableOS)' == 'linux-musl'">linux-musl</_portableHostOS>
-    <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(PortableOS)' == 'linux-bionic'">linux-bionic</_portableHostOS>
+    <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_portableHostOS>
+    <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-bionic'">linux-bionic</_portableHostOS>
 
-    <ToolsRID Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)-$(_hostArch)</ToolsRID>
-    <ToolsRID Condition="'$(ToolsRID)' == ''">$(_portableHostOS)-$(_hostArch)</ToolsRID>
+    <ToolsOS>$(_portableHostOS)</ToolsOS>
+
+    <ToolsRID Condition="'$(ToolsRID)' == ''">$(ToolsOS)-$(_hostArch)</ToolsRID>
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
   </PropertyGroup>
 
@@ -219,7 +220,7 @@
     <_distroRidIndex>$(_parseDistroRid.LastIndexOf('-'))</_distroRidIndex>
 
     <_outputOS>$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_outputOS>
-    <_outputOS Condition="'$(PortableBuild)' == 'true'">$(PortableOS)</_outputOS>
+    <_outputOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_outputOS>
 
     <OutputRID Condition="'$(OutputRID)' == ''">$(_outputOS)-$(TargetArchitecture)</OutputRID>
   </PropertyGroup>
@@ -229,8 +230,8 @@
     <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
     <TargetsSolaris Condition="'$(TargetOS)' == 'solaris'">true</TargetsSolaris>
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
-    <TargetsLinuxBionic Condition="'$(PortableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
-    <TargetsLinuxMusl Condition="'$(PortableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
+    <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
+    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>
