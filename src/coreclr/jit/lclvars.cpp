@@ -4518,6 +4518,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 
         lvaShadowSPslotsVar = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
         lvaSetStruct(lvaShadowSPslotsVar, typGetBlkLayout(slotsNeeded * TARGET_POINTER_SIZE), false);
+        lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
     }
 
 #endif // !FEATURE_EH_FUNCLETS
