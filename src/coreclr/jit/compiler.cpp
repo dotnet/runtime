@@ -3353,10 +3353,10 @@ bool Compiler::compJitHaltMethod()
     /* This method returns true when we use an INS_BREAKPOINT to allow us to step into the generated native code */
     /* Note that this these two "Jit" environment variables also work for ngen images */
 
-    if (JitConfig.JitHalt().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-    {
-        return true;
-    }
+    //if (JitConfig.JitHalt().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1))
+    //{
+    //    return true;
+    //}
 
     /* Use this Hash variant when there are a lot of method with the same name and different signatures */
 

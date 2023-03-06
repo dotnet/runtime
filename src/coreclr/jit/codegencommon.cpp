@@ -5462,6 +5462,14 @@ void CodeGen::genFnProlog()
     }
 #endif // defined(TARGET_ARM64)
 
+    //const char* fullName = compiler->eeGetMethodFullName(compiler->info.compMethodHnd);
+    //if ((_strcmpi(fullName, "System.Threading.Tests.Perf_ThreadStatic:GetThreadStaticInt():int:this") == 0) &&
+    //    compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1))
+    //{
+    //    instGen(INS_nop);
+    //    instGen(INS_BREAKPOINT);
+    //}
+
 #ifdef DEBUG
 
     if (compiler->compJitHaltMethod())

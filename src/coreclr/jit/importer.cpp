@@ -14434,6 +14434,9 @@ GenTree* Compiler::impThreadLocalFieldRead(CORINFO_RESOLVED_TOKEN& token,
     impAssignTempGen(tmpNum, maxThreadStaticBlocksQmark, token.hClass, CHECK_SPILL_ALL);
     var_types type = genActualType(lvaTable[tmpNum].TypeGet());
 
+    //slowPathForThreadStaticBlockNull->gtFlags = (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    //slowPathForMaxThreadStaticBlock->gtFlags = (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
     return gtNewLclvNode(tmpNum, type);
 }
 
@@ -14546,8 +14549,13 @@ GenTree* Compiler::impThreadLocalFieldWrite(CORINFO_RESOLVED_TOKEN& token,
     GenTree*  threadStaticBlockValueSlow =
         fgGetStaticsCCtorHelper(token.hClass, CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
                                 threadLocalInfo.threadStaticBlockIndex); // TODO: fix the helper name
+    
 
     GenTree* slowPathForMaxThreadStaticBlock = gtCloneExpr(threadStaticBlockValueSlow);
+
+    //threadStaticBlockValueSlow->gtFlags      = (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    //slowPathForMaxThreadStaticBlock->gtFlags = (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    
 
     // Value of maxThreadStaticBlocks
     GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(threadLocalInfo.offsetOfMaxThreadStaticBlocks, TYP_I_IMPL);
@@ -14595,7 +14603,7 @@ GenTree* Compiler::impThreadLocalFieldWrite(CORINFO_RESOLVED_TOKEN& token,
     // finalQmarkNode is the one that has static block address
     // 
     const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("TLS field access"));
-    impAssignTempGen(tmpNum, threadStaticBlockValueQmark, token.hClass, CHECK_SPILL_ALL);
+    impAssignTempGen(tmpNum, maxThreadStaticBlocksQmark, token.hClass, CHECK_SPILL_ALL);
     var_types type = genActualType(TYP_I_IMPL);
 
     GenTree* threadStaticBlockAddress = gtNewLclvNode(tmpNum, type);
