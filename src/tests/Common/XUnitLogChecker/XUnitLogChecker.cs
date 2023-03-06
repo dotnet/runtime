@@ -121,6 +121,22 @@ public class XUnitLogChecker
         // Rename the temp log to the final log, so that Helix can use it without
         // knowing what transpired here.
         File.Move(tempLogPath, finalLogPath);
+
+        if (args.Length > 2)
+        {
+            string dumpPath = args[2];
+
+            if (!OperatingSystem.IsWindows())
+            {
+                CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport($"{dumpPath}.crashreport.json",
+                                                                        Console.Out);
+            }
+            else
+            {
+                CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath, Console.Out);
+            }
+        }
+
         return SUCCESS;
     }
 
