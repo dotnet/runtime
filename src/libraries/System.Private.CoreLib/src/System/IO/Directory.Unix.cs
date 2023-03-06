@@ -26,6 +26,9 @@ namespace System.IO
 
         private static unsafe string CreateTempSubdirectoryCore(string? prefix)
         {
+            if (OperatingSystem.IsWasi())
+                throw new PlatformNotSupportedException();
+
             // mkdtemp takes a char* and overwrites the XXXXXX with six characters
             // that'll result in a unique directory name.
             string tempPath = Path.GetTempPath();

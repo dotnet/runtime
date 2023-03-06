@@ -892,10 +892,11 @@ intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 #elif TARGET_WASI
     assert_msg(false, "Not supported on WASI", 0);
     result = -1;
+    errno = ENOTSUP;
 #else
 #error "Cannot find mkstemps nor mkstemp on this platform"
 #endif
-    return  result;
+    return result;
 }
 
 static int32_t ConvertMMapProtection(int32_t protection)

@@ -94,6 +94,9 @@ namespace System.IO
 
         public static unsafe string GetTempFileName()
         {
+            if (OperatingSystem.IsWasi())
+                throw new PlatformNotSupportedException();
+
             const int SuffixByteLength = 4; // ".tmp"
             ReadOnlySpan<byte> fileTemplate = "tmpXXXXXX.tmp"u8;
 
