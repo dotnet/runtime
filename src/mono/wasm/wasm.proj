@@ -198,12 +198,12 @@
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
       <EmccExportedRuntimeMethod Include="addRunDependency" />
       <EmccExportedRuntimeMethod Include="addFunction" />
+      <EmccExportedRuntimeMethod Include="getWasmTableEntry" />
 
       <EmccExportedFunction Include="_malloc" />
       <EmccExportedFunction Include="_memalign" />
       <EmccExportedFunction Include="_htons" />
       <EmccExportedFunction Include="_ntohs" />
-      <EmccExportedFunction Include="getWasmTableEntry" />
     </ItemGroup>
     <!-- after 3.0 -->
     <ItemGroup Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))">
