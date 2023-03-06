@@ -2595,7 +2595,7 @@ get_gshared_info_slot (MonoCompile *cfg, MonoJumpInfo *patch_info, MonoRgctxInfo
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_VIRT_METHOD:
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_DELEGATE_INFO:
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		data = (gpointer)patch_info->data.target;
@@ -3610,18 +3610,31 @@ emit_set_deopt_il_offset (MonoCompile *cfg, int offset)
 }
 
 static MonoInst*
-emit_get_rgctx_dele_tramp (MonoCompile *cfg, int context_used,
-							MonoClass *klass, MonoMethod *virt_method, gboolean _virtual, MonoRgctxInfoType rgctx_type)
+emit_get_rgctx_dele_tramp_info (MonoCompile *cfg, int context_used,
+								MonoClass *klass, MonoMethod *method, gboolean is_virtual, MonoRgctxInfoType rgctx_type)
 {
 	MonoDelegateClassMethodPair *info;
 	MonoJumpInfoRgctxEntry *entry;
 
 	info = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoDelegateClassMethodPair));
 	info->klass = klass;
-	info->method = virt_method;
-	info->is_virtual = _virtual;
+	info->method = method;
+	info->is_virtual = is_virtual;
 
-	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, info, rgctx_type);
+	if (!context_used) {
+		MonoInst *ins;
+
+		g_assert (rgctx_type == MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
+		if (cfg->compile_aot) {
+			EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_DELEGATE_INFO, info);
+		} else {
+			MonoDelegateTrampInfo *tramp_info = mono_create_delegate_trampoline_info (klass, method, is_virtual);
+			EMIT_NEW_PCONST (cfg, ins, tramp_info);
+		}
+		return ins;
+	}
+
+	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_DELEGATE_INFO, info, rgctx_type);
 
 	return emit_rgctx_fetch (cfg, context_used, entry);
 }
@@ -3716,9 +3729,9 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);
 	}
 
-	if (target_method_context_used || invoke_context_used) {
-		info_ins = emit_get_rgctx_dele_tramp (cfg, target_method_context_used | invoke_context_used, klass, method, is_virtual, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
+	info_ins = emit_get_rgctx_dele_tramp_info (cfg, target_method_context_used | invoke_context_used, klass, method, is_virtual, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
 
+	if (target_method_context_used || invoke_context_used) {
 		//This is emitted as a constant store for the non-shared case.
 		//We copy from the delegate trampoline info as it's faster than a rgctx fetch
 		dreg = alloc_preg (cfg);
@@ -3726,17 +3739,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method));
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), dreg);
 		}
-	} else if (cfg->compile_aot) {
-		MonoDelegateClassMethodPair *del_tramp;
-
-		del_tramp = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoDelegateClassMethodPair));
-		del_tramp->klass = klass;
-		del_tramp->method = method;
-		del_tramp->is_virtual = is_virtual;
-		EMIT_NEW_AOTCONST (cfg, info_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
-	} else {
-		MonoDelegateTrampInfo *info = mono_create_delegate_trampoline_info (klass, method, is_virtual);
-		EMIT_NEW_PCONST (cfg, info_ins, info);
 	}
 
 	if (cfg->llvm_only) {
