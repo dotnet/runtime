@@ -2986,7 +2986,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
         // Inlining could replace a canon struct type with an exact one.
         varDsc->SetLayout(layout);
-        assert(varDsc->lvExactSize != 0);
+        assert(layout->IsBlockLayout() || (varDsc->lvExactSize != 0));
     }
 
     if (!layout->IsBlockLayout())

@@ -1082,6 +1082,7 @@ public:
         lvStkOffs = offset;
     }
 
+    // TODO-Cleanup: Remove this in favor of GetLayout()->Size/genTypeSize(lvType).
     unsigned lvExactSize; // (exact) size of a STRUCT/SIMD/BLK local in bytes.
 
     unsigned lvSize() const;
