@@ -192,7 +192,7 @@
 
     <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(PortableOS)' != 'linux-musl' and '$(PortableOS)' != 'linux-bionic'">$(_hostOS)</_packageOS>
 
-    <PackageRID>$(PackageOS)-$(TargetArchitecture)</PackageRID>
+    <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
 
   <!-- ToolsRID is used for packages needed on the build host. -->
