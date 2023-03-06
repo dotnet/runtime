@@ -2655,10 +2655,10 @@ public:
                 //
                 int spillSimdRegInProlog = 1;
 
-// If we have a SIMD32 that is live across a call we have even higher spill costs
-//
 #if defined(TARGET_XARCH)
-                if (candidate->Expr()->TypeIs(TYP_SIMD32))
+                // If we have a SIMD32 that is live across a call we have even higher spill costs
+                //
+                if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
                 {
                     // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
                     // (to hold the upper half of the simd32 register that isn't preserved across the call)

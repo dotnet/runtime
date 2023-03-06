@@ -733,16 +733,11 @@ LinearScan::LinearScan(Compiler* theCompiler)
             availableRegs[i] = &availableDoubleRegs;
         }
 #ifdef FEATURE_SIMD
-#if defined(TARGET_XARCH)
-        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD32))
-#else
-        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD16))
-#endif // TARGET_XARCH
-
+        else if (varTypeIsSIMD(thisType))
         {
             availableRegs[i] = &availableDoubleRegs;
         }
-#endif
+#endif // FEATURE_SIMD
         else
         {
             availableRegs[i] = &availableIntRegs;
@@ -1602,6 +1597,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         case TYP_SIMD16:
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
+        case TYP_SIMD64:
 #endif // TARGET_XARCH
         {
             return !varDsc->lvPromoted;
@@ -5085,6 +5081,13 @@ void LinearScan::allocateRegisters()
                 {
                     allocate = false;
                 }
+#if defined(TARGET_XARCH)
+                else if (lclVarInterval->registerType == TYP_SIMD64)
+                {
+                    allocate                           = false;
+                    lclVarInterval->isPartiallySpilled = true;
+                }
+#endif // TARGET_XARCH
                 else
                 {
                     lclVarInterval->isPartiallySpilled = true;

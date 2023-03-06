@@ -2280,6 +2280,40 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
+    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL and
+    // AVX512F/AVX512BW/AVX512CD/AVX512DQ/VX512VL have been shipped together historically.
+    // It is therefore unlikely that future CPUs only support "just one" and
+    // not worth the additional complexity in the JIT to support.
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ))
+    {
+        if (!DoJitStressEvexEncoding())
+        {
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
+#ifdef TARGET_AMD64
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
+#endif // TARGET_AMD64
+        }
+        else
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
+        }
+    }
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
     {
@@ -2297,14 +2331,14 @@ void Compiler::compSetProcessor()
         if (canUseEvexEncoding())
         {
             codeGen->GetEmitter()->SetUseEvexEncoding(true);
-            // TODO-XArch-AVX512: Revisit other flags to be set once avx512 instructions are added.
+            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
         }
         if (canUseVexEncoding())
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
-            codeGen->GetEmitter()->SetContains256bitAVX(false);
+            codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
         }
     }
 #endif // TARGET_XARCH

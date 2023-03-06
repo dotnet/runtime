@@ -504,7 +504,37 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             if (vecCon->IsZero())
             {
-                if ((attr != EA_32BYTE) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                bool isSupported;
+
+                switch (attr)
+                {
+                    case EA_32BYTE:
+                    {
+                        isSupported = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX);
+                        break;
+                    }
+
+                    case EA_64BYTE:
+                    {
+                        isSupported = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F);
+                        break;
+                    }
+
+                    case EA_8BYTE:
+                    case EA_16BYTE:
+                    {
+                        assert((attr == EA_8BYTE) || (attr == EA_16BYTE));
+                        isSupported = true;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+
+                if (isSupported)
                 {
 #if defined(FEATURE_SIMD)
                     emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
@@ -547,6 +577,18 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 {
                     simd32_t             constValue = vecCon->gtSimd32Val;
                     CORINFO_FIELD_HANDLE hnd        = emit->emitSimd32Const(constValue);
+
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
+
+                case TYP_SIMD64:
+                {
+                    simd64_t constValue;
+                    // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+                    constValue.v256[0]       = vecCon->gtSimd32Val;
+                    constValue.v256[1]       = vecCon->gtSimd32Val;
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd64Const(constValue);
 
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;
@@ -5730,7 +5772,8 @@ void CodeGen::genCall(GenTreeCall* call)
     // To limit code size increase impact: we only issue VZEROUPPER before PInvoke call, not issue
     // VZEROUPPER after PInvoke call because transition penalty from legacy SSE to AVX only happens
     // when there's preceding 256-bit AVX to legacy SSE transition penalty.
-    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && GetEmitter()->Contains256bitAVX())
+    // This applies to 512bit AVX512 instructions as well.
+    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && (GetEmitter()->Contains256bitOrMoreAVX()))
     {
         assert(compiler->canUseVexEncoding());
         instGen(INS_vzeroupper);
@@ -11026,7 +11069,7 @@ void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
     bool emitVzeroUpper = false;
     if (check256bitOnly)
     {
-        emitVzeroUpper = GetEmitter()->Contains256bitAVX();
+        emitVzeroUpper = GetEmitter()->Contains256bitOrMoreAVX();
     }
     else
     {

@@ -11949,7 +11949,11 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     size_t roDataAlignment = sizeof(void*);
-    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
+    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN)!= 0)
+    {
+        roDataAlignment = 64;
+    }
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
     {
         roDataAlignment = 32;
     }
