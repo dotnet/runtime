@@ -515,7 +515,7 @@ dn_umap_extract_key (
 dn_umap_it_t
 dn_umap_custom_find (
 	dn_umap_t *map,
-	const void *data,
+	const void *key,
 	dn_umap_equal_func_t equal_func)
 {
 	DN_ASSERT (map);
@@ -523,13 +523,14 @@ dn_umap_custom_find (
 	dn_umap_it_t found = dn_umap_end (map);
 	equal_func = equal_func ? equal_func : map->_internal._key_equal_func;
 
-	for (uint32_t i = 0; i < map->_internal._bucket_count; i++) {
-		for (dn_umap_node_t *node = map->_internal._buckets [i]; node; node = node->next)
-			if (equal_func (node->key, data)) {
-				found._internal._index = i;
-				found._internal._node = node;
-				return found;
-			}
+	uint32_t hashcode = map->_internal._hash_func (key) % map->_internal._bucket_count;
+
+	for (dn_umap_node_t *node = map->_internal._buckets [hashcode]; node; node = node->next) {
+		if (equal_func (node->key, key)) {
+			found._internal._index = hashcode;
+			found._internal._node = node;
+			return found;
+		}
 	}
 
 	return found;
