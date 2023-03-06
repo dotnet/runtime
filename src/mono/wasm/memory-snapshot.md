@@ -2,9 +2,9 @@
 
 We take snapshot of WASM memory after first cold start at run time​.
 We store it on the client side in the browser cache.
-For subsequent start of the application with the same configuration and same assets, we could use the snapshot.
-Instead of downloading all the assets and doing the runtime startup again.
-Such subsequent start is significantly faster.
+For subsequent runs with the same configuration and same assets, we use the snapshot 
+instead of downloading everything again and doing the runtime startup again.
+These subsequent starts are significantly faster.
 
 ### Implementation details
 
