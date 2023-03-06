@@ -92,11 +92,16 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     // Compute the block weights given the inputs and edge likelihoods
     //
     ComputeBlockWeights();
+
+    // For now, since we have installed synthesized profile data,
+    // act as if we don't have "real" profile data.
+    //
+    m_comp->fgPgoHaveWeights = false;
 }
 
 //------------------------------------------------------------------------
 // AssignLikelihoods: update edge likelihoods and block counts based
-//   entrely on heuristics.
+//   entirely on heuristics.
 //
 // Notes:
 //   any existing likelihoods are removed in favor of heuristic
@@ -171,7 +176,7 @@ bool ProfileSynthesis::IsDfsAncestor(BasicBlock* x, BasicBlock* y)
 }
 
 //------------------------------------------------------------------------
-// IsLoopHeader: see if a block is a loop header, and if so return
+// GetLoopFromHeader: see if a block is a loop header, and if so return
 //   the associated loop.
 //
 // Arguments:
@@ -180,7 +185,7 @@ bool ProfileSynthesis::IsDfsAncestor(BasicBlock* x, BasicBlock* y)
 // Returns:
 //    loop headed by block, or nullptr
 //
-SimpleLoop* ProfileSynthesis::IsLoopHeader(BasicBlock* block)
+SimpleLoop* ProfileSynthesis::GetLoopFromHeader(BasicBlock* block)
 {
     for (SimpleLoop* loop : *m_loops)
     {
@@ -405,7 +410,7 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// AssignLikelihoodCond: update edge likelihood for a block that
+// AssignLikelihoodSwitch: update edge likelihood for a block that
 //   ends in a switch
 //
 // Arguments;
@@ -416,6 +421,7 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
     // Assume each switch case is equally probable
     //
     const unsigned n = block->NumSucc();
+    assert(n != 0);
     const weight_t p = 1 / (weight_t)n;
 
     // Each unique edge gets some multiple of that basic probability
@@ -607,7 +613,7 @@ void ProfileSynthesis::FindLoops()
         {
             BasicBlock* const loopBlock = m_bbNumToBlockMap[bbNum];
 
-            for (BasicBlock* const succBlock : loopBlock->Succs())
+            for (BasicBlock* const succBlock : loopBlock->Succs(m_comp))
             {
                 if (!BlockSetOps::IsMember(m_comp, loop->m_blocks, succBlock->bbNum))
                 {
@@ -746,7 +752,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
         }
         else
         {
-            SimpleLoop* nestedLoop = IsLoopHeader(block);
+            SimpleLoop* const nestedLoop = GetLoopFromHeader(block);
 
             if (nestedLoop != nullptr)
             {
@@ -869,7 +875,7 @@ void ProfileSynthesis::ComputeBlockWeights()
     for (unsigned int i = 1; i <= m_comp->fgBBNumMax; i++)
     {
         BasicBlock* const block = m_comp->fgBBReversePostorder[i];
-        SimpleLoop*       loop  = IsLoopHeader(block);
+        SimpleLoop* const loop  = GetLoopFromHeader(block);
 
         if (loop != nullptr)
         {

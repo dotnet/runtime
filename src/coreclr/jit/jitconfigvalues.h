@@ -593,7 +593,7 @@ CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtua
 CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts"), 0) // Collect 64-bit counts randomly
                                                                                      // for some methods.
 // 1: profile synthesis for root methods
-// 2: profile synthesis for foot methods w/o pgo data
+// 2: profile synthesis for root methods w/o pgo data
 CONFIG_INTEGER(JitSynthesizeCounts, W("JitSynthesizeCounts"), 0)
 #endif
 

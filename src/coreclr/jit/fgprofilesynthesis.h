@@ -75,7 +75,7 @@ private:
     bool IsLoopExitEdge(FlowEdge* edge);
 
     void        FindLoops();
-    SimpleLoop* IsLoopHeader(BasicBlock* block);
+    SimpleLoop* GetLoopFromHeader(BasicBlock* block);
 
     void AssignLikelihoods();
     void AssignLikelihoodNext(BasicBlock* block);

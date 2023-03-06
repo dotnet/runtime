@@ -2436,7 +2436,6 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         {
             JITDUMP("Synthesizing profile data\n");
             ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
-            fgPgoHaveWeights = false;
             return PhaseStatus::MODIFIED_EVERYTHING;
         }
     }

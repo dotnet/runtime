@@ -296,6 +296,7 @@ set( JIT_HEADERS
   emitjmps.h
   emitpub.h
   error.h
+  fgprofilesynthesis.h
   gentree.h
   gentreeopsdef.h
   gtlist.h
