@@ -620,9 +620,8 @@ MonoClassMetadataUpdateInfo*
 mono_class_get_metadata_update_info (MonoClass *klass)
 {
 	switch (m_class_get_class_kind (klass)) {
-	case MONO_CLASS_GTD:
-		return NULL;
 	case MONO_CLASS_DEF:
+	case MONO_CLASS_GTD:
 		return (MonoClassMetadataUpdateInfo *)get_pointer_property (klass, PROP_METADATA_UPDATE_INFO);
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
@@ -648,6 +647,8 @@ mono_class_set_metadata_update_info (MonoClass *klass, MonoClassMetadataUpdateIn
 		return;
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
+		/* metadata-update: this shouldn't happen */
+		g_assert_not_reached();
 	case MONO_CLASS_POINTER:
 	case MONO_CLASS_GC_FILLER:
 		g_assert_not_reached ();
@@ -666,6 +667,8 @@ mono_class_has_metadata_update_info (MonoClass *klass)
 		return get_pointer_property (klass, PROP_METADATA_UPDATE_INFO) != NULL;
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
+		/* metadata-update: this shouldn't happen */
+		g_assert_not_reached();
 	case MONO_CLASS_POINTER:
 	case MONO_CLASS_GC_FILLER:
 		return FALSE;

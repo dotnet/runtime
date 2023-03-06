@@ -3369,10 +3369,13 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter)
 	GSList *members = hot_reload_get_added_members (klass);
 	if (!members)
 		return NULL;
-	// expect to only see class defs here.  Rationale: adding methods to generic classes is not
-	// allowed (if a generation adds a new generic class, it won't be here - those methods will
-	// be in the normal iteration code, not here.
-	g_assert (m_class_get_class_kind (klass) == MONO_CLASS_DEF);
+	// expect to only see class defs or GTDs here.  We don't expect to see arrays or pointers
+	// here since they don't own MONO_TABLE_METHOD entries.
+	//
+	// TODO: metadata-update: we might see generic instances, though.  Handle them by iterating
+	// over the GTD and inflating.
+	int class_kind = m_class_get_class_kind (klass);
+	g_assert (class_kind == MONO_CLASS_DEF || class_kind == MONO_CLASS_GTD);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Iterating added methods of 0x%08x idx = %u", m_class_get_type_token (klass), idx);
 
