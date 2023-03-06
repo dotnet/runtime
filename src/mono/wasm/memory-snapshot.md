@@ -11,7 +11,7 @@ Such subsequent start is significantly faster.
 - the consistency of inputs (configuration and assets) with the snapshot is done by calculating SHA256 of the inputs.
     - the DLLs and other downloaded assets each have SHA256 which is used to validate 'integrity' by the browser.
     - the mono-config has field `assetsHash` which is summary SHA256 of all the assets.
-    - the configuration could be changed programmatically and se we calculate the hash at the runtime, just before taking snapshot. 
+    - the configuration could be changed programmatically and se we calculate the hash at the runtime, just before taking snapshot.
 - the snapshot is taken just after we initialize the Mono runtime
     - cwraps initialized (they would be initialized again on subsequent start)
     - after loading all the DLLs into memory.
