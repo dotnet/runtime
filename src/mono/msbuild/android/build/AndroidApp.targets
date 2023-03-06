@@ -3,7 +3,7 @@
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <AndroidGenerateAppBundle >true</AndroidGenerateAppBundle>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
     <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
     <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>
   </PropertyGroup>
@@ -61,11 +61,11 @@
 
   <Target Name="_AndroidResolveReferences">
     <ItemGroup>
-      <_AndroidAssembliesInternal Remove="@(_AndroidAssembliesInternal)" />
-      <_AndroidAssembliesInternal Include="@(AndroidAssembliesToBundle)">
+      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
+      <AppAssembliesInternal Include="@(AndroidAssembliesToBundle)">
         <_InternalForceInterpret>%(AndroidAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
         <_IsNative>%(AndroidAssembliesToBundle._IsNative)</_IsNative>
-      </_AndroidAssembliesInternal>
+      </AppAssembliesInternal>
     </ItemGroup>
   </Target>
 
@@ -100,14 +100,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_AndroidAssembliesInternal)"
-                           Condition="'%(_AndroidAssembliesInternal._InternalForceInterpret)' != 'true'">
+      <_AotInputAssemblies Include="@(AppAssembliesInternal)"
+                           Condition="'%(AppAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
       </_AotInputAssemblies>
 
-      <_AOT_InternalForceInterpretAssemblies Include="@(_AndroidAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
-      <_AndroidAssembliesInternal Remove="@(_AndroidAssembliesInternal)" />
+      <_AOT_InternalForceInterpretAssemblies Include="@(AppAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
     </ItemGroup>
 
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
@@ -165,12 +165,11 @@
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="AsmOnly"
         UseLLVM="$(MonoEnableLLVM)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="_AndroidAssembliesInternal" />
+        <Output TaskParameter="CompiledAssemblies" ItemName="AppAssembliesInternal" />
     </MonoAOTCompiler>
 
     <ItemGroup>
-      <_AndroidAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
-      <AppAssembliesInternal Include="@(_AndroidAssembliesInternal)" />
+      <AppAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
   </Target>
 
@@ -186,7 +185,7 @@
 
     <AndroidAppBuilderTask
         AppDir="$(AndroidAppDir)"
-        Assemblies="@(_AndroidAssembliesInternal)"
+        Assemblies="@(AppAssembliesInternal)"
         DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
         ExtraLinkerArguments="@(ExtraAppLinkerArgs)"

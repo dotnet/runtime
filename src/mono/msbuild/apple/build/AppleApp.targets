@@ -6,7 +6,7 @@
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
+    <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == ''">true</AppleGenerateAppBundle>
     <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
     <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AppleGenerateAppBundle>
   </PropertyGroup>
@@ -75,11 +75,11 @@
 
   <Target Name="_AppleResolveReferences">
     <ItemGroup>
-      <_AppleAssembliesInternal Remove="@(_AppleAssembliesInternal)" />
-      <_AppleAssembliesInternal Include="@(AppleAssembliesToBundle)">
+      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
+      <AppAssembliesInternal Include="@(AppleAssembliesToBundle)">
         <_InternalForceInterpret>%(AppleAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
         <_IsNative>%(AppleAssembliesToBundle._IsNative)</_IsNative>
-      </_AppleAssembliesInternal>
+      </AppAssembliesInternal>
     </ItemGroup>
   </Target>
 
@@ -98,13 +98,11 @@
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=arm64-ios" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=arm64-apple-ios14.2-macabi" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-ios" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=x86_64-ios" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=x86_64-apple-ios13.5-macabi" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i386-ios" />
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
@@ -125,14 +123,14 @@
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
 
-      <_AotInputAssemblies Include="@(_AppleAssembliesInternal)" 
-                           Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">
+      <_AotInputAssemblies Include="@(AppAssembliesInternal)" 
+                           Condition="'%(AppAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
       </_AotInputAssemblies>
 
-      <_AOT_InternalForceInterpretAssemblies Include="@(_AppleAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
-      <_AppleAssembliesInternal Remove="@(_AppleAssembliesInternal)" />
+      <_AOT_InternalForceInterpretAssemblies Include="@(AppAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
     </ItemGroup>
     
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
@@ -169,14 +167,13 @@
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="AsmOnly"
         UseLLVM="$(MonoEnableLLVM)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="_AppleAssembliesInternal" />
+        <Output TaskParameter="CompiledAssemblies" ItemName="AppAssembliesInternal" />
     </MonoAOTCompiler>
 
-    <ILStrip Condition="'$(ShouldILStrip)' == 'true'" Assemblies="@(_AppleAssembliesInternal)" />
+    <ILStrip Condition="'$(ShouldILStrip)' == 'true'" Assemblies="@(AppAssembliesInternal)" />
 
     <ItemGroup>
-      <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
-      <AppAssembliesInternal Include="@(_AppleAssembliesInternal)" />
+      <AppAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
   </Target>
 
@@ -196,7 +193,7 @@
     <AppleAppBuilderTask
       AppDir="$(AppleAppDir)"
       Arch="$(TargetArchitecture)"
-      Assemblies="@(_AppleAssembliesInternal)"
+      Assemblies="@(AppAssembliesInternal)"
       BuildAppBundle="$(GenerateXcodeProject)"
       DevTeamProvisioning="$(DevTeamProvisioning)"
       DiagnosticPorts="$(DiagnosticPorts)"

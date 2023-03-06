@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <!-- Preserves the UnmanagedCallersOnly method -->
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
   <ItemGroup>
