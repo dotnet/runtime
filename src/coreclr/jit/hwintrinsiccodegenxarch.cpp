@@ -360,6 +360,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
+        case InstructionSet_Vector512:
             genBaseIntrinsic(node);
             break;
         case InstructionSet_X86Base:
@@ -384,7 +385,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         case InstructionSet_AVX:
         case InstructionSet_AVX2:
-            genAvxOrAvx2Intrinsic(node);
+        case InstructionSet_AVX512F:
+            genAvxFamilyIntrinsic(node);
             break;
         case InstructionSet_AES:
             genAESIntrinsic(node);
@@ -474,6 +476,8 @@ void CodeGen::genHWIntrinsic_R_RM(
             else
             {
                 if (varTypeIsIntegral(rmOp) && ((node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128) ||
+                                                (node->GetHWIntrinsicId() == NI_AVX512F_BroadcastScalarToVector512) ||
+                                                (node->GetHWIntrinsicId() == NI_AVX512BW_BroadcastScalarToVector512) ||
                                                 (node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256)))
                 {
                     // In lowering we had the special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
@@ -1117,6 +1121,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_Vector128_ToVector256Unsafe:
+        case NI_Vector256_ToVector512Unsafe:
         case NI_Vector256_GetLower:
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
@@ -1519,12 +1524,12 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
 }
 
 //------------------------------------------------------------------------
-// genAvxOrAvx2Intrinsic: Generates the code for an AVX/AVX2 hardware intrinsic node
+// genAvxFamilyIntrinsic: Generates the code for an AVX/AVX2/AVX512 hardware intrinsic node
 //
 // Arguments:
 //    node - The hardware intrinsic node
 //
-void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
+void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     var_types      baseType    = node->GetSimdBaseType();

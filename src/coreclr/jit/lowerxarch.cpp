@@ -1035,6 +1035,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_Vector128_Create:
         case NI_Vector256_Create:
+        case NI_Vector512_Create:
         case NI_Vector128_CreateScalar:
         case NI_Vector256_CreateScalar:
         {
@@ -1899,7 +1900,7 @@ void Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::LowerHWIntrinsicCreate: Lowers a Vector128 or Vector256 Create call
+// Lowering::LowerHWIntrinsicCreate: Lowers a Vector128 or Vector256 or Vector512 Create call
 //
 //  Arguments:
 //     node - The hardware intrinsic node.
@@ -1911,7 +1912,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
     var_types      simdBaseType    = node->GetSimdBaseType();
     unsigned       simdSize        = node->GetSimdSize();
-    simd32_t       simd32Val       = {};
+    simd64_t       simd64Val       = {};
 
     if ((simdSize == 8) && (simdType == TYP_DOUBLE))
     {
@@ -1933,13 +1934,22 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     GenTree* tmp2 = nullptr;
     GenTree* tmp3 = nullptr;
 
-    bool   isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val);
+    bool isConstant = false;
+    // TODO-XArch-AVX512: Keep only one path once GenTreeVecCon supports gtSimd64Val.
+    if (simdSize != 64)
+    {
+        isConstant = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd32_t>(node, simd64Val.v256[0]);
+    }
+    else
+    {
+        isConstant = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd64_t>(node, simd64Val);
+    }
     bool   isCreateScalar = (intrinsicId == NI_Vector128_CreateScalar) || (intrinsicId == NI_Vector256_CreateScalar);
     size_t argCnt         = node->GetOperandCount();
 
     if (isConstant)
     {
-        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32));
+        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
         for (GenTree* arg : node->Operands())
         {
@@ -1953,24 +1963,69 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             BlockRange().Remove(arg);
         }
 
-        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
-
-        vecCon->gtSimd32Val = simd32Val;
-        BlockRange().InsertBefore(node, vecCon);
-
-        LIR::Use use;
-        if (BlockRange().TryGetUse(node, &use))
+        if (simdSize != 64)
         {
-            use.ReplaceWith(vecCon);
+            GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
+
+            vecCon->gtSimd32Val = simd64Val.v256[0];
+            BlockRange().InsertBefore(node, vecCon);
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                use.ReplaceWith(vecCon);
+            }
+            else
+            {
+                vecCon->SetUnusedValue();
+            }
+
+            BlockRange().Remove(node);
+
+            return LowerNode(vecCon);
         }
         else
         {
-            vecCon->SetUnusedValue();
+            assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
+
+            // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+            // We will be constructing the following parts:
+            //          /--*  op1 T
+            //          +--*  ... T
+            //   lo   = *  HWINTRINSIC   simd32 T Create
+            //          /--*  ... T
+            //          +--*  opN T
+            //   hi   = *  HWINTRINSIC   simd32 T Create
+            //          +--*  lo   simd32
+            //   tmp1 = * HWINTRINSIC   simd64 T ToVector512Unsafe
+            //   idx  =    CNS_INT       int    1
+            //          /--*  tmp1   simd64
+            //          +--*  hi   simd32
+            //          +--*  idx  int
+            //   node = *  HWINTRINSIC   simd64 T InsertVector256
+
+            GenTreeVecCon* vecCon0 = comp->gtNewVconNode(TYP_SIMD32);
+            vecCon0->gtSimd32Val   = simd64Val.v256[0];
+            BlockRange().InsertBefore(node, vecCon0);
+            LowerNode(vecCon0);
+            GenTreeVecCon* vecCon1 = comp->gtNewVconNode(TYP_SIMD32);
+            vecCon1->gtSimd32Val   = simd64Val.v256[1];
+            BlockRange().InsertAfter(vecCon0, vecCon1);
+
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, vecCon0, NI_Vector256_ToVector512Unsafe, simdBaseJitType,
+                                                  32);
+            BlockRange().InsertAfter(vecCon1, tmp1);
+
+            idx = comp->gtNewIconNode(0x01, TYP_INT);
+            BlockRange().InsertAfter(tmp1, idx);
+
+            node->ResetHWIntrinsicId(NI_AVX512F_InsertVector256, comp, tmp1, vecCon1, idx);
+
+            LowerNode(vecCon1);
+            LowerNode(idx);
+            LowerNode(tmp1);
+            return LowerNode(node);
         }
-
-        BlockRange().Remove(node);
-
-        return LowerNode(vecCon);
     }
     else if (argCnt == 1)
     {
@@ -2121,6 +2176,55 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 node = tmp2->AsHWIntrinsic();
             }
 
+            return LowerNode(node);
+        }
+
+        // We have the following (where simd is simd16, simd32 or simd64):
+        //          /--*  op1  T
+        //   node = *  HWINTRINSIC   simd   T Create
+
+        if (intrinsicId == NI_Vector512_Create)
+        {
+            assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
+            // We will be constructing the following parts:
+            //          /--*  op1  T
+            //   tmp1 = *  HWINTRINSIC   simd32 T CreateScalarUnsafe
+            //          /--*  tmp1 simd16
+            //   node = *  HWINTRINSIC   simd64 T BroadcastScalarToVector512
+
+            // This is roughly the following managed code:
+            //   var tmp1 = Vector256.CreateScalarUnsafe(op1);
+            //   return Avx512.BroadcastScalarToVector512(tmp1);
+
+            tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseJitType, 16);
+            LowerNode(tmp1);
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                    node->ResetHWIntrinsicId(NI_AVX512BW_BroadcastScalarToVector512, tmp1);
+                    break;
+                }
+                case TYP_INT:
+                case TYP_UINT:
+                case TYP_LONG:
+                case TYP_ULONG:
+                case TYP_FLOAT:
+                case TYP_DOUBLE:
+                {
+                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    node->ResetHWIntrinsicId(NI_AVX512F_BroadcastScalarToVector512, tmp1);
+                    break;
+                }
+                default:
+                {
+                    unreached();
+                }
+            }
             return LowerNode(node);
         }
 
@@ -2501,13 +2605,71 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     GenTree* op2 = node->Op(2);
 
+    // TODO-XArch-AVX512 : Merge the NI_Vector512_Create and NI_Vector256_Create paths below.
     // We have the following (where simd is simd16 or simd32):
     //          /--*  op1 T
     //          +--*  ... T
     //          +--*  opN T
     //   node = *  HWINTRINSIC   simd   T Create
+    if (intrinsicId == NI_Vector512_Create)
+    {
+        assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
 
-    if (intrinsicId == NI_Vector256_Create)
+        // We will be constructing the following parts:
+        //          /--*  op1 T
+        //          +--*  ... T
+        //   lo   = *  HWINTRINSIC   simd32 T Create
+        //          /--*  ... T
+        //          +--*  opN T
+        //   hi   = *  HWINTRINSIC   simd32 T Create
+        //   idx  =    CNS_INT       int    1
+        //          /--*  lo   simd64
+        //          +--*  hi   simd32
+        //          +--*  idx  int
+        //   node = *  HWINTRINSIC   simd64 T InsertVector256
+
+        // This is roughly the following managed code:
+        //   ...
+        //   var lo   = Vector256.Create(op1, ...);
+        //   var hi   = Vector256.Create(..., opN);
+        //   return Avx512F.InsertVector512(lo, hi, 0x01);
+
+        // Each Vector256.Create call gets half the operands. That is:
+        //   lo = Vector256.Create(op1, op2);
+        //   hi = Vector256.Create(op3, op4);
+        // -or-
+        //   lo = Vector256.Create(op1,  ..., op4);
+        //   hi = Vector256.Create(op5,  ..., op8);
+        // -or-
+        //   lo = Vector256.Create(op1,  ..., op8);
+        //   hi = Vector256.Create(op9,  ..., op16);
+        // -or-
+        //   lo = Vector256.Create(op1,  ..., op16);
+        //   hi = Vector256.Create(op17, ..., op32);
+
+        size_t halfArgCnt = argCnt / 2;
+        assert((halfArgCnt * 2) == argCnt);
+
+        GenTree* lo = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, node->GetOperandArray(), halfArgCnt,
+                                                     NI_Vector256_Create, simdBaseJitType, 32);
+        BlockRange().InsertAfter(node->Op(halfArgCnt), lo);
+
+        GenTree* hi = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, node->GetOperandArray(halfArgCnt), halfArgCnt,
+                                                     NI_Vector256_Create, simdBaseJitType, 32);
+        BlockRange().InsertAfter(node->Op(argCnt), hi);
+
+        idx = comp->gtNewIconNode(0x01, TYP_INT);
+        BlockRange().InsertAfter(hi, idx);
+
+        assert(argCnt >= 7);
+        node->ResetHWIntrinsicId(NI_AVX512F_InsertVector256, comp, lo, hi, idx);
+
+        LowerNode(lo);
+        LowerNode(hi);
+
+        return LowerNode(node);
+    }
+    else if (intrinsicId == NI_Vector256_Create)
     {
         assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
 
@@ -6594,6 +6756,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
+                case NI_AVX512F_BroadcastScalarToVector512:
+                case NI_AVX512BW_BroadcastScalarToVector512:
                 {
                     if (!parentNode->OperIsMemoryLoad())
                     {
@@ -6930,6 +7094,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
+                    case NI_AVX512F_BroadcastScalarToVector512:
+                    case NI_AVX512BW_BroadcastScalarToVector512:
                     {
                         if (node->OperIsMemoryLoad())
                         {
@@ -7410,6 +7576,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_InsertVector128:
                         case NI_AVX2_MultipleSumAbsoluteDifferences:
                         case NI_AVX2_Permute2x128:
+                        case NI_AVX512F_InsertVector256:
                         case NI_PCLMULQDQ_CarrylessMultiply:
                         {
                             if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))

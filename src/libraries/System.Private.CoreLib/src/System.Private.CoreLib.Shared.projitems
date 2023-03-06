@@ -1938,9 +1938,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\Secur32\Interop.GetUserNameExW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.CommandLineToArgv.cs">
-      <Link>Common\Interop\Windows\Shell32\Interop.CommandLineToArgv.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs">
       <Link>Common\Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs</Link>
     </Compile>
