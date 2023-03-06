@@ -422,19 +422,6 @@ namespace ILCompiler
 
                     if (type != null)
                     {
-                        if (!type.IsInterface &&
-                            type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        {
-                            foreach (DefType baseInterface in type.RuntimeInterfaces)
-                            {
-                                // If the interface is implemented on a template type, there might be
-                                // no real upper bound on the number of actual classes implementing it
-                                // due to MakeGenericType.
-                                if (CanAssumeWholeProgramViewOnInterfaceUse(factory, type, baseInterface))
-                                    _disqualifiedInterfaces.Add(baseInterface);
-                            }
-                        }
-
                         _constructedTypes.Add(type);
 
                         if (type.IsInterface)
@@ -475,18 +462,28 @@ namespace ILCompiler
                                 }
                             }
 
-                            // Interfaces implemented by arrays and array enumerators have weird casting rules
-                            // due to array covariance (string[] castable to object[], or int[] castable to uint[]).
-                            // Disqualify such interfaces.
-                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any) &&
-                                (type.IsArray || type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType))
+                            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             {
+                                // If the interface is implemented on a template type, there might be
+                                // no real upper bound on the number of actual classes implementing it
+                                // due to MakeGenericType.
+                                foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                {
+                                    _disqualifiedInterfaces.Add(baseInterface);
+                                }
+                            }
+                            else if (type.IsArray || type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
+                            {
+                                // Interfaces implemented by arrays and array enumerators have weird casting rules
+                                // due to array covariance (string[] castable to object[], or int[] castable to uint[]).
+                                // Disqualify such interfaces.
                                 TypeDesc elementType = type.IsArray ? ((ArrayType)type).ElementType : type.Instantiation[0];
                                 if (CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
                                     (elementType.IsDefType && !elementType.IsValueType))
                                 {
                                     foreach (DefType baseInterface in type.RuntimeInterfaces)
                                     {
+                                        // Limit to the generic ones - ICollection<T>, etc.
                                         if (baseInterface.HasInstantiation)
                                             _disqualifiedInterfaces.Add(baseInterface);
                                     }
