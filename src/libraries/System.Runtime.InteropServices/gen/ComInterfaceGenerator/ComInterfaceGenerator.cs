@@ -226,7 +226,7 @@ namespace Microsoft.Interop
                                             SingletonSeparatedList(
                                                 Argument(
                                                     LiteralExpression(SyntaxKind.StringLiteralExpression, Literal("00000000-0000-0000-0000-000000000000")))))))))))));
-            // private static readonly void** m_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IComInterface1), sizeof(void*) * 4);
+            // private static readonly void** m_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(<InterfaceName>), sizeof(void*) * <3 + numberOfInterfaceMethods>);
             var m_vtable = FieldDeclaration(
                 List<AttributeListSyntax>(),
                 TokenList(
@@ -263,10 +263,8 @@ namespace Microsoft.Interop
             //     {
             //         if (m_vtable[0] == null)
             //         {
-            //             nint v0 = (nint)m_vtable[0];
-            //             nint v1 = (nint)m_vtable[1];
-            //             nint v2 = (nint)m_vtable[2];
-            //             IUnknownVTableComWrappers.GetIUnknownImpl(out v0, out v1, out v2);
+            //             nint v0, v1, v2;
+            //             ComWrappers.GetIUnknownImpl(out v0, out v1, out v2);
             //             m_vtable[0] = (void*)v0;
             //             m_vtable[1] = (void*)v1;
             //             m_vtable[2] = (void*)v2;
@@ -301,52 +299,15 @@ namespace Microsoft.Interop
                                     Block(
                                         List(new StatementSyntax[]
                                         {
-                                            // nint v0 = (nint)m_vtable[0];
+                                            // nint v0, v1, v2;
                                             LocalDeclarationStatement(VariableDeclaration(ParseTypeName("nint"),
-                                                SeparatedList(SingletonList(VariableDeclarator(Identifier("v0"),
-                                                null,
-                                                EqualsValueClause(
-                                                    CastExpression(
-                                                        ParseTypeName("nint"),
-                                                        ElementAccessExpression(IdentifierName("m_vtable"),
-                                                        BracketedArgumentList(
-                                                            SeparatedList(
-                                                                SingletonList(
-                                                                    Argument(
-                                                                        LiteralExpression(
-                                                                            SyntaxKind.NumericLiteralExpression,
-                                                                            Literal(0)))))))))))))),
-                                            // nint v1 = (nint)m_vtable[1];
-                                            LocalDeclarationStatement(VariableDeclaration(ParseTypeName("nint"),
-                                                SeparatedList(SingletonList(VariableDeclarator(Identifier("v1"),
-                                                null,
-                                                EqualsValueClause(
-                                                    CastExpression(
-                                                        ParseTypeName("nint"),
-                                                        ElementAccessExpression(IdentifierName("m_vtable"),
-                                                        BracketedArgumentList(
-                                                            SeparatedList(
-                                                                SingletonList(
-                                                                    Argument(
-                                                                        LiteralExpression(
-                                                                            SyntaxKind.NumericLiteralExpression,
-                                                                            Literal(1)))))))))))))),
-                                            // nint v2 = (nint)m_vtable[2];
-                                            LocalDeclarationStatement(VariableDeclaration(ParseTypeName("nint"),
-                                                SeparatedList(SingletonList(VariableDeclarator(Identifier("v2"),
-                                                null,
-                                                EqualsValueClause(
-                                                    CastExpression(
-                                                        ParseTypeName("nint"),
-                                                        ElementAccessExpression(IdentifierName("m_vtable"),
-                                                        BracketedArgumentList(
-                                                            SeparatedList(
-                                                                SingletonList(
-                                                                    Argument(
-                                                                        LiteralExpression(
-                                                                            SyntaxKind.NumericLiteralExpression,
-                                                                            Literal(2)))))))))))))),
-                                            // IUnknownVTableComWrappers.GetIUnknownImpl(out v0, out v1, out v2);
+                                                SeparatedList(new VariableDeclaratorSyntax[] {
+                                                    VariableDeclarator(Identifier("v0"), null, null),
+                                                    VariableDeclarator(Identifier("v1"), null, null),
+                                                    VariableDeclarator(Identifier("v2"), null, null),
+                                                }
+                                                ))),
+                                            // ComWrappers.GetIUnknownImpl(out v0, out v1, out v2);
                                             ExpressionStatement(
                                                 InvocationExpression(
                                                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,

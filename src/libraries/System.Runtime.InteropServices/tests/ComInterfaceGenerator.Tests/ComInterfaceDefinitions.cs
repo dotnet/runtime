@@ -17,20 +17,21 @@ namespace ComInterfaceGenerator.Tests
         void Method();
     }
 
-    public class ImplComInterface1 : IComInterface1
+    [GeneratedComInterface]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public partial interface IComInterface2
     {
-        public int Data = 0;
-        public void Method() { Data = 1; }
+        int Method1();
     }
 
     public class Tests
     {
-        [Fact]
+#pragma warning disable xUnit1004 // Test methods should not be skipped
+        [Fact(Skip = "Not Implemented Yet")]
+#pragma warning restore xUnit1004 // Test methods should not be skipped
         public unsafe void UseGeneratedComInterface()
         {
-            ImplComInterface1 x = new();
-
-
+            throw new NotImplementedException("Not Implemented");
         }
 
     }
