@@ -316,7 +316,7 @@ namespace System.Security.Cryptography
         // UseMachineKeyStore has no effect in Unix
         public static bool UseMachineKeyStore { get; set; }
 
-        private static Exception PaddingModeNotSupported()
+        private static CryptographicException PaddingModeNotSupported()
         {
             return new CryptographicException(SR.Cryptography_InvalidPaddingMode);
         }

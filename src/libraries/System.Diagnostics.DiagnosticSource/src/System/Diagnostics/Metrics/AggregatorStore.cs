@@ -309,7 +309,7 @@ namespace System.Diagnostics.Metrics
         }
     }
 
-    internal struct LabelInstruction
+    internal readonly struct LabelInstruction
     {
         public LabelInstruction(int sourceIndex, string labelName)
         {
@@ -410,10 +410,10 @@ namespace System.Diagnostics.Metrics
         where TObjectSequence : struct, IObjectSequence, IEquatable<TObjectSequence>
         where TAggregator : Aggregator
     {
-        private int _expectedLabelCount;
-        private LabelInstruction[] _instructions;
-        private ConcurrentDictionary<TObjectSequence, TAggregator> _valuesDict;
-        private Func<TObjectSequence, TAggregator?> _createAggregator;
+        private readonly int _expectedLabelCount;
+        private readonly LabelInstruction[] _instructions;
+        private readonly ConcurrentDictionary<TObjectSequence, TAggregator> _valuesDict;
+        private readonly Func<TObjectSequence, TAggregator?> _createAggregator;
 
         public LabelInstructionInterpreter(
             int expectedLabelCount,

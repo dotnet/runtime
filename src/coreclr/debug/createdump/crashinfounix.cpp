@@ -36,12 +36,22 @@ CrashInfo::Initialize()
         return false;
     }
 
-    char pagemapPath[128];
-    _snprintf_s(pagemapPath, sizeof(pagemapPath), sizeof(pagemapPath), "/proc/%lu/pagemap", m_pid);
-    m_fdPagemap = open(pagemapPath, O_RDONLY);
-    if (m_fdPagemap == -1)
+    CLRConfigNoCache disablePagemapUse = CLRConfigNoCache::Get("DbgDisablePagemapUse", /*noprefix*/ false, &getenv);
+    DWORD val = 0;
+    if (disablePagemapUse.IsSet() && disablePagemapUse.TryAsInteger(10, val) && val == 0)
     {
-        TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        TRACE("DbgDisablePagemapUse detected - pagemap file checking is enabled\n");
+        char pagemapPath[128];
+        _snprintf_s(pagemapPath, sizeof(pagemapPath), sizeof(pagemapPath), "/proc/%lu/pagemap", m_pid);
+        m_fdPagemap = open(pagemapPath, O_RDONLY);
+        if (m_fdPagemap == -1)
+        {
+            TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        }
+    }
+    else
+    {
+        m_fdPagemap = -1;
     }
 
     // Get the process info
@@ -339,7 +349,8 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                     m_coreclrPath = GetDirectory(moduleName);
                     m_runtimeBaseAddress = baseAddress;
 
-                    RuntimeInfo runtimeInfo { };
+                    // explicit initialization for old gcc support; instead of just runtimeInfo { }
+                    RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { } };
                     if (ReadMemory((void*)(baseAddress + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
                     {
                         if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)

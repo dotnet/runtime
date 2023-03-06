@@ -107,12 +107,10 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader XUACompatible = new KnownHeader("X-UA-Compatible");
         public static readonly KnownHeader XXssProtection = new KnownHeader("X-XSS-Protection", HttpHeaderType.Custom, null, new string[] { "0", "1", "1; mode=block" });
 
-        private static HttpHeaderParser? GetAltSvcHeaderParser() =>
 #if TARGET_BROWSER
-            // Allow for the AltSvcHeaderParser to be trimmed on Browser since Alt-Svc is only for SocketsHttpHandler, which isn't used on Browser.
-            null;
+        private static HttpHeaderParser? GetAltSvcHeaderParser() => null; // Allow for the AltSvcHeaderParser to be trimmed on Browser since Alt-Svc is only for SocketsHttpHandler, which isn't used on Browser.
 #else
-            AltSvcHeaderParser.Parser;
+        private static AltSvcHeaderParser? GetAltSvcHeaderParser() => AltSvcHeaderParser.Parser;
 #endif
 
         // Helper interface for making GetCandidate generic over strings, utf8, etc

@@ -358,17 +358,17 @@ namespace System.Xml.Serialization
                 throw new InvalidOperationException(SR.Format(SR.XmlCannotReconcileAccessor, accessor.Name, accessor.Namespace, GetMappingName(existing.Mapping!), GetMappingName(accessor.Mapping!)));
         }
 
-        private static Exception CreateReflectionException(string context, Exception e)
+        private static InvalidOperationException CreateReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlReflectionError, context), e);
         }
 
-        private static Exception CreateTypeReflectionException(string context, Exception e)
+        private static InvalidOperationException CreateTypeReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlTypeReflectionError, context), e);
         }
 
-        private static Exception CreateMemberReflectionException(FieldModel model, Exception e)
+        private static InvalidOperationException CreateMemberReflectionException(FieldModel model, Exception e)
         {
             return new InvalidOperationException(SR.Format(model.IsProperty ? SR.XmlPropertyReflectionError : SR.XmlFieldReflectionError, model.Name), e);
         }
@@ -604,12 +604,12 @@ namespace System.Xml.Serialization
                 _ => throw new ArgumentException(SR.XmlInternalError, nameof(context)),
             };
 
-        private static Exception InvalidAttributeUseException(Type type)
+        private static InvalidOperationException InvalidAttributeUseException(Type type)
         {
             return new InvalidOperationException(SR.Format(SR.XmlInvalidAttributeUse, type.FullName));
         }
 
-        private static Exception UnsupportedException(TypeDesc typeDesc, ImportContext context)
+        private static InvalidOperationException UnsupportedException(TypeDesc typeDesc, ImportContext context)
         {
             return new InvalidOperationException(SR.Format(SR.XmlIllegalTypeContext, typeDesc.FullName, GetContextName(context)));
         }

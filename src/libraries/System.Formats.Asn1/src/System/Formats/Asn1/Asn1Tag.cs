@@ -472,7 +472,7 @@ namespace System.Formats.Asn1
             }
             else
             {
-                classAndValue = TagClass + "-" + TagValue;
+                classAndValue = $"{TagClass}-{TagValue}";
             }
 
             if (IsConstructed)

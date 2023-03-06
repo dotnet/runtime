@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd</TargetFrameworks>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'tvOS'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>

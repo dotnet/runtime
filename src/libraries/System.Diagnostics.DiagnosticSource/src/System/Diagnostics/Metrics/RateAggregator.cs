@@ -5,7 +5,13 @@ namespace System.Diagnostics.Metrics
 {
     internal sealed class RateSumAggregator : Aggregator
     {
+        private readonly bool _isMonotonic;
         private double _sum;
+
+        public RateSumAggregator(bool isMonotonic)
+        {
+            _isMonotonic = isMonotonic;
+        }
 
         public override void Update(double value)
         {
@@ -19,7 +25,7 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                RateStatistics? stats = new RateStatistics(_sum);
+                RateStatistics? stats = new RateStatistics(_sum, _isMonotonic);
                 _sum = 0;
                 return stats;
             }
@@ -28,8 +34,14 @@ namespace System.Diagnostics.Metrics
 
     internal sealed class RateAggregator : Aggregator
     {
+        private readonly bool _isMonotonic;
         private double? _prevValue;
         private double _value;
+
+        public RateAggregator(bool isMonotonic)
+        {
+            _isMonotonic = isMonotonic;
+        }
 
         public override void Update(double value)
         {
@@ -48,7 +60,7 @@ namespace System.Diagnostics.Metrics
                 {
                     delta = _value - _prevValue.Value;
                 }
-                RateStatistics stats = new RateStatistics(delta);
+                RateStatistics stats = new RateStatistics(delta, _isMonotonic);
                 _prevValue = _value;
                 return stats;
             }
@@ -57,11 +69,14 @@ namespace System.Diagnostics.Metrics
 
     internal sealed class RateStatistics : IAggregationStatistics
     {
-        public RateStatistics(double? delta)
+        public RateStatistics(double? delta, bool isMonotonic)
         {
             Delta = delta;
+            IsMonotonic = isMonotonic;
         }
 
         public double? Delta { get; }
+
+        public bool IsMonotonic { get; }
     }
 }

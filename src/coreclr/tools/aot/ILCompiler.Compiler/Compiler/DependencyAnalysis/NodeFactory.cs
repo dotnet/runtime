@@ -255,6 +255,18 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodEntrypoints = new MethodEntrypointHashtable(this);
 
+            _tentativeMethodEntrypoints = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
+            {
+                IMethodNode entrypoint = MethodEntrypoint(method, unboxingStub: false);
+                return new TentativeMethodNode(entrypoint is TentativeMethodNode tentative ?
+                    tentative.RealBody : (IMethodBodyNode)entrypoint);
+            });
+
+            _tentativeMethods = new NodeCache<MethodDesc, TentativeInstanceMethodNode>(method =>
+            {
+                return new TentativeInstanceMethodNode((IMethodBodyNode)MethodEntrypoint(method));
+            });
+
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
             _methodAssociatedData = new NodeCache<IMethodNode, MethodAssociatedDataNode>(methodNode =>
@@ -272,19 +284,29 @@ namespace ILCompiler.DependencyAnalysis
                 return new GVMDependenciesNode(method);
             });
 
+            _gvmImpls = new NodeCache<MethodDesc, GenericVirtualMethodImplNode>(method =>
+            {
+                return new GenericVirtualMethodImplNode(method);
+            });
+
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
             });
 
-            _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
+            _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
             {
-                return new ReflectableMethodNode(method);
+                return new ReflectedMethodNode(method);
             });
 
-            _reflectableFields = new NodeCache<FieldDesc, ReflectableFieldNode>(field =>
+            _reflectedFields = new NodeCache<FieldDesc, ReflectedFieldNode>(field =>
             {
-                return new ReflectableFieldNode(field);
+                return new ReflectedFieldNode(field);
+            });
+
+            _reflectedTypes = new NodeCache<TypeDesc, ReflectedTypeNode>(type =>
+            {
+                return new ReflectedTypeNode(type);
             });
 
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
@@ -359,6 +381,16 @@ namespace ILCompiler.DependencyAnalysis
             _dataflowAnalyzedMethods = new NodeCache<MethodILKey, DataflowAnalyzedMethodNode>((MethodILKey il) =>
             {
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
+            });
+
+            _dataflowAnalyzedTypeDefinitions = new NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode>((TypeDesc type) =>
+            {
+                return new DataflowAnalyzedTypeDefinitionNode(type);
+            });
+
+            _dynamicDependencyAttributesOnEntities = new NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode>((TypeSystemEntity entity) =>
+            {
+                return new DynamicDependencyAttributesOnEntityNode(entity);
             });
 
             _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
@@ -438,6 +470,11 @@ namespace ILCompiler.DependencyAnalysis
             _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
             {
                 return new ModuleMetadataNode(module);
+            });
+
+            _inlineableStringResources = new NodeCache<EcmaModule, InlineableStringsResourceNode>(module =>
+            {
+                return new InlineableStringsResourceNode(module);
             });
 
             _customAttributesWithMetadata = new NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode>(ca =>
@@ -682,6 +719,20 @@ namespace ILCompiler.DependencyAnalysis
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
         }
 
+        private NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode> _dataflowAnalyzedTypeDefinitions;
+
+        public DataflowAnalyzedTypeDefinitionNode DataflowAnalyzedTypeDefinition(TypeDesc type)
+        {
+            return _dataflowAnalyzedTypeDefinitions.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode> _dynamicDependencyAttributesOnEntities;
+
+        public DynamicDependencyAttributesOnEntityNode DynamicDependencyAttributesOnEntity(TypeSystemEntity entity)
+        {
+            return _dynamicDependencyAttributesOnEntities.GetOrAdd(entity);
+        }
+
         private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;
 
         public EmbeddedTrimmingDescriptorNode EmbeddedTrimmingDescriptor(EcmaModule module)
@@ -839,6 +890,28 @@ namespace ILCompiler.DependencyAnalysis
             return _methodEntrypoints.GetOrCreateValue(method);
         }
 
+        protected NodeCache<MethodDesc, IMethodNode> _tentativeMethodEntrypoints;
+
+        public IMethodNode TentativeMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
+        {
+            // Didn't implement unboxing stubs for now. Would need to pass down the flag.
+            Debug.Assert(!unboxingStub);
+            return _tentativeMethodEntrypoints.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, TentativeInstanceMethodNode> _tentativeMethods;
+        public IMethodNode MethodEntrypointOrTentativeMethod(MethodDesc method, bool unboxingStub = false)
+        {
+            // We might be able to optimize the method body away if the owning type was never seen as allocated.
+            if (method.NotCallableWithoutOwningEEType() && CompilationModuleGroup.AllowInstanceMethodOptimization(method))
+            {
+                Debug.Assert(!unboxingStub);
+                return _tentativeMethods.GetOrAdd(method);
+            }
+
+            return MethodEntrypoint(method, unboxingStub);
+        }
+
         public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)
         {
             return _methodAssociatedData.GetOrAdd(methodNode);
@@ -875,22 +948,34 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmDependenciesNode.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, GenericVirtualMethodImplNode> _gvmImpls;
+        public GenericVirtualMethodImplNode GenericVirtualMethodImpl(MethodDesc method)
+        {
+            return _gvmImpls.GetOrAdd(method);
+        }
+
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
             return _gvmTableEntries.GetOrAdd(type);
         }
 
-        private NodeCache<MethodDesc, ReflectableMethodNode> _reflectableMethods;
-        public ReflectableMethodNode ReflectableMethod(MethodDesc method)
+        private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
+        public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
-            return _reflectableMethods.GetOrAdd(method);
+            return _reflectedMethods.GetOrAdd(method);
         }
 
-        private NodeCache<FieldDesc, ReflectableFieldNode> _reflectableFields;
-        public ReflectableFieldNode ReflectableField(FieldDesc field)
+        private NodeCache<FieldDesc, ReflectedFieldNode> _reflectedFields;
+        public ReflectedFieldNode ReflectedField(FieldDesc field)
         {
-            return _reflectableFields.GetOrAdd(field);
+            return _reflectedFields.GetOrAdd(field);
+        }
+
+        private NodeCache<TypeDesc, ReflectedTypeNode> _reflectedTypes;
+        public ReflectedTypeNode ReflectedType(TypeDesc type)
+        {
+            return _reflectedTypes.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
@@ -962,8 +1047,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                _systemArrayOfTClass ??= _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
-                return _systemArrayOfTClass;
+                return _systemArrayOfTClass ??= _context.SystemModule.GetKnownType("System", "Array`1");
             }
         }
 
@@ -972,8 +1056,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                _systemArrayOfTEnumeratorType ??= _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
-                return _systemArrayOfTEnumeratorType;
+                // This type is optional, but it's fine for this cache to be ineffective if that happens.
+                // Those scenarios are rare and typically deal with small compilations.
+                return _systemArrayOfTEnumeratorType ??= _context.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
             }
         }
 
@@ -984,9 +1069,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // This helper is optional, but it's fine for this cache to be ineffective if that happens.
                 // Those scenarios are rare and typically deal with small compilations.
-                _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
-
-                return _instanceMethodRemovedHelper;
+                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
             }
         }
 
@@ -1080,6 +1163,12 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _modulesWithMetadata.GetOrAdd(module);
+        }
+
+        private NodeCache<EcmaModule, InlineableStringsResourceNode> _inlineableStringResources;
+        internal InlineableStringsResourceNode InlineableStringResource(EcmaModule module)
+        {
+            return _inlineableStringResources.GetOrAdd(module);
         }
 
         private NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode> _customAttributesWithMetadata;

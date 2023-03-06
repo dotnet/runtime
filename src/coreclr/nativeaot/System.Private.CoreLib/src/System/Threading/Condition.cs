@@ -100,8 +100,7 @@ namespace System.Threading
 
         public unsafe bool Wait(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             if (!_lock.IsAcquired)
                 throw new SynchronizationLockException();

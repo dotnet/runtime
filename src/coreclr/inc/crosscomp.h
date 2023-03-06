@@ -551,6 +551,8 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 #define DAC_CS_NATIVE_DATA_SIZE 12
 #elif defined(TARGET_FREEBSD) && defined(TARGET_AMD64)
 #define DAC_CS_NATIVE_DATA_SIZE 24
+#elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
+#define DAC_CS_NATIVE_DATA_SIZE 24
 #elif defined(TARGET_LINUX) && defined(TARGET_ARM)
 #define DAC_CS_NATIVE_DATA_SIZE 80
 #elif defined(TARGET_LINUX) && defined(TARGET_ARM64)

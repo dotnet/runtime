@@ -21,7 +21,7 @@ namespace NetCoreServer
             }
 
             // Add original request method verb as a custom response header.
-            context.Response.Headers.Add("X-HttpRequest-Method", context.Request.Method);
+            context.Response.Headers["X-HttpRequest-Method"] = context.Request.Method;
 
             var size = 1024;
             if (context.Request.Query.TryGetValue("size", out var value))

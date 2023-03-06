@@ -9,7 +9,7 @@ using Mono.Linker.Dataflow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial struct RequireDynamicallyAccessedMembersAction
+	internal partial struct RequireDynamicallyAccessedMembersAction
 	{
 		readonly ReflectionMarker _reflectionMarker;
 

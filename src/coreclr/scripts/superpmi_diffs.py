@@ -196,7 +196,8 @@ def main(main_args):
         ], _exit_on_fail=True)
 
     print("Running superpmi.py asmdiffs")
-    log_file = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
+
+    log_file = os.path.join(log_directory, "superpmi_asmdiffs_{}_{}.log".format(platform_name, arch_name))
 
     overall_md_asmdiffs_summary_file = os.path.join(spmi_location, "diff_summary.md")
     if os.path.isfile(overall_md_asmdiffs_summary_file):
@@ -224,6 +225,8 @@ def main(main_args):
         failed = True
 
     print("Running superpmi.py tpdiff")
+
+    log_file = os.path.join(log_directory, "superpmi_tpdiff_{}_{}.log".format(platform_name, arch_name))
 
     overall_md_tpdiff_summary_file = os.path.join(spmi_location, "tpdiff_summary.md")
     if os.path.isfile(overall_md_tpdiff_summary_file):

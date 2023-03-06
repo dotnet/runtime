@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
@@ -1306,7 +1307,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool ContainsValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value))
+            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(T) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
             {
                 return PackedSpanHelpers.Contains(ref Unsafe.As<T, short>(ref searchSpace), *(short*)&value, length);
             }
@@ -1436,6 +1437,10 @@ namespace System
             => IndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int NonPackedIndexOfChar(ref char searchSpace, char value, int length) =>
+            NonPackedIndexOfValueType<short, DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
             => IndexOfValueType<T, DontNegate<T>>(ref searchSpace, value, length);
 
@@ -1448,7 +1453,7 @@ namespace System
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value))
+            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
             {
                 return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOf(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value, length)
@@ -1605,7 +1610,7 @@ namespace System
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
+            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
             {
                 return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, length)
@@ -1782,7 +1787,7 @@ namespace System
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2))
+            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2))
             {
                 return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, *(char*)&value2, length)
@@ -3085,7 +3090,7 @@ namespace System
             where T : struct, IUnsignedNumber<T>, IComparisonOperators<T, T, bool>
             where TNegator : struct, INegator<T>
         {
-            if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(lowInclusive) && PackedSpanHelpers.CanUsePackedIndexOf(highInclusive) && highInclusive >= lowInclusive)
+            if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(T) == typeof(ushort) && PackedSpanHelpers.CanUsePackedIndexOf(lowInclusive) && PackedSpanHelpers.CanUsePackedIndexOf(highInclusive) && highInclusive >= lowInclusive)
             {
                 ref char charSearchSpace = ref Unsafe.As<T, char>(ref searchSpace);
                 char charLowInclusive = *(char*)&lowInclusive;
@@ -3291,6 +3296,89 @@ namespace System
             }
 
             return -1;
+        }
+
+        public static int Count<T>(ref T current, T value, int length) where T : IEquatable<T>?
+        {
+            int count = 0;
+
+            ref T end = ref Unsafe.Add(ref current, length);
+            if (value is not null)
+            {
+                while (Unsafe.IsAddressLessThan(ref current, ref end))
+                {
+                    if (value.Equals(current))
+                    {
+                        count++;
+                    }
+
+                    current = ref Unsafe.Add(ref current, 1);
+                }
+            }
+            else
+            {
+                while (Unsafe.IsAddressLessThan(ref current, ref end))
+                {
+                    if (current is null)
+                    {
+                        count++;
+                    }
+
+                    current = ref Unsafe.Add(ref current, 1);
+                }
+            }
+
+            return count;
+        }
+
+        public static int CountValueType<T>(ref T current, T value, int length) where T : struct, IEquatable<T>?
+        {
+            int count = 0;
+
+            ref T end = ref Unsafe.Add(ref current, length);
+            if (Vector128.IsHardwareAccelerated && length >= Vector128<T>.Count)
+            {
+                if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
+                {
+                    Vector256<T> targetVector = Vector256.Create(value);
+                    ref T oneVectorAwayFromEndMinus1 = ref Unsafe.Subtract(ref end, Vector256<T>.Count - 1);
+                    do
+                    {
+                        count += BitOperations.PopCount(Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        current = ref Unsafe.Add(ref current, Vector256<T>.Count);
+                    }
+                    while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEndMinus1));
+
+                    if (Unsafe.IsAddressLessThan(ref current, ref Unsafe.Subtract(ref end, Vector128<T>.Count - 1)))
+                    {
+                        count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), Vector128.Create(value)).ExtractMostSignificantBits());
+                        current = ref Unsafe.Add(ref current, Vector128<T>.Count);
+                    }
+                }
+                else
+                {
+                    Vector128<T> targetVector = Vector128.Create(value);
+                    ref T oneVectorAwayFromEndMinus1 = ref Unsafe.Subtract(ref end, Vector128<T>.Count - 1);
+                    do
+                    {
+                        count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        current = ref Unsafe.Add(ref current, Vector128<T>.Count);
+                    }
+                    while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEndMinus1));
+                }
+            }
+
+            while (Unsafe.IsAddressLessThan(ref current, ref end))
+            {
+                if (current.Equals(value))
+                {
+                    count++;
+                }
+
+                current = ref Unsafe.Add(ref current, 1);
+            }
+
+            return count;
         }
     }
 }

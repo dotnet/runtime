@@ -3122,7 +3122,7 @@ namespace System.Xml.Schema
         /// Create an InvalidCastException for cases where either "destinationType" or "sourceType" is not a supported CLR representation
         /// for this Xml type.
         /// </summary>
-        private new Exception CreateInvalidClrMappingException(Type sourceType, Type destinationType)
+        private new InvalidCastException CreateInvalidClrMappingException(Type sourceType, Type destinationType)
         {
             if (sourceType == destinationType)
                 return new InvalidCastException(SR.Format(SR.XmlConvert_TypeListBadMapping, XmlTypeName, sourceType.Name));

@@ -181,19 +181,6 @@ namespace System.Threading
             // no-op
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int GetCurrentProcessorNumber();
-
-        public static int GetCurrentProcessorId()
-        {
-            int id = GetCurrentProcessorNumber();
-
-            if (id < 0)
-                id = Environment.CurrentManagedThreadId;
-
-            return id;
-        }
-
         public void Interrupt()
         {
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI // TODO: https://github.com/dotnet/runtime/issues/49521
@@ -363,5 +350,7 @@ namespace System.Threading
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SetPriority(Thread thread, int priority);
+
+        internal int GetSmallId() => small_id;
     }
 }

@@ -73,7 +73,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - iOSSimulator_x64
+            - iossimulator_x64
           variables:
             - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
               - name: _HelixSource
@@ -102,3 +102,5 @@ extends:
               extraStepsParameters:
                 creator: dotnet-bot
                 testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              extraVariablesTemplates:
+                - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

@@ -333,9 +333,9 @@ namespace Internal.Reflection.Execution
                 return true;
             }
 
-            TypeInfo typeDefinition = Type.GetTypeFromHandle(genericTypeDefinitionHandle).GetTypeInfo();
+            Type typeDefinition = Type.GetTypeFromHandle(genericTypeDefinitionHandle);
 
-            TypeInfo[] typeArguments = new TypeInfo[genericTypeArgumentHandles.Length];
+            Type[] typeArguments = new Type[genericTypeArgumentHandles.Length];
             for (int i = 0; i < genericTypeArgumentHandles.Length; i++)
             {
                 // Early out if one of the arguments is a generic definition.
@@ -345,11 +345,24 @@ namespace Internal.Reflection.Execution
                 if (RuntimeAugments.IsGenericTypeDefinition(genericTypeArgumentHandles[i]))
                     return false;
 
-                typeArguments[i] = Type.GetTypeFromHandle(genericTypeArgumentHandles[i]).GetTypeInfo();
+                typeArguments[i] = Type.GetTypeFromHandle(genericTypeArgumentHandles[i]);
             }
 
             ConstraintValidator.EnsureSatisfiesClassConstraints(typeDefinition, typeArguments);
 
+            return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
+        }
+
+
+        // Given a RuntimeTypeHandle for a generic type G and a set of RuntimeTypeHandles T1, T2.., return the RuntimeTypeHandle for the generic
+        // instance G<T1,T2...> if the pay-for-play policy denotes G<T1,T2...> as browsable. This is used to implement Type.MakeGenericType().
+        //
+        // Preconditions:
+        //      runtimeTypeDefinitionHandle is a valid RuntimeTypeHandle for a generic type.
+        //      genericTypeArgumentHandles is an array of valid RuntimeTypeHandles.
+        //
+        public sealed override unsafe bool TryGetConstructedGenericTypeForComponentsNoConstraintCheck(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
+        {
             return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
         }
 
@@ -1144,7 +1157,7 @@ namespace Internal.Reflection.Execution
 
                         if (parameterType.IsByRef)
                             result.Add(parameterType.GetElementType().TypeHandle);
-                        else if (parameterType.GetTypeInfo().IsEnum && !parameters[i].HasDefaultValue)
+                        else if (parameterType.IsEnum && !parameters[i].HasDefaultValue)
                             result.Add(Enum.GetUnderlyingType(parameterType).TypeHandle);
                         else
                             result.Add(parameterType.TypeHandle);

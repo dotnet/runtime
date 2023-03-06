@@ -916,15 +916,16 @@ namespace System
                         Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
 
                         // Load special control character codes used for input processing
-                        var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
+                        const int NumControlCharacterNames = 4;
+                        Interop.Sys.ControlCharacterNames* controlCharacterNames = stackalloc Interop.Sys.ControlCharacterNames[NumControlCharacterNames]
                         {
                             Interop.Sys.ControlCharacterNames.VERASE,
                             Interop.Sys.ControlCharacterNames.VEOL,
                             Interop.Sys.ControlCharacterNames.VEOL2,
                             Interop.Sys.ControlCharacterNames.VEOF
                         };
-                        var controlCharacterValues = new byte[controlCharacterNames.Length];
-                        Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
+                        byte* controlCharacterValues = stackalloc byte[NumControlCharacterNames];
+                        Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, NumControlCharacterNames, out s_posixDisableValue);
                         s_veraseCharacter = controlCharacterValues[0];
                         s_veolCharacter = controlCharacterValues[1];
                         s_veol2Character = controlCharacterValues[2];

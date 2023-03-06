@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 
 namespace System.Reflection.Emit
@@ -186,6 +187,8 @@ namespace System.Reflection.Emit
             if (s_anonymouslyHostedDynamicMethodsModule != null)
                 return s_anonymouslyHostedDynamicMethodsModule;
 
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
             lock (s_anonymouslyHostedDynamicMethodsModuleLock)
             {
                 if (s_anonymouslyHostedDynamicMethodsModule != null)
@@ -193,12 +196,8 @@ namespace System.Reflection.Emit
 
                 AssemblyName assemblyName = new AssemblyName("Anonymously Hosted DynamicMethods Assembly");
 
-                AssemblyBuilder assembly = AssemblyBuilder.InternalDefineDynamicAssembly(
-                    assemblyName,
-                    AssemblyBuilderAccess.Run,
-                    typeof(object).Assembly,
-                    null,
-                    null);
+                var assembly = RuntimeAssemblyBuilder.InternalDefineDynamicAssembly(assemblyName,
+                    AssemblyBuilderAccess.Run, AssemblyLoadContext.Default, null);
 
                 // this always gets the internal module.
                 s_anonymouslyHostedDynamicMethodsModule = assembly.ManifestModule!;
@@ -222,6 +221,8 @@ namespace System.Reflection.Emit
                           bool transparentMethod)
         {
             ArgumentNullException.ThrowIfNull(name);
+
+            AssemblyBuilder.EnsureDynamicCodeSupported();
 
             if (attributes != (MethodAttributes.Static | MethodAttributes.Public) || callingConvention != CallingConventions.Standard)
                 throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
@@ -262,7 +263,7 @@ namespace System.Reflection.Emit
                 Debug.Assert(m == null || owner == null, "m and owner cannot both be set");
 
                 if (m != null)
-                    _module = ModuleBuilder.GetRuntimeModuleFromModule(m); // this returns the underlying module for all RuntimeModule and ModuleBuilder objects.
+                    _module = RuntimeModuleBuilder.GetRuntimeModuleFromModule(m); // this returns the underlying module for all RuntimeModule and ModuleBuilder objects.
                 else
                 {
                     if (owner?.UnderlyingSystemType is RuntimeType rtOwner)

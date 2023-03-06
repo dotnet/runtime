@@ -1164,6 +1164,9 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(NFloat x) => NativeType.ILogB(x._value);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static NFloat Lerp(NFloat value1, NFloat value2, NFloat amount) => new NFloat(NativeType.Lerp(value1._value, value2._value, amount._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static NFloat ReciprocalEstimate(NFloat x) => new NFloat(NativeType.ReciprocalEstimate(x._value));
 

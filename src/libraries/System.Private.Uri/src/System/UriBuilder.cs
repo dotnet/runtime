@@ -180,10 +180,8 @@ namespace System
             get => _port;
             set
             {
-                if (value < -1 || value > 0xFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0xFFFF);
                 _port = value;
                 _changed = true;
             }

@@ -34,7 +34,7 @@ initNonPortableDistroRid()
     local rootfsDir="$4"
     local nonPortableBuildID=""
 
-    if [ "$targetOs" = "Linux" ]; then
+    if [ "$targetOs" = "linux" ]; then
         if [ -e "${rootfsDir}/etc/os-release" ]; then
             source "${rootfsDir}/etc/os-release"
 
@@ -46,12 +46,13 @@ initNonPortableDistroRid()
                     VERSION_ID="${VERSION_ID%.*}"
                 fi
 
-                if [ -z "${VERSION_ID+x}" ]; then
-                        # Rolling release distros do not set VERSION_ID, so omit
-                        # it here to be consistent with everything else.
-                        nonPortableBuildID="${ID}-${buildArch}"
+                if [[ "${VERSION_ID}" =~ ^([[:digit:]]|\.)+$ ]]; then
+                    nonPortableBuildID="${ID}.${VERSION_ID}-${buildArch}"
                 else
-                        nonPortableBuildID="${ID}.${VERSION_ID}-${buildArch}"
+                    # Rolling release distros either do not set VERSION_ID, set it as blank or
+                    # set it to non-version looking string (such as TEMPLATE_VERSION_ID on ArchLinux);
+                    # so omit it here to be consistent with everything else.
+                    nonPortableBuildID="${ID}-${buildArch}"
                 fi
             fi
 
@@ -61,7 +62,7 @@ initNonPortableDistroRid()
         fi
     fi
 
-    if [ "$targetOs" = "FreeBSD" ]; then
+    if [ "$targetOs" = "freebsd" ]; then
         if (( isPortable == 0 )); then
             # $rootfsDir can be empty. freebsd-version is shell script and it should always work.
             __freebsd_major_version=$($rootfsDir/bin/freebsd-version | { read v; echo "${v%%.*}"; })
@@ -85,7 +86,7 @@ initNonPortableDistroRid()
                 nonPortableBuildID=openindiana-"$buildArch"
             ;;
         esac
-    elif [ "$targetOs" = "Solaris" ]; then
+    elif [ "$targetOs" = "solaris" ]; then
         __uname_version=$(uname -v)
         __solaris_major_version=$(echo "${__uname_version%.*}")
         nonPortableBuildID=solaris."$__solaris_major_version"-"$buildArch"
@@ -148,7 +149,7 @@ initDistroRidGlobal()
     initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
 
     if [ "$buildArch" = "wasm" ]; then
-        if [ "$targetOs" = "Browser" ]; then
+        if [ "$targetOs" = "browser" ]; then
             __DistroRid=browser-wasm
             export __DistroRid
         elif [ "$targetOs" = "wasi" ]; then
@@ -171,33 +172,33 @@ initDistroRidGlobal()
         fi
 
         if [ -z "${distroRid}" ]; then
-            if [ "$targetOs" = "Linux" ]; then
+            if [ "$targetOs" = "linux" ]; then
                 distroRid="linux-$buildArch"
             elif [ "$targetOs" = "linux-bionic" ]; then
                 distroRid="linux-bionic-$buildArch"
-            elif [ "$targetOs" = "OSX" ]; then
+            elif [ "$targetOs" = "osx" ]; then
                 distroRid="osx-$buildArch"
-            elif [ "$targetOs" = "MacCatalyst" ]; then
+            elif [ "$targetOs" = "maccatalyst" ]; then
                 distroRid="maccatalyst-$buildArch"
-            elif [ "$targetOs" = "tvOS" ]; then
+            elif [ "$targetOs" = "tvos" ]; then
                 distroRid="tvos-$buildArch"
-            elif [ "$targetOs" = "tvOSSimulator" ]; then
+            elif [ "$targetOs" = "tvossimulator" ]; then
                 distroRid="tvossimulator-$buildArch"
-            elif [ "$targetOs" = "iOS" ]; then
+            elif [ "$targetOs" = "ios" ]; then
                 distroRid="ios-$buildArch"
-            elif [ "$targetOs" = "iOSSimulator" ]; then
+            elif [ "$targetOs" = "iossimulator" ]; then
                 distroRid="iossimulator-$buildArch"
-            elif [ "$targetOs" = "Android" ]; then
+            elif [ "$targetOs" = "android" ]; then
                 distroRid="android-$buildArch"
-            elif [ "$targetOs" = "Browser" ]; then
+            elif [ "$targetOs" = "browser" ]; then
                 distroRid="browser-$buildArch"
             elif [ "$targetOs" = "wasi" ]; then
                 distroRid="wasi-$buildArch"
-            elif [ "$targetOs" = "FreeBSD" ]; then
+            elif [ "$targetOs" = "freebsd" ]; then
                 distroRid="freebsd-$buildArch"
             elif [ "$targetOs" = "illumos" ]; then
                 distroRid="illumos-$buildArch"
-            elif [ "$targetOs" = "Solaris" ]; then
+            elif [ "$targetOs" = "solaris" ]; then
                 distroRid="solaris-$buildArch"
             fi
         fi

@@ -47,15 +47,15 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "System.Text.Json.FSharp.Tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.TestLibrary.Roslyn3.11", "tests\System.Text.Json.SourceGeneration.TestLibrary\System.Text.Json.TestLibrary.Roslyn3.11.csproj", "{5C0CE30B-DD4A-4F7A-87C0-5243F0C86885}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.TestLibrary.Roslyn4.0", "tests\System.Text.Json.SourceGeneration.TestLibrary\System.Text.Json.TestLibrary.Roslyn4.0.csproj", "{FCA21178-0411-45D6-B597-B7BE145CEE33}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.TestLibrary.Roslyn4.4", "tests\System.Text.Json.SourceGeneration.TestLibrary\System.Text.Json.TestLibrary.Roslyn4.4.csproj", "{FCA21178-0411-45D6-B597-B7BE145CEE33}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn3.11.Tests", "tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj", "{66AD4B7E-CF15-4A8F-8BF8-7E1BC6176D07}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn4.0.Tests", "tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.0.Tests.csproj", "{33599A6C-F340-4E1B-9B4D-CB8946C22140}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn4.4.Tests", "tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj", "{33599A6C-F340-4E1B-9B4D-CB8946C22140}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn3.11.Unit.Tests", "tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Unit.Tests.csproj", "{256A4653-4287-44B3-BDEF-67FC1522ED2F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn4.0.Unit.Tests", "tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn4.0.Unit.Tests.csproj", "{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn4.4.Unit.Tests", "tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Unit.Tests.csproj", "{F6A18EB5-A8CC-4A39-9E85-5FA226019C3D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.Tests", "tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj", "{A0178BAA-A1AF-4C69-8E4A-A700A2723DDC}"
 EndProject

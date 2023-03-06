@@ -36,7 +36,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/utils.h"
 #include "pal/debug.h"
 #include "pal/init.h"
-#include "pal/numa.h"
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
 #include <minipal/getexepath.h>
@@ -102,7 +101,7 @@ using namespace CorUnix;
 // necessary prototype here
 //
 
-extern "C" BOOL CRTInitStdStreams( void );
+extern "C" BOOL CRTInitStdStreams(void);
 
 extern bool g_running_in_exe;
 
@@ -692,7 +691,6 @@ Initialize(
     }
     goto done;
 
-    NUMASupportCleanup();
     /* No cleanup required for CRTInitStdStreams */
 CLEANUP15:
     FILECleanupStdHandles();

@@ -1116,19 +1116,14 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
                 emitter* emit = GetEmitter();
                 emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
-
-                // Updating variable liveness after instruction was emitted
-                genUpdateLife(tree);
-
-                varDsc->SetRegNum(REG_STK);
             }
             else // store into register (i.e move into register)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
                 inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
-
-                genProduceReg(tree);
             }
+
+            genUpdateLifeStore(tree, targetReg, varDsc);
         }
     }
 }
@@ -1257,13 +1252,9 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     regNumber targetReg = tree->GetRegNum();
     emitter*  emit      = GetEmitter();
 
-    genConsumeIfReg(op1);
-    genConsumeIfReg(op2);
-
     if (varTypeIsFloating(op1Type))
     {
         assert(op1Type == op2Type);
-        assert(!tree->OperIs(GT_CMP));
         emit->emitInsBinary(INS_vcmp, emitTypeSize(op1Type), op1, op2);
         // vmrs with register 0xf has special meaning of transferring flags
         emit->emitIns_R(INS_vmrs, EA_4BYTE, REG_R15);
@@ -1898,12 +1889,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
 
     compiler->unwindAllocStack(frameSize);
-#ifdef USING_SCOPE_INFO
-    if (!doubleAlignOrFramePointerUsed())
-    {
-        psiAdjustStackLevel(frameSize);
-    }
-#endif // USING_SCOPE_INFO
 }
 
 void CodeGen::genPushFltRegs(regMaskTP regMask)

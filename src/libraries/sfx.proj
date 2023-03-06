@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS.ToLowerInvariant())</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <BuildInParallel>false</BuildInParallel>
   </PropertyGroup>
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -187,6 +188,22 @@ namespace System
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is the same as or earlier than right; otherwise, false.</returns>
         public static bool operator <=(DateOnly left, DateOnly right) => left._dayNumber <= right._dayNumber;
+
+        /// <summary>
+        /// Deconstructs <see cref="DateOnly"/> by <see cref="Year"/>, <see cref="Month"/> and <see cref="Day"/>.
+        /// </summary>
+        /// <param name="year">
+        /// Deconstructed parameter for <see cref="Year"/>.
+        /// </param>
+        /// <param name="month">
+        /// Deconstructed parameter for <see cref="Month"/>.
+        /// </param>
+        /// <param name="day">
+        /// Deconstructed parameter for <see cref="Day"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out int year, out int month, out int day)
+            => GetEquivalentDateTime().GetDate(out year, out month, out day);
 
         /// <summary>
         /// Returns a DateTime that is set to the date of this DateOnly instance and the time of specified input time.
@@ -419,7 +436,7 @@ namespace System
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
             {
                 result = default;
-                return ParseFailureKind.FormatWithParameter;
+                return ParseFailureKind.Argument_InvalidDateStyles;
             }
 
             DateTimeResult dtResult = default;
@@ -428,13 +445,13 @@ namespace System
             if (!DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), style, ref dtResult))
             {
                 result = default;
-                return ParseFailureKind.FormatWithOriginalDateTime;
+                return ParseFailureKind.Format_BadDateOnly;
             }
 
             if ((dtResult.flags & ParseFlagsDateMask) != 0)
             {
                 result = default;
-                return ParseFailureKind.WrongParts;
+                return ParseFailureKind.Format_DateTimeOnlyContainsNoneDateParts;
             }
 
             result = new DateOnly(DayNumberFromDateTime(dtResult.parsedDate));
@@ -468,7 +485,7 @@ namespace System
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
             {
                 result = default;
-                return ParseFailureKind.FormatWithParameter;
+                return ParseFailureKind.Argument_InvalidDateStyles;
             }
 
             if (format.Length == 1)
@@ -495,13 +512,13 @@ namespace System
             if (!DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, ref dtResult))
             {
                 result = default;
-                return ParseFailureKind.FormatWithOriginalDateTime;
+                return ParseFailureKind.Format_BadDateOnly;
             }
 
             if ((dtResult.flags & ParseFlagsDateMask) != 0)
             {
                 result = default;
-                return ParseFailureKind.WrongParts;
+                return ParseFailureKind.Format_DateTimeOnlyContainsNoneDateParts;
             }
 
             result = new DateOnly(DayNumberFromDateTime(dtResult.parsedDate));
@@ -535,7 +552,7 @@ namespace System
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0 || formats == null)
             {
                 result = default;
-                return ParseFailureKind.FormatWithParameter;
+                return ParseFailureKind.Argument_InvalidDateStyles;
             }
 
             DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(provider);
@@ -547,7 +564,7 @@ namespace System
                 if (string.IsNullOrEmpty(format))
                 {
                     result = default;
-                    return ParseFailureKind.FormatWithFormatSpecifier;
+                    return ParseFailureKind.Argument_BadFormatSpecifier;
                 }
 
                 if (format.Length == 1)
@@ -580,7 +597,7 @@ namespace System
             }
 
             result = default;
-            return ParseFailureKind.FormatWithOriginalDateTime;
+            return ParseFailureKind.Format_BadDateOnly;
         }
 
         /// <summary>
@@ -675,11 +692,11 @@ namespace System
             Debug.Assert(result != ParseFailureKind.None);
             switch (result)
             {
-                case ParseFailureKind.FormatWithParameter: throw new ArgumentException(SR.Argument_InvalidDateStyles, "style");
-                case ParseFailureKind.FormatWithOriginalDateTime: throw new FormatException(SR.Format(SR.Format_BadDateOnly, s.ToString()));
-                case ParseFailureKind.FormatWithFormatSpecifier: throw new FormatException(SR.Argument_BadFormatSpecifier);
+                case ParseFailureKind.Argument_InvalidDateStyles: throw new ArgumentException(SR.Argument_InvalidDateStyles, "style");
+                case ParseFailureKind.Argument_BadFormatSpecifier: throw new FormatException(SR.Argument_BadFormatSpecifier);
+                case ParseFailureKind.Format_BadDateOnly: throw new FormatException(SR.Format(SR.Format_BadDateOnly, s.ToString()));
                 default:
-                    Debug.Assert(result == ParseFailureKind.WrongParts);
+                    Debug.Assert(result == ParseFailureKind.Format_DateTimeOnlyContainsNoneDateParts);
                     throw new FormatException(SR.Format(SR.Format_DateTimeOnlyContainsNoneDateParts, s.ToString(), nameof(DateOnly)));
             }
         }

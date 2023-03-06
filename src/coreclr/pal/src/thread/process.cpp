@@ -2009,6 +2009,28 @@ PROCFormatInt(ULONG32 value)
     return buffer;
 }
 
+/*++
+Function:
+    PROCFormatInt64
+
+    Helper function to format an ULONG64 as a string.
+
+--*/
+char*
+PROCFormatInt64(ULONG64 value)
+{
+    char* buffer = (char*)InternalMalloc(128);
+    if (buffer != nullptr)
+    {
+        if (sprintf_s(buffer, 128, "%lld", value) == -1)
+        {
+            free(buffer);
+            buffer = nullptr;
+        }
+    }
+    return buffer;
+}
+
 static const INT UndefinedDumpType = 0;
 
 /*++
@@ -2376,7 +2398,7 @@ Parameters:
 (no return value)
 --*/
 VOID
-PROCCreateCrashDumpIfEnabled(int signal)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
 {
     // If enabled, launch the create minidump utility and wait until it completes
     if (!g_argvCreateDump.empty())
@@ -2384,13 +2406,16 @@ PROCCreateCrashDumpIfEnabled(int signal)
         std::vector<const char*> argv(g_argvCreateDump);
         char* signalArg = nullptr;
         char* crashThreadArg = nullptr;
+        char* signalCodeArg = nullptr;
+        char* signalErrnoArg = nullptr;
+        char* signalAddressArg = nullptr;
 
         if (signal != 0)
         {
             // Remove the terminating nullptr
             argv.pop_back();
 
-            // Add the Windows exception code to the command line
+            // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
             if (signalArg != nullptr)
             {
@@ -2405,6 +2430,29 @@ PROCCreateCrashDumpIfEnabled(int signal)
                 argv.push_back("--crashthread");
                 argv.push_back(crashThreadArg);
             }
+
+            if (siginfo != nullptr)
+            {
+                signalCodeArg = PROCFormatInt(siginfo->si_code);
+                if (signalCodeArg != nullptr)
+                {
+                    argv.push_back("--code");
+                    argv.push_back(signalCodeArg);
+                }
+                signalErrnoArg = PROCFormatInt(siginfo->si_errno);
+                if (signalErrnoArg != nullptr)
+                {
+                    argv.push_back("--errno");
+                    argv.push_back(signalErrnoArg);
+                }
+                signalAddressArg = PROCFormatInt64((ULONG64)siginfo->si_addr);
+                if (signalAddressArg != nullptr)
+                {
+                    argv.push_back("--address");
+                    argv.push_back(signalAddressArg);
+                }
+            }
+
             argv.push_back(nullptr);
         }
 
@@ -2412,6 +2460,9 @@ PROCCreateCrashDumpIfEnabled(int signal)
 
         free(signalArg);
         free(crashThreadArg);
+        free(signalCodeArg);
+        free(signalErrnoArg);
+        free(signalAddressArg);
     }
 }
 
@@ -2429,15 +2480,16 @@ Parameters:
 --*/
 PAL_NORETURN
 VOID
-PROCAbort(int signal)
+PROCAbort(int signal, siginfo_t* siginfo)
 {
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo);
 
-    // Restore the SIGABORT handler to prevent recursion
-    SEHCleanupAbort();
+    // Restore all signals; the SIGABORT handler to prevent recursion and
+    // the others to prevent multiple core dumps from being generated.
+    SEHCleanupSignals();
 
     // Abort the process after waiting for the core dump to complete
     abort();

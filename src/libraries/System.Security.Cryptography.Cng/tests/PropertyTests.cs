@@ -2,42 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.EcDsa.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Cng.Tests
 {
     public static class PropertyTests
     {
-        private static Lazy<bool> s_lazyPlatformCryptoProviderFunctional = new Lazy<bool>(static () =>
-        {
-            CngKey key = null;
-
-            try
-            {
-                key = CngKey.Create(
-                    CngAlgorithm.ECDsaP256,
-                    $"{nameof(PlatformCryptoProviderFunctional)}Key",
-                    new CngKeyCreationParameters
-                    {
-                        Provider = CngProvider.MicrosoftPlatformCryptoProvider,
-                        KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
-                    });
-
-                return true;
-            }
-            catch (CryptographicException)
-            {
-                return false;
-            }
-            finally
-            {
-                key?.Delete();
-            }
-        });
-
-        public static bool PlatformCryptoProviderFunctional => s_lazyPlatformCryptoProviderFunctional.Value;
-
-        [ConditionalTheory(nameof(PlatformCryptoProviderFunctional))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
         [InlineData("ECDH_P256", 256)]
         [InlineData("ECDH_P384", 384)]
         [InlineData("ECDSA_P256", 256)]
@@ -45,54 +17,29 @@ namespace System.Security.Cryptography.Cng.Tests
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreatePersisted_PlatformEccKeyHasKeySize(string algorithm, int expectedKeySize)
         {
-            CngKey key = null;
+            CngAlgorithm cngAlgorithm = new CngAlgorithm(algorithm);
 
-            try
+            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(cngAlgorithm))
             {
-                key = CngKey.Create(
-                    new CngAlgorithm(algorithm),
-                    $"{nameof(CreatePersisted_PlatformEccKeyHasKeySize)}_{algorithm}",
-                    new CngKeyCreationParameters
-                    {
-                        Provider = CngProvider.MicrosoftPlatformCryptoProvider,
-                        KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
-                    });
-
-                Assert.Equal(expectedKeySize, key.KeySize);
-            }
-            finally
-            {
-                key?.Delete(); // Delete does a Dispose for us.
+                Assert.Equal(expectedKeySize, platformKey.Key.KeySize);
             }
         }
 
-        [ConditionalTheory(nameof(PlatformCryptoProviderFunctional))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
         [InlineData(1024)]
         [InlineData(2048)]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreatePersisted_PlatformRsaKeyHasKeySize(int keySize)
         {
-            CngKey key = null;
+            CngProperty keyLengthProperty = new CngProperty("Length", BitConverter.GetBytes(keySize), CngPropertyOptions.None);
+            CngPlatformProviderKey platformKey = new CngPlatformProviderKey(
+                CngAlgorithm.Rsa,
+                keySuffix: keySize.ToString(),
+                additionalParameters: keyLengthProperty);
 
-            try
+            using (platformKey)
             {
-                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
-                {
-                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
-                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
-                };
-                cngCreationParameters.Parameters.Add(new CngProperty("Length", BitConverter.GetBytes(keySize), CngPropertyOptions.None));
-
-                key = CngKey.Create(
-                    CngAlgorithm.Rsa,
-                    $"{nameof(CreatePersisted_PlatformRsaKeyHasKeySize)}_{keySize}",
-                    cngCreationParameters);
-
-                Assert.Equal(keySize, key.KeySize);
-            }
-            finally
-            {
-                key?.Delete(); // Delete does a Dispose for us.
+                Assert.Equal(keySize, platformKey.Key.KeySize);
             }
         }
 

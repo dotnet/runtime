@@ -53,8 +53,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - Linux_s390x
-          - Linux_ppc64le
+          - linux_s390x
+          - linux_ppc64le
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -92,7 +92,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - FreeBSD_x64
+          - freebsd_x64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -120,7 +120,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - Linux_armv6
+          - linux_armv6
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

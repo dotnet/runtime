@@ -22,7 +22,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isAndroidOnlyBuild: ${{ parameters.isAndroidOnlyBuild }}
     platforms:
-      - Android_arm64
+      - android_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -48,6 +48,8 @@ jobs:
       #   extraStepsParameters:
       #     creator: dotnet-bot
       #     testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      #   extraVariablesTemplates:
+      #     - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
 #
 # Android devices
@@ -60,8 +62,8 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Android_arm
-    - Android_arm64
+    - android_arm
+    - android_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

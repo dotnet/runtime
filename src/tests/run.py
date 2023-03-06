@@ -644,9 +644,9 @@ def setup_coredump_generation(host_os):
     """
     global coredump_pattern
 
-    if host_os == "OSX":
+    if host_os == "osx":
         coredump_pattern = subprocess.check_output("sysctl -n kern.corefile", shell=True).rstrip()
-    elif host_os == "Linux":
+    elif host_os == "linux":
         with open("/proc/sys/kernel/core_pattern", "r") as f:
             coredump_pattern = f.read().rstrip()
     else:
@@ -688,7 +688,7 @@ def setup_coredump_generation(host_os):
 
     print("CoreDump generation enabled")
 
-    if host_os == "Linux" and os.path.isfile("/proc/self/coredump_filter"):
+    if host_os == "linux" and os.path.isfile("/proc/self/coredump_filter"):
         # Include memory in private and shared file-backed mappings in the dump.
         # This ensures that we can see disassembly from our shared libraries when
         # inspecting the contents of the dump. See 'man core' for details.
@@ -720,9 +720,9 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
 
     command = ""
 
-    if host_os == "OSX":
+    if host_os == "osx":
         command = "lldb -c %s -b -o 'bt all' -o 'disassemble -b -p'" % coredump_name
-    elif host_os == "Linux":
+    elif host_os == "linux":
         command = "gdb --batch -ex \"thread apply all bt full\" -ex \"disassemble /r $pc\" -ex \"quit\" %s %s" % (executable_name, coredump_name)
     else:
         print("Not printing coredump due to unsupported OS: %s" % host_os)
@@ -808,7 +808,7 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
 
     if "%P" in coredump_pattern:
         coredump_name_uses_pid=True
-    elif host_os == "Linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
+    elif host_os == "linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
         with open("/proc/sys/kernel/core_uses_pid", "r") as f:
             if f.read().rstrip() == "1":
                 coredump_name_uses_pid=True
@@ -930,7 +930,7 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    requires_coreroot = args.host_os != "Browser" and args.host_os != "Android"
+    requires_coreroot = args.host_os != "browser" and args.host_os != "android"
     coreclr_setup_args = CoreclrArguments(args,
                                           require_built_test_dir=True,
                                           require_built_core_root=requires_coreroot,

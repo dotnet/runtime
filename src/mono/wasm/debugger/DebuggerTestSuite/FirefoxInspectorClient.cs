@@ -84,6 +84,8 @@ class FirefoxInspectorClient : InspectorClient
         res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);
         res = await SendCommand("watchTargets", JObject.FromObject(new { type = "watchTargets", targetType = "frame", to = watcherId}), token);
         UpdateTarget(res.Value?["result"]?["value"]?["target"] as JObject);
+        if (ThreadActorId == null)
+            return false;
         res = await SendCommand("attach", JObject.FromObject(new
             {
                 type = "attach",
@@ -123,7 +125,7 @@ class FirefoxInspectorClient : InspectorClient
         if (res["type"]?.Value<string>() == "newSource")
         {
             var method = res["type"]?.Value<string>();
-            return onEvent(method, res, token);
+            return onEvent("", method, res, token);
         }
 
         if (res["type"]?.Value<string>() == "target-available-form" && res["target"] is JObject target)
@@ -190,7 +192,7 @@ class FirefoxInspectorClient : InspectorClient
                     break;
                 }
             }
-            return onEvent(method, res, token);
+            return onEvent("", method, res, token);
         }
         return null;
     }

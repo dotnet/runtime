@@ -23,6 +23,8 @@ namespace System.Text.Json.Reflection
 
         private FieldAttributes? _attributes;
 
+        public IFieldSymbol Symbol => _field;
+
         public override FieldAttributes Attributes
         {
             get

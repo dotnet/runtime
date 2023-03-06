@@ -20,7 +20,6 @@
 #include "thread.h"
 
 #include "shash.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "threadstore.h"
 #include "threadstore.inl"

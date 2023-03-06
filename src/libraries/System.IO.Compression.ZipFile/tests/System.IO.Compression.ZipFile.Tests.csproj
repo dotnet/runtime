@@ -6,7 +6,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 shell because https://bugs.chromium.org/p/v8/issues/detail?id=12541 -->
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>

@@ -29,6 +29,7 @@ namespace System.Net.Http
         private readonly Stream _stream;
 
         // NOTE: These are mutable structs; do not make these readonly.
+        // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync are responsible for disposing/returning their respective buffers.
         private ArrayBuffer _incomingBuffer;
         private ArrayBuffer _outgoingBuffer;
 
@@ -89,10 +90,12 @@ namespace System.Net.Http
 
 #if DEBUG
         // In debug builds, start with a very small buffer to induce buffer growing logic.
-        private const int InitialConnectionBufferSize = 4;
+        private const int InitialConnectionBufferSize = FrameHeader.Size;
 #else
-        private const int InitialConnectionBufferSize = 4096;
+        // Rent enough space to receive a full data frame in one read call.
+        private const int InitialConnectionBufferSize = FrameHeader.Size + FrameHeader.MaxPayloadLength;
 #endif
+
         // The default initial window size for streams and connections according to the RFC:
         // https://datatracker.ietf.org/doc/html/rfc7540#section-5.2.1
         // Unlike HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize, this value should never be changed.
@@ -139,8 +142,8 @@ namespace System.Net.Http
             _pool = pool;
             _stream = stream;
 
-            _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
-            _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
+            _incomingBuffer = new ArrayBuffer(initialSize: 0, usePool: true);
+            _outgoingBuffer = new ArrayBuffer(initialSize: 0, usePool: true);
 
             _hpackDecoder = new HPackDecoder(maxHeadersLength: pool.Settings.MaxResponseHeadersByteLength);
 
@@ -239,11 +242,15 @@ namespace System.Net.Http
                 _ = ProcessIncomingFramesAsync();
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
-                _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
-
+                _outgoingBuffer.ClearAndReturnBuffer();
             }
             catch (Exception e)
             {
+                // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync are responsible for disposing/returning their respective buffers.
+                // SetupAsync is the exception as it's responsible for starting the ProcessOutgoingFramesAsync loop.
+                // As we're about to throw and ProcessOutgoingFramesAsync will never be called, we must return the buffer here.
+                _outgoingBuffer.Dispose();
+
                 Dispose();
 
                 if (e is OperationCanceledException oce && oce.CancellationToken == cancellationToken)
@@ -428,9 +435,13 @@ namespace System.Net.Http
             // Ensure we've read enough data for the frame header.
             if (_incomingBuffer.ActiveLength < FrameHeader.Size)
             {
-                _incomingBuffer.EnsureAvailableSpace(FrameHeader.Size - _incomingBuffer.ActiveLength);
                 do
                 {
+                    // Issue a zero-byte read to avoid potentially pinning the buffer while waiting for more data.
+                    await _stream.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
+
+                    _incomingBuffer.EnsureAvailableSpace(FrameHeader.Size);
+
                     int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                     _incomingBuffer.Commit(bytesRead);
                     if (bytesRead == 0)
@@ -469,6 +480,9 @@ namespace System.Net.Http
                 _incomingBuffer.EnsureAvailableSpace(frameHeader.PayloadLength - _incomingBuffer.ActiveLength);
                 do
                 {
+                    // Issue a zero-byte read to avoid potentially pinning the buffer while waiting for more data.
+                    await _stream.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
+
                     int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                     _incomingBuffer.Commit(bytesRead);
                     if (bytesRead == 0) ThrowPrematureEOF(frameHeader.PayloadLength);
@@ -531,9 +545,21 @@ namespace System.Net.Http
                     // the entire frame's needs (not just the header).
                     if (_incomingBuffer.ActiveLength < FrameHeader.Size)
                     {
-                        _incomingBuffer.EnsureAvailableSpace(FrameHeader.Size - _incomingBuffer.ActiveLength);
                         do
                         {
+                            // Issue a zero-byte read to avoid potentially pinning the buffer while waiting for more data.
+                            ValueTask<int> zeroByteReadTask = _stream.ReadAsync(Memory<byte>.Empty);
+                            if (!zeroByteReadTask.IsCompletedSuccessfully && _incomingBuffer.ActiveLength == 0)
+                            {
+                                // No data is available yet. Return the receive buffer back to the pool while we wait.
+                                _incomingBuffer.ClearAndReturnBuffer();
+                            }
+                            await zeroByteReadTask.ConfigureAwait(false);
+
+                            // While we only need FrameHeader.Size bytes to complete this read, it's better if we rent more
+                            // to avoid multiple ReadAsync calls and resizes once we start copying the content.
+                            _incomingBuffer.EnsureAvailableSpace(InitialConnectionBufferSize);
+
                             int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                             Debug.Assert(bytesRead >= 0);
                             _incomingBuffer.Commit(bytesRead);
@@ -604,6 +630,10 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(ProcessIncomingFramesAsync)}: {e.Message}");
 
                 Abort(e);
+            }
+            finally
+            {
+                _incomingBuffer.Dispose();
             }
         }
 
@@ -1252,6 +1282,11 @@ namespace System.Net.Http
                     {
                         await FlushOutgoingBytesAsync().ConfigureAwait(false);
                     }
+
+                    if (_outgoingBuffer.ActiveLength == 0)
+                    {
+                        _outgoingBuffer.ClearAndReturnBuffer();
+                    }
                 }
             }
             catch (Exception e)
@@ -1259,6 +1294,10 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) Trace($"Unexpected exception in {nameof(ProcessOutgoingFramesAsync)}: {e}");
 
                 Debug.Fail($"Unexpected exception in {nameof(ProcessOutgoingFramesAsync)}: {e}");
+            }
+            finally
+            {
+                _outgoingBuffer.Dispose();
             }
         }
 
@@ -1330,7 +1369,7 @@ namespace System.Net.Http
             int bytesWritten;
             while (!HPackEncoder.EncodeIndexedHeaderField(index, headerBuffer.AvailableSpan, out bytesWritten))
             {
-                headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
+                headerBuffer.Grow();
             }
 
             headerBuffer.Commit(bytesWritten);
@@ -1343,7 +1382,7 @@ namespace System.Net.Http
             int bytesWritten;
             while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexing(index, value, valueEncoding: null, headerBuffer.AvailableSpan, out bytesWritten))
             {
-                headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
+                headerBuffer.Grow();
             }
 
             headerBuffer.Commit(bytesWritten);
@@ -1356,7 +1395,7 @@ namespace System.Net.Http
             int bytesWritten;
             while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
-                headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
+                headerBuffer.Grow();
             }
 
             headerBuffer.Commit(bytesWritten);
@@ -1369,7 +1408,7 @@ namespace System.Net.Http
             int bytesWritten;
             while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
-                headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
+                headerBuffer.Grow();
             }
 
             headerBuffer.Commit(bytesWritten);
@@ -1382,7 +1421,7 @@ namespace System.Net.Http
             int bytesWritten;
             while (!HPackEncoder.EncodeStringLiteral(value, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
             {
-                headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
+                headerBuffer.Grow();
             }
 
             headerBuffer.Commit(bytesWritten);
@@ -1392,11 +1431,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(bytes.Length)}={bytes.Length}");
 
-            if (bytes.Length > headerBuffer.AvailableLength)
-            {
-                headerBuffer.EnsureAvailableSpace(bytes.Length);
-            }
-
+            headerBuffer.EnsureAvailableSpace(bytes.Length);
             bytes.CopyTo(headerBuffer.AvailableSpan);
             headerBuffer.Commit(bytes.Length);
         }
@@ -1528,11 +1563,11 @@ namespace System.Net.Http
 
             if (request.HasHeaders)
             {
-                if (request.Headers.Protocol != null)
+                if (request.Headers.Protocol is string protocol)
                 {
                     WriteBytes(ProtocolLiteralHeaderBytes, ref headerBuffer);
                     Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
-                    WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
+                    WriteLiteralHeaderValue(protocol, protocolEncoding, ref headerBuffer);
                     headerListSize += HeaderField.RfcOverhead;
                 }
 
@@ -1854,6 +1889,10 @@ namespace System.Net.Http
 
             _connectionWindow.Dispose();
             _writeChannel.Writer.Complete();
+
+            // We're not disposing the _incomingBuffer and _outgoingBuffer here as they may still be in use by
+            // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync respectively, and those methods are
+            // responsible for returning the buffers.
 
             if (HttpTelemetry.Log.IsEnabled())
             {

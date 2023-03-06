@@ -43,7 +43,7 @@ extends:
             runtimeFlavor: mono
             buildConfig: release
             platforms:
-            - Linux_arm64
+            - linux_arm64
 
         # build coreclr and libraries
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -51,7 +51,7 @@ extends:
             jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
             buildConfig: release
             platforms:
-            - Linux_arm64
+            - linux_arm64
             jobParameters:
               testGroup: perf
 
@@ -62,7 +62,7 @@ extends:
             buildConfig: release
             runtimeFlavor: mono
             platforms:
-            - Linux_arm64
+            - linux_arm64
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
@@ -81,7 +81,7 @@ extends:
             buildConfig: release
             runtimeFlavor: mono
             platforms:
-            - Browser_wasm
+            - browser_wasm
             jobParameters:
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
               nameSuffix: wasm
@@ -103,7 +103,7 @@ extends:
             jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
             buildConfig: release
             platforms:
-            - Linux_arm64
+            - linux_arm64
             - windows_arm64
             jobParameters:
               testGroup: perf
@@ -115,7 +115,7 @@ extends:
             buildConfig: release
             runtimeFlavor: mono
             platforms:
-            - Browser_wasm
+            - browser_wasm
             jobParameters:
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
               nameSuffix: wasm
@@ -136,7 +136,7 @@ extends:
             runtimeFlavor: mono
             runtimeVariant: 'llvmaot'
             platforms:
-            - Linux_arm64
+            - linux_arm64
             jobParameters:
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
               nameSuffix: AOT
@@ -158,7 +158,7 @@ extends:
             buildConfig: release
             runtimeFlavor: aot
             platforms:
-            - Linux_arm64
+            - linux_arm64
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
@@ -177,7 +177,7 @@ extends:
             buildConfig: release
             runtimeFlavor: coreclr
             platforms:
-            - Linux_arm64
+            - linux_arm64
             jobParameters:
               testGroup: perf
               liveLibrariesBuildConfig: Release
@@ -227,7 +227,7 @@ extends:
       #     buildConfig: release
       #     runtimeFlavor: coreclr
       #     platforms:
-      #     - Linux_arm64
+      #     - linux_arm64
       #     jobParameters:
       #       testGroup: perf
       #       liveLibrariesBuildConfig: Release

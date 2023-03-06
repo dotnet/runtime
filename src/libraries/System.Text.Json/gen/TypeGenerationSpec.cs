@@ -62,10 +62,14 @@ namespace System.Text.Json.SourceGeneration
         public bool CanBeNull { get; private set; }
 
         public JsonNumberHandling? NumberHandling { get; private set; }
+        public JsonUnmappedMemberHandling? UnmappedMemberHandling { get; private set; }
 
         public List<PropertyGenerationSpec>? PropertyGenSpecList { get; private set; }
 
         public ParameterGenerationSpec[]? CtorParamGenSpecArray { get; private set; }
+
+        public List<PropertyInitializerGenerationSpec>? PropertyInitializerSpecList { get; private set; }
+        public int PropertyInitializersWithoutMatchingConstructorParameters { get; private set; }
 
         public CollectionType CollectionType { get; private set; }
 
@@ -74,6 +78,8 @@ namespace System.Text.Json.SourceGeneration
         public TypeGenerationSpec? CollectionValueTypeMetadata { get; private set; }
 
         public ObjectConstructionStrategy ConstructionStrategy { get; private set; }
+
+        public bool ConstructorSetsRequiredParameters { get; private set; }
 
         public TypeGenerationSpec? NullableUnderlyingTypeMetadata { get; private set; }
 
@@ -124,12 +130,15 @@ namespace System.Text.Json.SourceGeneration
             JsonSourceGenerationMode generationMode,
             ClassType classType,
             JsonNumberHandling? numberHandling,
+            JsonUnmappedMemberHandling? unmappedMemberHandling,
             List<PropertyGenerationSpec>? propertyGenSpecList,
             ParameterGenerationSpec[]? ctorParamGenSpecArray,
+            List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList,
             CollectionType collectionType,
             TypeGenerationSpec? collectionKeyTypeMetadata,
             TypeGenerationSpec? collectionValueTypeMetadata,
             ObjectConstructionStrategy constructionStrategy,
+            bool constructorSetsRequiredMembers,
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? runtimeTypeRef,
             TypeGenerationSpec? extensionDataPropertyTypeSpec,
@@ -146,12 +155,15 @@ namespace System.Text.Json.SourceGeneration
             CanBeNull = !IsValueType || nullableUnderlyingTypeMetadata != null;
             IsPolymorphic = isPolymorphic;
             NumberHandling = numberHandling;
+            UnmappedMemberHandling = unmappedMemberHandling;
             PropertyGenSpecList = propertyGenSpecList;
+            PropertyInitializerSpecList = propertyInitializerSpecList;
             CtorParamGenSpecArray = ctorParamGenSpecArray;
             CollectionType = collectionType;
             CollectionKeyTypeMetadata = collectionKeyTypeMetadata;
             CollectionValueTypeMetadata = collectionValueTypeMetadata;
             ConstructionStrategy = constructionStrategy;
+            ConstructorSetsRequiredParameters = constructorSetsRequiredMembers;
             NullableUnderlyingTypeMetadata = nullableUnderlyingTypeMetadata;
             RuntimeTypeRef = runtimeTypeRef;
             ExtensionDataPropertyTypeSpec = extensionDataPropertyTypeSpec;
@@ -172,7 +184,7 @@ namespace System.Text.Json.SourceGeneration
 
             castingRequiredForProps = false;
             serializableProperties = new Dictionary<string, PropertyGenerationSpec>();
-            Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
+            HashSet<string>? ignoredMembers = null;
 
             for (int i = 0; i < PropertyGenSpecList.Count; i++)
             {
@@ -233,7 +245,7 @@ namespace System.Text.Json.SourceGeneration
                                 other.ClrName == memberName ||
                                 // Was a property with the same CLR name ignored? That property hid the current property,
                                 // thus, if it was ignored, the current property should be ignored too.
-                                ignoredMembers?.ContainsKey(memberName) == true;
+                                ignoredMembers?.Contains(memberName) == true;
                         }
                         else
                         {
@@ -259,7 +271,7 @@ namespace System.Text.Json.SourceGeneration
 
                 if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
                 {
-                    (ignoredMembers ??= new()).Add(memberName, propGenSpec);
+                    (ignoredMembers ??= new()).Add(memberName);
                 }
             }
 

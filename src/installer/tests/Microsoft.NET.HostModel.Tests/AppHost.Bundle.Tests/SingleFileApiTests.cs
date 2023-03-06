@@ -20,9 +20,7 @@ namespace AppHost.Bundle.Tests
         [Fact]
         public void SelfContained_SingleFile_APITests()
         {
-            var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture);
-
+            string singleFile = BundleHelper.GetHostPath(sharedTestState.PublishedSingleFile);
             Command.Create(singleFile, "fullyqualifiedname codebase appcontext cmdlineargs executing_assembly_location basedirectory")
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -88,10 +86,9 @@ namespace AppHost.Bundle.Tests
         [Fact]
         public void AppContext_Native_Search_Dirs_Contains_Bundle_Dir()
         {
-            var fixture = sharedTestState.TestFixture.Copy();
-            Bundler bundler = BundleSelfContainedApp(fixture, out string singleFile);
-            string extractionDir = BundleHelper.GetExtractionDir(fixture, bundler).Name;
-            string bundleDir = BundleHelper.GetBundleDir(fixture).FullName;
+            string singleFile = BundleHelper.GetHostPath(sharedTestState.PublishedSingleFile);
+            string extractionRoot = BundleHelper.GetExtractionRootPath(sharedTestState.PublishedSingleFile);
+            string bundleDir = BundleHelper.GetPublishPath(sharedTestState.PublishedSingleFile);
 
             // If we don't extract anything to disk, the extraction dir shouldn't
             // appear in the native search dirs.
@@ -101,7 +98,7 @@ namespace AppHost.Bundle.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining(bundleDir)
-                .And.NotHaveStdOutContaining(extractionDir);
+                .And.NotHaveStdOutContaining(extractionRoot);
         }
 
         [Fact]

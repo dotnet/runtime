@@ -88,8 +88,6 @@
 //   and in the same EH region.
 // * Rerun this later, after we have built SSA, and handle single-def single-use
 //   from SSA perspective.
-// * Fix issue in morph that can unsoundly reorder call args, and remove
-//   extra effects computation from ForwardSubVisitor.
 // * We can be more aggressive with GTF_IND_INVARIANT / GTF_IND_NONFAULTING
 //   nodes--even though they may be marked GTF_GLOB_REF, they can be freely
 //   reordered. See if this offers any benefit.
@@ -191,17 +189,23 @@ public:
         UseExecutionOrder = true
     };
 
-    ForwardSubVisitor(Compiler* compiler, unsigned lclNum)
-        : GenTreeVisitor<ForwardSubVisitor>(compiler)
+    ForwardSubVisitor(Compiler* compiler, unsigned lclNum, bool livenessBased)
+        : GenTreeVisitor(compiler)
         , m_use(nullptr)
         , m_node(nullptr)
         , m_parentNode(nullptr)
         , m_lclNum(lclNum)
-        , m_useCount(0)
+        , m_parentLclNum(BAD_VAR_NUM)
         , m_useFlags(GTF_EMPTY)
         , m_accumulatedFlags(GTF_EMPTY)
         , m_treeSize(0)
+        , m_livenessBased(livenessBased)
     {
+        LclVarDsc* dsc = compiler->lvaGetDesc(m_lclNum);
+        if (dsc->lvIsStructField)
+        {
+            m_parentLclNum = dsc->lvParentLcl;
+        }
     }
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
@@ -217,8 +221,6 @@ public:
 
             if (lclNum == m_lclNum)
             {
-                m_useCount++;
-
                 // Screen out contextual "uses"
                 //
                 GenTree* const parent = user;
@@ -234,7 +236,7 @@ public:
                     isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
                 }
 
-                if (!isDef && !isCallTarget)
+                if (!isDef && !isCallTarget && IsLastUse(node->AsLclVar()))
                 {
                     m_node       = node;
                     m_use        = use;
@@ -246,17 +248,27 @@ public:
 
         // Stores to and uses of address-exposed locals are modelled as global refs.
         //
-        GenTree* lclNode = nullptr;
-        if (node->OperIsLocal() && !isDef)
+        LclVarDsc* lclDsc = nullptr;
+        if (node->OperIsLocal())
         {
-            lclNode = node;
+#ifdef DEBUG
+            if (IsUse(node->AsLclVarCommon()))
+            {
+                m_useCount++;
+            }
+#endif
+
+            if (!isDef)
+            {
+                lclDsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
+            }
         }
         else if (node->OperIs(GT_ASG) && node->gtGetOp1()->OperIsLocal())
         {
-            lclNode = node->gtGetOp1();
+            lclDsc = m_compiler->lvaGetDesc(node->gtGetOp1()->AsLclVarCommon());
         }
 
-        if ((lclNode != nullptr) && m_compiler->lvaGetDesc(lclNode->AsLclVarCommon())->IsAddressExposed())
+        if ((lclDsc != nullptr) && lclDsc->IsAddressExposed())
         {
             m_accumulatedFlags |= GTF_GLOB_REF;
         }
@@ -266,10 +278,12 @@ public:
         return fgWalkResult::WALK_CONTINUE;
     }
 
+#ifdef DEBUG
     unsigned GetUseCount() const
     {
         return m_useCount;
     }
+#endif
 
     GenTree* GetNode() const
     {
@@ -301,15 +315,69 @@ public:
         return m_treeSize;
     }
 
+    //------------------------------------------------------------------------
+    // IsUse: Check if a local is considered a use of the forward sub candidate
+    // while taking promotion into account.
+    //
+    // Arguments:
+    //    lcl - the local
+    //
+    // Returns:
+    //    true if the node is a use of the local candidate or any of its fields.
+    //
+    bool IsUse(GenTreeLclVarCommon* lcl)
+    {
+        unsigned lclNum = lcl->GetLclNum();
+        if ((lclNum == m_lclNum) || (lclNum == m_parentLclNum))
+        {
+            return true;
+        }
+
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
+        return dsc->lvIsStructField && (dsc->lvParentLcl == m_lclNum);
+    }
+
+    //------------------------------------------------------------------------
+    // IsLastUse: Check if the local node is a last use. The local node is expected
+    // to be a GT_LCL_VAR of the local being forward subbed.
+    //
+    // Arguments:
+    //    lcl - the GT_LCL_VAR of the current local.
+    //
+    // Returns:
+    //    true if the expression is a last use of the local; otherwise false.
+    //
+    bool IsLastUse(GenTreeLclVar* lcl)
+    {
+        assert(lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == m_lclNum));
+
+        if (!m_livenessBased)
+        {
+            // When not liveness based we can only get here when we have
+            // exactly 2 global references, and we should have already seen the
+            // def.
+            assert(m_compiler->lvaGetDesc(lcl)->lvRefCnt(RCS_EARLY) == 2);
+            return true;
+        }
+
+        LclVarDsc*   dsc        = m_compiler->lvaGetDesc(lcl);
+        GenTreeFlags deathFlags = dsc->FullDeathFlags();
+        return (lcl->gtFlags & deathFlags) == deathFlags;
+    }
+
 private:
-    GenTree**    m_use;
-    GenTree*     m_node;
-    GenTree*     m_parentNode;
-    unsigned     m_lclNum;
-    unsigned     m_useCount;
+    GenTree** m_use;
+    GenTree*  m_node;
+    GenTree*  m_parentNode;
+    unsigned  m_lclNum;
+    unsigned  m_parentLclNum;
+#ifdef DEBUG
+    unsigned m_useCount = 0;
+#endif
     GenTreeFlags m_useFlags;
     GenTreeFlags m_accumulatedFlags;
     unsigned     m_treeSize;
+    bool         m_livenessBased;
 };
 
 //------------------------------------------------------------------------
@@ -400,12 +468,23 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     }
 
     // Only fwd sub if we expect no code duplication
-    // We expect one def and one use.
     //
+    bool livenessBased = false;
     if (varDsc->lvRefCnt(RCS_EARLY) != 2)
     {
-        JITDUMP(" not asg (single-use lcl)\n");
-        return false;
+        if (!fgDidEarlyLiveness)
+        {
+            JITDUMP(" not asg (single-use lcl)\n");
+            return false;
+        }
+
+        if (varDsc->lvRefCnt(RCS_EARLY) < 2)
+        {
+            JITDUMP(" not asg (no use)\n");
+            return false;
+        }
+
+        livenessBased = true;
     }
 
     // And local is unalised
@@ -465,6 +544,40 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
+    // Local and tree to substitute seem suitable.
+    // See if the next statement contains the one and only use.
+    //
+    Statement* const nextStmt = stmt->GetNextStmt();
+
+    ForwardSubVisitor fsv(this, lclNum, livenessBased);
+    assert(fgNodeThreading == NodeThreading::AllLocals);
+    // Do a quick scan through the linked locals list to see if there is a last
+    // use.
+    bool found = false;
+    for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
+    {
+        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
+        {
+            if (fsv.IsLastUse(lcl->AsLclVar()))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (fsv.IsUse(lcl))
+        {
+            JITDUMP(" next stmt has non-last use\n");
+            return false;
+        }
+    }
+
+    if (!found)
+    {
+        JITDUMP(" no next stmt use\n");
+        return false;
+    }
+
     // Don't fwd sub overly large trees.
     // Size limit here is ad-hoc. Need to tune.
     //
@@ -472,16 +585,11 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     unsigned const nodeLimit = 16;
 
-    if (gtComplexityExceeds(&fwdSubNode, nodeLimit))
+    if (gtComplexityExceeds(fwdSubNode, nodeLimit))
     {
         JITDUMP(" tree to sub has more than %u nodes\n", nodeLimit);
         return false;
     }
-
-    // Local and tree to substitute seem suitable.
-    // See if the next statement contains the one and only use.
-    //
-    Statement* const nextStmt = stmt->GetNextStmt();
 
     // We often see stale flags, eg call flags after inlining.
     // Try and clean these up.
@@ -489,23 +597,28 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     gtUpdateStmtSideEffects(nextStmt);
     gtUpdateStmtSideEffects(stmt);
 
-    // Scan for the (single) use.
+    // Scan for the (last) use.
     //
-    ForwardSubVisitor fsv(this, lclNum);
     fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
 
-    // LclMorph (via RCS_Early) said there was just one use.
-    // It had better have gotten this right.
-    //
-    assert(fsv.GetUseCount() <= 1);
+    if (!livenessBased)
+    {
+        // LclMorph (via RCS_Early) said there was just one use.
+        // It had better have gotten this right.
+        //
+        assert(fsv.GetUseCount() == 1);
+    }
 
-    if ((fsv.GetUseCount() == 0) || (fsv.GetNode() == nullptr))
+    // The visitor has more contextual information and may not actually deem
+    // the use we found above as a valid forward sub destination so we must
+    // recheck it here.
+    if (fsv.GetNode() == nullptr)
     {
         JITDUMP(" no next stmt use\n");
         return false;
     }
 
-    JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
+    JITDUMP(" [%06u] is last use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
 
     // Qmarks must replace top-level uses. Also, restrict to GT_ASG.
     // And also to where neither local is normalize on store, otherwise
@@ -553,7 +666,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // height of the fwdSubNode.
     //
     unsigned const nextTreeLimit = 200;
-    if ((fsv.GetComplexity() > nextTreeLimit) && gtComplexityExceeds(&fwdSubNode, 1))
+    if ((fsv.GetComplexity() > nextTreeLimit) && gtComplexityExceeds(fwdSubNode, 1))
     {
         JITDUMP(" next stmt tree is too large (%u)\n", fsv.GetComplexity());
         return false;
@@ -743,8 +856,26 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Looks good, forward sub!
     //
-    GenTree** use = fsv.GetUse();
-    *use          = fwdSubNode;
+    GenTree**            use    = fsv.GetUse();
+    GenTreeLclVarCommon* useLcl = (*use)->AsLclVarCommon();
+    *use                        = fwdSubNode;
+
+    // We expect the last local in the statement is the defined local and
+    // replace the use of it with the rest from the statement.
+    assert(lhsNode->gtNext == nullptr);
+
+    GenTreeLclVarCommon* firstLcl = *stmt->LocalsTreeList().begin();
+
+    if (firstLcl == lhsNode)
+    {
+        nextStmt->LocalsTreeList().Remove(useLcl);
+    }
+    else
+    {
+        nextStmt->LocalsTreeList().Replace(useLcl, useLcl, firstLcl, lhsNode->gtPrev->AsLclVarCommon());
+
+        fgForwardSubUpdateLiveness(firstLcl, lhsNode->gtPrev);
+    }
 
     if (!fwdSubNodeInvariant)
     {
@@ -755,4 +886,83 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     DISPSTMT(nextStmt);
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// fgForwardSubUpdateLiveness: correct liveness after performing a forward
+// substitution that added a new sub list of locals in a statement.
+//
+// Arguments:
+//    newSubListFirst - the first local in the new sub list.
+//    newSubListLast - the last local in the new sub list.
+//
+// Remarks:
+//    Forward substitution may add new uses of other locals; these may be
+//    inserted at arbitrary points in the statement, so previous last uses may
+//    be invalidated. This function will conservatively unmark last uses that
+//    may no longer be correct.
+//
+//    The function is not as precise as it could be, in particular it does not
+//    mark any of the new later uses as a last use, and it does not care about
+//    defs. However, currently the only user of last use information after
+//    forward sub is last-use copy omission, and diffs indicate that being
+//    conservative here does not have a large impact.
+//
+void Compiler::fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast)
+{
+    for (GenTree* node = newSubListFirst->gtPrev; node != nullptr; node = node->gtPrev)
+    {
+        if ((node->gtFlags & GTF_VAR_DEATH_MASK) == 0)
+        {
+            continue;
+        }
+
+        unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* dsc    = lvaGetDesc(lclNum);
+
+        unsigned parentLclNum = dsc->lvIsStructField ? dsc->lvParentLcl : BAD_VAR_NUM;
+
+        GenTree* candidate = newSubListFirst;
+        while (true)
+        {
+            unsigned newUseLclNum = candidate->AsLclVarCommon()->GetLclNum();
+            if (dsc->lvPromoted)
+            {
+                // Is the parent struct being used?
+                if (newUseLclNum == lclNum)
+                {
+                    // Then all fields are not dying.
+                    node->gtFlags &= ~GTF_VAR_DEATH_MASK;
+                    break;
+                }
+
+                // Otherwise, is one single field being used?
+                if ((newUseLclNum >= dsc->lvFieldLclStart) && (newUseLclNum < dsc->lvFieldLclStart + dsc->lvFieldCnt))
+                {
+                    node->ClearLastUse(newUseLclNum - dsc->lvFieldLclStart);
+
+                    if ((node->gtFlags & GTF_VAR_DEATH_MASK) == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // See if a new instance of this local or its parent appeared.
+                if ((newUseLclNum == lclNum) || (newUseLclNum == parentLclNum))
+                {
+                    node->gtFlags &= ~GTF_VAR_DEATH;
+                    break;
+                }
+            }
+
+            if (candidate == newSubListLast)
+            {
+                break;
+            }
+
+            candidate = candidate->gtNext;
+        }
+    }
 }

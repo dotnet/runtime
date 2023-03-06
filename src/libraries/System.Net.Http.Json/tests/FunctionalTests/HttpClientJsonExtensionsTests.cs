@@ -354,5 +354,92 @@ namespace System.Net.Http.Json.Functional.Tests
                     await server.HandleRequestAsync(content: json, headers: headers);
                 });
         }
+
+        public static IEnumerable<object[]> GetFromJsonAsync_EnforcesMaxResponseContentBufferSize_MemberData() =>
+            from useDeleteAsync in new[] { true, false }
+            from limit in new[] { 2, 100, 100000 }
+            from contentLength in new[] { limit, limit + 1 }
+            from chunked in new[] { true, false }
+            select new object[] { useDeleteAsync, limit, contentLength, chunked };
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // No Socket support
+        [MemberData(nameof(GetFromJsonAsync_EnforcesMaxResponseContentBufferSize_MemberData))]
+        public async Task GetFromJsonAsync_EnforcesMaxResponseContentBufferSize(bool useDeleteAsync, int limit, int contentLength, bool chunked)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var client = new HttpClient { MaxResponseContentBufferSize = limit };
+
+                Func<Task> testMethod = () => useDeleteAsync ? client.DeleteFromJsonAsync<string>(uri) : client.GetFromJsonAsync<string>(uri);
+
+                if (contentLength > limit)
+                {
+                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(testMethod);
+                    Assert.Contains(limit.ToString(), ex.Message);
+                }
+                else
+                {
+                    await testMethod();
+                }
+            },
+            async server =>
+            {
+                List<HttpHeaderData> headers = new();
+                string content = $"\"{new string('a', contentLength - 2)}\"";
+
+                if (chunked)
+                {
+                    headers.Add(new HttpHeaderData("Transfer-Encoding", "chunked"));
+                    content = $"{Convert.ToString(contentLength, 16)}\r\n{content}\r\n0\r\n\r\n";
+                }
+
+                await server.HandleRequestAsync(headers: headers, content: content);
+            });
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // No Socket support
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task GetFromJsonAsync_EnforcesTimeout(bool useDeleteAsync, bool slowHeaders)
+        {
+            TaskCompletionSource<byte> exceptionThrown = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(100) };
+
+                Exception ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                    useDeleteAsync ? client.DeleteFromJsonAsync<string>(uri) : client.GetFromJsonAsync<string>(uri));
+
+#if NETCORE
+                Assert.Contains("HttpClient.Timeout", ex.Message);
+                Assert.IsType<TimeoutException>(ex.InnerException);
+#endif
+
+                exceptionThrown.SetResult(0);
+            },
+            async server =>
+            {
+                // The client may timeout before even connecting the server
+                await Task.WhenAny(exceptionThrown.Task, Task.Run(async () =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            if (!slowHeaders)
+                            {
+                                await connection.SendPartialResponseHeadersAsync(headers: new[] { new HttpHeaderData("Content-Length", "42") });
+                            }
+
+                            await exceptionThrown.Task;
+                        });
+                    }
+                    catch { }
+                }));
+            });
+        }
     }
 }

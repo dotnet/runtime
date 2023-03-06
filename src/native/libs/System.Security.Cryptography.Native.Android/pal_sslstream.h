@@ -44,14 +44,15 @@ Create an SSL context
 
 Returns NULL on failure
 */
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(void);
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle);
 
 /*
 Create an SSL context with the specified certificates
 
 Returns NULL on failure
 */
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(uint8_t* pkcs8PrivateKey,
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t sslStreamProxyHandle,
+                                                                         uint8_t* pkcs8PrivateKey,
                                                                          int32_t pkcs8PrivateKeyLen,
                                                                          PAL_KeyAlgorithm algorithm,
                                                                          jobject* /*X509Certificate[]*/ certs,

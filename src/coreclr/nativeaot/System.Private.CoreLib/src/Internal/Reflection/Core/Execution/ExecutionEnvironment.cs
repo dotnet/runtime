@@ -71,6 +71,7 @@ namespace Internal.Reflection.Core.Execution
         public abstract bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle);
 
         public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
+        public abstract bool TryGetConstructedGenericTypeForComponentsNoConstraintCheck(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
 
         //==============================================================================================
         // Invoke and field access support.

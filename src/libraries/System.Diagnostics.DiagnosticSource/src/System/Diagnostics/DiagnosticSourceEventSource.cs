@@ -1359,7 +1359,7 @@ namespace System.Diagnostics
 
                     [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
                         Justification = "MakeGenericType is only called when IsDynamicCodeSupported is true or only with ref types.")]
-                    private static PropertyFetch CreateEnumeratePropertyFetch(Type type, Type enumerableOfTType)
+                    private static PropertyFetch CreateEnumeratePropertyFetch(Type type, TypeInfo enumerableOfTType)
                     {
                         Type elemType = enumerableOfTType.GetGenericArguments()[0];
 #if NETCOREAPP

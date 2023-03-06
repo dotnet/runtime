@@ -107,10 +107,7 @@ namespace System.Net
         /// </devdoc>
         public IPAddress(long newAddress)
         {
-            if ((ulong)newAddress > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(newAddress));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((ulong)newAddress, 0x00000000FFFFFFFF, nameof(newAddress));
 
             PrivateAddress = (uint)newAddress;
         }
@@ -134,10 +131,7 @@ namespace System.Net
 
             // Consider: Since scope is only valid for link-local and site-local
             //           addresses we could implement some more robust checking here
-            if ((ulong)scopeid > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(scopeid));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((ulong)scopeid, 0x00000000FFFFFFFF, nameof(scopeid));
 
             _numbers = ReadUInt16NumbersFromBytes(address);
             PrivateScopeId = (uint)scopeid;
@@ -374,10 +368,8 @@ namespace System.Net
 
                 // Consider: Since scope is only valid for link-local and site-local
                 //           addresses we could implement some more robust checking here
-                if (value < 0 || value > 0x00000000FFFFFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x00000000FFFFFFFF);
 
                 PrivateScopeId = (uint)value;
             }

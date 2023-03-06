@@ -792,7 +792,7 @@ namespace System.Security.Cryptography
                 return _key.Value.DuplicateHandle();
             }
 
-            private static Exception PaddingModeNotSupported() =>
+            private static CryptographicException PaddingModeNotSupported() =>
                 new CryptographicException(SR.Cryptography_InvalidPaddingMode);
         }
     }

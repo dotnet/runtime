@@ -754,7 +754,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ServerUntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
@@ -854,7 +854,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73862", TestPlatforms.OSX)]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
@@ -915,7 +915,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientCertificateContext_SendsChain()
         {
             (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);

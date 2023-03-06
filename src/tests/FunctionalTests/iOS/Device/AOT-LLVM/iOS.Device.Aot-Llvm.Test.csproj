@@ -6,7 +6,7 @@
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <MainLibraryFileName>iOS.Device.Aot-Llvm.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>

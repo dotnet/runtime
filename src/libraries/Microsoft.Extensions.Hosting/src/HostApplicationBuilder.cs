@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +20,8 @@ namespace Microsoft.Extensions.Hosting
     {
         private readonly HostBuilderContext _hostBuilderContext;
         private readonly ServiceCollection _serviceCollection = new();
+        private readonly IHostEnvironment _environment;
+        private readonly LoggingBuilder _logging;
 
         private Func<IServiceProvider> _createServiceProvider;
         private Action<object> _configureContainer = _ => { };
@@ -46,7 +47,6 @@ namespace Microsoft.Extensions.Hosting
         ///     <item><description>enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
         ///   </list>
         /// </remarks>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostApplicationBuilder()
             : this(args: null)
         {
@@ -70,7 +70,6 @@ namespace Microsoft.Extensions.Hosting
         ///   </list>
         /// </remarks>
         /// <param name="args">The command line args.</param>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostApplicationBuilder(string[]? args)
             : this(new HostApplicationBuilderSettings { Args = args })
         {
@@ -80,7 +79,6 @@ namespace Microsoft.Extensions.Hosting
         /// Initializes a new instance of the <see cref="HostApplicationBuilder"/>.
         /// </summary>
         /// <param name="settings">Settings controlling initial configuration and whether default settings should be used.</param>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostApplicationBuilder(HostApplicationBuilderSettings? settings)
         {
             settings ??= new HostApplicationBuilderSettings();
@@ -93,8 +91,51 @@ namespace Microsoft.Extensions.Hosting
                     HostingHostBuilderExtensions.SetDefaultContentRoot(Configuration);
                 }
 
-                HostingHostBuilderExtensions.AddDefaultHostConfigurationSources(Configuration, settings.Args);
+                Configuration.AddEnvironmentVariables(prefix: "DOTNET_");
             }
+
+            Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
+
+            ServiceProviderOptions? serviceProviderOptions = null;
+            if (!settings.DisableDefaults)
+            {
+                HostingHostBuilderExtensions.ApplyDefaultAppConfiguration(_hostBuilderContext, Configuration, settings.Args);
+                HostingHostBuilderExtensions.AddDefaultServices(_hostBuilderContext, Services);
+                serviceProviderOptions = HostingHostBuilderExtensions.CreateDefaultServiceProviderOptions(_hostBuilderContext);
+            }
+
+            _createServiceProvider = () =>
+            {
+                // Call _configureContainer in case anyone adds callbacks via HostBuilderAdapter.ConfigureContainer<IServiceCollection>() during build.
+                // Otherwise, this no-ops.
+                _configureContainer(Services);
+                return serviceProviderOptions is null ? Services.BuildServiceProvider() : Services.BuildServiceProvider(serviceProviderOptions);
+            };
+        }
+
+        internal HostApplicationBuilder(HostApplicationBuilderSettings? settings, bool empty)
+        {
+            Debug.Assert(empty, "should only be called with empty: true");
+
+            settings ??= new HostApplicationBuilderSettings();
+            Configuration = settings.Configuration ?? new ConfigurationManager();
+
+            Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
+
+            _createServiceProvider = () =>
+            {
+                // Call _configureContainer in case anyone adds callbacks via HostBuilderAdapter.ConfigureContainer<IServiceCollection>() during build.
+                // Otherwise, this no-ops.
+                _configureContainer(Services);
+                return Services.BuildServiceProvider();
+            };
+        }
+
+        private void Initialize(HostApplicationBuilderSettings settings, out HostBuilderContext hostBuilderContext, out IHostEnvironment environment, out LoggingBuilder logging)
+        {
+            // Command line args are added even when settings.DisableDefaults == true. If the caller didn't want settings.Args applied,
+            // they wouldn't have set them on the settings.
+            HostingHostBuilderExtensions.AddCommandLineConfig(Configuration, settings.Args);
 
             // HostApplicationBuilderSettings override all other config sources.
             List<KeyValuePair<string, string?>>? optionList = null;
@@ -122,46 +163,29 @@ namespace Microsoft.Extensions.Hosting
 
             Configuration.SetFileProvider(physicalFileProvider);
 
-            _hostBuilderContext = new HostBuilderContext(new Dictionary<object, object>())
+            hostBuilderContext = new HostBuilderContext(new Dictionary<object, object>())
             {
                 HostingEnvironment = hostingEnvironment,
                 Configuration = Configuration,
             };
 
-            Environment = hostingEnvironment;
+            environment = hostingEnvironment;
 
             HostBuilder.PopulateServiceCollection(
                 Services,
-                _hostBuilderContext,
+                hostBuilderContext,
                 hostingEnvironment,
                 physicalFileProvider,
                 Configuration,
                 () => _appServices!);
 
-            Logging = new LoggingBuilder(Services);
-
-            ServiceProviderOptions? serviceProviderOptions = null;
-
-            if (!settings.DisableDefaults)
-            {
-                HostingHostBuilderExtensions.ApplyDefaultAppConfiguration(_hostBuilderContext, Configuration, settings.Args);
-                HostingHostBuilderExtensions.AddDefaultServices(_hostBuilderContext, Services);
-                serviceProviderOptions = HostingHostBuilderExtensions.CreateDefaultServiceProviderOptions(_hostBuilderContext);
-            }
-
-            _createServiceProvider = () =>
-            {
-                // Call _configureContainer in case anyone adds callbacks via HostBuilderAdapter.ConfigureContainer<IServiceCollection>() during build.
-                // Otherwise, this no-ops.
-                _configureContainer(Services);
-                return serviceProviderOptions is null ? Services.BuildServiceProvider() : Services.BuildServiceProvider(serviceProviderOptions);
-            };
+            logging = new LoggingBuilder(Services);
         }
 
         /// <summary>
         /// Provides information about the hosting environment an application is running in.
         /// </summary>
-        public IHostEnvironment Environment { get; }
+        public IHostEnvironment Environment => _environment;
 
         /// <summary>
         /// A collection of services for the application to compose. This is useful for adding user provided or framework provided services.
@@ -176,7 +200,7 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// A collection of logging providers for the application to compose. This is useful for adding new logging providers.
         /// </summary>
-        public ILoggingBuilder Logging { get; }
+        public ILoggingBuilder Logging => _logging;
 
         /// <summary>
         /// Registers a <see cref="IServiceProviderFactory{TContainerBuilder}" /> instance to be used to create the <see cref="IServiceProvider" />.

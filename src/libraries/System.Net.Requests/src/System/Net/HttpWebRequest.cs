@@ -233,10 +233,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if (value < 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_toosmall);
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, System.Threading.Timeout.Infinite);
                 _maximumResponseHeadersLen = value;
             }
         }
@@ -249,10 +246,7 @@ namespace System.Net
             }
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentException(SR.net_toosmall, nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 _maximumAllowedRedirections = value;
             }
         }
@@ -320,10 +314,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_writestarted);
                 }
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 SetSpecialHeaders(HttpKnownHeaderNames.ContentLength, value.ToString());
             }
         }
@@ -355,7 +346,7 @@ namespace System.Net
                 Uri hostUri = _hostUri ?? Address;
                 return (_hostUri == null || !_hostHasPort) && Address.IsDefaultPort ?
                     hostUri.Host :
-                    hostUri.Host + ":" + hostUri.Port;
+                    $"{hostUri.Host}:{hostUri.Port}";
             }
             set
             {

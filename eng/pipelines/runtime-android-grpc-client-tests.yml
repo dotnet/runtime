@@ -36,7 +36,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - Android_x64
+          - android_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_gRPC

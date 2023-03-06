@@ -346,12 +346,12 @@ namespace System.Net.Http
             return stream.WriteAsync(new ReadOnlyMemory<byte>(buffer), cancellationToken);
         }
 
-        private static Stream EncodeStringToNewStream(string input)
+        private static MemoryStream EncodeStringToNewStream(string input)
         {
             return new MemoryStream(HttpRuleParser.DefaultHttpEncoding.GetBytes(input), writable: false);
         }
 
-        private Stream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
+        private MemoryStream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
         {
             var stream = new MemoryStream();
             SerializeHeadersToStream(stream, content, writeDivider);
@@ -533,10 +533,10 @@ namespace System.Net.Http
                 ReadAsyncPrivate(buffer, cancellationToken);
 
             public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-                TaskToApm.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
+                TaskToAsyncResult.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
             public override int EndRead(IAsyncResult asyncResult) =>
-                TaskToApm.End<int>(asyncResult);
+                TaskToAsyncResult.End<int>(asyncResult);
 
             public async ValueTask<int> ReadAsyncPrivate(Memory<byte> buffer, CancellationToken cancellationToken)
             {
