@@ -1283,6 +1283,48 @@ LIR::ReadOnlyRange LIR::Range::GetTreeRange(GenTree* root, bool* isClosed, unsig
 }
 
 //------------------------------------------------------------------------
+// LIR::Range::GetTreeRangeWithFlags: Computes the subrange that includes all nodes
+//                                    in the dataflow tree rooted at a particular
+//                                    range of node, taking into account that the root
+//                                    node may also implicitly consume flags defined by
+//                                    non-operands.
+//
+// Arguments:
+//    root        - The root of the dataflow tree range of nodes.
+//    isClosed    - An output parameter that is set to true if the returned
+//                  range contains only nodes in the dataflow tree and false
+//                  otherwise.
+//    sideEffects - An output parameter that summarizes the side effects
+//                  contained in the returned range.
+//
+// Returns:
+//    The computed subrange.
+LIR::ReadOnlyRange LIR::Range::GetTreeRangeWithFlags(GenTree* root, bool* isClosed, unsigned* sideEffects) const
+{
+    unsigned markCount = 1;
+    root->gtLIRFlags |= LIR::Flags::Mark;
+
+    GenTree* flagsNode = root;
+    while (flagsNode->OperConsumesFlags())
+    {
+        assert(flagsNode->gtPrev != nullptr);
+
+        do
+        {
+            flagsNode = flagsNode->gtPrev;
+            if ((flagsNode->gtFlags & GTF_SET_FLAGS) != 0)
+            {
+                markCount++;
+                flagsNode->gtLIRFlags |= LIR::Flags::Mark;
+                break;
+            }
+        } while (flagsNode->gtPrev != nullptr);
+    }
+
+    return GetMarkedRange(markCount, root, isClosed, sideEffects);
+}
+
+//------------------------------------------------------------------------
 // LIR::Range::GetTreeRange: Computes the subrange that includes all nodes
 //                           in the dataflow trees rooted by the operands
 //                           to a particular node.
@@ -1732,6 +1774,35 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
     }
 
     blockRange.InsertBefore(insertionPoint, std::move(range));
+}
+
+//------------------------------------------------------------------------
+// LIR::EarliestNode:
+//   Given two nodes, find the earliest of the two nodes.
+//
+// Arguments:
+//    node1 - The first node
+//    node2 - The second node
+//
+// Returns:
+//    Either node1 or node2, depending on which is earliest
+//
+GenTree* LIR::EarliestNode(GenTree* node1, GenTree* node2)
+{
+    GenTree* node1Cursor = node1;
+    GenTree* node2Cursor = node2;
+
+    while (true)
+    {
+        if ((node1Cursor == node2) || (node2Cursor == nullptr))
+            return node2;
+
+        if ((node2Cursor == node1) || (node1Cursor == nullptr))
+            return node1;
+
+        node1Cursor = node1Cursor->gtPrev;
+        node2Cursor = node2Cursor->gtPrev;
+    }
 }
 
 #ifdef DEBUG

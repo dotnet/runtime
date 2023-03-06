@@ -2306,15 +2306,32 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTreeOp* tree)
         return nullptr;
     }
 
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        bool               isClosed;
+        unsigned           sideEffects;
+        LIR::ReadOnlyRange op1Range  = BlockRange().GetTreeRangeWithFlags(op1, &isClosed, &sideEffects);
+        LIR::ReadOnlyRange op2Range  = BlockRange().GetTreeRangeWithFlags(op2, &isClosed, &sideEffects);
+        GenTree*           firstNode = LIR::EarliestNode(op1Range.FirstNode(), op2Range.FirstNode());
+
+        JITDUMP("[%06u] is a candidate for CCMP:\n", Compiler::dspTreeID(tree));
+        comp->gtDispRange(LIR::ReadOnlyRange(firstNode, tree));
+        JITDUMP("\n");
+    }
+#endif
+
     // We leave checking invariance of op1 to tree to TryLowerConditionToFlagsNode.
     if (!IsInvariantInRange(op2, tree))
     {
+        JITDUMP("  ..cannot move [%06u], bailing\n", Compiler::dspTreeID(op2));
         return nullptr;
     }
 
     GenCondition cond1;
     if (!TryLowerConditionToFlagsNode(tree, op1, &cond1))
     {
+        JITDUMP("  ..could not turn [%06u] into a def of flags, bailing\n", Compiler::dspTreeID(op1));
         return nullptr;
     }
 
@@ -2338,6 +2355,18 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTreeOp* tree)
 
     tree->SetOper(GT_SETCC);
     tree->AsCC()->gtCondition = cond2;
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("Conversion was legal. Result:\n");
+        bool               isClosed;
+        unsigned           sideEffects;
+        LIR::ReadOnlyRange range = BlockRange().GetTreeRangeWithFlags(tree, &isClosed, &sideEffects);
+        comp->gtDispRange(range);
+        JITDUMP("\n");
+    }
+#endif
 
     return tree->gtNext;
 }

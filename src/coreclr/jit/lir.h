@@ -291,6 +291,7 @@ public:
 
         ReadOnlyRange GetTreeRange(GenTree* root, bool* isClosed) const;
         ReadOnlyRange GetTreeRange(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
+        ReadOnlyRange GetTreeRangeWithFlags(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
         ReadOnlyRange GetRangeOfOperandTrees(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
 
 #ifdef DEBUG
@@ -306,6 +307,8 @@ public:
     static Range SeqTree(Compiler* compiler, GenTree* tree);
 
     static void InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range);
+
+    static GenTree* EarliestNode(GenTree* node1, GenTree* node2);
 };
 
 inline void GenTree::SetUnusedValue()
