@@ -373,38 +373,19 @@ namespace System.Xml
                     byte* bytes = _bytes;
                     char* charsMax = &chars[charCount];
 
-                    if (Sse41.IsSupported && charCount >= Vector128<short>.Count)
+                    // Fast path for small strings, skip and use Encoding.GetBytes for larger strings since it is faster
+                    if (charCount < 16)
                     {
-                        var mask = Vector128.Create(unchecked((short)0xff80));
-                        uint lastSimd = (uint)(charCount - Vector128<short>.Count);
-                        for (uint i = 0; i < lastSimd; i += (uint)Vector128<ushort>.Count)
+                        while (chars < charsMax)
                         {
-                            var v = *(Vector128<short>*)(chars + i);
-                            if (!Sse41.TestZ(v, mask))
-                                goto NonAscii;
-
-                            Sse2.StoreScalar((long*)(bytes + i), Sse2.PackUnsignedSaturate(v, v).AsInt64());
-                        }
-
-                        var v2 = *(Vector128<short>*)(chars + charCount - Vector128<ushort>.Count);
-                        if (!Sse41.TestZ(v2, mask))
-                            goto NonAscii;
-
-                        Sse2.StoreScalar((long*)(_bytes + charCount - sizeof(long)), Sse2.PackUnsignedSaturate(v2, v2).AsInt64());
-                        return charCount;
-                    }
-                    // Fast path for small strings, skip and use Encoding.GetBytes for larger strings since it is faster even for the all-Ascii case
-                    else if (Sse41.IsSupported || charCount < 16)
-                    {
-                        for (uint i = 0; i < (uint)charCount; ++i)
-                        {
-                            char t = chars[i];
+                            char t = *chars;
                             if (t >= 0x80)
                                 goto NonAscii;
 
-                            bytes[i] = (byte)t;
+                            *bytes = (byte)t;
+                            bytes++;
+                            chars++;
                         }
-
                         return charCount;
                     }
 
