@@ -192,6 +192,7 @@
 
     <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)</_packageOS>
     <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_packageOS>
+    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' == 'linux-bionic'">linux-bionic</_packageOS>
 
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
