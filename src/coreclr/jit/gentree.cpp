@@ -24842,10 +24842,12 @@ bool GenTree::CanDivisionPossiblyOverflow(Compiler* comp) const
         {
             return false;
         }
+#ifdef TARGET_64BIT
         else if (this->TypeIs(TYP_LONG) && !op1->IsIntegralConst(INT64_MIN))
         {
             return false;
         }
+#endif // TARGET_64BIT
     }
 
     return true;
