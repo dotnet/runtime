@@ -23,5 +23,5 @@ Such subsequent start is significantly faster.
     - therefore we do not expect to store any application state in the snapshot.
 
 ### How to opt out
- - you can use new API `withMemoryCache(false)` to opt out from the feature.
+You can turn this feature of by calling `withMemoryCache(false)` on [dotnet API](https://github.com/dotnet/runtime/blob/main/src/mono/wasm/runtime/dotnet.d.ts).
 
