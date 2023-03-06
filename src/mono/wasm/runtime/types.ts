@@ -233,7 +233,7 @@ export type RuntimeHelpers = {
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
     loadedFiles: string[],
-    memoryIsLoaded: boolean,
+    useMemorySnapshot: boolean,
     subtle: SubtleCrypto | null,
     preferredIcuAsset: string | null,
     timezone: string | null,

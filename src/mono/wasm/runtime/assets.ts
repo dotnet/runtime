@@ -8,7 +8,7 @@ import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
-import { abort_startup, beforeOnRuntimeInitialized } from "./startup";
+import { abort_startup, beforeOnRuntimeInitialized, memorySnapshotIsResolved } from "./startup";
 import { AssetBehaviours, AssetEntry, AssetEntryInternal, LoadingResource, mono_assert, ResourceRequest } from "./types";
 import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
 
@@ -59,7 +59,10 @@ export function resolve_asset_path(behavior: AssetBehaviours) {
     return asset;
 }
 export async function mono_download_assets(): Promise<void> {
-    if (runtimeHelpers.memoryIsLoaded) {
+    // continue after we know if memory snapshot is available or not
+    await memorySnapshotIsResolved.promise;
+
+    if (runtimeHelpers.useMemorySnapshot) {
         allAssetsInMemory.promise_control.resolve();
         return;
     }

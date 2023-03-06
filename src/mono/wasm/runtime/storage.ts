@@ -8,7 +8,7 @@ import { runtimeHelpers } from "./imports";
 const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
 
 // adapted from Blazor's WebAssemblyResourceLoader.ts
-async function open(): Promise<Cache | null> {
+async function openCache(): Promise<Cache | null> {
     // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
     if (typeof globalThis.caches === "undefined") {
         return null;
@@ -43,14 +43,34 @@ async function open(): Promise<Cache | null> {
     }
 }
 
-export async function getMemory(): Promise<ArrayBuffer | undefined> {
+export async function getMemorySnapshotSize(): Promise<number | undefined> {
     try {
         const inputsHash = await getInputsHash();
         if (!inputsHash) {
             return undefined;
         }
         const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${inputsHash}`;
-        const cache = await open();
+        const cache = await openCache();
+        if (!cache) {
+            return undefined;
+        }
+        const res = await cache.match(cacheKey);
+        const contentLength = res?.headers.get("content-length");
+        return contentLength ? parseInt(contentLength) : undefined;
+    } catch (ex) {
+        console.warn("MONO_WASM: Failed find memory snapshot in the cache", ex);
+        return undefined;
+    }
+}
+
+export async function getMemorySnapshot(): Promise<ArrayBuffer | undefined> {
+    try {
+        const inputsHash = await getInputsHash();
+        if (!inputsHash) {
+            return undefined;
+        }
+        const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${inputsHash}`;
+        const cache = await openCache();
         if (!cache) {
             return undefined;
         }
@@ -60,18 +80,19 @@ export async function getMemory(): Promise<ArrayBuffer | undefined> {
         }
         return res.arrayBuffer();
     } catch (ex) {
+        console.warn("MONO_WASM: Failed load memory snapshot from the cache", ex);
         return undefined;
     }
 }
 
-export async function storeMemory(memory: ArrayBuffer) {
+export async function storeMemorySnapshot(memory: ArrayBuffer) {
     try {
         const inputsHash = await getInputsHash();
         if (!inputsHash) {
             return;
         }
         const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${inputsHash}`;
-        const cache = await open();
+        const cache = await openCache();
         if (!cache) {
             return;
         }
@@ -85,15 +106,16 @@ export async function storeMemory(memory: ArrayBuffer) {
 
         await cache.put(cacheKey, responseToCache);
 
-        cleanupMemory(cacheKey); // no await
+        cleanupMemorySnapshots(cacheKey); // no await
     } catch (ex) {
+        console.warn("MONO_WASM: Failed to store memory snapshot in the cache", ex);
         return;
     }
 }
 
-export async function cleanupMemory(protectKey: string) {
+export async function cleanupMemorySnapshots(protectKey: string) {
     try {
-        const cache = await open();
+        const cache = await openCache();
         if (!cache) {
             return;
         }

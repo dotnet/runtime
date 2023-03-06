@@ -27,7 +27,7 @@ import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
-import { getMemory, storeMemory } from "./storage";
+import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./storage";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
@@ -39,6 +39,7 @@ let configLoaded = false;
 export const dotnetReady = createPromiseController<any>();
 export const afterConfigLoaded = createPromiseController<MonoConfig>();
 export const beforeInstantiateWasm = createPromiseController<void>();
+export const memorySnapshotIsResolved = createPromiseController<void>();
 export const afterInstantiateWasm = createPromiseController<void>();
 export const beforePreInit = createPromiseController<void>();
 export const afterPreInit = createPromiseController<void>();
@@ -108,7 +109,9 @@ function instantiateWasm(
 
     const mark = startMeasure();
     if (userInstantiateWasm) {
+        // user wasm doesn't support memory snapshots
         beforeInstantiateWasm.promise_control.resolve();
+        memorySnapshotIsResolved.promise_control.resolve();
         const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => {
             endMeasure(mark, MeasuredBlock.instantiateWasm);
             afterInstantiateWasm.promise_control.resolve();
@@ -179,7 +182,6 @@ async function preInitWorkerAsync() {
     const mark = startMeasure();
     try {
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preInitWorker");
-        beforePreInit.promise_control.resolve();
         mono_wasm_pre_init_essential(true);
         await init_polyfills_async();
         afterPreInit.promise_control.resolve();
@@ -286,6 +288,7 @@ export function abort_startup(reason: any, should_exit: boolean): void {
     if (runtimeHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
     dotnetReady.promise_control.reject(reason);
     beforeInstantiateWasm.promise_control.reject(reason);
+    memorySnapshotIsResolved.promise_control.reject(reason);
     afterInstantiateWasm.promise_control.reject(reason);
     beforePreInit.promise_control.reject(reason);
     afterPreInit.promise_control.reject(reason);
@@ -334,7 +337,9 @@ async function mono_wasm_pre_init_full(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_full");
     Module.addRunDependency("mono_wasm_pre_init_full");
 
+    // continue after wasm is downloaded
     await beforeInstantiateWasm.promise;
+
     await mono_download_assets();
 
     Module.removeRunDependency("mono_wasm_pre_init_full");
@@ -348,8 +353,8 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
         mono_wasm_globalization_init();
 
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
-        if (config.cacheMemory && !runtimeHelpers.memoryIsLoaded) {
-            await storeMemory(Module.HEAP8.buffer);
+        if (config.cacheMemory && !runtimeHelpers.useMemorySnapshot) {
+            await storeMemorySnapshot(Module.HEAP8.buffer);
         }
         if (MonoWasmThreads) {
             preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);
@@ -460,19 +465,23 @@ async function instantiate_wasm_module(
 ): Promise<void> {
     // this is called so early that even Module exports like addRunDependency don't exist yet
     try {
-        let memoryBytes: ArrayBuffer | undefined = undefined;
+        let memorySize: number | undefined = undefined;
         await mono_wasm_load_config(Module.configSrc);
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
-
-        if (config.cacheMemory && config.assetsHash) {
-            memoryBytes = await getMemory();
-            runtimeHelpers.memoryIsLoaded = !!memoryBytes;
-        }
-        beforeInstantiateWasm.promise_control.resolve();
-
         // FIXME: this would not apply re-try (on connection reset during download) for dotnet.wasm because we could not download the buffer before we pass it to instantiate_wasm_asset
         await start_asset_download(assetToLoad);
+        beforeInstantiateWasm.promise_control.resolve();
+
+        if (config.cacheMemory && config.assetsHash) {
+            memorySize = await getMemorySnapshotSize();
+            runtimeHelpers.useMemorySnapshot = !!memorySize;
+        }
+        if (!runtimeHelpers.useMemorySnapshot) {
+            // we should start downloading DLLs etc as they are not in the snapshot
+            memorySnapshotIsResolved.promise_control.resolve();
+        }
+
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
 
@@ -483,13 +492,23 @@ async function instantiate_wasm_module(
         assetToLoad.buffer = null as any; // GC
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
 
-        if (runtimeHelpers.memoryIsLoaded) {
-            const wasmMemory = anyModule.asm.memory;
-            // .grow() takes a delta compared to the previous size
-            wasmMemory.grow((memoryBytes!.byteLength - wasmMemory.buffer.byteLength + 65535) >>> 16);
-            runtimeHelpers.updateGlobalBufferAndViews(wasmMemory.buffer);
-            Module.HEAP8.set(new Int8Array(memoryBytes!), 0);
-            if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Loaded memory from cache");
+        if (runtimeHelpers.useMemorySnapshot) {
+            try {
+                const wasmMemory = anyModule.asm.memory;
+                // .grow() takes a delta compared to the previous size
+                wasmMemory.grow((memorySize! - wasmMemory.buffer.byteLength + 65535) >>> 16);
+                runtimeHelpers.updateGlobalBufferAndViews(wasmMemory.buffer);
+
+                // get the bytes after we re-sized the memory, so that we don't have too much memory in use at the same time
+                const memoryBytes = await getMemorySnapshot();
+                Module.HEAP8.set(new Int8Array(memoryBytes!), 0);
+                if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Loaded memory from cache");
+            } catch (err) {
+                console.warn("MONO_WASM: failed to load memory snapshot", err);
+                runtimeHelpers.useMemorySnapshot = false;
+            }
+            // now we know if the loading of memory succeeded or not, we can start loading the rest of the assets
+            memorySnapshotIsResolved.promise_control.resolve();
         }
         afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
@@ -531,7 +550,7 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
     runtimeHelpers.mono_wasm_load_runtime_done = true;
     try {
         const mark = startMeasure();
-        if (!runtimeHelpers.memoryIsLoaded) {
+        if (!runtimeHelpers.useMemorySnapshot) {
             if (debugLevel == undefined) {
                 debugLevel = 0;
                 if (config && config.debugLevel) {
