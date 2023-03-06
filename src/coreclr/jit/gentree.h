@@ -2300,6 +2300,9 @@ public:
     bool IsInvariant() const;
 
     bool IsNeverNegative(Compiler* comp) const;
+    bool IsNeverNegativeOne(Compiler* comp) const;
+    bool IsNeverZero() const;
+    bool CanDivisionPossiblyOverflow(Compiler* comp) const;
 
     bool IsReuseRegVal() const
     {

@@ -9672,37 +9672,12 @@ DONE_MORPHING_CHILDREN:
 #endif
             if (!varTypeIsFloating(tree->gtType))
             {
-                if (!op2->IsNeverNegative(this))
+                if (tree->CanDivisionPossiblyOverflow(this))
                 {
-                    bool checkDividend = true;
-
-                    // We do not need to throw if we know the first operand is a constant and not a min-value.
-                    if (op1->IsIntegralConst())
-                    {
-                        if (tree->TypeIs(TYP_INT) && !op1->IsIntegralConst(INT32_MIN))
-                        {
-                            checkDividend = false;
-                        }
-                        else if (tree->TypeIs(TYP_LONG) && !op1->IsIntegralConst(INT64_MIN))
-                        {
-                            checkDividend = false;
-                        }
-                    }
-
-                    // We do not need to throw if the second operand is a non-(negative one) constant.
-                    if (op2->IsIntegralConst() && !op2->IsIntegralConst(-1))
-                    {
-                        checkDividend = false;
-                    }
-
-                    if (checkDividend)
-                    {
-                        fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
-                    }
+                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
                 }
 
-                // We do not need to throw if the second operand is a non-zero constant.
-                if (!op2->IsIntegralConst() || op2->IsIntegralConst(0))
+                if (!op2->IsNeverZero())
                 {
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
                 }
@@ -9712,8 +9687,7 @@ DONE_MORPHING_CHILDREN:
 #ifdef TARGET_LOONGARCH64
         case GT_UMOD:
 #endif
-            // We do not need to throw if the second operand is a non-zero constant.
-            if (!op2->IsIntegralConst() || op2->IsIntegralConst(0))
+            if (!op2->IsNeverZero())
             {
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             }

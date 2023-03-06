@@ -24768,3 +24768,85 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
     // TODO-Casts: extend IntegralRange to handle constants
     return IntegralRange::ForNode((GenTree*)this, comp).IsPositive();
 }
+
+//------------------------------------------------------------------------
+// IsNeverNegativeOne: returns true if the given tree is known to never be
+//                     be negative one. Only valid for integral types.
+//
+// Arguments:
+//    comp - Compiler object, needed for IsNeverNegative
+//
+// Return Value:
+//    true if the given tree is known to never be negative one
+//
+bool GenTree::IsNeverNegativeOne(Compiler* comp) const
+{
+    assert(varTypeIsIntegral(this));
+
+    if (this->IsNeverNegative(comp))
+        return true;
+
+    if (this->IsIntegralConst())
+    {
+        return !this->IsIntegralConst(-1);
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsNeverZero: returns true if the given tree is known to never be zero.
+//              Only valid for integral types.
+//
+// Return Value:
+//    true if the given tree is known to never be zero
+//
+bool GenTree::IsNeverZero() const
+{
+    assert(varTypeIsIntegral(this));
+
+    if (this->IsIntegralConst())
+    {
+        return !this->IsIntegralConst(0);
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// CanDivisionPossiblyOverflow: returns true if the given tree is known
+//                              to possibly overflow on a division.
+//                              Only valid for integral types.
+//                              Only valid for signed-division.
+//
+// Arguments:
+//    comp - Compiler object, needed for IsNeverNegativeOne
+//
+// Return Value:
+//    true if the given tree is known to possibly overflow on a division
+//
+bool GenTree::CanDivisionPossiblyOverflow(Compiler* comp) const
+{
+    assert(this->OperIs(GT_DIV));
+    assert(varTypeIsIntegral(this));
+
+    GenTree* op1 = this->gtGetOp1();
+    GenTree* op2 = this->gtGetOp2();
+
+    if (op2->IsNeverNegativeOne(comp))
+        return false;
+
+    if (op1->IsIntegralConst())
+    {
+        if (op1->TypeIs(TYP_INT) && !op1->IsIntegralConst(INT32_MIN))
+        {
+            return false;
+        }
+        else if (op1->TypeIs(TYP_LONG) && !op1->IsIntegralConst(INT64_MIN))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}

@@ -3458,52 +3458,22 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             // Generate the require runtime checks for GT_DIV or GT_UDIV
             if (tree->gtOper == GT_DIV)
             {
-                BasicBlock* sdivLabel = genCreateTempLabel();
-
                 // Two possible exceptions:
                 //     (AnyVal /  0) => DivideByZeroException
                 //     (MinInt / -1) => ArithmeticException
-                //
-                bool checkDividend = true;
 
-                // Do we have an immediate for the 'divisorOp' or 'dividendOp'?
-                //
-                GenTree* dividendOp = tree->gtGetOp1();
-                if (dividendOp->IsCnsIntOrI())
-                {
-                    GenTreeIntConCommon* intConstTree  = dividendOp->AsIntConCommon();
-                    ssize_t              intConstValue = intConstTree->IconValue();
-                    if ((targetType == TYP_INT && intConstValue != INT_MIN) ||
-                        (targetType == TYP_LONG && intConstValue != INT64_MIN))
-                    {
-                        checkDividend = false; // We statically know that the dividend is not the minimum int
-                    }
-                }
-
-                if (divisorOp->IsNeverNegative(emit->emitComp))
-                {
-                    checkDividend = false;
-                }
-
-                if (divisorOp->IsCnsIntOrI())
-                {
-                    GenTreeIntConCommon* intConstTree  = divisorOp->AsIntConCommon();
-                    ssize_t              intConstValue = intConstTree->IconValue();
-                    assert(intConstValue != 0); // already checked above by IsIntegralConst(0)
-                    if (intConstValue != -1)
-                    {
-                        checkDividend = false; // We statically know that the dividend is not -1
-                    }
-                }
-                else // insert check for division by zero
+                if (!divisorOp->IsNeverZero())
                 {
                     // Check if the divisor is zero throw a DivideByZeroException
                     emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
                     genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
                 }
 
-                if (checkDividend)
+                if (tree->CanDivisionPossiblyOverflow(emit->emitComp))
                 {
+                    BasicBlock* sdivLabel  = genCreateTempLabel();
+                    GenTree*    dividendOp = tree->gtGetOp1();
+
                     // Check if the divisor is not -1 branch to 'sdivLabel'
                     emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
 
