@@ -3479,7 +3479,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                         checkDividend = false; // We statically know that the dividend is not the minimum int
                     }
                 }
-                else if (divisorOp->IsNeverNegative(emit->emitComp))
+
+                if (divisorOp->IsNeverNegative(emit->emitComp))
                 {
                     checkDividend = false;
                 }
