@@ -1433,8 +1433,8 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 			tramp_info->invoke_impl = mono_create_specific_trampoline (jit_mm->mem_manager, tramp_info, MONO_TRAMPOLINE_DELEGATE, &code_size);
 			g_assert (code_size);
 		}
-	}
 #endif
+	}
 
 	dpair = (MonoClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoClassMethodPair));
 	memcpy (dpair, &pair, sizeof (MonoClassMethodPair));
