@@ -861,15 +861,15 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, UnwindInfoSections &uwInfoSectio
 bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 {
     UnwindInfoSections uwInfoSections;
-    uintptr_t ip = regs->GetIP();
-    if (!_addressSpace.findUnwindSections(ip, uwInfoSections))
+    uintptr_t pc = regs->GetIP();
+    if (!_addressSpace.findUnwindSections(pc, uwInfoSections))
     {
         return false;
     }
-    return DoTheStep(ip, uwInfoSections, regs);
+    return DoTheStep(pc, uwInfoSections, regs);
 }
 
-bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
+bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSections, unw_proc_info_t *procInfo)
 {
 #if defined(TARGET_AMD64)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
@@ -888,7 +888,7 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, UnwindInfoSections &uwInfoSectio
 
 #if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
     // If there is a compact unwind encoding table, look there first.
-    if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(ip, uwInfoSections)) {
+    if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(pc, uwInfoSections)) {
         uc.getInfo(procInfo);
 
 #if defined(TARGET_ARM64)
@@ -909,7 +909,7 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, UnwindInfoSections &uwInfoSectio
     }
 #endif
 
-    bool retVal = uc.getInfoFromDwarfSection(ip, uwInfoSections, dwarfOffsetHint);
+    bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, dwarfOffsetHint);
     if (!retVal)
     {
         return false;
@@ -917,7 +917,7 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE ip, UnwindInfoSections &uwInfoSectio
 
 #elif defined(_LIBUNWIND_ARM_EHABI)
     // If there is ARM EHABI unwind info, look there next.
-    if (uwInfoSections.arm_section == 0 || !this->getInfoFromEHABISection(ip, uwInfoSections))
+    if (uwInfoSections.arm_section == 0 || !this->getInfoFromEHABISection(pc, uwInfoSections))
     {
         return false;
     }
