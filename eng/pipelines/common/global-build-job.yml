@@ -234,9 +234,9 @@ jobs:
       inputs:
         PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
         PublishLocation: Container
-        ${{ if ne(parameters.osGroup, 'browser') }}:
+        ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
           ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-        ${{ if eq(parameters.osGroup, 'browser') }}:
-          ArtifactName: Logs_Build_browser_wasm_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+        ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
+          ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
       continueOnError: true
       condition: always()

@@ -83,10 +83,14 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
         assert((size == 12) || (size == 16));
         return 16;
     }
+    else if (size == 32)
+    {
+        return 32;
+    }
     else
     {
-        assert(size == 32);
-        return 32;
+        assert(size == 64);
+        return 64;
     }
 #elif defined(TARGET_ARM64)
     // preferred alignment for 64-bit vectors is 8-bytes.
@@ -422,12 +426,87 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
         const size_t Vector64SizeBytes  = 64 / 8;
         const size_t Vector128SizeBytes = 128 / 8;
         const size_t Vector256SizeBytes = 256 / 8;
+        const size_t Vector512SizeBytes = 512 / 8;
 
 #if defined(TARGET_XARCH)
+        static_assert_no_msg(ZMM_REGSIZE_BYTES == Vector512SizeBytes);
         static_assert_no_msg(YMM_REGSIZE_BYTES == Vector256SizeBytes);
         static_assert_no_msg(XMM_REGSIZE_BYTES == Vector128SizeBytes);
 
-        if (typeHnd == m_simdHandleCache->Vector256FloatHandle)
+        if (typeHnd == m_simdHandleCache->Vector512FloatHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_FLOAT;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<float>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512DoubleHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_DOUBLE;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<double>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512IntHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_INT;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<int>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512UIntHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_UINT;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<uint>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512ShortHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_SHORT;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<short>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512UShortHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_USHORT;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<ushort>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512ByteHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_BYTE;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<sbyte>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512UByteHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_UBYTE;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<byte>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512LongHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_LONG;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<long>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512ULongHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_ULONG;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<ulong>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512NIntHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_NATIVEINT;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<nint>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector512NUIntHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_NATIVEUINT;
+            size            = Vector512SizeBytes;
+            JITDUMP("  Known type Vector512<nuint>\n");
+        }
+
+        else if (typeHnd == m_simdHandleCache->Vector256FloatHandle)
         {
             simdBaseJitType = CORINFO_TYPE_FLOAT;
             size            = Vector256SizeBytes;
@@ -663,7 +742,77 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         getClassNameFromMetadata(baseTypeHnd, nullptr));
 
 #if defined(TARGET_XARCH)
-                if (strcmp(className, "Vector256`1") == 0)
+                if (strcmp(className, "Vector512`1") == 0)
+                {
+                    size = Vector512SizeBytes;
+                    switch (type)
+                    {
+                        case CORINFO_TYPE_FLOAT:
+                            m_simdHandleCache->Vector512FloatHandle = typeHnd;
+                            simdBaseJitType                         = CORINFO_TYPE_FLOAT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<float>\n");
+                            break;
+                        case CORINFO_TYPE_DOUBLE:
+                            m_simdHandleCache->Vector512DoubleHandle = typeHnd;
+                            simdBaseJitType                          = CORINFO_TYPE_DOUBLE;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<double>\n");
+                            break;
+                        case CORINFO_TYPE_INT:
+                            m_simdHandleCache->Vector512IntHandle = typeHnd;
+                            simdBaseJitType                       = CORINFO_TYPE_INT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<int>\n");
+                            break;
+                        case CORINFO_TYPE_UINT:
+                            m_simdHandleCache->Vector512UIntHandle = typeHnd;
+                            simdBaseJitType                        = CORINFO_TYPE_UINT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<uint>\n");
+                            break;
+                        case CORINFO_TYPE_SHORT:
+                            m_simdHandleCache->Vector512ShortHandle = typeHnd;
+                            simdBaseJitType                         = CORINFO_TYPE_SHORT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<short>\n");
+                            break;
+                        case CORINFO_TYPE_USHORT:
+                            m_simdHandleCache->Vector512UShortHandle = typeHnd;
+                            simdBaseJitType                          = CORINFO_TYPE_USHORT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<ushort>\n");
+                            break;
+                        case CORINFO_TYPE_LONG:
+                            m_simdHandleCache->Vector512LongHandle = typeHnd;
+                            simdBaseJitType                        = CORINFO_TYPE_LONG;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<long>\n");
+                            break;
+                        case CORINFO_TYPE_ULONG:
+                            m_simdHandleCache->Vector512ULongHandle = typeHnd;
+                            simdBaseJitType                         = CORINFO_TYPE_ULONG;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<ulong>\n");
+                            break;
+                        case CORINFO_TYPE_UBYTE:
+                            m_simdHandleCache->Vector512UByteHandle = typeHnd;
+                            simdBaseJitType                         = CORINFO_TYPE_UBYTE;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<byte>\n");
+                            break;
+                        case CORINFO_TYPE_BYTE:
+                            m_simdHandleCache->Vector512ByteHandle = typeHnd;
+                            simdBaseJitType                        = CORINFO_TYPE_BYTE;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<sbyte>\n");
+                            break;
+                        case CORINFO_TYPE_NATIVEINT:
+                            m_simdHandleCache->Vector512NIntHandle = typeHnd;
+                            simdBaseJitType                        = CORINFO_TYPE_NATIVEINT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<nint>\n");
+                            break;
+                        case CORINFO_TYPE_NATIVEUINT:
+                            m_simdHandleCache->Vector512NUIntHandle = typeHnd;
+                            simdBaseJitType                         = CORINFO_TYPE_NATIVEUINT;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector512<nuint>\n");
+                            break;
+
+                        default:
+                            JITDUMP("  Unknown Hardware Intrinsic SIMD Type Vector512<T>\n");
+                    }
+                }
+                else if (strcmp(className, "Vector256`1") == 0)
                 {
                     size = Vector256SizeBytes;
                     switch (type)
@@ -888,6 +1037,11 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
         {
             simdBaseJitType = CORINFO_TYPE_UNDEF;
         }
+        if (size == ZMM_REGSIZE_BYTES && (simdBaseJitType != CORINFO_TYPE_UNDEF) &&
+            !compExactlyDependsOn(InstructionSet_AVX512F))
+        {
+            simdBaseJitType = CORINFO_TYPE_UNDEF;
+        }
 #endif // TARGET_XARCH
     }
 #endif // FEATURE_HW_INTRINSICS
@@ -915,6 +1069,9 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 break;
             case 32:
                 pCanonicalHnd = &m_simdHandleCache->CanonicalSimd32Handle;
+                break;
+            case 64:
+                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd64Handle;
                 break;
             default:
                 unreached();

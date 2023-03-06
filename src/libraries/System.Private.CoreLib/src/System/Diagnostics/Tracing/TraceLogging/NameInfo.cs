@@ -95,7 +95,7 @@ namespace System.Diagnostics.Tracing
                             fixed (byte* pMetadataBlob = metadata)
                             {
                                 // Define the event.
-                                eventHandle = provider.m_eventProvider.DefineEventHandle(
+                                eventHandle = provider._eventProvider.DefineEventHandle(
                                     (uint)descriptor.EventId,
                                     name,
                                     descriptor.Keywords,

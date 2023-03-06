@@ -296,7 +296,7 @@ namespace ILCompiler
 
         private sealed class ScannedDictionaryLayoutProvider : DictionaryLayoutProvider
         {
-            private Dictionary<TypeSystemEntity, IEnumerable<GenericLookupResult>> _layouts = new Dictionary<TypeSystemEntity, IEnumerable<GenericLookupResult>>();
+            private Dictionary<TypeSystemEntity, (GenericLookupResult[] Slots, GenericLookupResult[] DiscardedSlots)> _layouts = new();
             private HashSet<TypeSystemEntity> _entitiesWithForcedLazyLookups = new HashSet<TypeSystemEntity>();
 
             public ScannedDictionaryLayoutProvider(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
@@ -306,7 +306,8 @@ namespace ILCompiler
                     if (node is DictionaryLayoutNode layoutNode)
                     {
                         TypeSystemEntity owningMethodOrType = layoutNode.OwningMethodOrType;
-                        _layouts.Add(owningMethodOrType, layoutNode.Entries);
+                        GenericLookupResult[] layout = OptimizeSlots(factory, layoutNode.Entries, out GenericLookupResult[] discarded);
+                        _layouts.Add(owningMethodOrType, (layout, discarded));
                     }
                     else if (node is ReadyToRunGenericHelperNode genericLookup
                         && genericLookup.HandlesInvalidEntries(factory))
@@ -320,9 +321,41 @@ namespace ILCompiler
                 }
             }
 
+            private static GenericLookupResult[] OptimizeSlots(NodeFactory factory, IEnumerable<GenericLookupResult> slots, out GenericLookupResult[] discarded)
+            {
+                ArrayBuilder<GenericLookupResult> slotBuilder = default;
+                ArrayBuilder<GenericLookupResult> discardedBuilder = default;
+
+                // We go over all slots in the layout, looking for references to method dictionaries
+                // that are going to be empty.
+                // Set those slots aside so that we can avoid generating the references to such dictionaries.
+                // We do this for methods only because method dictionaries have a high overhead (they
+                // get prefixed with a pointer-padded 32-bit hashcode and might end up in various
+                // summary tables as well).
+
+                foreach (GenericLookupResult lookupResult in slots)
+                {
+                    if (lookupResult is MethodDictionaryGenericLookupResult methodDictLookup)
+                    {
+                        MethodDesc targetMethod = methodDictLookup.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                        DictionaryLayoutNode targetLayout = factory.GenericDictionaryLayout(targetMethod);
+                        if (targetLayout.IsEmpty)
+                        {
+                            discardedBuilder.Add(lookupResult);
+                            continue;
+                        }
+                    }
+
+                    slotBuilder.Add(lookupResult);
+                }
+
+                discarded = discardedBuilder.ToArray();
+                return slotBuilder.ToArray();
+            }
+
             private PrecomputedDictionaryLayoutNode GetPrecomputedLayout(TypeSystemEntity methodOrType)
             {
-                if (!_layouts.TryGetValue(methodOrType, out IEnumerable<GenericLookupResult> layout))
+                if (!_layouts.TryGetValue(methodOrType, out var layout))
                 {
                     // If we couldn't find the dictionary layout information for this, it's because the scanner
                     // didn't correctly predict what will be needed.
@@ -334,7 +367,7 @@ namespace ILCompiler
                     Debug.Assert(false);
                     throw new ScannerFailedException($"A dictionary layout was not computed by the IL scanner.");
                 }
-                return new PrecomputedDictionaryLayoutNode(methodOrType, layout);
+                return new PrecomputedDictionaryLayoutNode(methodOrType, layout.Slots, layout.DiscardedSlots);
             }
 
             public override DictionaryLayoutNode GetLayout(TypeSystemEntity methodOrType)

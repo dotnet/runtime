@@ -91,16 +91,8 @@ namespace System.Net.Http
                     _cleanPoolTimeout = timerPeriod.TotalSeconds >= MinScavengeSeconds ? timerPeriod : TimeSpan.FromSeconds(MinScavengeSeconds);
                 }
 
-                bool restoreFlow = false;
-                try
+                using (ExecutionContext.SuppressFlow()) // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
                 {
-                    // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
-                    if (!ExecutionContext.IsFlowSuppressed())
-                    {
-                        ExecutionContext.SuppressFlow();
-                        restoreFlow = true;
-                    }
-
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
                     // can introduce a cycle that keeps the HttpConnectionPoolManager rooted by the Timer
                     // implementation until the handler is Disposed (or indefinitely if it's not).
@@ -129,14 +121,6 @@ namespace System.Net.Http
                                 thisRef.HeartBeat();
                             }
                         }, thisRef, heartBeatInterval, heartBeatInterval);
-                    }
-                }
-                finally
-                {
-                    // Restore the current ExecutionContext
-                    if (restoreFlow)
-                    {
-                        ExecutionContext.RestoreFlow();
                     }
                 }
             }
@@ -190,14 +174,7 @@ namespace System.Net.Http
                 return;
             }
 
-            if (!ExecutionContext.IsFlowSuppressed())
-            {
-                using (ExecutionContext.SuppressFlow())
-                {
-                    NetworkChange.NetworkAddressChanged += networkChangedDelegate;
-                }
-            }
-            else
+            using (ExecutionContext.SuppressFlow())
             {
                 NetworkChange.NetworkAddressChanged += networkChangedDelegate;
             }
@@ -494,7 +471,7 @@ namespace System.Net.Http
             {
                 if (entry.Value.CleanCacheAndDisposeIfUnused())
                 {
-                    _pools.TryRemove(entry.Key, out HttpConnectionPool _);
+                    _pools.TryRemove(entry.Key, out _);
                 }
             }
 
