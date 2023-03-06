@@ -349,10 +349,17 @@ enum emitAttr : unsigned
                 EA_2BYTE         = 0x002,
                 EA_4BYTE         = 0x004,
                 EA_8BYTE         = 0x008,
+
+#if !defined(FEATURE_SIMD)
+                EA_SIZE_MASK     = 0x00F,
+#elif !defined(TARGET_XARCH)
                 EA_16BYTE        = 0x010,
+                EA_SIZE_MASK     = 0x01F,
+#else
                 EA_32BYTE        = 0x020,
                 EA_64BYTE        = 0x040,
                 EA_SIZE_MASK     = 0x07F,
+#endif
 
 #ifdef TARGET_64BIT
                 EA_PTRSIZE       = EA_8BYTE,

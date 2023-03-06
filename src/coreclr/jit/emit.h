@@ -511,14 +511,23 @@ protected:
 
     enum opSize : unsigned
     {
-        OPSZ1      = 0,
-        OPSZ2      = 1,
-        OPSZ4      = 2,
-        OPSZ8      = 3,
+        OPSZ1 = 0,
+        OPSZ2 = 1,
+        OPSZ4 = 2,
+        OPSZ8 = 3,
+
+#if !defined(FEATURE_SIMD)
+        OPSZ_COUNT = 4,
+#elif !defined(TARGET_XARCH)
+        OPSZ16     = 4,
+        OPSZ_COUNT = 5,
+#else
         OPSZ16     = 4,
         OPSZ32     = 5,
         OPSZ64     = 6,
         OPSZ_COUNT = 7,
+#endif
+
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
@@ -528,8 +537,7 @@ protected:
 
 #define OPSIZE_INVALID ((opSize)0xffff)
 
-    static const emitter::opSize emitSizeEncode[];
-    static const emitAttr        emitSizeDecode[];
+    static const emitAttr emitSizeDecode[];
 
     static emitter::opSize emitEncodeSize(emitAttr size);
     static emitAttr emitDecodeSize(emitter::opSize ensz);
@@ -3082,16 +3090,13 @@ inline emitAttr emitActualTypeSize(T type)
 
 /* static */ inline emitter::opSize emitter::emitEncodeSize(emitAttr size)
 {
-    assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE ||
-           size == EA_32BYTE || size == EA_64BYTE);
-
+    assert((size != EA_UNKNOWN) && ((size & EA_SIZE_MASK) == size));
     return static_cast<emitter::opSize>(genLog2(size));
 }
 
 /* static */ inline emitAttr emitter::emitDecodeSize(emitter::opSize ensz)
 {
-    assert(((unsigned)ensz) < OPSZ_COUNT);
-
+    assert(static_cast<unsigned>(ensz) < OPSZ_COUNT);
     return emitSizeDecode[ensz];
 }
 
