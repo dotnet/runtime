@@ -181,6 +181,7 @@
 %type <instr> instr_none instr_var instr_i instr_i8 instr_r instr_brtarget instr_method instr_field
 %type <instr> instr_type instr_string instr_sig instr_tok instr_switch
 %type <instr> instr_r_head
+%type <int32> noCheckOpt noCheckOptGroup
 
 %start decls
 
