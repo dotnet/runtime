@@ -5816,7 +5816,8 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 	if (!iface_method ||
 		iface_method->is_generic ||
 		iface_method->dynamic || 					// Reflection.Emit-generated methods should have this flag
-		!strcmp (iface_method->name, "GetHashCode")) // the callvirt handler itself optimizes those
+		!strcmp (iface_method->name, "GetHashCode") || // the callvirt handler itself optimizes those
+		(iface_method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return NULL;
 
 	MonoMethodSignature* iface_method_sig;
