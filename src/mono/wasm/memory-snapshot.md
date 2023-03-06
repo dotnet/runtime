@@ -19,7 +19,7 @@ Such subsequent start is significantly faster.
     - after applying environment variables and other runtime options.
     - before any worker threads initialization
     - before any JavaScript interop initialization
-    - before any Managed code initialization
+    - before any Managed code executes
     - therefore we do not expect to store any application state in the snapshot.
 
 ### How to opt out
