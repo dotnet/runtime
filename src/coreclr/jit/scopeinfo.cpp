@@ -284,7 +284,6 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_BYREF:
         case TYP_FLOAT:
         case TYP_STRUCT:
-        case TYP_BLK: // Needed because of the TYP_BLK stress mode
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         case TYP_SIMD12:

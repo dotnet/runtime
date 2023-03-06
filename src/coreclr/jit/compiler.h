@@ -1191,6 +1191,16 @@ public:
         m_layout = layout;
     }
 
+    // Grow the size of a block layout local.
+    void GrowBlockLayout(ClassLayout* layout)
+    {
+        assert(varTypeIsStruct(lvType));
+        assert((m_layout == nullptr) || (m_layout->IsBlockLayout() && (m_layout->GetSize() <= layout->GetSize())));
+        assert(layout->IsBlockLayout());
+        m_layout = layout;
+        lvExactSize = layout->GetSize();
+    }
+
     SsaDefArray<LclSsaVarDsc> lvPerSsaData;
 
     // Returns the address of the per-Ssa data for the given ssaNum (which is required
@@ -3272,7 +3282,7 @@ public:
                                         // or if the inlinee has GC ref locals.
 
 #if FEATURE_FIXED_OUT_ARGS
-    unsigned            lvaOutgoingArgSpaceVar;  // dummy TYP_LCLBLK var for fixed outgoing argument space
+    unsigned            lvaOutgoingArgSpaceVar;  // var that represents outgoing argument space
     PhasedVar<unsigned> lvaOutgoingArgSpaceSize; // size of fixed outgoing argument space
 #endif                                           // FEATURE_FIXED_OUT_ARGS
 
@@ -3521,6 +3531,7 @@ public:
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
     CORINFO_CLASS_HANDLE lvaGetStruct(unsigned varNum);
+    void lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeValueClsCheck);
     void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck);
     void lvaSetStructUsedAsVarArg(unsigned varNum);
 

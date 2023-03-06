@@ -1994,6 +1994,11 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
+    if (varDsc->GetLayout()->IsBlockLayout())
+    {
+        return false;
+    }
+
     CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
     assert(typeHnd != NO_CLASS_HANDLE);
 
@@ -2904,7 +2909,7 @@ bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 /*****************************************************************************
  * Set the lvClass for a local variable of a struct type */
 
-void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck)
+void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeValueClsCheck)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
 
@@ -2915,24 +2920,22 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     }
     if (varDsc->GetLayout() == nullptr)
     {
-        ClassLayout* layout = typGetObjLayout(typeHnd);
         varDsc->SetLayout(layout);
 
         assert(varDsc->lvExactSize == 0);
         varDsc->lvExactSize = layout->GetSize();
-        assert(varDsc->lvExactSize != 0);
+        assert(layout->IsBlockLayout() || (varDsc->lvExactSize != 0));
 
-        if (layout->IsValueClass())
+        if (!layout->IsBlockLayout() && layout->IsValueClass())
         {
-            CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-            varDsc->lvType              = impNormStructType(typeHnd, &simdBaseJitType);
+            varDsc->lvType = layout->GetType();
 
 #if FEATURE_IMPLICIT_BYREFS
             // Mark implicit byref struct parameters
             if (varDsc->lvIsParam && !varDsc->lvIsStructField)
             {
                 structPassingKind howToReturnStruct;
-                getArgTypeForStruct(typeHnd, &howToReturnStruct, this->info.compIsVarArgs, varDsc->lvExactSize);
+                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, this->info.compIsVarArgs, varDsc->lvExactSize);
 
                 if (howToReturnStruct == SPK_ByReference)
                 {
@@ -2943,31 +2946,34 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 #endif // FEATURE_IMPLICIT_BYREFS
 
 #if FEATURE_SIMD
-            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+            if (structSizeMightRepresentSIMDType(layout->GetSize()))
             {
-                assert(varTypeIsSIMD(varDsc));
-                varDsc->lvSIMDType = true;
-                varDsc->SetSimdBaseJitType(simdBaseJitType);
+                CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+                impNormStructType(layout->GetClassHandle(), &simdBaseJitType);
+
+                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+                {
+                    assert(varTypeIsSIMD(varDsc));
+                    varDsc->lvSIMDType = true;
+                    varDsc->SetSimdBaseJitType(simdBaseJitType);
+                }
             }
 #endif // FEATURE_SIMD
-            if (GlobalJitOptions::compFeatureHfa)
+            // For structs that are small enough, we check and set HFA element type
+            if (GlobalJitOptions::compFeatureHfa && (layout->GetSize() <= MAX_PASS_MULTIREG_BYTES))
             {
-                // For structs that are small enough, we check and set HFA element type
-                if (varDsc->lvExactSize <= MAX_PASS_MULTIREG_BYTES)
+                // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF
+                var_types hfaType = GetHfaType(layout->GetClassHandle());
+                if (varTypeIsValidHfaType(hfaType))
                 {
-                    // hfaType is set to float, double or SIMD type if it is an HFA, otherwise TYP_UNDEF
-                    var_types hfaType = GetHfaType(typeHnd);
-                    if (varTypeIsValidHfaType(hfaType))
-                    {
-                        varDsc->SetHfaType(hfaType);
+                    varDsc->SetHfaType(hfaType);
 
-                        // hfa variables can never contain GC pointers
-                        assert(!layout->HasGCPtr());
-                        // The size of this struct should be evenly divisible by 4 or 8
-                        assert((varDsc->lvExactSize % genTypeSize(hfaType)) == 0);
-                        // The number of elements in the HFA should fit into our MAX_ARG_REG_COUNT limit
-                        assert((varDsc->lvExactSize / genTypeSize(hfaType)) <= MAX_ARG_REG_COUNT);
-                    }
+                    // hfa variables can never contain GC pointers
+                    assert(!layout->HasGCPtr());
+                    // The size of this struct should be evenly divisible by 4 or 8
+                    assert((varDsc->lvExactSize % genTypeSize(hfaType)) == 0);
+                    // The number of elements in the HFA should fit into our MAX_ARG_REG_COUNT limit
+                    assert((varDsc->lvExactSize / genTypeSize(hfaType)) <= MAX_ARG_REG_COUNT);
                 }
             }
         }
@@ -2977,47 +2983,54 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 #if FEATURE_SIMD
         assert(!varTypeIsSIMD(varDsc) || (varDsc->GetSimdBaseType() != TYP_UNKNOWN));
 #endif // FEATURE_SIMD
-        ClassLayout* layout = typGetObjLayout(typeHnd);
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
         // Inlining could replace a canon struct type with an exact one.
         varDsc->SetLayout(layout);
         assert(varDsc->lvExactSize != 0);
     }
 
+    if (!layout->IsBlockLayout())
+    {
 #ifndef TARGET_64BIT
-    bool fDoubleAlignHint = false;
+        bool fDoubleAlignHint = false;
 #ifdef TARGET_X86
-    fDoubleAlignHint = true;
+        fDoubleAlignHint = true;
 #endif
 
-    if (info.compCompHnd->getClassAlignmentRequirement(typeHnd, fDoubleAlignHint) == 8)
-    {
-#ifdef DEBUG
-        if (verbose)
+        if (info.compCompHnd->getClassAlignmentRequirement(layout->GetClassHandle(), fDoubleAlignHint) == 8)
         {
-            printf("Marking struct in V%02i with double align flag\n", varNum);
-        }
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("Marking struct in V%02i with double align flag\n", varNum);
+            }
 #endif
-        varDsc->lvStructDoubleAlign = 1;
-    }
+            varDsc->lvStructDoubleAlign = 1;
+        }
 #endif // not TARGET_64BIT
 
-    unsigned classAttribs = info.compCompHnd->getClassAttribs(typeHnd);
+        unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
 
-    // Check whether this local is an unsafe value type and requires GS cookie protection.
-    // GS checks require the stack to be re-ordered, which can't be done with EnC.
-    if (unsafeValueClsCheck && (classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
-    {
-        setNeedsGSSecurityCookie();
-        compGSReorderStackLayout = true;
-        varDsc->lvIsUnsafeBuffer = true;
-    }
+        // Check whether this local is an unsafe value type and requires GS cookie protection.
+        // GS checks require the stack to be re-ordered, which can't be done with EnC.
+        if (unsafeValueClsCheck && (classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
+        {
+            setNeedsGSSecurityCookie();
+            compGSReorderStackLayout = true;
+            varDsc->lvIsUnsafeBuffer = true;
+        }
 #ifdef DEBUG
-    if (JitConfig.EnableExtraSuperPmiQueries())
-    {
-        makeExtraStructQueries(typeHnd, 2);
-    }
+        if (JitConfig.EnableExtraSuperPmiQueries())
+        {
+            makeExtraStructQueries(layout->GetClassHandle(), 2);
+        }
 #endif // DEBUG
+    }
+}
+
+void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck)
+{
+    lvaSetStruct(varNum, typGetObjLayout(typeHnd), unsafeValueClsCheck);
 }
 
 #ifdef DEBUG
@@ -3320,26 +3333,11 @@ unsigned Compiler::lvaLclSize(unsigned varNum)
 
     var_types varType = lvaTable[varNum].TypeGet();
 
-    switch (varType)
+    if (varType == TYP_STRUCT)
     {
-        case TYP_STRUCT:
-        case TYP_BLK:
-            return lvaTable[varNum].lvSize();
-
-        case TYP_LCLBLK:
-#if FEATURE_FIXED_OUT_ARGS
-            // Note that this operation performs a read of a PhasedVar
-            noway_assert(varNum == lvaOutgoingArgSpaceVar);
-            return lvaOutgoingArgSpaceSize;
-#else // FEATURE_FIXED_OUT_ARGS
-            assert(!"Unknown size");
-            NO_WAY("Target doesn't support TYP_LCLBLK");
-
-#endif // FEATURE_FIXED_OUT_ARGS
-
-        default: // This must be a primitive var. Fall out of switch statement
-            break;
+        return lvaTable[varNum].lvSize();
     }
+
 #ifdef TARGET_64BIT
     // We only need this Quirk for TARGET_64BIT
     if (lvaTable[varNum].lvQuirkToLong)
@@ -3361,27 +3359,9 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 
     var_types varType = lvaTable[varNum].TypeGet();
 
-    switch (varType)
+    if (varType == TYP_STRUCT)
     {
-        case TYP_STRUCT:
-        case TYP_BLK:
-            return lvaTable[varNum].lvExactSize;
-
-        case TYP_LCLBLK:
-#if FEATURE_FIXED_OUT_ARGS
-            // Note that this operation performs a read of a PhasedVar
-            noway_assert(lvaOutgoingArgSpaceSize >= 0);
-            noway_assert(varNum == lvaOutgoingArgSpaceVar);
-            return lvaOutgoingArgSpaceSize;
-
-#else // FEATURE_FIXED_OUT_ARGS
-            assert(!"Unknown size");
-            NO_WAY("Target doesn't support TYP_LCLBLK");
-
-#endif // FEATURE_FIXED_OUT_ARGS
-
-        default: // This must be a primitive var. Fall out of switch statement
-            break;
+        return lvaTable[varNum].lvExactSize;
     }
 
     return genTypeSize(varType);
@@ -3915,7 +3895,7 @@ unsigned LclVarDsc::lvSize() const // Size needed for storage representation. On
     // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
     // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
 
-    assert(varTypeIsStruct(lvType) || (lvType == TYP_BLK) || (lvPromoted && lvUnusedStruct));
+    assert(varTypeIsStruct(lvType) || (lvPromoted && lvUnusedStruct));
 
     if (lvIsParam)
     {
@@ -4545,9 +4525,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
         slotsNeeded++;
 
         lvaShadowSPslotsVar           = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
-        LclVarDsc* shadowSPslotsVar   = lvaGetDesc(lvaShadowSPslotsVar);
-        shadowSPslotsVar->lvType      = TYP_BLK;
-        shadowSPslotsVar->lvExactSize = (slotsNeeded * TARGET_POINTER_SIZE);
+        lvaSetStruct(lvaShadowSPslotsVar, typGetBlkLayout(slotsNeeded * TARGET_POINTER_SIZE), false);
     }
 
 #endif // !FEATURE_EH_FUNCLETS
@@ -4885,10 +4863,8 @@ void Compiler::lvaAllocOutgoingArgSpaceVar()
 
     if (lvaOutgoingArgSpaceVar == BAD_VAR_NUM)
     {
-        lvaOutgoingArgSpaceVar = lvaGrabTemp(false DEBUGARG("OutgoingArgSpace"));
-
-        lvaTable[lvaOutgoingArgSpaceVar].lvType                 = TYP_LCLBLK;
-        lvaTable[lvaOutgoingArgSpaceVar].lvImplicitlyReferenced = 1;
+        lvaOutgoingArgSpaceVar = lvaGrabTempWithImplicitUse(false DEBUGARG("OutgoingArgSpace"));
+        lvaSetStruct(lvaOutgoingArgSpaceVar, typGetBlkLayout(0), false);
     }
 
     noway_assert(lvaOutgoingArgSpaceVar >= info.compLocalsCount && lvaOutgoingArgSpaceVar < lvaCount);
@@ -8329,9 +8305,9 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_SKIP_SUBTREES;
         }
 
-        // The noway_assert in the second pass below, requires that these types match, or we have a TYP_BLK
+        // The noway_assert in the second pass below, requires that these types match
         //
-        if ((varType != lclType) && (varType != TYP_BLK))
+        if (varType != lclType)
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;
@@ -8341,7 +8317,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // node with the accurate small type. If we bash lvaTable[].lvType,
         // then there will be no indication that it was ever a small type.
 
-        if ((varType != TYP_BLK) && genTypeSize(varType) != genTypeSize(genActualType(varType)))
+        if (genTypeSize(varType) != genTypeSize(genActualType(varType)))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;
@@ -8359,7 +8335,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     else
     {
         // Do the morphing
-        noway_assert((varType == lclType) || (varType == TYP_BLK));
+        noway_assert(varType == lclType);
 
         // Calculate padding
         unsigned padding = pComp->lvaStressLclFldPadding(lclNum);
@@ -8372,16 +8348,14 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         padding   = roundUp(padding, alignment);
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
-        // Change the variable to a TYP_BLK
-        if (varType != TYP_BLK)
-        {
-            varDsc->lvExactSize = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
-            varDsc->lvType      = TYP_BLK;
-            pComp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::STRESS_LCL_FLD));
+        // Change the variable to a block struct
+        varDsc->lvExactSize = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
+        varDsc->lvType      = TYP_STRUCT;
+        varDsc->SetLayout(pComp->typGetBlkLayout(varDsc->lvExactSize));
+        pComp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::STRESS_LCL_FLD));
 
-            JITDUMP("Converting V%02u to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
-                    varDsc->lvExactSize, padding);
-        }
+        JITDUMP("Converting V%02u to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
+                varDsc->lvExactSize, padding);
 
         tree->gtFlags |= GTF_GLOB_REF;
 
