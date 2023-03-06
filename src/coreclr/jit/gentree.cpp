@@ -16494,6 +16494,13 @@ void Compiler::gtSplitTree(
                     }
                 }
 
+                if (varTypeIsStruct(*use) &&
+                    ((*use)->IsMultiRegNode() ||
+                     ((user != nullptr) && user->OperIs(GT_RETURN) && m_compiler->compMethodReturnsMultiRegRetType())))
+                {
+                    m_compiler->lvaGetDesc(lclNum)->lvIsMultiRegRet = true;
+                }
+
                 if (stmt == nullptr)
                 {
                     GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
