@@ -3479,6 +3479,11 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                         checkDividend = false; // We statically know that the dividend is not the minimum int
                     }
                 }
+                else if (divisorOp->IsNeverNegative(emit->emitComp))
+                {
+                    checkDividend = false;
+                }
+
                 if (divisorOp->IsCnsIntOrI())
                 {
                     GenTreeIntConCommon* intConstTree  = divisorOp->AsIntConCommon();

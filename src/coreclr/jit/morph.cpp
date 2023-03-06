@@ -9672,8 +9672,7 @@ DONE_MORPHING_CHILDREN:
 #endif
             if (!varTypeIsFloating(tree->gtType))
             {
-                // We do not need to throw if the second operand is a non-(negative one) constant.
-                if (!op2->IsIntegralConst() || op2->IsIntegralConst(-1))
+                if (!op2->IsNeverNegative(this))
                 {
                     bool checkDividend = true;
 
@@ -9688,6 +9687,12 @@ DONE_MORPHING_CHILDREN:
                         {
                             checkDividend = false;
                         }
+                    }
+
+                    // We do not need to throw if the second operand is a non-(negative one) constant.
+                    if (op2->IsIntegralConst() && !op2->IsIntegralConst(-1))
+                    {
+                        checkDividend = false;
                     }
 
                     if (checkDividend)
