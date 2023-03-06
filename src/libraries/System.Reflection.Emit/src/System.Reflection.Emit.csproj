@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Emit\EntityWrappers.cs" />
-    <Compile Include="System\Reflection\Emit\MetadataHelper.cs"  />
+    <Compile Include="System\Reflection\Emit\MetadataHelper.cs" />
     <Compile Include="System\Reflection\Emit\PersistableAssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\PersistableFieldBuilder.cs" />
     <Compile Include="System\Reflection\Emit\PersistableMethodBuilder.cs" />
@@ -16,9 +16,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Runtime\src\System.Runtime.csproj" />
-  </ItemGroup>
-  <ItemGroup>
   </ItemGroup>
 </Project>
