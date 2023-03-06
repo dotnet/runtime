@@ -421,7 +421,7 @@
       <!-- order matters -->
       <!-- some flags will be duplicated on the commandline and in the .rsp file. The last wins. -->
       <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
-      <_EmccLDSFlags Condition="'$(EmccEnvironment)' != ''" Include="-s ENVIRONMENT=$(EmccEnvironment)" />
+      <_EmccLDSFlags Condition="'$(EmccEnvironment)' != ''" Include="-s ENVIRONMENT=&quot;$(EmccEnvironment)&quot;" />
       <_EmccLDSFlags Condition="'$(EmccAssertions)' == 'true'" Include="-s ASSERTIONS=1" />
 
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />

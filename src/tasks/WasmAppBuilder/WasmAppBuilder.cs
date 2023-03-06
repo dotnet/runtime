@@ -204,7 +204,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             {
                 config.Assets.Add(new ThreadsWorkerEntry (name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
-            else if(name == "dotnet.js.symbols"){
+            else if(name == "dotnet.js.symbols")
+            {
                 config.Assets.Add(new SymbolsData (name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
         }

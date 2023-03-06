@@ -201,7 +201,7 @@ export type AssetBehaviours =
     | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
     | "dotnetwasm" // the binary of the dotnet runtime
     | "js-module-threads" // the javascript module for threads
-    | "symbols" // the javascript module for threads
+    | "symbols" // the symbols for the wasm native code
 
 export type RuntimeHelpers = {
     runtime_interop_module: MonoAssembly;
