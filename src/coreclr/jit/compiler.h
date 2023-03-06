@@ -1182,7 +1182,7 @@ public:
         assert(varTypeIsStruct(lvType));
         assert((m_layout == nullptr) || (m_layout->IsBlockLayout() && (m_layout->GetSize() <= layout->GetSize())));
         assert(layout->IsBlockLayout());
-        m_layout = layout;
+        m_layout    = layout;
         lvExactSize = layout->GetSize();
     }
 

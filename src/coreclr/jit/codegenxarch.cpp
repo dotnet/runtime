@@ -6358,7 +6358,6 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             continue;
         }
 
-
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
@@ -6412,9 +6411,9 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             // Register argument
             CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_X86
-            noway_assert(
-                isRegParamType(genActualType(varDsc->TypeGet())) ||
-                ((varDsc->TypeGet() == TYP_STRUCT) && compiler->isTrivialPointerSizedStruct(varDsc->GetLayout()->GetClassHandle())));
+            noway_assert(isRegParamType(genActualType(varDsc->TypeGet())) ||
+                         ((varDsc->TypeGet() == TYP_STRUCT) &&
+                          compiler->isTrivialPointerSizedStruct(varDsc->GetLayout()->GetClassHandle())));
 #else
             noway_assert(isRegParamType(genActualType(varDsc->TypeGet())));
 #endif // TARGET_X86

@@ -4031,7 +4031,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     if (!opts.MinOpts())
     {
         found = ForEachHbvBitSet(*fgAvailableOutgoingArgTemps, [&](indexType lclNum) {
-                    LclVarDsc* varDsc = lvaGetDesc((unsigned)lclNum);
+                    LclVarDsc*   varDsc = lvaGetDesc((unsigned)lclNum);
                     ClassLayout* layout = varDsc->GetLayout();
                     if (!layout->IsBlockLayout() && (layout->GetClassHandle() == copyBlkClass))
                     {

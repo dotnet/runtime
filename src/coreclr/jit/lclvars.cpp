@@ -2394,7 +2394,8 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 #ifdef DEBUG
     if (compiler->verbose)
     {
-        printf("\nPromoting struct local V%02u (%s):", lclNum, compiler->eeGetClassName(varDsc->GetLayout()->GetClassHandle()));
+        printf("\nPromoting struct local V%02u (%s):", lclNum,
+               compiler->eeGetClassName(varDsc->GetLayout()->GetClassHandle()));
     }
 #endif
 
@@ -2925,7 +2926,8 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             if (varDsc->lvIsParam && !varDsc->lvIsStructField)
             {
                 structPassingKind howToReturnStruct;
-                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, this->info.compIsVarArgs, varDsc->lvExactSize);
+                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, this->info.compIsVarArgs,
+                                    varDsc->lvExactSize);
 
                 if (howToReturnStruct == SPK_ByReference)
                 {
@@ -4514,7 +4516,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
         // For zero-termination of the shadow-Stack-pointer chain
         slotsNeeded++;
 
-        lvaShadowSPslotsVar           = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
+        lvaShadowSPslotsVar = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
         lvaSetStruct(lvaShadowSPslotsVar, typGetBlkLayout(slotsNeeded * TARGET_POINTER_SIZE), false);
     }
 
@@ -8354,8 +8356,8 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         varDsc->SetLayout(pComp->typGetBlkLayout(varDsc->lvExactSize));
         pComp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::STRESS_LCL_FLD));
 
-        JITDUMP("Converting V%02u to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
-                varDsc->lvExactSize, padding);
+        JITDUMP("Converting V%02u to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum, varDsc->lvExactSize,
+                padding);
 
         tree->gtFlags |= GTF_GLOB_REF;
 

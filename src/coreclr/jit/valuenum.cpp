@@ -9041,8 +9041,8 @@ PhaseStatus Compiler::fgValueNumber()
             if (isZeroed)
             {
                 // By default we will zero init these LclVars
-                initVal = (typ == TYP_STRUCT) ? vnStore->VNForZeroObj(varDsc->GetLayout())
-                                              : vnStore->VNZeroForType(typ);
+                initVal =
+                    (typ == TYP_STRUCT) ? vnStore->VNForZeroObj(varDsc->GetLayout()) : vnStore->VNZeroForType(typ);
             }
             else
             {
