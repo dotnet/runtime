@@ -1707,7 +1707,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
 
-            assert(emitter::isMaskReg(maskReg));
+            assert(emitter::isMaskReg(maskReg) && maskReg == REG_K1);
 
             emit->emitIns_R_R(maskIns, attr, maskReg, op1Reg);
             emit->emitIns_Mov(kmovIns, EA_8BYTE, targetReg, maskReg, INS_FLAGS_DONT_CARE);
