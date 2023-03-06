@@ -695,6 +695,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_ARRAY_ELEMENT_SIZE:
 		case MINT_MONO_CMPXCHG_I4:
 		case MINT_MONO_CMPXCHG_I8:
+		case MINT_CPBLK:
+		case MINT_INITBLK:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:

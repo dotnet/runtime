@@ -264,6 +264,56 @@ export function generate_wasm_body (
                 append_memset_dest(builder, 0, getArgU16(ip, 2));
                 break;
             }
+            case MintOpcode.MINT_CPBLK: {
+                // size (FIXME: uint32 not int32)
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                builder.local("math_rhs32", WasmOpcode.tee_local);
+                // if size is 0 then don't do anything
+                builder.block(WasmValtype.void, WasmOpcode.if_); // if #1
+
+                // stash dest then check for null
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                builder.local("temp_ptr", WasmOpcode.tee_local);
+                builder.appendU8(WasmOpcode.i32_eqz);
+                // stash src then check for null
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                builder.local("math_lhs32", WasmOpcode.tee_local);
+                builder.appendU8(WasmOpcode.i32_eqz);
+
+                // now we memmove if both dest and src are valid. The stack currently has
+                //  the eqz result for each pointer so we can stash a bailout inside of an if
+                builder.appendU8(WasmOpcode.i32_or);
+                builder.block(WasmValtype.void, WasmOpcode.if_); // if #2
+                append_bailout(builder, ip, BailoutReason.NullCheck);
+                builder.endBlock(); // if #2
+
+                // We passed the null check so now prepare the stack
+                builder.local("temp_ptr");
+                builder.local("math_lhs32");
+                builder.local("math_rhs32");
+                // wasm memmove with stack layout dest, src, count
+                builder.appendU8(WasmOpcode.PREFIX_sat);
+                builder.appendU8(10);
+                builder.appendU8(0);
+                builder.appendU8(0);
+                builder.endBlock(); // if #1
+                break;
+            }
+            case MintOpcode.MINT_INITBLK: {
+                // FIXME: This will cause an erroneous bailout if dest and size are both 0
+                //  but that really shouldn't ever happen, and it will only cause a slowdown
+                // dest
+                append_ldloc_cknull(builder, getArgU16(ip, 1), ip, true);
+                // value
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                // size (FIXME: uint32 not int32)
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
+                builder.appendU8(WasmOpcode.PREFIX_sat);
+                builder.appendU8(11);
+                builder.appendU8(0);
+                break;
+            }
 
             // Other conditional branch types are handled by the relop table.
             case MintOpcode.MINT_BRFALSE_I4_S:
