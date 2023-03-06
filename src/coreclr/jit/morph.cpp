@@ -10889,12 +10889,14 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree*            rhs      = nullptr;
             GenTreeHWIntrinsic* inner_hw = nullptr;
 
-            // Transforms ~v1 & v2 to VectorXxx.AndNot(v2, v1)
+            // Transforms ~v1 & v2 to VectorXxx.AndNot(v1, v2)
             if (op1->OperIs(GT_HWINTRINSIC))
             {
                 GenTreeHWIntrinsic* xor_hw = op1->AsHWIntrinsic();
                 switch (xor_hw->GetHWIntrinsicId())
                 {
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+
 #if defined(TARGET_XARCH)
                     case NI_SSE_Xor:
                     case NI_SSE2_Xor:
@@ -10905,17 +10907,22 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 #endif
                         inner_hw = xor_hw;
                         rhs      = op2;
+#endif
                     default:
+                    {
                         break;
+                    }
                 }
             }
 
-            // Transforms v2 & (~v1) to VectorXxx.AndNot(v1, v2)
+            // Transforms v2 & (~v1) to VectorXxx.AndNot(v2, v1)
             if (op2->OperIs(GT_HWINTRINSIC))
             {
                 GenTreeHWIntrinsic* xor_hw = op2->AsHWIntrinsic();
                 switch (xor_hw->GetHWIntrinsicId())
                 {
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+
 #if defined(TARGET_XARCH)
                     case NI_SSE_Xor:
                     case NI_SSE2_Xor:
@@ -10926,8 +10933,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 #endif
                         inner_hw = xor_hw;
                         rhs      = op1;
+#endif
                     default:
+                    {
                         break;
+                    }
                 }
             }
 
