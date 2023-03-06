@@ -1073,6 +1073,95 @@ BOOL CompareMethodSigWithCorrectSubstitution(
     }
 }
 
+namespace
+{
+    class MyData final
+    {
+        FILE* _file;
+    public:
+        MyData(char const* fileName)
+        {
+            _file = fopen(fileName, "w");
+        }
+        void Write(LONGLONG value)
+        {
+            fprintf(_file, "%lld\n", value);
+        }
+    };
+    class MeasureBlock_GetNameThrowing final
+    {
+        static MyData _file;
+    public:
+        MeasureBlock_GetNameThrowing()
+        {
+            ::QueryPerformanceCounter(&_start);
+        }
+
+        ~MeasureBlock_GetNameThrowing()
+        {
+            LARGE_INTEGER end;
+            ::QueryPerformanceCounter(&end);
+            _file.Write(end.QuadPart - _start.QuadPart);
+        }
+    private:
+        LARGE_INTEGER _start;
+    };
+    class MeasureBlock_GetNameOnNonArrayClass final
+    {
+        static MyData _file;
+    public:
+        MeasureBlock_GetNameOnNonArrayClass()
+        {
+            ::QueryPerformanceCounter(&_start);
+        }
+
+        ~MeasureBlock_GetNameOnNonArrayClass()
+        {
+            LARGE_INTEGER end;
+            ::QueryPerformanceCounter(&end);
+            _file.Write(end.QuadPart - _start.QuadPart);
+        }
+    private:
+        LARGE_INTEGER _start;
+    };
+    MyData MeasureBlock_GetNameThrowing::_file{"MeasureBlock_GetNameThrowing.csv"};
+    MyData MeasureBlock_GetNameOnNonArrayClass::_file{"MeasureBlock_GetNameOnNonArrayClass.csv"};
+
+    BOOL TryMightHaveName_GetNameThrowing(_In_ MethodDesc *pMD, ULONG hashMaybe, _Out_ LPCUTF8* toMatch)
+    {
+        LPCUTF8 name = NULL;
+        // if (!pMD->IsNameHashSet())
+        // {
+        //     name = pMD->GetNameThrowing();
+        //     StackSString str(SString::Utf8, name);
+        //     pMD->SetNameHash(str.HashCaseInsensitive());
+        // }
+
+        // if (!pMD->MightHaveName(hashMaybe))
+        //     return FALSE;
+
+        *toMatch = name != NULL ? name : pMD->GetNameThrowing();
+        return TRUE;
+    }
+
+    BOOL TryMightHaveName_GetNameOnNonArrayClass(_In_ MethodDesc *pMD, ULONG hashMaybe, _Out_ LPCUTF8* toMatch)
+    {
+        LPCUTF8 name = NULL;
+        // if (!pMD->IsNameHashSet())
+        // {
+        //     name = pMD->GetNameOnNonArrayClass();
+        //     StackSString str(SString::Utf8, name);
+        //     pMD->SetNameHash(str.HashCaseInsensitive());
+        // }
+
+        // if (!pMD->MightHaveName(hashMaybe))
+        //     return FALSE;
+
+        *toMatch = name != NULL ? name : pMD->GetNameOnNonArrayClass();
+        return TRUE;
+    }
+}
+
 //*******************************************************************************
 // Finds a method by name and signature, where scope is the scope in which the
 // signature is defined.
@@ -1115,6 +1204,8 @@ MemberLoader::FindMethod(
     it.MoveToEnd();
 
     // Iterate through the methods of the current type searching for a match.
+    {
+    MeasureBlock_GetNameThrowing t;
     for (; it.IsValid(); it.Prev())
     {
         MethodDesc *pCurDeclMD = it.GetDeclMethodDesc();
@@ -1128,11 +1219,12 @@ MemberLoader::FindMethod(
             continue;
         }
 
+        LPCUTF8 name = NULL;
         if ((flags & FM_IgnoreName) != 0
             ||
-            (pCurDeclMD->MightHaveName(targetNameHash)
+            (TryMightHaveName_GetNameThrowing(pCurDeclMD, targetNameHash, &name)
             // This is done last since it is the most expensive of the IF statement.
-            && StrCompFunc(pszName, pCurDeclMD->GetNameThrowing()) == 0)
+            && StrCompFunc(pszName, name) == 0)
            )
         {
             if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT))
@@ -1140,6 +1232,7 @@ MemberLoader::FindMethod(
                 RETURN pCurDeclMD;
             }
         }
+    }
     }
 
 
@@ -1277,6 +1370,8 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
         // Iterate through the methods searching for a match.
         MethodTable::MethodIterator it(pMT);
         it.MoveToEnd();
+        {
+            MeasureBlock_GetNameOnNonArrayClass t{};
         for (; it.IsValid(); it.Prev())
         {
             MethodDesc *pCurMD = it.GetDeclMethodDesc();
@@ -1296,7 +1391,8 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
                     continue;
                 }
 
-                if (pCurMD->MightHaveName(targetNameHash) && StrCompFunc(pszName, pCurMD->GetNameOnNonArrayClass()) == 0)
+                LPCUTF8 name = NULL;
+                if (TryMightHaveName_GetNameOnNonArrayClass(pCurMD, targetNameHash, &name) && StrCompFunc(pszName, name) == 0)
                 {
                     if (pRetMD != NULL)
                     {
@@ -1317,6 +1413,7 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
                         return pRetMD;
                 }
             }
+        }
         }
 
         if (pRetMD != NULL)

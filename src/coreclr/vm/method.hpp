@@ -1680,9 +1680,9 @@ protected:
 
         enum_flag2_IsEligibleForTieredCompilation       = 0x20,
 
-        enum_flag2_RequiresCovariantReturnTypeChecking  = 0x40
+        enum_flag2_RequiresCovariantReturnTypeChecking  = 0x40,
 
-        // unused                           = 0x80,
+        enum_flag2_NameHashSet                          = 0x80,
     };
     BYTE        m_bFlags2;
 
@@ -1698,7 +1698,22 @@ protected:
 
     WORD m_wFlags;
 
+public:
+    bool IsNameHashSet()
+    {
+        return (m_bFlags2 & enum_flag2_NameHashSet) != 0;
+    }
 
+    void SetNameHash(ULONG hash)
+    {
+        if (RequiresFullSlotNumber())
+            return;
+
+        WORD partialHash = (WORD) hash & enum_packedSlotLayout_NameHashMask;
+        m_wSlotNumber |= partialHash;
+
+        InterlockedUpdateFlags2(enum_flag2_NameHashSet, TRUE);
+    }
 
 public:
 #ifdef DACCESS_COMPILE
