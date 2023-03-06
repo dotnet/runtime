@@ -146,7 +146,7 @@ namespace System.Configuration
         public static object GetSection(string sectionName)
         {
             if (DisableConfigurationManager)
-                throw new ArgumentException(SR.ConfigurationManagerDisabled);
+                return null;
 
             // Avoid unintended AV's by ensuring sectionName is not empty.
             // For compatibility, we cannot throw an InvalidArgumentException.
@@ -161,7 +161,7 @@ namespace System.Configuration
         public static void RefreshSection(string sectionName)
         {
             if (DisableConfigurationManager)
-                throw new ArgumentException(SR.ConfigurationManagerDisabled);
+                return;
 
             // Avoid unintended AV's by ensuring sectionName is not empty.
             // For consistency with GetSection, we should not throw an InvalidArgumentException.
