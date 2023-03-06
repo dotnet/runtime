@@ -1568,10 +1568,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
 		MonoDelegateClassMethodPair *del_tramp = patch_info->data.del_tramp;
 
-		if (del_tramp->is_virtual)
-			target = mono_create_delegate_virtual_trampoline (del_tramp->klass, del_tramp->method);
-		else
-			target = mono_create_delegate_trampoline_info (del_tramp->klass, del_tramp->method);
+		target = mono_create_delegate_trampoline_info (del_tramp->klass, del_tramp->method, del_tramp->is_virtual);
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
@@ -4239,7 +4236,7 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	info->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->jump_target_hash = g_hash_table_new (NULL, NULL);
 	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	info->delegate_trampoline_hash = g_hash_table_new (class_method_pair_hash, class_method_pair_equal);
+	info->delegate_info_hash = g_hash_table_new (class_method_pair_hash, class_method_pair_equal);
 	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
 	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -4308,7 +4305,7 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	g_hash_table_destroy (info->method_code_hash);
 	g_hash_table_destroy (info->jump_trampoline_hash);
 	g_hash_table_destroy (info->jit_trampoline_hash);
-	g_hash_table_destroy (info->delegate_trampoline_hash);
+	g_hash_table_destroy (info->delegate_info_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->mrgctx_hash);
 	g_hash_table_destroy (info->interp_method_pointer_hash);

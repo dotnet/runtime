@@ -771,7 +771,7 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 
 	if (G_UNLIKELY (!info)) {
 		g_assert (del->method);
-		info = mono_create_delegate_trampoline_info (del->object.vtable->klass, del->method);
+		info = mono_create_delegate_trampoline_info (del->object.vtable->klass, del->method, FALSE);
 	}
 
 	del->method = info->method;

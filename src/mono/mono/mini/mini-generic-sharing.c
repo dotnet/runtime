@@ -2616,14 +2616,9 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		return res;
 	}
 	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO: {
-		MonoDelegateClassMethodPair *dele_info = (MonoDelegateClassMethodPair*)data;
-		gpointer trampoline;
+		MonoDelegateClassMethodPair *del_info = (MonoDelegateClassMethodPair*)data;
 
-		if (dele_info->is_virtual)
-			trampoline = mono_create_delegate_virtual_trampoline (dele_info->klass, dele_info->method);
-		else
-			trampoline = mono_create_delegate_trampoline_info (dele_info->klass, dele_info->method);
-
+		gpointer trampoline = mono_create_delegate_trampoline_info (del_info->klass, del_info->method, del_info->is_virtual);
 		g_assert (trampoline);
 		return trampoline;
 	}

@@ -3630,15 +3630,14 @@ emit_get_rgctx_dele_tramp (MonoCompile *cfg, int context_used,
  * Returns NULL and set the cfg exception on error.
  */
 static G_GNUC_UNUSED MonoInst*
-handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, MonoMethod *method, int target_method_context_used, int invoke_context_used, gboolean virtual_)
+handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, MonoMethod *method, int target_method_context_used, int invoke_context_used, gboolean is_virtual)
 {
 	MonoInst *ptr;
 	int dreg;
-	gpointer trampoline;
-	MonoInst *obj, *tramp_ins;
+	MonoInst *obj, *info_ins;
 	guint8 **code_slot;
 
-	if (virtual_ && !cfg->llvm_only) {
+	if (is_virtual && !cfg->llvm_only) {
 		MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
 		g_assert (invoke);
 
@@ -3678,7 +3677,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	}
 
 	if (cfg->llvm_only) {
-		if (virtual_) {
+		if (is_virtual) {
 			MonoInst *args [ ] = {
 				obj,
 				target,
@@ -3718,13 +3717,13 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	}
 
 	if (target_method_context_used || invoke_context_used) {
-		tramp_ins = emit_get_rgctx_dele_tramp (cfg, target_method_context_used | invoke_context_used, klass, method, virtual_, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
+		info_ins = emit_get_rgctx_dele_tramp (cfg, target_method_context_used | invoke_context_used, klass, method, is_virtual, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
 
 		//This is emitted as a constant store for the non-shared case.
 		//We copy from the delegate trampoline info as it's faster than a rgctx fetch
 		dreg = alloc_preg (cfg);
 		if (!cfg->llvm_only) {
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method));
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method));
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), dreg);
 		}
 	} else if (cfg->compile_aot) {
@@ -3733,40 +3732,37 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		del_tramp = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoDelegateClassMethodPair));
 		del_tramp->klass = klass;
 		del_tramp->method = method;
-		del_tramp->is_virtual = virtual_;
-		EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
+		del_tramp->is_virtual = is_virtual;
+		EMIT_NEW_AOTCONST (cfg, info_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
 	} else {
-		if (virtual_)
-			trampoline = mono_create_delegate_virtual_trampoline (klass, method);
-		else
-			trampoline = mono_create_delegate_trampoline_info (klass, method);
-		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
+		MonoDelegateTrampInfo *info = mono_create_delegate_trampoline_info (klass, method, is_virtual);
+		EMIT_NEW_PCONST (cfg, info_ins, info);
 	}
 
 	if (cfg->llvm_only) {
-		MonoInst *args [ ] = {
+		MonoInst *args [] = {
 			obj,
-			tramp_ins
+			info_ins
 		};
 		mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, args);
 		return obj;
 	}
 
 	/* Set invoke_impl field */
-	if (virtual_) {
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), tramp_ins->dreg);
+	if (is_virtual) {
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), info_ins->dreg);
 	} else {
 		dreg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, invoke_impl));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, invoke_impl));
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), dreg);
 
 		dreg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method_ptr));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method_ptr));
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), dreg);
 	}
 
 	dreg = alloc_preg (cfg);
-	MONO_EMIT_NEW_ICONST (cfg, dreg, virtual_ ? 1 : 0);
+	MONO_EMIT_NEW_ICONST (cfg, dreg, is_virtual ? 1 : 0);
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_is_virtual), dreg);
 
 	/* All the checks which are in mono_delegate_ctor () are done by the delegate trampoline */
