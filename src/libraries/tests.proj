@@ -414,6 +414,9 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/82561 - System.IO.*GetTemp* not supported -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.FileExtensions\tests\Microsoft.Extensions.Configuration.FileExtensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration\tests\FunctionalTests\Microsoft.Extensions.Configuration.Functional.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/82561 - DOTNET_USER_SECRETS_FALLBACK_DIR not available -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.UserSecrets\tests\Microsoft.Extensions.Configuration.UserSecrets.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetArchitecture)' == 's390x' and '$(RunDisableds390xTests)' != 'true'">
