@@ -15,8 +15,6 @@ namespace Wasm.Build.Tests
 {
     public class BuildPublishTests : NativeRebuildTestsBase
     {
-        private readonly char unicodeChar = '煉';
-
         public BuildPublishTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
@@ -30,7 +28,7 @@ namespace Wasm.Build.Tests
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, bool testsUnicode, RunHost host, string id)
         {
             string projectName = testsUnicode ?
-                $"build_publish_{buildArgs.Config}{unicodeChar}" :
+                $"build_publish_{buildArgs.Config}{s_unicodeChar}" :
                 $"build_publish_{buildArgs.Config}";
 
             buildArgs = buildArgs with { ProjectName = projectName };

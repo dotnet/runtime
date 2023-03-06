@@ -24,11 +24,15 @@ public class BuildPublishTests : BuildTestBase
     }
 
     [Theory, TestCategory("no-workload")]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void DefaultTemplate_WithoutWorkload(string config)
+    [InlineData("Debug", true)]
+    [InlineData("Release", false)]
+    [InlineData("Debug", false)]
+    [InlineData("Release", true)]
+    public void DefaultTemplate_WithoutWorkload(string config, bool testsUnicode)
     {
-        string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}";
+        string id = testsUnicode ?
+            $"blz_no_workload_{config}_{Path.GetRandomFileName()}{s_unicodeChar}" :
+            $"blz_no_workload_{config}_{Path.GetRandomFileName()}";
         CreateBlazorWasmTemplateProject(id);
 
         // Build
@@ -41,11 +45,15 @@ public class BuildPublishTests : BuildTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void DefaultTemplate_NoAOT_WithWorkload(string config)
+    [InlineData("Debug", true)]
+    [InlineData("Release", false)]
+    [InlineData("Debug", false)]
+    [InlineData("Release", true)]
+    public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testsUnicode)
     {
-        string id = $"blz_no_aot_{config}_{Path.GetRandomFileName()}";
+        string id = testsUnicode ?
+            $"blz_no_aot_{config}_{Path.GetRandomFileName()}{s_unicodeChar}" :
+            $"blz_no_aot_{config}_{Path.GetRandomFileName()}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
