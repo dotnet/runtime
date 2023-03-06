@@ -1378,12 +1378,13 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	MonoMethod *invoke;
 	ERROR_DECL (error);
 	MonoDelegateTrampInfo *tramp_info;
-	MonoClassMethodPair pair, *dpair;
+	MonoDelegateClassMethodPair pair, *dpair;
 	MonoMemoryManager *mm_class, *mm_method, *mm;
 	MonoJitMemoryManager *jit_mm;
 
 	pair.klass = klass;
 	pair.method = method;
+	pair.is_virtual = is_virtual;
 
 	if (method) {
 		mm_class = m_class_get_mem_manager (klass);
@@ -1407,6 +1408,7 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	tramp_info->klass = klass;
 	tramp_info->invoke = invoke;
 	tramp_info->invoke_sig = mono_method_signature_internal (invoke);
+	tramp_info->is_virtual = is_virtual;
 	// FIXME: Use a different conditional
 #ifndef HOST_WASM
 	if (!mono_llvm_only) {
@@ -1421,20 +1423,20 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 		tramp_info->need_rgctx_tramp = mono_method_needs_static_rgctx_invoke (method, FALSE);
 	}
 
+#ifndef HOST_WASM
 	if (is_virtual) {
 		tramp_info->invoke_impl = mono_get_delegate_virtual_invoke_impl (mono_method_signature_internal (invoke), method);
 	} else {
-#ifndef HOST_WASM
 		if (!mono_llvm_only) {
 			guint32 code_size = 0;
 			tramp_info->invoke_impl = mono_create_specific_trampoline (jit_mm->mem_manager, tramp_info, MONO_TRAMPOLINE_DELEGATE, &code_size);
 			g_assert (code_size);
 		}
-#endif
 	}
+#endif
 
-	dpair = (MonoClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoClassMethodPair));
-	memcpy (dpair, &pair, sizeof (MonoClassMethodPair));
+	dpair = (MonoDelegateClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateClassMethodPair));
+	memcpy (dpair, &pair, sizeof (MonoDelegateClassMethodPair));
 
 	/* store trampoline address */
 	jit_mm_lock (jit_mm);

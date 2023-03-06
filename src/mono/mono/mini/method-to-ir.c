@@ -3689,18 +3689,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
 	}
 
-	if (cfg->llvm_only) {
-		if (is_virtual) {
-			MonoInst *args [ ] = {
-				obj,
-				target,
-				emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD)
-			};
-			mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate_virtual, args);
-			return obj;
-		}
-	}
-
 	/*
 	 * To avoid looking up the compiled code belonging to the target method
 	 * in mono_delegate_trampoline (), we allocate a per-domain memory slot to
@@ -3731,16 +3719,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 
 	info_ins = emit_get_rgctx_dele_tramp_info (cfg, target_method_context_used | invoke_context_used, klass, method, is_virtual, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
 
-	if (target_method_context_used || invoke_context_used) {
-		//This is emitted as a constant store for the non-shared case.
-		//We copy from the delegate trampoline info as it's faster than a rgctx fetch
-		dreg = alloc_preg (cfg);
-		if (!cfg->llvm_only) {
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method));
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), dreg);
-		}
-	}
-
 	if (cfg->llvm_only) {
 		MonoInst *args [] = {
 			obj,
@@ -3748,6 +3726,14 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		};
 		mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, args);
 		return obj;
+	}
+
+	if (target_method_context_used || invoke_context_used) {
+		//This is emitted as a constant store for the non-shared case.
+		//We copy from the delegate trampoline info as it's faster than a rgctx fetch
+		dreg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method));
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), dreg);
 	}
 
 	/* Set invoke_impl field */
