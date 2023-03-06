@@ -1195,7 +1195,8 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
     assert(sideEffects != nullptr);
 
 #ifndef DEBUG
-    // The treatment of flags definitions is on a best-effort basis; it should be used debug purposes only.
+    // The treatment of flags definitions is on a best-effort basis; it should
+    // be used for debug purposes only.
     static_assert_no_msg(!markFlagsOperands);
 #endif
 
@@ -1310,6 +1311,7 @@ LIR::ReadOnlyRange LIR::Range::GetTreeRange(GenTree* root, bool* isClosed, unsig
     return GetMarkedRange(markCount, root, isClosed, sideEffects);
 }
 
+#ifdef DEBUG
 //------------------------------------------------------------------------
 // LIR::Range::GetTreeRangeWithFlags:
 // Computes the subrange that includes all nodes in the dataflow tree rooted at
@@ -1335,6 +1337,7 @@ LIR::ReadOnlyRange LIR::Range::GetTreeRangeWithFlags(GenTree* root, bool* isClos
 
     return GetMarkedRange<true>(markCount, root, isClosed, sideEffects);
 }
+#endif
 
 //------------------------------------------------------------------------
 // LIR::Range::GetTreeRange: Computes the subrange that includes all nodes
