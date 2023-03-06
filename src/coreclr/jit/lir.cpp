@@ -1164,6 +1164,15 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 // occurring before uses).
 //
 // Arguments:
+//    markCount         - The number of marks initially set on nodes before the
+//                        start node.
+//    start             - The node to start looking backwards from.
+//    isClosed          - [out] Set to true if the returned range contains only
+//                        nodes in the dataflow tree and false otherwise.
+//    sideEffects       - [out] Combined side effect flags for all nodes in the
+//                        returned range.
+//
+// Template arguments:
 //    markFlagsOperands - Whether the dataflow algorithm should also try to
 //                        mark operands that are defining flags. For example,
 //                        GT_JCC implicitly consumes the flags defined by the
@@ -1173,12 +1182,6 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 //                        range.
 //                        This works on a best-effort basis; the user should not
 //                        rely on all flags defs to be found.
-//    root              - The root of the dataflow tree.
-//    isClosed          - An output parameter that is set to true if the returned
-//                        range contains only nodes in the dataflow tree and false
-//                        otherwise.
-//
-// Type arguments:
 //
 // Returns:
 //    The computed subrange.
