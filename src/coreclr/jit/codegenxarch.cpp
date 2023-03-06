@@ -6358,10 +6358,11 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             continue;
         }
 
+
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
             assert(typeHnd != nullptr);
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
@@ -6413,7 +6414,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #ifdef TARGET_X86
             noway_assert(
                 isRegParamType(genActualType(varDsc->TypeGet())) ||
-                (varTypeIsStruct(varDsc->TypeGet()) && compiler->isTrivialPointerSizedStruct(varDsc->GetStructHnd())));
+                ((varDsc->TypeGet() == TYP_STRUCT) && compiler->isTrivialPointerSizedStruct(varDsc->GetLayout()->GetClassHandle())));
 #else
             noway_assert(isRegParamType(genActualType(varDsc->TypeGet())));
 #endif // TARGET_X86

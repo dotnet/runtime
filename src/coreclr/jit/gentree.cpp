@@ -11698,7 +11698,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                         else
 #endif // !defined(TARGET_64BIT)
                         {
-                            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+                            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
                             CORINFO_FIELD_HANDLE fldHnd =
                                 info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
                             fieldName = eeGetFieldName(fldHnd, true, buffer, sizeof(buffer));
@@ -15798,7 +15798,9 @@ GenTree* Compiler::gtNewTempAssign(
             if (varTypeIsSIMD(dstTyp))
             {
                 varDsc->lvExactSize = genTypeSize(dstTyp);
+#ifdef FEATURE_SIMD
                 varDsc->lvSIMDType = 1;
+#endif
             }
             else
             {
@@ -17670,8 +17672,14 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 }
                 break;
             case GT_LCL_VAR:
-                structHnd = lvaGetDesc(tree->AsLclVar())->GetStructHnd();
+            {
+                LclVarDsc* dsc = lvaGetDesc(tree->AsLclVar());
+                if ((dsc->GetLayout() != nullptr) && !dsc->GetLayout()->IsBlockLayout())
+                {
+                    structHnd = dsc->GetLayout()->GetClassHandle();
+                }
                 break;
+            }
             case GT_RETURN:
                 structHnd = gtGetStructHandleIfPresent(tree->AsOp()->gtOp1);
                 break;

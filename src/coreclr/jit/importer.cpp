@@ -2805,7 +2805,7 @@ typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
     }
     if (varTypeIsStruct(varDsc))
     {
-        return typeInfo(TI_STRUCT, varDsc->GetStructHnd());
+        return typeInfo(TI_STRUCT, varDsc->GetLayout()->GetClassHandle());
     }
 
     return typeInfo(varDsc->TypeGet());

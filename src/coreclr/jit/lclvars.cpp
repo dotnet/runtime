@@ -1636,16 +1636,6 @@ void Compiler::lvSetMinOptsDoNotEnreg()
     }
 }
 
-/*****************************************************************************
- * Returns the handle to the class of the local variable varNum
- */
-
-CORINFO_CLASS_HANDLE Compiler::lvaGetStruct(unsigned varNum)
-{
-    const LclVarDsc* varDsc = lvaGetDesc(varNum);
-    return varDsc->GetStructHnd();
-}
-
 //--------------------------------------------------------------------------------------------
 // lvaFieldOffsetCmp - a static compare function passed to jitstd::sort() by Compiler::StructPromotionHelper;
 //   compares fields' offsets.
@@ -1999,7 +1989,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+    CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
     assert(typeHnd != NO_CLASS_HANDLE);
 
     bool canPromote = CanPromoteStructType(typeHnd);
@@ -2093,7 +2083,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
 {
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
     assert(varTypeIsStruct(varDsc));
-    assert(varDsc->GetStructHnd() == structPromotionInfo.typeHnd);
+    assert(varDsc->GetLayout()->GetClassHandle() == structPromotionInfo.typeHnd);
     assert(structPromotionInfo.canPromote);
 
     bool shouldPromote = true;
@@ -2387,7 +2377,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     // We should never see a reg-sized non-field-addressed struct here.
     assert(!varDsc->lvRegStruct);
 
-    assert(varDsc->GetStructHnd() == structPromotionInfo.typeHnd);
+    assert(varDsc->GetLayout()->GetClassHandle() == structPromotionInfo.typeHnd);
     assert(structPromotionInfo.canPromote);
 
     varDsc->lvFieldCnt      = structPromotionInfo.fieldCnt;
@@ -2404,7 +2394,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 #ifdef DEBUG
     if (compiler->verbose)
     {
-        printf("\nPromoting struct local V%02u (%s):", lclNum, compiler->eeGetClassName(varDsc->GetStructHnd()));
+        printf("\nPromoting struct local V%02u (%s):", lclNum, compiler->eeGetClassName(varDsc->GetLayout()->GetClassHandle()));
     }
 #endif
 
@@ -2884,7 +2874,7 @@ bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 {
     if (varTypeIsStruct(varDsc->TypeGet()))
     {
-        CORINFO_CLASS_HANDLE clsHnd = varDsc->GetStructHnd();
+        CORINFO_CLASS_HANDLE clsHnd = varDsc->GetLayout()->GetClassHandle();
         structPassingKind    howToPassStruct;
 
         var_types type = getArgTypeForStruct(clsHnd, &howToPassStruct, isVarArg, varDsc->lvExactSize);
@@ -7838,7 +7828,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         else
 #endif // !defined(TARGET_64BIT)
         {
-            CORINFO_CLASS_HANDLE typeHnd = parentvarDsc->GetStructHnd();
+            CORINFO_CLASS_HANDLE typeHnd = parentvarDsc->GetLayout()->GetClassHandle();
             CORINFO_FIELD_HANDLE fldHnd  = info.compCompHnd->getFieldInClass(typeHnd, varDsc->lvFldOrdinal);
 
             char buffer[128];

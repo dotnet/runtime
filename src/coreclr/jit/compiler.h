@@ -1091,24 +1091,8 @@ public:
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
-    // class handle for the local or null if not known or not a class,
-    // for a struct handle use `GetStructHnd()`.
+    // class handle for the local or null if not known or not a class
     CORINFO_CLASS_HANDLE lvClassHnd;
-
-    // Get class handle for a struct local or implicitByRef struct local.
-    CORINFO_CLASS_HANDLE GetStructHnd() const
-    {
-#ifdef FEATURE_SIMD
-        if (lvSIMDType && (m_layout == nullptr))
-        {
-            return NO_CLASS_HANDLE;
-        }
-#endif
-
-        CORINFO_CLASS_HANDLE structHnd = GetLayout()->GetClassHandle();
-        assert(structHnd != NO_CLASS_HANDLE);
-        return structHnd;
-    }
 
 private:
     ClassLayout* m_layout; // layout info for structs
@@ -3531,7 +3515,6 @@ public:
     bool lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVararg);
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
-    CORINFO_CLASS_HANDLE lvaGetStruct(unsigned varNum);
     void lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeValueClsCheck);
     void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck);
     void lvaSetStructUsedAsVarArg(unsigned varNum);
@@ -8727,6 +8710,16 @@ private:
         return true;
     }
 
+    bool isOpaqueSIMDType(ClassLayout* layout) const
+    {
+        if (layout->IsBlockLayout())
+        {
+            return true;
+        }
+
+        return isOpaqueSIMDType(layout->GetClassHandle());
+    }
+
     // Returns true if the lclVar is an opaque SIMD type.
     bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
     {
@@ -8734,7 +8727,13 @@ private:
         {
             return false;
         }
-        return isOpaqueSIMDType(varDsc->GetStructHnd());
+
+        if (varDsc->GetLayout() == nullptr)
+        {
+            return true;
+        }
+
+        return isOpaqueSIMDType(varDsc->GetLayout());
     }
 
     bool isNumericsNamespace(const char* ns)
