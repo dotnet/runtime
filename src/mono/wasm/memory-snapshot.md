@@ -13,7 +13,7 @@ Such subsequent start is significantly faster.
     - the mono-config has field `assetsHash` which is summary SHA256 of all the assets.
     - the configuration could be changed programmatically and se we calculate the hash at the runtime, just before taking snapshot.
 - the snapshot is taken just after we initialize the Mono runtime
-    - cwraps initialized (they would be initialized again on subsequent start)
+    - before cwraps are initialized (they would be initialized again on subsequent start)
     - after loading all the DLLs into memory.
     - after loading ICU and timezone data
     - after applying environment variables and other runtime options.
