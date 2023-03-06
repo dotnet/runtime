@@ -9675,9 +9675,22 @@ DONE_MORPHING_CHILDREN:
                 // We do not need to throw if the second operand is a non-(negative one) constant.
                 if (!op2->IsIntegralConst() || op2->IsIntegralConst(-1))
                 {
+                    bool checkDividend = true;
+
                     // We do not need to throw if we know the first operand is a constant and not a min-value.
-                    if (!(tree->TypeIs(TYP_INT) && op1->IsIntegralConst() && !op1->IsIntegralConst(INT32_MIN)) &&
-                        !(tree->TypeIs(TYP_LONG) && op1->IsIntegralConst() && !op1->IsIntegralConst(INT64_MIN)))
+                    if (op1->IsIntegralConst())
+                    {
+                        if (tree->TypeIs(TYP_INT) && !op1->IsIntegralConst(INT32_MIN))
+                        {
+                            checkDividend = false;
+                        }
+                        else if (tree->TypeIs(TYP_LONG) && !op1->IsIntegralConst(INT64_MIN))
+                        {
+                            checkDividend = false;
+                        }
+                    }
+
+                    if (checkDividend)
                     {
                         fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
                     }
