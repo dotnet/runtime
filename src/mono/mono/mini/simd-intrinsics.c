@@ -1213,14 +1213,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
-	int class_size = mono_class_value_size (cmethod->klass, NULL);
-	if (!COMPILE_LLVM (cfg) && class_size !=16)
+	if (!COMPILE_LLVM (cfg) && id != SN_Add)
 		return NULL;
-	if (id != SN_Add)
+	MonoClass *arg0_class = mono_class_from_mono_type_internal (fsig->params [0]);
+	int class_size = mono_class_value_size (arg0_class, NULL);
+	if (!COMPILE_LLVM (cfg) && class_size != 16)
 		return NULL;
 #endif
-	
-	
+
 	MonoClass *klass = cmethod->klass;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 
@@ -1873,7 +1873,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg) && size != 16)
 		return NULL;
-	if (!(id == SN_get_One || id == SN_get_Zero))
+	if (!COMPILE_LLVM (cfg) && !(id == SN_get_One || id == SN_get_Zero))
 		return NULL;
 #endif
 
