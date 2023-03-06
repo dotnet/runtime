@@ -121,7 +121,7 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCSTR
 // ProfilingAPIUtility::ShouldInjectProfAPIFault
 //
 // Description:
-//    Determines whether COMPlus_ProfAPIFault is set to a bitmask value
+//    Determines whether DOTNET_ProfAPIFault is set to a bitmask value
 //    with the specified flag set
 //
 // Return Value:

@@ -1431,15 +1431,15 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
-    ++fgBBNumMax;
 
     if (compIsForInlining())
     {
         block->bbNum = ++impInlineInfo->InlinerCompiler->fgBBNumMax;
+        fgBBNumMax   = block->bbNum;
     }
     else
     {
-        block->bbNum = fgBBNumMax;
+        block->bbNum = ++fgBBNumMax;
     }
 
     if (compRationalIRForm)

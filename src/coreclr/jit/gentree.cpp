@@ -3050,6 +3050,7 @@ AGAIN:
                 {
 #if defined(FEATURE_SIMD)
 #if defined(TARGET_XARCH)
+                    case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
                     case TYP_SIMD32:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimd32Val.u32[7]);
@@ -7282,7 +7283,8 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
         case TYP_SIMD16:
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
-#endif // TARGET_XARCH
+        case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+#endif                   // TARGET_XARCH
         {
             allBitsSet                                 = gtNewVconNode(type);
             allBitsSet->AsVecCon()->gtSimd32Val.i64[0] = -1;
@@ -7327,7 +7329,8 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         case TYP_SIMD16:
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
-#endif // TARGET_XARCH
+        case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+#endif                   // TARGET_XARCH
         {
             zero                          = gtNewVconNode(type);
             zero->AsVecCon()->gtSimd32Val = {};
@@ -7369,7 +7372,8 @@ GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = T
         case TYP_SIMD16:
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
-#endif // TARGET_XARCH
+        case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+#endif                   // TARGET_XARCH
         {
             GenTreeVecCon* vecCon = gtNewVconNode(type);
 
@@ -11586,6 +11590,7 @@ void Compiler::gtDispConst(GenTree* tree)
 
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
+                case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
                 {
                     simd32_t simdVal = vecCon->gtSimd32Val;
                     printf("<0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx>", simdVal.u64[0], simdVal.u64[1],
@@ -17498,220 +17503,11 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 #endif // TARGET_X86
 
 #if defined(FEATURE_HW_INTRINSICS)
-//----------------------------------------------------------------------------------------------
-// IsHWIntrinsicCreateConstant: Determines if a HWIntrinsic node represents a vector constant
-//
-//  Arguments:
-//     node      - The node to check
-//     simd32Val - The vector constant being constructed
-//
-//  Returns:
-//     true if node represents a constant; otherwise, false
-bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val)
+unsigned GenTreeVecCon::ElementCount(unsigned simdSize, var_types simdBaseType)
 {
-    NamedIntrinsic intrinsic    = node->GetHWIntrinsicId();
-    var_types      simdType     = node->TypeGet();
-    var_types      simdBaseType = node->GetSimdBaseType();
-    unsigned       simdSize     = node->GetSimdSize();
-
-    size_t argCnt    = node->GetOperandCount();
-    size_t cnsArgCnt = 0;
-
-    switch (intrinsic)
-    {
-        case NI_Vector128_Create:
-        case NI_Vector128_CreateScalar:
-        case NI_Vector128_CreateScalarUnsafe:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_Create:
-        case NI_Vector256_CreateScalar:
-        case NI_Vector256_CreateScalarUnsafe:
-#elif defined(TARGET_ARM64)
-        case NI_Vector64_Create:
-        case NI_Vector64_CreateScalar:
-        case NI_Vector64_CreateScalarUnsafe:
-#endif
-        {
-            // Zero out the simd32Val
-            simd32Val = {};
-
-            // These intrinsics are meant to set the same value to every element.
-            if ((argCnt == 1) && HandleArgForHWIntrinsicCreate(node->Op(1), 0, simd32Val, simdBaseType))
-            {
-// CreateScalar leaves the upper bits as zero
-
-#if defined(TARGET_XARCH)
-                if ((intrinsic != NI_Vector128_CreateScalar) && (intrinsic != NI_Vector256_CreateScalar))
-#elif defined(TARGET_ARM64)
-                if ((intrinsic != NI_Vector64_CreateScalar) && (intrinsic != NI_Vector128_CreateScalar))
-#endif
-                {
-                    // Now assign the rest of the arguments.
-                    for (unsigned i = 1; i < simdSize / genTypeSize(simdBaseType); i++)
-                    {
-                        HandleArgForHWIntrinsicCreate(node->Op(1), i, simd32Val, simdBaseType);
-                    }
-                }
-
-                cnsArgCnt = 1;
-            }
-            else
-            {
-                for (unsigned i = 1; i <= argCnt; i++)
-                {
-                    if (HandleArgForHWIntrinsicCreate(node->Op(i), i - 1, simd32Val, simdBaseType))
-                    {
-                        cnsArgCnt++;
-                    }
-                }
-            }
-
-            assert((argCnt == 1) || (argCnt == (simdSize / genTypeSize(simdBaseType))));
-            return argCnt == cnsArgCnt;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
+    return simdSize / genTypeSize(simdBaseType);
 }
-
-//----------------------------------------------------------------------------------------------
-// HandleArgForHWIntrinsicCreate: Processes an argument for the GenTreeVecCon::IsHWIntrinsicCreateConstant method
-//
-//  Arguments:
-//     arg       - The argument to process
-//     argIdx    - The index of the argument being processed
-//     simd32Val - The vector constant being constructed
-//     baseType  - The base type of the vector constant
-//
-//  Returns:
-//     true if arg was a constant; otherwise, false
-bool GenTreeVecCon::HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, simd32_t& simd32Val, var_types baseType)
-{
-    switch (baseType)
-    {
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        {
-            if (arg->IsCnsIntOrI())
-            {
-                simd32Val.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
-                return true;
-            }
-            else
-            {
-                // We expect the constant to have been already zeroed
-                assert(simd32Val.i8[argIdx] == 0);
-            }
-            break;
-        }
-
-        case TYP_SHORT:
-        case TYP_USHORT:
-        {
-            if (arg->IsCnsIntOrI())
-            {
-                simd32Val.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
-                return true;
-            }
-            else
-            {
-                // We expect the constant to have been already zeroed
-                assert(simd32Val.i16[argIdx] == 0);
-            }
-            break;
-        }
-
-        case TYP_INT:
-        case TYP_UINT:
-        {
-            if (arg->IsCnsIntOrI())
-            {
-                simd32Val.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
-                return true;
-            }
-            else
-            {
-                // We expect the constant to have been already zeroed
-                assert(simd32Val.i32[argIdx] == 0);
-            }
-            break;
-        }
-
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-#if defined(TARGET_64BIT)
-            if (arg->IsCnsIntOrI())
-            {
-                simd32Val.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->gtIconVal);
-                return true;
-            }
-#else
-            if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
-            {
-                // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
-                // We need to reconstruct the 64-bit value in order to handle this
-
-                INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                gtLconVal <<= 32;
-                gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->gtIconVal;
-
-                simd32Val.i64[argIdx] = gtLconVal;
-                return true;
-            }
-#endif // TARGET_64BIT
-            else
-            {
-                // We expect the constant to have been already zeroed
-                assert(simd32Val.i64[argIdx] == 0);
-            }
-            break;
-        }
-
-        case TYP_FLOAT:
-        {
-            if (arg->IsCnsFltOrDbl())
-            {
-                simd32Val.f32[argIdx] = static_cast<float>(arg->AsDblCon()->DconValue());
-                return true;
-            }
-            else
-            {
-                // We expect the constant to have been already zeroed
-                // We check against the i32, rather than f32, to account for -0.0
-                assert(simd32Val.i32[argIdx] == 0);
-            }
-            break;
-        }
-
-        case TYP_DOUBLE:
-        {
-            if (arg->IsCnsFltOrDbl())
-            {
-                simd32Val.f64[argIdx] = static_cast<double>(arg->AsDblCon()->DconValue());
-                return true;
-            }
-            else
-            {
-                // We expect the constant to have been already zeroed
-                // We check against the i64, rather than f64, to account for -0.0
-                assert(simd32Val.i64[argIdx] == 0);
-            }
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-
-    return false;
-}
-#endif // FEATURE_HW_INTRINSICS
+#endif // FEATURE_HW_INTRINSICS*/
 
 //------------------------------------------------------------------------
 // IsFieldAddr: Is "this" a static or class field address?
@@ -21276,7 +21072,11 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(
     }
 #endif // TARGET_X86
 
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        hwIntrinsicID = NI_Vector512_Create;
+    }
+    else if (simdSize == 32)
     {
         hwIntrinsicID = NI_Vector256_Create;
     }
@@ -23925,6 +23725,8 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 case NI_SSE41_ConvertToVector128Int64:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
+                case NI_AVX512F_BroadcastScalarToVector512:
+                case NI_AVX512BW_BroadcastScalarToVector512:
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:

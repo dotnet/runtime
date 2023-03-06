@@ -57,12 +57,12 @@ DEF_TP(BLK     ,"blk"     , TYP_BLK,     TI_ERROR, 0,  0,  0,   1, 4, VTF_ANY) /
 DEF_TP(LCLBLK  ,"lclBlk"  , TYP_LCLBLK,  TI_ERROR, 0,  0,  0,   1, 4, VTF_ANY) // preallocated memory for locspace
 
 #ifdef FEATURE_SIMD
-// Amd64: The size and alignment of SIMD vector varies at JIT time based on whether target arch supports AVX or SSE2.
 DEF_TP(SIMD8    ,"simd8"  , TYP_SIMD8,   TI_STRUCT, 8, 8,  8,   2, 8, VTF_S|VTF_VEC)
 DEF_TP(SIMD12   ,"simd12" , TYP_SIMD12,  TI_STRUCT,12,16, 16,   4,16, VTF_S|VTF_VEC)
 DEF_TP(SIMD16   ,"simd16" , TYP_SIMD16,  TI_STRUCT,16,16, 16,   4,16, VTF_S|VTF_VEC)
 #if defined(TARGET_XARCH)
 DEF_TP(SIMD32   ,"simd32" , TYP_SIMD32,  TI_STRUCT,32,32, 32,   8,16, VTF_S|VTF_VEC)
+DEF_TP(SIMD64   ,"simd64" , TYP_SIMD64,  TI_STRUCT,64,64, 64,  16,16, VTF_S|VTF_VEC)
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 

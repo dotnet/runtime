@@ -92,7 +92,6 @@ namespace Microsoft.Interop
             {
                 var rewriter = new PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
                 assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
-
             }
             yield return ExpressionStatement(assignment);
         }

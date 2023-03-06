@@ -203,7 +203,7 @@ export function generate_wasm_body (
                 //  because a backward branch might target a point in the middle of the trace
                 (isFirstInstruction && backwardBranchTable),
             needsFallthroughEipUpdate = needsEipCheck && !isFirstInstruction;
-        let isDeadOpcode = false,
+        let isLowValueOpcode = false,
             skipDregInvalidation = false;
 
         // We record the offset of each backward branch we encounter, so that later branch
@@ -317,7 +317,7 @@ export function generate_wasm_body (
             }
 
             case MintOpcode.MINT_TIER_ENTER_JITERPRETER:
-                isDeadOpcode = true;
+                isLowValueOpcode = true;
                 // If we hit an enter opcode and we're not currently in a branch block
                 //  or the enter opcode is the first opcode in a branch block, this likely
                 //  indicates that we've reached a loop body that was already jitted before
@@ -363,7 +363,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_SDB_BREAKPOINT:
             case MintOpcode.MINT_SDB_INTR_LOC:
             case MintOpcode.MINT_SDB_SEQ_POINT:
-                isDeadOpcode = true;
+                isLowValueOpcode = true;
                 break;
 
             case MintOpcode.MINT_SAFEPOINT:
@@ -792,6 +792,7 @@ export function generate_wasm_body (
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
                     append_bailout(builder, ip, BailoutReason.Call);
+                    isLowValueOpcode = true;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
                     //  executed before now so the trace will always need to bail out into the
@@ -815,6 +816,7 @@ export function generate_wasm_body (
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
                     );
+                    isLowValueOpcode = true;
                 } else {
                     ip = abort;
                 }
@@ -828,6 +830,7 @@ export function generate_wasm_body (
                 // Otherwise, it may be in a branch that is unlikely to execute
                 if (builder.branchTargets.size > 0) {
                     append_bailout(builder, ip, BailoutReason.Throw);
+                    isLowValueOpcode = true;
                 } else {
                     ip = abort;
                 }
@@ -1031,9 +1034,10 @@ export function generate_wasm_body (
                         (opcode <= MintOpcode.MINT_RET_I8_IMM)
                     )
                 ) {
-                    if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts)
+                    if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts) {
                         append_bailout(builder, ip, BailoutReason.Return);
-                    else
+                        isLowValueOpcode = true;
+                    } else
                         ip = abort;
                 } else if (
                     (opcode >= MintOpcode.MINT_LDC_I4_M1) &&
@@ -1102,9 +1106,10 @@ export function generate_wasm_body (
                     //  types can be handled by emit_branch or emit_relop_branch,
                     //  to only perform a conditional bailout
                     // complex safepoint branches, just generate a bailout
-                    if (builder.branchTargets.size > 0)
+                    if (builder.branchTargets.size > 0) {
                         append_bailout(builder, ip, BailoutReason.ComplexBranch);
-                    else
+                        isLowValueOpcode = true;
+                    } else
                         ip = abort;
                 } else {
                     ip = abort;
@@ -1147,7 +1152,7 @@ export function generate_wasm_body (
                 builder.traceBuf.push(stmtText);
             }
 
-            if (!isDeadOpcode)
+            if (!isLowValueOpcode)
                 result++;
 
             ip += <any>(info[1] * 2);
@@ -1332,7 +1337,8 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
         if (traceNullCheckOptimizations)
             console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, fresh null check)`);
         cknullOffset = localOffset;
-    }
+    } else
+        cknullOffset = -1;
 }
 
 const ldcTable : { [opcode: number]: [WasmOpcode, number] } = {
@@ -1580,8 +1586,8 @@ function emit_fieldop (
 
             builder.local("pLocals");
             builder.i32_const(fieldOffset);
-            builder.i32_const(objectOffset);
-            builder.i32_const(localOffset);
+            builder.i32_const(objectOffset); // dest
+            builder.i32_const(localOffset); // src
             builder.callImport("stfld_o");
 
             if (!notNull) {
@@ -1590,11 +1596,15 @@ function emit_fieldop (
                 append_bailout(builder, ip, BailoutReason.NullCheck);
                 builder.endBlock();
             } else {
+                if (traceNullCheckOptimizations)
+                    console.log(`(0x${(<any>ip).toString(16)}) locals[${objectOffset}] not null since 0x${notNullSince.get(objectOffset)!.toString(16)}`);
+
                 builder.appendU8(WasmOpcode.drop);
                 counters.nullChecksEliminated++;
 
                 if (nullCheckValidation) {
-                    builder.local("cknull_ptr");
+                    // cknull_ptr was not used here so all we can do is verify that the target object is not null
+                    append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     builder.i32_const(builder.base);
                     builder.i32_const(ip);
@@ -2515,10 +2525,6 @@ const mathIntrinsicTable : { [opcode: number] : [isUnary: boolean, isF32: boolea
     [MintOpcode.MINT_FLOORF]:   [true, true,   WasmOpcode.f32_floor],
     [MintOpcode.MINT_ABS]:      [true, false,  WasmOpcode.f64_abs],
     [MintOpcode.MINT_ABSF]:     [true, true,   WasmOpcode.f32_abs],
-    [MintOpcode.MINT_MIN]:      [true, false,  WasmOpcode.f64_min],
-    [MintOpcode.MINT_MINF]:     [true, true,   WasmOpcode.f32_min],
-    [MintOpcode.MINT_MAX]:      [true, false,  WasmOpcode.f64_max],
-    [MintOpcode.MINT_MAXF]:     [true, true,   WasmOpcode.f32_max],
 
     [MintOpcode.MINT_ACOS]:     [true, false,  "acos"],
     [MintOpcode.MINT_ACOSF]:    [true, true,   "acos"],
@@ -2540,6 +2546,11 @@ const mathIntrinsicTable : { [opcode: number] : [isUnary: boolean, isF32: boolea
     [MintOpcode.MINT_LOG2F]:    [true, true,   "log2"],
     [MintOpcode.MINT_LOG10]:    [true, false,  "log10"],
     [MintOpcode.MINT_LOG10F]:   [true, true,   "log10"],
+
+    [MintOpcode.MINT_MIN]:      [false, false,  WasmOpcode.f64_min],
+    [MintOpcode.MINT_MINF]:     [false, true,   WasmOpcode.f32_min],
+    [MintOpcode.MINT_MAX]:      [false, false,  WasmOpcode.f64_max],
+    [MintOpcode.MINT_MAXF]:     [false, true,   WasmOpcode.f32_max],
 
     [MintOpcode.MINT_ATAN2]:    [false, false, "atan2"],
     [MintOpcode.MINT_ATAN2F]:   [false, true,  "atan2"],

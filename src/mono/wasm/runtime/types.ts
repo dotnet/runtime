@@ -228,6 +228,7 @@ export type RuntimeHelpers = {
     quit: Function,
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
+    loadedFiles: string[],
 }
 
 export type GlobalizationMode =

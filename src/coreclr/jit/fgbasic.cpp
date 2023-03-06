@@ -1193,6 +1193,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_POPCNT_PopCount:
                             case NI_POPCNT_X64_PopCount:
                             case NI_Vector256_Create:
+                            case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
                             case NI_VectorT256_CreateBroadcast:
