@@ -204,7 +204,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             INamedTypeSymbol generatedInterfaceImplementation = Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
 
-            IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"{userDefinedInterfaceName}.{methodName}").OfType<IMethodSymbol>());
+            IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"global::{userDefinedInterfaceName}.{methodName}").OfType<IMethodSymbol>());
 
             SyntaxNode emittedImplementationSyntax = await methodImplementation.DeclaringSyntaxReferences[0].GetSyntaxAsync();
 
