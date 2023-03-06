@@ -5,6 +5,8 @@ import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
 import { runtimeHelpers } from "./imports";
 
+const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
+
 // adapted from Blazor's WebAssemblyResourceLoader.ts
 async function open(): Promise<Cache | null> {
     // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
@@ -36,10 +38,11 @@ async function open(): Promise<Cache | null> {
     } catch {
         // There's no known scenario where we should get an exception here, but considering the
         // Chromium bug above, let's tolerate it and treat as "proceed without caching".
+        console.warn("MONO_WASM: Failed to open cache");
         return null;
     }
 }
-const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
+
 export async function getMemory(): Promise<ArrayBuffer | undefined> {
     try {
         const inputsHash = await getInputsHash();

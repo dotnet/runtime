@@ -298,7 +298,6 @@ export function abort_startup(reason: any, should_exit: boolean): void {
     }
 }
 
-// runs in both blazor and non-blazor
 function mono_wasm_pre_init_essential(isWorker: boolean): void {
     if (!isWorker)
         Module.addRunDependency("mono_wasm_pre_init_essential");
@@ -321,7 +320,6 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
         Module.removeRunDependency("mono_wasm_pre_init_essential");
 }
 
-// runs in both blazor and non-blazor
 async function mono_wasm_pre_init_essential_async(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential_async");
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
@@ -329,14 +327,9 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     await init_polyfills_async();
     await mono_wasm_load_config(Module.configSrc);
 
-    if (MonoWasmThreads) {
-        preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);
-    }
-
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }
 
-// runs just in non-blazor
 async function mono_wasm_pre_init_full(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_full");
     Module.addRunDependency("mono_wasm_pre_init_full");
@@ -347,7 +340,6 @@ async function mono_wasm_pre_init_full(): Promise<void> {
     Module.removeRunDependency("mono_wasm_pre_init_full");
 }
 
-// runs just in non-blazor
 async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_before_user_runtime_initialized");
 
@@ -358,6 +350,10 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
         if (config.cacheMemory && !runtimeHelpers.memoryIsLoaded) {
             await storeMemory(Module.HEAP8.buffer);
+        }
+        if (MonoWasmThreads) {
+            preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);
+            await mono_wasm_init_diagnostics();
         }
         bindings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
@@ -373,7 +369,6 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
     }
 }
 
-// runs in both blazor and non-blazor
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized");
     try {
@@ -393,10 +388,6 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
                     console.warn(`MONO_WASM: The exported symbol ${exportName} could not be found in the emscripten module`);
                 }
             }
-        }
-        // for Blazor, init diagnostics after their "onRuntimeInitalized" sets env variables, but before their postRun callback (which calls mono_wasm_load_runtime)
-        if (MonoWasmThreads) {
-            await mono_wasm_init_diagnostics();
         }
 
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Initializing mono runtime");
@@ -509,7 +500,6 @@ async function instantiate_wasm_module(
     Module.removeRunDependency("instantiate_wasm_module");
 }
 
-// runs just in non-blazor
 async function _apply_configuration_from_args() {
     // create /usr/share folder which is SpecialFolder.CommonApplicationData
     Module["FS_createPath"]("/", "usr", true, true);
@@ -531,11 +521,6 @@ async function _apply_configuration_from_args() {
 
     if (config.browserProfilerOptions)
         mono_wasm_init_browser_profiler(config.browserProfilerOptions);
-
-    // for non-Blazor, init diagnostics after environment variables are set
-    if (MonoWasmThreads) {
-        await mono_wasm_init_diagnostics();
-    }
 }
 
 export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
