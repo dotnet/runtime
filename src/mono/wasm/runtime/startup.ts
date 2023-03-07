@@ -4,8 +4,8 @@
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal } from "./types";
-import { anyModule, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal, DotnetModuleInternal } from "./types";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { get_preferred_icu_asset, mono_wasm_globalization_init } from "./icu";
@@ -50,7 +50,7 @@ const MONO_PTHREAD_POOL_SIZE = 4;
 
 // we are making emscripten startup async friendly
 // emscripten is executing the events without awaiting it and so we need to block progress via PromiseControllers above
-export function configure_emscripten_startup(module: DotnetModule, exportedAPI: RuntimeAPI): void {
+export function configure_emscripten_startup(module: DotnetModuleInternal, exportedAPI: RuntimeAPI): void {
     const mark = startMeasure();
     // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten
     // when user set configSrc or config, we are running our default startup sequence.
@@ -130,9 +130,9 @@ async function instantiateWasmWorker(
 
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
-    const instance = new WebAssembly.Instance(anyModule.wasmModule, imports);
+    const instance = new WebAssembly.Instance(Module.wasmModule!, imports);
     successCallback(instance, undefined);
-    anyModule.wasmModule = null;
+    Module.wasmModule = null;
 }
 
 function preInit(userPreInit: (() => void)[]) {
