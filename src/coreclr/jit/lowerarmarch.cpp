@@ -2311,6 +2311,7 @@ GenTree* Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree)
     if (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1()) && IsInvariantInRange(op2, tree) &&
         TryLowerConditionToFlagsNode(tree, op1, &cond1))
     {
+        // Fall through, converting op2 to the CCMP
     }
     else if (op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1()) && IsInvariantInRange(op1, tree) &&
              TryLowerConditionToFlagsNode(tree, op2, &cond1))
