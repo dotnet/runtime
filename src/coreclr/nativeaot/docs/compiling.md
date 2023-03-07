@@ -156,4 +156,4 @@ apk add numactl-dev
 
 ## NativeAOT on NixOS
 
-NativeAOT relies on hard-coded paths, such as `/lib64/ld-linux-x86-64.so.2`, which do not exist on NixOS. [Here](https://nixos.wiki/wiki/DotNET#NativeAOT) is an instruction for NixOS.
+NativeAOT uses native executable `ilc` pulled from nuget, which won't run on NixOS on its own (as it depends on the linker `/lib64/ld-linux-x86-64.so.2`, which does not exist on NixOS). [**Here**](https://nixos.wiki/wiki/DotNET#NativeAOT) is an instruction for NixOS.
