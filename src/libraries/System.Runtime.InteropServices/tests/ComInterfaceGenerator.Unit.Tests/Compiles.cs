@@ -337,8 +337,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 // Duplicate 'using'
                 "CS0105",
-                // ComWrappersUnwrapper is inaccessible due to its protection level
-                "CS0122",
                 // Variable assigned to but never read
                 "CS0219"
             };
