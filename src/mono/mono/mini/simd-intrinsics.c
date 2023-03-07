@@ -4710,7 +4710,7 @@ emit_wasm_supported_intrinsics (
 				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_EQ, arg0_type, fsig, args);
 			case SN_CompareNotEqual:
 				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
-			case SN_ConvertNarrowingSignedSaturate:
+			case SN_ConvertNarrowingSignedSaturate: {
 				int intrins = -1;
 				switch (arg0_type) {
 				case MONO_TYPE_I2:
@@ -4724,8 +4724,9 @@ emit_wasm_supported_intrinsics (
 						return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
 
 				return NULL;
-			case SN_ConvertNarrowingUnsignedSaturate:
-				intrins = -1;
+			}
+			case SN_ConvertNarrowingUnsignedSaturate: {
+				int intrins = -1;
 				switch (arg0_type) {
 				case MONO_TYPE_I2:
 						intrins = INTRINS_WASM_NARROW_UNSIGNED_V16;
@@ -4738,6 +4739,7 @@ emit_wasm_supported_intrinsics (
 						return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
 
 				return NULL;
+			}
 			case SN_ExtractLane: {
 				int extract_op = type_to_xextract_op (arg0_type);
 				return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
