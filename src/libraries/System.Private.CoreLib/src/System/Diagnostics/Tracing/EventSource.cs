@@ -4222,18 +4222,33 @@ namespace System.Diagnostics.Tracing
         // If an EventListener calls Dispose without calling DisableEvents first we want to issue the Disable command now
         private static void CallDisableEventsIfNecessary(EventDispatcher eventDispatcher, EventSource eventSource)
         {
-            if (eventDispatcher.m_EventEnabled == null)
+#if DEBUG
+            // Disable validation of EventSource/EventListener connections in case a call to EventSource.AddListener
+            // causes a recursive call into this method.
+            bool previousValue = s_ConnectingEventSourcesAndListener;
+            s_ConnectingEventSourcesAndListener = true;
+            try
             {
-                return;
-            }
-
-            for (int i = 0; i < eventDispatcher.m_EventEnabled.Length; ++i)
-            {
-                if (eventDispatcher.m_EventEnabled[i])
+#endif
+                if (eventDispatcher.m_EventEnabled == null)
                 {
-                    eventDispatcher.m_Listener.DisableEvents(eventSource);
+                    return;
                 }
+
+                for (int i = 0; i < eventDispatcher.m_EventEnabled.Length; ++i)
+                {
+                    if (eventDispatcher.m_EventEnabled[i])
+                    {
+                        eventDispatcher.m_Listener.DisableEvents(eventSource);
+                    }
+                }
+#if DEBUG
             }
+            finally
+            {
+                s_ConnectingEventSourcesAndListener = previousValue;
+            }
+#endif
         }
 
         /// <summary>
@@ -4247,6 +4262,27 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
             // Foreach existing EventSource in the appdomain
             Debug.Assert(s_EventSources != null);
+
+            // First pass to call DisableEvents
+            foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
+            {
+                if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
+                {
+                    EventDispatcher? cur = eventSource.m_Dispatchers;
+                    while (cur != null)
+                    {
+                        if (cur.m_Listener == listenerToRemove)
+                        {
+                            CallDisableEventsIfNecessary(cur!, eventSource);
+                        }
+
+                        cur = cur.m_Next;
+                    }
+                }
+            }
+
+            // DisableEvents can call back to user code and we have to start over since s_EventSources and
+            // eventSource.m_Dispatchers could have mutated
             foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
             {
                 if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
@@ -4255,7 +4291,6 @@ namespace System.Diagnostics.Tracing
                     // Is the first output dispatcher the dispatcher we are removing?
                     if (eventSource.m_Dispatchers.m_Listener == listenerToRemove)
                     {
-                        CallDisableEventsIfNecessary(eventSource.m_Dispatchers!, eventSource);
                         eventSource.m_Dispatchers = eventSource.m_Dispatchers.m_Next;
                     }
                     else
@@ -4272,7 +4307,6 @@ namespace System.Diagnostics.Tracing
                             }
                             if (cur.m_Listener == listenerToRemove)
                             {
-                                CallDisableEventsIfNecessary(cur!, eventSource);
                                 prev.m_Next = cur.m_Next;       // Remove entry.
                                 break;
                             }
@@ -4287,6 +4321,7 @@ namespace System.Diagnostics.Tracing
             EventPipeEventDispatcher.Instance.RemoveEventListener(listenerToRemove);
 #endif // FEATURE_PERFTRACING
         }
+
 
         /// <summary>
         /// Checks internal consistency of EventSources/Listeners.
