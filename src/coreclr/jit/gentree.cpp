@@ -24833,9 +24833,12 @@ bool GenTree::CanDivisionPossiblyOverflow(Compiler* comp) const
     GenTree* op1 = this->gtGetOp1();
     GenTree* op2 = this->gtGetOp2();
 
+    // If the divisor is known to never be '-1', we cannot overflow.
     if (op2->IsNeverNegativeOne(comp))
         return false;
 
+    // If the dividend is a constant with a minimum value with respect to the division's type, then we might overflow
+    // as we do not know if the divisor will be '-1' or not at this point.
     if (op1->IsIntegralConst())
     {
         if (this->TypeIs(TYP_INT) && op1->IsIntegralConst(INT32_MIN))
@@ -24854,8 +24857,10 @@ bool GenTree::CanDivisionPossiblyOverflow(Compiler* comp) const
         }
 #endif // TARGET_64BIT
 
+        // Dividend is not a minimum value; therefore we cannot overflow.
         return false;
     }
 
+    // Not enough known information; therefore we might overflow.
     return true;
 }
