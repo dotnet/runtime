@@ -3493,12 +3493,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
                 genDefineTempLabel(sdivLabel);
             }
-            genCodeForBinary(tree); // Generate the sdiv instruction
         }
-        else
-        {
-            genCodeForBinary(tree);
-        }
+
+        genCodeForBinary(tree); // Generate the sdiv instruction
     }
 }
 
