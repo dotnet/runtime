@@ -487,7 +487,7 @@ public:
         {
             registerType = FloatRegisterType;
         }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH)
         else if (emitter::isMaskReg(reg))
         {
             registerType = MaskRegisterType;
@@ -1608,7 +1608,9 @@ private:
     PhasedVar<regMaskTP>  availableIntRegs;
     PhasedVar<regMaskTP>  availableFloatRegs;
     PhasedVar<regMaskTP>  availableDoubleRegs;
+#if defined(TARGET_XARCH) 
     PhasedVar<regMaskTP>  availableMaskRegs;
+#endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
     // Register mask of argument registers currently occupied because we saw a

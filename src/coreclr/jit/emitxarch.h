@@ -676,7 +676,6 @@ void emitDispShift(instruction ins, int cnt = 0);
 const char* emitXMMregName(unsigned reg);
 const char* emitYMMregName(unsigned reg);
 const char* emitZMMregName(unsigned reg);
-const char* emitKregName(unsigned reg);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */

@@ -1707,6 +1707,8 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
 
+            // TODO-XARCH-AVX512 remove REG_K1 check when all K registers possible for
+            // allocation.
             assert(emitter::isMaskReg(maskReg) && maskReg == REG_K1);
 
             emit->emitIns_R_R(maskIns, attr, maskReg, op1Reg);

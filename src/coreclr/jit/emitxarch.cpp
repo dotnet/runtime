@@ -9622,7 +9622,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
 
     if (isMaskReg(reg))
     {
-        return emitKregName(reg);
+        return rn;
     }
 
     switch (EA_SIZE(attr))
@@ -9836,24 +9836,6 @@ const char* emitter::emitZMMregName(unsigned reg)
 {
     static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, sname) "z" sname,
-#include "register.h"
-    };
-
-    assert(reg < REG_COUNT);
-    assert(reg < ArrLen(regNames));
-
-    return regNames[reg];
-}
-
-/*****************************************************************************
- *
- *  Return a string that represents the given K register.
- */
-
-const char* emitter::emitKregName(unsigned reg)
-{
-    static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname) sname,
 #include "register.h"
     };
 
