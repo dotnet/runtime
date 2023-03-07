@@ -56,6 +56,7 @@ private:
 #ifdef __APPLE__
     vm_map_t m_task;                                // the mach task for the process
 #else
+    siginfo_t m_siginfo;                            // signal info (if any)
     bool m_canUseProcVmReadSyscall;
     int m_fd;                                       // /proc/<pid>/mem handle
 #endif
@@ -79,7 +80,7 @@ private:
     void operator=(const CrashInfo&) = delete;
 
 public:
-    CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal);
+    CrashInfo(const CreateDumpOptions& options);
     virtual ~CrashInfo();
 
     bool Initialize();
@@ -116,6 +117,7 @@ public:
 #ifndef __APPLE__
     inline const std::vector<elf_aux_entry>& AuxvEntries() const { return m_auxvEntries; }
     inline size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
+    inline const siginfo_t* SigInfo() const { return &m_siginfo; }
 #endif
 
     // IUnknown
