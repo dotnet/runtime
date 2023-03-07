@@ -1779,6 +1779,7 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
 {
     FCALL_CONTRACT;
 
+    //printf("Inside JIT_GetSharedNonGCThreadStaticBase: %u\n", staticBlockIndex);
     // Get the ModuleIndex
     ModuleIndex index = pDomainLocalModule->GetModuleIndex();
 
@@ -1805,11 +1806,11 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
     if (t_threadStaticBlocks == nullptr)
     {
         t_threadStaticBlocks = (void **) new (nothrow) PTR_BYTE[100 * sizeof(PTR_BYTE)];
-        printf("*** [Thread# %d] Initializing t_threadStaticBlocks: 0x%zx @ 0x%zx\n", threadID, (size_t)(t_threadStaticBlocks), (size_t)(&t_threadStaticBlocks));
+        //printf("*** [Thread# %d] Initializing t_threadStaticBlocks: 0x%zx @ 0x%zx\n", threadID, (size_t)(t_threadStaticBlocks), (size_t)(&t_threadStaticBlocks));
         memset(t_threadStaticBlocks, 0, 100 * sizeof(PTR_BYTE));
         t_maxThreadStaticBlocks = 0;
     }
-    else if (staticBlockIndex < 100)
+    if (staticBlockIndex < 100)
     {        
         //_ASSERTE(staticBlockIndex != 0);
         void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
@@ -1817,15 +1818,18 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
         // In such case, just avoid adding the same entry.
         if (currentEntry != staticBlock)
         {
-            printf("*** [Thread# %d] Saving t_threadStaticBlocks[%u] @ 0x%zx = 0x%zx\n", threadID, staticBlockIndex, (size_t)(&(t_threadStaticBlocks[staticBlockIndex])), (size_t)(staticBlock));
+            //printf("*** [Thread# %d] Saving t_threadStaticBlocks[%u] @ 0x%zx = 0x%zx, ", threadID, staticBlockIndex, (size_t)(&(t_threadStaticBlocks[staticBlockIndex])), (size_t)(staticBlock));
             _ASSERTE(currentEntry == nullptr);
             t_threadStaticBlocks[staticBlockIndex] = staticBlock;
+            //printf("OLD_t_maxThreadStaticBlocks: %u, ", t_maxThreadStaticBlocks);
             t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+            //printf("NEW_t_maxThreadStaticBlocks: %u, ", t_maxThreadStaticBlocks);
+            //printf("ADDR(t_maxThreadStaticBlocks): 0x%zx\n", (size_t)(&t_maxThreadStaticBlocks));
         }        
     }
     else
     {
-        printf("*** [Thread# %d] Skipped t_threadStaticBlocks[%u] = 0x%zx\n", threadID, staticBlockIndex, (size_t)(staticBlock));
+        //printf("*** [Thread# %d] Skipped t_threadStaticBlocks[%u] = 0x%zx\n", threadID, staticBlockIndex, (size_t)(staticBlock));
     }
 
     return staticBlock;
