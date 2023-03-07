@@ -28,11 +28,11 @@ SIMD_OP_EX  (64,  OP_XCOMPARE_FP, CMP_GE,               WTDSS,               _UN
 SIMD_OP_EX  (64,  OP_XCOMPARE_FP, CMP_LT,               WTDSS_REV,           _UNDEF,          _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fcmgt,   _UNDEF)
 SIMD_OP_EX  (64,  OP_XCOMPARE_FP, CMP_LE,               WTDSS_REV,           _UNDEF,          _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fcmge,   _UNDEF)
 
-SIMD_OP_EX  (64,  OP_XOP_X_X,     OP_ONES_COMPLEMENT,   WDS,                arm_neon_not,     arm_neon_not,     arm_neon_not,     arm_neon_not,     arm_neon_not,     arm_neon_not)
-SIMD_OP_EX  (64,  OP_XOP_X_X,     OP_NEGATION,          WTDS,               arm_neon_neg,     arm_neon_neg,     arm_neon_neg,     _UNDEF,           arm_neon_fneg,    _UNDEF)
-
 SIMD_OP_EX  (64,  OP_XBINOP,      OP_IADD,              WTDSS,              arm_neon_add,     arm_neon_add,     arm_neon_add,     _UNDEF,           _UNDEF,           _UNDEF)  
 SIMD_OP_EX  (64,  OP_XBINOP,      OP_FADD,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fadd,    _UNDEF)
+
+SIMD_OP     (64,  OP_ONES_COMPLEMENT,                   WDS,                arm_neon_not,     arm_neon_not,     arm_neon_not,     arm_neon_not,     arm_neon_not,     arm_neon_not)
+SIMD_OP     (64,  OP_NEGATION,                          WTDS,               arm_neon_neg,     arm_neon_neg,     arm_neon_neg,     _UNDEF,           arm_neon_fneg,    _UNDEF)
 
 SIMD_OP     (64,  OP_XONES,                             WTDI(ARM_IMM_FONE), _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fmov_imm,_UNDEF)
 SIMD_OP     (64,  OP_XZERO,                             WDDD,               arm_neon_eor,     arm_neon_eor,     arm_neon_eor,     _UNDEF,           arm_neon_eor,     _UNDEF)
@@ -56,11 +56,11 @@ SIMD_OP_EX  (128, OP_XCOMPARE_FP, CMP_GE,               WTDSS,              _UND
 SIMD_OP_EX  (128, OP_XCOMPARE_FP, CMP_LT,               WTDSS_REV,          _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fcmgt,   arm_neon_fcmgt)
 SIMD_OP_EX  (128, OP_XCOMPARE_FP, CMP_LE,               WTDSS_REV,          _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fcmge,   arm_neon_fcmge)
 
-SIMD_OP_EX  (128, OP_XOP_X_X,     OP_ONES_COMPLEMENT,   WDS,                arm_neon_not,     arm_neon_not,     arm_neon_not,    arm_neon_not,      arm_neon_not,     arm_neon_not)
-SIMD_OP_EX  (128, OP_XOP_X_X,     OP_NEGATION,          WTDS,               arm_neon_neg,     arm_neon_neg,     arm_neon_neg,    arm_neon_neg,      arm_neon_fneg,    arm_neon_fneg)
-
 SIMD_OP_EX  (128, OP_XBINOP,      OP_IADD,              WTDSS,              arm_neon_add,     arm_neon_add,     arm_neon_add,    arm_neon_add,      _UNDEF,           _UNDEF)  
 SIMD_OP_EX  (128, OP_XBINOP,      OP_FADD,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fadd,    arm_neon_fadd)
+
+SIMD_OP     (128, OP_ONES_COMPLEMENT,                   WDS,                arm_neon_not,     arm_neon_not,     arm_neon_not,     arm_neon_not,     arm_neon_not,     arm_neon_not)
+SIMD_OP     (128, OP_NEGATION,                          WTDS,               arm_neon_neg,     arm_neon_neg,     arm_neon_neg,     arm_neon_neg,     arm_neon_fneg,    arm_neon_fneg)
 
 SIMD_OP     (128, OP_XONES,                             WTDI(ARM_IMM_FONE), _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fmov_imm,arm_neon_fmov_imm)
 SIMD_OP     (128, OP_XZERO,                             WDDD,               arm_neon_eor,     arm_neon_eor,     arm_neon_eor,    arm_neon_eor,      arm_neon_eor,     arm_neon_eor)

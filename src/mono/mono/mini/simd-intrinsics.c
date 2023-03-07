@@ -1190,10 +1190,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
-#ifdef TARGET_ARM64
-	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
-		return NULL;
-#endif
+//#ifdef TARGET_ARM64
+//	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
+//		return NULL;
+//#endif
 
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
 	if (id == -1) {
@@ -1207,7 +1207,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		if (id != SN_Add)
+		if (id != SN_Add && id != SN_Equals && id != SN_GreaterThan && id != SN_GreaterThanOrEqual &&
+			id != SN_LessThan && id != SN_LessThanOrEqual && id != SN_Negate && id != SN_OnesComplement) 
 			return NULL;
 		MonoClass *arg0_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int class_size = mono_class_value_size (arg0_class, NULL);
