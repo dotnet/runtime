@@ -4,6 +4,10 @@
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*_ro.??proj" />
+    <MergedWrapperProjectReference Include="*/**/*_large.??proj" />
+    <MergedWrapperProjectReference Include="ebvts/**/*.??proj" />
+    <MergedWrapperProjectReference Include="eh/**/*.??proj" />
+    <MergedWrapperProjectReference Include="mcc/**/*.??proj" />
     <MergedWrapperProjectReference Update="**" Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;))))" />
     <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>

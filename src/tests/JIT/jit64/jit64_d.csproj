@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*_d.??proj" />
+    <MergedWrapperProjectReference Include="*/**/*_dynamic.??proj" />
+    <MergedWrapperProjectReference Include="localloc/**/*.??proj" />
     <MergedWrapperProjectReference Update="**" Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;))))" />
     <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>

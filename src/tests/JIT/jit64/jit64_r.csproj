@@ -4,6 +4,9 @@
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*_r.??proj" />
+    <MergedWrapperProjectReference Include="*/**/*_small.??proj" />
+    <MergedWrapperProjectReference Include="valuetypes/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="valuetypes/nullable/castclass/**/*.??proj" />
     <MergedWrapperProjectReference Update="**" Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;))))" />
     <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>
