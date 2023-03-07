@@ -151,5 +151,11 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> CompareNotEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nint>   CompareNotEqual(Vector128<nint>   left, Vector128<nint>   right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  CompareNotEqual(Vector128<nuint>  left, Vector128<nuint>  right) { throw new PlatformNotSupportedException(); }
+
+        internal static Vector128<sbyte>  ConvertNarrowingSignedSaturate(Vector128<short>   lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<short>  ConvertNarrowingSignedSaturate(Vector128<int>     lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
+
+        internal static Vector128<byte>   ConvertNarrowingUnsignedSaturate(Vector128<short> lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>   lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
     }
 }
