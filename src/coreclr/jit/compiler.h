@@ -9151,6 +9151,11 @@ private:
         {
             return true;
         }
+
+        if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        {
+            return true;
+        }
 #endif // DEBUG
 
         return false;
