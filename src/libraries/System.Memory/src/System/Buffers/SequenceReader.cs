@@ -337,7 +337,6 @@ namespace System.Buffers
             {
                 while (!ReferenceEquals(segment, endObject) && (@object = segment = segment!.Next) is not null)
                 {
-                    result = TryGetNextBufferResult.FailureAllRemainingSegmentsEmpty; // until we know otherwise
                     buffer = segment!.Memory.Span;
 
                     if (ReferenceEquals(segment, endObject))
@@ -351,6 +350,9 @@ namespace System.Buffers
                         result = TryGetNextBufferResult.SuccessHaveData;
                         break;
                     }
+
+                    // tell the caller that we *had* more segments (and have advanced), even if not useful
+                    result = TryGetNextBufferResult.FailureAllRemainingSegmentsEmpty;
                 }
             }
             return result;
@@ -394,7 +396,7 @@ namespace System.Buffers
             AssertValidPosition();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // avoid what looks like a JIT regression with it inlining this too much from Advance
+        [MethodImpl(MethodImplOptions.NoInlining)] // avoid inlining this too much from Advance
         private void AdvanceToNextSpan(long count)
         {
             AssertValidPosition();
