@@ -14385,7 +14385,7 @@ GenTree* Compiler::impThreadLocalFieldRead(CORINFO_RESOLVED_TOKEN& token,
     GenTree* maxThreadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsForMaxThreadStaticBlockAccess, offsetOfMaxThreadStaticBlocks);
     GenTree* maxThreadStaticBlocksValue =
-        gtNewIndir(TYP_I_IMPL, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Value of threadStaticBlocks
     GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(threadLocalInfo.offsetOfThreadStaticBlocks, TYP_I_IMPL);
@@ -14411,8 +14411,9 @@ GenTree* Compiler::impThreadLocalFieldRead(CORINFO_RESOLVED_TOKEN& token,
     GenTree* fastPath =
         gtNewIndir(fieldType, gtNewOperNode(GT_ADD, TYP_I_IMPL, typeThreadStaticBlockValueForFastPath, offsetNode));
 
+    GenTree* typeThreadStaticBlockIndexValueForMaxCompare = gtNewIconNode(threadLocalInfo.threadStaticBlockIndex);
     GenTree* maxThreadStaticBlocksCond =
-        gtNewOperNode(GT_GT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
+        gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, typeThreadStaticBlockIndexValueForMaxCompare);
     GenTree* threadStaticBlockNullCond =
         gtNewOperNode(GT_EQ, TYP_INT, typeThreadStaticBlockValueForCond,
                       gtNewIconNode(0, TYP_I_IMPL)); // TODO: should this be gtNewNull()?
@@ -14562,7 +14563,7 @@ GenTree* Compiler::impThreadLocalFieldWrite(CORINFO_RESOLVED_TOKEN& token,
     GenTree* maxThreadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsForMaxThreadStaticBlockAccess, offsetOfMaxThreadStaticBlocks);
     GenTree* maxThreadStaticBlocksValue =
-        gtNewIndir(TYP_I_IMPL, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Value of threadStaticBlocks
     GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(threadLocalInfo.offsetOfThreadStaticBlocks, TYP_I_IMPL);
@@ -14581,8 +14582,9 @@ GenTree* Compiler::impThreadLocalFieldWrite(CORINFO_RESOLVED_TOKEN& token,
         gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     GenTree* threadStaticBlockValueFastCond = gtCloneExpr(threadStaticBlockValueFast);
 
+    GenTree* typeThreadStaticBlockIndexValueForMaxCompare = gtNewIconNode(threadLocalInfo.threadStaticBlockIndex);
     GenTree* maxThreadStaticBlocksCond =
-        gtNewOperNode(GT_GT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
+        gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, typeThreadStaticBlockIndexValueForMaxCompare);
     GenTree* threadStaticBlockNullCond =
         gtNewOperNode(GT_EQ, TYP_INT, threadStaticBlockValueFastCond,
                       gtNewIconNode(0, TYP_I_IMPL)); // TODO: should this be gtNewNull()?
