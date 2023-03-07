@@ -3462,14 +3462,22 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 //     (AnyVal /  0) => DivideByZeroException
                 //     (MinInt / -1) => ArithmeticException
 
-                if (!divisorOp->IsNeverZero())
+                bool emitDivideByZeroCheck =
+                    compiler->fgFindExcptnTarget(SCK_DIV_BY_ZERO, compiler->bbThrowIndex(compiler->compCurBB)) !=
+                    nullptr;
+
+                bool emitOverflowCheck =
+                    compiler->fgFindExcptnTarget(SCK_ARITH_EXCPN, compiler->bbThrowIndex(compiler->compCurBB)) !=
+                    nullptr;
+
+                if (emitDivideByZeroCheck && !divisorOp->IsNeverZero())
                 {
                     // Check if the divisor is zero throw a DivideByZeroException
                     emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
                     genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
                 }
 
-                if (tree->CanDivisionPossiblyOverflow(emit->emitComp))
+                if (emitOverflowCheck && tree->CanDivisionPossiblyOverflow(compiler))
                 {
                     BasicBlock* sdivLabel  = genCreateTempLabel();
                     GenTree*    dividendOp = tree->gtGetOp1();
@@ -3484,7 +3492,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     // At this point the divisor is known to be -1
                     //
                     // Issue the 'cmp dividendReg, 1' instruction.
-                    // This is an alias to 'subs zr, dividendReg, 1'.
+                    // This is an alias to 'subs zr, dividendReg, 1' on ARM64 itself.
                     // This will set the V (overflow) flags only when dividendReg is MinInt
                     //
                     emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
