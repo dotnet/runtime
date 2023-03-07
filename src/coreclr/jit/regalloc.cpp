@@ -320,13 +320,6 @@ void Compiler::raMarkStkVars()
                 needSlot |= varDsc->IsAddressExposed();
             }
 
-#if FEATURE_FIXED_OUT_ARGS
-
-            /* Is this the dummy variable representing GT_LCLBLK ? */
-            needSlot |= (lclNum == lvaOutgoingArgSpaceVar);
-
-#endif // FEATURE_FIXED_OUT_ARGS
-
 #ifdef DEBUG
             /* For debugging, note that we have to reserve space even for
                unused variables if they are ever in scope. However, this is not
