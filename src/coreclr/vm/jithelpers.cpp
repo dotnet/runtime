@@ -1801,8 +1801,10 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
     ENDFORBIDGC();
     void* staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
 
-    HANDLE currentThread = GetCurrentThread();
-    DWORD threadID = GetThreadId(currentThread);        
+
+    //HANDLE currentThread = GetCurrentThread();
+    //DWORD threadID = GetThreadId(currentThread);
+#ifdef TARGET_WINDOWS
     if (t_threadStaticBlocks == nullptr)
     {
         t_threadStaticBlocks = (void **) new (nothrow) PTR_BYTE[100 * sizeof(PTR_BYTE)];
@@ -1831,7 +1833,7 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
     {
         //printf("*** [Thread# %d] Skipped t_threadStaticBlocks[%u] = 0x%zx\n", threadID, staticBlockIndex, (size_t)(staticBlock));
     }
-
+#endif
     return staticBlock;
 }
 HCIMPLEND

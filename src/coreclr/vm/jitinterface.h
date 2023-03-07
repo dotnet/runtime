@@ -437,6 +437,8 @@ public:
 
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             _Out_writes_ (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
+
+#ifdef HOST_WINDOWS
     static uint32_t ThreadLocalOffset(void* p);
 
     // MethodTable to `typeIndex` map. `typeIndex` is embedded in the code during codegen. During execution
@@ -451,7 +453,7 @@ public:
     {
         return g_threadStaticBlockTypeIDMap.GetTypeID(pMT);
     }
-
+#endif // HOST_WINDOWS
 
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);
 

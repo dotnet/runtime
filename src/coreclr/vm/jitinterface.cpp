@@ -848,6 +848,7 @@ size_t CEEInfo::findNameOfToken (Module* module,
     return strlen (szFQName);
 }
 
+#ifdef HOST_WINDOWS
 /* static */
 uint32_t CEEInfo::ThreadLocalOffset(void* p)
 {
@@ -856,6 +857,7 @@ uint32_t CEEInfo::ThreadLocalOffset(void* p)
     uint8_t* pOurTls = pTls[_tls_index];
     return (uint32_t)((uint8_t*)p - pOurTls);
 }
+#endif // HOST_WINDOWS
 
 CorInfoHelpFunc CEEInfo::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
 {
@@ -1542,17 +1544,19 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             else
             if (// Static fields are not pinned in collectible types. We will always access
                 // them using a helper since the address cannot be embedded into the code.
-                pFieldMT->Collectible()
+                pFieldMT->Collectible() ||
                 // We always treat accessing thread statics as if we are in domain neutral code.
-                || pField->IsThreadStatic()
+                pField->IsThreadStatic()
                 )
             {
+#ifdef TARGET_WINDOWS
                 if (pField->IsThreadStatic() && ((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() <= ELEMENT_TYPE_STRING)))
                 {
                     // If the field is thread static
                     fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
                 }
                 else
+#endif // TARGET_WINDOWS
                 {
                     fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
@@ -1740,6 +1744,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 }
 
 /*********************************************************************/
+#ifdef HOST_WINDOWS
 TypeIDMap CEEInfo::g_threadStaticBlockTypeIDMap;
 
 void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
@@ -1778,6 +1783,7 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
     
     EE_TO_JIT_TRANSITION();
 }
+#endif // HOST_WINDOWS
 
 //---------------------------------------------------------------------------------------
 //
