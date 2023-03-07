@@ -80,7 +80,6 @@ steps:
       $internalRuntimeDownloadArgs \
       $internalRestoreArgs \
       $targetRidArgs \
-      $runtimeOsArgs \
       /p:SourceBuildNonPortable=${{ parameters.platform.nonPortable }} \
       /p:ArcadeBuildFromSource=true \
       /p:AssetManifestFileName=$assetManifestFileName
