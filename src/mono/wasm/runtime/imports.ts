@@ -10,6 +10,7 @@ import type { EmscriptenModule } from "./types/emscripten";
 
 // these are our public API (except internal)
 export let Module: EmscriptenModule & DotnetModule;
+export let anyModule: any = undefined;
 export let INTERNAL: any;
 export let IMPORTS: any;
 
@@ -29,7 +30,7 @@ export function set_imports_exports(
 ): void {
     INTERNAL = exports.internal;
     IMPORTS = exports.marshaled_imports;
-    Module = exports.module;
+    anyModule = Module = exports.module;
 
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;

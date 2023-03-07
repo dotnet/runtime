@@ -3,14 +3,13 @@
 
 import { GCHandle, MarshalerToCs, MarshalerToJs, MonoMethod, mono_assert } from "./types";
 import cwraps from "./cwraps";
-import { Module, runtimeHelpers, ENVIRONMENT_IS_PTHREAD } from "./imports";
+import { runtimeHelpers, ENVIRONMENT_IS_PTHREAD, anyModule } from "./imports";
 import { alloc_stack_frame, get_arg, get_arg_gc_handle, MarshalerType, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "./marshal-to-js";
 
 export function init_managed_exports(): void {
-    const anyModule = Module as any;
     const exports_fqn_asm = "System.Runtime.InteropServices.JavaScript";
     runtimeHelpers.runtime_interop_module = cwraps.mono_wasm_assembly_load(exports_fqn_asm);
     if (!runtimeHelpers.runtime_interop_module)

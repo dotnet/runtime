@@ -229,6 +229,9 @@ export type RuntimeHelpers = {
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
     loadedFiles: string[],
+    preferredIcuAsset: string | null,
+    timezone: string | null,
+    updateGlobalBufferAndViews: (buffer: ArrayBufferLike) => void
 }
 
 export type GlobalizationMode =
