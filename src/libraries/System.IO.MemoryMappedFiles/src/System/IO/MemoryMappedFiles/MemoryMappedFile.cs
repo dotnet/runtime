@@ -186,6 +186,56 @@ namespace System.IO.MemoryMappedFiles
             return new MemoryMappedFile(handle, fileHandle, false);
         }
 
+        public static MemoryMappedFile CreateFromFile(SafeFileHandle fileHandle, string? mapName, long capacity,
+                                                        MemoryMappedFileAccess access,
+                                                        HandleInheritability inheritability, bool leaveOpen)
+        {
+            ArgumentNullException.ThrowIfNull(fileHandle);
+
+            if (mapName != null && mapName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_MapNameEmptyString);
+            }
+
+            if (capacity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_PositiveOrDefaultCapacityRequired);
+            }
+
+            long fileSize = RandomAccess.GetLength(fileHandle);
+
+            if (capacity == 0 && fileSize == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyFile);
+            }
+
+            if (access < MemoryMappedFileAccess.ReadWrite ||
+                access > MemoryMappedFileAccess.ReadWriteExecute)
+            {
+                throw new ArgumentOutOfRangeException(nameof(access));
+            }
+
+            if (access == MemoryMappedFileAccess.Write)
+            {
+                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
+            }
+
+            if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inheritability));
+            }
+
+            if (capacity == DefaultSize)
+            {
+                capacity = fileSize;
+            }
+
+            SafeMemoryMappedFileHandle handle = CreateCore(fileHandle, mapName, inheritability,
+                access, MemoryMappedFileOptions.None, capacity, fileSize);
+
+            return new MemoryMappedFile(handle, fileHandle, leaveOpen);
+        }
+
         public static MemoryMappedFile CreateFromFile(FileStream fileStream, string? mapName, long capacity,
                                                         MemoryMappedFileAccess access,
                                                         HandleInheritability inheritability, bool leaveOpen)

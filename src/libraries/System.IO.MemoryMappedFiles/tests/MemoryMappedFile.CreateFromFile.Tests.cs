@@ -36,7 +36,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void InvalidArguments_FileStream()
         {
             // null is an invalid stream
-            AssertExtensions.Throws<ArgumentNullException>("fileStream", () => MemoryMappedFile.CreateFromFile(null, CreateUniqueMapName(), 4096, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+            AssertExtensions.Throws<ArgumentNullException>("fileStream", () => MemoryMappedFile.CreateFromFile((FileStream)null, CreateUniqueMapName(), 4096, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
         }
 
         /// <summary>
@@ -449,10 +449,43 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         /// <summary>
+        /// Test various combinations of arguments to CreateFromFile that accepts a SafeFileHandle.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(ValidArgumentCombinationsWithStreamOrHandle),
+            new string[] { null, "CreateUniqueMapName()" },
+            new long[] { 1, 256, -1 /*pagesize*/, 10000 },
+            new MemoryMappedFileAccess[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite },
+            new HandleInheritability[] { HandleInheritability.None, HandleInheritability.Inheritable },
+            new bool[] { false, true })]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public void ValidArgumentCombinationsWithHandle(
+            string mapName, long capacity, MemoryMappedFileAccess access, HandleInheritability inheritability, bool leaveOpen)
+        {
+            // Create a file of the right size, then create the map for it.
+            using (TempFile file = new TempFile(GetTestFilePath(), capacity))
+            using (FileStream fs = File.Open(file.Path, FileMode.Open))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, mapName, capacity, access, inheritability, leaveOpen))
+            {
+                ValidateMemoryMappedFile(mmf, capacity, access, inheritability);
+            }
+
+            // Start with an empty file and let the map grow it to the right size.  This requires write access.
+            if (IsWritable(access))
+            {
+                using (FileStream fs = File.Create(GetTestFilePath()))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, mapName, capacity, access, inheritability, leaveOpen))
+                {
+                    ValidateMemoryMappedFile(mmf, capacity, access, inheritability);
+                }
+            }
+        }
+
+        /// <summary>
         /// Test various combinations of arguments to CreateFromFile that accepts a FileStream.
         /// </summary>
         [Theory]
-        [MemberData(nameof(MemberData_ValidArgumentCombinationsWithStream),
+        [MemberData(nameof(ValidArgumentCombinationsWithStreamOrHandle),
             new string[] { null, "CreateUniqueMapName()" },
             new long[] { 1, 256, -1 /*pagesize*/, 10000 },
             new MemoryMappedFileAccess[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite },
@@ -482,10 +515,10 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         /// <summary>
-        /// Provides input data to the ValidArgumentCombinationsWithStream tests, yielding the full matrix
-        /// of combinations of input values provided, except for those that are known to be unsupported
-        /// (e.g. non-null map names on Unix), and with appropriate values substituted in for placeholders
-        /// listed in the MemberData attribute (e.g. actual system page size instead of -1).
+        /// Provides input data to the ValidArgumentCombinationsWithStream or ValidArgumentCombinationsWithHandle
+        /// tests, yielding the full matrix of combinations of input values provided, except for those that are
+        /// known to be unsupported (e.g. non-null map names on Unix), and with appropriate values substituted
+        /// in for placeholders listed in the MemberData attribute (e.g. actual system page size instead of -1).
         /// </summary>
         /// <param name="mapNames">
         /// The names to yield.
@@ -498,7 +531,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// </param>
         /// <param name="inheritabilities">The inheritabilities to yield.</param>
         /// <param name="inheritabilities">The leaveOpen values to yield.</param>
-        public static IEnumerable<object[]> MemberData_ValidArgumentCombinationsWithStream(
+        public static IEnumerable<object[]> ValidArgumentCombinationsWithStreamOrHandle(
             string[] mapNames, long[] capacities, MemoryMappedFileAccess[] accesses, HandleInheritability[] inheritabilities, bool[] leaveOpens)
         {
             foreach (string tmpMapName in mapNames)
