@@ -36,9 +36,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{CC3961B0-C62
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Extensions.Configuration.Binder.SourceGeneration", "gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj", "{D4B3EEA1-7394-49EA-A088-897C0CD26D11}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests", "tests\SourceGeneration.Tests\Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests.csproj", "{56F4D38E-41A0-45E2-9F04-9E670D002E71}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests", "tests\SourceGenerationTests\Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests.csproj", "{56F4D38E-41A0-45E2-9F04-9E670D002E71}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Extensions.Configuration.Binder.Tests", "tests\Tests\Microsoft.Extensions.Configuration.Binder.Tests.csproj", "{75BA0154-A24D-421E-9046-C7949DF12A55}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Extensions.Configuration.Binder.Tests", "tests\UnitTests\Microsoft.Extensions.Configuration.Binder.Tests.csproj", "{75BA0154-A24D-421E-9046-C7949DF12A55}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
