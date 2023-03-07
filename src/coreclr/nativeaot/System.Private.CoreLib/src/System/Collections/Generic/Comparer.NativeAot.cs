@@ -29,7 +29,7 @@ namespace System.Collections.Generic
             }
             return new ObjectComparer<T>();
         }
-        
+
         public static Comparer<T> Default { [Intrinsic] get; } = Create();
     }
 
