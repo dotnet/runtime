@@ -183,15 +183,14 @@
     <_portableOS Condition="'$(_portableOS)' == 'windows'">win</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableOS)' == 'linux-musl'">linux-musl</_portableOS>
     <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableOS)' == 'linux-bionic'">linux-bionic</_portableOS>
-    <_portableOS Condition="'$(RuntimeOS)' == 'linux-bionic'">linux-bionic</_portableOS>
   </PropertyGroup>
 
   <!-- PackageRID is used for packages needed for the target. -->
   <PropertyGroup Label="CalculatePackageRID">
     <_packageOS>$(_portableOS)</_packageOS>
     <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' != 'linux-musl' and '$(_portableOS)' != 'linux-bionic'">$(_hostOS)</_packageOS>
-    <_packageOS Condition="'$(RuntimeOS)' != ''">$(RuntimeOS)</_packageOS>
 
+    <PackageRID Condition="'$(PackageOS)' != ''">$(PackageOS)-$(TargetArchitecture)</PackageRID>
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
 
@@ -204,9 +203,8 @@
     <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_portableHostOS>
     <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-bionic'">linux-bionic</_portableHostOS>
 
-    <ToolsOS>$(_portableHostOS)</ToolsOS>
-
-    <ToolsRID Condition="'$(ToolsRID)' == ''">$(ToolsOS)-$(_hostArch)</ToolsRID>
+    <ToolsRID Condition="'$(ToolsOS)' != ''">$(ToolsOS)-$(_hostArch)</ToolsRID>
+    <ToolsRID Condition="'$(ToolsRID)' == ''">$(_portableHostOS)-$(_hostArch)</ToolsRID>
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
   </PropertyGroup>
 

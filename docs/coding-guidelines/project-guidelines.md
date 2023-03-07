@@ -29,7 +29,6 @@ The following are the properties associated with each build pivot
 - `$(TargetOS) -> windows | linux | osx | freebsd | ... | [defaults to running OS when empty]`
 - `$(Configuration) -> Debug | Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
-- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/main/src/libraries/Microsoft.NETCore.Platforms) for more info.
 
 ## Aggregate build properties
 Each project will define a set of supported TargetFrameworks
@@ -62,8 +61,6 @@ A full or individual project build is centered around BuildTargetFramework, Targ
 1. `$(BuildTargetFramework), $(TargetOS), $(Configuration), $(TargetArchitecture)` can individually be passed in to change the default values.
 2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `net8.0-[TargetOS Running On]-Debug-x64`.
 3. When building an individual project (either from the CLI or an IDE), all target frameworks are built.
-
-We also have `RuntimeOS` which can be passed to customize the specific OS and version needed for native package builds as well as package restoration. If not passed it will default based on the OS you are running on.
 
 Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
 

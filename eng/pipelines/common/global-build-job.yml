@@ -73,7 +73,7 @@ jobs:
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
-          value: /p:RuntimeOS=linux-bionic
+          value: -os linux-bionic
 
       # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
       - name: _crossBuildPropertyArg
@@ -169,7 +169,6 @@ jobs:
             buildScript: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt)
             nonPortable: ${{ parameters.isNonPortableSourceBuild }}
             targetRID: ${{ parameters.targetRid }}
-            runtimeOS: linux
             name: ${{ parameters.platform }}
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
