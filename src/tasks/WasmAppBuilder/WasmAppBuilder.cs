@@ -206,7 +206,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
             else if(name == "dotnet.js.symbols")
             {
-                config.Assets.Add(new SymbolsData (name, Utils.ComputeIntegrity(item.ItemSpec)));
+                config.Assets.Add(new SymbolsData(name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
         }
 
