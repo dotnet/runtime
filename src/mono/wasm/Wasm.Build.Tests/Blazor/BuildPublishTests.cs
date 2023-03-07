@@ -24,15 +24,11 @@ public class BuildPublishTests : BuildTestBase
     }
 
     [Theory, TestCategory("no-workload")]
-    [InlineData("Debug", true)]
-    [InlineData("Release", false)]
-    [InlineData("Debug", false)]
-    [InlineData("Release", true)]
-    public void DefaultTemplate_WithoutWorkload(string config, bool testsUnicode)
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public void DefaultTemplate_WithoutWorkload(string config)
     {
-        string id = testsUnicode ?
-            $"blz_no_workload_{config}_{Path.GetRandomFileName()}{s_unicodeChar}" :
-            $"blz_no_workload_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         // Build
@@ -45,15 +41,11 @@ public class BuildPublishTests : BuildTestBase
     }
 
     [Theory]
-    [InlineData("Debug", true)]
-    [InlineData("Release", false)]
-    [InlineData("Debug", false)]
-    [InlineData("Release", true)]
-    public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testsUnicode)
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public void DefaultTemplate_NoAOT_WithWorkload(string config)
     {
-        string id = testsUnicode ?
-            $"blz_no_aot_{config}_{Path.GetRandomFileName()}{s_unicodeChar}" :
-            $"blz_no_aot_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_no_aot_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -99,7 +91,7 @@ public class BuildPublishTests : BuildTestBase
     public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
-        string id = $"blz_dllimp_{config}_";
+        string id = $"blz_dllimp_{config}_{s_unicodeChar}";
         if (build && publish)
             id += "build_then_publish";
         else if (build)
