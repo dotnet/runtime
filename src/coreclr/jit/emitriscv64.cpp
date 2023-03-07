@@ -1829,7 +1829,7 @@ AGAIN:
                 }
                 else
                 {
-                    assert(ins == INS_jal || ins == INS_jalr);
+                    assert(ins == INS_j || ins == INS_jal || ins == INS_jalr);
                     assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
                     continue;
                 }

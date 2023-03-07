@@ -2016,11 +2016,18 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     emitAttr attr = emitActualTypeSize(tree);
     if (tree->OperIs(GT_NEG))
     {
-        GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, -1);
+        if (attr == EA_4BYTE)
+        {
+            GetEmitter()->emitIns_R_R_R(INS_subw, attr, targetReg, REG_R0, operandReg);
+        }
+        else
+        {
+            GetEmitter()->emitIns_R_R_R(INS_sub, attr, targetReg, REG_R0, operandReg);
+        }
     }
     else if (tree->OperIs(GT_NOT))
     {
-        GetEmitter()->emitIns_R_R_R(INS_sub, attr, targetReg, REG_R0, operandReg); // TODO CHECK BETTER WAY
+        GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, -1);
     }
 
     genProduceReg(tree);
