@@ -308,6 +308,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and $(ExportsFile) != ''" />
       <CustomLinkerArg Condition="Exists('$(_Win32ResFile)')" Include="&quot;$(_Win32ResFile)&quot;" />
       <CustomLinkerArg Include="@(LinkerArg)" />
+      <CustomLinkerArg Include="-v" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
