@@ -291,7 +291,7 @@ while [[ $# > 0 ]]; do
           __PortableOS=linux-bionic
           ;;
         linux-musl)
-          os="linux-musl"
+          os="linux"
           __PortableOS=linux-musl
           ;;
         *)
