@@ -3737,13 +3737,11 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	}
 
 	/* Set invoke_impl field */
-	if (is_virtual) {
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), info_ins->dreg);
-	} else {
-		dreg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, invoke_impl));
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), dreg);
+	dreg = alloc_preg (cfg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, invoke_impl));
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), dreg);
 
+	if (!is_virtual) {
 		dreg = alloc_preg (cfg);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method_ptr));
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), dreg);
