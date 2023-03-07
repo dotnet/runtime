@@ -3447,52 +3447,40 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
         regNumber divisorReg = divisorOp->GetRegNum();
 
+        // (AnyVal /  0) => DivideByZeroException
         if (!divisorOp->IsNeverZero())
         {
-            bool canEmitDivideByZeroCheck =
-                // (AnyVal /  0) => DivideByZeroException
-                compiler->fgFindExcptnTarget(SCK_DIV_BY_ZERO, compiler->bbThrowIndex(compiler->compCurBB)) != nullptr;
-
-            if (canEmitDivideByZeroCheck)
-            {
-                // Check if the divisor is zero throw a DivideByZeroException
-                emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-                genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
-            }
+            // Check if the divisor is zero throw a DivideByZeroException
+            emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
+            genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
         }
 
+        // (MinInt / -1) => ArithmeticException
         if (tree->OperIs(GT_DIV) && tree->CanDivisionPossiblyOverflow(compiler))
         {
             // Signed-division might overflow.
 
-            bool canEmitOverflowCheck =
-                // (MinInt / -1) => ArithmeticException
-                compiler->fgFindExcptnTarget(SCK_ARITH_EXCPN, compiler->bbThrowIndex(compiler->compCurBB)) != nullptr;
+            BasicBlock* sdivLabel  = genCreateTempLabel();
+            GenTree*    dividendOp = tree->gtGetOp1();
 
-            if (canEmitOverflowCheck)
-            {
-                BasicBlock* sdivLabel  = genCreateTempLabel();
-                GenTree*    dividendOp = tree->gtGetOp1();
+            // Check if the divisor is not -1 branch to 'sdivLabel'
+            emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
 
-                // Check if the divisor is not -1 branch to 'sdivLabel'
-                emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
+            inst_JMP(EJ_ne, sdivLabel);
+            // If control flow continues past here the 'divisorReg' is known to be -1
 
-                inst_JMP(EJ_ne, sdivLabel);
-                // If control flow continues past here the 'divisorReg' is known to be -1
+            regNumber dividendReg = dividendOp->GetRegNum();
+            // At this point the divisor is known to be -1
+            //
+            // Issue the 'cmp dividendReg, 1' instruction.
+            // This is an alias to 'subs zr, dividendReg, 1' on ARM64 itself.
+            // This will set the V (overflow) flags only when dividendReg is MinInt
+            //
+            emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
+            genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
+                                                            // ArithmeticException
 
-                regNumber dividendReg = dividendOp->GetRegNum();
-                // At this point the divisor is known to be -1
-                //
-                // Issue the 'cmp dividendReg, 1' instruction.
-                // This is an alias to 'subs zr, dividendReg, 1' on ARM64 itself.
-                // This will set the V (overflow) flags only when dividendReg is MinInt
-                //
-                emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
-                genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
-                                                              // ArithmeticException
-
-                genDefineTempLabel(sdivLabel);
-            }
+            genDefineTempLabel(sdivLabel);
         }
 
         genCodeForBinary(tree); // Generate the sdiv instruction
