@@ -2596,6 +2596,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 					*op = MINT_POPCNT_I4;
 				else if (arg_type == MONO_TYPE_U8 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 8))
 					*op = MINT_POPCNT_I8;
+			} else if (!strcmp (tm, "Log2")) {
+				if (arg_type == MONO_TYPE_U4 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 4))
+					*op = MINT_LOG2_I4;
+				else if (arg_type == MONO_TYPE_U8 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 8))
+					*op = MINT_LOG2_I8;
 			}
 		}
 	} else if (in_corlib &&

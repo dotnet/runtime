@@ -806,6 +806,8 @@ OPDEF(MINT_CTZ_I4, "ctz.i4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CTZ_I8, "ctz.i8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_POPCNT_I4, "popcnt.i4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_POPCNT_I8, "popcnt.i8", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_LOG2_I4, "log2.i4", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_LOG2_I8, "log2.i8", 3, 1, 1, MintOpNoArgs)
 
 OPDEF(MINT_SIMD_V128_LDC, "simd_v128_ldc", 10, 1, 0, MintOpNoArgs)
 OPDEF(MINT_SIMD_V128_I1_CREATE, "simd_v128_i1_create", 3, 1, 1, MintOpNoArgs)
