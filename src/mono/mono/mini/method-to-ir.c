@@ -3744,9 +3744,11 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), dreg);
 	}
 
-	dreg = alloc_preg (cfg);
-	MONO_EMIT_NEW_ICONST (cfg, dreg, is_virtual ? 1 : 0);
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_is_virtual), dreg);
+	if (is_virtual) {
+		dreg = alloc_preg (cfg);
+		MONO_EMIT_NEW_ICONST (cfg, dreg, 1);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_is_virtual), dreg);
+	}
 
 	/* All the checks which are in mono_delegate_ctor () are done by the delegate trampoline */
 
