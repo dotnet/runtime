@@ -91,8 +91,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //--------------------------------------------------------------------
 typedef DPTR(struct CalleeSavedRegisters) PTR_CalleeSavedRegisters;
 struct CalleeSavedRegisters {
-    INT64 sp; // stack pointer
     INT64 fp; // frame pointer
+    INT64 ra; // return register
     INT64 s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
     INT64 tp, gp;
 };

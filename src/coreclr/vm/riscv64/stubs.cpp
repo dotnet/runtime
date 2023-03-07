@@ -483,25 +483,156 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pCalleeSaved)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
+    LIMITED_METHOD_CONTRACT;
+    pRD->pCurrentContext->S1 = pCalleeSaved->s1;
+    pRD->pCurrentContext->S2 = pCalleeSaved->s2;
+    pRD->pCurrentContext->S3 = pCalleeSaved->s3;
+    pRD->pCurrentContext->S4 = pCalleeSaved->s4;
+    pRD->pCurrentContext->S5 = pCalleeSaved->s5;
+    pRD->pCurrentContext->S6 = pCalleeSaved->s6;
+    pRD->pCurrentContext->S7 = pCalleeSaved->s7;
+    pRD->pCurrentContext->S8 = pCalleeSaved->s8;
+    pRD->pCurrentContext->S9 = pCalleeSaved->s9;
+    pRD->pCurrentContext->S10 = pCalleeSaved->s10;
+    pRD->pCurrentContext->S11 = pCalleeSaved->s11;
+    pRD->pCurrentContext->Gp = pCalleeSaved->gp;
+    pRD->pCurrentContext->Tp = pCalleeSaved->tp;
+    pRD->pCurrentContext->Fp  = pCalleeSaved->fp;
+    pRD->pCurrentContext->Ra  = pCalleeSaved->ra;
 
+    T_KNONVOLATILE_CONTEXT_POINTERS * pContextPointers = pRD->pCurrentContextPointers;
+    pContextPointers->S1 = (PDWORD64)&pCalleeSaved->s1;
+    pContextPointers->S2 = (PDWORD64)&pCalleeSaved->s2;
+    pContextPointers->S3 = (PDWORD64)&pCalleeSaved->s3;
+    pContextPointers->S4 = (PDWORD64)&pCalleeSaved->s4;
+    pContextPointers->S5 = (PDWORD64)&pCalleeSaved->s5;
+    pContextPointers->S6 = (PDWORD64)&pCalleeSaved->s6;
+    pContextPointers->S7 = (PDWORD64)&pCalleeSaved->s7;
+    pContextPointers->S8 = (PDWORD64)&pCalleeSaved->s8;
+    pContextPointers->S9 = (PDWORD64)&pCalleeSaved->s9;
+    pContextPointers->S10 = (PDWORD64)&pCalleeSaved->s10;
+    pContextPointers->S11 = (PDWORD64)&pCalleeSaved->s11;
+    pContextPointers->Gp = (PDWORD64)&pCalleeSaved->gp;
+    pContextPointers->Tp = (PDWORD64)&pCalleeSaved->tp;
+    pContextPointers->Fp = (PDWORD64)&pCalleeSaved->fp;
+    pContextPointers->Ra  = (PDWORD64)&pCalleeSaved->ra;
+}
 
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    // copy the callee saved regs
+    CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
+    UpdateRegDisplayFromCalleeSavedRegisters(pRD, pCalleeSaved);
+
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+    // copy the control registers
+    //pRD->pCurrentContext->Fp = pCalleeSaved->fp;//not needed for duplicated.
+    //pRD->pCurrentContext->Ra = pCalleeSaved->ra;//not needed for duplicated.
+    pRD->pCurrentContext->Pc = GetReturnAddress();
+    pRD->pCurrentContext->Sp = this->GetSP();
+
+    // Finally, syncup the regdisplay with the context
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
-
-
 
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // Copy the context to regdisplay
+    memcpy(pRD->pCurrentContext, &m_ctx, sizeof(T_CONTEXT));
+
+    pRD->ControlPC = ::GetIP(&m_ctx);
+    pRD->SP = ::GetSP(&m_ctx);
+
+    // Update the integer registers in KNONVOLATILE_CONTEXT_POINTERS from
+    // the exception context we have.
+    pRD->pCurrentContextPointers->S1 = (PDWORD64)&m_ctx.S1;
+    pRD->pCurrentContextPointers->S2 = (PDWORD64)&m_ctx.S2;
+    pRD->pCurrentContextPointers->S3 = (PDWORD64)&m_ctx.S3;
+    pRD->pCurrentContextPointers->S4 = (PDWORD64)&m_ctx.S4;
+    pRD->pCurrentContextPointers->S5 = (PDWORD64)&m_ctx.S5;
+    pRD->pCurrentContextPointers->S6 = (PDWORD64)&m_ctx.S6;
+    pRD->pCurrentContextPointers->S7 = (PDWORD64)&m_ctx.S7;
+    pRD->pCurrentContextPointers->S8 = (PDWORD64)&m_ctx.S8;
+    pRD->pCurrentContextPointers->S9 = (PDWORD64)&m_ctx.S9;
+    pRD->pCurrentContextPointers->S10 = (PDWORD64)&m_ctx.S10;
+    pRD->pCurrentContextPointers->S11 = (PDWORD64)&m_ctx.S11;
+    pRD->pCurrentContextPointers->Fp = (PDWORD64)&m_ctx.Fp;
+    pRD->pCurrentContextPointers->Gp = (PDWORD64)&m_ctx.Gp;
+    pRD->pCurrentContextPointers->Tp = (PDWORD64)&m_ctx.Tp;
+    pRD->pCurrentContextPointers->Ra = (PDWORD64)&m_ctx.Ra;
+
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
 void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+#ifdef PROFILING_SUPPORTED
+        PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
+#endif
+        HOST_NOCALLS;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACT_END;
+
+    if (!InlinedCallFrame::FrameHasActiveCall(this))
+    {
+        LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
+        return;
+    }
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;
+
+    pRD->pCurrentContext->Pc = *(DWORD64 *)&m_pCallerReturnAddress;
+    pRD->pCurrentContext->Sp = *(DWORD64 *)&m_pCallSiteSP;
+    pRD->pCurrentContext->Fp = *(DWORD64 *)&m_pCalleeSavedFP;
+
+    pRD->pCurrentContextPointers->S1 = NULL;
+    pRD->pCurrentContextPointers->S2 = NULL;
+    pRD->pCurrentContextPointers->S3 = NULL;
+    pRD->pCurrentContextPointers->S4 = NULL;
+    pRD->pCurrentContextPointers->S5 = NULL;
+    pRD->pCurrentContextPointers->S6 = NULL;
+    pRD->pCurrentContextPointers->S7 = NULL;
+    pRD->pCurrentContextPointers->S8 = NULL;
+    pRD->pCurrentContextPointers->S9 = NULL;
+    pRD->pCurrentContextPointers->S10 = NULL;
+    pRD->pCurrentContextPointers->S11 = NULL;
+    pRD->pCurrentContextPointers->Gp = NULL;
+    pRD->pCurrentContextPointers->Tp = NULL;
+
+    pRD->ControlPC = m_pCallerReturnAddress;
+    pRD->SP = (DWORD64) dac_cast<TADDR>(m_pCallSiteSP);
+
+    // reset pContext; it's only valid for active (top-most) frame
+    pRD->pContext = NULL;
+
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+
+    // Update the frame pointer in the current context.
+    pRD->pCurrentContextPointers->Fp = &m_pCalleeSavedFP;
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+
     RETURN;
 }
 
