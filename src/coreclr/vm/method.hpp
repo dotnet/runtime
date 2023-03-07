@@ -322,8 +322,6 @@ public:
 
     LPCUTF8 GetNameThrowing();
 
-    BOOL MightHaveName(ULONG nameHashValue);
-
     FORCEINLINE LPCUTF8 GetNameOnNonArrayClass()
     {
         WRAPPER_NO_CONTRACT;
@@ -1692,8 +1690,7 @@ protected:
     WORD m_wSlotNumber;
 
     enum {
-        enum_packedSlotLayout_SlotMask      = 0x03FF,
-        enum_packedSlotLayout_NameHashMask  = 0xFC00
+        enum_packedSlotLayout_SlotMask      = 0x03FF
     };
 
     WORD m_wFlags;

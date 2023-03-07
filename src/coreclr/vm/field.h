@@ -133,7 +133,6 @@ public:
 
     enum {
         enum_packedMbLayout_MbMask        = 0x01FFFF,
-        enum_packedMbLayout_NameHashMask  = 0xFE0000
     };
 
     void SetMemberDef(mdFieldDef mb)
@@ -651,8 +650,6 @@ public:
 
         return GetMDImport()->GetNameOfFieldDef(GetMemberDef(), pszName);
     }
-
-    BOOL MightHaveName(ULONG nameHashValue);
 
     // <TODO>@TODO: </TODO>This is slow, don't use it!
     DWORD   GetAttributes()
