@@ -99,9 +99,6 @@ size_t loh_size_threshold = LARGE_OBJECT_SIZE;
 int compact_ratio = 0;
 #endif //GC_CONFIG_DRIVEN
 
-// See comments in reset_memory.
-BOOL reset_mm_p = TRUE;
-
 #ifdef FEATURE_SVR_GC
 bool g_built_with_svr_gc = true;
 #else
@@ -2256,6 +2253,8 @@ size_t      gc_heap::current_total_committed = 0;
 size_t      gc_heap::committed_by_oh[recorded_committed_bucket_counts];
 
 size_t      gc_heap::current_total_committed_bookkeeping = 0;
+
+BOOL        gc_heap::reset_mm_p = TRUE;
 
 #ifdef FEATURE_EVENT_TRACE
 bool gc_heap::informational_event_enabled_p = false;
@@ -14056,6 +14055,8 @@ gc_heap::init_semi_shared()
 
     dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
 
+    reset_mm_p = TRUE;
+
     ret = 1;
 
 cleanup:
@@ -16832,7 +16833,8 @@ found_fit:
     // (see also: object.cpp/Object::ValidateInner)
     // Make sure it will see cleaned up state to prevent triggering occasional verification failures.
     // And make sure the write happens before updating "allocated"
-    VolatileStore(((void**)allocated - 1), (void*)0);     //clear the sync block
+    ((void**)allocated)[-1] = 0;    // clear the sync block
+    VOLATILE_MEMORY_BARRIER();
 #endif //VERIFY_HEAP && _DEBUG
 
     uint8_t* old_alloc;
@@ -27914,7 +27916,7 @@ BOOL gc_heap::loh_enque_pinned_plug (uint8_t* plug, size_t len)
 }
 
 inline
-BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit)
+BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit, bool end_p)
 {
     dprintf (1235, ("trying to fit %zd(%zd) between %p and %p (%zd)",
         size,
@@ -27923,7 +27925,11 @@ BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* allo
         alloc_limit,
         (alloc_limit - alloc_pointer)));
 
-    return ((alloc_pointer + 2* AlignQword (loh_padding_obj_size) +  size) <= alloc_limit);
+    // If it's at the end, we don't need to allocate the tail padding
+    size_t pad = 1 + (end_p ? 0 : 1);
+    pad *= AlignQword (loh_padding_obj_size);
+
+    return ((alloc_pointer + pad + size) <= alloc_limit);
 }
 
 uint8_t* gc_heap::loh_allocate_in_condemned (size_t size)
@@ -27937,7 +27943,8 @@ uint8_t* gc_heap::loh_allocate_in_condemned (size_t size)
 retry:
     {
         heap_segment* seg = generation_allocation_segment (gen);
-        if (!(loh_size_fit_p (size, generation_allocation_pointer (gen), generation_allocation_limit (gen))))
+        if (!(loh_size_fit_p (size, generation_allocation_pointer (gen), generation_allocation_limit (gen), 
+                              (generation_allocation_limit (gen) == heap_segment_plan_allocated (seg)))))
         {
             if ((!(loh_pinned_plug_que_empty_p()) &&
                  (generation_allocation_limit (gen) ==
@@ -27975,7 +27982,10 @@ retry:
                 }
                 else
                 {
-                    if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg)) &&
+                    if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg), true) &&
+                        // We are overestimating here by padding with 2 loh_padding_obj_size objects which we shouldn't need
+                        // to do if it's at the end of the region. However, grow_heap_segment is already overestimating by
+                        // a lot more - it would be worth fixing when we are in extreme low memory situations.
                         (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (loh_padding_obj_size)))))
                     {
                         dprintf (1235, ("growing seg from %p to %p\n", heap_segment_committed (seg),
@@ -28898,7 +28908,8 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
         return;
     }
 
-    set_region_plan_gen_num_sip (current_region, current_plan_gen_num);
+    decide_on_demotion_pin_surv (current_region);
+
     if (!heap_segment_swept_in_plan (current_region))
     {
         heap_segment_plan_allocated (current_region) = generation_allocation_pointer (consing_gen);
@@ -30618,6 +30629,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
         gc_time_info[time_plan] = gc_time_info[time_sweep] - gc_time_info[time_plan];
     }
 #endif //FEATURE_EVENT_TRACE
+
+#ifdef USE_REGIONS
+    if (special_sweep_p)
+    {
+        should_compact = FALSE;
+    }
+#endif //!USE_REGIONS
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_LOH_COMPACTION
@@ -32559,14 +32577,6 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address)
     else
         return tree;
 }
-
-#ifdef FEATURE_BASICFREEZE
-bool gc_heap::frozen_object_p (Object* obj)
-{
-    heap_segment* seg = seg_mapping_table_segment_of ((uint8_t*)obj);
-    return heap_segment_read_only_p (seg);
-}
-#endif // FEATURE_BASICFREEZE
 
 void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 {
@@ -42060,7 +42070,7 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
     return obj;
 }
 
-void reset_memory (uint8_t* o, size_t sizeo)
+void gc_heap::reset_memory (uint8_t* o, size_t sizeo)
 {
     if (gc_heap::use_large_pages_p)
         return;
@@ -46353,7 +46363,6 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
 } while (false)
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-
 // Allocate small object with an alignment requirement of 8-bytes.
 Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags)
 {
@@ -49070,7 +49079,7 @@ inline void testGCShadow(Object** ptr)
         {
 #ifdef FEATURE_BASICFREEZE
             // Write barriers for stores of references to frozen objects may be optimized away.
-            if (!gc_heap::frozen_object_p(*ptr))
+            if (!g_theGCHeap->IsInFrozenSegment (*ptr))
 #endif // FEATURE_BASICFREEZE
             {
                 _ASSERTE(!"Pointer updated without using write barrier");

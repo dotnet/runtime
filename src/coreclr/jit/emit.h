@@ -38,7 +38,11 @@
 #define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
 #endif
 
-#define EMIT_BACKWARDS_NAVIGATION 0 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
+#ifdef TARGET_XARCH
+#define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
+#else
+#define EMIT_BACKWARDS_NAVIGATION 0
+#endif
 
 /*****************************************************************************/
 
@@ -507,24 +511,30 @@ protected:
 
     enum opSize : unsigned
     {
-        OPSZ1      = 0,
-        OPSZ2      = 1,
-        OPSZ4      = 2,
-        OPSZ8      = 3,
-        OPSZ16     = 4,
+        OPSZ1  = 0,
+        OPSZ2  = 1,
+        OPSZ4  = 2,
+        OPSZ8  = 3,
+        OPSZ16 = 4,
+
+#if defined(TARGET_XARCH)
         OPSZ32     = 5,
-        OPSZ_COUNT = 6,
+        OPSZ64     = 6,
+        OPSZ_COUNT = 7,
+#else
+        OPSZ_COUNT = 5,
+#endif
+
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
-        OPSZP = OPSZ4,
+        OPSZP      = OPSZ4,
 #endif
     };
 
 #define OPSIZE_INVALID ((opSize)0xffff)
 
-    static const emitter::opSize emitSizeEncode[];
-    static const emitAttr        emitSizeDecode[];
+    static const emitAttr emitSizeDecode[];
 
     static emitter::opSize emitEncodeSize(emitAttr size);
     static emitAttr emitDecodeSize(emitter::opSize ensz);
@@ -2058,9 +2068,14 @@ private:
 #endif // TARGET_AMD64
 
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
+#if defined(FEATURE_SIMD)
     CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
     CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
+#if defined(TARGET_XARCH)
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
+    CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
@@ -2070,6 +2085,10 @@ private:
     insFormat emitMapFmtAtoM(insFormat fmt);
     void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void spillIntArgRegsToShadowSlots();
+
+#ifdef TARGET_XARCH
+    bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
+#endif // TARGET_XARCH
 
     /************************************************************************/
     /*      The logic that creates and keeps track of instruction groups    */
@@ -2288,6 +2307,12 @@ private:
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
+#define EMIT_MAX_IG_INS_COUNT 256
+
+#if EMIT_BACKWARDS_NAVIGATION
+#define EMIT_MAX_PEEPHOLE_INS_COUNT 32 // The max number of previous instructions to navigate through for peepholes.
+#endif                                 // EMIT_BACKWARDS_NAVIGATION
+
     instrDesc* emitLastIns;
     insGroup*  emitLastInsIG;
 
@@ -2295,24 +2320,98 @@ private:
     unsigned emitLastInsFullSize;
 #endif // EMIT_BACKWARDS_NAVIGATION
 
+    // Check to see if the last instruction is available.
+    inline bool emitHasLastIns() const
+    {
+        return (emitLastIns != nullptr);
+    }
+
+    // Checks to see if we can cross between the two given IG boundaries.
+    //
+    // We have the following checks:
+    // 1. Looking backwards across an IG boundary can only be done if we're in an extension IG.
+    // 2. The IG of the previous instruction must have the same GC interrupt status as the current IG.
+    inline bool isInsIGSafeForPeepholeOptimization(insGroup* prevInsIG, insGroup* curInsIG) const
+    {
+        if (prevInsIG == curInsIG)
+        {
+            return true;
+        }
+        else
+        {
+            return (curInsIG->igFlags & IGF_EXTEND) &&
+                   ((prevInsIG->igFlags & IGF_NOGCINTERRUPT) == (curInsIG->igFlags & IGF_NOGCINTERRUPT));
+        }
+    }
+
     // Check if a peephole optimization involving emitLastIns is safe.
     //
     // We have the following checks:
     // 1. There must be a non-null emitLastIns to consult (thus, we have a known "last" instruction).
     // 2. `emitForceNewIG` is not set: this prevents peepholes from crossing nogc boundaries where
     //    the next instruction is forced to create a new IG.
-    // 3. Looking backwards across an IG boundary can only be done if we're in an extension IG.
-    // 4. The IG of the previous instruction must have the same GC interrupt status as the current IG.
-    //    This is related to #2; it disallows peephole when the previous IG is GC and the current is NOGC.
-    bool emitCanPeepholeLastIns()
+    bool emitCanPeepholeLastIns() const
     {
-        assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
+        assert(emitHasLastIns() == (emitLastInsIG != nullptr));
 
-        return (emitLastIns != nullptr) && !emitForceNewIG &&
-               ((emitCurIGinsCnt > 0) ||                     // we're not at the start of a new IG
-                ((emitCurIG->igFlags & IGF_EXTEND) != 0)) && //    or we are at the start of a new IG,
-                                                             //    and it's an extension IG
-               ((emitLastInsIG->igFlags & IGF_NOGCINTERRUPT) == (emitCurIG->igFlags & IGF_NOGCINTERRUPT));
+        return emitHasLastIns() && // there is an emitLastInstr
+               !emitForceNewIG &&  // and we're not about to start a new IG.
+               isInsIGSafeForPeepholeOptimization(emitLastInsIG, emitCurIG);
+    }
+
+    enum emitPeepholeResult
+    {
+        PEEPHOLE_CONTINUE,
+        PEEPHOLE_ABORT
+    };
+
+    // Visits the last emitted instructions.
+    // Must be safe to do - use emitCanPeepholeLastIns for checking.
+    // Action is a function type: instrDesc* -> emitPeepholeResult
+    template <typename Action>
+    void emitPeepholeIterateLastInstrs(Action action)
+    {
+        assert(emitCanPeepholeLastIns());
+
+#if EMIT_BACKWARDS_NAVIGATION
+        insGroup*  curInsIG;
+        instrDesc* id;
+
+        if (!emitGetLastIns(&curInsIG, &id))
+            return;
+
+        for (unsigned i = 0; i < EMIT_MAX_PEEPHOLE_INS_COUNT; i++)
+        {
+            assert(id != nullptr);
+
+            switch (action(id))
+            {
+                case PEEPHOLE_ABORT:
+                    return;
+                case PEEPHOLE_CONTINUE:
+                {
+                    insGroup* savedInsIG = curInsIG;
+                    if (emitPrevID(curInsIG, id))
+                    {
+                        if (isInsIGSafeForPeepholeOptimization(curInsIG, savedInsIG))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+                    return;
+                }
+
+                default:
+                    unreached();
+            }
+        }
+#else  // EMIT_BACKWARDS_NAVIGATION
+        action(emitLastIns);
+#endif // !EMIT_BACKWARDS_NAVIGATION
     }
 
 #ifdef TARGET_ARMARCH
@@ -2674,11 +2773,11 @@ public:
 
     struct dataSection
     {
-        // Note to use alignments greater than 32 requires modification in the VM
+        // Note to use alignments greater than 64 requires modification in the VM
         // to support larger alignments (see ICorJitInfo::allocMem)
         //
         const static unsigned MIN_DATA_ALIGN = 4;
-        const static unsigned MAX_DATA_ALIGN = 32;
+        const static unsigned MAX_DATA_ALIGN = 64;
 
         enum sectionType
         {
@@ -2988,16 +3087,13 @@ inline emitAttr emitActualTypeSize(T type)
 
 /* static */ inline emitter::opSize emitter::emitEncodeSize(emitAttr size)
 {
-    assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE ||
-           size == EA_32BYTE);
-
-    return emitSizeEncode[((int)size) - 1];
+    assert((size != EA_UNKNOWN) && ((size & EA_SIZE_MASK) == size));
+    return static_cast<emitter::opSize>(genLog2(size));
 }
 
 /* static */ inline emitAttr emitter::emitDecodeSize(emitter::opSize ensz)
 {
-    assert(((unsigned)ensz) < OPSZ_COUNT);
-
+    assert(static_cast<unsigned>(ensz) < OPSZ_COUNT);
     return emitSizeDecode[ensz];
 }
 

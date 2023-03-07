@@ -1072,8 +1072,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     // being adding causes a new EXTEND IG to be created. Also, emitLastIns might not be in this IG
     // at all if this IG is empty.
 
-    assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
-    if ((emitLastIns != nullptr) && (sz != 0))
+    assert(emitHasLastIns() == (emitLastInsIG != nullptr));
+    if (emitHasLastIns() && (sz != 0))
     {
         // If we get here, emitLastIns must be in the current IG we are saving.
         assert(emitLastInsIG == emitCurIG);
@@ -1499,8 +1499,6 @@ size_t emitter::emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp)
 
 void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
-    instrDesc* id;
-
 #ifdef DEBUG
     // Under STRESS_EMITTER, put every instruction in its own instruction group.
     // We can't do this for a prolog, epilog, funclet prolog, or funclet epilog,
@@ -1557,18 +1555,18 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     assert(IsCodeAligned(emitCurIGsize));
 
     // Make sure we have enough space for the new instruction.
-    // `igInsCnt` is currently a byte, so we can't have more than 255 instructions in a single insGroup.
 
     size_t fullSize = sz + m_debugInfoSize;
 
-    if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= 255))
+    if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG ||
+        (emitCurIGinsCnt >= (EMIT_MAX_IG_INS_COUNT - 1)))
     {
         emitNxtIG(true);
     }
 
     /* Grab the space for the instruction */
 
-    emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+    instrDesc* id = emitLastIns = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
 
 #if EMIT_BACKWARDS_NAVIGATION
     emitCurIG->igLastIns = id;
@@ -1606,14 +1604,18 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     if (m_debugInfoSize > 0)
     {
         instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
-        info->idNum              = emitInsCount;
-        info->idSize             = sz;
-        info->idVarRefOffs       = 0;
-        info->idMemCookie        = 0;
-        info->idFlags            = GTF_EMPTY;
-        info->idFinallyCall      = false;
-        info->idCatchRet         = false;
-        info->idCallSig          = nullptr;
+        memset(info, 0, sizeof(instrDescDebugInfo));
+
+        // These fields should have been zero-ed by the above
+        assert(info->idVarRefOffs == 0);
+        assert(info->idMemCookie == 0);
+        assert(info->idFlags == GTF_EMPTY);
+        assert(info->idFinallyCall == false);
+        assert(info->idCatchRet == false);
+        assert(info->idCallSig == nullptr);
+
+        info->idNum  = emitInsCount;
+        info->idSize = sz;
         id->idDebugOnlyInfo(info);
     }
 
@@ -2607,20 +2609,15 @@ void emitter::emitSetFrameRangeArgs(int offsLo, int offsHi)
 
 /*****************************************************************************
  *
- *  A conversion table used to map an operand size value (in bytes) into its
- *  small encoding (0 through 3), and vice versa.
+ *  A conversion table used to map an operand size value (in bytes) into its emitAttr
  */
 
-const emitter::opSize emitter::emitSizeEncode[] = {
-    emitter::OPSZ1, emitter::OPSZ2,  OPSIZE_INVALID, emitter::OPSZ4,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    emitter::OPSZ8, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, emitter::OPSZ16, OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, emitter::OPSZ32,
+const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {
+    EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE, EA_16BYTE,
+#if defined(TARGET_XARCH)
+    EA_32BYTE, EA_64BYTE,
+#endif // TARGET_XARCH
 };
-
-const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {EA_1BYTE, EA_2BYTE,  EA_4BYTE,
-                                                               EA_8BYTE, EA_16BYTE, EA_32BYTE};
 
 /*****************************************************************************
  *
@@ -6116,7 +6113,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
     }
     else
     {
-        // For non-adaptive, just take whatever is supplied using COMPlus_ variables
+        // For non-adaptive, just take whatever is supplied using DOTNET_ variables
         maxLoopSize = emitComp->opts.compJitAlignLoopMaxCodeSize;
     }
 
@@ -6548,7 +6545,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     coldCodeBlock = nullptr;
 
-    // This restricts the data alignment to: 4, 8, 16, or 32 bytes
+    // This restricts the data alignment to: 4, 8, 16, 32 or 64 bytes
     // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
     uint32_t dataAlignment = emitConsDsc.alignment;
     assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
@@ -6628,6 +6625,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     else if (dataAlignment == 32)
     {
         allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN;
+    }
+    else if (dataAlignment == 64)
+    {
+        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN;
     }
 
     CorJitAllocMemFlag allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlagCodeAlign | allocMemFlagDataAlign);
@@ -7075,9 +7076,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
         {
 #ifdef DEBUG
-            size_t     curInstrAddr = (size_t)cp;
-            instrDesc* curInstrDesc = id;
-
             if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
                 (id->idCodeSize() > 0))
             {
@@ -7104,16 +7102,20 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     ++nextMapping;
                 }
             }
-
 #endif
-
             size_t insSize = emitIssue1Instr(ig, id, &cp);
             emitAdvanceInstrDesc(&id, insSize);
+        }
 
-#ifdef DEBUG
-            // Print the alignment boundary
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (emitComp->opts.disAddr || emitComp->opts.disAlignment))
+        // Print the alignment boundary
+        if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
+            (INDEBUG(emitComp->opts.disAddr ||) emitComp->opts.disAlignment))
+        {
+            for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
             {
+                size_t     curInstrAddr = (size_t)cp;
+                instrDesc* curInstrDesc = id;
+
                 size_t      afterInstrAddr   = (size_t)cp;
                 instruction curIns           = curInstrDesc->idIns();
                 bool        isJccAffectedIns = false;
@@ -7195,7 +7197,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     }
                 }
             }
-#endif // DEBUG
         }
 
 #ifdef DEBUG
@@ -7892,6 +7893,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
+#if defined(FEATURE_SIMD)
 //------------------------------------------------------------------------
 // emitSimd8Const: Create a simd8 data section constant.
 //
@@ -7908,7 +7910,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
     // to constant data, not a real static field.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_SIMD)
     unsigned cnsSize  = 8;
     unsigned cnsAlign = cnsSize;
 
@@ -7921,9 +7922,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD8);
     return emitComp->eeFindJitDataOffs(cnum);
-#else
-    unreached();
-#endif // !FEATURE_SIMD
 }
 
 CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
@@ -7933,7 +7931,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
     // to constant data, not a real static field.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_SIMD)
     unsigned cnsSize  = 16;
     unsigned cnsAlign = cnsSize;
 
@@ -7946,11 +7943,9 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD16);
     return emitComp->eeFindJitDataOffs(cnum);
-#else
-    unreached();
-#endif // !FEATURE_SIMD
 }
 
+#if defined(TARGET_XARCH)
 CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
 {
     // Access to inline data is 'abstracted' by a special type of static member
@@ -7958,23 +7953,38 @@ CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
     // to constant data, not a real static field.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_SIMD)
     unsigned cnsSize  = 32;
     unsigned cnsAlign = cnsSize;
 
-#ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
     {
         cnsAlign = dataSection::MIN_DATA_ALIGN;
     }
-#endif // TARGET_XARCH
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
     return emitComp->eeFindJitDataOffs(cnum);
-#else
-    unreached();
-#endif // !FEATURE_SIMD
 }
+
+CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+    unsigned cnsSize  = 64;
+    unsigned cnsAlign = cnsSize;
+
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD64);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
 
 /*****************************************************************************
  *

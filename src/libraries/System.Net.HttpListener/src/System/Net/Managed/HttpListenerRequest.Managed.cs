@@ -92,7 +92,7 @@ namespace System.Net
 
             _rawUrl = req[parts[1]];
 
-            ReadOnlySpan<char> version = req.AsSpan()[parts[2]];
+            ReadOnlySpan<char> version = req.AsSpan(parts[2]);
             if (version.Length != 8 || !version.StartsWith("HTTP/", StringComparison.Ordinal))
             {
                 _context.ErrorMessage = "Invalid request line (version).";

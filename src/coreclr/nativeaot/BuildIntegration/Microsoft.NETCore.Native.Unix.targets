@@ -31,7 +31,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
       <CrossCompileRid />
-      <CrossCompileRid Condition="!$(RuntimeIdentifier.EndsWith('-$(IlcHostArch)'))">$(RuntimeIdentifier)</CrossCompileRid>
+      <CrossCompileRid Condition="!$(RuntimeIdentifier.EndsWith('-$(_hostArchitecture)'))">$(RuntimeIdentifier)</CrossCompileRid>
 
       <CrossCompileArch />
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
@@ -158,6 +158,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-L/usr/local/lib -lgssapi_krb5" Condition="'$(_targetOS)' == 'freebsd'" />
       <!-- FreeBSD's inotify is an installed package and not found in default libraries  -->
       <LinkerArg Include="-L/usr/local/lib -linotify" Condition="'$(_targetOS)' == 'freebsd'" />
+      <LinkerArg Include="-Wl,-segprot,__THUNKS,rx,rx" Condition="'$(_IsiOSLikePlatform)' == 'true'" />
 
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(_IsApplePlatform)' == 'true'" />
     </ItemGroup>

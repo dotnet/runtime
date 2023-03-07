@@ -571,6 +571,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void CertificateWithTrailingDataCanBeRead()
+        {
+            byte[] certData = new byte[TestData.MsCertificate.Length + 100];
+            TestData.MsCertificate.AsSpan().CopyTo(certData);
+            certData.AsSpan(TestData.MsCertificate.Length).Fill(0xFF);
+
+            using (X509Certificate2 cert = new X509Certificate2(certData))
+            {
+                Assert.Equal("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Subject);
+                Assert.Equal("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Issuer);
+
+                Assert.Equal(TestData.MsCertificate, cert.RawData);
+            }
+        }
+
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()

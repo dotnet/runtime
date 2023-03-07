@@ -21,6 +21,7 @@ namespace Microsoft.Interop
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
             public const string MethodNotDeclaredInAttributedInterface = Prefix + "1091";
+            public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1092";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -175,10 +176,20 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceDescription)));
 
+        public static readonly DiagnosticDescriptor InvalidAttributedInterfaceMissingGuidAttribute =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
 
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
+
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
