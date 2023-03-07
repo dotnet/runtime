@@ -535,13 +535,13 @@ if [[ "$__CrossBuild" == 1 ]]; then
     fi
 fi
 
-# init the target distro name (__DistroRid) and target portable os (__PortableOS).
+# init the target distro name (__DistroRid) and target portable os (__PortableTargetOS).
 initTargetDistroRid
 if [ -z "$__OutputRid" ]; then
     if [[ "$__PortableBuild" == 0 ]]; then
         __OutputRid="$__DistroRid"
     else
-        __OutputRid="$__PortableOS-$__TargetArch"
+        __OutputRid="$__PortableTargetOS-$__TargetArch"
     fi
 fi
 export __OutputRid

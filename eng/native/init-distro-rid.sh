@@ -88,7 +88,7 @@ getNonPortableDistroRid()
 # exports the following variables on success:
 #
 #   __DistroRid   : Non-portable rid of the target platform.
-#   __PortableOS  : OS-part of the portable rid that corresponds to the target platform.
+#   __PortableTargetOS  : OS-part of the portable rid that corresponds to the target platform.
 #
 initDistroRidGlobal()
 {
@@ -110,15 +110,15 @@ initDistroRidGlobal()
 
     __DistroRid=$(getNonPortableDistroRid "${targetOs}" "${targetArch}" "${rootfsDir}")
 
-    if [ -z "${__PortableOS:-}" ]; then
-        __PortableOS="$targetOs"
+    if [ -z "${__PortableTargetOS:-}" ]; then
+        __PortableTargetOS="$targetOs"
 
         # Check for musl-based distros (e.g Alpine Linux, Void Linux).
         if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl ||
                 strings "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl; then
-            __PortableOS="linux-musl"
+            __PortableTargetOS="linux-musl"
         fi
     fi
 
-    export __DistroRid __PortableOS
+    export __DistroRid __PortableTargetOS
 }

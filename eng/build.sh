@@ -288,11 +288,11 @@ while [[ $# > 0 ]]; do
           os="solaris" ;;
         linux-bionic)
           os="linux"
-          __PortableOS=linux-bionic
+          __PortableTargetOS=linux-bionic
           ;;
         linux-musl)
           os="linux"
-          __PortableOS=linux-musl
+          __PortableTargetOS=linux-musl
           ;;
         *)
           echo "Unsupported target OS '$2'."
