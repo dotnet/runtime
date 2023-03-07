@@ -89,9 +89,9 @@ namespace Microsoft.Interop
             // to calculate the methods to generate.
             // The generator infrastructure preserves ordering of the tables once Select statements are in use,
             // so we can rely on the order matching here.
-            var methodsWithDiagnostics = interfacesToGenerate
+            var interfacesWithMethods = interfacesToGenerate
                 .Zip(interfaceContexts)
-                .SelectMany(static (data, ct) =>
+                .Select(static (data, ct) =>
             {
                 var (interfaceData, interfaceContext) = data;
                 Location interfaceLocation = interfaceData.Syntax.GetLocation();
@@ -135,8 +135,34 @@ namespace Microsoft.Interop
                         }
                     }
                 }
-                return methods.ToImmutable();
+                return (Interface: interfaceContext, Methods: methods.ToImmutable());
             });
+
+            var interfaceWithMethodsContexts = interfacesWithMethods
+                .Where(data => data.Methods.Length > 0)
+                .Select(static (data, ct) => data.Interface);
+
+            // Marker interfaces are COM interfaces that don't have any methods.
+            // The lack of methods breaks the mechanism we use later to stitch back together interface-level data
+            // and method-level data, but that's okay because marker interfaces are much simpler.
+            // We'll handle them seperately because they are so simple.
+            var markerInterfaces = interfacesWithMethods
+                .Where(data => data.Methods.Length == 0)
+                .Select(static (data, ct) => data.Interface);
+
+            var markerInterfaceIUnknownDerived = markerInterfaces.Select(static (context, ct) => GenerateIUnknownDerivedAttributeApplication(context))
+                .WithComparer(SyntaxEquivalentComparer.Instance)
+                .SelectNormalized();
+
+            context.RegisterSourceOutput(markerInterfaces.Zip(markerInterfaceIUnknownDerived), (context, data) =>
+            {
+                var (interfaceContext, iUnknownDerivedAttributeApplication) = data;
+                context.AddSource(
+                    interfaceContext.InterfaceType.FullTypeName.Replace("global::", ""),
+                    GenerateMarkerInterfaceSource(interfaceContext) + iUnknownDerivedAttributeApplication);
+            });
+
+            var methodsWithDiagnostics = interfacesWithMethods.SelectMany(static (data, ct) => data.Methods);
 
             // Split the methods we want to generate and the ones we don't into two separate groups.
             var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
@@ -219,7 +245,7 @@ namespace Microsoft.Interop
                 .SelectNormalized();
 
             // Generate the native interface metadata for each [GeneratedComInterface]-attributed interface.
-            var nativeInterfaceInformation = interfaceContexts
+            var nativeInterfaceInformation = interfaceWithMethodsContexts
                 .Select(static (context, ct) => GenerateInterfaceInformation(context))
                 .WithTrackingName(StepNames.GenerateInterfaceInformation)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
@@ -236,13 +262,13 @@ namespace Microsoft.Interop
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
-            var iUnknownDerivedAttributeApplication = interfaceContexts
+            var iUnknownDerivedAttributeApplication = interfaceWithMethodsContexts
                 .Select(static (context, ct) => GenerateIUnknownDerivedAttributeApplication(context))
                 .WithTrackingName(StepNames.GenerateIUnknownDerivedAttribute)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
-            var filesToGenerate = interfaceContexts
+            var filesToGenerate = interfaceWithMethodsContexts
                 .Zip(nativeInterfaceInformation)
                 .Zip(managedToNativeInterfaceImplementations)
                 .Zip(nativeToManagedVtableMethods)
@@ -276,6 +302,33 @@ namespace Microsoft.Interop
                 context.AddSource(data.TypeName.Replace("global::", ""), data.Source);
             });
         }
+
+        private static string GenerateMarkerInterfaceSource(ComInterfaceContext iface) => $$"""
+            file unsafe class InterfaceInformation : global::System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType
+            {
+                public static global::System.Guid Iid => new(new global::System.ReadOnlySpan<byte>(new byte[] { {{string.Join(",", iface.InterfaceId.ToByteArray())}} }));
+
+                private static void** m_vtable;
+
+                public static void* VirtualMethodTableManagedImplementation
+                {
+                    get
+                    {
+                        if (m_vtable == null)
+                        {
+                            nint* vtable = (nint*)global::System.Runtime.CompilerServices.RuntimeHelpers.AllocateTypeAssociatedMemory(typeof({{iface.InterfaceType.FullTypeName}}), sizeof(nint) * 3);
+                            global::System.Runtime.InteropServices.ComWrappers.GetIUnknownImpl(out vtable[0], out vtable[1], out vtable[2]);
+                            m_vtable = (void**)vtable;
+                        }
+                        return m_vtable;
+                    }
+                }
+            }
+
+            [global::System.Runtime.InteropServices.DynamicInterfaceCastableImplementation]
+            file interface InterfaceImplementation : {{iface.InterfaceType.FullTypeName}}
+            {}
+            """;
 
         private static readonly AttributeSyntax s_iUnknownDerivedAttributeTemplate =
             Attribute(

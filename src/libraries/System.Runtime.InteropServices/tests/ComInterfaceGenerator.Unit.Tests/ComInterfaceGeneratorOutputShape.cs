@@ -75,6 +75,42 @@ namespace ComInterfaceGenerator.Unit.Tests
             VerifyShape(newComp, "J");
         }
 
+        [Fact]
+        public async Task EmptyComInterface()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [GeneratedComInterface]
+                partial interface I
+                {
+                    void Method();
+                    void Method2();
+                }
+                [GeneratedComInterface]
+                partial interface Empty
+                {
+                }
+                [GeneratedComInterface]
+                partial interface J
+                {
+                    void Method();
+                    void Method2();
+                }
+                """;
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.ComInterfaceGenerator());
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+            // We'll create one syntax tree per user-defined interface.
+            Assert.Equal(comp.SyntaxTrees.Count() + 3, newComp.SyntaxTrees.Count());
+
+            VerifyShape(newComp, "I");
+            VerifyShape(newComp, "J");
+        }
+
         private static void VerifyShape(Compilation comp, string userDefinedInterfaceMetadataName)
         {
             INamedTypeSymbol? userDefinedInterface = comp.Assembly.GetTypeByMetadataName(userDefinedInterfaceMetadataName);
