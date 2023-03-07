@@ -19,6 +19,11 @@ static char *bundle_path = "/data/user/0/net.dot.Android.Device_Emulator.Aot_Llv
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
 
 void register_aot_modules (void);
+bool monoeg_g_module_address (void *addr, char *file_name, size_t file_name_len,
+                           void **file_base, char *sym_name,
+                           size_t sym_name_len, void **sym_addr);
+char *mono_path_resolve_symlinks(const char *path);
+char *monoeg_g_path_get_dirname (const char *filename);
 
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -78,6 +83,22 @@ mono_droid_load_assembly (const char *name, const char *culture)
     return NULL;
 }
 
+// Assumes that the dl containing this function is in the same directory as the assemblies to load.
+static char *
+assemblies_dir (void)
+{
+    static char *dl_dir_name = NULL;
+    char dl_filename[4096];
+
+    if (monoeg_g_module_address ((void *)assemblies_dir, dl_filename, sizeof (dl_filename), NULL, NULL, 0, NULL)) {
+        char *resolved_dl_filename = mono_path_resolve_symlinks (dl_filename);
+        dl_dir_name = monoeg_g_path_get_dirname (resolved_dl_filename);
+        free (resolved_dl_filename);
+    }
+
+    return dl_dir_name;
+}
+
 static MonoAssembly*
 mono_droid_assembly_preload_hook (MonoAssemblyName *aname, char **assemblies_path, void* user_data)
 {
@@ -128,7 +149,7 @@ void runtime_init_callback ()
 
     register_bundled_modules ();
 
-    char *assemblyPath = bundle_path;
+    char *assemblyPath = assemblies_dir ();
     mono_set_assemblies_path ((assemblyPath && assemblyPath[0] != '\0') ? assemblyPath : "./");
 
     mono_jit_set_aot_only (true);
