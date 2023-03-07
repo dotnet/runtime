@@ -292,6 +292,15 @@ namespace ILLink.Shared.TrimAnalysis
 		/// </summary>
 		Assembly_get_Location,
 		/// <summary>
+		/// <see cref="System.Reflection.Assembly.GetFile(string)"/>
+		/// </summary>
+		Assembly_GetFile,
+		/// <summary>
+		/// <see cref="System.Reflection.Assembly.GetFiles()"/>
+		/// <see cref="System.Reflection.Assembly.GetFiles(bool)"/>
+		/// </summary>
+		Assembly_GetFiles,
+		/// <summary>
 		/// <see cref="System.Reflection.AssemblyName.CodeBase"/>
 		/// </summary>
 		AssemblyName_get_CodeBase,

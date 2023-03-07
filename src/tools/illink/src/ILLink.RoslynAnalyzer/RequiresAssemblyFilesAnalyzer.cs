@@ -70,7 +70,6 @@ namespace ILLink.RoslynAnalyzer
 				ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyType.GetMembers ("Location")));
 
 				// Methods
-				dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("get_Location").OfType<IMethodSymbol> ());
 				dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("GetFile").OfType<IMethodSymbol> ());
 				dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("GetFiles").OfType<IMethodSymbol> ());
 			}
@@ -78,9 +77,7 @@ namespace ILLink.RoslynAnalyzer
 			var assemblyNameType = compilation.GetTypeByMetadataName ("System.Reflection.AssemblyName");
 			if (assemblyNameType != null) {
 				ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyNameType.GetMembers ("CodeBase")));
-				dangerousPatternsBuilder.AddRange (assemblyNameType.GetMembers ("get_CodeBase").OfType<IMethodSymbol> ());
 				ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyNameType.GetMembers ("EscapedCodeBase")));
-				dangerousPatternsBuilder.AddRange (assemblyNameType.GetMembers ("get_EscapedCodeBase").OfType<IMethodSymbol> ());
 			}
 
 			return dangerousPatternsBuilder.ToImmutable ();
@@ -88,10 +85,19 @@ namespace ILLink.RoslynAnalyzer
 
 		protected override bool ReportSpecialIncompatibleMembersDiagnostic (OperationAnalysisContext operationContext, ImmutableArray<ISymbol> dangerousPatterns, ISymbol member)
 		{
-			if (member is IMethodSymbol method && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default) &&
-				method.AssociatedSymbol is null) {
-				operationContext.ReportDiagnostic (Diagnostic.Create (s_getFilesRule, operationContext.Operation.Syntax.GetLocation (), member.GetDisplayName ()));
-				return true;
+			if (member is IMethodSymbol method) {
+				if (ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
+					operationContext.ReportDiagnostic (Diagnostic.Create (s_getFilesRule, operationContext.Operation.Syntax.GetLocation (), member.GetDisplayName ()));
+					return true;
+				}
+				else if (method.AssociatedSymbol is ISymbol associatedSymbol &&
+					ImmutableArrayOperations.Contains (dangerousPatterns, associatedSymbol, SymbolEqualityComparer.Default)) {
+					// The getters for CodeBase and EscapedCodeBase have RAF attribute on them
+					// so our caller will produce the RAF warning (IL3002) by default. Since we handle these properties specifically
+					// here and produce different warning (IL3000) we don't want the caller to produce IL3002.
+					// So we need to return true from here for the getters, to suppress the RAF warning.
+					return true;
+				}
 			} else if (member is IPropertySymbol && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
 				operationContext.ReportDiagnostic (Diagnostic.Create (s_locationRule, operationContext.Operation.Syntax.GetLocation (), member.GetDisplayName ()));
 				return true;

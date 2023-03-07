@@ -22,6 +22,10 @@ namespace Mono.Linker.Tests.Cases.SingleFile
 			TestAssemblyNameCodeBaseSuppressedByRAF ();
 			TestAssemblyNameEscapedCodeBase ();
 			TestAssemblyNameEscapedCodeBaseSuppressedByRAF ();
+			TestAssemblyGetFile ();
+			TestAssemblyGetFileSuppressedByRAF ();
+			TestAssemblyGetFiles ();
+			TestAssemblyGetFilesSuppressedByRAF ();
 		}
 
 		[ExpectedWarning("IL3000", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
@@ -37,8 +41,6 @@ namespace Mono.Linker.Tests.Cases.SingleFile
 		}
 
 		[ExpectedWarning ("IL3000", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-		// https://github.com/dotnet/runtime/issues/83088 - analyzer also produces IL3002 - unnecessarily
-		[ExpectedWarning ("IL3002", ProducedBy = Tool.Analyzer)]
 		static void TestAssemblyNameCodeBase()
 		{
 			var a = typeof (SingleFileIntrinsics).Assembly.GetName ().CodeBase;
@@ -51,8 +53,6 @@ namespace Mono.Linker.Tests.Cases.SingleFile
 		}
 
 		[ExpectedWarning ("IL3000", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-		// https://github.com/dotnet/runtime/issues/83088 - analyzer also produces IL3002 - unnecessarily
-		[ExpectedWarning ("IL3002", ProducedBy = Tool.Analyzer)]
 		static void TestAssemblyNameEscapedCodeBase ()
 		{
 			var a = typeof (SingleFileIntrinsics).Assembly.GetName ().EscapedCodeBase;
@@ -62,6 +62,33 @@ namespace Mono.Linker.Tests.Cases.SingleFile
 		static void TestAssemblyNameEscapedCodeBaseSuppressedByRAF ()
 		{
 			var a = typeof (SingleFileIntrinsics).Assembly.GetName ().EscapedCodeBase;
+		}
+
+		[ExpectedWarning ("IL3001", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		static void TestAssemblyGetFile()
+		{
+			var a = typeof (SingleFileIntrinsics).Assembly.GetFile ("unknown");
+		}
+
+		[RequiresAssemblyFiles ("test")]
+		static void TestAssemblyGetFileSuppressedByRAF ()
+		{
+			var a = typeof (SingleFileIntrinsics).Assembly.GetFile ("unknown");
+		}
+
+		[ExpectedWarning ("IL3001", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3001", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		static void TestAssemblyGetFiles ()
+		{
+			var a = typeof (SingleFileIntrinsics).Assembly.GetFiles ();
+			a = typeof (SingleFileIntrinsics).Assembly.GetFiles (true);
+		}
+
+		[RequiresAssemblyFiles ("test")]
+		static void TestAssemblyGetFilesSuppressedByRAF ()
+		{
+			var a = typeof (SingleFileIntrinsics).Assembly.GetFiles ();
+			a = typeof (SingleFileIntrinsics).Assembly.GetFiles (true);
 		}
 	}
 }

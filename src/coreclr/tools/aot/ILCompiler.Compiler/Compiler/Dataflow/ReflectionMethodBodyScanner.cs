@@ -544,6 +544,16 @@ namespace ILCompiler.Dataflow
                     diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile, calledMethod.GetDisplayName());
                     break;
 
+                //
+                // string System.Reflection.Assembly.GetFile(string)
+                // string System.Reflection.Assembly.GetFiles()
+                // string System.Reflection.Assembly.GetFiles(bool)
+                //
+                case IntrinsicId.Assembly_GetFile:
+                case IntrinsicId.Assembly_GetFiles:
+                    diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile, calledMethod.GetDisplayName());
+                    break;
+
                 default:
                     throw new NotImplementedException("Unhandled intrinsic");
             }
