@@ -1761,10 +1761,12 @@ HCIMPLEND
 
 
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks/*Index*/ = 0;
+__declspec(selectany) __declspec(thread) uint32_t t_threadStaticBlocksSize = 0;
 __declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
 #else
-EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
+EXTERN_C __thread uint32_t t_maxThreadStaticBlocks = 0;
+EXTERN_C __thread uint32_t t_threadStaticBlocksSize = 0;
 EXTERN_C __thread void** t_threadStaticBlocks;
 #endif
 
@@ -1802,36 +1804,44 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
     void* staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
 
 
-    //HANDLE currentThread = GetCurrentThread();
-    //DWORD threadID = GetThreadId(currentThread);
+    HANDLE currentThread = GetCurrentThread();
+    DWORD threadID = GetThreadId(currentThread);
 #ifdef TARGET_WINDOWS
-    if (t_threadStaticBlocks == nullptr)
+
+
+    if ((staticBlockIndex > 0) /*TODO: Remove this once separate helper*/)
     {
-        t_threadStaticBlocks = (void **) new (nothrow) PTR_BYTE[100 * sizeof(PTR_BYTE)];
-        //printf("*** [Thread# %d] Initializing t_threadStaticBlocks: 0x%zx @ 0x%zx\n", threadID, (size_t)(t_threadStaticBlocks), (size_t)(&t_threadStaticBlocks));
-        memset(t_threadStaticBlocks, 0, 100 * sizeof(PTR_BYTE));
-        t_maxThreadStaticBlocks = 0;
-    }
-    if (staticBlockIndex < 100)
-    {        
+        if (t_threadStaticBlocksSize <= staticBlockIndex)
+        {
+            UINT32 prevThreadStaticBlocksSize = t_threadStaticBlocksSize;
+            void** prevThreadStaticBlock = t_threadStaticBlocks;
+
+            t_threadStaticBlocksSize = max(2 * t_threadStaticBlocksSize, staticBlockIndex + 1);
+            t_threadStaticBlocks = (void**) new (nothrow) PTR_BYTE[t_threadStaticBlocksSize * sizeof(PTR_BYTE)];
+            memset(t_threadStaticBlocks, 0, t_threadStaticBlocksSize * sizeof(PTR_BYTE));
+
+            if (prevThreadStaticBlocksSize > 0)
+            {
+                memcpy(t_threadStaticBlocks, prevThreadStaticBlock, prevThreadStaticBlocksSize);
+                delete prevThreadStaticBlock;
+            }
+        }
+
         //_ASSERTE(staticBlockIndex != 0);
         void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
         // We could be coming here 2nd time after running the ctor when we try to get the static block.
         // In such case, just avoid adding the same entry.
         if (currentEntry != staticBlock)
         {
-            //printf("*** [Thread# %d] Saving t_threadStaticBlocks[%u] @ 0x%zx = 0x%zx, ", threadID, staticBlockIndex, (size_t)(&(t_threadStaticBlocks[staticBlockIndex])), (size_t)(staticBlock));
+            printf("*** [Thread# %d] Saving t_threadStaticBlocks[%u] @ 0x%zx = 0x%zx, ", threadID, staticBlockIndex, (size_t)(&(t_threadStaticBlocks[staticBlockIndex])), (size_t)(staticBlock));
             _ASSERTE(currentEntry == nullptr);
             t_threadStaticBlocks[staticBlockIndex] = staticBlock;
-            //printf("OLD_t_maxThreadStaticBlocks: %u, ", t_maxThreadStaticBlocks);
+            printf("OLD_t_maxThreadStaticBlocks: %u, ", t_maxThreadStaticBlocks);
             t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
-            //printf("NEW_t_maxThreadStaticBlocks: %u, ", t_maxThreadStaticBlocks);
-            //printf("ADDR(t_maxThreadStaticBlocks): 0x%zx\n", (size_t)(&t_maxThreadStaticBlocks));
-        }        
-    }
-    else
-    {
-        //printf("*** [Thread# %d] Skipped t_threadStaticBlocks[%u] = 0x%zx\n", threadID, staticBlockIndex, (size_t)(staticBlock));
+            printf("NEW_t_maxThreadStaticBlocks: %u, ", t_maxThreadStaticBlocks);
+            printf("ADDR(t_maxThreadStaticBlocks): 0x%zx\n", (size_t)(&t_maxThreadStaticBlocks));
+        }
+            //_ASSERTE(CEEInfo::g_threadStaticBlockTypeIDMap.LookupType(staticBlockIndex));
     }
 #endif
     return staticBlock;
