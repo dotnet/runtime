@@ -22,7 +22,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public string UnmanagedObjectUnwrapper(Type t) => "";
 
-        public string GeneratedComInterface => "[global::System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute]";
+        public string GeneratedComInterface => @$"[global::System.Runtime.InteropServices.Marshalling.GeneratedComInterface, global::System.Runtime.InteropServices.Guid(""0A52B77C-E08B-4274-A1F4-1A2BF2C07E60"")]";
 
         public string AdditionalUserRequiredInterfaces(string userDefinedInterfaceName) => "";
     }

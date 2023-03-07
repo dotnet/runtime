@@ -2,17 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -74,13 +70,20 @@ namespace Microsoft.Interop
             {
                 // Start at offset 3 as 0-2 are IUnknown.
                 // TODO: Calculate starting offset based on base types.
-                // TODO: Extract IID from source.
+                Guid? guid = null;
+                var guidAttr = data.Symbol.GetAttributes().Where(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_GuidAttribute).SingleOrDefault();
+                if (guidAttr is not null)
+                {
+                    string? guidstr = guidAttr.ConstructorArguments.SingleOrDefault().Value as string;
+                    if (guidstr is not null)
+                        guid = new Guid(guidstr);
+                }
                 return new ComInterfaceContext(
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(data.Symbol),
                     new ContainingSyntaxContext(data.Syntax),
                     new ContainingSyntax(data.Syntax.Modifiers, data.Syntax.Kind(), data.Syntax.Identifier, data.Syntax.TypeParameterList),
                     3,
-                    Guid.Empty);
+                    guid ?? Guid.Empty);
             });
 
             context.RegisterDiagnostics(invalidTypeDiagnostics.Select((data, ct) => data.Diagnostic));
@@ -431,6 +434,16 @@ namespace Microsoft.Interop
                 {
                     return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers, syntax.Identifier.GetLocation(), type.Name, typeDecl.Identifier);
                 }
+            }
+            var guidAttr = type.GetAttributes().Where(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_InteropServices_GuidAttribute).SingleOrDefault();
+            var interfaceTypeAttr = type.GetAttributes().Where(attr => attr.AttributeClass.ToDisplayString() == TypeNames.InterfaceTypeAttribute).SingleOrDefault();
+            // Assume interfaceType is IUnknown for now
+            if (interfaceTypeAttr is not null
+                && (guidAttr is null
+                    || guidAttr.ConstructorArguments.SingleOrDefault().Value as string is null))
+            {
+                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedInterfaceMissingGuidAttribute, syntax.Identifier.GetLocation(), type.ToDisplayString());
+                // Missing Guid
             }
 
             return null;
