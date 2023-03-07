@@ -70,9 +70,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--")]
-		[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		// https://github.com/dotnet/runtime/issues/83080 - Analyzer doesn't recognize DynamicDependency in any way
+		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
 		[DynamicDependency ("RequiresInDynamicDependency")]
 		static void TestRequiresInDynamicDependency ()
 		{
