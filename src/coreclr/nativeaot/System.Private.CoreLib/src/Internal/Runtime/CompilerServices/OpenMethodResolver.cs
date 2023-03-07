@@ -20,10 +20,10 @@ namespace Internal.Runtime.CompilerServices
     // 3) Use the ResolveMethod function to do the virtual lookup. This function takes advantage of
     //    a lockless cache so the resolution is very fast for repeated lookups.
     [ReflectionBlocked]
-    public unsafe struct OpenMethodResolver : IEquatable<OpenMethodResolver>
+    public struct OpenMethodResolver : IEquatable<OpenMethodResolver>
     {
         // Lazy initialized to point to the type loader method when the first `GVMResolve` resolver is created
-        private static delegate*<object, RuntimeMethodHandle, nint> s_lazyGvmLookupForSlot;
+        private static unsafe delegate*<object, RuntimeMethodHandle, nint> s_lazyGvmLookupForSlot;
 
         public const short DispatchResolve = 0;
         public const short GVMResolve = 1;
@@ -56,7 +56,7 @@ namespace Internal.Runtime.CompilerServices
             _readerGCHandle = readerGCHandle;
             _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
 
-            if (s_lazyGvmLookupForSlot == IntPtr.Zero)
+            if (s_lazyGvmLookupForSlot == null)
                 s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
