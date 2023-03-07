@@ -3483,10 +3483,11 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     regNumber dividendReg = dividendOp->GetRegNum();
                     // At this point the divisor is known to be -1
                     //
-                    // Issue the 'subs  zr, dividendReg,1' instruction
-                    // this will set the V flags only when dividendReg is MinInt
+                    // Issue the 'cmp dividendReg, 1' instruction.
+                    // This is an alias to 'subs zr, dividendReg, 1'.
+                    // This will set the V (overflow) flags only when dividendReg is MinInt
                     //
-                    emit->emitIns_R_R_I(INS_subs, size, REG_ZR, dividendReg, 1);
+                    emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
                     genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
                                                                   // ArithmeticException
 
