@@ -22,6 +22,7 @@ namespace Internal.Runtime.CompilerServices
     [ReflectionBlocked]
     public unsafe struct OpenMethodResolver : IEquatable<OpenMethodResolver>
     {
+        // Lazy initialized to point to the type loader method when the first `GVMResolve` resolver is created
         private static delegate*<object, RuntimeMethodHandle, nint> s_lazyGvmLookupForSlot;
 
         public const short DispatchResolve = 0;
@@ -44,7 +45,9 @@ namespace Internal.Runtime.CompilerServices
             _handle = handle;
             _readerGCHandle = readerGCHandle;
             _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
-            s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
+            
+            if (s_lazyGvmLookupForSlot == IntPtr.Zero)
+                s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public unsafe OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, GCHandle readerGCHandle, int handle)
@@ -55,7 +58,9 @@ namespace Internal.Runtime.CompilerServices
             _handle = handle;
             _readerGCHandle = readerGCHandle;
             _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
-            s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
+
+            if (s_lazyGvmLookupForSlot == IntPtr.Zero)
+                s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle)
@@ -65,7 +70,9 @@ namespace Internal.Runtime.CompilerServices
             _declaringType = declaringType.ToEETypePtr();
             _handle = handle;
             _readerGCHandle = readerGCHandle;
-            s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
+
+            if (s_lazyGvmLookupForSlot == IntPtr.Zero)
+                s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle, short resolveType)
@@ -81,7 +88,9 @@ namespace Internal.Runtime.CompilerServices
                 _nonVirtualOpenInvokeCodePointer = RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(codePointer, declaringType);
             else
                 throw new NotSupportedException();
-            s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
+
+            if (s_lazyGvmLookupForSlot == IntPtr.Zero)
+                s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public short ResolverType
