@@ -20,7 +20,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
         public const string INativeAPI_IUnmanagedInterfaceTypeImpl = $$"""
-            partial interface INativeAPI
+            partial interface INativeAPI : IUnmanagedInterfaceType
             {
                 {{INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
             }
@@ -29,8 +29,6 @@ namespace ComInterfaceGenerator.Unit.Tests
         public const string INativeAPI_IUnmanagedInterfaceTypeMethodImpl = """
                 static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
             """;
-
-        public static abstract string NativeInterfaceUsage();
         string ICustomMarshallingSignatureTestProvider.BasicParametersAndModifiers(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -41,11 +39,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
         string ICustomMarshallingSignatureTestProvider.BasicParametersAndModifiersNoRef(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -56,11 +54,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         string ICustomMarshallingSignatureTestProvider.BasicParameterByValue(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
@@ -70,11 +68,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     void Method({typeName} value);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         string ICustomMarshallingSignatureTestProvider.BasicParameterWithByRefModifier(string modifier, string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
@@ -86,11 +84,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     void Method({modifier} {typeName} value);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
         string ICustomMarshallingSignatureTestProvider.BasicReturnType(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -99,11 +97,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     {typeName} Method();
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
         string ICustomMarshallingSignatureTestProvider.MarshalUsingParametersAndModifiers(string typeName, string marshallerTypeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -112,7 +110,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     [return: MarshalUsing(typeof({marshallerTypeName}))]
@@ -121,7 +119,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType
         [MarshalUsing(typeof({marshallerTypeName}))] in {typeName} pIn,
         [MarshalUsing(typeof({marshallerTypeName}))] ref {typeName} pRef,
         [MarshalUsing(typeof({marshallerTypeName}))] out {typeName} pOut);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -130,7 +128,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     [return:MarshalUsing(ConstantElementCount=10)]
@@ -141,7 +139,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType
         [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionParametersAndModifiers(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -151,7 +149,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     [return:MarshalUsing(typeof({marshallerType}), ConstantElementCount=10)]
@@ -163,7 +161,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType
         [MarshalUsing(typeof({marshallerType}), CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize
         );
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionReturnValueLength(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -173,13 +171,13 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     int Method(
         [MarshalUsing(typeof({marshallerType}), CountElementName = MarshalUsingAttribute.ReturnsCountValue)] out {collectionType} pOut
         );
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionOutConstantLength(string collectionType, string predeclaration) => $@"
 using System.Runtime.CompilerServices;
@@ -191,14 +189,14 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     int Method(
         [MarshalUsing(ConstantElementCount = 10)] out {collectionType} pOut
         );
 }}
-" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+" + INativeAPI_IUnmanagedInterfaceTypeImpl;
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionReturnConstantLength(string collectionType, string predeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -209,13 +207,13 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     [return:MarshalUsing(ConstantElementCount = 10)]
     {collectionType} Method();
 }}
-" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+" + INativeAPI_IUnmanagedInterfaceTypeImpl;
         string ICustomMarshallingSignatureTestProvider.CustomElementMarshalling(string collectionType, string elementMarshaller, string predeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -226,7 +224,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: TProvider.ImplicitThisParameter, Direction: TProvider.Direction)}
     [return:MarshalUsing(ConstantElementCount=10)]
@@ -240,6 +238,6 @@ partial interface INativeAPI : IUnmanagedInterfaceType
         out int pOutSize
         );
 }}
-" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+" + INativeAPI_IUnmanagedInterfaceTypeImpl;
     }
 }

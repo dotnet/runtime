@@ -52,7 +52,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
         public const string INativeAPI_IUnmanagedInterfaceTypeImpl = $$"""
-            partial interface INativeAPI
+            partial interface INativeAPI : IUnmanagedInterfaceType
             {
                 {{INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
             }
@@ -62,25 +62,17 @@ namespace ComInterfaceGenerator.Unit.Tests
                 static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
             """;
 
-        public static string NativeInterfaceUsage() => @"
-// Try using the generated native interface
-sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
-{
-    public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(System.Type type) => throw null;
-}
-";
-
         public string SpecifiedMethodIndexNoExplicitParameters => $@"
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0)}
     void Method();
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public string SpecifiedMethodIndexNoExplicitParametersNoImplicitThis => $@"
 using System.Runtime.InteropServices;
@@ -88,12 +80,12 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: false)}
     void Method();
 
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public string SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions => $@"
 using System.Runtime.CompilerServices;
@@ -102,7 +94,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
 
     {UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl) })}
@@ -125,7 +117,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType
     [SuppressGCTransition]
     {VirtualMethodIndex(4)}
     void Method4();
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public string BasicParametersAndModifiers(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -137,11 +129,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0)}
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public string BasicParametersAndModifiersManagedToUnmanaged(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -153,11 +145,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, Direction: MarshalDirection.ManagedToUnmanaged)}
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
         public string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).FullName!);
         public string BasicParametersAndModifiersNoRef(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -169,11 +161,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0)}
     {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public string BasicParametersAndModifiersNoImplicitThis(string typeName) => $@"
 using System.Runtime.CompilerServices;
@@ -182,11 +174,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: false)}
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public string BasicParametersAndModifiersNoImplicitThis<T>() => BasicParametersAndModifiersNoImplicitThis(typeof(T).FullName!);
         public string MarshalUsingCollectionCountInfoParametersAndModifiers<T>() => MarshalUsingCollectionCountInfoParametersAndModifiers(typeof(T).ToString());
@@ -198,7 +190,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0)}
     [return:MarshalUsing(ConstantElementCount=10)]
@@ -209,7 +201,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType
         [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize);
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public string BasicReturnTypeComExceptionHandling(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -219,11 +211,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ExceptionMarshalling : ExceptionMarshalling.Com)}
     {typeName} Method();
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public string BasicReturnTypeCustomExceptionHandling(string typeName, string customExceptionType, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -233,11 +225,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 {UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
 {GeneratedComInterface}
-partial interface INativeAPI : IUnmanagedInterfaceType
+partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ExceptionMarshallingType : Type.GetType(customExceptionType))}
     {typeName} Method();
-}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider<ManagedToUnmanaged>
         {
@@ -247,8 +239,6 @@ partial interface INativeAPI : IUnmanagedInterfaceType
             public static bool ImplicitThisParameter => true;
 
             public GeneratorKind Generator { get; }
-
-            public static string NativeInterfaceUsage() => CodeSnippets.NativeInterfaceUsage();
         }
         public class ManagedToUnmanagedNoImplicitThis : IVirtualMethodIndexSignatureProvider<ManagedToUnmanagedNoImplicitThis>
         {
@@ -259,8 +249,6 @@ partial interface INativeAPI : IUnmanagedInterfaceType
             public GeneratorKind Generator { get; }
 
             public ManagedToUnmanagedNoImplicitThis(GeneratorKind generator) => Generator = generator;
-
-            public static string NativeInterfaceUsage() => CodeSnippets.NativeInterfaceUsage();
         }
         public class UnmanagedToManaged : IVirtualMethodIndexSignatureProvider<UnmanagedToManaged>
         {
@@ -271,10 +259,6 @@ partial interface INativeAPI : IUnmanagedInterfaceType
             public GeneratorKind Generator { get; }
 
             public UnmanagedToManaged(GeneratorKind generator) => Generator = generator;
-
-            // Unmanaged-to-managed-only stubs don't provide implementations for the interface, so we don't want to try to use the generated nested interface
-            // since it won't have managed implementations for the methods
-            public static string NativeInterfaceUsage() => string.Empty;
         }
         public class Bidirectional : IVirtualMethodIndexSignatureProvider<Bidirectional>
         {
@@ -285,8 +269,6 @@ partial interface INativeAPI : IUnmanagedInterfaceType
             public GeneratorKind Generator { get; }
 
             public Bidirectional(GeneratorKind generator) => Generator = generator;
-
-            public static string NativeInterfaceUsage() => CodeSnippets.NativeInterfaceUsage();
         }
     }
 }
