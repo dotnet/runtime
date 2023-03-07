@@ -44,7 +44,6 @@
 #define OPFMT_WDDD _w, dreg, dreg, dreg
 #define _UNDEF(...) g_assert_not_reached ()
 #define SIMD_OP_CODE(reg_w, op, c) ((reg_w << 31) | (op) << 16 | (c))
-#define SIMD_TYPE_CODE(t,f) ((f) << (t))
 #define VREG_64 VREG_LOW
 #define VREG_128 VREG_FULL
 #define OPCODE_BASIC 0
