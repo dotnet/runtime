@@ -4514,7 +4514,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 
         lvaShadowSPslotsVar = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
         lvaSetStruct(lvaShadowSPslotsVar, typGetBlkLayout(slotsNeeded * TARGET_POINTER_SIZE), false);
-        lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+        lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
     }
 
 #endif // !FEATURE_EH_FUNCLETS
@@ -4854,6 +4854,7 @@ void Compiler::lvaAllocOutgoingArgSpaceVar()
     {
         lvaOutgoingArgSpaceVar = lvaGrabTempWithImplicitUse(false DEBUGARG("OutgoingArgSpace"));
         lvaSetStruct(lvaOutgoingArgSpaceVar, typGetBlkLayout(0), false);
+        lvaSetVarAddrExposed(lvaOutgoingArgSpaceVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICTLY));
     }
 
     noway_assert(lvaOutgoingArgSpaceVar >= info.compLocalsCount && lvaOutgoingArgSpaceVar < lvaCount);

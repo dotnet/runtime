@@ -476,6 +476,9 @@ enum class AddressExposedReason
     STRESS_LCL_FLD,                // Stress mode replaces localVar with localFld and makes them addrExposed.
     DISPATCH_RET_BUF,              // Caller return buffer dispatch.
     STRESS_POISON_IMPLICIT_BYREFS, // This is an implicit byref we want to poison.
+    EXTERNALLY_VISIBLE_IMPLICTLY,  // Local is visible externally without explicit escape in JIT IR.
+                                   // For example because it is used by GC or is the outgoing arg area
+                                   // that belongs to callees.
 };
 
 #endif // DEBUG
@@ -10339,6 +10342,7 @@ public:
         unsigned m_dispatchRetBuf;
         unsigned m_wideIndir;
         unsigned m_stressPoisonImplicitByrefs;
+        unsigned m_externallyVisibleImplicitly;
 
     public:
         void RecordLocal(const LclVarDsc* varDsc);

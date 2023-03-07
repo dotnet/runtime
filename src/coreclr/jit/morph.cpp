@@ -6020,6 +6020,12 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     assert(lvaIsImplicitByRefLocal(lvaTable[varDsc->lvFieldLclStart].lvParentLcl));
                     assert(fgGlobalMorph);
                 }
+#if FEATURE_FIXED_OUT_ARGS
+                else if (varNum == lvaOutgoingArgSpaceVar)
+                {
+                    // The outgoing arg space is exposed only at callees, which is ok for our purposes.
+                }
+#endif
                 else
                 {
                     failTailCall("Local address taken", varNum);
