@@ -12641,7 +12641,7 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned
 #if FEATURE_FIXED_OUT_ARGS
         sprintf_s(bufp, bufLength, " out+%02x", arg->AbiInfo.ByteOffset);
 #else
-            sprintf_s(bufp, bufLength, " on STK");
+        sprintf_s(bufp, bufLength, " on STK");
 #endif
     }
 }
@@ -19059,7 +19059,7 @@ bool GenTree::isContainableHWIntrinsic() const
         }
     }
 #else
-        return false;
+    return false;
 #endif // TARGET_XARCH
 }
 
@@ -19102,9 +19102,9 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         }
     }
 #elif defined(TARGET_ARM64)
-        return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
+    return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
 #else
-        return false;
+    return false;
 #endif
 }
 
@@ -19125,7 +19125,7 @@ bool GenTree::isEvexCompatibleHWIntrinsic()
     return HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
            !HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
 #else
-        return false;
+    return false;
 #endif
 }
 
@@ -19319,19 +19319,19 @@ GenTree* Compiler::gtNewSimdAbsNode(
         return gtNewSimdCndSelNode(type, op1, tmp, op1Dup2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
     }
 #elif defined(TARGET_ARM64)
-        NamedIntrinsic intrinsic = NI_AdvSimd_Abs;
+    NamedIntrinsic intrinsic = NI_AdvSimd_Abs;
 
-        if (simdBaseType == TYP_DOUBLE)
-        {
-            intrinsic = (simdSize == 8) ? NI_AdvSimd_AbsScalar : NI_AdvSimd_Arm64_Abs;
-        }
-        else if (varTypeIsLong(simdBaseType))
-        {
-            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_AbsScalar : NI_AdvSimd_Arm64_Abs;
-        }
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        intrinsic = (simdSize == 8) ? NI_AdvSimd_AbsScalar : NI_AdvSimd_Arm64_Abs;
+    }
+    else if (varTypeIsLong(simdBaseType))
+    {
+        intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_AbsScalar : NI_AdvSimd_Arm64_Abs;
+    }
 
-        assert(intrinsic != NI_Illegal);
-        return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    assert(intrinsic != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #else
 #error Unsupported platform
 #endif
@@ -19794,266 +19794,266 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             break;
         }
 #elif defined(TARGET_ARM64)
-            case GT_ADD:
+        case GT_ADD:
+        {
+            if (simdBaseType == TYP_DOUBLE)
             {
-                if (simdBaseType == TYP_DOUBLE)
-                {
-                    intrinsic = (simdSize == 8) ? NI_AdvSimd_AddScalar : NI_AdvSimd_Arm64_Add;
-                }
-                else if ((simdSize == 8) && varTypeIsLong(simdBaseType))
-                {
-                    intrinsic = NI_AdvSimd_AddScalar;
-                }
-                else
-                {
-                    intrinsic = NI_AdvSimd_Add;
-                }
-                break;
+                intrinsic = (simdSize == 8) ? NI_AdvSimd_AddScalar : NI_AdvSimd_Arm64_Add;
+            }
+            else if ((simdSize == 8) && varTypeIsLong(simdBaseType))
+            {
+                intrinsic = NI_AdvSimd_AddScalar;
+            }
+            else
+            {
+                intrinsic = NI_AdvSimd_Add;
+            }
+            break;
+        }
+
+        case GT_AND:
+        {
+            intrinsic = NI_AdvSimd_And;
+            break;
+        }
+
+        case GT_AND_NOT:
+        {
+            intrinsic = NI_AdvSimd_BitwiseClear;
+            break;
+        }
+
+        case GT_DIV:
+        {
+            // TODO-AARCH-CQ: We could support division by constant for integral types
+            assert(varTypeIsFloating(simdBaseType));
+
+            if (varTypeIsArithmetic(op2))
+            {
+                op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
             }
 
-            case GT_AND:
+            if ((simdSize == 8) && (simdBaseType == TYP_DOUBLE))
             {
-                intrinsic = NI_AdvSimd_And;
-                break;
+                intrinsic = NI_AdvSimd_DivideScalar;
+            }
+            else
+            {
+                intrinsic = NI_AdvSimd_Arm64_Divide;
+            }
+            break;
+        }
+
+        case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
+        {
+            assert((op != GT_RSH) || !varTypeIsUnsigned(simdBaseType));
+
+            // float and double don't have actual instructions for shifting
+            // so we'll just use the equivalent integer instruction instead.
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseJitType = CORINFO_TYPE_INT;
+                simdBaseType    = TYP_INT;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseJitType = CORINFO_TYPE_LONG;
+                simdBaseType    = TYP_LONG;
             }
 
-            case GT_AND_NOT:
+            // "over shifting" is platform specific behavior. We will match the C# behavior
+            // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot
+            // exceed the number of bits available in `T`. This is roughly equivalent to
+            // x % (sizeof(T) * 8), but that is "more expensive" and only the same for unsigned
+            // inputs, where-as we have a signed-input and so negative values would differ.
+
+            unsigned shiftCountMask = (genTypeSize(simdBaseType) * 8) - 1;
+
+            if (op2->IsCnsIntOrI())
             {
-                intrinsic = NI_AdvSimd_BitwiseClear;
-                break;
-            }
+                op2->AsIntCon()->gtIconVal &= shiftCountMask;
 
-            case GT_DIV:
-            {
-                // TODO-AARCH-CQ: We could support division by constant for integral types
-                assert(varTypeIsFloating(simdBaseType));
-
-                if (varTypeIsArithmetic(op2))
+                if ((simdSize == 8) && varTypeIsLong(simdBaseType))
                 {
-                    op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-                }
-
-                if ((simdSize == 8) && (simdBaseType == TYP_DOUBLE))
-                {
-                    intrinsic = NI_AdvSimd_DivideScalar;
-                }
-                else
-                {
-                    intrinsic = NI_AdvSimd_Arm64_Divide;
-                }
-                break;
-            }
-
-            case GT_LSH:
-            case GT_RSH:
-            case GT_RSZ:
-            {
-                assert((op != GT_RSH) || !varTypeIsUnsigned(simdBaseType));
-
-                // float and double don't have actual instructions for shifting
-                // so we'll just use the equivalent integer instruction instead.
-
-                if (simdBaseType == TYP_FLOAT)
-                {
-                    simdBaseJitType = CORINFO_TYPE_INT;
-                    simdBaseType    = TYP_INT;
-                }
-                else if (simdBaseType == TYP_DOUBLE)
-                {
-                    simdBaseJitType = CORINFO_TYPE_LONG;
-                    simdBaseType    = TYP_LONG;
-                }
-
-                // "over shifting" is platform specific behavior. We will match the C# behavior
-                // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot
-                // exceed the number of bits available in `T`. This is roughly equivalent to
-                // x % (sizeof(T) * 8), but that is "more expensive" and only the same for unsigned
-                // inputs, where-as we have a signed-input and so negative values would differ.
-
-                unsigned shiftCountMask = (genTypeSize(simdBaseType) * 8) - 1;
-
-                if (op2->IsCnsIntOrI())
-                {
-                    op2->AsIntCon()->gtIconVal &= shiftCountMask;
-
-                    if ((simdSize == 8) && varTypeIsLong(simdBaseType))
+                    if (op == GT_LSH)
                     {
-                        if (op == GT_LSH)
-                        {
-                            intrinsic = NI_AdvSimd_ShiftLeftLogicalScalar;
-                        }
-                        else if (op == GT_RSH)
-                        {
-                            intrinsic = NI_AdvSimd_ShiftRightArithmeticScalar;
-                        }
-                        else
-                        {
-                            assert(op == GT_RSZ);
-                            intrinsic = NI_AdvSimd_ShiftRightLogicalScalar;
-                        }
-                    }
-                    else if (op == GT_LSH)
-                    {
-                        intrinsic = NI_AdvSimd_ShiftLeftLogical;
+                        intrinsic = NI_AdvSimd_ShiftLeftLogicalScalar;
                     }
                     else if (op == GT_RSH)
                     {
-                        intrinsic = NI_AdvSimd_ShiftRightArithmetic;
+                        intrinsic = NI_AdvSimd_ShiftRightArithmeticScalar;
                     }
                     else
                     {
                         assert(op == GT_RSZ);
-                        intrinsic = NI_AdvSimd_ShiftRightLogical;
+                        intrinsic = NI_AdvSimd_ShiftRightLogicalScalar;
                     }
+                }
+                else if (op == GT_LSH)
+                {
+                    intrinsic = NI_AdvSimd_ShiftLeftLogical;
+                }
+                else if (op == GT_RSH)
+                {
+                    intrinsic = NI_AdvSimd_ShiftRightArithmetic;
                 }
                 else
                 {
-                    op2 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(shiftCountMask));
+                    assert(op == GT_RSZ);
+                    intrinsic = NI_AdvSimd_ShiftRightLogical;
+                }
+            }
+            else
+            {
+                op2 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(shiftCountMask));
 
-                    if (op != GT_LSH)
-                    {
-                        op2 = gtNewOperNode(GT_NEG, TYP_INT, op2);
-                    }
+                if (op != GT_LSH)
+                {
+                    op2 = gtNewOperNode(GT_NEG, TYP_INT, op2);
+                }
 
-                    op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
-                    if ((simdSize == 8) && varTypeIsLong(simdBaseType))
+                if ((simdSize == 8) && varTypeIsLong(simdBaseType))
+                {
+                    if (op == GT_LSH)
                     {
-                        if (op == GT_LSH)
-                        {
-                            intrinsic = NI_AdvSimd_ShiftLogicalScalar;
-                        }
-                        else if (op == GT_RSH)
-                        {
-                            intrinsic = NI_AdvSimd_ShiftArithmeticScalar;
-                        }
-                        else
-                        {
-                            intrinsic = NI_AdvSimd_ShiftLogicalScalar;
-                        }
-                    }
-                    else if (op == GT_LSH)
-                    {
-                        intrinsic = NI_AdvSimd_ShiftLogical;
+                        intrinsic = NI_AdvSimd_ShiftLogicalScalar;
                     }
                     else if (op == GT_RSH)
                     {
-                        intrinsic = NI_AdvSimd_ShiftArithmetic;
+                        intrinsic = NI_AdvSimd_ShiftArithmeticScalar;
                     }
                     else
                     {
-                        assert(op == GT_RSZ);
-                        intrinsic = NI_AdvSimd_ShiftLogical;
+                        intrinsic = NI_AdvSimd_ShiftLogicalScalar;
                     }
                 }
-                break;
+                else if (op == GT_LSH)
+                {
+                    intrinsic = NI_AdvSimd_ShiftLogical;
+                }
+                else if (op == GT_RSH)
+                {
+                    intrinsic = NI_AdvSimd_ShiftArithmetic;
+                }
+                else
+                {
+                    assert(op == GT_RSZ);
+                    intrinsic = NI_AdvSimd_ShiftLogical;
+                }
+            }
+            break;
+        }
+
+        case GT_MUL:
+        {
+            assert(!varTypeIsLong(simdBaseType));
+            GenTree** scalarOp = nullptr;
+
+            if (varTypeIsArithmetic(op1))
+            {
+                // MultiplyByScalar requires the scalar op to be op2
+                std::swap(op1, op2);
+                scalarOp = &op2;
+            }
+            else if (varTypeIsArithmetic(op2))
+            {
+                scalarOp = &op2;
             }
 
-            case GT_MUL:
+            switch (JitType2PreciseVarType(simdBaseJitType))
             {
-                assert(!varTypeIsLong(simdBaseType));
-                GenTree** scalarOp = nullptr;
-
-                if (varTypeIsArithmetic(op1))
+                case TYP_BYTE:
+                case TYP_UBYTE:
                 {
-                    // MultiplyByScalar requires the scalar op to be op2
-                    std::swap(op1, op2);
-                    scalarOp = &op2;
-                }
-                else if (varTypeIsArithmetic(op2))
-                {
-                    scalarOp = &op2;
-                }
-
-                switch (JitType2PreciseVarType(simdBaseJitType))
-                {
-                    case TYP_BYTE:
-                    case TYP_UBYTE:
+                    if (scalarOp != nullptr)
                     {
-                        if (scalarOp != nullptr)
-                        {
-                            *scalarOp = gtNewSimdCreateBroadcastNode(type, *scalarOp, simdBaseJitType, simdSize,
-                                                                     isSimdAsHWIntrinsic);
-                        }
+                        *scalarOp = gtNewSimdCreateBroadcastNode(type, *scalarOp, simdBaseJitType, simdSize,
+                                                                 isSimdAsHWIntrinsic);
+                    }
+                    intrinsic = NI_AdvSimd_Multiply;
+                    break;
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                case TYP_INT:
+                case TYP_UINT:
+                case TYP_FLOAT:
+                {
+                    if (scalarOp != nullptr)
+                    {
+                        intrinsic = NI_AdvSimd_MultiplyByScalar;
+                        *scalarOp = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, *scalarOp, simdBaseJitType, 8,
+                                                                    isSimdAsHWIntrinsic);
+                    }
+                    else
+                    {
                         intrinsic = NI_AdvSimd_Multiply;
-                        break;
                     }
-
-                    case TYP_SHORT:
-                    case TYP_USHORT:
-                    case TYP_INT:
-                    case TYP_UINT:
-                    case TYP_FLOAT:
-                    {
-                        if (scalarOp != nullptr)
-                        {
-                            intrinsic = NI_AdvSimd_MultiplyByScalar;
-                            *scalarOp = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, *scalarOp, simdBaseJitType, 8,
-                                                                        isSimdAsHWIntrinsic);
-                        }
-                        else
-                        {
-                            intrinsic = NI_AdvSimd_Multiply;
-                        }
-                        break;
-                    }
-
-                    case TYP_DOUBLE:
-                    {
-                        if (scalarOp != nullptr)
-                        {
-                            intrinsic = NI_AdvSimd_Arm64_MultiplyByScalar;
-                            *scalarOp = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, *scalarOp, simdBaseJitType, 8,
-                                                                        isSimdAsHWIntrinsic);
-                        }
-                        else
-                        {
-                            intrinsic = NI_AdvSimd_Arm64_Multiply;
-                        }
-
-                        if (simdSize == 8)
-                        {
-                            intrinsic = NI_AdvSimd_MultiplyScalar;
-                        }
-                        break;
-                    }
-
-                    default:
-                    {
-                        unreached();
-                    }
+                    break;
                 }
-                break;
-            }
 
-            case GT_OR:
-            {
-                intrinsic = NI_AdvSimd_Or;
-                break;
-            }
-
-            case GT_SUB:
-            {
-                if (simdBaseType == TYP_DOUBLE)
+                case TYP_DOUBLE:
                 {
-                    intrinsic = (simdSize == 8) ? NI_AdvSimd_SubtractScalar : NI_AdvSimd_Arm64_Subtract;
-                }
-                else if ((simdSize == 8) && varTypeIsLong(simdBaseType))
-                {
-                    intrinsic = NI_AdvSimd_SubtractScalar;
-                }
-                else
-                {
-                    intrinsic = NI_AdvSimd_Subtract;
-                }
-                break;
-            }
+                    if (scalarOp != nullptr)
+                    {
+                        intrinsic = NI_AdvSimd_Arm64_MultiplyByScalar;
+                        *scalarOp = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, *scalarOp, simdBaseJitType, 8,
+                                                                    isSimdAsHWIntrinsic);
+                    }
+                    else
+                    {
+                        intrinsic = NI_AdvSimd_Arm64_Multiply;
+                    }
 
-            case GT_XOR:
-            {
-                intrinsic = NI_AdvSimd_Xor;
-                break;
+                    if (simdSize == 8)
+                    {
+                        intrinsic = NI_AdvSimd_MultiplyScalar;
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
             }
+            break;
+        }
+
+        case GT_OR:
+        {
+            intrinsic = NI_AdvSimd_Or;
+            break;
+        }
+
+        case GT_SUB:
+        {
+            if (simdBaseType == TYP_DOUBLE)
+            {
+                intrinsic = (simdSize == 8) ? NI_AdvSimd_SubtractScalar : NI_AdvSimd_Arm64_Subtract;
+            }
+            else if ((simdSize == 8) && varTypeIsLong(simdBaseType))
+            {
+                intrinsic = NI_AdvSimd_SubtractScalar;
+            }
+            else
+            {
+                intrinsic = NI_AdvSimd_Subtract;
+            }
+            break;
+        }
+
+        case GT_XOR:
+        {
+            intrinsic = NI_AdvSimd_Xor;
+            break;
+        }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -20096,14 +20096,14 @@ GenTree* Compiler::gtNewSimdCeilNode(
         intrinsic = NI_SSE41_Ceiling;
     }
 #elif defined(TARGET_ARM64)
-        if (simdBaseType == TYP_DOUBLE)
-        {
-            intrinsic = (simdSize == 8) ? NI_AdvSimd_CeilingScalar : NI_AdvSimd_Arm64_Ceiling;
-        }
-        else
-        {
-            intrinsic = NI_AdvSimd_Ceiling;
-        }
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        intrinsic = (simdSize == 8) ? NI_AdvSimd_CeilingScalar : NI_AdvSimd_Arm64_Ceiling;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_Ceiling;
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -20658,74 +20658,73 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
             break;
         }
 #elif defined(TARGET_ARM64)
-            case GT_EQ:
+        case GT_EQ:
+        {
+            if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
             {
-                if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
-                {
-                    intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
-                }
-                else
-                {
-                    intrinsic = NI_AdvSimd_CompareEqual;
-                }
-                break;
+                intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
             }
+            else
+            {
+                intrinsic = NI_AdvSimd_CompareEqual;
+            }
+            break;
+        }
 
-            case GT_GE:
+        case GT_GE:
+        {
+            if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
             {
-                if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
-                {
-                    intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar
-                                                : NI_AdvSimd_Arm64_CompareGreaterThanOrEqual;
-                }
-                else
-                {
-                    intrinsic = NI_AdvSimd_CompareGreaterThanOrEqual;
-                }
-                break;
+                intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar
+                                            : NI_AdvSimd_Arm64_CompareGreaterThanOrEqual;
             }
+            else
+            {
+                intrinsic = NI_AdvSimd_CompareGreaterThanOrEqual;
+            }
+            break;
+        }
 
-            case GT_GT:
+        case GT_GT:
+        {
+            if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
             {
-                if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
-                {
-                    intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareGreaterThanScalar
-                                                : NI_AdvSimd_Arm64_CompareGreaterThan;
-                }
-                else
-                {
-                    intrinsic = NI_AdvSimd_CompareGreaterThan;
-                }
-                break;
+                intrinsic =
+                    (simdSize == 8) ? NI_AdvSimd_Arm64_CompareGreaterThanScalar : NI_AdvSimd_Arm64_CompareGreaterThan;
             }
+            else
+            {
+                intrinsic = NI_AdvSimd_CompareGreaterThan;
+            }
+            break;
+        }
 
-            case GT_LE:
+        case GT_LE:
+        {
+            if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
             {
-                if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
-                {
-                    intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar
-                                                : NI_AdvSimd_Arm64_CompareLessThanOrEqual;
-                }
-                else
-                {
-                    intrinsic = NI_AdvSimd_CompareLessThanOrEqual;
-                }
-                break;
+                intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar
+                                            : NI_AdvSimd_Arm64_CompareLessThanOrEqual;
             }
+            else
+            {
+                intrinsic = NI_AdvSimd_CompareLessThanOrEqual;
+            }
+            break;
+        }
 
-            case GT_LT:
+        case GT_LT:
+        {
+            if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
             {
-                if ((varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE)))
-                {
-                    intrinsic =
-                        (simdSize == 8) ? NI_AdvSimd_Arm64_CompareLessThanScalar : NI_AdvSimd_Arm64_CompareLessThan;
-                }
-                else
-                {
-                    intrinsic = NI_AdvSimd_CompareLessThan;
-                }
-                break;
+                intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareLessThanScalar : NI_AdvSimd_Arm64_CompareLessThan;
             }
+            else
+            {
+                intrinsic = NI_AdvSimd_CompareLessThan;
+            }
+            break;
+        }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -20822,44 +20821,44 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
             break;
         }
 #elif defined(TARGET_ARM64)
-            case GT_EQ:
+        case GT_EQ:
+        {
+            intrinsic = (simdSize == 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
+            break;
+        }
+
+        case GT_GE:
+        case GT_GT:
+        case GT_LE:
+        case GT_LT:
+        {
+            // We want to generate a comparison along the lines of
+            // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
+
+            if (simdSize == 8)
             {
-                intrinsic = (simdSize == 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
-                break;
+                intrinsic = NI_Vector64_op_Equality;
+            }
+            else
+            {
+                intrinsic = NI_Vector128_op_Equality;
             }
 
-            case GT_GE:
-            case GT_GT:
-            case GT_LE:
-            case GT_LT:
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            op2 = gtNewAllBitsSetConNode(simdType);
+
+            if (simdBaseType == TYP_FLOAT)
             {
-                // We want to generate a comparison along the lines of
-                // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
-
-                if (simdSize == 8)
-                {
-                    intrinsic = NI_Vector64_op_Equality;
-                }
-                else
-                {
-                    intrinsic = NI_Vector128_op_Equality;
-                }
-
-                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-                op2 = gtNewAllBitsSetConNode(simdType);
-
-                if (simdBaseType == TYP_FLOAT)
-                {
-                    simdBaseType    = TYP_INT;
-                    simdBaseJitType = CORINFO_TYPE_INT;
-                }
-                else if (simdBaseType == TYP_DOUBLE)
-                {
-                    simdBaseType    = TYP_LONG;
-                    simdBaseJitType = CORINFO_TYPE_LONG;
-                }
-                break;
+                simdBaseType    = TYP_INT;
+                simdBaseJitType = CORINFO_TYPE_INT;
             }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseType    = TYP_LONG;
+                simdBaseJitType = CORINFO_TYPE_LONG;
+            }
+            break;
+        }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -20958,38 +20957,38 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
             break;
         }
 #elif defined(TARGET_ARM64)
-            case GT_EQ:
-            case GT_GE:
-            case GT_GT:
-            case GT_LE:
-            case GT_LT:
+        case GT_EQ:
+        case GT_GE:
+        case GT_GT:
+        case GT_LE:
+        case GT_LT:
+        {
+            // We want to generate a comparison along the lines of
+            // GT_XX(op1, op2).As<T, TInteger>() != Vector128<TInteger>.Zero
+
+            intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
+
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            op2 = gtNewZeroConNode(simdType);
+
+            if (simdBaseType == TYP_FLOAT)
             {
-                // We want to generate a comparison along the lines of
-                // GT_XX(op1, op2).As<T, TInteger>() != Vector128<TInteger>.Zero
-
-                intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
-
-                op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-                op2 = gtNewZeroConNode(simdType);
-
-                if (simdBaseType == TYP_FLOAT)
-                {
-                    simdBaseType    = TYP_INT;
-                    simdBaseJitType = CORINFO_TYPE_INT;
-                }
-                else if (simdBaseType == TYP_DOUBLE)
-                {
-                    simdBaseType    = TYP_LONG;
-                    simdBaseJitType = CORINFO_TYPE_LONG;
-                }
-                break;
+                simdBaseType    = TYP_INT;
+                simdBaseJitType = CORINFO_TYPE_INT;
             }
-
-            case GT_NE:
+            else if (simdBaseType == TYP_DOUBLE)
             {
-                intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
-                break;
+                simdBaseType    = TYP_LONG;
+                simdBaseJitType = CORINFO_TYPE_LONG;
             }
+            break;
+        }
+
+        case GT_NE:
+        {
+            intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
+            break;
+        }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21036,8 +21035,8 @@ GenTree* Compiler::gtNewSimdCndSelNode(var_types   type,
     intrinsic = (simdSize == 32) ? NI_Vector256_ConditionalSelect : NI_Vector128_ConditionalSelect;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #elif defined(TARGET_ARM64)
-        return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_AdvSimd_BitwiseSelect, simdBaseJitType, simdSize,
-                                        isSimdAsHWIntrinsic);
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_AdvSimd_BitwiseSelect, simdBaseJitType, simdSize,
+                                    isSimdAsHWIntrinsic);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21167,10 +21166,10 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(
         hwIntrinsicID = NI_Vector256_Create;
     }
 #elif defined(TARGET_ARM64)
-        if (simdSize == 8)
-        {
-            hwIntrinsicID = NI_Vector64_Create;
-        }
+    if (simdSize == 8)
+    {
+        hwIntrinsicID = NI_Vector64_Create;
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21275,10 +21274,10 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(
         hwIntrinsicID = NI_Vector256_CreateScalar;
     }
 #elif defined(TARGET_ARM64)
-        if (simdSize == 8)
-        {
-            hwIntrinsicID = (genTypeSize(simdBaseType) == 8) ? NI_Vector64_Create : NI_Vector64_CreateScalar;
-        }
+    if (simdSize == 8)
+    {
+        hwIntrinsicID = (genTypeSize(simdBaseType) == 8) ? NI_Vector64_Create : NI_Vector64_CreateScalar;
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21415,10 +21414,10 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(
         hwIntrinsicID = NI_Vector256_CreateScalarUnsafe;
     }
 #elif defined(TARGET_ARM64)
-        if (simdSize == 8)
-        {
-            hwIntrinsicID = (genTypeSize(simdBaseType) == 8) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
-        }
+    if (simdSize == 8)
+    {
+        hwIntrinsicID = (genTypeSize(simdBaseType) == 8) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21466,8 +21465,8 @@ GenTree* Compiler::gtNewSimdDotProdNode(var_types   type,
         intrinsic = NI_Vector128_Dot;
     }
 #elif defined(TARGET_ARM64)
-        assert(!varTypeIsLong(simdBaseType));
-        intrinsic = (simdSize == 8) ? NI_Vector64_Dot : NI_Vector128_Dot;
+    assert(!varTypeIsLong(simdBaseType));
+    intrinsic = (simdSize == 8) ? NI_Vector64_Dot : NI_Vector128_Dot;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21503,14 +21502,14 @@ GenTree* Compiler::gtNewSimdFloorNode(
         intrinsic = NI_SSE41_Floor;
     }
 #elif defined(TARGET_ARM64)
-        if (simdBaseType == TYP_DOUBLE)
-        {
-            intrinsic = (simdSize == 8) ? NI_AdvSimd_FloorScalar : NI_AdvSimd_Arm64_Floor;
-        }
-        else
-        {
-            intrinsic = NI_AdvSimd_Floor;
-        }
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        intrinsic = (simdSize == 8) ? NI_AdvSimd_FloorScalar : NI_AdvSimd_Arm64_Floor;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_Floor;
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21560,10 +21559,10 @@ GenTree* Compiler::gtNewSimdGetElementNode(var_types   type,
         intrinsicId = NI_Vector256_GetElement;
     }
 #elif defined(TARGET_ARM64)
-        if (simdSize == 8)
-        {
-            intrinsicId = NI_Vector64_GetElement;
-        }
+    if (simdSize == 8)
+    {
+        intrinsicId = NI_Vector64_GetElement;
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21658,12 +21657,12 @@ GenTree* Compiler::gtNewSimdLoadAlignedNode(
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #elif defined(TARGET_ARM64)
-        // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
-        // aligned when optimizations are disable, so only skip the intrinsic handling
-        // if optimizations are enabled
+    // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+    // aligned when optimizations are disable, so only skip the intrinsic handling
+    // if optimizations are enabled
 
-        assert(opts.OptimizationEnabled());
-        return gtNewSimdLoadNode(type, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    assert(opts.OptimizationEnabled());
+    return gtNewSimdLoadNode(type, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21747,12 +21746,12 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #elif defined(TARGET_ARM64)
-        // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
-        // aligned when optimizations are disable, so only skip the intrinsic handling
-        // if optimizations are enabled
+    // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+    // aligned when optimizations are disable, so only skip the intrinsic handling
+    // if optimizations are enabled
 
-        assert(opts.OptimizationEnabled());
-        return gtNewSimdLoadNode(type, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    assert(opts.OptimizationEnabled());
+    return gtNewSimdLoadNode(type, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -21920,17 +21919,17 @@ GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
         }
     }
 #elif defined(TARGET_ARM64)
-        if (!varTypeIsLong(simdBaseType))
+    if (!varTypeIsLong(simdBaseType))
+    {
+        if (simdBaseType == TYP_DOUBLE)
         {
-            if (simdBaseType == TYP_DOUBLE)
-            {
-                intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_MaxScalar : NI_AdvSimd_Arm64_Max;
-            }
-            else
-            {
-                intrinsic = NI_AdvSimd_Max;
-            }
+            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_MaxScalar : NI_AdvSimd_Arm64_Max;
         }
+        else
+        {
+            intrinsic = NI_AdvSimd_Max;
+        }
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -22111,17 +22110,17 @@ GenTree* Compiler::gtNewSimdMinNode(var_types   type,
         }
     }
 #elif defined(TARGET_ARM64)
-        if (!varTypeIsLong(simdBaseType))
+    if (!varTypeIsLong(simdBaseType))
+    {
+        if (simdBaseType == TYP_DOUBLE)
         {
-            if (simdBaseType == TYP_DOUBLE)
-            {
-                intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_MinScalar : NI_AdvSimd_Arm64_Min;
-            }
-            else
-            {
-                intrinsic = NI_AdvSimd_Min;
-            }
+            intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_MinScalar : NI_AdvSimd_Arm64_Min;
         }
+        else
+        {
+            intrinsic = NI_AdvSimd_Min;
+        }
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -22495,62 +22494,62 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
         }
     }
 #elif defined(TARGET_ARM64)
-        if (simdSize == 16)
+    if (simdSize == 16)
+    {
+        if (varTypeIsFloating(simdBaseType))
         {
-            if (varTypeIsFloating(simdBaseType))
-            {
-                // var tmp1 = AdvSimd.Arm64.ConvertToSingleLower(op1);
-                // return AdvSimd.Arm64.ConvertToSingleUpper(tmp1, op2);
+            // var tmp1 = AdvSimd.Arm64.ConvertToSingleLower(op1);
+            // return AdvSimd.Arm64.ConvertToSingleUpper(tmp1, op2);
 
-                tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_ConvertToSingleLower, simdBaseJitType,
-                                                8, isSimdAsHWIntrinsic);
-                return gtNewSimdHWIntrinsicNode(type, tmp1, op2, NI_AdvSimd_Arm64_ConvertToSingleUpper, simdBaseJitType,
-                                                simdSize, isSimdAsHWIntrinsic);
-            }
-            else
-            {
-                // var tmp1 = AdvSimd.ExtractNarrowingLower(op1);
-                // return AdvSimd.ExtractNarrowingUpper(tmp1, op2);
-
-                tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_ExtractNarrowingLower, simdBaseJitType, 8,
-                                                isSimdAsHWIntrinsic);
-                return gtNewSimdHWIntrinsicNode(type, tmp1, op2, NI_AdvSimd_ExtractNarrowingUpper, simdBaseJitType,
-                                                simdSize, isSimdAsHWIntrinsic);
-            }
-        }
-        else if (varTypeIsFloating(simdBaseType))
-        {
-            // var tmp1 = op1.ToVector128Unsafe();
-            // var tmp2 = AdvSimd.InsertScalar(tmp1, op2);
-            // return AdvSimd.Arm64.ConvertToSingleLower(tmp2);
-
-            CorInfoType tmp2BaseJitType = CORINFO_TYPE_DOUBLE;
-
-            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseJitType, simdSize,
+            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_ConvertToSingleLower, simdBaseJitType, 8,
                                             isSimdAsHWIntrinsic);
-            tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, gtNewIconNode(1), op2, NI_AdvSimd_InsertScalar,
-                                            tmp2BaseJitType, 16, isSimdAsHWIntrinsic);
-
-            return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_Arm64_ConvertToSingleLower, simdBaseJitType,
+            return gtNewSimdHWIntrinsicNode(type, tmp1, op2, NI_AdvSimd_Arm64_ConvertToSingleUpper, simdBaseJitType,
                                             simdSize, isSimdAsHWIntrinsic);
         }
         else
         {
-            // var tmp1 = op1.ToVector128Unsafe();
-            // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64()).As<T>(); - signed integer use int64,
-            // unsigned integer use uint64
-            // return AdvSimd.ExtractNarrowingLower(tmp2);
+            // var tmp1 = AdvSimd.ExtractNarrowingLower(op1);
+            // return AdvSimd.ExtractNarrowingUpper(tmp1, op2);
 
-            CorInfoType tmp2BaseJitType = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
-
-            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseJitType, simdSize,
+            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_ExtractNarrowingLower, simdBaseJitType, 8,
                                             isSimdAsHWIntrinsic);
-            tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, gtNewIconNode(1), op2, NI_AdvSimd_InsertScalar,
-                                            tmp2BaseJitType, 16, isSimdAsHWIntrinsic);
-
-            return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_ExtractNarrowingLower, simdBaseJitType, simdSize,
-                                            isSimdAsHWIntrinsic);
+            return gtNewSimdHWIntrinsicNode(type, tmp1, op2, NI_AdvSimd_ExtractNarrowingUpper, simdBaseJitType,
+                                            simdSize, isSimdAsHWIntrinsic);
         }
+    }
+    else if (varTypeIsFloating(simdBaseType))
+    {
+        // var tmp1 = op1.ToVector128Unsafe();
+        // var tmp2 = AdvSimd.InsertScalar(tmp1, op2);
+        // return AdvSimd.Arm64.ConvertToSingleLower(tmp2);
+
+        CorInfoType tmp2BaseJitType = CORINFO_TYPE_DOUBLE;
+
+        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseJitType, simdSize,
+                                        isSimdAsHWIntrinsic);
+        tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, gtNewIconNode(1), op2, NI_AdvSimd_InsertScalar,
+                                        tmp2BaseJitType, 16, isSimdAsHWIntrinsic);
+
+        return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_Arm64_ConvertToSingleLower, simdBaseJitType, simdSize,
+                                        isSimdAsHWIntrinsic);
+    }
+    else
+    {
+        // var tmp1 = op1.ToVector128Unsafe();
+        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64()).As<T>(); - signed integer use int64,
+        // unsigned integer use uint64
+        // return AdvSimd.ExtractNarrowingLower(tmp2);
+
+        CorInfoType tmp2BaseJitType = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
+
+        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseJitType, simdSize,
+                                        isSimdAsHWIntrinsic);
+        tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, gtNewIconNode(1), op2, NI_AdvSimd_InsertScalar,
+                                        tmp2BaseJitType, 16, isSimdAsHWIntrinsic);
+
+        return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_ExtractNarrowingLower, simdBaseJitType, simdSize,
+                                        isSimdAsHWIntrinsic);
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -22805,47 +22804,46 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
 
     return retNode;
 #elif defined(TARGET_ARM64)
-        uint64_t value  = 0;
-        simd_t   vecCns = {};
+    uint64_t value  = 0;
+    simd_t   vecCns = {};
 
-        for (size_t index = 0; index < elementCount; index++)
+    for (size_t index = 0; index < elementCount; index++)
+    {
+        value = op2->GetIntegralVectorConstElement(index, simdBaseType);
+
+        if (value < elementCount)
         {
-            value = op2->GetIntegralVectorConstElement(index, simdBaseType);
-
-            if (value < elementCount)
+            for (uint32_t i = 0; i < elementSize; i++)
             {
-                for (uint32_t i = 0; i < elementSize; i++)
-                {
-                    vecCns.u8[(index * elementSize) + i] = (uint8_t)((value * elementSize) + i);
-                }
-            }
-            else
-            {
-                for (uint32_t i = 0; i < elementSize; i++)
-                {
-                    vecCns.u8[(index * elementSize) + i] = 0xFF;
-                }
+                vecCns.u8[(index * elementSize) + i] = (uint8_t)((value * elementSize) + i);
             }
         }
-
-        NamedIntrinsic lookupIntrinsic = NI_AdvSimd_VectorTableLookup;
-
-        if (simdSize == 16)
+        else
         {
-            lookupIntrinsic = NI_AdvSimd_Arm64_VectorTableLookup;
-
-            op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128, simdBaseJitType, simdSize,
-                                           isSimdAsHWIntrinsic);
+            for (uint32_t i = 0; i < elementSize; i++)
+            {
+                vecCns.u8[(index * elementSize) + i] = 0xFF;
+            }
         }
+    }
 
-        // VectorTableLookup is only valid on byte/sbyte
-        simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+    NamedIntrinsic lookupIntrinsic = NI_AdvSimd_VectorTableLookup;
 
-        op2                        = gtNewVconNode(type);
-        op2->AsVecCon()->gtSimdVal = vecCns;
+    if (simdSize == 16)
+    {
+        lookupIntrinsic = NI_AdvSimd_Arm64_VectorTableLookup;
 
-        return gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseJitType, simdSize,
-                                        isSimdAsHWIntrinsic);
+        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128, simdBaseJitType, simdSize,
+                                       isSimdAsHWIntrinsic);
+    }
+
+    // VectorTableLookup is only valid on byte/sbyte
+    simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+
+    op2                        = gtNewVconNode(type);
+    op2->AsVecCon()->gtSimdVal = vecCns;
+
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -22882,14 +22880,14 @@ GenTree* Compiler::gtNewSimdSqrtNode(
         intrinsic = NI_SSE2_Sqrt;
     }
 #elif defined(TARGET_ARM64)
-        if ((simdSize == 8) && (simdBaseType == TYP_DOUBLE))
-        {
-            intrinsic = NI_AdvSimd_SqrtScalar;
-        }
-        else
-        {
-            intrinsic = NI_AdvSimd_Arm64_Sqrt;
-        }
+    if ((simdSize == 8) && (simdBaseType == TYP_DOUBLE))
+    {
+        intrinsic = NI_AdvSimd_SqrtScalar;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_Arm64_Sqrt;
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -22973,12 +22971,12 @@ GenTree* Compiler::gtNewSimdStoreAlignedNode(
 
     return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #elif defined(TARGET_ARM64)
-        // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
-        // aligned when optimizations are disable, so only skip the intrinsic handling
-        // if optimizations are enabled
+    // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+    // aligned when optimizations are disable, so only skip the intrinsic handling
+    // if optimizations are enabled
 
-        assert(opts.OptimizationEnabled());
-        return gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    assert(opts.OptimizationEnabled());
+    return gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23030,12 +23028,12 @@ GenTree* Compiler::gtNewSimdStoreNonTemporalNode(
 
     return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #elif defined(TARGET_ARM64)
-        // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
-        // aligned when optimizations are disable, so only skip the intrinsic handling
-        // if optimizations are enabled
+    // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+    // aligned when optimizations are disable, so only skip the intrinsic handling
+    // if optimizations are enabled
 
-        assert(opts.OptimizationEnabled());
-        return gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    assert(opts.OptimizationEnabled());
+    return gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23114,77 +23112,74 @@ GenTree* Compiler::gtNewSimdSumNode(
 
     return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #elif defined(TARGET_ARM64)
-        switch (simdBaseType)
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
         {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            case TYP_SHORT:
-            case TYP_USHORT:
-            {
-                tmp = gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize,
-                                               isSimdAsHWIntrinsic);
-                return gtNewSimdHWIntrinsicNode(type, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8,
-                                                isSimdAsHWIntrinsic);
-            }
+            tmp = gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize,
+                                           isSimdAsHWIntrinsic);
+            return gtNewSimdHWIntrinsicNode(type, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8, isSimdAsHWIntrinsic);
+        }
 
-            case TYP_INT:
-            case TYP_UINT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            if (simdSize == 8)
             {
-                if (simdSize == 8)
+                tmp = fgMakeMultiUse(&op1, clsHnd);
+                tmp = gtNewSimdHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_AddPairwise, simdBaseJitType, simdSize,
+                                               isSimdAsHWIntrinsic);
+            }
+            else
+            {
+                tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 16,
+                                               isSimdAsHWIntrinsic);
+            }
+            return gtNewSimdHWIntrinsicNode(type, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8, isSimdAsHWIntrinsic);
+        }
+
+        case TYP_FLOAT:
+        {
+            if (simdSize == 8)
+            {
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
+                                               simdSize, isSimdAsHWIntrinsic);
+            }
+            else
+            {
+                unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                int      haddCount    = genLog2(vectorLength);
+
+                for (int i = 0; i < haddCount; i++)
                 {
                     tmp = fgMakeMultiUse(&op1, clsHnd);
-                    tmp = gtNewSimdHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_AddPairwise, simdBaseJitType,
+                    op1 = gtNewSimdHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_Arm64_AddPairwise, simdBaseJitType,
                                                    simdSize, isSimdAsHWIntrinsic);
                 }
-                else
-                {
-                    tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 16,
-                                                   isSimdAsHWIntrinsic);
-                }
-                return gtNewSimdHWIntrinsicNode(type, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8,
-                                                isSimdAsHWIntrinsic);
             }
-
-            case TYP_FLOAT:
-            {
-                if (simdSize == 8)
-                {
-                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
-                                                   simdSize, isSimdAsHWIntrinsic);
-                }
-                else
-                {
-                    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
-                    int      haddCount    = genLog2(vectorLength);
-
-                    for (int i = 0; i < haddCount; i++)
-                    {
-                        tmp = fgMakeMultiUse(&op1, clsHnd);
-                        op1 = gtNewSimdHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_Arm64_AddPairwise,
-                                                       simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-                    }
-                }
-                return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize,
-                                                isSimdAsHWIntrinsic);
-            }
-
-            case TYP_DOUBLE:
-            case TYP_LONG:
-            case TYP_ULONG:
-            {
-                if (simdSize == 16)
-                {
-                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
-                                                   simdSize, isSimdAsHWIntrinsic);
-                }
-                return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector64_ToScalar, simdBaseJitType, 8,
-                                                isSimdAsHWIntrinsic);
-            }
-            default:
-            {
-                unreached();
-            }
+            return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize,
+                                            isSimdAsHWIntrinsic);
         }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            if (simdSize == 16)
+            {
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
+                                               simdSize, isSimdAsHWIntrinsic);
+            }
+            return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector64_ToScalar, simdBaseJitType, 8, isSimdAsHWIntrinsic);
+        }
+        default:
+        {
+            unreached();
+        }
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23234,39 +23229,37 @@ GenTree* Compiler::gtNewSimdUnOpNode(genTreeOps  op,
             return gtNewSimdBinOpNode(GT_XOR, type, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
         }
 #elif defined(TARGET_ARM64)
-            case GT_NEG:
+        case GT_NEG:
+        {
+            if (varTypeIsSigned(simdBaseType))
             {
-                if (varTypeIsSigned(simdBaseType))
+                if (simdBaseType == TYP_LONG)
                 {
-                    if (simdBaseType == TYP_LONG)
-                    {
-                        intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_NegateScalar : NI_AdvSimd_Arm64_Negate;
-                    }
-                    else if (simdBaseType == TYP_DOUBLE)
-                    {
-                        intrinsic = (simdSize == 8) ? NI_AdvSimd_NegateScalar : NI_AdvSimd_Arm64_Negate;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AdvSimd_Negate;
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize,
-                                                    isSimdAsHWIntrinsic);
+                    intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_NegateScalar : NI_AdvSimd_Arm64_Negate;
+                }
+                else if (simdBaseType == TYP_DOUBLE)
+                {
+                    intrinsic = (simdSize == 8) ? NI_AdvSimd_NegateScalar : NI_AdvSimd_Arm64_Negate;
                 }
                 else
                 {
-                    // Zero - op1
-                    op2 = gtNewZeroConNode(type);
-                    return gtNewSimdBinOpNode(GT_SUB, type, op2, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                    intrinsic = NI_AdvSimd_Negate;
                 }
-            }
 
-            case GT_NOT:
-            {
-                return gtNewSimdHWIntrinsicNode(type, op1, NI_AdvSimd_Not, simdBaseJitType, simdSize,
-                                                isSimdAsHWIntrinsic);
+                return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
             }
+            else
+            {
+                // Zero - op1
+                op2 = gtNewZeroConNode(type);
+                return gtNewSimdBinOpNode(GT_SUB, type, op2, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            }
+        }
+
+        case GT_NOT:
+        {
+            return gtNewSimdHWIntrinsicNode(type, op1, NI_AdvSimd_Not, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23401,41 +23394,40 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
                                         isSimdAsHWIntrinsic);
     }
 #elif defined(TARGET_ARM64)
-        if (simdSize == 16)
-        {
-            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize,
-                                            isSimdAsHWIntrinsic);
-        }
-        else
-        {
-            assert(simdSize == 8);
-            tmp1 = op1;
-        }
+    if (simdSize == 16)
+    {
+        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize,
+                                        isSimdAsHWIntrinsic);
+    }
+    else
+    {
+        assert(simdSize == 8);
+        tmp1 = op1;
+    }
 
-        if (varTypeIsFloating(simdBaseType))
-        {
-            assert(simdBaseType == TYP_FLOAT);
-            intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
-        }
-        else if (varTypeIsSigned(simdBaseType))
-        {
-            intrinsic = NI_AdvSimd_SignExtendWideningLower;
-        }
-        else
-        {
-            intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
-        }
+    if (varTypeIsFloating(simdBaseType))
+    {
+        assert(simdBaseType == TYP_FLOAT);
+        intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
+    }
+    else if (varTypeIsSigned(simdBaseType))
+    {
+        intrinsic = NI_AdvSimd_SignExtendWideningLower;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
+    }
 
-        assert(intrinsic != NI_Illegal);
-        tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, 8, isSimdAsHWIntrinsic);
+    assert(intrinsic != NI_Illegal);
+    tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, 8, isSimdAsHWIntrinsic);
 
-        if (simdSize == 8)
-        {
-            tmp1 =
-                gtNewSimdHWIntrinsicNode(type, tmp1, NI_Vector128_GetLower, simdBaseJitType, 16, isSimdAsHWIntrinsic);
-        }
+    if (simdSize == 8)
+    {
+        tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, NI_Vector128_GetLower, simdBaseJitType, 16, isSimdAsHWIntrinsic);
+    }
 
-        return tmp1;
+    return tmp1;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23573,55 +23565,55 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
                                         isSimdAsHWIntrinsic);
     }
 #elif defined(TARGET_ARM64)
-        GenTree* zero;
+    GenTree* zero;
 
-        if (simdSize == 16)
+    if (simdSize == 16)
+    {
+        if (varTypeIsFloating(simdBaseType))
         {
-            if (varTypeIsFloating(simdBaseType))
-            {
-                assert(simdBaseType == TYP_FLOAT);
-                intrinsic = NI_AdvSimd_Arm64_ConvertToDoubleUpper;
-            }
-            else if (varTypeIsSigned(simdBaseType))
-            {
-                intrinsic = NI_AdvSimd_SignExtendWideningUpper;
-            }
-            else
-            {
-                intrinsic = NI_AdvSimd_ZeroExtendWideningUpper;
-            }
-
-            assert(intrinsic != NI_Illegal);
-            return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            assert(simdBaseType == TYP_FLOAT);
+            intrinsic = NI_AdvSimd_Arm64_ConvertToDoubleUpper;
+        }
+        else if (varTypeIsSigned(simdBaseType))
+        {
+            intrinsic = NI_AdvSimd_SignExtendWideningUpper;
         }
         else
         {
-            assert(simdSize == 8);
-            ssize_t index = 8 / genTypeSize(simdBaseType);
-
-            if (varTypeIsFloating(simdBaseType))
-            {
-                assert(simdBaseType == TYP_FLOAT);
-                intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
-            }
-            else if (varTypeIsSigned(simdBaseType))
-            {
-                intrinsic = NI_AdvSimd_SignExtendWideningLower;
-            }
-            else
-            {
-                intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
-            }
-
-            assert(intrinsic != NI_Illegal);
-
-            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-            zero = gtNewZeroConNode(TYP_SIMD16);
-            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
-                                            simdBaseJitType, 16, isSimdAsHWIntrinsic);
-            return gtNewSimdHWIntrinsicNode(type, tmp1, NI_Vector128_GetLower, simdBaseJitType, simdSize,
-                                            isSimdAsHWIntrinsic);
+            intrinsic = NI_AdvSimd_ZeroExtendWideningUpper;
         }
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else
+    {
+        assert(simdSize == 8);
+        ssize_t index = 8 / genTypeSize(simdBaseType);
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            assert(simdBaseType == TYP_FLOAT);
+            intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
+        }
+        else if (varTypeIsSigned(simdBaseType))
+        {
+            intrinsic = NI_AdvSimd_SignExtendWideningLower;
+        }
+        else
+        {
+            intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
+        }
+
+        assert(intrinsic != NI_Illegal);
+
+        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        zero = gtNewZeroConNode(TYP_SIMD16);
+        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
+                                        simdBaseJitType, 16, isSimdAsHWIntrinsic);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, NI_Vector128_GetLower, simdBaseJitType, simdSize,
+                                        isSimdAsHWIntrinsic);
+    }
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23678,32 +23670,32 @@ GenTree* Compiler::gtNewSimdWithElementNode(var_types   type,
         hwIntrinsicID = NI_Vector256_WithElement;
     }
 #elif defined(TARGET_ARM64)
-        switch (simdBaseType)
-        {
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_DOUBLE:
-                if (simdSize == 8)
-                {
-                    return gtNewSimdHWIntrinsicNode(type, op3, NI_Vector64_Create, simdBaseJitType, simdSize,
-                                                    isSimdAsHWIntrinsic);
-                }
-                break;
+    switch (simdBaseType)
+    {
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+            if (simdSize == 8)
+            {
+                return gtNewSimdHWIntrinsicNode(type, op3, NI_Vector64_Create, simdBaseJitType, simdSize,
+                                                isSimdAsHWIntrinsic);
+            }
+            break;
 
-            case TYP_FLOAT:
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            case TYP_SHORT:
-            case TYP_USHORT:
-            case TYP_INT:
-            case TYP_UINT:
-                break;
+        case TYP_FLOAT:
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_UINT:
+            break;
 
-            default:
-                unreached();
-        }
+        default:
+            unreached();
+    }
 
-        hwIntrinsicID = NI_AdvSimd_Insert;
+    hwIntrinsicID = NI_AdvSimd_Insert;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
