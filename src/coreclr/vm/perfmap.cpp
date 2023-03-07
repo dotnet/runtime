@@ -60,6 +60,7 @@ void PerfMap::Initialize()
 
         s_enabled = true;
     }
+
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == ALL || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == JITDUMP)
     {   
         const char* jitdumpPath;
@@ -174,6 +175,11 @@ void PerfMap::WriteLine(SString& line)
 {
     STANDARD_VM_CONTRACT;
 
+    if (m_FileStream == nullptr || m_ErrorEncountered)
+    {
+        return;
+    }
+
     EX_TRY
     {
         // Write the line.
@@ -271,7 +277,8 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
         line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
 
         // Write the line.
-        if(s_Current !=nullptr && s_Current->m_FileStream != nullptr && !s_Current->m_ErrorEncountered){
+        if(s_Current != nullptr)
+        {
             s_Current->WriteLine(line);
         }
         PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
