@@ -29,6 +29,7 @@ export function set_imports_exports(
 ): void {
     INTERNAL = exports.internal;
     IMPORTS = exports.marshaled_imports;
+    Module = exports.module;
 
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;
