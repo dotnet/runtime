@@ -24,7 +24,6 @@ using System.Globalization;
 using System.Numerics;
 
 using EETypeElementType = Internal.Runtime.EETypeElementType;
-using System.Runtime.InteropServices.ComTypes;
 
 namespace Internal.Reflection.Augments
 {
