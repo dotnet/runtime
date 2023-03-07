@@ -462,8 +462,8 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
             code |= ((imm >> 20) & 0x1) << 31;
             break;
         default:
-            fprintf(stderr, "emitIns_I %llx %llx\n", ins, code);
-            unreached();
+            fprintf(stderr, "Not implemented instruction in I: 0x%x\n", code);
+            NYI_RISCV64("illegal ins within emitIns_I!");
     }
 
     instrDesc* id = emitNewInstr(attr);
@@ -511,8 +511,8 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             code |= ((imm >> 20) & 0x1) << 31;
             break;
         default:
-            fprintf(stderr, "emitIns_R_I %llx %llx\n", ins, code);
-            unreached();
+            fprintf(stderr, "Not implemented instruction in R_I: 0x%x\n", code);
+            NYI_RISCV64("illegal ins within emitIns_R_I!");
             break;
     } // end switch (ins)
 
@@ -582,7 +582,8 @@ void emitter::emitIns_R_R(
         code |= (reg2 & 0x1f) << 15;
     }
     else if ((INS_fcvt_s_w <= ins && INS_fmv_w_x >= ins) || (INS_fcvt_d_w == ins || INS_fcvt_d_wu == ins) ||
-             (INS_fcvt_s_l == ins || INS_fcvt_s_lu == ins) || (INS_fmv_d_x == ins))
+             (INS_fcvt_s_l == ins || INS_fcvt_s_lu == ins) || (INS_fmv_d_x == ins) ||
+             (INS_fcvt_d_l == ins || INS_fcvt_d_lu == ins))
 
     {
         // TODO CHECK ROUNDING MODE
@@ -600,6 +601,7 @@ void emitter::emitIns_R_R(
     }
     else
     {
+        fprintf(stderr, "Not implemented instruction in R_R: 0x%x\n", code);
         NYI_RISCV64("illegal ins within emitIns_R_R!");
     }
 
@@ -649,7 +651,7 @@ void emitter::emitIns_R_R_I(
     else
     {
         fprintf(stderr, "Not implemented instruction in R_R_I: 0x%x\n", code);
-        _ASSERTE(!"TODO RISCV64 NYI");
+        NYI_RISCV64("illegal ins within emitIns_R_R_I!");
     }
     instrDesc* id = emitNewInstr(attr);
 
@@ -755,7 +757,7 @@ void emitter::emitIns_R_R_R(
     else
     {
         fprintf(stderr, "Not implemented instruction in R_R_R: 0x%x\n", code);
-        _ASSERTE(!"TODO RISCV64 NYI");
+        NYI_RISCV64("illegal ins within emitIns_R_R_R!");
     }
 
     instrDesc* id = emitNewInstr(attr);

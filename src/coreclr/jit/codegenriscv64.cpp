@@ -5522,7 +5522,23 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 //
 void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
+    // genConsumeBlockOp takes care of this for us.
+    genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
+
+    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before a volatile CpBlk operation
+        instGen_MemoryBarrier();
+    }
+
+    genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
+
+    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a INS_BARRIER_RMB after a volatile CpBlk operation
+        instGen_MemoryBarrier(BARRIER_FULL);
+    }
 }
 
 //----------------------------------------------------------------------------------

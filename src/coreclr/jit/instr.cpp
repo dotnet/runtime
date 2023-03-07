@@ -446,7 +446,16 @@ void CodeGen::inst_RV_RV(instruction ins,
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R(ins, size, reg1, reg2, flags);
 #else
-    GetEmitter()->emitIns_R_R(ins, size, reg1, reg2);
+#ifdef TARGET_RISCV64
+    if (INS_fsgnj_s == ins || INS_fsgnj_d == ins)
+    {
+        GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg2);
+    }
+    else
+#endif
+    {
+        GetEmitter()->emitIns_R_R(ins, size, reg1, reg2);
+    }
 #endif
 }
 
