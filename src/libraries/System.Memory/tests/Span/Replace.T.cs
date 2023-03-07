@@ -12,6 +12,7 @@ namespace System.SpanTests
     public class ReplaceTests_Int64 : ReplaceTests<long> { protected override long Create(int value) => value; }
     public class ReplaceTests_Char : ReplaceTests<char> { protected override char Create(int value) => (char)value; }
     public class ReplaceTests_Double : ReplaceTests<double> { protected override double Create(int value) => (double)value; }
+    public class ReplaceTests_String : ReplaceTests<string> { protected override string Create(int value) => value.ToString(); }
     public class ReplaceTests_Record : ReplaceTests<SimpleRecord> { protected override SimpleRecord Create(int value) => new SimpleRecord(value); }
     public class ReplaceTests_CustomEquatable : ReplaceTests<CustomEquatable> { protected override CustomEquatable Create(int value) => new CustomEquatable((byte)value); }
 
@@ -36,57 +37,113 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public void ZeroLengthSpan()
+        public void ZeroLengthSpan_InPlace()
         {
-            Exception actual = Record.Exception(() => Span<T>.Empty.Replace(_oldValue, _newValue));
+            Span<T>.Empty.Replace(_oldValue, _newValue);
+        }
 
-            Assert.Null(actual);
+        [Fact]
+        public void ZeroLengthSpan_Copy()
+        {
+            ReadOnlySpan<T>.Empty.Replace(Span<T>.Empty, _oldValue, _newValue);
+        }
+
+        [Fact]
+        public void ArgumentValidation_Copy()
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () => ((ReadOnlySpan<T>)new T[] { _oldValue }).Replace(Span<T>.Empty, _oldValue, _newValue));
+
+            T[] values = new T[] { _oldValue, _oldValue, _oldValue };
+            AssertExtensions.Throws<ArgumentException>(null, () => new ReadOnlySpan<T>(values, 0, 2).Replace(new Span<T>(values, 1, 2), _oldValue, _newValue));
         }
 
         [Theory]
         [MemberData(nameof(Length_MemberData))]
-        public void AllElementsNeedToBeReplaced(int length)
+        public void AllElementsNeedToBeReplaced_InPlace(int length)
         {
             Span<T> span = CreateArray(length, _oldValue);
-            T[] expected = CreateArray(length, _newValue);
 
             span.Replace(_oldValue, _newValue);
-            T[] actual = span.ToArray();
 
-            Assert.Equal(expected, actual);
+            Assert.Equal(CreateArray(length, _newValue), span.ToArray());
         }
 
         [Theory]
         [MemberData(nameof(Length_MemberData))]
-        public void DefaultToBeReplaced(int length)
+        public void AllElementsNeedToBeReplaced_Copy(int length)
+        {
+            ReadOnlySpan<T> span = CreateArray(length, _oldValue);
+            T[] original = span.ToArray();
+
+            T[] destination = new T[span.Length];
+            span.Replace(destination, _oldValue, _newValue);
+            Assert.Equal(CreateArray(length, _newValue), destination);
+            Assert.Equal(original, span.ToArray());
+
+            destination = new T[span.Length + 1];
+            span.Replace(destination, _oldValue, _newValue);
+            Assert.Equal(CreateArray(length, _newValue), destination[0..^1]);
+            Assert.Equal(default, destination[^1]);
+            Assert.Equal(original, span.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(Length_MemberData))]
+        public void DefaultToBeReplaced_InPlace(int length)
         {
             Span<T> span = CreateArray(length);
-            T[] expected = CreateArray(length, _newValue);
 
             span.Replace(default, _newValue);
-            T[] actual = span.ToArray();
 
-            Assert.Equal(expected, actual);
+            Assert.Equal(CreateArray(length, _newValue), span.ToArray());
         }
 
         [Theory]
         [MemberData(nameof(Length_MemberData))]
-        public void NoElementsNeedToBeReplaced(int length)
+        public void DefaultToBeReplaced_Copy(int length)
+        {
+            ReadOnlySpan<T> span = CreateArray(length);
+            T[] original = span.ToArray();
+
+            T[] destination = new T[span.Length];
+            span.Replace(destination, default, _newValue);
+
+            Assert.Equal(original, span.ToArray());
+            Assert.Equal(CreateArray(length, _newValue), destination);
+        }
+
+        [Theory]
+        [MemberData(nameof(Length_MemberData))]
+        public void NoElementsNeedToBeReplaced_InPlace(int length)
         {
             T[] values = { Create('0'), Create('1') };
 
             Span<T> span = CreateArray(length, values);
-            T[] expected = span.ToArray();
+            T[] original = span.ToArray();
 
             span.Replace(_oldValue, _newValue);
-            T[] actual = span.ToArray();
 
-            Assert.Equal(expected, actual);
+            Assert.Equal(original, span.ToArray());
         }
 
         [Theory]
         [MemberData(nameof(Length_MemberData))]
-        public void SomeElementsNeedToBeReplaced(int length)
+        public void NoElementsNeedToBeReplaced_Copy(int length)
+        {
+            T[] values = { Create('0'), Create('1') };
+
+            ReadOnlySpan<T> span = CreateArray(length, values);
+            T[] original = span.ToArray();
+
+            T[] destination = span.ToArray();
+            span.Replace(destination, _oldValue, _newValue);
+
+            Assert.Equal(original, destination);
+        }
+
+        [Theory]
+        [MemberData(nameof(Length_MemberData))]
+        public void SomeElementsNeedToBeReplaced_InPlace(int length)
         {
             T[] values = { Create('0'), Create('1') };
 
@@ -106,7 +163,29 @@ namespace System.SpanTests
 
         [Theory]
         [MemberData(nameof(Length_MemberData))]
-        public void OldAndNewValueAreSame(int length)
+        public void SomeElementsNeedToBeReplaced_Copy(int length)
+        {
+            T[] values = { Create('0'), Create('1') };
+
+            Span<T> span = CreateArray(length, values);
+            span[0] = _oldValue;
+            span[^1] = _oldValue;
+            T[] original = span.ToArray();
+
+            T[] expected = CreateArray(length, values);
+            expected[0] = _newValue;
+            expected[^1] = _newValue;
+
+            T[] destination = new T[expected.Length];
+            ((ReadOnlySpan<T>)span).Replace(destination, _oldValue, _newValue);
+
+            Assert.Equal(original, span.ToArray());
+            Assert.Equal(expected, destination);
+        }
+
+        [Theory]
+        [MemberData(nameof(Length_MemberData))]
+        public void OldAndNewValueAreSame_InPlace(int length)
         {
             T[] values = { Create('0'), Create('1') };
 
@@ -116,9 +195,26 @@ namespace System.SpanTests
             T[] expected = span.ToArray();
 
             span.Replace(_oldValue, _oldValue);
-            T[] actual = span.ToArray();
 
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, span.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(Length_MemberData))]
+        public void OldAndNewValueAreSame_Copy(int length)
+        {
+            T[] values = { Create('0'), Create('1') };
+
+            Span<T> span = CreateArray(length, values);
+            span[0] = _oldValue;
+            span[^1] = _oldValue;
+            T[] expected = span.ToArray();
+
+            T[] destination = new T[expected.Length];
+            ((ReadOnlySpan<T>)span).Replace(destination, _oldValue, _oldValue);
+
+            Assert.Equal(expected, span.ToArray());
+            Assert.Equal(expected, destination);
         }
 
         public static IEnumerable<object[]> Length_MemberData()

@@ -634,20 +634,16 @@ namespace System
                         Unsafe.As<T, int>(ref value),
                         span.Length);
                 }
-                else
+                else if (sizeof(T) == sizeof(long))
                 {
-                    Debug.Assert(sizeof(T) == sizeof(long));
-
                     return SpanHelpers.IndexOfAnyExceptValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value),
                         span.Length);
                 }
             }
-            else
-            {
-                return SpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value, span.Length);
-            }
+
+            return SpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value, span.Length);
         }
 
         /// <summary>Searches for the first index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>
@@ -940,20 +936,16 @@ namespace System
                         Unsafe.As<T, int>(ref value),
                         span.Length);
                 }
-                else
+                else if (sizeof(T) == sizeof(long))
                 {
-                    Debug.Assert(sizeof(T) == sizeof(long));
-
                     return SpanHelpers.LastIndexOfAnyExceptValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value),
                         span.Length);
                 }
             }
-            else
-            {
-                return SpanHelpers.LastIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value, span.Length);
-            }
+
+            return SpanHelpers.LastIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), value, span.Length);
         }
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>
@@ -3120,10 +3112,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
+            nuint length = (uint)span.Length;
+
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                nuint length = (uint)span.Length;
-
                 if (sizeof(T) == sizeof(byte))
                 {
                     ref byte src = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span));
@@ -3133,6 +3125,7 @@ namespace System
                         Unsafe.As<T, byte>(ref oldValue),
                         Unsafe.As<T, byte>(ref newValue),
                         length);
+                    return;
                 }
                 else if (sizeof(T) == sizeof(ushort))
                 {
@@ -3144,6 +3137,7 @@ namespace System
                         Unsafe.As<T, ushort>(ref oldValue),
                         Unsafe.As<T, ushort>(ref newValue),
                         length);
+                    return;
                 }
                 else if (sizeof(T) == sizeof(int))
                 {
@@ -3154,11 +3148,10 @@ namespace System
                         Unsafe.As<T, int>(ref oldValue),
                         Unsafe.As<T, int>(ref newValue),
                         length);
+                    return;
                 }
-                else
+                else if (sizeof(T) == sizeof(long))
                 {
-                    Debug.Assert(sizeof(T) == sizeof(long));
-
                     ref long src = ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span));
                     SpanHelpers.ReplaceValueType(
                         ref src,
@@ -3166,10 +3159,95 @@ namespace System
                         Unsafe.As<T, long>(ref oldValue),
                         Unsafe.As<T, long>(ref newValue),
                         length);
+                    return;
                 }
             }
 
-            SpanHelpers.Replace(span, oldValue, newValue);
+            ref T src2 = ref MemoryMarshal.GetReference(span);
+            SpanHelpers.Replace(ref src2, ref src2, oldValue, newValue, length);
+        }
+
+        /// <summary>
+        /// Copies <paramref name="source"/> to <paramref name="destination"/>, replacing all occurrences of <paramref name="oldValue"/> with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="source">The span to copy.</param>
+        /// <param name="destination">The span into which the copied and replaced values should be written.</param>
+        /// <param name="oldValue">The value to be replaced with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of <paramref name="oldValue"/>.</param>
+        /// <exception cref="ArgumentException">The <paramref name="destination"/> span was shorter than the <paramref name="source"/> span.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="source"/> and <paramref name="destination"/> were overlapping but not referring to the same starting location.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void Replace<T>(this ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue) where T : IEquatable<T>?
+        {
+            nuint length = (uint)source.Length;
+            if (length == 0)
+            {
+                return;
+            }
+
+            if (length > (uint)destination.Length)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            ref T src = ref MemoryMarshal.GetReference(source);
+            ref T dst = ref MemoryMarshal.GetReference(destination);
+
+            nint byteOffset = Unsafe.ByteOffset(ref src, ref dst);
+            if (byteOffset != 0 &&
+                ((nuint)byteOffset < (nuint)((nint)source.Length * sizeof(T)) ||
+                 (nuint)byteOffset > (nuint)(-((nint)destination.Length * sizeof(T)))))
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
+            }
+
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (sizeof(T) == sizeof(byte))
+                {
+                    SpanHelpers.ReplaceValueType(
+                        ref Unsafe.As<T, byte>(ref src),
+                        ref Unsafe.As<T, byte>(ref dst),
+                        Unsafe.As<T, byte>(ref oldValue),
+                        Unsafe.As<T, byte>(ref newValue),
+                        length);
+                    return;
+                }
+                else if (sizeof(T) == sizeof(ushort))
+                {
+                    // Use ushort rather than short, as this avoids a sign-extending move.
+                    SpanHelpers.ReplaceValueType(
+                        ref Unsafe.As<T, ushort>(ref src),
+                        ref Unsafe.As<T, ushort>(ref dst),
+                        Unsafe.As<T, ushort>(ref oldValue),
+                        Unsafe.As<T, ushort>(ref newValue),
+                        length);
+                    return;
+                }
+                else if (sizeof(T) == sizeof(int))
+                {
+                    SpanHelpers.ReplaceValueType(
+                        ref Unsafe.As<T, int>(ref src),
+                        ref Unsafe.As<T, int>(ref dst),
+                        Unsafe.As<T, int>(ref oldValue),
+                        Unsafe.As<T, int>(ref newValue),
+                        length);
+                    return;
+                }
+                else if (sizeof(T) == sizeof(long))
+                {
+                    SpanHelpers.ReplaceValueType(
+                        ref Unsafe.As<T, long>(ref src),
+                        ref Unsafe.As<T, long>(ref dst),
+                        Unsafe.As<T, long>(ref oldValue),
+                        Unsafe.As<T, long>(ref newValue),
+                        length);
+                    return;
+                }
+            }
+
+            SpanHelpers.Replace(ref src, ref dst, oldValue, newValue, length);
         }
 
         /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
