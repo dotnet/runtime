@@ -3,9 +3,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable;CP0001</NoWarn>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types supporting Code Access Security (CAS).</PackageDescription>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">

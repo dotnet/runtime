@@ -6,9 +6,7 @@ using System.Security.Permissions;
 
 namespace System.DirectoryServices
 {
-#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-#endif
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct |
         AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Event,
         AllowMultiple = true, Inherited = false)]

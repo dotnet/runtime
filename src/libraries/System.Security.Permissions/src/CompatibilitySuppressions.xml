@@ -2,6 +2,36 @@
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.DirectoryServices.DirectoryServicesPermission</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.DirectoryServices.DirectoryServicesPermissionAccess</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.DirectoryServices.DirectoryServicesPermissionAttribute</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.DirectoryServices.DirectoryServicesPermissionEntry</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.DirectoryServices.DirectoryServicesPermissionEntryCollection</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.#ctor</Target>
     <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>

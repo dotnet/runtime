@@ -309,9 +309,7 @@ namespace System.Diagnostics
 }
 namespace System.DirectoryServices
 {
-#if NETCOREAPP
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-#endif    
     public sealed partial class DirectoryServicesPermission : System.Security.Permissions.ResourcePermissionBase
     {
         public DirectoryServicesPermission() { }
@@ -327,9 +325,7 @@ namespace System.DirectoryServices
         Browse = 2,
         Write = 6,
     }
-#if NETCOREAPP
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-#endif    
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public partial class DirectoryServicesPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
