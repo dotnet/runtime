@@ -271,8 +271,20 @@ namespace ILCompiler
                 MethodDesc invokeMethod = type.GetMethod("Invoke", null);
                 if (!IsReflectionBlocked(invokeMethod))
                 {
+                    // Size optimization: try to downgrade to metadata-only if possible
+                    bool isActuallyInvokable = !type.IsGenericDefinition;
+                    if (isActuallyInvokable)
+                    {
+                        isActuallyInvokable &= !invokeMethod.Signature.ReturnType.IsByRefLike;
+                        foreach (TypeDesc paramType in invokeMethod.Signature)
+                            isActuallyInvokable &= !paramType.IsByRefLike;
+                    }
+
                     dependencies ??= new DependencyList();
-                    dependencies.Add(factory.ReflectedMethod(invokeMethod), "Delegate invoke method is always reflectable");
+                    if (isActuallyInvokable)
+                        dependencies.Add(factory.ReflectedMethod(invokeMethod), "Delegate invoke method is always reflectable");
+                    else
+                        dependencies.Add(factory.MethodMetadata(invokeMethod.GetTypicalMethodDefinition()), "Delegate invoke method is always reflectable");
                 }
             }
 
