@@ -9674,13 +9674,17 @@ DONE_MORPHING_CHILDREN:
             {
                 if (tree->CanDivisionPossiblyOverflow(this))
                 {
+#ifdef TARGET_ARM64
                     tree->gtFlags |= GTF_DIV_OVERFLOW_CHK;
+#endif // TARGET_ARM64
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
                 }
 
                 if (!op2->IsNeverZero())
                 {
+#ifdef TARGET_ARM64
                     tree->gtFlags |= GTF_DIV_BY_ZERO_CHK;
+#endif // TARGET_ARM64
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
                 }
             }
@@ -9691,7 +9695,9 @@ DONE_MORPHING_CHILDREN:
 #endif
             if (!op2->IsNeverZero())
             {
+#ifdef TARGET_ARM64
                 tree->gtFlags |= GTF_DIV_BY_ZERO_CHK;
+#endif // TARGET_ARM64
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             }
             break;

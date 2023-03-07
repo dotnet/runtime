@@ -3447,18 +3447,34 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
         regNumber divisorReg = divisorOp->GetRegNum();
 
-        if (tree->gtFlags & GTF_DIV_BY_ZERO_CHK)
+        // (AnyVal / 0) = > DivideByZeroException
+        if ((tree->gtFlags & GTF_DIV_BY_ZERO_CHK) && !divisorOp->IsNeverZero())
         {
-            // Check if the divisor is zero throw a DivideByZeroException
-            emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-            genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+            if (divisorOp->IsIntegralConst(0))
+            {
+                // We unconditionally throw a divide by zero exception
+                genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+
+                // We still need to call genProduceReg
+                genProduceReg(tree);
+
+                return;
+            }
+            else
+            {
+                // Check if the divisor is zero throw a DivideByZeroException
+                emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
+                genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+            }
         }
 
-        if (tree->gtFlags & GTF_DIV_OVERFLOW_CHK)
+        // (MinInt / -1) => ArithmeticException
+        if ((tree->gtFlags & GTF_DIV_OVERFLOW_CHK) && tree->CanDivisionPossiblyOverflow(compiler))
         {
             // Signed-division might overflow.
 
             assert(tree->OperIs(GT_DIV));
+            assert(!divisorOp->IsIntegralConst(0));
 
             BasicBlock* sdivLabel  = genCreateTempLabel();
             GenTree*    dividendOp = tree->gtGetOp1();
@@ -3478,7 +3494,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             //
             emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
             genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
-                                                            // ArithmeticException
+                                                          // ArithmeticException
 
             genDefineTempLabel(sdivLabel);
         }

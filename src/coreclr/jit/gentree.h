@@ -562,10 +562,11 @@ enum GenTreeFlags : unsigned int
     GTF_OVERFLOW                = 0x10000000, // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    GTF_DIV_BY_ZERO_CHK         = 0x20000000,
-    GTF_DIV_OVERFLOW_CHK        = 0x40000000,
-#endif
+#ifdef TARGET_ARM64
+    GTF_DIV_BY_ZERO_CHK         = 0x20000000, // GT_DIV -- Tells ARM64 code-gen to possibly emit a divide-by-zero check.
+
+    GTF_DIV_OVERFLOW_CHK        = 0x40000000, // GT_DIV -- Tells ARM64 code-gen to possibly emit an overflow check.
+#endif // TARGET_ARM64
 
     GTF_DIV_BY_CNS_OPT          = 0x80000000, // GT_DIV -- Uses the division by constant optimization to compute this division
 
