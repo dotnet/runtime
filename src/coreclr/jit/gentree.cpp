@@ -22891,7 +22891,12 @@ GenTree* Compiler::gtNewSimdStoreAlignedNode(
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        intrinsic = NI_AVX512F_StoreAligned;
+    }
+    else if (simdSize == 32)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         intrinsic = NI_AVX_StoreAligned;
@@ -22948,7 +22953,12 @@ GenTree* Compiler::gtNewSimdStoreNonTemporalNode(
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        intrinsic = NI_AVX512F_StoreAlignedNonTemporal;
+    }
+    else if (simdSize == 32)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         intrinsic = NI_AVX_StoreAlignedNonTemporal;

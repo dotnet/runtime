@@ -2090,8 +2090,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Store:
         case NI_Vector256_Store:
+        case NI_Vector512_Store:
         case NI_Vector128_StoreUnsafe:
         case NI_Vector256_StoreUnsafe:
+        case NI_Vector512_StoreUnsafe:
         {
             assert(retType == TYP_VOID);
             var_types simdType = getSIMDTypeForSize(simdSize);
@@ -2134,6 +2136,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_StoreAligned:
         case NI_Vector256_StoreAligned:
+        case NI_Vector512_StoreAligned:
         {
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
@@ -2159,6 +2162,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_StoreAlignedNonTemporal:
         case NI_Vector256_StoreAlignedNonTemporal:
+        case NI_Vector512_StoreAlignedNonTemporal:
         {
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
