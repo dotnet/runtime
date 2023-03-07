@@ -149,6 +149,7 @@
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
     <WorkloadBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</WorkloadBuildTasksDir>
+    <LibraryBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'LibraryBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</LibraryBuilderDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
     <TestExclusionListTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'TestExclusionListTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</TestExclusionListTasksDir>
@@ -162,13 +163,16 @@
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
     <WasmAppHostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppHost', 'wasm', '$(Configuration)'))</WasmAppHostDir>
     <WorkloadBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WorkloadBuildTasksDir)', 'WorkloadBuildTasks.dll'))</WorkloadBuildTasksAssemblyPath>
+    <LibraryBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(LibraryBuilderDir)', 'LibraryBuilder.dll'))</LibraryBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
     <TestExclusionListTasksAssemblyPath>$([MSBuild]::NormalizePath('$(TestExclusionListTasksDir)', 'TestExclusionListTasks.dll'))</TestExclusionListTasksAssemblyPath>
     <CoreCLRToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</CoreCLRToolPath>
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
 
-    <WasmtimeDir>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
+    <WasmtimeDir Condition="'$(WasmtimeDir)' == '' and '$(WASMTIME_PATH)' != '' and Exists($(WASMTIME_PATH))">$(WASMTIME_PATH)</WasmtimeDir>
+    <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
+    <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateOS">
@@ -223,9 +227,9 @@
     <_toolsRID Condition="'$(_toolsRID)' == ''">$(_runtimeOS)-$(_hostArch)</_toolsRID>
 
     <!-- There are no WebAssembly tools, so use the default ones -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'browser'">linux-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'wasi'">linux-x64</_toolsRID>
+    <_toolsRID Condition="('$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'wasi') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
+    <_toolsRID Condition="('$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'wasi') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Android tools, so use the default ones -->
     <_toolsRID Condition="'$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic'">linux-x64</_toolsRID>

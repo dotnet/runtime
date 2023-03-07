@@ -1116,19 +1116,14 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
                 emitter* emit = GetEmitter();
                 emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
-
-                // Updating variable liveness after instruction was emitted
-                genUpdateLife(tree);
-
-                varDsc->SetRegNum(REG_STK);
             }
             else // store into register (i.e move into register)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
                 inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
-
-                genProduceReg(tree);
             }
+
+            genUpdateLifeStore(tree, targetReg, varDsc);
         }
     }
 }
@@ -1277,6 +1272,22 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         inst_SETCC(GenCondition::FromRelop(tree), tree->TypeGet(), targetReg);
         genProduceReg(tree);
     }
+}
+
+//------------------------------------------------------------------------
+// genCodeForJTrue: Produce code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - the node
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+    inst_RV_RV(INS_tst, reg, reg, genActualType(op));
+    inst_JMP(EJ_ne, compiler->compCurBB->bbJumpDest);
 }
 
 //------------------------------------------------------------------------

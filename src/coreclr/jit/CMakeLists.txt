@@ -113,6 +113,7 @@ set( JIT_SOURCES
   fginline.cpp
   fgopt.cpp
   fgprofile.cpp
+  fgprofilesynthesis.cpp
   fgstmt.cpp
   flowgraph.cpp
   forwardsub.cpp
@@ -295,6 +296,7 @@ set( JIT_HEADERS
   emitjmps.h
   emitpub.h
   error.h
+  fgprofilesynthesis.h
   gentree.h
   gentreeopsdef.h
   gtlist.h
@@ -565,6 +567,7 @@ function(add_jit jitName)
     set_property(TARGET ${jitName} APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPORTS_FILE})
 
     target_link_libraries(${jitName}
+        PRIVATE
         ${JIT_LINK_LIBRARIES}
         ${JIT_ARCH_LINK_LIBRARIES}
     )

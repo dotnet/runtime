@@ -81,7 +81,6 @@
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/networking.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -89,6 +88,7 @@
 
 #include <mono/component/debugger-state-machine.h>
 #include "debugger-agent.h"
+#include "debugger-networking.h"
 #include <mono/mini/mini.h>
 #include <mono/mini/seq-points.h>
 #include <mono/mini/aot-runtime.h>
@@ -1047,7 +1047,7 @@ socket_transport_connect (const char *address)
 	listen_fd = INVALID_SOCKET;
 
 	MONO_ENTER_GC_UNSAFE;
-	mono_networking_init();
+	mono_debugger_networking_init ();
 	MONO_EXIT_GC_UNSAFE;
 
 	if (host) {
@@ -1060,7 +1060,7 @@ socket_transport_connect (const char *address)
 		for (size_t i = 0; i < sizeof(hints) / sizeof(int); i++) {
 			/* Obtain address(es) matching host/port */
 			MONO_ENTER_GC_UNSAFE;
-			s = mono_get_address_info (host, port, hints[i], &result);
+			s = mono_debugger_get_address_info (host, port, hints[i], &result);
 			MONO_EXIT_GC_UNSAFE;
 			if (s == 0)
 				break;
@@ -1111,7 +1111,7 @@ socket_transport_connect (const char *address)
 				int n = 1;
 
 				MONO_ENTER_GC_UNSAFE;
-				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				mono_debugger_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype, rp->protocol);
@@ -1133,7 +1133,7 @@ socket_transport_connect (const char *address)
 			}
 
 			MONO_ENTER_GC_UNSAFE;
-			mono_free_address_info (result);
+			mono_debugger_free_address_info (result);
 			MONO_EXIT_GC_UNSAFE;
 		}
 
@@ -1176,7 +1176,7 @@ socket_transport_connect (const char *address)
 				socklen_t sock_len;
 
 				MONO_ENTER_GC_UNSAFE;
-				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				mono_debugger_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype,
@@ -1213,7 +1213,7 @@ socket_transport_connect (const char *address)
 		conn_fd = sfd;
 
 		MONO_ENTER_GC_UNSAFE;
-		mono_free_address_info (result);
+		mono_debugger_free_address_info (result);
 		MONO_EXIT_GC_UNSAFE;
 	}
 
@@ -7963,7 +7963,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		char *ppdb_path;
 		GArray *pdb_checksum_hash_type = g_array_new (FALSE, TRUE, sizeof (char*));
 		GArray *pdb_checksum = g_array_new (FALSE, TRUE, sizeof (guint8*));
-		gboolean has_debug_info = get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
+		gboolean has_debug_info = mono_get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
 		if (!has_debug_info || ppdb_size > 0)
 		{
 			buffer_add_byte (buf, 0);
@@ -7988,6 +7988,22 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		g_array_free (pdb_checksum_hash_type, TRUE);
 		g_array_free (pdb_checksum, TRUE);
+		break;
+	}
+	case MDBGPROT_CMD_ASSEMBLY_HAS_DEBUG_INFO_LOADED: {
+		MonoImage* image = ass->image;
+		MonoDebugHandle* handle = mono_debug_get_handle (image);
+		if (!handle) {
+			buffer_add_byte (buf, 0);
+			return ERR_NONE;
+		}
+		MonoPPDBFile* ppdb = handle->ppdb;
+		if (ppdb) {
+			image = mono_ppdb_get_image (ppdb);
+			buffer_add_byte (buf, image->raw_data_len > 0);
+		} else {
+			buffer_add_byte (buf, 0);
+		}
 		break;
 	}
 	default:

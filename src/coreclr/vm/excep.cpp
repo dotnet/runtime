@@ -3048,8 +3048,10 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
 
     // Get an IErrorInfo if one is available.
     IErrorInfo *pErrInfo = NULL;
+#ifdef FEATURE_COMINTEROP
     if (SafeGetErrorInfo(&pErrInfo) != S_OK)
         pErrInfo = NULL;
+#endif // FEATURE_COMINTEROP
 
     GetExceptionForHR(hr, pErrInfo, pProtectedThrowable);
 }
@@ -11287,6 +11289,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
 }
 
 
+#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
 {
     CONTRACTL
@@ -11306,6 +11309,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
     // Throw the exception.
     RealCOMPlusThrowHR(hr, pErrInfo);
 }
+#endif // FEATURE_COMINTEROP
 
 
 

@@ -246,15 +246,23 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #define REGDEF(name, rnum, mask, sname) "y" sname,
 #include "register.h"
     };
+    static const char* regNamesZMM[] = {
+#define REGDEF(name, rnum, mask, sname) "z" sname,
+#include "register.h"
+    };
 #endif // FEATURE_SIMD
     assert((unsigned)reg < ArrLen(regNamesFloat));
 
-#ifdef FEATURE_SIMD
-    if (type == TYP_SIMD32)
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+    if (type == TYP_SIMD64)
+    {
+        return regNamesZMM[reg];
+    }
+    else if (type == TYP_SIMD32)
     {
         return regNamesYMM[reg];
     }
-#endif // FEATURE_SIMD
+#endif // FEATURE_SIMD && TARGET_XARCH
 
     return regNamesFloat[reg];
 #endif

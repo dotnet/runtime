@@ -122,7 +122,8 @@ config_register_provider (
 					ep_session_provider_get_keywords (session_provider),
 					ep_session_provider_get_logging_level (session_provider),
 					ep_session_provider_get_filter_data (session_provider),
-					&provider_callback_data);
+					&provider_callback_data,
+					(EventPipeSessionID)session);
 				if (provider_callback_data_queue)
 					ep_provider_callback_data_queue_enqueue (provider_callback_data_queue, &provider_callback_data);
 				ep_provider_callback_data_fini (&provider_callback_data);
@@ -562,7 +563,8 @@ config_enable_disable (
 							ep_session_provider_get_keywords (session_provider),
 							ep_session_provider_get_logging_level (session_provider),
 							ep_session_provider_get_filter_data (session_provider),
-							&provider_callback_data);
+							&provider_callback_data,
+							(EventPipeSessionID)session);
 					} else {
 						provider_unset_config (
 							provider,

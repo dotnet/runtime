@@ -1282,7 +1282,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             private static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 
-            internal struct Member
+            internal readonly struct Member
             {
                 internal Member(DataMember member, string ns, int baseTypeIndex)
                 {
@@ -1290,9 +1290,9 @@ namespace System.Runtime.Serialization.DataContracts
                     _ns = ns;
                     _baseTypeIndex = baseTypeIndex;
                 }
-                internal DataMember _member;
-                internal string _ns;
-                internal int _baseTypeIndex;
+                internal readonly DataMember _member;
+                internal readonly string _ns;
+                internal readonly int _baseTypeIndex;
             }
 
             internal sealed class DataMemberConflictComparer : IComparer<Member>

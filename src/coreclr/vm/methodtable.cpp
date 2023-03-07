@@ -8269,23 +8269,24 @@ MethodTable::ResolveVirtualStaticMethod(
                         }
                     }
                 }
+            }
 
-                BOOL haveUniqueDefaultImplementation = pMT->FindDefaultInterfaceImplementation(
-                    pInterfaceMD,
-                    pInterfaceType,
-                    &pMD,
-                    /* allowVariance */ allowVariantMatches,
-                    /* throwOnConflict */ uniqueResolution == nullptr,
-                    level);
-                if (haveUniqueDefaultImplementation || (pMD != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+            MethodDesc *pMDDefaultImpl = nullptr;
+            BOOL haveUniqueDefaultImplementation = FindDefaultInterfaceImplementation(
+                pInterfaceMD,
+                pInterfaceType,
+                &pMDDefaultImpl,
+                /* allowVariance */ allowVariantMatches,
+                /* throwOnConflict */ uniqueResolution == nullptr,
+                level);
+            if (haveUniqueDefaultImplementation || (pMDDefaultImpl != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+            {
+                // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
+                if (uniqueResolution != nullptr)
                 {
-                    // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
-                    if (uniqueResolution != nullptr)
-                    {
-                        *uniqueResolution = haveUniqueDefaultImplementation;
-                    }
-                    return pMD;
+                    *uniqueResolution = haveUniqueDefaultImplementation;
                 }
+                return pMDDefaultImpl;
             }
         }
 

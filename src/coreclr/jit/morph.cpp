@@ -7054,8 +7054,8 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
     // used; otherwise, it specifies the number of indirections via pRuntimeLookup->offsets array.
-    if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || pRuntimeLookup->testForNull ||
-        pRuntimeLookup->testForFixup)
+    if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || (pRuntimeLookup->indirections == CORINFO_USENULL) ||
+        pRuntimeLookup->testForNull || pRuntimeLookup->testForFixup)
     {
         // If the first condition is true, runtime lookup tree is available only via the run-time helper function.
         // TODO-CQ If the second or third condition is true, we are always using the slow path since we can't
@@ -8404,6 +8404,11 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
     assert(varTypeIsIntegralOrI(tree->TypeGet()));
     assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_AND, GT_XOR));
 
+    if (opts.OptimizationDisabled())
+    {
+        return nullptr;
+    }
+
     // op1 can be GT_COMMA, in this case we're going to fold
     // "(op (COMMA(... (op X C1))) C2)" to "(COMMA(... (op X C3)))"
     GenTree*   op1  = tree->gtGetOp1()->gtEffectiveVal(true);
@@ -8836,7 +8841,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             // then don't morph to a helper call - it can be done faster inline using idiv.
 
             noway_assert(op2);
-            if ((typ == TYP_LONG) && opts.OptEnabled(CLFLG_CONSTANTFOLD))
+            if ((typ == TYP_LONG) && opts.OptimizationEnabled())
             {
                 if (op2->OperIs(GT_CNS_NATIVELONG) && op2->AsIntConCommon()->LngValue() >= 2 &&
                     op2->AsIntConCommon()->LngValue() <= 0x3fffffff)
@@ -8961,7 +8966,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
             GenTree* oldTree = tree;
 
-            tree = gtFoldExpr(tree);
+            if (opts.OptimizationEnabled())
+            {
+                tree = gtFoldExpr(tree);
+            }
 
             // Were we able to fold it ?
             // Note that gtFoldExpr may return a non-leaf even if successful
@@ -9398,8 +9406,11 @@ DONE_MORPHING_CHILDREN:
         qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
     }
 
-    // Try to fold it, maybe we get lucky,
-    tree = gtFoldExpr(tree);
+    if (opts.OptimizationEnabled())
+    {
+        // Try to fold it, maybe we get lucky,
+        tree = gtFoldExpr(tree);
+    }
 
     if (oldTree != tree)
     {
@@ -9769,7 +9780,7 @@ DONE_MORPHING_CHILDREN:
             }
 
             /* Any constant cases should have been folded earlier */
-            noway_assert(!op1->OperIsConst() || !opts.OptEnabled(CLFLG_CONSTANTFOLD) || optValnumCSE_phase);
+            noway_assert(!op1->OperIsConst() || opts.OptimizationDisabled() || optValnumCSE_phase);
             break;
 
         case GT_CKFINITE:
@@ -10768,9 +10779,17 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         return node;
     }
 
+#if defined(TARGET_XARCH)
+    // TODO-XArch-AVX512: Enable for simd64 once GenTreeVecCon supports gtSimd64Val.
+    if (node->TypeGet() == TYP_SIMD64)
+    {
+        return node;
+    }
+#endif // TARGET_XARCH
+
     simd32_t simd32Val = {};
 
-    if (GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val))
+    if (GenTreeVecCon::IsHWIntrinsicCreateConstant<simd32_t>(node, simd32Val))
     {
         GenTreeVecCon* vecCon = gtNewVconNode(node->TypeGet());
 
@@ -12769,8 +12788,11 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags |= tree->AsConditional()->gtOp1->gtFlags & GTF_ALL_EFFECT;
             tree->gtFlags |= tree->AsConditional()->gtOp2->gtFlags & GTF_ALL_EFFECT;
 
-            // Try to fold away any constants etc.
-            tree = gtFoldExpr(tree);
+            if (opts.OptimizationEnabled())
+            {
+                // Try to fold away any constants etc.
+                tree = gtFoldExpr(tree);
+            }
 
             break;
 

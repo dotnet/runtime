@@ -90,8 +90,6 @@
     <!-- Common -->
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
              Link="Common\System\Net\Security\TlsAlertMessage.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"

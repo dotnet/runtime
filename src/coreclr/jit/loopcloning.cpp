@@ -3156,7 +3156,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
 
 //----------------------------------------------------------------------------
 // optLoopCloningEnabled: Determine whether loop cloning is allowed. It is allowed
-// in release builds. For debug builds, use the value of the COMPlus_JitCloneLoops
+// in release builds. For debug builds, use the value of the DOTNET_JitCloneLoops
 // flag (which defaults to 1, or allowed).
 //
 // Return Value:

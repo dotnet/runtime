@@ -5,6 +5,17 @@
              TaskName="ILStrip"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
+  <PropertyGroup>
+    <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == ''">true</AppleGenerateAppBundle>
+    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
+    <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AppleGenerateAppBundle>
+  </PropertyGroup>
+
+  <Target Name="_CleanPublish" 
+          BeforeTargets="Build">
+    <RemoveDir Directories="$(PublishDir)" />
+  </Target>
+
   <Target Name="AppleBuildApp" AfterTargets="$(AppleBuildAppAfterThisTarget)" />
 
   <Target Name="_AppleCoreBuild" BeforeTargets="AppleBuildApp" DependsOnTargets="$(AppleBuildAppDependsOn)" />
@@ -17,6 +28,40 @@
     <PropertyGroup>
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
     </PropertyGroup>
+    <PropertyGroup>
+      <BundleDir>$(AppleAppBundleDir)</BundleDir>
+      <_MonoHeaderPath>$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0</_MonoHeaderPath>
+      <_AotModuleTablePath>$(AppleAppBundleDir)\modules.m</_AotModuleTablePath>
+    </PropertyGroup>
+
+    <!-- common linker arguments for app and library builds -->
+    <ItemGroup>
+      <_CommonLinkerArgs Condition="'$(TargetOS)' != 'tvos'" Include="-framework GSS" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <!-- add all non stub libs first -->
+      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
+      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
+      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
+
+      <_UsedComponents 
+        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
+        Include="$(RuntimeComponents)" />
+
+      <_RuntimeLibraries 
+        Include="$(AppleAppDir)\*-stub-static.a" />
+      <_RuntimeLibraries 
+        Include="$(AppleAppDir)\*.a"
+        Exclude="$(AppleAppDir)\*-static.a" />
+
+      <_RuntimeLibraries Remove="$(AppleAppDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Include="$(AppleAppDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_BeforeAppleBuildApp">
@@ -30,11 +75,11 @@
 
   <Target Name="_AppleResolveReferences">
     <ItemGroup>
-      <_AppleAssembliesInternal Remove="@(_AppleAssembliesInternal)" />
-      <_AppleAssembliesInternal Include="@(AppleAssembliesToBundle)">
+      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
+      <AppAssembliesInternal Include="@(AppleAssembliesToBundle)">
         <_InternalForceInterpret>%(AppleAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
         <_IsNative>%(AppleAssembliesToBundle._IsNative)</_IsNative>
-      </_AppleAssembliesInternal>
+      </AppAssembliesInternal>
     </ItemGroup>
   </Target>
 
@@ -46,16 +91,18 @@
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(_IsLibraryMode)' == 'true'">true</_EnableUnmanagedCallersOnlyMethodsExport>
+    </PropertyGroup>
+
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=arm64-ios" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=arm64-apple-ios14.2-macabi" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-ios" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=x86_64-ios" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=x86_64-apple-ios13.5-macabi" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i386-ios" />
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
@@ -76,14 +123,14 @@
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
 
-      <_AotInputAssemblies Include="@(_AppleAssembliesInternal)" 
-                           Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">
+      <_AotInputAssemblies Include="@(AppAssembliesInternal)" 
+                           Condition="'%(AppAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
       </_AotInputAssemblies>
 
-      <_AOT_InternalForceInterpretAssemblies Include="@(_AppleAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
-      <_AppleAssembliesInternal Remove="@(_AppleAssembliesInternal)" />
+      <_AOT_InternalForceInterpretAssemblies Include="@(AppAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
     </ItemGroup>
     
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
@@ -108,60 +155,64 @@
     </ItemGroup>
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
-        OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="$(_AOTMode)"
-        OutputType="AsmOnly"
-        Assemblies="@(_AotInputAssemblies)"
-        AotModulesTablePath="$(AppleAppBundleDir)\modules.m"
+        AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
-        UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(MonoAotCrossDir)"
+        Assemblies="@(_AotInputAssemblies)"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         DedupAssembly="$(_iOSLikeDedupAssembly)"
-        IntermediateOutputPath="$(_MobileIntermediateOutputPath)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="_AppleAssembliesInternal" />
+        EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
+        IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
+        LLVMPath="$(MonoAotCrossDir)"
+        Mode="$(_AOTMode)"
+        OutputDir="$(_MobileIntermediateOutputPath)"
+        OutputType="AsmOnly"
+        UseLLVM="$(MonoEnableLLVM)">
+        <Output TaskParameter="CompiledAssemblies" ItemName="AppAssembliesInternal" />
     </MonoAOTCompiler>
 
-    <ILStrip Condition="'$(ShouldILStrip)' == 'true'" Assemblies="@(_AppleAssembliesInternal)" />
+    <ILStrip Condition="'$(ShouldILStrip)' == 'true'" Assemblies="@(AppAssembliesInternal)" />
 
     <ItemGroup>
-      <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+      <AppAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
   </Target>
 
 
-  <Target Name="_AppleGenerateAppBundle" DependsOnTargets="_AppleGenerateRuntimeConfig">
+  <Target Name="_AppleGenerateAppBundle" 
+          Condition="'$(AppleGenerateAppBundle)' == 'true'"
+          DependsOnTargets="_AppleGenerateRuntimeConfig">
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
 
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
+    <ItemGroup>
+      <ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
+    </ItemGroup>
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
     <AppleAppBuilderTask
-        TargetOS="$(TargetOS)"
-        Arch="$(TargetArchitecture)"
-        ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
-        Assemblies="@(_AppleAssembliesInternal)"
-        MainLibraryFileName="$(MainLibraryFileName)"
-        ForceAOT="$(RunAOTCompilation)"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        EnableAppSandbox="$(EnableAppSandbox)"
-        InvariantGlobalization="$(InvariantGlobalization)"
-        UseConsoleUITemplate="True"
-        GenerateXcodeProject="$(GenerateXcodeProject)"
-        GenerateCMakeProject="$(GenerateCMakeProject)"
-        BuildAppBundle="$(GenerateXcodeProject)"
-        Optimized="$(Optimized)"
-        DevTeamProvisioning="$(DevTeamProvisioning)"
-        RuntimeComponents="$(RuntimeComponents)"
-        DiagnosticPorts="$(DiagnosticPorts)"
-        OutputDirectory="$(AppleAppBundleDir)"
-        NativeMainSource="$(NativeMainSource)"
-        AppDir="$(AppleAppDir)">
+      AppDir="$(AppleAppDir)"
+      Arch="$(TargetArchitecture)"
+      Assemblies="@(AppAssembliesInternal)"
+      BuildAppBundle="$(GenerateXcodeProject)"
+      DevTeamProvisioning="$(DevTeamProvisioning)"
+      DiagnosticPorts="$(DiagnosticPorts)"
+      EnableAppSandbox="$(EnableAppSandbox)"
+      ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
+      ForceAOT="$(RunAOTCompilation)"
+      ForceInterpreter="$(MonoForceInterpreter)"
+      GenerateCMakeProject="$(GenerateCMakeProject)"
+      GenerateXcodeProject="$(GenerateXcodeProject)"
+      InvariantGlobalization="$(InvariantGlobalization)"
+      MainLibraryFileName="$(MainLibraryFileName)"
+      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      NativeMainSource="$(NativeMainSource)"
+      Optimized="$(Optimized)"
+      OutputDirectory="$(AppleAppBundleDir)"
+      ProjectName="$(AssemblyName)"
+      RuntimeComponents="$(RuntimeComponents)"
+      TargetOS="$(TargetOS)"
+      UseConsoleUITemplate="True">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
