@@ -45,9 +45,6 @@ namespace Internal.Runtime.CompilerServices
             _handle = handle;
             _readerGCHandle = readerGCHandle;
             _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
-            
-            if (s_lazyGvmLookupForSlot == IntPtr.Zero)
-                s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public unsafe OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, GCHandle readerGCHandle, int handle)
@@ -70,9 +67,6 @@ namespace Internal.Runtime.CompilerServices
             _declaringType = declaringType.ToEETypePtr();
             _handle = handle;
             _readerGCHandle = readerGCHandle;
-
-            if (s_lazyGvmLookupForSlot == IntPtr.Zero)
-                s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle, short resolveType)
@@ -88,9 +82,6 @@ namespace Internal.Runtime.CompilerServices
                 _nonVirtualOpenInvokeCodePointer = RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(codePointer, declaringType);
             else
                 throw new NotSupportedException();
-
-            if (s_lazyGvmLookupForSlot == IntPtr.Zero)
-                s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public short ResolverType
