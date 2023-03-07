@@ -2238,11 +2238,8 @@ void Compiler::compSetProcessor()
         info.genCPU = CPU_X86_PENTIUM_4;
     else
         info.genCPU = CPU_X86;
-
 #elif defined(TARGET_LOONGARCH64)
-
-    info.genCPU = CPU_LOONGARCH64;
-
+    info.genCPU                   = CPU_LOONGARCH64;
 #endif
 
     //
