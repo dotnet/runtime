@@ -487,7 +487,7 @@ public:
         {
             registerType = FloatRegisterType;
         }
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
         else if (emitter::isMaskReg(reg))
         {
             registerType = MaskRegisterType;
@@ -1605,11 +1605,11 @@ private:
     // A temporary VarToRegMap used during the resolution of critical edges.
     VarToRegMap sharedCriticalVarToRegMap;
 
-    PhasedVar<regMaskTP>  availableIntRegs;
-    PhasedVar<regMaskTP>  availableFloatRegs;
-    PhasedVar<regMaskTP>  availableDoubleRegs;
-#if defined(TARGET_XARCH) 
-    PhasedVar<regMaskTP>  availableMaskRegs;
+    PhasedVar<regMaskTP> availableIntRegs;
+    PhasedVar<regMaskTP> availableFloatRegs;
+    PhasedVar<regMaskTP> availableDoubleRegs;
+#if defined(TARGET_XARCH)
+    PhasedVar<regMaskTP> availableMaskRegs;
 #endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 

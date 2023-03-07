@@ -76,11 +76,11 @@ inline bool varTypeIsSIMD(T vt)
 template <class T>
 inline bool varTypeIsMask(T vt)
 {
-#if defined (TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
     return (TypeGet(vt) == TYP_MASK);
-#else  // FEATURE_SIMD
+#else // FEATURE_SIMD
     return false;
-#endif 
+#endif
 }
 
 template <class T>
