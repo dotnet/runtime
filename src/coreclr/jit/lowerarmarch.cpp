@@ -2319,7 +2319,8 @@ GenTree* Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree)
     }
     else
     {
-        JITDUMP("  ..could not turn [%06u] or [%06u] into a def of flags, bailing\n", Compiler::dspTreeID(op1), Compiler::dspTreeID(op2));
+        JITDUMP("  ..could not turn [%06u] or [%06u] into a def of flags, bailing\n", Compiler::dspTreeID(op1),
+                Compiler::dspTreeID(op2));
         return nullptr;
     }
 
