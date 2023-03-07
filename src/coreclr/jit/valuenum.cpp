@@ -2060,7 +2060,7 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
             simd12_t cnsVal;
 
             cnsVal.u64[0] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u32[3] = 0xFFFFFFFF;
+            cnsVal.u32[2] = 0xFFFFFFFF;
 
             return VNForSimd12Con(cnsVal);
         }
@@ -10136,7 +10136,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     {
         CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
         int                  size           = (int)genTypeSize(tree->TypeGet());
-        const int            maxElementSize = 32; // SIMD32
+        const int            maxElementSize = sizeof(simd_t);
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};

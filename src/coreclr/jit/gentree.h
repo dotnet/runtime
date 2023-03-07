@@ -6624,7 +6624,7 @@ struct GenTreeVecCon : public GenTree
 
             case TYP_SIMD12:
             {
-                if (left->gtSimdVal.u32[3] != right->gtSimdVal.u32[3])
+                if (left->gtSimdVal.u32[2] != right->gtSimdVal.u32[2])
                 {
                     return false;
                 }
@@ -9905,7 +9905,13 @@ inline GenTree* GenTree::GetIndirOrArrMetaDataAddr()
 /*****************************************************************************/
 
 const size_t TREE_NODE_SZ_SMALL = sizeof(GenTreeLclFld);
-const size_t TREE_NODE_SZ_LARGE = sizeof(GenTreeCall);
+
+// For some configurations, such as x86 release, GenTreeVecCon is
+// the largest by a small margin due to needing to carry a simd64_t
+// constant value. Otherwise, GenTreeCall is the largest.
+
+const size_t TREE_NODE_SZ_LARGE =
+    (sizeof(GenTreeVecCon) < sizeof(GenTreeCall)) ? sizeof(GenTreeCall) : sizeof(GenTreeVecCon);
 
 enum varRefKinds
 {

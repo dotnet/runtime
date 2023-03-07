@@ -7310,7 +7310,7 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 
             case TYP_SIMD12:
             {
-                allBitsSet->gtSimdVal.i32[3] = -1;
+                allBitsSet->gtSimdVal.i32[2] = -1;
                 FALLTHROUGH;
             }
 
@@ -7385,7 +7385,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
 
             case TYP_SIMD12:
             {
-                allBitsSet->gtSimdVal.i32[3] = 0;
+                allBitsSet->gtSimdVal.i32[2] = 0;
                 FALLTHROUGH;
             }
 
