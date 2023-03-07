@@ -5698,7 +5698,7 @@ void emitter::emitIns_R_R_I(
 
         if (setFlags) // Can't encode SP with setFlags
         {
-            assert(isGeneralRegisterOrZR(reg1));
+            assert(isGeneralRegister(reg1));
             assert(isGeneralRegister(reg2));
         }
         else
