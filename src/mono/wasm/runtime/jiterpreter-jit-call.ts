@@ -394,9 +394,9 @@ export function mono_interp_flush_jitcall_queue () : void {
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
             const wasmName = compress ? i.toString(shortNameBase) : undefined;
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, wasmName);
         }
-        builder.generateImportSection();
+        builder._generateImportSection();
 
         // Function section
         builder.beginSection(3);
@@ -432,6 +432,7 @@ export function mono_interp_flush_jitcall_queue () : void {
             if (!ok)
                 throw new Error(`Failed to generate ${info.name}`);
             builder.appendU8(WasmOpcode.end);
+            builder.endFunction(true);
         }
 
         builder.endSection();

@@ -1238,6 +1238,7 @@ export function generate_wasm_body (
     //  from there.
     builder.local("eip");
     builder.appendU8(WasmOpcode.return_);
+    builder.appendU8(WasmOpcode.end);
 
     return result;
 }
