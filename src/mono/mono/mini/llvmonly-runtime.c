@@ -757,10 +757,14 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 	ERROR_DECL (error);
 	MonoFtnDesc *ftndesc;
 
-	if (info->is_virtual) {
-		del->method = mono_object_get_virtual_method_internal (del->target, info->method);
-		/* Create a new one below for the new class+method pair */
-		info = NULL;
+	if (info) {
+		if (info->is_virtual) {
+			del->method = mono_object_get_virtual_method_internal (del->target, info->method);
+			/* Create a new one below for the new class+method pair */
+			info = NULL;
+		} else {
+			del->method = info->method;
+		}
 	}
 
 	if (!info && !del->method) {
