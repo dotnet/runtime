@@ -126,12 +126,6 @@ export const traceInfo : { [key: string] : TraceInfo } = {};
 export const
     sizeOfDataItem = 4,
     sizeOfObjectHeader = 8,
-
-    // HACK: Typically we generate ~12 bytes of extra gunk after the function body so we are
-    //  subtracting 20 from the maximum size to make sure we don't produce too much
-    // Also subtract some more size since the wasm we generate for one opcode could be big
-    // WASM implementations only allow compiling 4KB of code at once :-)
-    maxModuleSize = 4000 - 160,
     // While stats are enabled, dump concise stats every N traces so that it's clear a long-running
     //  task isn't frozen if it's jitting lots of traces
     autoDumpInterval = 500;
@@ -714,17 +708,6 @@ function generate_wasm (
         );
 
         builder.emitImportsAndFunctions();
-
-        /*
-
-        builder.beginFunction("trace", );
-
-        ...
-
-        builder.appendU8(WasmOpcode.end);
-        builder.endSection();
-
-        */
 
         if (!keep) {
             const ti = traceInfo[<any>ip];

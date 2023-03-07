@@ -74,6 +74,7 @@ export class WasmBuilder {
     nextImportIndex = 0;
 
     functions: Array<FunctionInfo> = [];
+    estimatedExportBytes = 0;
 
     argumentCount!: number;
     activeBlocks!: number;
@@ -107,6 +108,7 @@ export class WasmBuilder {
         this.importedFunctions = {};
 
         this.functions.length = 0;
+        this.estimatedExportBytes = 0;
 
         this.argumentCount = 0;
         this.current.clear();
@@ -145,8 +147,19 @@ export class WasmBuilder {
             return av.slice();
     }
 
+    // HACK: Approximate amount of space we need to generate the full module at present
+    // FIXME: This does not take into account any other functions already generated if they weren't
+    //  emitted into the module immediately
     get bytesGeneratedSoFar () {
-        return this.stack[0].size;
+        return this.stack[0].size +
+            // HACK: A random constant for section headers and padding
+            32 +
+            // mod (2 bytes) name (2-3 bytes) type (1 byte) typeidx (1-2 bytes)
+            (this.importedFunctionCount * 8) +
+            // type index for each function
+            (this.functions.length * 2) +
+            // export entry for each export
+            this.estimatedExportBytes;
     }
 
     get current() {
@@ -377,6 +390,9 @@ export class WasmBuilder {
             blob: null
         };
         this.functions.push(rec);
+        if (rec.export)
+            this.estimatedExportBytes += rec.name.length + 8;
+        return rec;
     }
 
     emitImportsAndFunctions () {
