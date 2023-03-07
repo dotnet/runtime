@@ -270,6 +270,36 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         /// <summary>
+        /// Tests invalid arguments to the CreateFromFile capacity parameter
+        /// when used with SafeFileHandle parameter.
+        /// </summary>
+        [Fact]
+        public void InvalidCapacityCombinationsWithFileHandle()
+        {
+            using (TempFile file = new TempFile(GetTestFilePath()))
+            {
+                using (FileStream fs = File.Open(file.Path, FileMode.Open))
+                {
+                    SafeFileHandle fileHandle = fs.SafeFileHandle;
+                    // Out of range values for capacity
+                    Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMappedFile.CreateFromFile(fileHandle, null, -1, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+
+                    // Default (0) capacity with an empty file
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fileHandle, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fileHandle, CreateUniqueMapName(), 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+
+                    // Larger capacity than the underlying file, but read-only such that we can't expand the file
+                    fs.SetLength(4096);
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fileHandle, null, 8192, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fileHandle, CreateUniqueMapName(), 8192, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+
+                    // Capacity can't be less than the file size (for such cases a view can be created with the smaller size)
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateFromFile(fileHandle, null, 1, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true));
+                }
+            }
+        }
+
+        /// <summary>
         /// Tests invalid arguments to the CreateFromFile inheritability parameter.
         /// </summary>
         [Theory]
