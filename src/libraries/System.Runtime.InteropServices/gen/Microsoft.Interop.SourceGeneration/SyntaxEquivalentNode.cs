@@ -16,6 +16,6 @@ namespace Microsoft.Interop
             return SyntaxEquivalentComparer.Instance.Equals(Node, other.Node);
         }
 
-        public override int GetHashCode() => SyntaxEquivalentComparer.Instance.GetHashCode(Node);
+        public override int GetHashCode() => throw new UnreachableException();
     }
 }
