@@ -1390,7 +1390,7 @@ private:
         }
         return nextConsecutiveRefPositionMap;
     }
-    RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
+    FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
 #endif
 
 #ifdef DEBUG

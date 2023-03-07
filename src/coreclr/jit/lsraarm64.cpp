@@ -1436,13 +1436,16 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             if (restoreRefPos != nullptr)
             {
-                // If there was a restoreRefPosition created, make sure
-                // to link it as well so it gets same registerAssignment
+                // If there was a restoreRefPosition created, make sure to link it
+                // as well so during register assignment, we could visit it and
+                // make sure that it doesn't get assigned one of register that is part
+                // of consecutive registers we are allocating for this treeNode.
+                // See setNextConsecutiveRegisterAssignment().
                 restoreRefPos->needsConsecutive = true;
                 restoreRefPos->regCount         = 0;
                 if (firstRefPos == nullptr)
                 {
-                    // Always set the non  UpperVectorRestore. UpperVectorRestore can be assigned
+                    // Always set the non UpperVectorRestore. UpperVectorRestore can be assigned
                     // different independent register.
                     // See TODO-CQ in setNextConsecutiveRegisterAssignment().
                     firstRefPos = currRefPos;
