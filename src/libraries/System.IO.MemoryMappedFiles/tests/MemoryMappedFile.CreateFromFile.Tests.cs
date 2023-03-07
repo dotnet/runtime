@@ -274,7 +274,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// when used with SafeFileHandle parameter.
         /// </summary>
         [Fact]
-        public void InvalidCapacityCombinationsWithFileHandle()
+        public void InvalidArguments_CapacityWithFileHandle()
         {
             using (TempFile file = new TempFile(GetTestFilePath()))
             {
