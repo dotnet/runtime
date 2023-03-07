@@ -1327,12 +1327,12 @@ public:
         assert(lowerBound <= upperBound);
     }
 
-    SymbolicIntegerValue GetLowerBound()
+    SymbolicIntegerValue GetLowerBound() const
     {
         return m_lowerBound;
     }
 
-    SymbolicIntegerValue GetUpperBound()
+    SymbolicIntegerValue GetUpperBound() const
     {
         return m_upperBound;
     }
@@ -1344,7 +1344,7 @@ public:
         return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
     }
 
-    bool IsPositive()
+    bool IsNonNegative() const
     {
         return m_lowerBound >= SymbolicIntegerValue::Zero;
     }
