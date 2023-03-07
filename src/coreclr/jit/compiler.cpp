@@ -10280,7 +10280,7 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_stressPoisonImplicitByrefs++;
                     break;
 
-                case AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICTLY:
+                case AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY:
                     m_externallyVisibleImplicitly++;
                     break;
 
