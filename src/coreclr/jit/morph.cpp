@@ -9680,7 +9680,7 @@ DONE_MORPHING_CHILDREN:
 
                 if (!op2->IsNeverZero())
                 {
-                    tree->gtFlags | GTF_DIV_BY_ZERO_CHK;
+                    tree->gtFlags |= GTF_DIV_BY_ZERO_CHK;
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
                 }
             }
@@ -9691,7 +9691,7 @@ DONE_MORPHING_CHILDREN:
 #endif
             if (!op2->IsNeverZero())
             {
-                tree->gtFlags | GTF_DIV_BY_ZERO_CHK;
+                tree->gtFlags |= GTF_DIV_BY_ZERO_CHK;
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             }
             break;
