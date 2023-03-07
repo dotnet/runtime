@@ -377,6 +377,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // TARGET_ARM64
 
+        case GT_JTRUE:
+            genCodeForJTrue(treeNode->AsOp());
+            break;
+
         case GT_JCC:
             genCodeForJcc(treeNode->AsCC());
             break;
