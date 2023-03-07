@@ -20,8 +20,10 @@ namespace Internal.Runtime.CompilerServices
     // 3) Use the ResolveMethod function to do the virtual lookup. This function takes advantage of
     //    a lockless cache so the resolution is very fast for repeated lookups.
     [ReflectionBlocked]
-    public struct OpenMethodResolver : IEquatable<OpenMethodResolver>
+    public unsafe struct OpenMethodResolver : IEquatable<OpenMethodResolver>
     {
+        private static delegate*<object, RuntimeMethodHandle, nint> s_lazyGvmLookupForSlot;
+
         public const short DispatchResolve = 0;
         public const short GVMResolve = 1;
         public const short OpenNonVirtualResolve = 2;
@@ -42,6 +44,7 @@ namespace Internal.Runtime.CompilerServices
             _handle = handle;
             _readerGCHandle = readerGCHandle;
             _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
+            s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public unsafe OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, GCHandle readerGCHandle, int handle)
@@ -52,6 +55,7 @@ namespace Internal.Runtime.CompilerServices
             _handle = handle;
             _readerGCHandle = readerGCHandle;
             _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
+            s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle)
@@ -61,6 +65,7 @@ namespace Internal.Runtime.CompilerServices
             _declaringType = declaringType.ToEETypePtr();
             _handle = handle;
             _readerGCHandle = readerGCHandle;
+            s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle, short resolveType)
@@ -76,6 +81,7 @@ namespace Internal.Runtime.CompilerServices
                 _nonVirtualOpenInvokeCodePointer = RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(codePointer, declaringType);
             else
                 throw new NotSupportedException();
+            s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
         public short ResolverType
@@ -151,7 +157,7 @@ namespace Internal.Runtime.CompilerServices
             }
             else if (_resolveType == GVMResolve)
             {
-                return TypeLoaderExports.GVMLookupForSlot(thisObject, GVMMethodHandle);
+                return s_lazyGvmLookupForSlot(thisObject, GVMMethodHandle);
             }
             else
             {
