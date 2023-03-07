@@ -400,7 +400,7 @@
 
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" />
     <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)" 
-          EnvironmentVariables="WasmEnableLegacyJsInterop=$(WasmEnableLegacyJsInterop);MonoWasmThreads=$(MonoWasmThreads)" />
+          EnvironmentVariables="WasmEnableLegacyJsInterop=$(WasmEnableLegacyJsInterop)" />
 
     <ItemGroup>
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />

@@ -4,9 +4,17 @@
 
 "use strict";
 
-const monoWasmThreads = process.env.MonoWasmThreads == "true";
-const WasmEnableLegacyJsInterop = process.env.WasmEnableLegacyJsInterop === "true";
-const isPThread = monoWasmThreads ? "ENVIRONMENT_IS_PTHREAD" : "false";
+// USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
+#if USE_PTHREADS
+const monoWasmThreads = true;
+const isPThread = `ENVIRONMENT_IS_PTHREAD`;
+#else
+const monoWasmThreads = false;
+const isPThread = "false";
+#endif
+
+// because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
+const WasmEnableLegacyJsInterop = process.env.WasmEnableLegacyJsInterop !== "false";
 
 const DotnetSupportLib = {
     $DOTNET: {},
