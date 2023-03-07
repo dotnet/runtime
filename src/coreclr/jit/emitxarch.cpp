@@ -5843,7 +5843,13 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movaps:
         case INS_movd:
         case INS_movdqa:
+        case INS_movdqa32:
+        case INS_movdqa64:
         case INS_movdqu:
+        case INS_movdqu8:
+        case INS_movdqu16:
+        case INS_movdqu32:
+        case INS_movdqu64:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movsx:
@@ -5855,12 +5861,6 @@ bool emitter::IsMovInstruction(instruction ins)
         }
 
 #if defined(TARGET_AMD64)
-        case INS_movdqa32:
-        case INS_movdqa64:
-        case INS_movdqu8:
-        case INS_movdqu16:
-        case INS_movdqu32:
-        case INS_movdqu64:
         case INS_movq:
         case INS_movsxd:
         {
@@ -5935,7 +5935,21 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         {
             // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
             // non EA_32BYTE and EA_64BYTE moves clear the upper bits under VEX and EVEX encoding respectively.
-            hasSideEffect = (UseVEXEncoding() && (size <= EA_32BYTE)) || (UseEvexEncoding() && (size <= EA_64BYTE));
+            if (UseVEXEncoding())
+            {
+                if (UseEvexEncoding())
+                {
+                    hasSideEffect = (size != EA_64BYTE);
+                }
+                else
+                {
+                    hasSideEffect = (size != EA_32BYTE);
+                }
+            }
+            else
+            {
+                hasSideEffect = false;
+            }
             break;
         }
 
@@ -5979,7 +5993,8 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         {
             // These EVEX instructions merges/masks based on k-register
             // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
-            hasSideEffect = UseEvexEncoding() && (size < EA_64BYTE);
+            assert(UseEvexEncoding());
+            hasSideEffect = (size != EA_64BYTE);
             break;
         }
 
