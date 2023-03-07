@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,13 +17,18 @@ namespace Wasm.Build.Tests
         {
         }
 
+        public static IEnumerable<object?[]> MainMethodSimdTestData(bool aot, RunHost host, bool simd)
+            => ConfigWithAOTData(aot, extraArgs: $"-p:WasmEnableSIMD={simd}")
+                .WithRunHosts(host)
+                .UnwrapItemsAsArrays();
+
         [Theory]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void BuildWithSIMD_NoAOT_ShouldNotRelink(BuildArgs buildArgs, RunHost host, string id)
+        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, RunHost.All, true /* simd */ })]
+        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, RunHost.All, false /* simd */ })]
+        public void Build_NoAOT_ShouldNotRelink(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"simd_with_workload_no_aot";
+            string projectName = $"build_with_workload_no_aot";
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, "<WasmEnableSIMD>true</WasmEnableSIMD>");
 
             (_, string output) = BuildProject(buildArgs,
                                     id: id,
@@ -31,44 +37,11 @@ namespace Wasm.Build.Tests
                                         Publish: false,
                                         DotnetWasmFromRuntimePack: true));
 
-            if (!_buildContext.TryGetBuildFor(buildArgs, out _))
-            {
-                // Check if this is not a cached build
-                Assert.Contains("Compiling native assets with excc", output);
-            }
+            // Check if this is not a cached build
+            Assert.Contains("Compiling native assets with emcc", output);
 
             RunAndTestWasmApp(buildArgs,
                                 extraXHarnessArgs: host == RunHost.NodeJS ? "--engine-arg=--experimental-wasm-simd" : "",
-                                expectedExitCode: 42,
-                                test: output =>
-                                {
-                                    Assert.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>", output);
-                                    Assert.Contains("Hello, World!", output);
-                                }, host: host, id: id);
-        }
-
-        [Theory]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void BuildWithoutSIMD_AOT(BuildArgs buildArgs, RunHost host, string id)
-        {
-            string projectName = $"nosimd_with_workload_aot";
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, "<WasmEnableSIMD>false</WasmEnableSIMD>");
-
-            (_, string output) = BuildProject(buildArgs,
-                                    id: id,
-                                    new BuildProjectOptions(
-                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
-                                        Publish: false,
-                                        DotnetWasmFromRuntimePack: true));
-
-            if (!_buildContext.TryGetBuildFor(buildArgs, out _))
-            {
-                // Check if this is not a cached build
-                Assert.Contains("Compiling native assets with excc", output);
-            }
-
-            RunAndTestWasmApp(buildArgs,
                                 expectedExitCode: 42,
                                 test: output =>
                                 {
