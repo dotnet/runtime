@@ -9674,11 +9674,13 @@ DONE_MORPHING_CHILDREN:
             {
                 if (tree->CanDivisionPossiblyOverflow(this))
                 {
+                    tree->gtFlags |= GTF_DIV_OVERFLOW_CHK;
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
                 }
 
                 if (!op2->IsNeverZero())
                 {
+                    tree->gtFlags | GTF_DIV_BY_ZERO_CHK;
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
                 }
             }
@@ -9689,6 +9691,7 @@ DONE_MORPHING_CHILDREN:
 #endif
             if (!op2->IsNeverZero())
             {
+                tree->gtFlags | GTF_DIV_BY_ZERO_CHK;
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             }
             break;

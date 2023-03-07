@@ -3447,18 +3447,18 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
         regNumber divisorReg = divisorOp->GetRegNum();
 
-        // (AnyVal /  0) => DivideByZeroException
-        if (!divisorOp->IsNeverZero())
+        if (tree->gtFlags & GTF_DIV_BY_ZERO_CHK)
         {
             // Check if the divisor is zero throw a DivideByZeroException
             emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
             genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
         }
 
-        // (MinInt / -1) => ArithmeticException
-        if (tree->OperIs(GT_DIV) && tree->CanDivisionPossiblyOverflow(compiler))
+        if (tree->gtFlags & GTF_DIV_OVERFLOW_CHK)
         {
             // Signed-division might overflow.
+
+            assert(tree->OperIs(GT_DIV));
 
             BasicBlock* sdivLabel  = genCreateTempLabel();
             GenTree*    dividendOp = tree->gtGetOp1();
