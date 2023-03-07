@@ -3,6 +3,11 @@
 
 #pragma once
 
+// libunwind headers
+#include <libunwind.h>
+#include <external/llvm-libunwind/src/config.h>
+#include <external/llvm-libunwind/src/AddressSpace.hpp>
+
 class UnixNativeCodeManager : public ICodeManager
 {
     TADDR m_moduleBase;
@@ -12,6 +17,11 @@ class UnixNativeCodeManager : public ICodeManager
 
     PTR_PTR_VOID m_pClasslibFunctions;
     uint32_t m_nClasslibFunctions;
+
+    libunwind::UnwindInfoSections m_UnwindInfoSections;
+
+    bool VirtualUnwind(REGDISPLAY* pRegisterSet);
+    bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda);
 
 public:
     UnixNativeCodeManager(TADDR moduleBase,

@@ -63,7 +63,12 @@ public:
     }
 
 private:
-    ProfileSynthesis(Compiler* compiler) : m_comp(compiler), m_loops(nullptr), m_bbNumToBlockMap(nullptr)
+    ProfileSynthesis(Compiler* compiler)
+        : m_comp(compiler)
+        , m_loops(nullptr)
+        , m_bbNumToBlockMap(nullptr)
+        , m_improperLoopHeaders(0)
+        , m_cappedCyclicProbabilities(0)
     {
     }
 
@@ -97,6 +102,8 @@ private:
     Compiler* const m_comp;
     LoopVector*     m_loops;
     BasicBlock**    m_bbNumToBlockMap;
+    unsigned        m_improperLoopHeaders;
+    unsigned        m_cappedCyclicProbabilities;
 };
 
 #endif // !_FGPROFILESYNTHESIS_H_

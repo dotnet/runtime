@@ -4565,6 +4565,21 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForJTrue: Produce code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - the node
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+    GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->bbJumpDest, reg);
+}
+
+//------------------------------------------------------------------------
 // genCodeForConditionalCompare: Produce code for a compare that's dependent on a previous compare.
 //
 // Arguments:

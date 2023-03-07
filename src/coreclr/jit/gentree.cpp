@@ -12745,8 +12745,9 @@ void Compiler::gtDispRange(LIR::ReadOnlyRange const& range)
 //
 void Compiler::gtDispTreeRange(LIR::Range& containingRange, GenTree* tree)
 {
-    bool unused;
-    gtDispRange(containingRange.GetTreeRange(tree, &unused));
+    bool     closed;
+    unsigned sideEffects;
+    gtDispRange(containingRange.GetTreeRangeWithFlags(tree, &closed, &sideEffects));
 }
 
 //------------------------------------------------------------------------
@@ -24766,5 +24767,5 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
     }
 
     // TODO-Casts: extend IntegralRange to handle constants
-    return IntegralRange::ForNode((GenTree*)this, comp).IsPositive();
+    return IntegralRange::ForNode(const_cast<GenTree*>(this), comp).IsNonNegative();
 }

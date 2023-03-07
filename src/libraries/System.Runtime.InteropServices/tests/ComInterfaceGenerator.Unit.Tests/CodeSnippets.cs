@@ -9,10 +9,13 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    internal partial class CodeSnippets : IComInterfaceAttributeProvider
+    internal partial class CodeSnippets
     {
-        private readonly GeneratorKind _generator;
-        GeneratorKind IComInterfaceAttributeProvider.Generator => _generator;
+        private readonly IComInterfaceAttributeProvider _attributeProvider;
+        public CodeSnippets(IComInterfaceAttributeProvider attributeProvider)
+        {
+            _attributeProvider = attributeProvider;
+        }
 
         private string VirtualMethodIndex(
             int index,
@@ -23,7 +26,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             bool? SetLastError = null,
             ExceptionMarshalling? ExceptionMarshalling = null,
             Type? ExceptionMarshallingType = null)
-            => ((IComInterfaceAttributeProvider)this).VirtualMethodIndex(
+            => _attributeProvider.VirtualMethodIndex(
                 index,
                 ImplicitThisParameter,
                 Direction,
@@ -33,14 +36,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 ExceptionMarshalling,
                 ExceptionMarshallingType);
 
-        private string UnmanagedObjectUnwrapper(Type t) => ((IComInterfaceAttributeProvider)this).UnmanagedObjectUnwrapper(t);
+        private string UnmanagedObjectUnwrapper(Type t) => _attributeProvider.UnmanagedObjectUnwrapper(t);
 
-        private string GeneratedComInterface => ((IComInterfaceAttributeProvider)this).GeneratedComInterface;
-
-        public CodeSnippets(GeneratorKind generator)
-        {
-            this._generator = generator;
-        }
+        private string GeneratedComInterface => _attributeProvider.GeneratedComInterface;
 
         private string UnmanagedCallConv(Type[]? CallConvs = null)
         {
@@ -51,16 +49,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
-        public const string INativeAPI_IUnmanagedInterfaceTypeImpl = $$"""
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
-            }
-            """;
 
-        public const string INativeAPI_IUnmanagedInterfaceTypeMethodImpl = """
-                static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
-            """;
 
         public string SpecifiedMethodIndexNoExplicitParameters => $@"
 using System.Runtime.InteropServices;
@@ -72,7 +61,7 @@ partial interface INativeAPI
 {{
     {VirtualMethodIndex(0)}
     void Method();
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         public string SpecifiedMethodIndexNoExplicitParametersNoImplicitThis => $@"
 using System.Runtime.InteropServices;
@@ -85,7 +74,7 @@ partial interface INativeAPI
     {VirtualMethodIndex(0, ImplicitThisParameter: false)}
     void Method();
 
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         public string SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions => $@"
 using System.Runtime.CompilerServices;
@@ -117,7 +106,7 @@ partial interface INativeAPI
     [SuppressGCTransition]
     {VirtualMethodIndex(4)}
     void Method4();
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         public string BasicParametersAndModifiers(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -133,7 +122,7 @@ partial interface INativeAPI
 {{
     {VirtualMethodIndex(0)}
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         public string BasicParametersAndModifiersManagedToUnmanaged(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -149,7 +138,7 @@ partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, Direction: MarshalDirection.ManagedToUnmanaged)}
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
         public string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).FullName!);
         public string BasicParametersAndModifiersNoRef(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -165,7 +154,7 @@ partial interface INativeAPI
 {{
     {VirtualMethodIndex(0)}
     {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         public string BasicParametersAndModifiersNoImplicitThis(string typeName) => $@"
 using System.Runtime.CompilerServices;
@@ -178,7 +167,7 @@ partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ImplicitThisParameter: false)}
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         public string BasicParametersAndModifiersNoImplicitThis<T>() => BasicParametersAndModifiersNoImplicitThis(typeof(T).FullName!);
         public string MarshalUsingCollectionCountInfoParametersAndModifiers<T>() => MarshalUsingCollectionCountInfoParametersAndModifiers(typeof(T).ToString());
@@ -201,7 +190,7 @@ partial interface INativeAPI
         [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize);
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         public string BasicReturnTypeComExceptionHandling(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -215,7 +204,7 @@ partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ExceptionMarshalling : ExceptionMarshalling.Com)}
     {typeName} Method();
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         public string BasicReturnTypeCustomExceptionHandling(string typeName, string customExceptionType, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -229,46 +218,59 @@ partial interface INativeAPI
 {{
     {VirtualMethodIndex(0, ExceptionMarshallingType : Type.GetType(customExceptionType))}
     {typeName} Method();
-}}" + INativeAPI_IUnmanagedInterfaceTypeImpl;
+}}" + _attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
-        public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider<ManagedToUnmanaged>
+        public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider
         {
-            public ManagedToUnmanaged(GeneratorKind generator) => Generator = generator;
-            public static MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
+            public MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
 
-            public static bool ImplicitThisParameter => true;
+            public bool ImplicitThisParameter => true;
 
-            public GeneratorKind Generator { get; }
+            public ManagedToUnmanaged(IComInterfaceAttributeProvider attributeProvider)
+            {
+                AttributeProvider = attributeProvider;
+            }
+
+            public IComInterfaceAttributeProvider AttributeProvider { get; }
         }
-        public class ManagedToUnmanagedNoImplicitThis : IVirtualMethodIndexSignatureProvider<ManagedToUnmanagedNoImplicitThis>
+        public class ManagedToUnmanagedNoImplicitThis : IVirtualMethodIndexSignatureProvider
         {
-            public static MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
+            public MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
 
-            public static bool ImplicitThisParameter => false;
+            public bool ImplicitThisParameter => false;
 
-            public GeneratorKind Generator { get; }
+            public ManagedToUnmanagedNoImplicitThis(IComInterfaceAttributeProvider attributeProvider)
+            {
+                AttributeProvider = attributeProvider;
+            }
 
-            public ManagedToUnmanagedNoImplicitThis(GeneratorKind generator) => Generator = generator;
+            public IComInterfaceAttributeProvider AttributeProvider { get; }
         }
-        public class UnmanagedToManaged : IVirtualMethodIndexSignatureProvider<UnmanagedToManaged>
+        public class UnmanagedToManaged : IVirtualMethodIndexSignatureProvider
         {
-            public static MarshalDirection Direction => MarshalDirection.UnmanagedToManaged;
+            public MarshalDirection Direction => MarshalDirection.UnmanagedToManaged;
 
-            public static bool ImplicitThisParameter => true;
+            public bool ImplicitThisParameter => true;
 
-            public GeneratorKind Generator { get; }
+            public UnmanagedToManaged(IComInterfaceAttributeProvider attributeProvider)
+            {
+                AttributeProvider = attributeProvider;
+            }
 
-            public UnmanagedToManaged(GeneratorKind generator) => Generator = generator;
+            public IComInterfaceAttributeProvider AttributeProvider { get; }
         }
-        public class Bidirectional : IVirtualMethodIndexSignatureProvider<Bidirectional>
+        public class Bidirectional : IVirtualMethodIndexSignatureProvider
         {
-            public static MarshalDirection Direction => MarshalDirection.Bidirectional;
+            public MarshalDirection Direction => MarshalDirection.Bidirectional;
 
-            public static bool ImplicitThisParameter => true;
+            public bool ImplicitThisParameter => true;
 
-            public GeneratorKind Generator { get; }
+            public Bidirectional(IComInterfaceAttributeProvider attributeProvider)
+            {
+                AttributeProvider = attributeProvider;
+            }
 
-            public Bidirectional(GeneratorKind generator) => Generator = generator;
+            public IComInterfaceAttributeProvider AttributeProvider { get; }
         }
     }
 }

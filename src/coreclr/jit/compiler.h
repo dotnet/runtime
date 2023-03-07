@@ -1327,12 +1327,12 @@ public:
         assert(lowerBound <= upperBound);
     }
 
-    SymbolicIntegerValue GetLowerBound()
+    SymbolicIntegerValue GetLowerBound() const
     {
         return m_lowerBound;
     }
 
-    SymbolicIntegerValue GetUpperBound()
+    SymbolicIntegerValue GetUpperBound() const
     {
         return m_upperBound;
     }
@@ -1344,7 +1344,7 @@ public:
         return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
     }
 
-    bool IsPositive()
+    bool IsNonNegative() const
     {
         return m_lowerBound >= SymbolicIntegerValue::Zero;
     }
@@ -1575,6 +1575,53 @@ inline constexpr FlowGraphUpdates operator|(FlowGraphUpdates a, FlowGraphUpdates
 inline constexpr FlowGraphUpdates operator&(FlowGraphUpdates a, FlowGraphUpdates b)
 {
     return (FlowGraphUpdates)((unsigned int)a & (unsigned int)b);
+}
+
+// Profile checking options
+//
+// clang-format off
+enum class ProfileChecks : unsigned int
+{
+    CHECK_NONE          = 0,
+    CHECK_CLASSIC       = 1 << 0, // check "classic" jit weights
+    CHECK_LIKELY        = 1 << 1, // check likelihood based weights
+    RAISE_ASSERT        = 1 << 2, // assert on check failure
+    CHECK_ALL_BLOCKS    = 1 << 3, // check blocks even if bbHasProfileWeight is false
+};
+
+inline constexpr ProfileChecks operator ~(ProfileChecks a)
+{
+    return (ProfileChecks)(~(unsigned int)a);
+}
+
+inline constexpr ProfileChecks operator |(ProfileChecks a, ProfileChecks b)
+{
+    return (ProfileChecks)((unsigned int)a | (unsigned int)b);
+}
+
+inline constexpr ProfileChecks operator &(ProfileChecks a, ProfileChecks b)
+{
+    return (ProfileChecks)((unsigned int)a & (unsigned int)b);
+}
+
+inline ProfileChecks& operator |=(ProfileChecks& a, ProfileChecks b)
+{
+    return a = (ProfileChecks)((unsigned int)a | (unsigned int)b);
+}
+
+inline ProfileChecks& operator &=(ProfileChecks& a, ProfileChecks b)
+{
+    return a = (ProfileChecks)((unsigned int)a & (unsigned int)b);
+}
+
+inline ProfileChecks& operator ^=(ProfileChecks& a, ProfileChecks b)
+{
+    return a = (ProfileChecks)((unsigned int)a ^ (unsigned int)b);
+}
+
+inline bool hasFlag(const ProfileChecks& flagSet, const ProfileChecks& flag)
+{
+    return ((flagSet & flag) == flag);
 }
 
 //---------------------------------------------------------------
@@ -5516,8 +5563,9 @@ public:
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfileWeights();
-    bool fgDebugCheckIncomingProfileData(BasicBlock* block);
-    bool fgDebugCheckOutgoingProfileData(BasicBlock* block);
+    void fgDebugCheckProfileWeights(ProfileChecks checks);
+    bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
+    bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
 #endif // DEBUG
 

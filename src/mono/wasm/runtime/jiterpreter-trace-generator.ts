@@ -18,7 +18,7 @@ import {
     getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 import {
-    sizeOfDataItem, maxModuleSize,
+    sizeOfDataItem,
 
     disabledOpcodes, countCallTargets,
     callTargetCounts, trapTraceErrors,
@@ -178,7 +178,13 @@ export function generate_wasm_body (
             record_abort(traceIp, ip, traceName, "end-of-body");
             break;
         }
+
+        // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
+        //  might generate a ton of code and we generate a bit of an epilogue after
+        //  we finish
+        const maxModuleSize = 3850;
         if (builder.size >= maxModuleSize - builder.bytesGeneratedSoFar) {
+            // console.log(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
             record_abort(traceIp, ip, traceName, "trace-too-big");
             break;
         }
@@ -1238,6 +1244,7 @@ export function generate_wasm_body (
     //  from there.
     builder.local("eip");
     builder.appendU8(WasmOpcode.return_);
+    builder.appendU8(WasmOpcode.end);
 
     return result;
 }
