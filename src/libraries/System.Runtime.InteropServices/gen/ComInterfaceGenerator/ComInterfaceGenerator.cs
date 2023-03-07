@@ -504,7 +504,71 @@ namespace Microsoft.Interop
                                                     SizeOfExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))),
                                                     LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethodStubs.Length)))))))))));
 
-            // TODO: Fill in IUnknown VTable from ComWrappers.GetIUnknownImpl
+            var fillIUnknownSlots = Block()
+                .AddStatements(
+                    // nint v0, v1, v2;
+                    LocalDeclarationStatement(VariableDeclaration(ParseTypeName("nint"))
+                        .AddVariables(
+                            VariableDeclarator("v0"),
+                            VariableDeclarator("v1"),
+                            VariableDeclarator("v2")
+                        )),
+                    // ComWrappers.GetIUnknownImpl(out v0, out v1, out v2);
+                    ExpressionStatement(
+                        InvocationExpression(
+                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers),
+                                IdentifierName("GetIUnknownImpl")))
+                        .AddArgumentListArguments(
+                            Argument(IdentifierName("v0"))
+                                    .WithRefKindKeyword(Token(SyntaxKind.OutKeyword)),
+                            Argument(IdentifierName("v1"))
+                                .WithRefKindKeyword(Token(SyntaxKind.OutKeyword)),
+                            Argument(IdentifierName("v2"))
+                                .WithRefKindKeyword(Token(SyntaxKind.OutKeyword)))),
+                    // m_vtable[0] = (void*)v0;
+                    ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                            ElementAccessExpression(
+                                IdentifierName(vtableLocalName),
+                                BracketedArgumentList(
+                                    SingletonSeparatedList(
+                                        Argument(
+                                            LiteralExpression(
+                                                SyntaxKind.NumericLiteralExpression,
+                                                Literal(0)))))),
+                            CastExpression(
+                                PointerType(
+                                    PredefinedType(Token(SyntaxKind.VoidKeyword))),
+                                IdentifierName("v0")))),
+                    // m_vtable[1] = (void*)v1;
+                    ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                            ElementAccessExpression(
+                                IdentifierName(vtableLocalName),
+                                BracketedArgumentList(
+                                    SingletonSeparatedList(
+                                        Argument(
+                                            LiteralExpression(
+                                                SyntaxKind.NumericLiteralExpression,
+                                                Literal(1)))))),
+                            CastExpression(
+                                PointerType(
+                                    PredefinedType(Token(SyntaxKind.VoidKeyword))),
+                                IdentifierName("v1")))),
+                    // m_vtable[2] = (void*)v2;
+                    ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                            ElementAccessExpression(
+                                IdentifierName(vtableLocalName),
+                                BracketedArgumentList(
+                                    SingletonSeparatedList(
+                                        Argument(
+                                            LiteralExpression(
+                                                SyntaxKind.NumericLiteralExpression,
+                                                Literal(2)))))),
+                            CastExpression(
+                                PointerType(
+                                    PredefinedType(Token(SyntaxKind.VoidKeyword))),
+                                IdentifierName("v2")))));
+
             var vtableSlotAssignments = VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(interfaceMethodStubs, vtableLocalName);
 
             return ImplementationInterfaceTemplate
@@ -513,6 +577,7 @@ namespace Microsoft.Interop
                         .WithBody(
                             Block(
                                 vtableDeclarationStatement,
+                                fillIUnknownSlots,
                                 vtableSlotAssignments,
                                 ReturnStatement(IdentifierName(vtableLocalName)))));
         }

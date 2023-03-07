@@ -111,6 +111,8 @@ namespace Microsoft.Interop
 
         public const string ComInterfaceTypeAttribute = "System.Runtime.InteropServices.ComInterfaceType";
 
+        public const string System_Runtime_InteropServices_ComWrappers = "System.Runtime.InteropServices.ComWrappers";
+
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
 
         public const string IIUnknownInterfaceType = "System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType";
