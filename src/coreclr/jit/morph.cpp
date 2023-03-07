@@ -10869,98 +10869,98 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
-
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-
-#if defined(TARGET_XARCH)
-        case NI_SSE_And:
-        case NI_SSE2_And:
-        case NI_AVX_And:
-        case NI_AVX2_And:
-#elif defined(TARGET_ARM64)
-        case NI_AdvSimd_And:
-#endif
+        default:
         {
-            assert(node->GetOperandCount() == 2);
+            break;
+        }
+    }
 
-            GenTree*            op1      = node->Op(1);
-            GenTree*            op2      = node->Op(2);
-            GenTree*            lhs      = nullptr;
-            GenTree*            rhs      = nullptr;
-            GenTreeHWIntrinsic* inner_hw = nullptr;
+    // Transforms:
+    // 1.(~v1 & v2) to VectorXxx.AndNot(v1, v2)
+    // 2.(v1 & (~v2)) to VectorXxx.AndNot(v1, v2)
+    switch (node->HWOperGet())
+    {
+        case GT_AND:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+            GenTree* lhs = nullptr;
+            GenTree* rhs = nullptr;
 
-            // Transforms ~v1 & v2 to VectorXxx.AndNot(v1, v2)
-            if (op1->OperIs(GT_HWINTRINSIC))
+            if (op1->OperIsHWIntrinsic())
             {
-                GenTreeHWIntrinsic* xor_hw = op1->AsHWIntrinsic();
-                switch (xor_hw->GetHWIntrinsicId())
-                {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+                // Try handle: ~op1 & op2
+                GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet();
 
-#if defined(TARGET_XARCH)
-                    case NI_SSE_Xor:
-                    case NI_SSE2_Xor:
-                    case NI_AVX_Xor:
-                    case NI_AVX2_Xor:
-#elif defined(TARGET_ARM64)
-                    case NI_AdvSimd_Xor:
-#endif
-                        inner_hw = xor_hw;
-                        rhs      = op2;
-#endif
-                    default:
+                if (hwOper == GT_NOT)
+                {
+                    lhs = op1;
+                    rhs = op2;
+                }
+                else if (hwOper == GT_XOR)
+                {
+                    GenTree* hwOp1 = hw->Op(1);
+                    GenTree* hwOp2 = hw->Op(2);
+
+                    if (hwOp1->IsVectorAllBitsSet())
                     {
-                        break;
+                        lhs = hwOp2;
+                        rhs = op2;
+                    }
+                    else if (hwOp2->IsVectorAllBitsSet())
+                    {
+                        lhs = hwOp1;
+                        rhs = op2;
                     }
                 }
             }
 
-            // Transforms v2 & (~v1) to VectorXxx.AndNot(v2, v1)
-            if (op2->OperIs(GT_HWINTRINSIC))
+            if ((lhs == nullptr) && op2->OperIsHWIntrinsic())
             {
-                GenTreeHWIntrinsic* xor_hw = op2->AsHWIntrinsic();
-                switch (xor_hw->GetHWIntrinsicId())
-                {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+                // Try handle: op1 & ~op2
+                GenTreeHWIntrinsic* hw     = op2->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet();
 
-#if defined(TARGET_XARCH)
-                    case NI_SSE_Xor:
-                    case NI_SSE2_Xor:
-                    case NI_AVX_Xor:
-                    case NI_AVX2_Xor:
-#elif defined(TARGET_ARM64)
-                    case NI_AdvSimd_Xor:
-#endif
-                        inner_hw = xor_hw;
-                        rhs      = op1;
-#endif
-                    default:
+                if (hwOper == GT_NOT)
+                {
+                    lhs = op1;
+                    rhs = op2;
+                }
+                else if (hwOper == GT_XOR)
+                {
+                    GenTree* hwOp1 = hw->Op(1);
+                    GenTree* hwOp2 = hw->Op(2);
+
+                    if (hwOp1->IsVectorAllBitsSet())
                     {
-                        break;
+                        lhs = op1;
+                        rhs = hwOp2;
+                    }
+                    else if (hwOp2->IsVectorAllBitsSet())
+                    {
+                        lhs = op1;
+                        rhs = hwOp1;
                     }
                 }
             }
 
-            if ((inner_hw == nullptr) || (!inner_hw->Op(2)->IsVectorAllBitsSet()))
+            if (lhs == nullptr || rhs == nullptr)
             {
-                return node;
+                break;
             }
 
             var_types    simdType        = node->TypeGet();
             CorInfoType  simdBaseJitType = node->GetSimdBaseJitType();
             unsigned int simdSize        = node->GetSimdSize();
 
-            lhs = inner_hw->Op(1);
-
             GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, simdType, lhs, rhs, simdBaseJitType, simdSize, true);
 
             DEBUG_DESTROY_NODE(node);
-
             INDEBUG(andnNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             return andnNode;
         }
-#endif
         default:
         {
             break;

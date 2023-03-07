@@ -6410,6 +6410,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
+    genTreeOps HWOperGet();
+
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 
