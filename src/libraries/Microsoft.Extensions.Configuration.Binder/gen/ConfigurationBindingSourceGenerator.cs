@@ -3,8 +3,11 @@
 
 //#define LAUNCH_DEBUGGER
 using System.Collections.Immutable;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -16,20 +19,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<InvocationExpressionSyntax> inputCalls = context.SyntaxProvider.CreateSyntaxProvider(
-                (node, _) => Parser.IsInputCall(node),
-                (syntaxContext, _) => (InvocationExpressionSyntax)syntaxContext.Node);
+            IncrementalValueProvider<KnownTypeData> compilationData =
+                context.CompilationProvider
+                    .Select((compilation, _) => new KnownTypeData(compilation));
 
-            IncrementalValueProvider<(Compilation, ImmutableArray<InvocationExpressionSyntax>)> compilationAndClasses =
-                context.CompilationProvider.Combine(inputCalls.Collect());
+            IncrementalValuesProvider<BinderInvocationOperation> inputCalls = context.SyntaxProvider.CreateSyntaxProvider(
+                (node, _) => node is InvocationExpressionSyntax invocation,
+                (context, cancellationToken) => new BinderInvocationOperation(context, cancellationToken));
 
-            context.RegisterSourceOutput(compilationAndClasses, (spc, source) => Execute(source.Item1, source.Item2, spc));
+            IncrementalValueProvider<(KnownTypeData, ImmutableArray<BinderInvocationOperation>)> inputData = compilationData.Combine(inputCalls.Collect());
+
+            context.RegisterSourceOutput(inputData, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
 
         /// <summary>
         /// Generates source code to optimize binding with ConfigurationBinder.
         /// </summary>
-        private static void Execute(Compilation compilation, ImmutableArray<InvocationExpressionSyntax> inputCalls, SourceProductionContext context)
+        private static void Execute(KnownTypeData typeData, ImmutableArray<BinderInvocationOperation> inputCalls, SourceProductionContext context)
         {
 #if LAUNCH_DEBUGGER
             #pragma warning disable IDE0055
@@ -45,8 +51,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return;
             }
 
-            Parser parser = new(context, compilation);
-            SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls, context.CancellationToken);
+            Parser parser = new(context, typeData);
+            SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls);
             if (spec is not null)
             {
                 Emitter emitter = new(context, spec);
@@ -61,6 +67,128 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             #pragma warning restore
 #endif
+        }
+
+        private readonly record struct KnownTypeData
+        {
+            public readonly INamedTypeSymbol SymbolForGenericIList { get; }
+            public readonly INamedTypeSymbol SymbolForICollection { get; }
+            public readonly INamedTypeSymbol SymbolForIEnumerable { get; }
+            public readonly INamedTypeSymbol SymbolForString { get; }
+
+            public readonly INamedTypeSymbol? SymbolForConfigurationKeyNameAttribute { get; }
+            public readonly INamedTypeSymbol? SymbolForDictionary { get; }
+            public readonly INamedTypeSymbol? SymbolForGenericIDictionary { get; }
+            public readonly INamedTypeSymbol? SymbolForHashSet { get; }
+            public readonly INamedTypeSymbol? SymbolForIConfiguration { get; }
+            public readonly INamedTypeSymbol? SymbolForIConfigurationSection { get; }
+            public readonly INamedTypeSymbol? SymbolForIDictionary { get; }
+            public readonly INamedTypeSymbol? SymbolForIServiceCollection { get; }
+            public readonly INamedTypeSymbol? SymbolForISet { get; }
+            public readonly INamedTypeSymbol? SymbolForList { get; }
+
+            public KnownTypeData(Compilation compilation)
+            {
+                SymbolForIEnumerable = compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
+                SymbolForConfigurationKeyNameAttribute = compilation.GetBestTypeByMetadataName(TypeFullName.ConfigurationKeyNameAttribute);
+                SymbolForIConfiguration = compilation.GetBestTypeByMetadataName(TypeFullName.IConfiguration);
+                SymbolForIConfigurationSection = compilation.GetBestTypeByMetadataName(TypeFullName.IConfigurationSection);
+                SymbolForIServiceCollection = compilation.GetBestTypeByMetadataName(TypeFullName.IServiceCollection);
+                SymbolForString = compilation.GetSpecialType(SpecialType.System_String);
+
+                // Collections
+                SymbolForIDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.IDictionary);
+
+                // Use for type equivalency checks for unbounded generics
+                SymbolForICollection = compilation.GetSpecialType(SpecialType.System_Collections_Generic_ICollection_T).ConstructUnboundGenericType();
+                SymbolForGenericIDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.GenericIDictionary)?.ConstructUnboundGenericType();
+                SymbolForGenericIList = compilation.GetSpecialType(SpecialType.System_Collections_Generic_IList_T).ConstructUnboundGenericType();
+                SymbolForISet = compilation.GetBestTypeByMetadataName(TypeFullName.ISet)?.ConstructUnboundGenericType();
+
+                // Used to construct concrete types at runtime; cannot also be constructed
+                SymbolForDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.Dictionary);
+                SymbolForHashSet = compilation.GetBestTypeByMetadataName(TypeFullName.HashSet);
+                SymbolForList = compilation.GetBestTypeByMetadataName(TypeFullName.List);
+            }
+        }
+
+        private enum BinderMethodKind
+        {
+            None = 0,
+            Configure = 1,
+            Get = 2,
+            Bind = 3,
+        }
+
+        private readonly record struct BinderInvocationOperation()
+        {
+            public IInvocationOperation? InvocationOperation { get; }
+            public BinderMethodKind BinderMethodKind { get; }
+            public Location? Location { get; }
+
+            public BinderInvocationOperation(GeneratorSyntaxContext context, CancellationToken cancellationToken) : this()
+            {
+                if (context.Node is not InvocationExpressionSyntax syntax ||
+                    context.SemanticModel.GetOperation(syntax, cancellationToken) is not IInvocationOperation operation)
+                {
+                    return;
+                }
+
+                InvocationOperation = operation;
+                Location = syntax.GetLocation();
+
+                if (IsGetCall(syntax))
+                {
+                    BinderMethodKind = BinderMethodKind.Get;
+                }
+                else if (IsConfigureCall(syntax))
+                {
+                    BinderMethodKind = BinderMethodKind.Configure;
+                }
+                else if (IsBindCall(syntax))
+                {
+                    BinderMethodKind = BinderMethodKind.Bind;
+                }
+            }
+
+            private static bool IsBindCall(InvocationExpressionSyntax invocation) =>
+                invocation is
+                {
+                    Expression: MemberAccessExpressionSyntax
+                    {
+                        Name: IdentifierNameSyntax
+                        {
+                            Identifier.ValueText: "Bind"
+                        }
+                    },
+                    ArgumentList.Arguments.Count: 1
+                };
+
+            private static bool IsConfigureCall(InvocationExpressionSyntax invocation) =>
+                invocation is
+                {
+                    Expression: MemberAccessExpressionSyntax
+                    {
+                        Name: GenericNameSyntax
+                        {
+                            Identifier.ValueText: "Configure"
+                        }
+                    },
+                    ArgumentList.Arguments.Count: 1
+                };
+
+            private static bool IsGetCall(InvocationExpressionSyntax invocation) =>
+                invocation is
+                {
+                    Expression: MemberAccessExpressionSyntax
+                    {
+                        Name: GenericNameSyntax
+                        {
+                            Identifier.ValueText: "Get"
+                        }
+                    },
+                    ArgumentList.Arguments.Count: 0
+                };
         }
     }
 }

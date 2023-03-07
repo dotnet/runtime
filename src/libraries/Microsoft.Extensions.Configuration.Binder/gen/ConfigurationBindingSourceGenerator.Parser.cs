@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
-using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Operations;
-using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -18,24 +15,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed class Parser
         {
-            private readonly Compilation _compilation;
             private readonly SourceProductionContext _context;
-
-            private readonly INamedTypeSymbol _symbolForGenericIList;
-            private readonly INamedTypeSymbol _symbolForICollection;
-            private readonly INamedTypeSymbol _symbolForIEnumerable;
-            private readonly INamedTypeSymbol _symbolForString;
-
-            private readonly INamedTypeSymbol? _symbolForConfigurationKeyNameAttribute;
-            private readonly INamedTypeSymbol? _symbolForDictionary;
-            private readonly INamedTypeSymbol? _symbolForGenericIDictionary;
-            private readonly INamedTypeSymbol? _symbolForHashSet;
-            private readonly INamedTypeSymbol? _symbolForIConfiguration;
-            private readonly INamedTypeSymbol? _symbolForIConfigurationSection;
-            private readonly INamedTypeSymbol? _symbolForIDictionary;
-            private readonly INamedTypeSymbol? _symbolForIServiceCollection;
-            private readonly INamedTypeSymbol? _symbolForISet;
-            private readonly INamedTypeSymbol? _symbolForList;
+            private readonly KnownTypeData _typeData;
 
             private readonly HashSet<TypeSpec> _typesForBindMethodGen = new();
             private readonly HashSet<TypeSpec> _typesForGetMethodGen = new();
@@ -46,75 +27,54 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly Dictionary<ITypeSymbol, TypeSpec?> _createdSpecs = new(SymbolEqualityComparer.Default);
 #pragma warning restore RS1024
 
-            public Parser(SourceProductionContext context, Compilation compilation)
+            public Parser(SourceProductionContext context, in KnownTypeData typeData)
             {
-                _compilation = compilation;
                 _context = context;
-
-                _symbolForIEnumerable = compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
-                _symbolForConfigurationKeyNameAttribute = compilation.GetBestTypeByMetadataName(TypeFullName.ConfigurationKeyNameAttribute);
-                _symbolForIConfiguration = compilation.GetBestTypeByMetadataName(TypeFullName.IConfiguration);
-                _symbolForIConfigurationSection = compilation.GetBestTypeByMetadataName(TypeFullName.IConfigurationSection);
-                _symbolForIServiceCollection = compilation.GetBestTypeByMetadataName(TypeFullName.IServiceCollection);
-                _symbolForString = compilation.GetSpecialType(SpecialType.System_String);
-
-                // Collections
-                _symbolForIDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.IDictionary);
-
-                // Use for type equivalency checks for unbounded generics
-                _symbolForICollection = compilation.GetSpecialType(SpecialType.System_Collections_Generic_ICollection_T).ConstructUnboundGenericType();
-                _symbolForGenericIDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.GenericIDictionary)?.ConstructUnboundGenericType();
-                _symbolForGenericIList = compilation.GetSpecialType(SpecialType.System_Collections_Generic_IList_T).ConstructUnboundGenericType();
-                _symbolForISet = compilation.GetBestTypeByMetadataName(TypeFullName.ISet)?.ConstructUnboundGenericType();
-
-                // Used to construct concrete types at runtime; cannot also be constructed
-                _symbolForDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.Dictionary);
-                _symbolForHashSet = compilation.GetBestTypeByMetadataName(TypeFullName.HashSet);
-                _symbolForList = compilation.GetBestTypeByMetadataName(TypeFullName.List);
+                _typeData = typeData;
             }
 
-            public SourceGenerationSpec? GetSourceGenerationSpec(
-                IEnumerable<InvocationExpressionSyntax> invocations,
-                CancellationToken cancellationToken)
+            public SourceGenerationSpec? GetSourceGenerationSpec(ImmutableArray<BinderInvocationOperation> operations)
             {
-                if (_symbolForIConfiguration is null || _symbolForIServiceCollection is null)
+                if (_typeData.SymbolForIConfiguration is null || _typeData.SymbolForIServiceCollection is null)
                 {
                     return null;
                 }
 
-                foreach (InvocationExpressionSyntax invocation in invocations)
+                foreach (BinderInvocationOperation operation in operations)
                 {
-                    if (IsBindCall(invocation))
+                    switch (operation.BinderMethodKind)
                     {
-                        ProcessBindCall(invocation, cancellationToken);
-                    }
-                    else if (IsGetCall(invocation))
-                    {
-                        ProcessGetCall(invocation, cancellationToken);
-                    }
-                    else if (IsConfigureCall(invocation))
-                    {
-                        ProcessConfigureCall(invocation, cancellationToken);
+                        case BinderMethodKind.Configure:
+                            {
+                                ProcessConfigureCall(operation);
+                            }
+                            break;
+                        case BinderMethodKind.Get:
+                            {
+                                ProcessGetCall(operation);
+                            }
+                            break;
+                        case BinderMethodKind.Bind:
+                            {
+                                ProcessBindCall(operation);
+                            }
+                            break;
+                        default:
+                            break;
                     }
                 }
 
                 return new SourceGenerationSpec(_typesForBindMethodGen, _typesForGetMethodGen, _typesForConfigureMethodGen);
             }
 
-            public static bool IsInputCall(SyntaxNode node) =>
-                node is not InvocationExpressionSyntax invocation
-                ? false
-                : IsBindCall(invocation) || IsConfigureCall(invocation) || IsGetCall(invocation);
-
-            private void ProcessBindCall(InvocationExpressionSyntax invocation, CancellationToken cancellationToken)
+            private void ProcessBindCall(BinderInvocationOperation binderOperation)
             {
-                SemanticModel semanticModel = _compilation.GetSemanticModel(invocation.SyntaxTree);
-                IInvocationOperation operation = semanticModel.GetOperation(invocation, cancellationToken) as IInvocationOperation;
+                IInvocationOperation operation = binderOperation.InvocationOperation!;
 
                 // We're looking for IConfiguration.Bind(object).
                 if (operation is IInvocationOperation { Arguments: { Length: 2 } arguments } &&
                     operation.TargetMethod.IsExtensionMethod &&
-                    TypesAreEqual(_symbolForIConfiguration, arguments[0].Parameter.Type) &&
+                    TypesAreEqual(_typeData.SymbolForIConfiguration, arguments[0].Parameter.Type) &&
                     arguments[1].Parameter.Type.SpecialType == SpecialType.System_Object)
                 {
                     IConversionOperation argument = arguments[1].Value as IConversionOperation;
@@ -128,7 +88,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return;
                     }
 
-                    AddTargetConfigType(_typesForBindMethodGen, namedType, invocation.GetLocation());
+                    AddTargetConfigType(_typesForBindMethodGen, namedType, binderOperation.Location);
 
                     static ITypeSymbol? ResolveType(IOperation argument) =>
                         argument switch
@@ -145,16 +105,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private void ProcessGetCall(InvocationExpressionSyntax invocation, CancellationToken cancellationToken)
+            private void ProcessGetCall(BinderInvocationOperation binderOperation)
             {
-                SemanticModel semanticModel = _compilation.GetSemanticModel(invocation.SyntaxTree);
-                IInvocationOperation? operation = semanticModel.GetOperation(invocation, cancellationToken) as IInvocationOperation;
+                IInvocationOperation operation = binderOperation.InvocationOperation!;
 
                 // We're looking for IConfiguration.Get<T>().
                 if (operation is IInvocationOperation { Arguments.Length: 1 } invocationOperation &&
                     invocationOperation.TargetMethod.IsExtensionMethod &&
                     invocationOperation.TargetMethod.IsGenericMethod &&
-                    TypesAreEqual(_symbolForIConfiguration, invocationOperation.TargetMethod.Parameters[0].Type))
+                    TypesAreEqual(_typeData.SymbolForIConfiguration, invocationOperation.TargetMethod.Parameters[0].Type))
                 {
                     ITypeSymbol? type = invocationOperation.TargetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None);
                     if (type is not INamedTypeSymbol { } namedType ||
@@ -164,21 +123,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return;
                     }
 
-                    AddTargetConfigType(_typesForGetMethodGen, namedType, invocation.GetLocation());
+                    AddTargetConfigType(_typesForGetMethodGen, namedType, binderOperation.Location);
                 }
             }
 
-            private void ProcessConfigureCall(InvocationExpressionSyntax invocation, CancellationToken cancellationToken)
+            private void ProcessConfigureCall(BinderInvocationOperation binderOperation)
             {
-                SemanticModel semanticModel = _compilation.GetSemanticModel(invocation.SyntaxTree);
-                IOperation? operation = semanticModel.GetOperation(invocation, cancellationToken);
+                IInvocationOperation operation = binderOperation.InvocationOperation!;
 
                 // We're looking for IServiceCollection.Configure<T>(IConfiguration).
                 if (operation is IInvocationOperation { Arguments.Length: 2 } invocationOperation &&
                     invocationOperation.TargetMethod.IsExtensionMethod &&
                     invocationOperation.TargetMethod.IsGenericMethod &&
-                    TypesAreEqual(_symbolForIServiceCollection, invocationOperation.TargetMethod.Parameters[0].Type) &&
-                    TypesAreEqual(_symbolForIConfiguration, invocationOperation.TargetMethod.Parameters[1].Type))
+                    TypesAreEqual(_typeData.SymbolForIServiceCollection, invocationOperation.TargetMethod.Parameters[0].Type) &&
+                    TypesAreEqual(_typeData.SymbolForIConfiguration, invocationOperation.TargetMethod.Parameters[1].Type))
                 {
                     ITypeSymbol? type = invocationOperation.TargetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None);
                     if (type is not INamedTypeSymbol { } namedType ||
@@ -187,48 +145,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return;
                     }
 
-                    AddTargetConfigType(_typesForConfigureMethodGen, namedType, invocation.GetLocation());
+                    AddTargetConfigType(_typesForConfigureMethodGen, namedType, binderOperation.Location);
                 }
             }
-
-            public static bool IsBindCall(SyntaxNode node) =>
-                node is InvocationExpressionSyntax
-                {
-                    Expression: MemberAccessExpressionSyntax
-                    {
-                        Name: IdentifierNameSyntax
-                        {
-                            Identifier.ValueText: "Bind"
-                        }
-                    },
-                    ArgumentList.Arguments.Count: 1
-                };
-
-            public static bool IsConfigureCall(SyntaxNode node) =>
-                node is InvocationExpressionSyntax
-                {
-                    Expression: MemberAccessExpressionSyntax
-                    {
-                        Name: GenericNameSyntax
-                        {
-                            Identifier.ValueText: "Configure"
-                        }
-                    },
-                    ArgumentList.Arguments.Count: 1
-                };
-
-            public static bool IsGetCall(SyntaxNode node) =>
-                node is InvocationExpressionSyntax
-                {
-                    Expression: MemberAccessExpressionSyntax
-                    {
-                        Name: GenericNameSyntax
-                        {
-                            Identifier.ValueText: "Get"
-                        }
-                    },
-                    ArgumentList.Arguments.Count: 0
-                };
 
             private TypeSpec? AddTargetConfigType(HashSet<TypeSpec> specs, ITypeSymbol type, Location? location)
             {
@@ -282,7 +201,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     spec = CreateArraySpec(arrayType, location);
                     return spec == null ? null : CacheSpec(spec);
                 }
-                else if (TypesAreEqual(type, _symbolForIConfigurationSection))
+                else if (TypesAreEqual(type, _typeData.SymbolForIConfigurationSection))
                 {
                     return CacheSpec(new TypeSpec(type) { Location = location, SpecKind = TypeSpecKind.IConfigurationSection });
                 }
@@ -337,7 +256,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 else
                 {
                     // We want a Bind method for List<TElement> as a temp holder for the array values.
-                    EnumerableSpec? listSpec = ConstructAndCacheGenericTypeForBind(_symbolForList, arrayType.ElementType) as EnumerableSpec;
+                    EnumerableSpec? listSpec = ConstructAndCacheGenericTypeForBind(_typeData.SymbolForList, arrayType.ElementType) as EnumerableSpec;
                     // We know the element type is supported.
                     Debug.Assert(listSpec != null);
 
@@ -382,10 +301,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 DictionarySpec? concreteType = null;
-                if (IsInterfaceMatch(type, _symbolForGenericIDictionary) || IsInterfaceMatch(type, _symbolForIDictionary))
+                if (IsInterfaceMatch(type, _typeData.SymbolForGenericIDictionary) || IsInterfaceMatch(type, _typeData.SymbolForIDictionary))
                 {
                     // We know the key and element types are supported.
-                    concreteType = ConstructAndCacheGenericTypeForBind(_symbolForDictionary, keyType, elementType) as DictionarySpec;
+                    concreteType = ConstructAndCacheGenericTypeForBind(_typeData.SymbolForDictionary, keyType, elementType) as DictionarySpec;
                     Debug.Assert(concreteType != null);
                 }
                 else if (!CanConstructObject(type, location) || !HasAddMethod(type, elementType, keyType))
@@ -418,14 +337,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 EnumerableSpec? concreteType = null;
-                if (IsInterfaceMatch(type, _symbolForISet))
+                if (IsInterfaceMatch(type, _typeData.SymbolForISet))
                 {
-                    concreteType = ConstructAndCacheGenericTypeForBind(_symbolForHashSet, elementType) as EnumerableSpec;
+                    concreteType = ConstructAndCacheGenericTypeForBind(_typeData.SymbolForHashSet, elementType) as EnumerableSpec;
                 }
-                else if (IsInterfaceMatch(type, _symbolForICollection) ||
-                    IsInterfaceMatch(type, _symbolForGenericIList))
+                else if (IsInterfaceMatch(type, _typeData.SymbolForICollection) ||
+                    IsInterfaceMatch(type, _typeData.SymbolForGenericIList))
                 {
-                    concreteType = ConstructAndCacheGenericTypeForBind(_symbolForList, elementType) as EnumerableSpec;
+                    concreteType = ConstructAndCacheGenericTypeForBind(_typeData.SymbolForList, elementType) as EnumerableSpec;
                 }
                 else if (!CanConstructObject(type, location) || !HasAddMethod(type, elementType))
                 {
@@ -468,7 +387,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 }
                                 else
                                 {
-                                    AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => TypesAreEqual(a.AttributeClass, _symbolForConfigurationKeyNameAttribute));
+                                    AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => TypesAreEqual(a.AttributeClass, _typeData.SymbolForConfigurationKeyNameAttribute));
                                     string? configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
 
                                     PropertySpec spec = new PropertySpec(property) { Type = propertyTypeSpec, ConfigurationKeyName = configKeyName };
@@ -488,7 +407,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private bool IsCandidateEnumerable(INamedTypeSymbol type, out ITypeSymbol? elementType)
             {
-                INamedTypeSymbol? @interface = GetInterface(type, _symbolForICollection);
+                INamedTypeSymbol? @interface = GetInterface(type, _typeData.SymbolForICollection);
 
                 if (@interface is not null)
                 {
@@ -502,7 +421,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private bool IsCandidateDictionary(INamedTypeSymbol type, out ITypeSymbol? keyType, out ITypeSymbol? elementType)
             {
-                INamedTypeSymbol? @interface = GetInterface(type, _symbolForGenericIDictionary);
+                INamedTypeSymbol? @interface = GetInterface(type, _typeData.SymbolForGenericIDictionary);
                 if (@interface is not null)
                 {
                     keyType = @interface.TypeArguments[0];
@@ -510,10 +429,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return true;
                 }
 
-                if (IsInterfaceMatch(type, _symbolForIDictionary))
+                if (IsInterfaceMatch(type, _typeData.SymbolForIDictionary))
                 {
-                    keyType = _symbolForString;
-                    elementType = _symbolForString;
+                    keyType = _typeData.SymbolForString;
+                    elementType = _typeData.SymbolForString;
                     return true;
                 }
 
@@ -523,7 +442,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             private bool IsCollection(INamedTypeSymbol type) =>
-                GetInterface(type, _symbolForIEnumerable) is not null;
+                GetInterface(type, _typeData.SymbolForIEnumerable) is not null;
 
             private static INamedTypeSymbol? GetInterface(INamedTypeSymbol type, INamedTypeSymbol @interface)
             {
