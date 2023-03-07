@@ -69,7 +69,6 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
     _ASSERTE(fIsStatic || (!fIsRVA && !fIsThreadLocal));
     _ASSERTE(fIsRVA + fIsThreadLocal <= 1);
 
-    m_requiresFullMbValue = 0;
     SetMemberDef(mb);
 
     // A TypedByRef should be treated like a regular value type.
