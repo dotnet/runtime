@@ -223,7 +223,9 @@ namespace ILCompiler.Dataflow
             {
                 if (_typeHierarchyDataFlowOrigin is not null)
                 {
-                    // TODO - type hierarchy marking behavior
+                    // For now we decided to not report single-file warnings due to type hierarchy marking.
+                    // It is considered too complex to figure out for the user and the likelihood of this
+                    // causing problems is pretty low.
                 }
                 else
                 {
@@ -235,7 +237,9 @@ namespace ILCompiler.Dataflow
             {
                 if (_typeHierarchyDataFlowOrigin is not null)
                 {
-                    // TODO - type hierarchy marking behavior
+                    // For now we decided to not report dynamic code warnings due to type hierarchy marking.
+                    // It is considered too complex to figure out for the user and the likelihood of this
+                    // causing problems is pretty low.
                 }
                 else
                 {
