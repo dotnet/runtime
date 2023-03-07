@@ -99,7 +99,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.MarshalUsingArrayParameterWithSizeParam<bool>(isByRef: false), 2, 0 };
 
             // Custom type marshalling with invalid members
-            CustomStructMarshallingCodeSnippets<CodeSnippets> customStructMarshallingCodeSnippets = new(new CodeSnippets());
+            CustomStructMarshallingCodeSnippets customStructMarshallingCodeSnippets = new(new CodeSnippets());
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.NonStaticMarshallerEntryPoint, 2, 0 };
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.ManagedToNativeOnlyOutParameter, 1, 0 };
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.ManagedToNativeOnlyReturnValue, 1, 0 };
@@ -120,7 +120,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.MarshalUsingCollectionWithNullElementName, 2, 0 };
 
             // Generic collection marshaller has different arity than collection.
-            CustomCollectionMarshallingCodeSnippets<CodeSnippets> customCollectionMarshallingCodeSnippets = new(new CodeSnippets());
+            CustomCollectionMarshallingCodeSnippets customCollectionMarshallingCodeSnippets = new(new CodeSnippets());
             yield return new object[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
 
             yield return new object[] { ID(), CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 1, 0 };
