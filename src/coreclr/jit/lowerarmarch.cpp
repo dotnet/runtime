@@ -2306,15 +2306,21 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTreeOp* tree)
         return nullptr;
     }
 
+    JITDUMP("[%06u] is a candidate for CCMP:\n", Compiler::dspTreeID(tree));
+    DISPTREERANGE(BlockRange(), tree);
+    JITDUMP("\n");
+
     // We leave checking invariance of op1 to tree to TryLowerConditionToFlagsNode.
     if (!IsInvariantInRange(op2, tree))
     {
+        JITDUMP("  ..cannot move [%06u], bailing\n", Compiler::dspTreeID(op2));
         return nullptr;
     }
 
     GenCondition cond1;
     if (!TryLowerConditionToFlagsNode(tree, op1, &cond1))
     {
+        JITDUMP("  ..could not turn [%06u] into a def of flags, bailing\n", Compiler::dspTreeID(op1));
         return nullptr;
     }
 
@@ -2338,6 +2344,10 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTreeOp* tree)
 
     tree->SetOper(GT_SETCC);
     tree->AsCC()->gtCondition = cond2;
+
+    JITDUMP("Conversion was legal. Result:\n");
+    DISPTREERANGE(BlockRange(), tree);
+    JITDUMP("\n");
 
     return tree->gtNext;
 }

@@ -4,6 +4,8 @@
 
   <PropertyGroup>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
+    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
+    <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>
   </PropertyGroup>
 
   <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />
@@ -16,6 +18,36 @@
     <PropertyGroup>
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
     </PropertyGroup>
+
+    <PropertyGroup>
+      <BundleDir>$(AndroidAppBundleDir)</BundleDir>
+      <_MonoHeaderPath>$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0</_MonoHeaderPath>
+      <_AotModuleTablePath>$(AndroidAppBundleDir)\modules.c</_AotModuleTablePath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <!-- add all non stub libs first -->
+      <!-- if RuntimeComponents is empty, exclude -static.a and include -stub-static.a instead -->
+      <!-- if RuntimeComponents is *, we're ok because all -static.a is included -->
+      <!-- if RuntimeComponents is a list, add to items and only pull in -static.a -->
+
+      <_UsedComponents 
+        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
+        Include="$(RuntimeComponents)" />
+
+      <_RuntimeLibraries 
+        Include="$(AndroidAppDir)\*-stub-static.a" />
+      <_RuntimeLibraries 
+        Include="$(AndroidAppDir)\*.a"
+        Exclude="$(AndroidAppDir)\*-static.a" />
+
+      <_RuntimeLibraries Remove="$(AndroidAppDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Include="$(AndroidAppDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_BeforeAndroidBuildApp">
@@ -29,11 +61,11 @@
 
   <Target Name="_AndroidResolveReferences">
     <ItemGroup>
-      <_AndroidAssembliesInternal Remove="@(_AndroidAssembliesInternal)" />
-      <_AndroidAssembliesInternal Include="@(AndroidAssembliesToBundle)">
+      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
+      <AppAssembliesInternal Include="@(AndroidAssembliesToBundle)">
         <_InternalForceInterpret>%(AndroidAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
         <_IsNative>%(AndroidAssembliesToBundle._IsNative)</_IsNative>
-      </_AndroidAssembliesInternal>
+      </AppAssembliesInternal>
     </ItemGroup>
   </Target>
 
@@ -52,6 +84,7 @@
 
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(_IsLibraryMode)' == 'true'" Include="direct-icalls" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
       <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />
@@ -67,14 +100,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_AndroidAssembliesInternal)"
-                           Condition="'%(_AndroidAssembliesInternal._InternalForceInterpret)' != 'true'">
+      <_AotInputAssemblies Include="@(AppAssembliesInternal)"
+                           Condition="'%(AppAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
       </_AotInputAssemblies>
 
-      <_AOT_InternalForceInterpretAssemblies Include="@(_AndroidAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
-      <_AndroidAssembliesInternal Remove="@(_AndroidAssembliesInternal)" />
+      <_AOT_InternalForceInterpretAssemblies Include="@(AppAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
     </ItemGroup>
 
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
@@ -104,22 +137,39 @@
       <ProfiledAOTProfilePaths Include="$(MibcFilePath)" />
     </ItemGroup>
 
+    <!-- 
+      In order for the runtime to work when static linking, we must supply 
+      a list of direct pinvokes otherwise the runtime will crash
+    -->
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <DirectPInvokes Include="libSystem.Native" />
+      <DirectPInvokes Include="libSystem.IO.Compression.Native" />
+      <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(_IsLibraryMode)' == 'true'">true</_EnableUnmanagedCallersOnlyMethodsExport>
+    </PropertyGroup>
+
     <MonoAOTCompiler
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
-        OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="$(_AOTMode)"
-        OutputType="AsmOnly"
+        AotModulesTablePath="$(_AotModuleTablePath)"
         Assemblies="@(_AotInputAssemblies)"
-        AotModulesTablePath="$(AndroidAppBundleDir)\modules.c"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        DirectPInvokes="@(DirectPInvokes)"
+        DirectPInvokeLists="@(DirectPInvokeLists)"
+        EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
+        LLVMPath="$(MonoAotCrossDir)"
         MibcProfilePath="@(ProfiledAOTProfilePaths)"
-        UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(MonoAotCrossDir)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="_AndroidAssembliesInternal" />
+        Mode="$(_AOTMode)"
+        OutputDir="$(_MobileIntermediateOutputPath)"
+        OutputType="AsmOnly"
+        UseLLVM="$(MonoEnableLLVM)">
+        <Output TaskParameter="CompiledAssemblies" ItemName="AppAssembliesInternal" />
     </MonoAOTCompiler>
 
     <ItemGroup>
-      <_AndroidAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+      <AppAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
   </Target>
 
@@ -129,27 +179,30 @@
     Condition="$(AndroidGenerateAppBundle) == 'true'"
     DependsOnTargets="_AndroidGenerateRuntimeConfig">
 
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <_NativeDependencies Include="$(LibraryOutputPath)" />
+    </ItemGroup>
 
     <AndroidAppBuilderTask
-        RuntimeIdentifier="$(RuntimeIdentifier)"
-        ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
-        Assemblies="@(_AndroidAssembliesInternal)"
-        MainLibraryFileName="$(MainLibraryFileName)"
+        AppDir="$(AndroidAppDir)"
+        Assemblies="@(AppAssembliesInternal)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
+        ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"
-        StripDebugSymbols="False"
-        RuntimeComponents="$(RuntimeComponents)"
-        DiagnosticPorts="$(DiagnosticPorts)"
+        IsLibraryMode="$(_IsLibraryMode)"
+        MainLibraryFileName="$(MainLibraryFileName)"
+        MonoRuntimeHeaders="$(_MonoHeaderPath)"
+        NativeDependencies="@(_NativeDependencies)"
         OutputDir="$(AndroidAppBundleDir)"
-        AppDir="$(AndroidAppDir)">
-        <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
+        ProjectName="$(AssemblyName)"
+        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeIdentifier="$(RuntimeIdentifier)"
+        StripDebugSymbols="False">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+        <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
 
     <Message Importance="High" Text="PackageId:       $(ApkPackageId)"/>

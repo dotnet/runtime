@@ -4,42 +4,6 @@
 #ifndef _SIMD_H_
 #define _SIMD_H_
 
-// Underlying hardware information
-// This type is used to control
-// 1. The length of System.Numerics.Vector<T>.
-// 2. Codegen of System.Numerics.Vectors.
-// 3. Codegen of floating-point arithmetics (VEX-encoding or not).
-//
-// Note
-// - Hardware SIMD support is classified to the levels. Do not directly use
-//   InstructionSet (instr.h) for System.Numerics.Vectors.
-// - Values of SIMDLevel have strictly increasing order that each SIMD level
-//   is a superset of the previous levels.
-enum SIMDLevel
-{
-    SIMD_Not_Supported = 0,
-#ifdef TARGET_XARCH
-    // SSE2 - The min bar of SIMD ISA on x86/x64.
-    // Vector<T> length is 128-bit.
-    // Floating-point instructions are legacy SSE encoded.
-    SIMD_SSE2_Supported = 1,
-
-    // SSE4 - RyuJIT may generate SSE3, SSSE3, SSE4.1 and SSE4.2 instructions for certain intrinsics.
-    // Vector<T> length is 128-bit.
-    // Floating-point instructions are legacy SSE encoded.
-    SIMD_SSE4_Supported = 2,
-
-    // AVX2 - Hardware has AVX and AVX2 instruction set.
-    // Vector<T> length is 256-bit and SIMD instructions are VEX-256 encoded.
-    // Floating-point instructions are VEX-128 encoded.
-    SIMD_AVX2_Supported = 3,
-
-    // Vector512 - Hardware has AVX, AVX2 and AVX512F instruction set.
-    // Floating-point instructions are EVEX encoded.
-    SIMD_Vector512_Supported = 4
-#endif
-};
-
 struct simd8_t
 {
     union {

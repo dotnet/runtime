@@ -1696,10 +1696,10 @@ MONO_RESTORE_WARNING
 static MonoInst*
 mono_create_fast_tls_getter (MonoCompile *cfg, MonoTlsKey key)
 {
-	int tls_offset = mono_tls_get_tls_offset (key);
-
 	if (cfg->compile_aot)
 		return NULL;
+
+	int tls_offset = mono_tls_get_tls_offset (key);
 
 	if (tls_offset != -1 && mono_arch_have_fast_tls ()) {
 		MonoInst *ins;

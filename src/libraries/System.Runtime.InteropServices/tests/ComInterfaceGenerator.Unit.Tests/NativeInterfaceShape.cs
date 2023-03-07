@@ -26,7 +26,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -53,7 +53,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -80,7 +80,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -112,7 +112,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
