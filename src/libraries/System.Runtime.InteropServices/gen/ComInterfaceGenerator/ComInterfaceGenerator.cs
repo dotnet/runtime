@@ -405,6 +405,13 @@ namespace Microsoft.Interop
 
         private static ImmutableArray<SequenceEqualImmutableArray<GeneratedMethodContextBase>> GroupContextsForInterfaceGeneration(ImmutableArray<GeneratedMethodContextBase> contexts)
         {
+            // We can end up with an empty set of contexts here as the compiler will call a SelectMany
+            // after a Collect with no input entries
+            if (contexts.IsEmpty)
+            {
+                return ImmutableArray<SequenceEqualImmutableArray<GeneratedMethodContextBase>>.Empty;
+            }
+
             ImmutableArray<SequenceEqualImmutableArray<GeneratedMethodContextBase>>.Builder allGroupsBuilder = ImmutableArray.CreateBuilder<SequenceEqualImmutableArray<GeneratedMethodContextBase>>();
 
             // Due to how the source generator driver processes the input item tables and our limitation that methods on COM interfaces can only be defined in a single partial definition of the type,
