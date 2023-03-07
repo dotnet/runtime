@@ -357,6 +357,6 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         internal RuntimeTypeBuilder m_typeBuilder;
 
-        private FieldBuilder m_underlyingField;
+        private readonly FieldBuilder m_underlyingField;
     }
 }

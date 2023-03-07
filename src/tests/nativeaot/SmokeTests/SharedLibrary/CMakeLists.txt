@@ -4,7 +4,7 @@ include_directories(${INC_PLATFORM_DIR})
 add_executable (SharedLibraryDriver SharedLibrary.cpp)
 
 if (CLR_CMAKE_TARGET_UNIX)
-    target_link_libraries (SharedLibraryDriver ${CMAKE_DL_LIBS})
+    target_link_libraries (SharedLibraryDriver PRIVATE ${CMAKE_DL_LIBS})
 endif()
 
 # add the install targets

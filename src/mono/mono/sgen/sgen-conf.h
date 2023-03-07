@@ -111,7 +111,7 @@ typedef target_mword SgenDescriptor;
 #endif
 #endif
 
-#if defined (HOST_WASM)
+#if defined (HOST_WASM) || defined(TARGET_WASM)
 #define DEFAULT_MAJOR SGEN_MAJOR_SERIAL
 #define DEFAULT_SWEEP_MODE SGEN_SWEEP_SERIAL
 #elif defined(HAVE_CONC_GC_AS_DEFAULT)

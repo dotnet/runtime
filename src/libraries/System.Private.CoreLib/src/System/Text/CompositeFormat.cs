@@ -112,7 +112,7 @@ namespace System.Text
         {
             if (numArgs < _argsRequired)
             {
-                throw new FormatException(SR.Format_IndexOutOfRange);
+                ThrowHelper.ThrowFormatIndexOutOfRange();
             }
         }
 

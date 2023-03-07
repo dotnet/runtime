@@ -790,7 +790,7 @@ namespace System
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
-#pragma warning disable CA1823, 414, 169
+#pragma warning disable CA1823, 414, 169, IDE0044
         private object? m_a;
         private object? m_b;
         private object? m_c;
@@ -799,7 +799,7 @@ namespace System
         private object? m_f;
         private object? m_g;
         private object? m_h;
-#pragma warning restore CA1823, 414, 169
+#pragma warning restore CA1823, 414, 169, IDE0044
 
         public RuntimeMethodHandleInternal m_value;
 
@@ -1160,13 +1160,13 @@ namespace System
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
-#pragma warning disable 414, 169
+#pragma warning disable 414, 169, IDE0044
         private object? m_c;
         private object? m_d;
         private int m_b;
         private object? m_e;
         private RuntimeFieldHandleInternal m_fieldHandle;
-#pragma warning restore 414, 169
+#pragma warning restore 414, 169, IDE0044
 
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
     }

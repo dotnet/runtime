@@ -687,5 +687,5 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// that in the future could lead to compat problems.
     /// </summary>
     [DebuggerNonUserCode]
-    internal struct VoidResult { }
+    internal readonly struct VoidResult { }
 }

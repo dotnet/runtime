@@ -13,8 +13,8 @@ namespace System.Reflection
     {
         #region Private Data Members
         // aggressive caching
-        private IntPtr m_fieldHandle;
-        private FieldAttributes m_fieldAttributes;
+        private readonly IntPtr m_fieldHandle;
+        private readonly FieldAttributes m_fieldAttributes;
         // lazy caching
         private string? m_name;
         private RuntimeType? m_fieldType;

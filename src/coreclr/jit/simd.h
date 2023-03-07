@@ -32,7 +32,11 @@ enum SIMDLevel
     // AVX2 - Hardware has AVX and AVX2 instruction set.
     // Vector<T> length is 256-bit and SIMD instructions are VEX-256 encoded.
     // Floating-point instructions are VEX-128 encoded.
-    SIMD_AVX2_Supported = 3
+    SIMD_AVX2_Supported = 3,
+
+    // Vector512 - Hardware has AVX, AVX2 and AVX512F instruction set.
+    // Floating-point instructions are EVEX encoded.
+    SIMD_Vector512_Supported = 4
 #endif
 };
 
@@ -149,6 +153,68 @@ struct simd32_t
     }
 };
 
+struct simd64_t
+{
+    union {
+        float    f32[16];
+        double   f64[8];
+        int8_t   i8[64];
+        int16_t  i16[32];
+        int32_t  i32[16];
+        int64_t  i64[8];
+        uint8_t  u8[64];
+        uint16_t u16[32];
+        uint32_t u32[16];
+        uint64_t u64[8];
+        simd8_t  v64[8];
+        simd16_t v128[4];
+        simd32_t v256[2];
+    };
+
+    bool operator==(const simd64_t& other) const
+    {
+        return (v256[0] == other.v256[0]) && (v256[1] == other.v256[1]);
+    }
+
+    bool operator!=(const simd64_t& other) const
+    {
+        return (v256[0] != other.v256[0]) || (v256[1] != other.v256[1]);
+    }
+};
+
+template <typename TBase>
+TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
+{
+    switch (oper)
+    {
+        case GT_NOT:
+        {
+            return ~arg0;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <>
+inline float EvaluateUnaryScalarSpecialized<float>(genTreeOps oper, float arg0)
+{
+    uint32_t arg0Bits   = BitOperations::SingleToUInt32Bits(arg0);
+    uint32_t resultBits = EvaluateUnaryScalarSpecialized<uint32_t>(oper, arg0Bits);
+    return BitOperations::UInt32BitsToSingle(resultBits);
+}
+
+template <>
+inline double EvaluateUnaryScalarSpecialized<double>(genTreeOps oper, double arg0)
+{
+    uint64_t arg0Bits   = BitOperations::DoubleToUInt64Bits(arg0);
+    uint64_t resultBits = EvaluateUnaryScalarSpecialized<uint64_t>(oper, arg0Bits);
+    return BitOperations::UInt64BitsToDouble(resultBits);
+}
+
 template <typename TBase>
 TBase EvaluateUnaryScalar(genTreeOps oper, TBase arg0)
 {
@@ -161,7 +227,7 @@ TBase EvaluateUnaryScalar(genTreeOps oper, TBase arg0)
 
         default:
         {
-            unreached();
+            return EvaluateUnaryScalarSpecialized<TBase>(oper, arg0);
         }
     }
 }
@@ -269,6 +335,119 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
 }
 
 template <typename TBase>
+TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
+{
+    return arg0 >> (arg1 & ((sizeof(TBase) * 8) - 1));
+}
+
+template <>
+inline int8_t EvaluateBinaryScalarRSZ<int8_t>(int8_t arg0, int8_t arg1)
+{
+    uint8_t arg0Bits = static_cast<uint8_t>(arg0);
+    uint8_t arg1Bits = static_cast<uint8_t>(arg1);
+
+    uint8_t resultBits = EvaluateBinaryScalarRSZ<uint8_t>(arg0Bits, arg1Bits);
+    return static_cast<int8_t>(resultBits);
+}
+
+template <>
+inline int16_t EvaluateBinaryScalarRSZ<int16_t>(int16_t arg0, int16_t arg1)
+{
+    uint16_t arg0Bits = static_cast<uint16_t>(arg0);
+    uint16_t arg1Bits = static_cast<uint16_t>(arg1);
+
+    uint16_t resultBits = EvaluateBinaryScalarRSZ<uint16_t>(arg0Bits, arg1Bits);
+    return static_cast<int16_t>(resultBits);
+}
+
+template <>
+inline int32_t EvaluateBinaryScalarRSZ<int32_t>(int32_t arg0, int32_t arg1)
+{
+    uint32_t arg0Bits = static_cast<uint32_t>(arg0);
+    uint32_t arg1Bits = static_cast<uint32_t>(arg1);
+
+    uint32_t resultBits = EvaluateBinaryScalarRSZ<uint32_t>(arg0Bits, arg1Bits);
+    return static_cast<int32_t>(resultBits);
+}
+
+template <>
+inline int64_t EvaluateBinaryScalarRSZ<int64_t>(int64_t arg0, int64_t arg1)
+{
+    uint64_t arg0Bits = static_cast<uint64_t>(arg0);
+    uint64_t arg1Bits = static_cast<uint64_t>(arg1);
+
+    uint64_t resultBits = EvaluateBinaryScalarRSZ<uint64_t>(arg0Bits, arg1Bits);
+    return static_cast<int64_t>(resultBits);
+}
+
+template <typename TBase>
+TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
+{
+    switch (oper)
+    {
+        case GT_AND:
+        {
+            return arg0 & arg1;
+        }
+
+        case GT_AND_NOT:
+        {
+            return arg0 & ~arg1;
+        }
+
+        case GT_LSH:
+        {
+            return arg0 << (arg1 & ((sizeof(TBase) * 8) - 1));
+        }
+
+        case GT_OR:
+        {
+            return arg0 | arg1;
+        }
+
+        case GT_RSH:
+        {
+            return arg0 >> (arg1 & ((sizeof(TBase) * 8) - 1));
+        }
+
+        case GT_RSZ:
+        {
+            return EvaluateBinaryScalarRSZ<TBase>(arg0, arg1);
+        }
+
+        case GT_XOR:
+        {
+            return arg0 ^ arg1;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <>
+inline float EvaluateBinaryScalarSpecialized<float>(genTreeOps oper, float arg0, float arg1)
+{
+    uint32_t arg0Bits = BitOperations::SingleToUInt32Bits(arg0);
+    uint32_t arg1Bits = BitOperations::SingleToUInt32Bits(arg1);
+
+    uint32_t resultBits = EvaluateBinaryScalarSpecialized<uint32_t>(oper, arg0Bits, arg1Bits);
+    return BitOperations::UInt32BitsToSingle(resultBits);
+}
+
+template <>
+inline double EvaluateBinaryScalarSpecialized<double>(genTreeOps oper, double arg0, double arg1)
+{
+    uint64_t arg0Bits = BitOperations::DoubleToUInt64Bits(arg0);
+    uint64_t arg1Bits = BitOperations::DoubleToUInt64Bits(arg1);
+
+    uint64_t resultBits = EvaluateBinaryScalarSpecialized<uint64_t>(oper, arg0Bits, arg1Bits);
+    return BitOperations::UInt64BitsToDouble(resultBits);
+}
+
+template <typename TBase>
 TBase EvaluateBinaryScalar(genTreeOps oper, TBase arg0, TBase arg1)
 {
     switch (oper)
@@ -278,6 +457,16 @@ TBase EvaluateBinaryScalar(genTreeOps oper, TBase arg0, TBase arg1)
             return arg0 + arg1;
         }
 
+        case GT_DIV:
+        {
+            return arg0 / arg1;
+        }
+
+        case GT_MUL:
+        {
+            return arg0 * arg1;
+        }
+
         case GT_SUB:
         {
             return arg0 - arg1;
@@ -285,7 +474,7 @@ TBase EvaluateBinaryScalar(genTreeOps oper, TBase arg0, TBase arg1)
 
         default:
         {
-            unreached();
+            return EvaluateBinaryScalarSpecialized<TBase>(oper, arg0, arg1);
         }
     }
 }
@@ -392,6 +581,18 @@ void EvaluateBinarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd*
         {
             unreached();
         }
+    }
+}
+
+template <typename TSimd, typename TBase>
+void BroadcastConstantToSimd(TSimd* result, TBase arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        // Safely execute `result[i] = arg0`
+        memcpy(&result->u8[i * sizeof(TBase)], &arg0, sizeof(TBase));
     }
 }
 

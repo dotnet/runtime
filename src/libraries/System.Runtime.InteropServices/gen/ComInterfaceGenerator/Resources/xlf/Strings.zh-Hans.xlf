@@ -52,6 +52,11 @@
         <target state="translated">方法“{0}”包含在未标记为 “partial” 的类型“{1}”中。P/Invoke 源生成将忽略方法“{0}”。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
+        <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
+        <target state="translated">包含 VirtualMethodIndexAttribute 的方法类型没有 UnmanagedObjectUnwrapperAttribute。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
         <target state="translated">标记为 “LibraryImportAttribute” 的方法应为 “static”、“partial” 和非泛型。P/Invoke 源生成将忽略非“static”、“non--partial” 或泛型的方法。</target>
@@ -114,17 +119,17 @@
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
         <source>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
-        <target state="new">All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</target>
+        <target state="translated">所有方法都必须在 “GeneratedComInterface” 特性化接口类型的同一部分定义中声明，以确保对虚拟方法表偏移进行可靠的计算。</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceMessage">
         <source>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</source>
-        <target state="new">The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</target>
+        <target state="translated">方法“{0}”是在接口“{1}”的不同部分定义上声明的，而不是在具有 “GeneratedComInterface” 属性的定义上声明的</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
         <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
-        <target state="new">Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</target>
+        <target state="translated">方法是在不同于 “GeneratedComInterface” 属性的部分声明中声明的。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

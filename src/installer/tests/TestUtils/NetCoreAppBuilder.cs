@@ -348,7 +348,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 .WithRuntimeFallbacks("win-x86", "win", "any")
                 .WithRuntimeFallbacks("win", "any")
                 .WithRuntimeFallbacks("linux-x64", "linux", "any")
-                .WithRuntimeFallbacks("linux", "any");
+                .WithRuntimeFallbacks("linux-musl-x64", "linux", "any")
+                .WithRuntimeFallbacks("linux", "any")
+                .WithRuntimeFallbacks("osx.10.12-x64", "osx-x64", "osx", "any")
+                .WithRuntimeFallbacks("osx-x64", "osx", "any");
         }
 
         public NetCoreAppBuilder WithCustomizer(Action<NetCoreAppBuilder> customizer)

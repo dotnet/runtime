@@ -13,7 +13,8 @@ import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, counters, getRawCwrap, importDef,
     getWasmFunctionTable, recordFailure, getOptions,
-    JiterpreterOptions, shortNameBase
+    JiterpreterOptions, shortNameBase,
+    getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -39,11 +40,10 @@ typedef struct {
 } JiterpEntryDataHeader;
 */
 
-const // offsetOfStack = 12,
+const
     maxInlineArgs = 16,
     // just allocate a bunch of extra space
-    sizeOfJiterpEntryData = 64,
-    offsetOfRMethod = 0;
+    sizeOfJiterpEntryData = 64;
 
 const maxJitQueueLength = 4,
     queueFlushDelayMs = 10;
@@ -283,10 +283,10 @@ function flush_wasm_entry_trampoline_jit_queue () {
         for (let i = 0; i < trampImports.length; i++) {
             mono_assert(trampImports[i], () => `trace #${i} missing`);
             const wasmName = compress ? i.toString(shortNameBase) : undefined;
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, wasmName);
         }
 
-        builder.generateImportSection();
+        builder._generateImportSection();
 
         // Function section
         builder.beginSection(3);
@@ -326,6 +326,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
                 throw new Error(`Failed to generate ${info.traceName}`);
 
             builder.appendU8(WasmOpcode.end);
+            builder.endFunction(true);
         }
 
         builder.endSection();
@@ -541,7 +542,7 @@ function generate_wasm_body (
 
     // Store the cleaned up rmethod value into the data.rmethod field of the scratch buffer
     builder.appendU8(WasmOpcode.i32_store);
-    builder.appendMemarg(offsetOfRMethod, 0); // data.rmethod
+    builder.appendMemarg(getMemberOffset(JiterpMember.Rmethod), 0); // data.rmethod
 
     // prologue takes data->rmethod and initializes data->context, then returns a value for sp_args
     // prologue also performs thread attach
