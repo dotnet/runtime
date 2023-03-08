@@ -353,7 +353,7 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
         mono_wasm_globalization_init();
 
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
-        if (config.cacheMemory && !runtimeHelpers.loadMemorySnapshot) {
+        if (config.startupMemoryCache && !runtimeHelpers.loadMemorySnapshot) {
             await storeMemorySnapshot(Module.HEAP8.buffer);
             runtimeHelpers.storeMemorySnapshotPending = false;
         }
@@ -474,7 +474,7 @@ async function instantiate_wasm_module(
         await start_asset_download(assetToLoad);
         beforeInstantiateWasm.promise_control.resolve();
 
-        if (config.cacheMemory && config.assetsHash) {
+        if (config.startupMemoryCache && config.assetsHash) {
             memorySize = await getMemorySnapshotSize();
             runtimeHelpers.loadMemorySnapshot = !!memorySize;
             runtimeHelpers.storeMemorySnapshotPending = !runtimeHelpers.loadMemorySnapshot;
@@ -563,7 +563,7 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
         }
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
-        if (!config.cacheMemory) bindings_init();
+        if (!config.startupMemoryCache) bindings_init();
     } catch (err: any) {
         _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
 
@@ -660,7 +660,7 @@ function normalizeConfig() {
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
     config.globalizationMode = config.globalizationMode || "auto";
-    config.cacheMemory = config.cacheMemory == undefined ? true : !!config.cacheMemory;
+    config.startupMemoryCache = config.startupMemoryCache == undefined ? true : !!config.startupMemoryCache;
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
     }

@@ -18,7 +18,7 @@ interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder;
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
     withApplicationArgumentsFromQuery(): DotnetHostBuilder;
-    withMemoryCache(value: boolean): DotnetHostBuilder;
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>;
     run(): Promise<number>;
 }
@@ -132,7 +132,7 @@ type MonoConfig = {
     /**
      * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
      */
-    cacheMemory?: boolean;
+    startupMemoryCache?: boolean;
     /**
      * hash of assets
      */
@@ -179,8 +179,8 @@ interface AssetEntry extends ResourceRequest {
 }
 type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
-"invariant" | //  operate in invariant globalization mode.
-"auto";
+    "invariant" | //  operate in invariant globalization mode.
+    "auto";
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;

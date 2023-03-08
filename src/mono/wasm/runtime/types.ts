@@ -122,7 +122,7 @@ export type MonoConfig = {
     /**
      * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
      */
-    cacheMemory?: boolean,
+    startupMemoryCache?: boolean,
     /**
      * hash of assets
      */

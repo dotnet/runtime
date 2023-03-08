@@ -18,7 +18,7 @@ export interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
     withApplicationArgumentsFromQuery(): DotnetHostBuilder
-    withMemoryCache(value: boolean): DotnetHostBuilder
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
 }
@@ -138,10 +138,10 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withMemoryCache(value: boolean): DotnetHostBuilder {
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
-                cacheMemory: value
+                startupMemoryCache: value
             };
             Object.assign(this.moduleConfig.config!, configInternal);
             return this;
