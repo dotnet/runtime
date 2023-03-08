@@ -4,7 +4,7 @@
   <PropertyGroup>
     <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">false</BuildAsStandalone>
 
-    <AssemblyName Condition="'$(BuildAsStandalone)' != 'true'">$(MSBuildProjectName.Replace('_il_d', '').Replace('_il_r', ''))</AssemblyName>
+    <AssemblyName Condition="'$(BuildAsStandalone)' != 'true'">$(MSBuildProjectName.Replace('_il_do', '').Replace('_il_d', '').Replace('_il_r', ''))</AssemblyName>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
