@@ -3447,7 +3447,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
         regNumber divisorReg = divisorOp->GetRegNum();
 
-        ExceptionSetFlags exSetFlags = tree->GetExceptionSetFlags(compiler);
+        ExceptionSetFlags exSetFlags = tree->OperExceptions(compiler);
 
         // (AnyVal / 0) => DivideByZeroException
         if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)

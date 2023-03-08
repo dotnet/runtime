@@ -1868,7 +1868,7 @@ public:
     bool OperRequiresCallFlag(Compiler* comp);
 
     bool OperMayThrow(Compiler* comp);
-    ExceptionSetFlags GetExceptionSetFlags(Compiler* comp);
+    ExceptionSetFlags OperExceptions(Compiler* comp);
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();

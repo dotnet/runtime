@@ -6608,7 +6608,7 @@ bool GenTree::OperIsImplicitIndir() const
 }
 
 //------------------------------------------------------------------------------
-// GetExceptionSetFlags: Get exception set this tree may throw.
+// OperExceptions: Get exception set this tree may throw.
 //
 //
 // Arguments:
@@ -6621,7 +6621,7 @@ bool GenTree::OperIsImplicitIndir() const
 //    Should not be used on calls given that we can say nothing precise about
 //    those.
 //
-ExceptionSetFlags GenTree::GetExceptionSetFlags(Compiler* comp)
+ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 {
     switch (gtOper)
     {
@@ -6768,7 +6768,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
         return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
     }
 
-    return GetExceptionSetFlags(comp) != ExceptionSetFlags::None;
+    return OperExceptions(comp) != ExceptionSetFlags::None;
 }
 
 //-----------------------------------------------------------------------------------
@@ -16806,7 +16806,7 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
                 return WALK_SKIP_SUBTREES;
             }
 
-            m_preciseExceptions |= tree->GetExceptionSetFlags(m_compiler);
+            m_preciseExceptions |= tree->OperExceptions(m_compiler);
             return WALK_CONTINUE;
         }
     };
