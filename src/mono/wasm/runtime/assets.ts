@@ -76,10 +76,10 @@ export async function mono_download_assets(): Promise<void> {
                     asset.pendingDownloadInternal = asset.pendingDownload;
                     const waitForExternalData: () => Promise<AssetWithBuffer> = async () => {
                         const response = await asset.pendingDownloadInternal!.response;
-                        ++actual_downloaded_assets_count;
                         if (!headersOnly) {
                             asset.buffer = await response.arrayBuffer();
                         }
+                        ++actual_downloaded_assets_count;
                         return { asset, buffer: asset.buffer };
                     };
                     promises_of_assets_with_buffer.push(waitForExternalData());
@@ -121,6 +121,10 @@ export async function mono_download_assets(): Promise<void> {
                         }
                         if (!skipInstantiateByAssetTypes[asset.behavior]) {
                             expected_instantiated_assets_count--;
+                        }
+                    } else {
+                        if (skipBufferByAssetTypes[asset.behavior]) {
+                            ++actual_downloaded_assets_count;
                         }
                     }
                 }
@@ -197,7 +201,9 @@ async function start_asset_download_with_throttle(asset: AssetEntry, downloadDat
         if (!downloadData || !response) {
             return undefined;
         }
-        return await response.arrayBuffer();
+        const buffer = await response.arrayBuffer();
+        ++actual_downloaded_assets_count;
+        return buffer;
     }
     finally {
         --parallel_count;
@@ -226,7 +232,6 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
                 }
             }) as any
         };
-        ++actual_downloaded_assets_count;
         return asset.pendingDownloadInternal.response;
     }
     if (asset.pendingDownloadInternal && asset.pendingDownloadInternal.response) {
@@ -262,7 +267,6 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
             if (!response.ok) {
                 continue;// next source
             }
-            ++actual_downloaded_assets_count;
             return response;
         }
         catch (err) {
@@ -293,7 +297,7 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
                     : asset.name;
             }
             else if (asset.behavior === "resource") {
-                const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
+                const path = asset.culture && asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
                 attemptUrl = assemblyRootFolder
                     ? (assemblyRootFolder + "/" + path)
                     : path;
@@ -420,7 +424,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
             Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
-        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
+        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }
     ++actual_instantiated_assets_count;
 }
@@ -429,10 +433,10 @@ export async function instantiate_wasm_asset(
     pendingAsset: AssetEntryInternal,
     wasmModuleImports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback,
-) {
-    mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal, "Can't load dotnet.wasm");
+): Promise<void> {
+    mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal && pendingAsset.pendingDownloadInternal.response, "Can't load dotnet.wasm");
     const response = await pendingAsset.pendingDownloadInternal.response;
-    const contentType = response.headers ? response.headers.get("Content-Type") : undefined;
+    const contentType = response.headers && response.headers.get ? response.headers.get("Content-Type") : undefined;
     let compiledInstance: WebAssembly.Instance;
     let compiledModule: WebAssembly.Module;
     if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {

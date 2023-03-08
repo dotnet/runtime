@@ -14,5 +14,5 @@
   <PropertyGroup>
     <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
   </PropertyGroup>
-  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
 </Project>
