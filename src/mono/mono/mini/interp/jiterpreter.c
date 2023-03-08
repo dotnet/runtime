@@ -988,7 +988,8 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 			// We failed to start a trace at a backwards branch target, but that might just mean
 			//  that the loop body starts with one or two unsupported opcodes, so it may be
 			//  worthwhile to try again later
-			enter_at_next = TRUE;
+			// FIXME: This caused a bunch of regressions
+			// enter_at_next = TRUE;
 		}
 
 		// Increase the instruction counter. If we inserted an entry point at the top of this bb,
