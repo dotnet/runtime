@@ -186,6 +186,43 @@ namespace System.IO.MemoryMappedFiles
             return new MemoryMappedFile(handle, fileHandle, false);
         }
 
+        /// <summary>
+        /// Creates a memory-mapped file from an existing file using a SafeFileHandle,
+        /// and the specified access mode, name, inheritability, and capacity.
+        /// </summary>
+        /// <param name="fileHandle">The SafeFileHandle to the existing file. Caller is
+        /// responsible for disposing <c>fileHandle</c> when <paramref name="leaveOpen"/>==true (otherwise,
+        /// automatically disposed by the <c>MemoryMappedFile</c>). </param>
+        /// <param name="mapName">A name to assign to the memory-mapped file, or <c>null</c> for a
+        /// <see cref="MemoryMappedFile"/> that you do not intend to share across processes.</param>
+        /// <param name="capacity">The maximum size, in bytes, to allocate to the memory-mapped file.
+        /// Specify 0 to set the capacity to the size of <c>filestream</c>.</param>
+        /// <param name="access">One of the enumeration values that specifies the type of access allowed
+        /// to the memory-mapped file.<para>This parameter can't be set to <c>Write</c>.</para></param>
+        /// <param name="inheritability">One of the enumeration values that specifies whether a handle
+        /// to the memory-mapped file can be inherited by a child process. The default is <c>None</c>.</param>
+        /// <param name="leaveOpen">A value that indicates whether to close the source file handle when
+        /// the <see cref="MemoryMappedFile"/> is disposed.</param>
+        /// <returns>A memory-mapped file that has the specified characteristics.</returns>
+        /// <exception cref="ArgumentException">
+        /// <para><c>mapName</c> is <c>null</c> or an empty string.</para>
+        /// <para>-or-
+        /// <c>capacity</c> and the length of the file are zero.</para>
+        /// <para>-or-
+        /// <c>access</c> is set to Write or Write enumeration value, which is not allowed.</para>
+        /// <para>-or-
+        /// access is set to Read and <c>capacity</c> is larger than the length of <c>fileHandle</c>.</para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><c>fileHanlde</c> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <c>capacity</c> is less than zero.
+        /// <para>-or-
+        /// <c>capacity</c> is less than the file size.</para>
+        /// <para>-or-
+        /// <c>access</c> is not a valid <see cref="MemoryMappedFileAccess"/> enumeration value.</para>
+        /// <para>-or-
+        /// <c>inheritability</c> is not a valid <see cref="HandleInheritability"/> enumeration value.</para>
+        /// </exception>
         public static MemoryMappedFile CreateFromFile(SafeFileHandle fileHandle, string? mapName, long capacity,
                                                         MemoryMappedFileAccess access,
                                                         HandleInheritability inheritability, bool leaveOpen)
