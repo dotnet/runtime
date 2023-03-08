@@ -444,8 +444,10 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_simd8CnsMap(nullptr)
     , m_simd12CnsMap(nullptr)
     , m_simd16CnsMap(nullptr)
+#if defined(TARGET_XARCH)
     , m_simd32CnsMap(nullptr)
     , m_simd64CnsMap(nullptr)
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
     , m_VNFunc0Map(nullptr)
     , m_VNFunc1Map(nullptr)
@@ -1957,28 +1959,28 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         {
-            return VNForSimd8Con({});
+            return VNForSimd8Con(simd8_t::Zero());
         }
 
         case TYP_SIMD12:
         {
-            return VNForSimd12Con({});
+            return VNForSimd12Con(simd12_t::Zero());
         }
 
         case TYP_SIMD16:
         {
-            return VNForSimd16Con({});
+            return VNForSimd16Con(simd16_t::Zero());
         }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
-            return VNForSimd32Con({});
+            return VNForSimd32Con(simd32_t::Zero());
         }
 
         case TYP_SIMD64:
         {
-            return VNForSimd64Con({});
+            return VNForSimd64Con(simd64_t::Zero());
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -2048,53 +2050,28 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         {
-            simd8_t cnsVal;
-
-            cnsVal.u32[0] = 0xFFFFFFFF;
-            cnsVal.u32[1] = 0xFFFFFFFF;
-
-            return VNForSimd8Con(cnsVal);
+            return VNForSimd8Con(simd8_t::AllBitsSet());
         }
 
         case TYP_SIMD12:
         {
-            simd12_t cnsVal;
-
-            cnsVal.u32[0] = 0xFFFFFFFF;
-            cnsVal.u32[1] = 0xFFFFFFFF;
-            cnsVal.u32[2] = 0xFFFFFFFF;
-
-            return VNForSimd12Con(cnsVal);
+            return VNForSimd12Con(simd12_t::AllBitsSet());
         }
 
         case TYP_SIMD16:
         {
-            simd16_t cnsVal;
-
-            cnsVal.u32[0] = 0xFFFFFFFF;
-            cnsVal.u32[1] = 0xFFFFFFFF;
-            cnsVal.u32[2] = 0xFFFFFFFF;
-            cnsVal.u32[3] = 0xFFFFFFFF;
-
-            return VNForSimd16Con(cnsVal);
+            return VNForSimd16Con(simd16_t::AllBitsSet());
         }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
-            simd32_t cnsVal;
+            return VNForSimd32Con(simd32_t::AllBitsSet());
+        }
 
-            cnsVal.u32[0] = 0xFFFFFFFF;
-            cnsVal.u32[1] = 0xFFFFFFFF;
-            cnsVal.u32[2] = 0xFFFFFFFF;
-            cnsVal.u32[3] = 0xFFFFFFFF;
-
-            cnsVal.u32[4] = 0xFFFFFFFF;
-            cnsVal.u32[5] = 0xFFFFFFFF;
-            cnsVal.u32[6] = 0xFFFFFFFF;
-            cnsVal.u32[7] = 0xFFFFFFFF;
-
-            return VNForSimd32Con(cnsVal);
+        case TYP_SIMD64:
+        {
+            return VNForSimd64Con(simd64_t::AllBitsSet());
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -2111,8 +2088,8 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
 {
     assert(varTypeIsSIMD(simdType));
 
-    simd32_t simd32Val = {};
-    int      simdSize  = genTypeSize(simdType);
+    simd_t simdVal  = {};
+    int    simdSize = genTypeSize(simdType);
 
     switch (simdBaseType)
     {
@@ -2121,7 +2098,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < simdSize; i++)
             {
-                simd32Val.u8[i] = 1;
+                simdVal.u8[i] = 1;
             }
             break;
         }
@@ -2131,7 +2108,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 2); i++)
             {
-                simd32Val.u16[i] = 1;
+                simdVal.u16[i] = 1;
             }
             break;
         }
@@ -2141,7 +2118,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 4); i++)
             {
-                simd32Val.u32[i] = 1;
+                simdVal.u32[i] = 1;
             }
             break;
         }
@@ -2151,7 +2128,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 8); i++)
             {
-                simd32Val.u64[i] = 1;
+                simdVal.u64[i] = 1;
             }
             break;
         }
@@ -2160,7 +2137,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 4); i++)
             {
-                simd32Val.f32[i] = 1.0f;
+                simdVal.f32[i] = 1.0f;
             }
             break;
         }
@@ -2169,7 +2146,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 8); i++)
             {
-                simd32Val.f64[i] = 1.0;
+                simdVal.f64[i] = 1.0;
             }
             break;
         }
@@ -2184,27 +2161,38 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
     {
         case TYP_SIMD8:
         {
-            return VNForSimd8Con(simd32Val.v64[0]);
+            simd8_t simd8Val;
+            memcpy(&simd8Val, &simdVal, sizeof(simd8_t));
+            return VNForSimd8Con(simd8Val);
         }
 
         case TYP_SIMD12:
         {
-            assert(simdBaseType == TYP_FLOAT);
-
             simd12_t simd12Val;
-            memcpy(&simd12Val, &simd32Val.f32, sizeof(simd12_t));
+            memcpy(&simd12Val, &simdVal, sizeof(simd12_t));
             return VNForSimd12Con(simd12Val);
         }
 
         case TYP_SIMD16:
         {
-            return VNForSimd16Con(simd32Val.v128[0]);
+            simd16_t simd16Val;
+            memcpy(&simd16Val, &simdVal, sizeof(simd16_t));
+            return VNForSimd16Con(simd16Val);
         }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
+            simd32_t simd32Val;
+            memcpy(&simd32Val, &simdVal, sizeof(simd32_t));
             return VNForSimd32Con(simd32Val);
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t simd64Val;
+            memcpy(&simd64Val, &simdVal, sizeof(simd64_t));
+            return VNForSimd64Con(simd64Val);
         }
 #endif // TARGET_XARCH
 
@@ -6424,6 +6412,18 @@ simd32_t GetConstantSimd32(ValueNumStore* vns, var_types baseType, ValueNum argV
 
     return BroadcastConstantToSimd<simd32_t>(vns, baseType, argVN);
 }
+
+simd64_t GetConstantSimd64(ValueNumStore* vns, var_types baseType, ValueNum argVN)
+{
+    assert(vns->IsVNConstant(argVN));
+
+    if (vns->TypeOfVN(argVN) == TYP_SIMD64)
+    {
+        return vns->GetConstantSimd64(argVN);
+    }
+
+    return BroadcastConstantToSimd<simd64_t>(vns, baseType, argVN);
+}
 #endif // TARGET_XARCH
 
 ValueNum EvaluateUnarySimd(
@@ -6466,6 +6466,15 @@ ValueNum EvaluateUnarySimd(
             simd32_t result = {};
             EvaluateUnarySimd<simd32_t>(oper, scalar, baseType, &result, arg0);
             return vns->VNForSimd32Con(result);
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t arg0 = GetConstantSimd64(vns, baseType, arg0VN);
+
+            simd64_t result = {};
+            EvaluateUnarySimd<simd64_t>(oper, scalar, baseType, &result, arg0);
+            return vns->VNForSimd64Con(result);
         }
 #endif // TARGET_XARCH
 
@@ -6525,6 +6534,16 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
             simd32_t result = {};
             EvaluateBinarySimd<simd32_t>(oper, scalar, baseType, &result, arg0, arg1);
             return vns->VNForSimd32Con(result);
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t arg0 = GetConstantSimd64(vns, baseType, arg0VN);
+            simd64_t arg1 = GetConstantSimd64(vns, baseType, arg1VN);
+
+            simd64_t result = {};
+            EvaluateBinarySimd<simd64_t>(oper, scalar, baseType, &result, arg0, arg1);
+            return vns->VNForSimd64Con(result);
         }
 #endif // TARGET_XARCH
 
@@ -6630,6 +6649,11 @@ ValueNum EvaluateSimdGetElement(ValueNumStore* vns, var_types type, var_types ba
         case TYP_SIMD32:
         {
             return EvaluateSimdGetElement<simd32_t>(vns, baseType, vns->GetConstantSimd32(arg0VN), arg1);
+        }
+
+        case TYP_SIMD64:
+        {
+            return EvaluateSimdGetElement<simd64_t>(vns, baseType, vns->GetConstantSimd64(arg0VN), arg1);
         }
 #endif // TARGET_XARCH
 
@@ -9689,22 +9713,50 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(tree->AsVecCon()->gtSimd8Val));
+        {
+            simd8_t simd8Val;
+            memcpy(&simd8Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd8_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
             break;
+        }
 
         case TYP_SIMD12:
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(tree->AsVecCon()->gtSimd12Val));
+        {
+            simd12_t simd12Val;
+            memcpy(&simd12Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd12_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(simd12Val));
             break;
+        }
 
         case TYP_SIMD16:
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(tree->AsVecCon()->gtSimd16Val));
+        {
+            simd16_t simd16Val;
+            memcpy(&simd16Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd16_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(simd16Val));
             break;
+        }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
-        case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(tree->AsVecCon()->gtSimd32Val));
+        {
+            simd32_t simd32Val;
+            memcpy(&simd32Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd32_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(simd32Val));
             break;
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t simd64Val;
+            memcpy(&simd64Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd64_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(simd64Val));
+            break;
+        }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -10053,7 +10105,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     {
         CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
         int                  size           = (int)genTypeSize(tree->TypeGet());
-        const int            maxElementSize = 32; // SIMD32
+        const int            maxElementSize = sizeof(simd_t);
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
@@ -10151,6 +10203,12 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                     {
                         READ_VALUE(simd32_t);
                         tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(val));
+                        return true;
+                    }
+                    case TYP_SIMD64:
+                    {
+                        READ_VALUE(simd64_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(val));
                         return true;
                     }
 #endif // TARGET_XARCH
