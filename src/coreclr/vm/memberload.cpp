@@ -1096,9 +1096,6 @@ MemberLoader::FindMethod(
     // Retrieve the right comparison function to use.
     UTF8StringCompareFuncPtr StrCompFunc = FM_GetStrCompFunc(flags);
 
-    SString targetName(SString::Utf8Literal, pszName);
-    ULONG targetNameHash = targetName.HashCaseInsensitive();
-
     // Statistically it's most likely for a method to be found in non-vtable portion of this class's members, then in the
     // vtable of this class's declared members, then in the inherited portion of the vtable, so we search backwards.
 
@@ -1260,9 +1257,6 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
 
     // Retrieve the right comparison function to use.
     UTF8StringCompareFuncPtr StrCompFunc = FM_GetStrCompFunc(flags);
-
-    SString targetName(SString::Utf8, pszName);
-    ULONG targetNameHash = targetName.HashCaseInsensitive();
 
     // Scan all classes in the hierarchy, starting at the current class and
     // moving back up towards the base.
@@ -1489,9 +1483,6 @@ MemberLoader::FindField(MethodTable * pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSig
     // Array classes don't have fields, and don't have metadata
     if (pMT->IsArray())
         return NULL;
-
-    SString targetName(SString::Utf8Literal, pszName);
-    ULONG targetNameHash = targetName.HashCaseInsensitive();
 
     EEClass * pClass = pMT->GetClass();
     MethodTable *pParentMT = pMT->GetParentMethodTable();
