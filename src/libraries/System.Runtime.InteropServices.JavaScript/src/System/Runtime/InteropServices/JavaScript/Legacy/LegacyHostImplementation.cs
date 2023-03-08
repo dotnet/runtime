@@ -11,6 +11,13 @@ namespace System.Runtime.InteropServices.JavaScript
     internal static class LegacyHostImplementation
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ReleaseInFlight(object obj)
+        {
+            JSObject? jsObj = obj as JSObject;
+            jsObj?.ReleaseInFlight();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RegisterCSOwnedObject(JSObject proxy)
         {
             lock (JSHostImplementation.s_csOwnedObjects)

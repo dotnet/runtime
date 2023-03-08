@@ -457,32 +457,36 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
+    if (comp->opts.OptimizationEnabled())
     {
-        GenTree* opNode  = nullptr;
-        GenTree* notNode = nullptr;
-        if (binOp->gtGetOp1()->OperIs(GT_NOT))
+        if (binOp->OperIs(GT_AND))
         {
-            notNode = binOp->gtGetOp1();
-            opNode  = binOp->gtGetOp2();
-        }
-        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
-        {
-            notNode = binOp->gtGetOp2();
-            opNode  = binOp->gtGetOp1();
+            GenTree* opNode  = nullptr;
+            GenTree* notNode = nullptr;
+            if (binOp->gtGetOp1()->OperIs(GT_NOT))
+            {
+                notNode = binOp->gtGetOp1();
+                opNode  = binOp->gtGetOp2();
+            }
+            else if (binOp->gtGetOp2()->OperIs(GT_NOT))
+            {
+                notNode = binOp->gtGetOp2();
+                opNode  = binOp->gtGetOp1();
+            }
+
+            if (notNode != nullptr)
+            {
+                binOp->gtOp1 = opNode;
+                binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+                binOp->ChangeOper(GT_AND_NOT);
+                BlockRange().Remove(notNode);
+            }
         }
 
-        if (notNode != nullptr)
-        {
-            binOp->gtOp1 = opNode;
-            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
-            binOp->ChangeOper(GT_AND_NOT);
-            BlockRange().Remove(notNode);
-        }
 #ifdef TARGET_ARM64
-        else
+        if (binOp->OperIs(GT_AND, GT_OR))
         {
-            GenTree* next = TryLowerAndToCCMP(binOp);
+            GenTree* next = TryLowerAndOrToCCMP(binOp);
             if (next != nullptr)
             {
                 return next;
@@ -2268,14 +2272,14 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 
 #ifdef TARGET_ARM64
 //------------------------------------------------------------------------
-// TryLowerAndToCCMP : Lower an and of two conditions into test + CCMP + SETCC nodes.
+// TryLowerAndOrToCCMP : Lower AND/OR of two conditions into test + CCMP + SETCC nodes.
 //
 // Arguments:
 //    tree - pointer to the node
 //
-GenTree* Lowering::TryLowerAndToCCMP(GenTreeOp* tree)
+GenTree* Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_AND));
+    assert(tree->OperIs(GT_AND, GT_OR));
 
     if (!comp->opts.OptimizationEnabled())
     {
@@ -2285,42 +2289,39 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    // Find out whether op2 is eligible to be converted to a conditional
+    if ((op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1())) ||
+        (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1())))
+    {
+        JITDUMP("[%06u] is a potential candidate for CCMP:\n", Compiler::dspTreeID(tree));
+        DISPTREERANGE(BlockRange(), tree);
+        JITDUMP("\n");
+    }
+
+    // Find out whether an operand is eligible to be converted to a conditional
     // compare. It must be a normal integral relop; for example, we cannot
     // conditionally perform a floating point comparison and there is no "ctst"
     // instruction that would allow us to conditionally implement
     // TEST_EQ/TEST_NE.
     //
-    if (!op2->OperIsCmpCompare() || !varTypeIsIntegral(op2->gtGetOp1()))
-    {
-        return nullptr;
-    }
-
-    // For op1 we can allow more arbitrary operations that set the condition
-    // flags; the final transformation into the flags def is done by
-    // TryLowerConditionToFlagsNode below, but we have a quick early out here
-    // too.
+    // For the other operand we can allow more arbitrary operations that set
+    // the condition flags; the final transformation into the flags def is done
+    // by TryLowerConditionToFlagsNode.
     //
-    if (!op1->OperIsCompare() && !op1->OperIs(GT_SETCC))
-    {
-        return nullptr;
-    }
-
-    JITDUMP("[%06u] is a candidate for CCMP:\n", Compiler::dspTreeID(tree));
-    DISPTREERANGE(BlockRange(), tree);
-    JITDUMP("\n");
-
-    // We leave checking invariance of op1 to tree to TryLowerConditionToFlagsNode.
-    if (!IsInvariantInRange(op2, tree))
-    {
-        JITDUMP("  ..cannot move [%06u], bailing\n", Compiler::dspTreeID(op2));
-        return nullptr;
-    }
-
     GenCondition cond1;
-    if (!TryLowerConditionToFlagsNode(tree, op1, &cond1))
+    if (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1()) && IsInvariantInRange(op2, tree) &&
+        TryLowerConditionToFlagsNode(tree, op1, &cond1))
     {
-        JITDUMP("  ..could not turn [%06u] into a def of flags, bailing\n", Compiler::dspTreeID(op1));
+        // Fall through, converting op2 to the CCMP
+    }
+    else if (op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1()) && IsInvariantInRange(op1, tree) &&
+             TryLowerConditionToFlagsNode(tree, op2, &cond1))
+    {
+        std::swap(op1, op2);
+    }
+    else
+    {
+        JITDUMP("  ..could not turn [%06u] or [%06u] into a def of flags, bailing\n", Compiler::dspTreeID(op1),
+                Compiler::dspTreeID(op2));
         return nullptr;
     }
 
@@ -2336,10 +2337,24 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTreeOp* tree)
     op2->gtGetOp2()->ClearContained();
 
     GenTreeCCMP* ccmp = op2->AsCCMP();
-    ccmp->gtCondition = cond1;
-    // If the first comparison fails, set the condition flags to something that
-    // makes the second one fail as well so that the overall AND failed.
-    ccmp->gtFlagsVal = TruthifyingFlags(GenCondition::Reverse(cond2));
+
+    if (tree->OperIs(GT_AND))
+    {
+        // If the first comparison succeeds then do the second comparison.
+        ccmp->gtCondition = cond1;
+        // Otherwise set the condition flags to something that makes the second
+        // one fail.
+        ccmp->gtFlagsVal = TruthifyingFlags(GenCondition::Reverse(cond2));
+    }
+    else
+    {
+        // If the first comparison fails then do the second comparison.
+        ccmp->gtCondition = GenCondition::Reverse(cond1);
+        // Otherwise set the condition flags to something that makes the second
+        // one succeed.
+        ccmp->gtFlagsVal = TruthifyingFlags(cond2);
+    }
+
     ContainCheckConditionalCompare(ccmp);
 
     tree->SetOper(GT_SETCC);
