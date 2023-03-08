@@ -22,7 +22,7 @@ public class C1
     public S0 F1;
 }
 
-public class Program
+public class Runtime_83140
 {
     public static C0 s_10 = new C0();
     public static C1 s_64 = new C1();
