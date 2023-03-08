@@ -80,10 +80,6 @@ DO_API(gboolean, mono_type_generic_inst_is_valuetype, (MonoType*))
 #endif
 DO_API(char*, mono_type_get_name_full, (MonoType * type, MonoTypeNameFormat format))
 
-#if PLATFORM_WIN
-DO_API(gunichar2*, mono_string_to_utf16, (MonoString * string_obj))
-#endif
-
 DO_API(const char*, mono_field_get_name, (MonoClassField * field))
 DO_API(MonoClass*, mono_field_get_parent, (MonoClassField * field))
 DO_API(MonoType*, mono_field_get_type, (MonoClassField * field))
