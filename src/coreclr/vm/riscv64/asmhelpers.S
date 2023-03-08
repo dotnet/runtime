@@ -366,6 +366,7 @@ LOCAL_LABEL(NoRestore_\reg):
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
+    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     addi  a1, METHODDESC_REGISTER, 0 // pMethodDesc
 
@@ -374,6 +375,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
     EPILOG_BRANCH_REG  t4
 NESTED_END ThePreStub, _TEXT
 
@@ -608,6 +610,7 @@ NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 // The stub dispatch thunk which transfers control to VSD_ResolveWorker.
 NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
+    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     addi  a2, t2, 0                 // DispatchToken
     addi  a0, sp, __PWTB_TransitionBlock        // pTransitionBlock
@@ -618,6 +621,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
 
     EPILOG_BRANCH_REG  t4
 NESTED_END ResolveWorkerAsmStub, _TEXT
@@ -831,6 +835,7 @@ NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
 C_FUNC(DelayLoad_MethodCall):
     .global C_FUNC(DelayLoad_MethodCall)
     PROLOG_WITH_TRANSITION_BLOCK
+    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     addi  a1, t5, 0      // Indirection cell
     addi  a2, t0, 0      // sectionIndex
@@ -841,6 +846,7 @@ C_FUNC(DelayLoad_MethodCall):
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
     PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   t4
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
@@ -852,6 +858,7 @@ DelayLoad_Helper\suffix:
     .global DelayLoad_Helper\suffix
 
     PROLOG_WITH_TRANSITION_BLOCK
+    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     //DynamicHelperWorker(TransitionBlock * pTransitionBlock, TADDR * pCell,
     //                    DWORD sectionIndex, Module * pModule, INT frameFlags)
@@ -867,9 +874,12 @@ DelayLoad_Helper\suffix:
 
     ld  a0, __PWTB_ArgumentRegisters(sp)
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
+    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
+
 LOCAL_LABEL(FakeProlog\suffix\()_0):
     addi t4, a0, 0
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
     EPILOG_BRANCH_REG  t4
 
 NESTED_END DelayLoad_Helper\suffix\()_FakeProlog, _TEXT
@@ -942,6 +952,7 @@ GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 
 NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
+    .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
     addi  a0, sp, __PWTB_TransitionBlock // TransitionBlock *
     addi  a1, t3, 0 // stub-identifying token
@@ -949,6 +960,7 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    .cfi_adjust_cfa_offset -__PWTB_StackAlloc
     EPILOG_BRANCH_REG t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
