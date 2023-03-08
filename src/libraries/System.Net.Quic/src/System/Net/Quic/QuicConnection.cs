@@ -39,11 +39,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
 {
 #if DEBUG
     /// <summary>
-    /// Name of file where secrets should be stored.
-    ///</summary>
-    private static readonly string? KeyLogFile = Environment.GetEnvironmentVariable("SSLKEYLOGFILE");
-
-    /// The actual secret structure wrapper passed to MsQuic
+    /// The actual secret structure wrapper passed to MsQuic.
+    /// </summary>
     private MsQuicTlsSecret? _tlsSecret;
 #endif
 
@@ -195,19 +192,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 &handle),
                 "ConnectionOpen failed");
             _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Connection);
-
-#if DEBUG
-            if (KeyLogFile != null)
-            {
-                _tlsSecret = new MsQuicTlsSecret(_handle);
-            }
-#endif
         }
         catch
         {
             context.Free();
             throw;
         }
+
+#if DEBUG
+        _tlsSecret = MsQuicTlsSecret.Create(_handle);
+#endif
     }
 
     /// <summary>
@@ -236,10 +230,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _remoteEndPoint = info->RemoteAddress->ToIPEndPoint();
         _localEndPoint = info->LocalAddress->ToIPEndPoint();
 #if DEBUG
-        if (KeyLogFile != null)
-        {
-            _tlsSecret = new MsQuicTlsSecret(_handle);
-        }
+        _tlsSecret = MsQuicTlsSecret.Create(_handle);
 #endif
     }
 
@@ -478,10 +469,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
 
 #if DEBUG
-        if (KeyLogFile != null && _tlsSecret != null)
+        if (_tlsSecret != null)
         {
-            _tlsSecret.WriteSecret(KeyLogFile);
+            _tlsSecret.WriteSecret();
             _tlsSecret.Dispose();
+            _tlsSecret = null;
         }
 #endif
         _connectedTcs.TrySetResult();
