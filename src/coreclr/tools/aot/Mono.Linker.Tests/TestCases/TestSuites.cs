@@ -24,6 +24,13 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.Generics), MemberType = typeof (TestDatabase))]
+		public void Generics (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.LinkXml), MemberType = typeof (TestDatabase))]
 		public void LinkXml (string t)
 		{

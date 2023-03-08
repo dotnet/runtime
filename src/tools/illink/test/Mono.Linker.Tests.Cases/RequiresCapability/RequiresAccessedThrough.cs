@@ -129,10 +129,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			static void GenericMethod<T> () where T : new() { }
 
-			// NativeAOT doesnt generate warnings when marking generic constraints
-			// https://github.com/dotnet/runtime/issues/68688
-			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
 			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
 			public static void Test<T> () where T : new()
@@ -151,10 +149,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
-			// NativeAOT doesnt generate warnings when marking generic constraints
-			// https://github.com/dotnet/runtime/issues/68688
-			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
 			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
 			public static void TestNewConstraintOnTypeParameter<T> () where T : new()
@@ -199,8 +195,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
 			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
 			public static void TestNewConstraintOnTypeParameterOfStaticType<T> () where T : new()
