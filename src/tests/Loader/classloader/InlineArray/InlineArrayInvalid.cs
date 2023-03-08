@@ -74,6 +74,29 @@ unsafe class Validate
         });
     }
 
+    [InlineArray(-1)]
+    private struct NegativeLength
+    {
+        public long field;
+    }
+
+    [Fact]
+    public static void NegativeLength_Fails()
+    {
+        Console.WriteLine($"{nameof(NegativeLength_Fails)}...");
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(NegativeLength); });
+
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            var t = new NegativeLength()
+            {
+                field = 1
+            };
+            return t;
+        });
+    }
+
+
     [InlineArray(123)]
     private struct NoFields
     {

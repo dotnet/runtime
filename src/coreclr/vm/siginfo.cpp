@@ -4862,11 +4862,11 @@ public:
         _ASSERTE(pMT != nullptr);
         _ASSERTE(pMT->IsByRefLike());
 
-        bool isValArray = pMT->GetClass()->HasInlineArrayFlagSet();
+        bool isValArray = pMT->GetClass()->IsInlineArray();
         ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
         for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {
-            if(isValArray)
+            if (isValArray)
             {
                 _ASSERTE(pFD->GetOffset() == 0);
                 DWORD elementSize = pFD->GetSize();

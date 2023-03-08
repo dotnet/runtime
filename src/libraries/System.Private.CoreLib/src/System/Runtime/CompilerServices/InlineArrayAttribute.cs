@@ -5,6 +5,9 @@ using System.ComponentModel;
 
 namespace System.Runtime.CompilerServices
 {
+    /// <summary>
+    /// Indicates that the instance's storage is sequentially replicated "length" times.
+    /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [AttributeUsage(AttributeTargets.Struct, AllowMultiple = false)]
     public sealed class InlineArrayAttribute : Attribute

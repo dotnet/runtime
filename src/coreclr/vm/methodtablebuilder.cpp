@@ -1715,7 +1715,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 if (repeat > 0)
                 {
                     bmtFP->NumInlineArrayElements = repeat;
-                    GetHalfBakedClass()->SetInlineArrayFlag();
+                    GetHalfBakedClass()->SetIsInlineArray();
                 }
                 else
                 {
@@ -1749,7 +1749,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
         _ASSERTE(HasLayout());
 
-        if (bmtFP->NumInlineArrayElements)
+        if (bmtFP->NumInlineArrayElements != 0)
         {
             GetLayoutInfo()->m_cbManagedSize *= bmtFP->NumInlineArrayElements;
         }
@@ -11556,7 +11556,6 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
         DWORD repeat = 1;
         if (bmtFP->NumInlineArrayElements > 1)
         {
-            _ASSERTE(bmtEnumFields->dwNumInstanceFields == 1);
             repeat = bmtFP->NumInlineArrayElements;
         }
 
@@ -11583,6 +11582,9 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
                     DWORD       dwCurrentOffset = pFieldDescList[i].GetOffset_NoLogging();
                     DWORD       dwElementSize = pByValueMT->GetBaseSize() - OBJECT_BASESIZE;
 
+                    // if we have an inline array, we will have only one formal instance field,
+                    // but will have to replicate the layout "repeat" times.
+                    // otherwise every field will be matched with 1 serie.
                     for (DWORD r = 0; r < repeat; r++)
                     {
                         // The by value class may have more than one pointer series

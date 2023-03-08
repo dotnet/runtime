@@ -1384,12 +1384,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_HAS_FIELDS_WHICH_MUST_BE_INITED;
     }
-    BOOL HasInlineArrayFlagSet()
+    DWORD IsInlineArray()
     {
         LIMITED_METHOD_CONTRACT;
         return (m_VMFlags & VMFLAG_INLINE_ARRAY);
     }
-    void SetInlineArrayFlag()
+    void SetIsInlineArray()
     {
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_INLINE_ARRAY;

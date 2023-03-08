@@ -2169,7 +2169,7 @@ static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
     _ASSERTE(pMT->IsValueType());
 
     unsigned result = 0;
-    bool isInlineArray = pMT->GetClass()->HasInlineArrayFlagSet();
+    bool isInlineArray = pMT->GetClass()->IsInlineArray();
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
     {
@@ -3569,7 +3569,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
 
-        if (pClass->HasInlineArrayFlagSet())
+        if (pClass->IsInlineArray())
             ret |= CORINFO_FLG_DONT_DIG_FIELDS;
 
         if (VMClsHnd.IsCanonicalSubtype())
