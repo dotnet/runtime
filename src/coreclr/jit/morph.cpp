@@ -9681,7 +9681,7 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW_CHK;
+                    tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
                 }
 
                 if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
@@ -9690,7 +9690,7 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO_CHK;
+                    tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
                 }
             }
         }
@@ -9707,7 +9707,7 @@ DONE_MORPHING_CHILDREN:
             }
             else
             {
-                tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO_CHK;
+                tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
             }
         }
         break;

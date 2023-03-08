@@ -562,9 +562,9 @@ enum GenTreeFlags : unsigned int
     GTF_OVERFLOW                = 0x10000000, // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
 
-    GTF_DIV_MOD_NO_BY_ZERO_CHK  = 0x20000000, // GT_DIV, GT_MOD -- Div or mod definitely does not do a divide-by-zero check.
+    GTF_DIV_MOD_NO_BY_ZERO      = 0x20000000, // GT_DIV, GT_MOD -- Div or mod definitely does not divide-by-zero.
 
-    GTF_DIV_MOD_NO_OVERFLOW_CHK = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not do an overflow check.
+    GTF_DIV_MOD_NO_OVERFLOW     = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not overflow.
 
     GTF_DIV_BY_CNS_OPT          = 0x80000000, // GT_DIV -- Uses the division by constant optimization to compute this division
 
