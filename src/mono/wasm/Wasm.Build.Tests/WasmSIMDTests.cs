@@ -38,9 +38,7 @@ namespace Wasm.Build.Tests
                                         Publish: false,
                                         DotnetWasmFromRuntimePack: true));
 
-            _buildContext.TryGetBuildFor(buildArgs, out _);
-
-            // Check if this is not a cached build
+            // Confirm that we didn't relink
             Assert.DoesNotContain("Compiling native assets with emcc", output);
 
             RunAndTestWasmApp(buildArgs,
