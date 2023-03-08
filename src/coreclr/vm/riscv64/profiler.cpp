@@ -31,7 +31,8 @@ typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 
 UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void* pPlatformSpecificHandle)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
+    _ASSERTE(!"RISCV64:NYI");
     LIMITED_METHOD_CONTRACT;
 
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(pPlatformSpecificHandle);
@@ -40,7 +41,8 @@ UINT_PTR ProfileGetIPFromPlatformSpecificHandle(void* pPlatformSpecificHandle)
 
 void ProfileSetFunctionIDInPlatformSpecificHandle(void* pPlatformSpecificHandle, FunctionID functionId)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
+    _ASSERTE(!"RISCV64:NYI");
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(pPlatformSpecificHandle != nullptr);
@@ -53,7 +55,8 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void* pPlatformSpecificHandle,
 ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHandle)
     : m_argIterator(pSig)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
+    _ASSERTE(!"RISCV64:NYI");
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(pSig != nullptr);
@@ -116,7 +119,8 @@ ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHan
 
 ProfileArgIterator::~ProfileArgIterator()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
+    _ASSERTE(!"RISCV64:NYI");
     LIMITED_METHOD_CONTRACT;
 
     m_handle = nullptr;
@@ -124,7 +128,8 @@ ProfileArgIterator::~ProfileArgIterator()
 
 LPVOID ProfileArgIterator::GetNextArgAddr()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
+    _ASSERTE(!"RISCV64:NYI");
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(m_handle != nullptr);
@@ -172,7 +177,8 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
 
 LPVOID ProfileArgIterator::GetHiddenArgValue(void)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
+    _ASSERTE(!"RISCV64:NYI");
     LIMITED_METHOD_CONTRACT;
 
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(m_handle);
@@ -182,7 +188,8 @@ LPVOID ProfileArgIterator::GetHiddenArgValue(void)
 
 LPVOID ProfileArgIterator::GetThis(void)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
+    _ASSERTE(!"RISCV64:NYI");
     CONTRACTL
     {
         NOTHROW;
@@ -216,7 +223,8 @@ LPVOID ProfileArgIterator::GetThis(void)
 
 LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64-CQ: copied codes from loongarch however not yet tested.
+    _ASSERTE(!"RISCV64:NYI");
     CONTRACTL
     {
         NOTHROW;

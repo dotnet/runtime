@@ -53,7 +53,6 @@ extern PCODE GetPreStubEntryPoint();
 
 #define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
-// #define CALLDESCR_RETBUFFARGREG                 1   // CallDescrWorker has RetBuffArg parameter that's separate from arg regs // TODO RISCV64
 
 #define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
 
@@ -346,7 +345,6 @@ const IntReg RegRa  = IntReg(1);
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
-#if 1 // TODO RISCV64
 class StubLinkerCPU : public StubLinker
 {
 
@@ -373,9 +371,9 @@ public:
 #endif // FEATURE_SHARE_GENERIC_CODE
 
 #ifdef _DEBUG
-    void EmitNop() { _ASSERTE(!"RISCV64: not implementation on riscv64!!!"); }
+    void EmitNop() { _ASSERTE(!"RISCV64:NYI "); }
 #endif
-    void EmitBreakPoint() { _ASSERTE(!"RISCV64: not implementation on riscv64!!!"); }
+    void EmitBreakPoint() { _ASSERTE(!"RISCV64:NYI"); }
     void EmitMovConstant(IntReg target, UINT64 constant);
     void EmitCmpImm(IntReg reg, int imm);
     void EmitCmpReg(IntReg Xn, IntReg Xm);
@@ -397,7 +395,6 @@ public:
     void EmitCallRegister(IntReg reg);
     void EmitRet(IntReg reg);
 };
-#endif
 
 extern "C" void SinglecastDelegateInvokeStub();
 

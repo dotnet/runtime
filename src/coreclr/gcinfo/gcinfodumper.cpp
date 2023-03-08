@@ -704,7 +704,7 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
     assert(!"unimplemented on LOONGARCH yet");
 #elif defined(TARGET_RISCV64)
 #pragma message("Unimplemented for RISCV64 yet.")
-    assert(!"unimplemented on RISCV64 yet"); // TODO RISCV64
+    assert(!"unimplemented on RISCV64 yet");
 #else
 PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on this platform.");
 #endif

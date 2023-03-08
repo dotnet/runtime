@@ -100,7 +100,7 @@ public:
 #elif defined(TARGET_LOONGARCH64)
     static const int CodeSize = 40;
 #elif defined(TARGET_RISCV64)
-    static const int CodeSize = 40; // TODO RISCV64
+    static const int CodeSize = 40;
 #endif
 
 private:

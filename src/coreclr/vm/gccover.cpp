@@ -1670,7 +1670,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 #elif defined(TARGET_LOONGARCH64)
                 *(DWORD*)nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;
 #elif defined(TARGET_RISCV64)
-                _ASSERTE(!"TODO RISCV64 NYI");
                 *(DWORD*)nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;
 #else
                 *nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;

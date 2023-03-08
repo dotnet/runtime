@@ -1100,7 +1100,6 @@ RtlpGetFunctionEndAddress (
     _In_ ULONG64 ImageBase
     )
 {
-    // TODO RISCV64
     ULONG64 FunctionLength;
 
     FunctionLength = FunctionEntry->UnwindData;

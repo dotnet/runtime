@@ -159,7 +159,7 @@ struct ResolveStub
 
 private:
     friend struct ResolveHolder;
-    const static int resolveEntryPointLen = 20; // TODO RISCV64
+    const static int resolveEntryPointLen = 20;
     const static int slowEntryPointLen = 4;
     const static int failEntryPointLen = 9;
 
@@ -187,12 +187,12 @@ struct ResolveHolder
 
 /******** Rough Convention of used in this routine
         ;;ra  temp base address of loading data region
-        ;;t5  indirection cell // TODO CHECK t8 => t5
+        ;;t5  indirection cell
         ;;t3  MethodTable (from object ref in a0), out: this._token
         ;;t0  hash scratch
         ;;t1  temp
         ;;t2  temp
-        ;;t6 hash scratch // TODO CHECK R21 => t6
+        ;;t6 hash scratch
         ;;cachemask => [CALL_STUB_CACHE_MASK * sizeof(void*)]
 
         // Called directly by JITTED code

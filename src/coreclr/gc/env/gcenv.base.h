@@ -226,8 +226,8 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define MemoryBarrier __sync_synchronize
 #endif // __loongarch64
 
-#ifdef __riscv // TODO RISCV64
- #define YieldProcessor() asm volatile( "fence iorw, iorw"); // TODO
+#ifdef __riscv
+ #define YieldProcessor() asm volatile( "fence iorw, iorw");
  #define MemoryBarrier __sync_synchronize
 #endif // __riscv
 
