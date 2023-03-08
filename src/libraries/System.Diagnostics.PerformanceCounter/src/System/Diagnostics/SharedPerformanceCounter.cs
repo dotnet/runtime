@@ -1761,7 +1761,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    Interop.Kernel32.LocalFree((IntPtr)pSecurityDescriptor);
+                    Marshal.FreeHGlobal((IntPtr)pSecurityDescriptor);
                 }
 
                 Interlocked.CompareExchange(ref *(int*)_fileViewAddress.DangerousGetHandle().ToPointer(), initialOffset, 0);
