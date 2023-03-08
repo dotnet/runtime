@@ -16,7 +16,7 @@ class ClassLayoutTable
     // unsigned value to represent the notion of type - values below TYP_UNKNOWN are var_types and values
     // above it are struct layouts.
     static constexpr unsigned ZeroSizedBlockLayoutNum = TYP_UNKNOWN + 1;
-    static constexpr unsigned FirstLayoutNum = TYP_UNKNOWN + 2;
+    static constexpr unsigned FirstLayoutNum          = TYP_UNKNOWN + 2;
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
