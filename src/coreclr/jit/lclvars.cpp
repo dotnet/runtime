@@ -2939,7 +2939,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
 #endif // FEATURE_IMPLICIT_BYREFS
 
 #if FEATURE_SIMD
-            if (structSizeMightRepresentSIMDType(layout->GetSize()))
+            if (varTypeIsSIMD(layout->GetType()))
             {
                 CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
                 impNormStructType(layout->GetClassHandle(), &simdBaseJitType);
