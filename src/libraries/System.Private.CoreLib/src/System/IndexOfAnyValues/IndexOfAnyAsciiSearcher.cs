@@ -846,14 +846,13 @@ namespace System.Buffers
         private static Vector128<byte> IndexOfAnyLookupCore(Vector128<byte> source, Vector128<byte> bitmapLookup)
         {
             // On X86, the Ssse3.Shuffle instruction will already perform an implicit 'AND 0xF' on the indices, so we can skip it.
-            // For values above 127, Ssse3.Shuffle will also set the result to 0. This saves us from explicitly checking whether the input was ascii.
+            // For values above 127, Ssse3.Shuffle will also set the result to 0. This is fine as we don't want non-ASCII values to match anyway.
             Vector128<byte> lowNibbles = Ssse3.IsSupported
                 ? source
                 : source & Vector128.Create((byte)0xF);
 
             // On ARM, we have an instruction for an arithmetic right shift of 1-byte signed values.
             // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
-            // This is how we exclude non-ASCII values from results on ARM.
             // On X86 and WASM, use a 4-byte value shift with AND 15 to emulate a 1-byte value logical shift.
             Vector128<byte> highNibbles = AdvSimd.IsSupported
                 ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
@@ -863,12 +862,8 @@ namespace System.Buffers
             // Lookup the rows via the lower nibble and the column via the higher nibble.
             Vector128<byte> bitMask = Shuffle(bitmapLookup, lowNibbles);
 
-            // On WASM, we still have to handle values outside the ASCII range.
             // For values above 127, the high nibble will be above 7. We construct the positions vector for the shuffle such that those values map to 0.
-            // This is similar to how we use Ssse3's Shuffle characteristics on X86 to transform values above 127 to 0 by not masking the low nibbles above.
-            Vector128<byte> bitPositions = PackedSimd.IsSupported
-                ? Shuffle(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles)
-                : Shuffle(Vector128.Create(0x8040201008040201).AsByte(), highNibbles);
+            Vector128<byte> bitPositions = Shuffle(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles);
 
             Vector128<byte> result = bitMask & bitPositions;
             return result;
