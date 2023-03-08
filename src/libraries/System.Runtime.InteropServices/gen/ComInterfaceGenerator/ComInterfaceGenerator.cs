@@ -100,7 +100,7 @@ namespace Microsoft.Interop
                 Location interfaceLocation = interfaceData.Syntax.GetLocation();
                 var methods = ImmutableArray.CreateBuilder<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic)>();
                 int methodVtableOffset = interfaceContext.MethodStartIndex;
-                var i = interfaceContext.MethodStartIndex;
+                var i = methodVtableOffset;
                 foreach (var member in interfaceData.Symbol.GetMembers())
                 {
                     if (member.Kind == SymbolKind.Method && !member.IsStatic)
@@ -682,7 +682,7 @@ namespace Microsoft.Interop
                     FieldDeclaration(VariableDeclaration(VoidStarStarSyntax, SingletonSeparatedList(VariableDeclarator(vtableFieldName))))
                         .AddModifiers(Token(SyntaxKind.PrivateKeyword), Token(SyntaxKind.StaticKeyword)),
                     // public static void* VirtualMethodTableManagedImplementation => _vtable != null ? _vtable : (_vtable = InterfaceImplementation.CreateManagedVirtualMethodTable());
-                    PropertyDeclaration(PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))), "ManagedVirtualMethodTable")
+                    PropertyDeclaration(VoidStarStarSyntax, "ManagedVirtualMethodTable")
                         .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                         .WithExpressionBody(
                             ArrowExpressionClause(
