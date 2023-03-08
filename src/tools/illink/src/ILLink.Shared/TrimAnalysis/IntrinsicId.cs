@@ -288,6 +288,18 @@ namespace ILLink.Shared.TrimAnalysis
 		/// </summary>
 		Assembly_CreateInstance,
 		/// <summary>
+		/// <see cref="System.Reflection.Assembly.Location"/>
+		/// </summary>
+		Assembly_get_Location,
+		/// <summary>
+		/// <see cref="System.Reflection.AssemblyName.CodeBase"/>
+		/// </summary>
+		AssemblyName_get_CodeBase,
+		/// <summary>
+		/// <see cref="System.Reflection.AssemblyName.EscapedCodeBase"/>
+		/// </summary>
+		AssemblyName_get_EscapedCodeBase,
+		/// <summary>
 		/// <see cref="System.Reflection.RuntimeReflectionExtensions.GetRuntimeEvent(System.Type, string)"/>
 		/// </summary>
 		RuntimeReflectionExtensions_GetRuntimeEvent,

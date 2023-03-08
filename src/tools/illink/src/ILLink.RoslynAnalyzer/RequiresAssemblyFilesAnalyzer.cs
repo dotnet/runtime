@@ -59,12 +59,18 @@ namespace ILLink.RoslynAnalyzer
 		{
 			var dangerousPatternsBuilder = ImmutableArray.CreateBuilder<ISymbol> ();
 
+			// Add the getters for all of the interesting properties into the set as well
+			// some of them have RequiresAssemblyFiles attribute on them and we want to avoid producing IL3002
+			// so we need to react to them as special.
+			// Below we will only produce diagnostics for the properties and not for the getters.
+
 			var assemblyType = compilation.GetTypeByMetadataName ("System.Reflection.Assembly");
 			if (assemblyType != null) {
 				// Properties
 				ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyType.GetMembers ("Location")));
 
 				// Methods
+				dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("get_Location").OfType<IMethodSymbol> ());
 				dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("GetFile").OfType<IMethodSymbol> ());
 				dangerousPatternsBuilder.AddRange (assemblyType.GetMembers ("GetFiles").OfType<IMethodSymbol> ());
 			}
@@ -72,7 +78,9 @@ namespace ILLink.RoslynAnalyzer
 			var assemblyNameType = compilation.GetTypeByMetadataName ("System.Reflection.AssemblyName");
 			if (assemblyNameType != null) {
 				ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyNameType.GetMembers ("CodeBase")));
+				dangerousPatternsBuilder.AddRange (assemblyNameType.GetMembers ("get_CodeBase").OfType<IMethodSymbol> ());
 				ImmutableArrayOperations.AddIfNotNull (dangerousPatternsBuilder, ImmutableArrayOperations.TryGetSingleSymbol<IPropertySymbol> (assemblyNameType.GetMembers ("EscapedCodeBase")));
+				dangerousPatternsBuilder.AddRange (assemblyNameType.GetMembers ("get_EscapedCodeBase").OfType<IMethodSymbol> ());
 			}
 
 			return dangerousPatternsBuilder.ToImmutable ();
@@ -80,7 +88,8 @@ namespace ILLink.RoslynAnalyzer
 
 		protected override bool ReportSpecialIncompatibleMembersDiagnostic (OperationAnalysisContext operationContext, ImmutableArray<ISymbol> dangerousPatterns, ISymbol member)
 		{
-			if (member is IMethodSymbol && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {
+			if (member is IMethodSymbol method && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default) &&
+				method.AssociatedSymbol is null) {
 				operationContext.ReportDiagnostic (Diagnostic.Create (s_getFilesRule, operationContext.Operation.Syntax.GetLocation (), member.GetDisplayName ()));
 				return true;
 			} else if (member is IPropertySymbol && ImmutableArrayOperations.Contains (dangerousPatterns, member, SymbolEqualityComparer.Default)) {

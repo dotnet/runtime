@@ -286,6 +286,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				}
 			}
 			""";
+			// https://github.com/dotnet/runtime/issues/83088 - the analyzer produces both IL3000 and IL3002 in this case
 			return VerifyRequiresAssemblyFilesAnalyzer (src,
 				// (7,7): warning SYSLIB0044: 'AssemblyName.CodeBase' is obsolete: 'AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.'
 				DiagnosticResult.CompilerWarning ("SYSLIB0044").WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.AssemblyName.CodeBase", "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported."),
