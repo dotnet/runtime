@@ -9673,7 +9673,7 @@ DONE_MORPHING_CHILDREN:
         {
             if (!varTypeIsFloating(tree->gtType))
             {
-                ExceptionSetFlags exSetFlags = tree->GetExceptionSetFlags(this);
+                ExceptionSetFlags exSetFlags = tree->OperExceptions(this);
 
                 if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
                 {
@@ -9700,7 +9700,7 @@ DONE_MORPHING_CHILDREN:
         case GT_UMOD:
 #endif
         {
-            ExceptionSetFlags exSetFlags = tree->GetExceptionSetFlags(this);
+            ExceptionSetFlags exSetFlags = tree->OperExceptions(this);
             if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
             {
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
