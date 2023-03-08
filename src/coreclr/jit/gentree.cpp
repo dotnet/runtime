@@ -7281,51 +7281,7 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
     if (varTypeIsSIMD(type))
     {
         GenTreeVecCon* allBitsSet = gtNewVconNode(type);
-
-        switch (type)
-        {
-#if defined(TARGET_XARCH)
-            case TYP_SIMD64:
-            {
-                allBitsSet->gtSimdVal.i64[7] = -1;
-                allBitsSet->gtSimdVal.i64[6] = -1;
-                allBitsSet->gtSimdVal.i64[5] = -1;
-                allBitsSet->gtSimdVal.i64[4] = -1;
-                FALLTHROUGH;
-            }
-
-            case TYP_SIMD32:
-            {
-                allBitsSet->gtSimdVal.i64[3] = -1;
-                allBitsSet->gtSimdVal.i64[2] = -1;
-                FALLTHROUGH;
-            }
-#endif // TARGET_XARCH
-            case TYP_SIMD16:
-            {
-                allBitsSet->gtSimdVal.i64[1] = -1;
-                allBitsSet->gtSimdVal.i64[0] = -1;
-                break;
-            }
-
-            case TYP_SIMD12:
-            {
-                allBitsSet->gtSimdVal.i32[2] = -1;
-                FALLTHROUGH;
-            }
-
-            case TYP_SIMD8:
-            {
-                allBitsSet->gtSimdVal.i64[0] = -1;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
+        allBitsSet->gtSimdVal     = simd_t::AllBitsSet();
         return allBitsSet;
     }
 #endif // FEATURE_SIMD
@@ -7355,52 +7311,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
     if (varTypeIsSIMD(type))
     {
         GenTreeVecCon* allBitsSet = gtNewVconNode(type);
-
-        switch (type)
-        {
-#if defined(TARGET_XARCH)
-            case TYP_SIMD64:
-            {
-                allBitsSet->gtSimdVal.i64[7] = 0;
-                allBitsSet->gtSimdVal.i64[6] = 0;
-                allBitsSet->gtSimdVal.i64[5] = 0;
-                allBitsSet->gtSimdVal.i64[4] = 0;
-                FALLTHROUGH;
-            }
-
-            case TYP_SIMD32:
-            {
-                allBitsSet->gtSimdVal.i64[3] = 0;
-                allBitsSet->gtSimdVal.i64[2] = 0;
-                FALLTHROUGH;
-            }
-#endif // TARGET_XARCH
-
-            case TYP_SIMD16:
-            {
-                allBitsSet->gtSimdVal.i64[1] = 0;
-                allBitsSet->gtSimdVal.i64[0] = 0;
-                break;
-            }
-
-            case TYP_SIMD12:
-            {
-                allBitsSet->gtSimdVal.i32[2] = 0;
-                FALLTHROUGH;
-            }
-
-            case TYP_SIMD8:
-            {
-                allBitsSet->gtSimdVal.i64[0] = 0;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
+        allBitsSet->gtSimdVal     = simd_t::Zero();
         return allBitsSet;
     }
 #endif // FEATURE_SIMD
@@ -22700,8 +22611,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             GenTree* op1Lower = gtNewSimdHWIntrinsicNode(type, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize,
                                                          isSimdAsHWIntrinsic);
 
-            op2                                = gtNewVconNode(TYP_SIMD16);
-            op2->AsVecCon()->gtSimdVal.v128[0] = vecCns.v128[0];
+            op2                          = gtNewVconNode(TYP_SIMD16);
+            op2->AsVecCon()->gtSimd16Val = vecCns.v128[0];
 
             op1Lower = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lower, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
                                                 isSimdAsHWIntrinsic);
@@ -22709,8 +22620,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             GenTree* op1Upper = gtNewSimdHWIntrinsicNode(type, op1Dup, gtNewIconNode(1), NI_AVX_ExtractVector128,
                                                          simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
-            op2                                = gtNewVconNode(TYP_SIMD16);
-            op2->AsVecCon()->gtSimdVal.v128[0] = vecCns.v128[1];
+            op2                          = gtNewVconNode(TYP_SIMD16);
+            op2->AsVecCon()->gtSimd16Val = vecCns.v128[1];
 
             op1Upper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Upper, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
                                                 isSimdAsHWIntrinsic);
@@ -22748,8 +22659,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
         {
             simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
-            op2                                = gtNewVconNode(type);
-            op2->AsVecCon()->gtSimdVal.v128[0] = vecCns.v128[0];
+            op2                          = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimd16Val = vecCns.v128[0];
 
             return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize,
                                             isSimdAsHWIntrinsic);
@@ -22795,8 +22706,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
     {
         assert(!compIsaSupportedDebugOnly(InstructionSet_SSSE3));
 
-        op2                                = gtNewVconNode(type);
-        op2->AsVecCon()->gtSimdVal.v128[0] = mskCns.v128[0];
+        op2                          = gtNewVconNode(type);
+        op2->AsVecCon()->gtSimd16Val = mskCns.v128[0];
 
         GenTree* zero = gtNewZeroConNode(type);
         retNode       = gtNewSimdCndSelNode(type, op2, retNode, zero, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);

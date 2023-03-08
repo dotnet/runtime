@@ -6312,7 +6312,18 @@ private:
 //
 struct GenTreeVecCon : public GenTree
 {
-    simd_t gtSimdVal;
+    union {
+        simd8_t  gtSimd8Val;
+        simd12_t gtSimd12Val;
+        simd16_t gtSimd16Val;
+
+#if defined(TARGET_XARCH)
+        simd32_t gtSimd32Val;
+        simd64_t gtSimd64Val;
+#endif // TARGET_XARCH
+
+        simd_t gtSimdVal;
+    };
 
 #if defined(FEATURE_HW_INTRINSICS)
     static unsigned ElementCount(unsigned simdSize, var_types simdBaseType);
@@ -6532,45 +6543,32 @@ struct GenTreeVecCon : public GenTree
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-#if defined(TARGET_XARCH)
-            case TYP_SIMD64:
+            case TYP_SIMD8:
             {
-                if ((gtSimdVal.u64[7] != 0xFFFFFFFFFFFFFFFF) || (gtSimdVal.u64[6] != 0xFFFFFFFFFFFFFFFF) ||
-                    (gtSimdVal.u64[5] != 0xFFFFFFFFFFFFFFFF) || (gtSimdVal.u64[4] != 0xFFFFFFFFFFFFFFFF))
-                {
-                    return false;
-                }
-                FALLTHROUGH;
-            }
-
-            case TYP_SIMD32:
-            {
-                if ((gtSimdVal.u64[3] != 0xFFFFFFFFFFFFFFFF) || (gtSimdVal.u64[2] != 0xFFFFFFFFFFFFFFFF))
-                {
-                    return false;
-                }
-                FALLTHROUGH;
-            }
-#endif // TARGET_XARCH
-
-            case TYP_SIMD16:
-            {
-                return ((gtSimdVal.u64[1] == 0xFFFFFFFFFFFFFFFF) && (gtSimdVal.u64[0] == 0xFFFFFFFFFFFFFFFF));
+                return gtSimd8Val.IsAllBitsSet();
             }
 
             case TYP_SIMD12:
             {
-                if (gtSimdVal.u32[2] != 0xFFFFFFFF)
-                {
-                    return false;
-                }
-                FALLTHROUGH;
+                return gtSimd12Val.IsAllBitsSet();
             }
 
-            case TYP_SIMD8:
+            case TYP_SIMD16:
             {
-                return (gtSimdVal.u64[0] == 0xFFFFFFFFFFFFFFFF);
+                return gtSimd16Val.IsAllBitsSet();
             }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                return gtSimd32Val.IsAllBitsSet();
+            }
+
+            case TYP_SIMD64:
+            {
+                return gtSimd64Val.IsAllBitsSet();
+            }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -6592,49 +6590,32 @@ struct GenTreeVecCon : public GenTree
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-#if defined(TARGET_XARCH)
-            case TYP_SIMD64:
+            case TYP_SIMD8:
             {
-                if ((left->gtSimdVal.u64[7] != right->gtSimdVal.u64[7]) ||
-                    (left->gtSimdVal.u64[6] != right->gtSimdVal.u64[6]) ||
-                    (left->gtSimdVal.u64[5] != right->gtSimdVal.u64[5]) ||
-                    (left->gtSimdVal.u64[4] != right->gtSimdVal.u64[4]))
-                {
-                    return false;
-                }
-                FALLTHROUGH;
-            }
-
-            case TYP_SIMD32:
-            {
-                if ((left->gtSimdVal.u64[3] != right->gtSimdVal.u64[3]) ||
-                    (left->gtSimdVal.u64[2] != right->gtSimdVal.u64[2]))
-                {
-                    return false;
-                }
-                FALLTHROUGH;
-            }
-#endif // TARGET_XARCH
-
-            case TYP_SIMD16:
-            {
-                return (left->gtSimdVal.u64[1] == right->gtSimdVal.u64[1]) &&
-                       (left->gtSimdVal.u64[0] == right->gtSimdVal.u64[0]);
+                return left->gtSimd8Val == right->gtSimd8Val;
             }
 
             case TYP_SIMD12:
             {
-                if (left->gtSimdVal.u32[2] != right->gtSimdVal.u32[2])
-                {
-                    return false;
-                }
-                FALLTHROUGH;
+                return left->gtSimd12Val == right->gtSimd12Val;
             }
 
-            case TYP_SIMD8:
+            case TYP_SIMD16:
             {
-                return (left->gtSimdVal.u64[0] == right->gtSimdVal.u64[0]);
+                return left->gtSimd16Val == right->gtSimd16Val;
             }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                return left->gtSimd32Val == right->gtSimd32Val;
+            }
+
+            case TYP_SIMD64:
+            {
+                return left->gtSimd64Val == right->gtSimd64Val;
+            }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -6649,45 +6630,32 @@ struct GenTreeVecCon : public GenTree
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-#if defined(TARGET_XARCH)
-            case TYP_SIMD64:
+            case TYP_SIMD8:
             {
-                if ((gtSimdVal.u64[7] != 0x0000000000000000) || (gtSimdVal.u64[6] != 0x0000000000000000) ||
-                    (gtSimdVal.u64[5] != 0x0000000000000000) || (gtSimdVal.u64[4] != 0x0000000000000000))
-                {
-                    return false;
-                }
-                FALLTHROUGH;
-            }
-
-            case TYP_SIMD32:
-            {
-                if ((gtSimdVal.u64[3] != 0x0000000000000000) || (gtSimdVal.u64[2] != 0x0000000000000000))
-                {
-                    return false;
-                }
-                FALLTHROUGH;
-            }
-#endif // TARGET_XARCH
-
-            case TYP_SIMD16:
-            {
-                return ((gtSimdVal.u64[1] == 0x0000000000000000) && (gtSimdVal.u64[0] == 0x0000000000000000));
+                return gtSimd8Val.IsZero();
             }
 
             case TYP_SIMD12:
             {
-                if (gtSimdVal.u32[2] != 0x00000000)
-                {
-                    return false;
-                }
-                FALLTHROUGH;
+                return gtSimd12Val.IsZero();
             }
 
-            case TYP_SIMD8:
+            case TYP_SIMD16:
             {
-                return (gtSimdVal.u64[0] == 0x0000000000000000);
+                return gtSimd16Val.IsZero();
             }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                return gtSimd32Val.IsZero();
+            }
+
+            case TYP_SIMD64:
+            {
+                return gtSimd64Val.IsZero();
+            }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -6700,6 +6668,12 @@ struct GenTreeVecCon : public GenTree
     GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
     {
         assert(varTypeIsSIMD(type));
+
+#if defined(TARGET_XARCH)
+        assert(sizeof(simd_t) == sizeof(simd64_t));
+#else
+        assert(sizeof(simd_t) == sizeof(simd16_t));
+#endif
     }
 
 #if DEBUGGABLE_GENTREE

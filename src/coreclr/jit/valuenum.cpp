@@ -1959,28 +1959,28 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         {
-            return VNForSimd8Con({});
+            return VNForSimd8Con(simd8_t::Zero());
         }
 
         case TYP_SIMD12:
         {
-            return VNForSimd12Con({});
+            return VNForSimd12Con(simd12_t::Zero());
         }
 
         case TYP_SIMD16:
         {
-            return VNForSimd16Con({});
+            return VNForSimd16Con(simd16_t::Zero());
         }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
-            return VNForSimd32Con({});
+            return VNForSimd32Con(simd32_t::Zero());
         }
 
         case TYP_SIMD64:
         {
-            return VNForSimd64Con({});
+            return VNForSimd64Con(simd64_t::Zero());
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -2050,59 +2050,28 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         {
-            simd8_t cnsVal;
-            cnsVal.u64[0] = 0xFFFFFFFFFFFFFFFF;
-            return VNForSimd8Con(cnsVal);
+            return VNForSimd8Con(simd8_t::AllBitsSet());
         }
 
         case TYP_SIMD12:
         {
-            simd12_t cnsVal;
-
-            cnsVal.u64[0] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u32[2] = 0xFFFFFFFF;
-
-            return VNForSimd12Con(cnsVal);
+            return VNForSimd12Con(simd12_t::AllBitsSet());
         }
 
         case TYP_SIMD16:
         {
-            simd16_t cnsVal;
-
-            cnsVal.u64[0] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[1] = 0xFFFFFFFFFFFFFFFF;
-
-            return VNForSimd16Con(cnsVal);
+            return VNForSimd16Con(simd16_t::AllBitsSet());
         }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
-            simd32_t cnsVal;
-
-            cnsVal.u64[0] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[1] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[2] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[3] = 0xFFFFFFFFFFFFFFFF;
-
-            return VNForSimd32Con(cnsVal);
+            return VNForSimd32Con(simd32_t::AllBitsSet());
         }
 
         case TYP_SIMD64:
         {
-            simd64_t cnsVal;
-
-            cnsVal.u64[0] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[1] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[2] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[3] = 0xFFFFFFFFFFFFFFFF;
-
-            cnsVal.u64[4] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[5] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[6] = 0xFFFFFFFFFFFFFFFF;
-            cnsVal.u64[7] = 0xFFFFFFFFFFFFFFFF;
-
-            return VNForSimd64Con(cnsVal);
+            return VNForSimd64Con(simd64_t::AllBitsSet());
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
