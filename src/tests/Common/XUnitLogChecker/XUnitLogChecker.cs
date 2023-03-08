@@ -115,6 +115,7 @@ public class XUnitLogChecker
 
         FixTheXml(tempLogPath);
         PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
+        Console.WriteLine("[XUnitLogChecker]: Log was fixed successfully!");
 
         var test = new CoreclrTestWrapperLib();
 
@@ -126,14 +127,33 @@ public class XUnitLogChecker
         {
             string dumpPath = args[2];
 
-            if (!OperatingSystem.IsWindows())
+            if (File.Exists(dumpPath))
             {
-                CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport($"{dumpPath}.crashreport.json",
-                                                                        Console.Out);
+                if (!OperatingSystem.IsWindows())
+                {
+                    string crashReportPath = $"{dumpPath}.crashreport.json";
+
+                    if (File.Exists(crashReportPath))
+                    {
+                        Console.WriteLine("[XUnitLogChecker]: Found the following crash"
+                                        + $" report in the path '{crashReportPath}':");
+
+                        CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport(crashReportPath,
+                                                                                Console.Out);
+                    }
+                    else
+                    {
+                        PrintMissingCrashPath(wrapperName, "crash report", crashReportPath);
+                    }
+                }
+                else
+                {
+                    CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath, Console.Out);
+                }
             }
             else
             {
-                CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath, Console.Out);
+                PrintMissingCrashPath(wrapperName, "crash dump", dumpPath);
             }
         }
 
@@ -146,6 +166,18 @@ public class XUnitLogChecker
         Console.WriteLine($"* {workItemEndStatus[1]} tests passed.");
         Console.WriteLine($"* {workItemEndStatus[2]} tests failed.");
         Console.WriteLine($"* {workItemEndStatus[3]} tests skipped.\n");
+    }
+
+    static void PrintMissingCrashPath(string wrapperName,
+                                      string crashFileType,
+                                      string crashFilePath)
+    {
+        Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did not complete"
+                        + $" successfully, but there was no {crashFileType} found."
+                        + " The XML log was fixed successfully though.");
+
+        Console.WriteLine($"[XUnitLogChecker]: Expected {crashFileType} path"
+                        + $" was '{crashFilePath}'");
     }
 
     static void FixTheXml(string xFile)
