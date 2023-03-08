@@ -231,7 +231,7 @@ export type RuntimeHelpers = {
     loadedFiles: string[],
     preferredIcuAsset: string | null,
     timezone: string | null,
-    updateGlobalBufferAndViews: (buffer: ArrayBufferLike) => void
+    updateMemoryViews: () => void
 }
 
 export type GlobalizationMode =
