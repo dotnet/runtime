@@ -5843,7 +5843,13 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movaps:
         case INS_movd:
         case INS_movdqa:
+        case INS_movdqa32:
+        case INS_movdqa64:
         case INS_movdqu:
+        case INS_movdqu8:
+        case INS_movdqu16:
+        case INS_movdqu32:
+        case INS_movdqu64:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movsx:
@@ -5927,8 +5933,23 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         case INS_movupd:
         case INS_movups:
         {
-            // non EA_32BYTE moves clear the upper bits under VEX encoding
-            hasSideEffect = UseVEXEncoding() && (size != EA_32BYTE);
+            // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
+            // non EA_32BYTE and EA_64BYTE moves clear the upper bits under VEX and EVEX encoding respectively.
+            if (UseVEXEncoding())
+            {
+                if (UseEvexEncoding())
+                {
+                    hasSideEffect = (size != EA_64BYTE);
+                }
+                else
+                {
+                    hasSideEffect = (size != EA_32BYTE);
+                }
+            }
+            else
+            {
+                hasSideEffect = false;
+            }
             break;
         }
 
@@ -5960,6 +5981,20 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         {
             // Clears the upper bits
             hasSideEffect = true;
+            break;
+        }
+
+        case INS_movdqa32:
+        case INS_movdqa64:
+        case INS_movdqu8:
+        case INS_movdqu16:
+        case INS_movdqu32:
+        case INS_movdqu64:
+        {
+            // These EVEX instructions merges/masks based on k-register
+            // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
+            assert(UseEvexEncoding());
+            hasSideEffect = (size != EA_64BYTE);
             break;
         }
 
@@ -6152,7 +6187,13 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         case INS_movapd:
         case INS_movaps:
         case INS_movdqa:
+        case INS_movdqa32:
+        case INS_movdqa64:
         case INS_movdqu:
+        case INS_movdqu8:
+        case INS_movdqu16:
+        case INS_movdqu32:
+        case INS_movdqu64:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movupd:
@@ -17350,7 +17391,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movdqa:
+        case INS_movdqa32:
+        case INS_movdqa64:
         case INS_movdqu:
+        case INS_movdqu8:
+        case INS_movdqu16:
+        case INS_movdqu32:
+        case INS_movdqu64:
         case INS_movaps:
         case INS_movups:
         case INS_movapd:
