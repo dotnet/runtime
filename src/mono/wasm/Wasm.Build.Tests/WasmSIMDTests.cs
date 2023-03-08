@@ -29,6 +29,7 @@ namespace Wasm.Build.Tests
         {
             string projectName = $"build_with_workload_no_aot";
             buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs);
 
             (_, string output) = BuildProject(buildArgs,
                                     id: id,
@@ -36,6 +37,8 @@ namespace Wasm.Build.Tests
                                         InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
                                         Publish: false,
                                         DotnetWasmFromRuntimePack: true));
+
+            _buildContext.TryGetBuildFor(buildArgs, out _);
 
             // Check if this is not a cached build
             Assert.Contains("Compiling native assets with emcc", output);
