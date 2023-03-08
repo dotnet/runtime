@@ -71,15 +71,7 @@ namespace System.Threading
         ///     <see cref="ThreadPoolBoundHandle"/> does not take ownership of <paramref name="handle"/>,
         ///     it remains the responsibility of the caller to call <see cref="SafeHandle.Dispose()"/>.
         /// </remarks>
-        public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
-        {
-            ArgumentNullException.ThrowIfNull(handle);
-
-            if (handle.IsClosed || handle.IsInvalid)
-                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
-
-            return BindHandleCore(handle);
-        }
+        public static ThreadPoolBoundHandle BindHandle(SafeHandle handle) => BindHandleCore(handle);
 
         /// <summary>
         ///     Returns an unmanaged pointer to a <see cref="NativeOverlapped"/> structure, specifying
@@ -124,7 +116,7 @@ namespace System.Threading
         /// </exception>
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: true);
+            AllocateNativeOverlappedCore(callback, state, pinData);
 
         /// <summary>
         ///     Returns an unmanaged pointer to a <see cref="NativeOverlapped"/> structure, specifying
@@ -172,17 +164,7 @@ namespace System.Threading
         /// </exception>
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* UnsafeAllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: false);
-
-        private unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
-        {
-            ArgumentNullException.ThrowIfNull(callback);
-            ObjectDisposedException.ThrowIf(_isDisposed, this);
-
-            ThreadPoolBoundHandleOverlapped overlapped = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, preAllocated: null, flowExecutionContext);
-            overlapped._boundHandle = this;
-            return overlapped._nativeOverlapped;
-        }
+            UnsafeAllocateNativeOverlappedCore(callback, state, pinData);
 
         /// <summary>
         ///     Returns an unmanaged pointer to a <see cref="NativeOverlapped"/> structure, using the callback,
@@ -213,29 +195,7 @@ namespace System.Threading
         /// </exception>
         /// <seealso cref="PreAllocatedOverlapped"/>
         [CLSCompliant(false)]
-        public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated)
-        {
-            ArgumentNullException.ThrowIfNull(preAllocated);
-            ObjectDisposedException.ThrowIf(_isDisposed, this);
-
-            preAllocated.AddRef();
-            try
-            {
-                ThreadPoolBoundHandleOverlapped overlapped = preAllocated._overlapped;
-
-                if (overlapped._boundHandle != null)
-                    throw new ArgumentException(SR.Argument_PreAllocatedAlreadyAllocated, nameof(preAllocated));
-
-                overlapped._boundHandle = this;
-
-                return overlapped._nativeOverlapped;
-            }
-            catch
-            {
-                preAllocated.Release();
-                throw;
-            }
-        }
+        public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated) => AllocateNativeOverlappedCore(preAllocated);
 
         /// <summary>
         ///     Frees the unmanaged memory associated with a <see cref="NativeOverlapped"/> structure
@@ -261,22 +221,7 @@ namespace System.Threading
         ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed.
         /// </exception>
         [CLSCompliant(false)]
-        public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
-        {
-            ArgumentNullException.ThrowIfNull(overlapped);
-
-            // Note: we explicitly allow FreeNativeOverlapped calls after the ThreadPoolBoundHandle has been Disposed.
-
-            ThreadPoolBoundHandleOverlapped wrapper = GetOverlappedWrapper(overlapped);
-
-            if (wrapper._boundHandle != this)
-                throw new ArgumentException(SR.Argument_NativeOverlappedWrongBoundHandle, nameof(overlapped));
-
-            if (wrapper._preAllocated != null)
-                wrapper._preAllocated.Release();
-            else
-                Overlapped.Free(overlapped);
-        }
+        public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped) => FreeNativeOverlappedCore(overlapped);
 
         /// <summary>
         ///     Returns the user-provided object specified when the <see cref="NativeOverlapped"/> instance was
@@ -295,29 +240,7 @@ namespace System.Threading
         ///     <paramref name="overlapped"/> is <see langword="null"/>.
         /// </exception>
         [CLSCompliant(false)]
-        public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped)
-        {
-            ArgumentNullException.ThrowIfNull(overlapped);
-
-            ThreadPoolBoundHandleOverlapped wrapper = GetOverlappedWrapper(overlapped);
-            Debug.Assert(wrapper._boundHandle != null);
-            return wrapper._userState;
-        }
-
-        private static unsafe ThreadPoolBoundHandleOverlapped GetOverlappedWrapper(NativeOverlapped* overlapped)
-        {
-            ThreadPoolBoundHandleOverlapped wrapper;
-            try
-            {
-                wrapper = (ThreadPoolBoundHandleOverlapped)Overlapped.Unpack(overlapped);
-            }
-            catch (NullReferenceException ex)
-            {
-                throw new ArgumentException(SR.Argument_NativeOverlappedAlreadyFree, nameof(overlapped), ex);
-            }
-
-            return wrapper;
-        }
+        public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped) => GetNativeOverlappedStateCore(overlapped);
 
         public void Dispose()
         {
