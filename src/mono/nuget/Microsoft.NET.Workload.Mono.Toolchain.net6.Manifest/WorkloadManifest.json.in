@@ -12,7 +12,7 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.net6.browser-wasm"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling-net6", "microsoft-net-sdk-emscripten-net6" ],
-      "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-android-net6": {
       "abstract": true,
