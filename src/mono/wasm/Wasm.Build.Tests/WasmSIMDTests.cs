@@ -41,7 +41,7 @@ namespace Wasm.Build.Tests
             _buildContext.TryGetBuildFor(buildArgs, out _);
 
             // Check if this is not a cached build
-            Assert.Contains("Compiling native assets with emcc", output);
+            Assert.DoesNotContain("Compiling native assets with emcc", output);
 
             RunAndTestWasmApp(buildArgs,
                                 extraXHarnessArgs: host == RunHost.NodeJS ? "--engine-arg=--experimental-wasm-simd" : "",
