@@ -677,7 +677,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating whether this is a value array type
+        /// Gets a value indicating whether this is an inline array type
         /// </summary>
         public bool IsInlineArray
         {

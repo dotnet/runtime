@@ -357,7 +357,7 @@ namespace Internal.TypeSystem
                 layoutMetadata.Size,
                 out instanceByteSizeAndAlignment);
 
-            // value array cannot have explicit layout
+            // inline array cannot have explicit layout
             if (type.IsInlineArray)
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayExplicit, type);

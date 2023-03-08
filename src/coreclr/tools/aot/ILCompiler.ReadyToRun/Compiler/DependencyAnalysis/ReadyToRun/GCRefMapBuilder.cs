@@ -297,7 +297,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         GcScanRoots(field.FieldType, in argDest, delta + offset, frame, topLevel: false);
                     }
 
-                    // there is only one formal instance field in a value array
+                    // there is only one formal instance field in an inline array
                     Debug.Assert(field.Offset.AsInt == 0);
                     break;
                 }
