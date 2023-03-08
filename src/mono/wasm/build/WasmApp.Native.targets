@@ -451,6 +451,7 @@
 
       <_EmccLinkStepArgs Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
       <_EmccLinkStepArgs Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
+      <_EmccLinkStepArgs Include="-s INCOMING_MODULE_JS_API=print,printErr" />
 
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
     </ItemGroup>
