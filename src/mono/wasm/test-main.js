@@ -66,8 +66,7 @@ async function getArgs() {
     let runArgsJson;
     // ToDo: runArgs should be read for all kinds of hosts, but
     // fetch is added to node>=18 and current Windows's emcc node<18
-    if (is_browser)
-    {
+    if (is_browser) {
         const response = await globalThis.fetch('./runArgs.json');
         if (response.ok) {
             runArgsJson = initRunArgs(await response.json());
@@ -243,53 +242,70 @@ const App = {
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
+function configureRuntime(dotnet, runArgs, INTERNAL) {
+    dotnet
+        .withVirtualWorkingDirectory(runArgs.workingDirectory)
+        .withEnvironmentVariables(runArgs.environmentVariables)
+        //.withDiagnosticTracing(runArgs.diagnosticTracing)
+        .withDiagnosticTracing(true)
+        .withExitOnUnhandledError()
+        .withExitCodeLogging()
+        .withElementOnExit();
+
+    if (is_node) {
+        dotnet
+            .withEnvironmentVariable("NodeJSPlatform", process.platform)
+            .withAsyncFlushOnExit();
+
+        const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
+        if (modulesToLoad) {
+            dotnet.withModuleConfig({
+                onConfigLoaded: (config) => {
+                    loadNodeModules(config, INTERNAL.require, modulesToLoad)
+                }
+            })
+        }
+    }
+    if (is_browser) {
+        dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
+    }
+    if (runArgs.runtimeArgs.length > 0) {
+        dotnet.withRuntimeOptions(runArgs.runtimeArgs);
+    }
+    if (runArgs.debugging) {
+        dotnet.withDebugging(-1);
+        dotnet.withWaitingForDebugger(-1);
+    }
+    if (runArgs.forwardConsole) {
+        dotnet.withConsoleForwarding();
+    }
+}
+
 async function run() {
     try {
+        const runArgs = await getArgs();
+
+        if (is_browser) {
+            // this separate instance of the ES6 module, in which we just populate the caches
+            const { dotnet: dry_run, exit: dry_exit, INTERNAL: DRY_INTERNAL } = await loadDotnet('./dotnet.js?dry-run=true');
+            mono_exit = dry_exit;
+            configureRuntime(dry_run, runArgs, DRY_INTERNAL);
+            await dry_run.create();
+        }
+
+        // this is subsequent run with the actual tests. It will use whatever was cached in the previous run. 
+        // This way, we are testing that the cached version works.
         const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js');
         mono_exit = exit;
 
-        const runArgs = await getArgs();
         if (runArgs.applicationArguments.length == 0) {
             mono_exit(1, "Missing required --run argument");
             return;
         }
         console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
-        dotnet
-            .withVirtualWorkingDirectory(runArgs.workingDirectory)
-            .withEnvironmentVariables(runArgs.environmentVariables)
-            .withDiagnosticTracing(runArgs.diagnosticTracing)
-            .withExitOnUnhandledError()
-            .withExitCodeLogging()
-            .withElementOnExit();
+        configureRuntime(dotnet, runArgs, INTERNAL);
 
-        if (is_node) {
-            dotnet
-                .withEnvironmentVariable("NodeJSPlatform", process.platform)
-                .withAsyncFlushOnExit();
-
-            const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
-            if (modulesToLoad) {
-                dotnet.withModuleConfig({
-                    onConfigLoaded: (config) => {
-                        loadNodeModules(config, INTERNAL.require, modulesToLoad)
-                    }
-                })
-            }
-        }
-        if (is_browser) {
-            dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
-        }
-        if (runArgs.runtimeArgs.length > 0) {
-            dotnet.withRuntimeOptions(runArgs.runtimeArgs);
-        }
-        if (runArgs.debugging) {
-            dotnet.withDebugging(-1);
-            dotnet.withWaitingForDebugger(-1);
-        }
-        if (runArgs.forwardConsole) {
-            dotnet.withConsoleForwarding();
-        }
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
 
