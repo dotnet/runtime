@@ -821,7 +821,7 @@ namespace System.Buffers
             Vector128<byte> source =
                 Sse2.IsSupported ? Sse2.PackUnsignedSaturate(source0, source1) :
                 AdvSimd.IsSupported ? AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0.AsUInt16()), source1.AsUInt16()) :
-                default; // TODO: Replace with PackedSimd.Narrow
+                PackedSimd.ConvertNarrowingUnsignedSaturate(source0, source1);
 
             Vector128<byte> result = IndexOfAnyLookupCore(source, bitmapLookup);
 
@@ -835,7 +835,7 @@ namespace System.Buffers
                 Vector128<short> ascii1 = Vector128.LessThan(source1.AsUInt16(), Vector128.Create((ushort)128)).AsInt16();
                 Vector128<byte> ascii = Sse2.IsSupported
                     ? Sse2.PackSignedSaturate(ascii0, ascii1).AsByte()
-                    : default; // TODO: Replace with PackedSimd.Narrow
+                    : PackedSimd.ConvertNarrowingSignedSaturate(ascii0, ascii1).AsByte();
                 result &= ascii;
             }
 
@@ -861,7 +861,6 @@ namespace System.Buffers
 
             // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
             // Lookup the rows via the lower nibble and the column via the higher nibble.
-            // TODO: Are WASM engines smart enough to figure out that indices are already [0, 15] due to the 'AND 0xF' above, and generate an optimal shuffle?
             Vector128<byte> bitMask = Shuffle(bitmapLookup, lowNibbles);
 
             // On WASM, we still have to handle values outside the ASCII range.
