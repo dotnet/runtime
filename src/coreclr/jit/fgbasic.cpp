@@ -3924,7 +3924,7 @@ void Compiler::fgCheckForLoopsInHandlers()
         return;
     }
 
-    // Walk blocks in handlers and filters, looing for a backedge target.
+    // Walk blocks in handlers and filters, looking for a backedge target.
     //
     assert(!compHasBackwardJumpInHandler);
     for (BasicBlock* const blk : Blocks())
