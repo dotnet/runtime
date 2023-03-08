@@ -6608,7 +6608,7 @@ bool GenTree::OperIsImplicitIndir() const
 }
 
 //------------------------------------------------------------------------------
-// OperExceptions : Get exception set this tree may throw.
+// GetExceptionSetFlags: Get exception set this tree may throw.
 //
 //
 // Arguments:
@@ -6621,42 +6621,38 @@ bool GenTree::OperIsImplicitIndir() const
 //    Should not be used on calls given that we can say nothing precise about
 //    those.
 //
-ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
+ExceptionSetFlags GenTree::GetExceptionSetFlags(Compiler* comp)
 {
-    GenTree* op;
-
     switch (gtOper)
     {
         case GT_MOD:
         case GT_DIV:
         case GT_UMOD:
         case GT_UDIV:
-
-            /* Division with a non-zero, non-minus-one constant does not throw an exception */
-
-            op = AsOp()->gtOp2;
-
-            if (varTypeIsFloating(op->TypeGet()))
+        {
+            if (varTypeIsFloating(this->TypeGet()))
             {
                 return ExceptionSetFlags::None;
             }
 
-            // For integers only division by 0 or by -1 can throw
-            if (op->IsIntegralConst())
-            {
-                if (op->IsIntegralConst(0))
-                {
-                    return ExceptionSetFlags::DivideByZeroException;
-                }
-                if (op->IsIntegralConst(-1))
-                {
-                    return ExceptionSetFlags::ArithmeticException;
-                }
+            ExceptionSetFlags exSetFlags = ExceptionSetFlags::None;
 
-                return ExceptionSetFlags::None;
+            GenTree* op2 = this->gtGetOp2();
+
+            if (!(this->gtFlags & GTF_DIV_MOD_NO_BY_ZERO_CHK) && !op2->IsNeverZero())
+            {
+                exSetFlags = ExceptionSetFlags::DivideByZeroException;
             }
 
-            return ExceptionSetFlags::DivideByZeroException | ExceptionSetFlags::ArithmeticException;
+            if (!(this->gtFlags & GTF_DIV_MOD_NO_OVERFLOW_CHK) && this->OperIs(GT_DIV, GT_MOD) &&
+                this->CanDivOrModPossiblyOverflow(comp))
+            {
+                exSetFlags |= ExceptionSetFlags::ArithmeticException;
+            }
+
+            return exSetFlags;
+        }
+        break;
 
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
@@ -6772,7 +6768,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
         return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
     }
 
-    return OperExceptions(comp) != ExceptionSetFlags::None;
+    return GetExceptionSetFlags(comp) != ExceptionSetFlags::None;
 }
 
 //-----------------------------------------------------------------------------------
@@ -16810,7 +16806,7 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
                 return WALK_SKIP_SUBTREES;
             }
 
-            m_preciseExceptions |= tree->OperExceptions(m_compiler);
+            m_preciseExceptions |= tree->GetExceptionSetFlags(m_compiler);
             return WALK_CONTINUE;
         }
     };
@@ -24814,10 +24810,10 @@ bool GenTree::IsNeverZero() const
 }
 
 //------------------------------------------------------------------------
-// CanDivisionPossiblyOverflow: returns true if the given tree is known
+// CanDivOrModPossiblyOverflow: returns true if the given tree is known
 //                              to possibly overflow on a division.
 //                              Only valid for integral types.
-//                              Only valid for signed-division.
+//                              Only valid for signed-div/signed-mod.
 //
 // Arguments:
 //    comp - Compiler object, needed for IsNeverNegativeOne
@@ -24825,9 +24821,9 @@ bool GenTree::IsNeverZero() const
 // Return Value:
 //    true if the given tree is known to possibly overflow on a division
 //
-bool GenTree::CanDivisionPossiblyOverflow(Compiler* comp) const
+bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 {
-    assert(this->OperIs(GT_DIV));
+    assert(this->OperIs(GT_DIV, GT_MOD));
     assert(varTypeIsIntegral(this));
 
     GenTree* op1 = this->gtGetOp1();
@@ -24845,7 +24841,6 @@ bool GenTree::CanDivisionPossiblyOverflow(Compiler* comp) const
         {
             return true;
         }
-#ifdef TARGET_64BIT
         else if (this->TypeIs(TYP_LONG) && (op1->AsIntConCommon()->IntegralValue() == INT64_MIN))
         {
             return true;

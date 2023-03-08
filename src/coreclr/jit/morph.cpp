@@ -9670,38 +9670,47 @@ DONE_MORPHING_CHILDREN:
 #ifdef TARGET_LOONGARCH64
         case GT_MOD:
 #endif
+        {
             if (!varTypeIsFloating(tree->gtType))
             {
-                if (tree->CanDivisionPossiblyOverflow(this))
+                ExceptionSetFlags exSetFlags = tree->GetExceptionSetFlags(this);
+
+                if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
                 {
-#ifdef TARGET_ARM64
-                    tree->gtFlags |= GTF_DIV_OVERFLOW_CHK;
-#endif // TARGET_ARM64
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
                 }
-
-                if (!op2->IsNeverZero())
+                else
                 {
-#ifdef TARGET_ARM64
-                    tree->gtFlags |= GTF_DIV_BY_ZERO_CHK;
-#endif // TARGET_ARM64
+                    tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW_CHK;
+                }
+
+                if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+                {
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
                 }
+                else
+                {
+                    tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO_CHK;
+                }
             }
-            break;
+        }
+        break;
         case GT_UDIV:
 #ifdef TARGET_LOONGARCH64
         case GT_UMOD:
 #endif
-            if (!op2->IsNeverZero())
+        {
+            ExceptionSetFlags exSetFlags = tree->GetExceptionSetFlags(this);
+            if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
             {
-#ifdef TARGET_ARM64
-                tree->gtFlags |= GTF_DIV_BY_ZERO_CHK;
-#endif // TARGET_ARM64
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             }
-            break;
-
+            else
+            {
+                tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO_CHK;
+            }
+        }
+        break;
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         case GT_ADD:

@@ -562,11 +562,9 @@ enum GenTreeFlags : unsigned int
     GTF_OVERFLOW                = 0x10000000, // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
 
-#ifdef TARGET_ARM64
-    GTF_DIV_BY_ZERO_CHK         = 0x20000000, // GT_DIV -- Tells ARM64 code-gen to possibly emit a divide-by-zero check.
+    GTF_DIV_MOD_NO_BY_ZERO_CHK  = 0x20000000, // GT_DIV, GT_MOD -- Div or mod definitely does not do a divide-by-zero check.
 
-    GTF_DIV_OVERFLOW_CHK        = 0x40000000, // GT_DIV -- Tells ARM64 code-gen to possibly emit an overflow check.
-#endif // TARGET_ARM64
+    GTF_DIV_MOD_NO_OVERFLOW_CHK = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not do an overflow check.
 
     GTF_DIV_BY_CNS_OPT          = 0x80000000, // GT_DIV -- Uses the division by constant optimization to compute this division
 
@@ -1870,7 +1868,7 @@ public:
     bool OperRequiresCallFlag(Compiler* comp);
 
     bool OperMayThrow(Compiler* comp);
-    ExceptionSetFlags OperExceptions(Compiler* comp);
+    ExceptionSetFlags GetExceptionSetFlags(Compiler* comp);
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();
@@ -2308,7 +2306,7 @@ public:
     bool IsNeverNegative(Compiler* comp) const;
     bool IsNeverNegativeOne(Compiler* comp) const;
     bool IsNeverZero() const;
-    bool CanDivisionPossiblyOverflow(Compiler* comp) const;
+    bool CanDivOrModPossiblyOverflow(Compiler* comp) const;
 
     bool IsReuseRegVal() const
     {
