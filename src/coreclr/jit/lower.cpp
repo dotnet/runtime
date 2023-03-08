@@ -3267,7 +3267,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
     // Optimize EQ/NE(relop/SETCC, 0) into (maybe reversed) cond.
-    if (op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))
+    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))
     {
         LIR::Use use;
         if (BlockRange().TryGetUse(cmp, &use))
