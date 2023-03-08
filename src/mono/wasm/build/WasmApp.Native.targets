@@ -187,6 +187,7 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
+      <EmccStackSize Condition="'$(EmccStackSize)' == ''">5MB</EmccStackSize>
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
     </PropertyGroup>
 
@@ -421,7 +422,7 @@
     <ItemGroup>
       <!-- order matters -->
       <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
-      <_EmccLDSFlags Include="-s STACK_SIZE=5MB" />
+      <_EmccLDSFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccLDSFlags Include="-s WASM_BIGINT=1" />
 
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
