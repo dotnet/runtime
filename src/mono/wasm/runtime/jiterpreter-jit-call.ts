@@ -3,7 +3,7 @@
 
 import { mono_assert, MonoType, MonoMethod } from "./types";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import {
     getU8, getI32, getU32, setU32_unchecked
 } from "./memory";
@@ -269,8 +269,9 @@ export function mono_jiterp_do_jit_call_indirect (
         }
     };
 
-    let failed = !getIsWasmEhSupported();
-    if (!failed) {
+    let failed = false;
+    const enabled = !runtimeHelpers.storeMemorySnapshotPending && getIsWasmEhSupported();
+    if (enabled) {
         // Wasm EH is supported which means doJitCallModule was loaded and compiled.
         // Now that we have jit_call_cb, we can instantiate it.
         try {
