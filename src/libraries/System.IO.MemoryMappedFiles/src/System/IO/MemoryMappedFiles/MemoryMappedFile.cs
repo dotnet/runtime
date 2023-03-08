@@ -240,7 +240,6 @@ namespace System.IO.MemoryMappedFiles
             }
 
             long fileSize = RandomAccess.GetLength(fileHandle);
-
             if (capacity == 0 && fileSize == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyFile);
