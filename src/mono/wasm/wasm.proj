@@ -228,10 +228,11 @@
       <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
       <EmccInitialHeapSize>16777216</EmccInitialHeapSize>
+      <EmccStackSize>5MB</EmccStackSize>
     </PropertyGroup>
     <ItemGroup>
       <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
-      <_EmccLinkFlags Include="-s STACK_SIZE=5MB" />
+      <_EmccLinkFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccCommonFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-msimd128" />
       <_EmccCommonFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
