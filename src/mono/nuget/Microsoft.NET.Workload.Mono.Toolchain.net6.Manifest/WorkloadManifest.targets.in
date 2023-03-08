@@ -35,7 +35,11 @@
       <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
     </PropertyGroup>
 
-    <Import Condition="'$(TargetsNet6)' == 'true' and '$(RunAOTCompilation)' == 'true' and '$(BrowserWorkloadDisabled)' != 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task.net6" />
+    <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
+      <UsingMobileWorkload>true</UsingMobileWorkload>
+    </PropertyGroup>
+
+    <Import Condition="'$(TargetsNet6)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task.net6" />
 
     <ImportGroup Condition="'$(TargetsNet6)' == 'true' and '$(TargetPlatformIdentifier)' == 'android'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net6" />
