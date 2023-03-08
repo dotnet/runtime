@@ -38,7 +38,7 @@ initialize_appctx_env_variables ()
 }
 
 static MonoAssembly*
-mono_droid_load_assembly (const char *name, const char *culture)
+mono_load_assembly (const char *name, const char *culture)
 {
     char filename [1024];
     char path [1024];
@@ -69,11 +69,11 @@ mono_droid_load_assembly (const char *name, const char *culture)
 }
 
 static MonoAssembly*
-mono_droid_assembly_preload_hook (MonoAssemblyName *aname, char **assemblies_path, void* user_data)
+mono_assembly_preload_hook (MonoAssemblyName *aname, char **assemblies_path, void* user_data)
 {
     const char *name = mono_assembly_name_get_name (aname);
     const char *culture = mono_assembly_name_get_culture (aname);
-    return mono_droid_load_assembly (name, culture);
+    return mono_load_assembly (name, culture);
 }
 
 static unsigned char *
@@ -127,7 +127,7 @@ runtime_init_callback ()
 
     mono_jit_set_aot_only (true);
 
-    mono_install_assembly_preload_hook (mono_droid_assembly_preload_hook, NULL);
+    mono_install_assembly_preload_hook (mono_assembly_preload_hook, NULL);
 
     // TODO test debug scenario
 #if DEBUG_ENABLED
@@ -143,7 +143,7 @@ runtime_init_callback ()
 
     mono_set_signal_chaining (true);
 
-    mono_jit_init ("dotnet.android"); // Pass in via LibraryBuilder?
+    mono_jit_init ("mono.self.contained.library"); // Pass in via LibraryBuilder?
 
 %ASSEMBLIES_LOADER%
 }
