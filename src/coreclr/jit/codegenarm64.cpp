@@ -3447,8 +3447,10 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
         regNumber divisorReg = divisorOp->GetRegNum();
 
+        ExceptionSetFlags exSetFlags = tree->GetExceptionSetFlags(compiler);
+
         // (AnyVal / 0) => DivideByZeroException
-        if (!(tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO_CHK))
+        if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
         {
             if (divisorOp->IsIntegralConst(0))
             {
@@ -3469,7 +3471,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         }
 
         // (MinInt / -1) => ArithmeticException
-        if (!(tree->gtFlags & GTF_DIV_MOD_NO_OVERFLOW_CHK))
+        if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
         {
             // Signed-division might overflow.
 
