@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
@@ -15,6 +16,9 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			B.SameContext ();
 			B.Broken ();
 			B.Conditional ();
+#if NATIVEAOT
+			ReferenceViaReflection.Test ();
+#endif
 		}
 
 		[KeptMember (".ctor()")]
@@ -176,4 +180,43 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		{
 		}
 	}
+#if NATIVEAOT
+	abstract class ReferenceViaReflection
+	{
+		[Kept]
+		[DynamicDependency (nameof (TargetMethodViaReflection))]
+		public static void SourceMethodViaReflection () { }
+
+		[Kept]
+		private static void TargetMethodViaReflection () { }
+
+
+		[Kept]
+		public static void Test ()
+		{
+			var i = new Impl (); // Avoid removal of non-implemented abstract methods
+
+			typeof (ReferenceViaReflection).RequiresPublicMethods ();
+			typeof (AbstractMethods).RequiresPublicMethods ();
+		}
+
+		[KeptMember (".ctor()")]
+		private abstract class AbstractMethods
+		{
+			[Kept (By = Tool.Trimmer)] // NativeAOT test infra doesn't check reflection-only methods (without entry point) yet
+			[DynamicDependency (nameof (TargetMethod))]
+			public abstract void SourceAbstractViaReflection ();
+
+			[Kept]
+			private static void TargetMethod () { }
+		}
+
+		[KeptMember (".ctor()")]
+		private class Impl : AbstractMethods
+		{
+			[Kept]
+			public override void SourceAbstractViaReflection () { }
+		}
+	}
+#endif
 }

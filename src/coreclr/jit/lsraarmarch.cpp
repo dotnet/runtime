@@ -833,17 +833,17 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 //
 int LinearScan::BuildSelect(GenTreeOp* tree)
 {
-    assert(tree->OperIsConditional());
-    GenTreeConditional* conditional = tree->AsConditional();
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
-    int srcCount = BuildOperandUses(conditional->gtCond);
-    srcCount += BuildOperandUses(conditional->gtOp1);
-    srcCount += BuildOperandUses(conditional->gtOp2);
-
-    if (tree->TypeGet() != TYP_VOID)
+    int srcCount = 0;
+    if (select->OperIs(GT_SELECT))
     {
-        BuildDef(conditional);
+        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
     }
+
+    srcCount += BuildOperandUses(select->gtOp1);
+    srcCount += BuildOperandUses(select->gtOp2);
+    BuildDef(select);
 
     return srcCount;
 }

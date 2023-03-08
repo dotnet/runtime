@@ -191,6 +191,14 @@ namespace System.Diagnostics.Metrics
             WriteEvent(15, runningSessionId);
         }
 
+        [Event(16, Keywords = Keywords.TimeSeriesValues)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
+        public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate)
+        {
+            WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate);
+        }
+
         /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
@@ -407,8 +415,16 @@ namespace System.Diagnostics.Metrics
             {
                 if (stats.AggregationStatistics is RateStatistics rateStats)
                 {
-                    Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
-                        rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                    if (rateStats.IsMonotonic)
+                    {
+                        Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                    }
+                    else
+                    {
+                        Log.UpDownCounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                    }
                 }
                 else if (stats.AggregationStatistics is LastValueStatistics lastValueStats)
                 {

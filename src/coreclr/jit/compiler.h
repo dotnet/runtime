@@ -86,6 +86,7 @@ class CSE_DataFlow;          // defined in OptCSE.cpp
 class OptBoolsDsc;           // defined in optimizer.cpp
 struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
 struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
+class ProfileSynthesis;      // defined in profilesynthesis.h
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -657,6 +658,10 @@ public:
     unsigned char lvIsOSRLocal : 1; // Root method local in an OSR method. Any stack home will be on the Tier0 frame.
                                     // Initial value will be defined by Tier0. Requires special handing in prolog.
 
+private:
+    unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
+
+public:
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
                                   // local.  For implicit byref parameters, this gets hijacked between
@@ -957,6 +962,18 @@ public:
         return false;
     }
 #endif
+
+    // Is this is local never negative?
+    bool IsNeverNegative() const
+    {
+        return lvIsNeverNegative;
+    }
+
+    // Is this is local never negative?
+    void SetIsNeverNegative(bool value)
+    {
+        lvIsNeverNegative = value;
+    }
 
     /////////////////////
 
@@ -1310,12 +1327,12 @@ public:
         assert(lowerBound <= upperBound);
     }
 
-    SymbolicIntegerValue GetLowerBound()
+    SymbolicIntegerValue GetLowerBound() const
     {
         return m_lowerBound;
     }
 
-    SymbolicIntegerValue GetUpperBound()
+    SymbolicIntegerValue GetUpperBound() const
     {
         return m_upperBound;
     }
@@ -1327,7 +1344,7 @@ public:
         return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
     }
 
-    bool IsPositive()
+    bool IsNonNegative() const
     {
         return m_lowerBound >= SymbolicIntegerValue::Zero;
     }
@@ -1558,6 +1575,53 @@ inline constexpr FlowGraphUpdates operator|(FlowGraphUpdates a, FlowGraphUpdates
 inline constexpr FlowGraphUpdates operator&(FlowGraphUpdates a, FlowGraphUpdates b)
 {
     return (FlowGraphUpdates)((unsigned int)a & (unsigned int)b);
+}
+
+// Profile checking options
+//
+// clang-format off
+enum class ProfileChecks : unsigned int
+{
+    CHECK_NONE          = 0,
+    CHECK_CLASSIC       = 1 << 0, // check "classic" jit weights
+    CHECK_LIKELY        = 1 << 1, // check likelihood based weights
+    RAISE_ASSERT        = 1 << 2, // assert on check failure
+    CHECK_ALL_BLOCKS    = 1 << 3, // check blocks even if bbHasProfileWeight is false
+};
+
+inline constexpr ProfileChecks operator ~(ProfileChecks a)
+{
+    return (ProfileChecks)(~(unsigned int)a);
+}
+
+inline constexpr ProfileChecks operator |(ProfileChecks a, ProfileChecks b)
+{
+    return (ProfileChecks)((unsigned int)a | (unsigned int)b);
+}
+
+inline constexpr ProfileChecks operator &(ProfileChecks a, ProfileChecks b)
+{
+    return (ProfileChecks)((unsigned int)a & (unsigned int)b);
+}
+
+inline ProfileChecks& operator |=(ProfileChecks& a, ProfileChecks b)
+{
+    return a = (ProfileChecks)((unsigned int)a | (unsigned int)b);
+}
+
+inline ProfileChecks& operator &=(ProfileChecks& a, ProfileChecks b)
+{
+    return a = (ProfileChecks)((unsigned int)a & (unsigned int)b);
+}
+
+inline ProfileChecks& operator ^=(ProfileChecks& a, ProfileChecks b)
+{
+    return a = (ProfileChecks)((unsigned int)a ^ (unsigned int)b);
+}
+
+inline bool hasFlag(const ProfileChecks& flagSet, const ProfileChecks& flag)
+{
+    return ((flagSet & flag) == flag);
 }
 
 //---------------------------------------------------------------
@@ -1977,6 +2041,7 @@ class Compiler
     friend class SharedTempsScope;
     friend class CallArgs;
     friend class IndirectCallTransformer;
+    friend class ProfileSynthesis;
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
@@ -2297,21 +2362,21 @@ public:
     } // Get the index to use as the cache key for sharing throw blocks
 #endif // !FEATURE_EH_FUNCLETS
 
-    // Returns a flowList representing the "EH predecessors" of "blk".  These are the normal predecessors of
-    // "blk", plus one special case: if "blk" is the first block of a handler, considers the predecessor(s) of the first
+    // Returns a FlowEdge representing the "EH predecessors" of "blk".  These are the normal predecessors of
+    // "blk", plus one special case: if "blk" is the first block of a handler, considers the predecessor(s) of the
     // first block of the corresponding try region to be "EH predecessors".  (If there is a single such predecessor,
     // for example, we want to consider that the immediate dominator of the catch clause start block, so it's
     // convenient to also consider it a predecessor.)
-    flowList* BlockPredsWithEH(BasicBlock* blk);
+    FlowEdge* BlockPredsWithEH(BasicBlock* blk);
 
     // This table is useful for memoization of the method above.
-    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, flowList*> BlockToFlowListMap;
-    BlockToFlowListMap* m_blockToEHPreds;
-    BlockToFlowListMap* GetBlockToEHPreds()
+    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, FlowEdge*> BlockToFlowEdgeMap;
+    BlockToFlowEdgeMap* m_blockToEHPreds;
+    BlockToFlowEdgeMap* GetBlockToEHPreds()
     {
         if (m_blockToEHPreds == nullptr)
         {
-            m_blockToEHPreds = new (getAllocator()) BlockToFlowListMap(getAllocator());
+            m_blockToEHPreds = new (getAllocator()) BlockToFlowEdgeMap(getAllocator());
         }
         return m_blockToEHPreds;
     }
@@ -2344,10 +2409,6 @@ public:
     EHblkDsc* fgAddEHTableEntry(unsigned XTnum);
 
 #endif // FEATURE_EH_FUNCLETS
-
-#if !FEATURE_EH
-    void fgRemoveEH();
-#endif // !FEATURE_EH
 
     void fgSortEHTable();
 
@@ -2401,6 +2462,9 @@ public:
 
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
+
+    GenTreeCC* gtNewCC(genTreeOps oper, var_types type, GenCondition cond);
+    GenTreeOpCC* gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2);
 
     GenTreeColon* gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
@@ -3671,6 +3735,7 @@ private:
 public:
     void impInit();
     void impImport();
+    void impFixPredLists();
 
     CORINFO_CLASS_HANDLE impGetRefAnyClass();
     CORINFO_CLASS_HANDLE impGetRuntimeArgumentHandle();
@@ -3857,6 +3922,7 @@ protected:
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic lookupPrimitiveNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -3866,6 +3932,11 @@ protected:
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
                                     CORINFO_SIG_INFO*     sig);
+
+    GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
+                                        CORINFO_CLASS_HANDLE  clsHnd,
+                                        CORINFO_METHOD_HANDLE method,
+                                        CORINFO_SIG_INFO*     sig);
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
@@ -3906,6 +3977,7 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
+
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                      CORINFO_SIG_INFO*    sig,
@@ -4355,11 +4427,10 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
-    unsigned     fgBBNumMin;       // The min bbNum that has been assigned to basic blocks
-    unsigned     fgBBNumMax;       // The max bbNum that has been assigned to basic blocks
-    unsigned     fgDomBBcount;     // # of BBs for which we have dominator and reachability information
-    BasicBlock** fgBBInvPostOrder; // The flow graph stored in an array sorted in topological order, needed to compute
-                                   // dominance. Indexed by block number. Size: fgBBNumMax + 1.
+    unsigned     fgBBNumMin;           // The min bbNum that has been assigned to basic blocks
+    unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
+    unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
+    BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -4375,6 +4446,7 @@ public:
     DomTreeNode* fgSsaDomTree;
 
     bool fgBBVarSetsInited;
+    bool fgOSROriginalEntryBBProtected;
 
     // Allocate array like T* a = new T[fgBBNumMax + 1];
     // Using helper so we don't keep forgetting +1.
@@ -4488,8 +4560,7 @@ public:
 #endif // FEATURE_JIT_METHOD_PERF
 
     bool fgModified;             // True if the flow graph has been modified recently
-    bool fgComputePredsDone;     // Have we computed the bbPreds list
-    bool fgCheapPredsValid;      // Is the bbCheapPreds list valid?
+    bool fgPredsComputed;        // Have we computed the bbPreds list
     bool fgDomsComputed;         // Have we computed the dominator sets?
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
@@ -4512,6 +4583,7 @@ public:
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
+    bool fgRemarkGlobalUses;  // true if morph should remark global uses after processing a statement
 
     enum FlowGraphOrder
     {
@@ -4575,7 +4647,7 @@ public:
     bool     fgPrintInlinedMethods;
 #endif
 
-    jitstd::vector<flowList*>* fgPredListSortVector;
+    jitstd::vector<FlowEdge*>* fgPredListSortVector;
 
     //-------------------------------------------------------------------------
 
@@ -4609,23 +4681,18 @@ public:
 
     void fgAddFinallyTargetFlags();
 
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    void fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, BasicBlock* newBlock);
 
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     PhaseStatus fgTailMergeThrows();
     void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                             BasicBlock* nonCanonicalBlock,
                                             BasicBlock* canonicalBlock,
-                                            flowList*   predEdge);
+                                            FlowEdge*   predEdge);
     void fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
                                        BasicBlock* nonCanonicalBlock,
                                        BasicBlock* canonicalBlock,
-                                       flowList*   predEdge);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // Sometimes we need to defer updating the BBF_FINALLY_TARGET bit. fgNeedToAddFinallyTargetBits signals
-    // when this is necessary.
-    bool fgNeedToAddFinallyTargetBits;
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+                                       FlowEdge*   predEdge);
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
@@ -4760,6 +4827,8 @@ public:
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     PhaseStatus fgSimpleLowering();
+
+    bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
 #if FEATURE_LOOP_ALIGN
     PhaseStatus placeLoopAlignInstructions();
@@ -5172,10 +5241,11 @@ protected:
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
-    void fgDfsInvPostOrder(); // In order to compute dominance using fgIntersectDom, the flow graph nodes must be
-                              // processed in topological sort, this function takes care of that.
-
-    void fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, unsigned* count);
+    void fgDfsReversePostorder();
+    void fgDfsReversePostorderHelper(BasicBlock* block,
+                                     BlockSet&   visited,
+                                     unsigned&   preorderIndex,
+                                     unsigned&   reversePostorderIndex);
 
     BlockSet_ValRet_T fgDomFindStartNodes(); // Computes which basic blocks don't have incoming edges in the flow graph.
                                              // Returns this as a set.
@@ -5195,22 +5265,6 @@ protected:
     // dominators, and possibly loops.
     //
     void fgUpdateChangedFlowGraph(FlowGraphUpdates updates);
-
-public:
-    // Compute the predecessors of the blocks in the control flow graph.
-    void fgComputePreds();
-
-    // Remove all predecessor information.
-    void fgRemovePreds();
-
-    // Compute the cheap flow graph predecessors lists. This is used in some early phases
-    // before the full predecessors lists are computed.
-    void fgComputeCheapPreds();
-
-private:
-    void fgAddCheapPred(BasicBlock* block, BasicBlock* blockPred);
-
-    void fgRemoveCheapPred(BasicBlock* block, BasicBlock* blockPred);
 
 public:
     enum GCPollType
@@ -5302,13 +5356,13 @@ public:
 
     bool fgIsFirstBlockOfFilterOrHandler(BasicBlock* block);
 
-    flowList* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred);
+    FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred);
 
-    flowList* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, flowList*** ptrToPred);
+    FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, FlowEdge*** ptrToPred);
 
-    flowList* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
+    FlowEdge* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
 
-    flowList* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
+    FlowEdge* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
 
     void fgRemoveBlockAsPred(BasicBlock* block);
 
@@ -5320,11 +5374,9 @@ public:
 
     void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 
-    flowList* fgAddRefPred(BasicBlock* block,
-                           BasicBlock* blockPred,
-                           flowList*   oldEdge           = nullptr,
-                           bool        initializingPreds = false); // Only set to 'true' when we are computing preds in
-                                                                   // fgComputePreds()
+    // initializingPreds is only 'true' when we are computing preds in fgLinkBasicBlocks()
+    template <bool initializingPreds = false>
+    FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
 
     void fgFindBasicBlocks();
 
@@ -5511,8 +5563,9 @@ public:
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfileWeights();
-    bool fgDebugCheckIncomingProfileData(BasicBlock* block);
-    bool fgDebugCheckOutgoingProfileData(BasicBlock* block);
+    void fgDebugCheckProfileWeights(ProfileChecks checks);
+    bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
+    bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
 #endif // DEBUG
 
@@ -5796,6 +5849,7 @@ private:
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
+    void fgMarkGlobalUses(Statement* stmt);
 
     GenTree* fgMorphLocal(GenTreeLclVarCommon* lclNode);
 #ifdef TARGET_X86
@@ -5814,7 +5868,9 @@ private:
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
-    bool fgCallHasMustCopyByrefParameter(GenTreeCall* callee);
+    bool fgCallHasMustCopyByrefParameter(GenTreeCall* call);
+    bool fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg);
+
 #endif
     bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
@@ -6135,6 +6191,9 @@ protected:
     // Records the set of "side effects" of all loops: fields (object instance and static)
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();
+
+    // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars).
+    void optComputeInterestingVarSets();
 
 #ifdef DEBUG
     bool optAnyChildNotRemoved(unsigned loopNum);
@@ -7620,7 +7679,8 @@ public:
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         assert(type != TYP_STRUCT);
-        return (type == TYP_SIMD32);
+        assert((type < TYP_SIMD32) || (type == TYP_SIMD32) || (type == TYP_SIMD64));
+        return type >= TYP_SIMD32;
     }
 #elif defined(TARGET_ARM64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
@@ -7631,7 +7691,7 @@ public:
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
-#error("Unknown target architecture for FEATURE_SIMD")
+#error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
@@ -8313,29 +8373,6 @@ private:
     }
 #endif // DEBUG
 
-    // Get highest available level for SIMD codegen
-    SIMDLevel getSIMDSupportLevel()
-    {
-#if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-        {
-            return SIMD_AVX2_Supported;
-        }
-
-        if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
-        {
-            return SIMD_SSE4_Supported;
-        }
-
-        // min bar is SSE2
-        return SIMD_SSE2_Supported;
-#else
-        assert(!"Available instruction set(s) for SIMD codegen is not defined for target arch");
-        unreached();
-        return SIMD_Not_Supported;
-#endif
-    }
-
     bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
     {
         return info.compCompHnd->isIntrinsicType(clsHnd);
@@ -8387,6 +8424,8 @@ private:
         CORINFO_CLASS_HANDLE SIMDNIntHandle;
         CORINFO_CLASS_HANDLE SIMDNUIntHandle;
 
+        CORINFO_CLASS_HANDLE SIMDPlaneHandle;
+        CORINFO_CLASS_HANDLE SIMDQuaternionHandle;
         CORINFO_CLASS_HANDLE SIMDVector2Handle;
         CORINFO_CLASS_HANDLE SIMDVector3Handle;
         CORINFO_CLASS_HANDLE SIMDVector4Handle;
@@ -8432,12 +8471,26 @@ private:
         CORINFO_CLASS_HANDLE Vector256ULongHandle;
         CORINFO_CLASS_HANDLE Vector256NIntHandle;
         CORINFO_CLASS_HANDLE Vector256NUIntHandle;
+
+        CORINFO_CLASS_HANDLE Vector512FloatHandle;
+        CORINFO_CLASS_HANDLE Vector512DoubleHandle;
+        CORINFO_CLASS_HANDLE Vector512IntHandle;
+        CORINFO_CLASS_HANDLE Vector512UShortHandle;
+        CORINFO_CLASS_HANDLE Vector512UByteHandle;
+        CORINFO_CLASS_HANDLE Vector512ShortHandle;
+        CORINFO_CLASS_HANDLE Vector512ByteHandle;
+        CORINFO_CLASS_HANDLE Vector512LongHandle;
+        CORINFO_CLASS_HANDLE Vector512UIntHandle;
+        CORINFO_CLASS_HANDLE Vector512ULongHandle;
+        CORINFO_CLASS_HANDLE Vector512NIntHandle;
+        CORINFO_CLASS_HANDLE Vector512NUIntHandle;
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
         CORINFO_CLASS_HANDLE CanonicalSimd8Handle;
         CORINFO_CLASS_HANDLE CanonicalSimd16Handle;
         CORINFO_CLASS_HANDLE CanonicalSimd32Handle;
+        CORINFO_CLASS_HANDLE CanonicalSimd64Handle;
 
         SIMDHandlesCache()
         {
@@ -8464,23 +8517,57 @@ private:
             switch (simdType)
             {
                 case TYP_SIMD8:
+                {
                     return m_simdHandleCache->SIMDVector2Handle;
+                }
+
                 case TYP_SIMD12:
+                {
                     return m_simdHandleCache->SIMDVector3Handle;
+                }
+
                 case TYP_SIMD16:
-                    if ((getSIMDVectorType() == TYP_SIMD32) ||
-                        (m_simdHandleCache->SIMDVector4Handle != NO_CLASS_HANDLE))
+                {
+                    // We order the checks roughly by expected hit count so early exits are possible
+
+                    if (simdBaseJitType != CORINFO_TYPE_FLOAT)
+                    {
+                        // We could be Vector<T>, so handle below
+                        assert(getSIMDVectorType() == TYP_SIMD16);
+                        break;
+                    }
+
+                    if (m_simdHandleCache->SIMDVector4Handle != NO_CLASS_HANDLE)
                     {
                         return m_simdHandleCache->SIMDVector4Handle;
                     }
-                    break;
+
+                    if (m_simdHandleCache->SIMDQuaternionHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->SIMDQuaternionHandle;
+                    }
+
+                    if (m_simdHandleCache->SIMDPlaneHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->SIMDPlaneHandle;
+                    }
+
+                    return NO_CLASS_HANDLE;
+                }
+
+#if defined(TARGET_XARCH)
                 case TYP_SIMD32:
+                case TYP_SIMD64:
                     break;
+#endif // TARGET_XARCH
+
                 default:
                     unreached();
             }
         }
+
         assert(emitTypeSize(simdType) <= largestEnregisterableStructSize());
+
         switch (simdBaseJitType)
         {
             case CORINFO_TYPE_FLOAT:
@@ -8510,6 +8597,7 @@ private:
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
+
         return NO_CLASS_HANDLE;
     }
 
@@ -8574,8 +8662,13 @@ private:
                 return m_simdHandleCache->SIMDVector3Handle;
             case TYP_SIMD16:
                 return m_simdHandleCache->CanonicalSimd16Handle;
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
                 return m_simdHandleCache->CanonicalSimd32Handle;
+            case TYP_SIMD64:
+                return m_simdHandleCache->CanonicalSimd64Handle;
+#endif // TARGET_XARCH
+
             default:
                 unreached();
         }
@@ -8587,9 +8680,39 @@ private:
     // actually be declared as having fields.
     bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle) const
     {
-        return ((m_simdHandleCache != nullptr) && (structHandle != m_simdHandleCache->SIMDVector2Handle) &&
-                (structHandle != m_simdHandleCache->SIMDVector3Handle) &&
-                (structHandle != m_simdHandleCache->SIMDVector4Handle));
+        // We order the checks roughly by expected hit count so early exits are possible
+
+        if (m_simdHandleCache == nullptr)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDVector4Handle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDVector3Handle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDVector2Handle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDQuaternionHandle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDPlaneHandle)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     // Returns true if the lclVar is an opaque SIMD type.
@@ -8680,15 +8803,14 @@ private:
     var_types getSIMDVectorType()
     {
 #if defined(TARGET_XARCH)
-        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
+            // TODO-XArch-AVX512 : Return TYP_SIMD64 once Vector<T> supports AVX512.
             return TYP_SIMD32;
         }
         else
         {
-            // Verify and record that AVX2 isn't supported
             compVerifyInstructionSetUnusable(InstructionSet_AVX2);
-            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return TYP_SIMD16;
         }
 #elif defined(TARGET_ARM64)
@@ -8721,15 +8843,14 @@ private:
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(TARGET_XARCH)
-        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
+            // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
             return YMM_REGSIZE_BYTES;
         }
         else
         {
-            // Verify and record that AVX2 isn't supported
             compVerifyInstructionSetUnusable(InstructionSet_AVX2);
-            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8744,25 +8865,36 @@ private:
 
     // maxSIMDStructBytes
     // The minimum SIMD size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
-    // SSE:  16-byte Vector<T> and Vector128<T>
-    // AVX:  32-byte Vector256<T> (Vector<T> is 16-byte)
-    // AVX2: 32-byte Vector<T> and Vector256<T>
+    // Arm.AdvSimd:  16-byte Vector<T> and Vector128<T>
+    // X86.SSE:      16-byte Vector<T> and Vector128<T>
+    // X86.AVX:      16-byte Vector<T> and Vector256<T>
+    // X86.AVX2:     32-byte Vector<T> and Vector256<T>
+    // X86.AVX512F:  32-byte Vector<T> and Vector512<T>
     unsigned int maxSIMDStructBytes()
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
-            return YMM_REGSIZE_BYTES;
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+            {
+                return ZMM_REGSIZE_BYTES;
+            }
+            else
+            {
+                compVerifyInstructionSetUnusable(InstructionSet_AVX512F);
+                return YMM_REGSIZE_BYTES;
+            }
         }
         else
         {
-            // Verify and record that AVX2 isn't supported
-            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
-            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
+            compVerifyInstructionSetUnusable(InstructionSet_AVX);
             return XMM_REGSIZE_BYTES;
         }
+#elif defined(TARGET_ARM64)
+        return FP_REGSIZE_BYTES;
 #else
-        return getSIMDVectorRegisterByteLength();
+        assert(!"maxSIMDStructBytes() unimplemented on target arch");
+        unreached();
 #endif
     }
 
@@ -8788,10 +8920,16 @@ public:
         {
             simdType = TYP_SIMD16;
         }
+#if defined(TARGET_XARCH)
         else if (size == 32)
         {
             simdType = TYP_SIMD32;
         }
+        else if (size == 64)
+        {
+            simdType = TYP_SIMD64;
+        }
+#endif // TARGET_XARCH
         else
         {
             noway_assert(!"Unexpected size for SIMD type");
@@ -8827,7 +8965,7 @@ public:
             // otherwise cause the highest level of instruction set support to be reported to crossgen2.
             // and this api is only ever used as an optimization or assert, so no reporting should
             // ever happen.
-            return YMM_REGSIZE_BYTES;
+            return ZMM_REGSIZE_BYTES;
         }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         unsigned vectorRegSize = maxSIMDStructBytes();
@@ -8989,13 +9127,42 @@ private:
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
-    bool canUseVexEncoding() const
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // IsBaselineVector512IsaSupportedDebugOnly - Does the target have isa support required for Vector512.
+    //
+    // Returns:
+    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //
+    bool IsBaselineVector512IsaSupportedDebugOnly() const
     {
-#ifdef TARGET_XARCH
-        return compOpportunisticallyDependsOn(InstructionSet_AVX);
+#ifdef TARGET_AMD64
+        return (compIsaSupportedDebugOnly(InstructionSet_Vector512));
 #else
         return false;
 #endif
+    }
+#endif // DEBUG
+
+    //------------------------------------------------------------------------
+    // IsBaselineVector512IsaSupported - Does the target have isa support required for Vector512.
+    //
+    // Returns:
+    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //
+    bool IsBaselineVector512IsaSupported() const
+    {
+#ifdef TARGET_AMD64
+        return (compExactlyDependsOn(InstructionSet_Vector512));
+#else
+        return false;
+#endif
+    }
+
+#ifdef TARGET_XARCH
+    bool canUseVexEncoding() const
+    {
+        return compOpportunisticallyDependsOn(InstructionSet_AVX);
     }
 
     //------------------------------------------------------------------------
@@ -9006,8 +9173,6 @@ private:
     //
     bool canUseEvexEncoding() const
     {
-#ifdef TARGET_XARCH
-
 #ifdef DEBUG
         if (JitConfig.JitForceEVEXEncoding())
         {
@@ -9016,9 +9181,6 @@ private:
 #endif // DEBUG
 
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
-#else
-        return false;
-#endif
     }
 
     //------------------------------------------------------------------------
@@ -9029,7 +9191,7 @@ private:
     //
     bool DoJitStressEvexEncoding() const
     {
-#if defined(TARGET_XARCH) && defined(DEBUG)
+#ifdef DEBUG
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
         // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
@@ -9039,14 +9201,16 @@ private:
         {
             return true;
         }
+
         if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
             return true;
         }
-#endif // TARGET_XARCH && DEBUG
+#endif // DEBUG
 
         return false;
     }
+#endif // TARGET_XARCH
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -9106,6 +9270,7 @@ public:
     bool fgLocalVarLivenessChanged;
     bool fgIsDoingEarlyLiveness;
     bool fgDidEarlyLiveness;
+    bool compPostImportationCleanupDone;
     bool compLSRADone;
     bool compRationalIRForm;
 
@@ -9285,6 +9450,11 @@ public:
         }
 #endif
 
+        bool IsTier0() const
+        {
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
+        }
+
         bool IsInstrumented() const
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
@@ -9368,9 +9538,10 @@ public:
         bool optRepeat; // Repeat optimizer phases k times
 #endif
 
-        bool disAsm;      // Display native code as it is generated
-        bool dspDiffable; // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
-        bool disDiffable; // Makes the Disassembly code 'diff-able'
+        bool disAsm;       // Display native code as it is generated
+        bool dspDiffable;  // Makes the Jit Dump 'diff-able' (currently uses same DOTNET_* flag as disDiffable)
+        bool disDiffable;  // Makes the Disassembly code 'diff-able'
+        bool disAlignment; // Display alignment boundaries in disassembly code
 #ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated
@@ -9383,7 +9554,6 @@ public:
         bool disAsmSpilled;            // Display native code when any register spilling occurs
         bool disasmWithGC;             // Display GC info interleaved with disassembly.
         bool disAddr;                  // Display process address next to each instruction in disassembly code
-        bool disAlignment;             // Display alignment boundaries in disassembly code
         bool disAsm2;                  // Display native code after it is generated using external disassembler
         bool dspOrder;                 // Display names of each of the methods that we ngen/jit
         bool dspUnwind;                // Display the unwind info output
@@ -9407,8 +9577,8 @@ public:
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
-// By default only single iteration loops will be unrolled
-#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 1
+// By default only loops with a constant iteration count less than or equal to this will be unrolled
+#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 4
 
 #ifdef DEBUG
         // Loop alignment variables
@@ -9470,7 +9640,7 @@ public:
 
 #if defined(TARGET_ARM64)
         // Decision about whether to save FP/LR registers with callee-saved registers (see
-        // COMPlus_JitSaveFpLrWithCalleSavedRegisters).
+        // DOTNET_JitSaveFpLrWithCalleSavedRegisters).
         int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif // defined(TARGET_ARM64)
 
@@ -10073,7 +10243,7 @@ public:
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
     // have them run within this method.  They will be run only once per process, and only
-    // in debug.  (Perhaps should be under the control of a COMPlus_ flag.)
+    // in debug.  (Perhaps should be under the control of a DOTNET_ flag.)
     // These should fail by asserting.
     void compDoComponentUnitTestsOnce();
 #endif // DEBUG
@@ -10381,6 +10551,8 @@ public:
 
     bool compJitHaltMethod();
 
+    void dumpRegMask(regMaskTP regs) const;
+
 #endif
 
     /*
@@ -10453,7 +10625,7 @@ public:
     static fgWalkPreFn gsReplaceShadowParams;     // Shadow param replacement tree-walk
 
 #define DEFAULT_MAX_INLINE_SIZE 100 // Methods with >  DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.
-                                    // This can be overwritten by setting complus_JITInlineSize env variable.
+                                    // This can be overwritten by setting DOTNET_JITInlineSize env variable.
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
 
@@ -10655,6 +10827,47 @@ public:
     GenTree* fgMorphMultiregStructArg(CallArg* arg);
 
     bool killGCRefs(GenTree* tree);
+
+#if defined(TARGET_AMD64)
+private:
+    // The following are for initializing register allocator "constants" defined in targetamd64.h
+    // that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which increases
+    // the number of SIMD (xmm, ymm, and zmm) registers from 16 to 32.
+    // As only 64-bit xarch has the capability to have the additional registers, we limit the changes
+    // to TARGET_AMD64 only.
+    //
+    // Users of these values need to define four accessor functions:
+    //
+    //    regMaskTP get_RBM_ALLFLOAT();
+    //    regMaskTP get_RBM_FLT_CALLEE_TRASH();
+    //    unsigned get_CNT_CALLEE_TRASH_FLOAT();
+    //    unsigned get_AVAILABLE_REG_COUNT();
+    //
+    // which return the values of these variables.
+    //
+    // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
+    // TARGET_AMD64 requires one.
+    //
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+    unsigned  cntCalleeTrashFloat;
+
+public:
+    regMaskTP get_RBM_ALLFLOAT() const
+    {
+        return this->rbmAllFloat;
+    }
+    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    {
+        return this->rbmFltCalleeTrash;
+    }
+    unsigned get_CNT_CALLEE_TRASH_FLOAT() const
+    {
+        return this->cntCalleeTrashFloat;
+    }
+
+#endif // TARGET_AMD64
+
 }; // end of class Compiler
 
 //---------------------------------------------------------------------------------------------------------------------

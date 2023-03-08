@@ -26,7 +26,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 	[SkipKeptItemsValidation]
-	[LogContains ("warning IL2108: Invalid scope '' used in 'UnconditionalSuppressMessageAttribute'")]
+	[LogContains ("warning IL2108:.*Invalid scope '' used in 'UnconditionalSuppressMessageAttribute'", regexMatch: true)]
 	[LogDoesNotContain ("IL2026")]
 	[LogDoesNotContain ("IL2072")]
 	class TargettedModuleSuppressionWithUnmatchedScope

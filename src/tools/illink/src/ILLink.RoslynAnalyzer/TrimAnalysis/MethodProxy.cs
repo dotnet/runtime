@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	readonly partial struct MethodProxy
+	internal readonly partial struct MethodProxy
 	{
 		public MethodProxy (IMethodSymbol method) => Method = method;
 

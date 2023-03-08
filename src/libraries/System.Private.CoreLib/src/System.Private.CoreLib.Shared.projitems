@@ -19,7 +19,7 @@
     <SupportsX86Intrinsics Condition="'$(Platform)' == 'x86' and '$(TargetsWindows)' == 'true' and '$(FeatureMono)' == 'true'">false</SupportsX86Intrinsics>
     <ILLinkSharedDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkSharedDirectory>
     <IsBigEndian Condition="'$(Platform)' == 's390x'">true</IsBigEndian>
-    <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64' or '$(Platform)' == 'ppc64le'">true</Is64Bit>
+    <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64' or '$(Platform)' == 'ppc64le' or '$(Platform)' == 'riscv64'">true</Is64Bit>
     <UseMinimalGlobalizationData Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</UseMinimalGlobalizationData>
   </PropertyGroup>
   <PropertyGroup>
@@ -560,12 +560,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.Impl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Plane.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\TotalOrderIeee754Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorDebugView_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorMath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Object.cs" />
@@ -633,10 +637,20 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\DefaultMemberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilderAccess.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ConstructorBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ConstructorOnTypeBuilderInstantiation.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\DynamicMethod.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EmptyCAHolder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EnumBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EventBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldOnTypeBuilderInstantiation.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Label.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilderInstantiation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodOnTypeBuilderInstantiation.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Opcode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodes.cs" />
@@ -644,8 +658,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OperandType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PackingSize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PEFileKinds.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PropertyBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StackBehaviour.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\SymbolType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeNameBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
@@ -660,6 +677,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IntrospectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvalidFilterCriteriaException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvocationFlags.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvokerEmitUtil.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvokeUtils.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflectableType.cs" />
@@ -675,8 +693,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.Internal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInvoker.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvokerEmitUtil.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Missing.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedHasElementType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedFunctionPointerType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedGenericType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\NullabilityInfo.cs" />
@@ -702,6 +723,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\RuntimeReflectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureArrayType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureByRefType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureCallingConvention.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureConstructedGenericType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericMethodParameterType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericParameterType.cs" />
@@ -1352,8 +1374,8 @@
     <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs">
       <Link>Common\System\Threading\OpenExistingResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs">
+      <Link>Common\System\Threading\Tasks\TaskToAsyncResult.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsMobileLike)' != 'true' and '$(FeatureNativeAot)' != 'true'">
@@ -1832,6 +1854,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SystemTimeToFileTime.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SystemTimeToFileTime.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Threading.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.Threading.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TimeZone.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.TimeZone.cs</Link>
     </Compile>
@@ -1912,9 +1937,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\Secur32\Interop.GetUserNameExW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.CommandLineToArgv.cs">
-      <Link>Common\Interop\Windows\Shell32\Interop.CommandLineToArgv.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs">
       <Link>Common\Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs</Link>
@@ -2120,6 +2142,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDefaultTimeZone.AnyMobile.cs" Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(IsiOSLike)' == 'true'">
       <Link>Common\Interop\Unix\System.Native\Interop.GetDefaultTimeZone.AnyMobile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetTimeZoneData.Wasm.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'">
+      <Link>Common\src\Interop\Unix\System.Native\Interop.GetTimeZoneData.Wasm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnv.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEnv.cs</Link>
@@ -2477,8 +2502,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WaitThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerTracking.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.cs" Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmThreads)' == 'true'" />
@@ -2512,9 +2537,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.Windows.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Threading.cs">
-      <Link>Interop\Windows\Kernel32\Interop.Threading.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\IParsable.cs" />

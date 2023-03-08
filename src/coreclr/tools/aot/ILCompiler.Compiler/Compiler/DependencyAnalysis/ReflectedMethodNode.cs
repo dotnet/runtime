@@ -64,14 +64,17 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_method.IsVirtual)
                 {
+                    // Virtual method use is tracked on the slot defining method only.
+                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(_method);
                     if (_method.HasInstantiation)
                     {
-                        dependencies.Add(factory.GVMDependencies(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM callable reflectable method");
+                        // FindSlotDefiningMethod might uninstantiate. We might want to fix the method not to do that.
+                        if (slotDefiningMethod.IsMethodDefinition)
+                            slotDefiningMethod = factory.TypeSystemContext.GetInstantiatedMethod(slotDefiningMethod, _method.Instantiation);
+                        dependencies.Add(factory.GVMDependencies(slotDefiningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM callable reflectable method");
                     }
                     else
                     {
-                        // Virtual method use is tracked on the slot defining method only.
-                        MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(_method);
                         if (!factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
                             dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Virtually callable reflectable method");
                     }

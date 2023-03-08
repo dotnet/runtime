@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>    
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\DispatchProxy.cs" />

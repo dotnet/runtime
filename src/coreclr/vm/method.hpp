@@ -138,7 +138,8 @@ enum MethodDescClassification
     // Has slot for native code
     mdcHasNativeCodeSlot                = 0x0020,
 
-    // unused                           = 0x0040,
+    // Method was added via Edit And Continue
+    mdcEnCAddedMethod                   = 0x0040,
 
     // Method is static
     mdcStatic                           = 0x0080,
@@ -668,7 +669,7 @@ public:
     // If the method is in an Edit and Continue (EnC) module, then
     // we DON'T want to backpatch this, ever.  We MUST always call
     // through the precode so that we can update the method.
-    inline DWORD IsEnCMethod()
+    inline DWORD InEnCEnabledModule()
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
@@ -976,11 +977,6 @@ public:
         //_ASSERTE(!GetClass()->IsInterface());
         m_wFlags |= mdcDuplicate;
     }
-
-    //==================================================================
-    // EnC
-
-    inline BOOL IsEnCAddedMethod();
 
     //==================================================================
     //
@@ -1384,7 +1380,7 @@ public:
             return false;
 #endif
 
-        return !IsVersionable() && !IsEnCMethod();
+        return !IsVersionable() && !InEnCEnabledModule();
     }
 
     //Is this method currently pointing to native code that will never change?
@@ -1735,6 +1731,26 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_wFlags |= mdcHasNativeCodeSlot;
     }
+
+#ifdef EnC_SUPPORTED
+    inline BOOL IsEnCAddedMethod()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (m_wFlags & mdcEnCAddedMethod) != 0;
+    }
+
+    inline void SetIsEnCAddedMethod()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_wFlags |= mdcEnCAddedMethod;
+    }
+#else
+    inline BOOL IsEnCAddedMethod()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FALSE;
+    }
+#endif // !EnC_SUPPORTED
 
     inline BOOL IsIntrinsic()
     {
@@ -2753,10 +2769,6 @@ class NDirectMethodDesc : public MethodDesc
 public:
     struct temp1
     {
-        // If we are hosted, stack imbalance MDA is active, or alignment thunks are needed,
-        // we will intercept m_pNDirectTarget. The true target is saved here.
-        LPVOID      m_pNativeNDirectTarget;
-
         // Information about the entrypoint
         PTR_CUTF8   m_pszEntrypointName;
 
@@ -2801,7 +2813,7 @@ public:
 
         kEarlyBound                     = 0x0001,   // IJW managed->unmanaged thunk. Standard [sysimport] stuff otherwise.
 
-        kHasSuppressUnmanagedCodeAccess = 0x0002,
+        // unused                       = 0x0002,
 
         kDefaultDllImportSearchPathsIsCached = 0x0004, // set if we cache attribute value.
 
@@ -2835,8 +2847,9 @@ public:
     // Resolve the import to the NDirect target and set it on the NDirectMethodDesc.
     static void* ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc* pMD);
 
-    // Attempt to import the NDirect target if a GC transition is suppressed.
-    static BOOL TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc* pMD, _Out_ void** ndirectTarget);
+    // Attempt to get a resolved NDirect target. This will return true for already resolved
+    // targets and methods that are resolved at JIT time, such as those marked SuppressGCTransition
+    static BOOL TryGetResolvedNDirectTarget(_In_ NDirectMethodDesc* pMD, _Out_ void** ndirectTarget);
 
     // Retrieves the cached result of marshaling required computation, or performs the computation
     // if the result is not cached yet.
@@ -2985,20 +2998,6 @@ public:
         return GetWriteableData()->m_pNDirectTarget;
     }
 
-    LPVOID GetNativeNDirectTarget()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsNDirect());
-        _ASSERTE_IMPL(!NDirectTargetIsImportThunk());
-
-        LPVOID pNativeNDirectTarget = ndirect.m_pNativeNDirectTarget;
-        if (pNativeNDirectTarget != NULL)
-            return pNativeNDirectTarget;
-
-        return GetNDirectTarget();
-    }
-
     VOID SetNDirectTarget(LPVOID pTarget);
 
 #ifndef DACCESS_COMPILE
@@ -3095,21 +3094,13 @@ class EEImplMethodDesc : public StoredSigMethodDesc
 #ifdef FEATURE_COMINTEROP
 
 // This is the extra information needed to be associated with a method in order to use it for
-// CLR->COM calls. It is currently used by code:ComPlusCallMethodDesc (ordinary CLR->COM calls),
-// code:InstantiatedMethodDesc (optional field, CLR->COM calls on shared generic interfaces),
-// and code:DelegateEEClass (delegate->COM calls for WinRT).
+// CLR->COM calls. It is currently used by code:ComPlusCallMethodDesc (ordinary CLR->COM calls).
 typedef DPTR(struct ComPlusCallInfo) PTR_ComPlusCallInfo;
 struct ComPlusCallInfo
 {
     // Returns ComPlusCallInfo associated with a method. pMD must be a ComPlusCallMethodDesc or
     // EEImplMethodDesc that has already been initialized for COM interop.
     inline static ComPlusCallInfo *FromMethodDesc(MethodDesc *pMD);
-
-    enum Flags
-    {
-        kHasSuppressUnmanagedCodeAccess = 0x1,
-        kRequiresArgumentWrapping       = 0x2,
-    };
 
     union
     {
@@ -3123,7 +3114,10 @@ struct ComPlusCallInfo
     // method table of the interface which this represents
     PTR_MethodTable m_pInterfaceMT;
 
-    // We need only 3 bits here, see enum Flags below.
+    enum Flags
+    {
+        kRequiresArgumentWrapping       = 0x1,
+    };
     BYTE        m_flags;
 
     // ComSlot() (is cached when we first invoke the method and generate
@@ -3298,7 +3292,7 @@ public:
 // parameters (see MethodDesc::IsSharedByGenericInstantiations()).
 //-----------------------------------------------------------------------
 
-class InstantiatedMethodDesc : public MethodDesc
+class InstantiatedMethodDesc final : public MethodDesc
 {
 
 public:
@@ -3352,17 +3346,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         return((m_wFlags2 & KindMask) == WrapperStubWithInstantiations);
-    }
-
-    BOOL IMD_IsEnCAddedMethod()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-#ifdef EnC_SUPPORTED
-        return((m_wFlags2 & KindMask) == EnCAddedMethod);
-#else
-        return FALSE;
-#endif
     }
 
     PTR_DictionaryLayout GetDictLayoutRaw()
@@ -3423,15 +3406,6 @@ public:
     // Setup the IMD as a wrapper around another method desc
     void SetupWrapperStubWithInstantiations(MethodDesc* wrappedMD,DWORD numGenericArgs, TypeHandle *pGenericMethodInst);
 
-
-#ifdef EnC_SUPPORTED
-    void SetupEnCAddedMethod()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags2 = EnCAddedMethod;
-    }
-#endif
-
 private:
     enum
     {
@@ -3440,17 +3414,6 @@ private:
         UnsharedMethodInstantiation         = 0x01,
         SharedMethodInstantiation           = 0x02,
         WrapperStubWithInstantiations       = 0x03,
-
-#ifdef EnC_SUPPORTED
-        // Non-virtual method added through EditAndContinue.
-        EnCAddedMethod                      = 0x07,
-#endif // EnC_SUPPORTED
-
-        Unrestored                          = 0x08,
-
-#ifdef FEATURE_COMINTEROP
-        HasComPlusCallInfo                  = 0x10, // this IMD contains an optional ComPlusCallInfo
-#endif // FEATURE_COMINTEROP
     };
 
     friend class MethodDesc; // this fields are currently accessed by MethodDesc::Save/Restore etc.
@@ -3609,13 +3572,6 @@ inline BOOL MethodDesc::SanityCheck()
 }
 
 #endif // _DEBUG
-
-inline BOOL MethodDesc::IsEnCAddedMethod()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return (GetClassification() == mcInstantiated) && AsInstantiatedMethodDesc()->IMD_IsEnCAddedMethod();
-}
 
 inline BOOL MethodDesc::HasNonVtableSlot()
 {

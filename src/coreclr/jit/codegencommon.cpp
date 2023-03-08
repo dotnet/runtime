@@ -68,6 +68,14 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 {
 }
 
+#if defined(TARGET_AMD64)
+void CodeGenInterface::CopyRegisterInfo()
+{
+    rbmAllFloat       = compiler->rbmAllFloat;
+    rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+}
+#endif // TARGET_AMD64
+
 /*****************************************************************************/
 
 CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
@@ -140,6 +148,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     genForceFuncletFrameType5              = false;
 #endif // TARGET_ARM64
 }
+
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 
 //---------------------------------------------------------------------
@@ -1722,6 +1731,7 @@ void CodeGen::genGenerateMachineCode()
 
         printf(" for ");
 
+#if defined(TARGET_X86)
         if (compiler->info.genCPU == CPU_X86)
         {
             printf("generic X86 CPU");
@@ -1730,9 +1740,14 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("Pentium 4");
         }
-        else if (compiler->info.genCPU == CPU_X64)
+#elif defined(TARGET_AMD64)
+        if (compiler->info.genCPU == CPU_X64)
         {
-            if (compiler->canUseVexEncoding())
+            if (compiler->canUseEvexEncoding())
+            {
+                printf("X64 CPU with AVX512");
+            }
+            else if (compiler->canUseVexEncoding())
             {
                 printf("X64 CPU with AVX");
             }
@@ -1741,18 +1756,22 @@ void CodeGen::genGenerateMachineCode()
                 printf("X64 CPU with SSE2");
             }
         }
-        else if (compiler->info.genCPU == CPU_ARM)
+#elif defined(TARGET_ARM)
+        if (compiler->info.genCPU == CPU_ARM)
         {
             printf("generic ARM CPU");
         }
-        else if (compiler->info.genCPU == CPU_ARM64)
+#elif defined(TARGET_ARM64)
+        if (compiler->info.genCPU == CPU_ARM64)
         {
             printf("generic ARM64 CPU");
         }
-        else if (compiler->info.genCPU == CPU_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64)
+        if (compiler->info.genCPU == CPU_LOONGARCH64)
         {
             printf("generic LOONGARCH64 CPU");
         }
+#endif
         else
         {
             printf("unknown architecture");
@@ -1937,7 +1956,7 @@ void CodeGen::genEmitMachineCode()
     // ugliness of having the failure here.
     if (!compiler->jitFallbackCompile)
     {
-        // Use COMPlus_JitNoForceFallback=1 to prevent NOWAY assert testing from happening,
+        // Use DOTNET_JitNoForceFallback=1 to prevent NOWAY assert testing from happening,
         // especially that caused by enabling JIT stress.
         if (!JitConfig.JitNoForceFallback())
         {
@@ -7042,7 +7061,7 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
  *  Display a IPmappingDsc. Pass -1 as mappingNum to not display a mapping number.
  */
 
-void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
+void CodeGen::genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMapping)
 {
     if (mappingNum != unsigned(-1))
     {

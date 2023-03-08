@@ -2575,6 +2575,7 @@ unsigned Compiler::lvaGetFieldLocal(const LclVarDsc* varDsc, unsigned int fldOff
 void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason))
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
+    assert(!varDsc->lvIsStructField);
 
     varDsc->SetAddressExposed(true DEBUGARG(reason));
 
@@ -3791,7 +3792,10 @@ void Compiler::lvaSortByRefCount()
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
+#if defined(TARGET_XARCH)
                 case TYP_SIMD32:
+                case TYP_SIMD64:
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:
                     break;

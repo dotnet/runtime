@@ -1,28 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
-//
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+using System.Collections;
+using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Xml;
 
@@ -32,10 +15,8 @@ namespace System.Data.Tests.SqlTypes
 {
     public class SqlXmlTest
     {
-        // Test constructor
-        [Fact] // .ctor (Stream)
-               //[Category ("NotDotNet")] // Name cannot begin with the '.' character, hexadecimal value 0x00. Line 1, position 2
-        public void Constructor2_Stream_Unicode()
+        [Fact]
+        public void Constructor_Stream_Unicode()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
             MemoryStream stream = new MemoryStream(Encoding.Unicode.GetBytes(xmlStr));
@@ -44,8 +25,8 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(xmlStr, xmlSql.Value);
         }
 
-        [Fact] // .ctor (Stream)
-        public void Constructor2_Stream_Empty()
+        [Fact]
+        public void Constructor_Stream_Empty()
         {
             MemoryStream ms = new MemoryStream();
             SqlXml xmlSql = new SqlXml(ms);
@@ -54,7 +35,7 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        public void Constructor2_Stream_Null()
+        public void Constructor_Stream_Null()
         {
             SqlXml xmlSql = new SqlXml((Stream)null);
             Assert.True(xmlSql.IsNull);
@@ -62,8 +43,8 @@ namespace System.Data.Tests.SqlTypes
             Assert.Throws<SqlNullValueException>(() => xmlSql.Value);
         }
 
-        [Fact] // .ctor (XmlReader)
-        public void Constructor3()
+        [Fact]
+        public void Constructor_StringReader()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
             XmlReader xrdr = new XmlTextReader(new StringReader(xmlStr));
@@ -72,8 +53,8 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(xmlStr, xmlSql.Value);
         }
 
-        [Fact] // .ctor (XmlReader)
-        public void Constructor3_XmlReader_Empty()
+        [Fact]
+        public void Constructor_XmlReader_Empty()
         {
             XmlReaderSettings xs = new XmlReaderSettings();
             xs.ConformanceLevel = ConformanceLevel.Fragment;
@@ -84,7 +65,7 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        public void Constructor3_XmlReader_Null()
+        public void Constructor_XmlReader_Null()
         {
             SqlXml xmlSql = new SqlXml((XmlReader)null);
             Assert.True(xmlSql.IsNull);
@@ -93,7 +74,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        //[Category ("NotDotNet")] // Name cannot begin with the '.' character, hexadecimal value 0x00. Line 1, position 2
         public void CreateReader_Stream_Unicode()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
@@ -107,7 +87,7 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        public void SqlXml_fromXmlReader_CreateReaderTest()
+        public void CreateReader_XmlTextReader_CanReadContent()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
             XmlReader rdr = new XmlTextReader(new StringReader(xmlStr));
@@ -119,8 +99,82 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(xmlStr, xrdr.ReadOuterXml());
         }
 
+        public static class CreateReader_TestFiles
+        {
+            private static TheoryData<string, string> _filesAndBaselines;
+
+            // The test files are made available through the System.Data.Common.TestData package included in dotnet/runtime-assets
+            private static void EnsureFileList()
+            {
+                if (_filesAndBaselines is null)
+                {
+                    IEnumerable<string> text = Directory.EnumerateFiles(Path.Combine("SqlXml.CreateReader", "Baseline-Text"), "*.xml");
+                    IEnumerable<string> binary = Directory.EnumerateFiles(Path.Combine("SqlXml.CreateReader", "SqlBinaryXml"), "*.bmx");
+
+                    // Make sure that we found our test files; otherwise the theories would succeed without validating anything
+                    Assert.NotEmpty(text);
+                    Assert.NotEmpty(binary);
+
+                    TheoryData<string, string> filesAndBaselines = new TheoryData<string, string>();
+
+                    // Use the Text XML files as their own baselines
+                    filesAndBaselines.Append(text.Select(f => new string[] { TextXmlFileName(f), TextXmlFileName(f) }).ToArray());
+
+                    // Use the matching Text XML files as the baselines for the SQL Binary XML files
+                    filesAndBaselines.Append(binary
+                        .Select(Path.GetFileNameWithoutExtension)
+                        .Intersect(text.Select(Path.GetFileNameWithoutExtension))
+                        .Select(f => new string[] { SqlBinaryXmlFileName(f), TextXmlFileName(f) }).ToArray());
+
+                    _filesAndBaselines = filesAndBaselines;
+
+                    string TextXmlFileName(string name) => Path.Combine("SqlXml.CreateReader", "Baseline-Text", $"{name}.xml");
+                    string SqlBinaryXmlFileName(string name) => Path.Combine("SqlXml.CreateReader", "SqlBinaryXml", $"{name}.bmx");
+                }
+            }
+
+            public static TheoryData<string, string> FilesAndBaselines
+            {
+                get
+                {
+                    EnsureFileList();
+                    return _filesAndBaselines;
+                }
+            }
+
+            public static string ReadAllXml(XmlReader reader)
+            {
+                using StringWriter writer = new StringWriter();
+                using XmlWriter xmlWriter = new XmlTextWriter(writer);
+
+                while (reader.Read()) xmlWriter.WriteNode(reader, false);
+
+                return writer.ToString();
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CreateReader_TestFiles.FilesAndBaselines), MemberType = typeof(CreateReader_TestFiles))]
+        public void CreateReader_TestAgainstBaseline(string testFile, string baselineFile)
+        {
+            // Get our expected output by using XmlReader directly
+            using XmlReader baselineReader = XmlReader.Create(baselineFile);
+            string expected = CreateReader_TestFiles.ReadAllXml(baselineReader);
+
+            // Now produce the actual output through SqlXml.CreateReader
+            using FileStream xmlStream = new FileStream(testFile, FileMode.Open);
+            SqlXml sqlXml = new SqlXml(xmlStream);
+
+            // When the input is text, an XmlTextReader will be returned
+            // When the input is SQL Binary XML, an XmlSqlBinaryReader will be returned
+            using XmlReader actualReader = sqlXml.CreateReader();
+            string actual = CreateReader_TestFiles.ReadAllXml(actualReader);
+
+            Assert.Equal(expected, actual);
+        }
+
         [Fact]
-        public void SqlXml_fromZeroLengthStream_CreateReaderTest()
+        public void SqlXml_FromZeroLengthStream_CreateReaderTest()
         {
             MemoryStream stream = new MemoryStream();
             SqlXml xmlSql = new SqlXml(stream);
@@ -131,7 +185,7 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        public void SqlXml_fromZeroLengthXmlReader_CreateReaderTest_withFragment()
+        public void SqlXml_FromZeroLengthXmlReader_CreateReaderTest_withFragment()
         {
             XmlReaderSettings xs = new XmlReaderSettings();
             xs.ConformanceLevel = ConformanceLevel.Fragment;
@@ -145,7 +199,7 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        public void SqlXml_fromZeroLengthXmlReader_CreateReaderTest()
+        public void SqlXml_FromZeroLengthXmlReader_CreateReaderTest()
         {
             XmlReader rdr = new XmlTextReader(new StringReader(string.Empty));
 

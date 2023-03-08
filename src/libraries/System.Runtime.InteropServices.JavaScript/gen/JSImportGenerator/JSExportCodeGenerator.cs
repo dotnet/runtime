@@ -179,7 +179,7 @@ namespace Microsoft.Interop.JavaScript
                     Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))))))))))));
         }
 
-        private StatementSyntax InvokeSyntax()
+        private TryStatementSyntax InvokeSyntax()
         {
             var statements = new List<StatementSyntax>();
             var arguments = new List<ArgumentSyntax>();

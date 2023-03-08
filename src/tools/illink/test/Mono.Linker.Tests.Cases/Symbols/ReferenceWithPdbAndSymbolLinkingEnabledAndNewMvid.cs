@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 	{
 		static void Main ()
 		{
-			// Use some stuff so that we can verify that the linker output correct results
+			// Use some stuff so that we can verify that the trimmer output correct results
 			SomeMethod ();
 			LibraryWithPdb.SomeMethod ();
 		}

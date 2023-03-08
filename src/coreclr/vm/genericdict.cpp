@@ -690,10 +690,7 @@ Dictionary::PopulateEntry(
         ptr = SigPointer((PCCOR_SIGNATURE)signature);
         IfFailThrow(ptr.GetData(&kind));
 
-        Module * pContainingZapModule = ExecutionManager::FindZapModule(dac_cast<TADDR>(signature));
-
-        zapSigContext = ZapSig::Context(CoreLibBinder::GetModule(), (void *)pContainingZapModule, ZapSig::NormalTokens);
-        pZapSigContext = (pContainingZapModule != NULL) ? &zapSigContext : NULL;
+        pZapSigContext = NULL;
     }
 
     ModuleBase * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();

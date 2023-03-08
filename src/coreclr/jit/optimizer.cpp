@@ -163,18 +163,18 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #endif
 
     // Build list of back edges for block begBlk.
-    flowList* backedgeList = nullptr;
+    FlowEdge* backedgeList = nullptr;
 
     for (BasicBlock* const predBlock : begBlk->PredBlocks())
     {
         // Is this a back edge?
         if (predBlock->bbNum >= begBlk->bbNum)
         {
-            backedgeList = new (this, CMK_FlowList) flowList(predBlock, backedgeList);
+            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, backedgeList);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
-            genFlowNodeSize += sizeof(flowList);
+            genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
         }
     }
@@ -217,9 +217,9 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             bool reachable = false;
             bool dominates = false;
 
-            for (flowList* tmp = backedgeList; tmp != nullptr; tmp = tmp->flNext)
+            for (FlowEdge* tmp = backedgeList; tmp != nullptr; tmp = tmp->getNextPredEdge())
             {
-                BasicBlock* backedge = tmp->getBlock();
+                BasicBlock* backedge = tmp->getSourceBlock();
 
                 reachable |= fgReachable(curBlk, backedge);
                 dominates |= fgDominate(curBlk, backedge);
@@ -2021,8 +2021,8 @@ private:
             // This must be a block we inserted to connect fall-through after moving blocks.
             // To determine if it's in the loop or not, use the number of its unique predecessor
             // block.
-            assert(block->bbPreds->getBlock() == block->bbPrev);
-            assert(block->bbPreds->flNext == nullptr);
+            assert(block->bbPreds->getSourceBlock() == block->bbPrev);
+            assert(block->bbPreds->getNextPredEdge() == nullptr);
             return block->bbPrev->bbNum;
         }
         return block->bbNum;
@@ -4304,17 +4304,19 @@ PhaseStatus Compiler::optUnrollLoops()
         // Heuristic: Estimated cost in code size of the unrolled loop.
 
         {
-            ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
-            auto                 tryIndex = loop.lpTop->bbTryIndex;
+            ClrSafeInt<unsigned>    loopCostSz; // Cost is size of one iteration
+            const BasicBlock* const top = loop.lpTop;
 
             // Besides calculating the loop cost, also ensure that all loop blocks are within the same EH
             // region, and count the number of BBJ_RETURN blocks in the loop.
             loopRetCount = 0;
             for (BasicBlock* const block : loop.LoopBlocks())
             {
-                if (block->bbTryIndex != tryIndex)
+                if (!BasicBlock::sameEHRegion(block, top))
                 {
                     // Unrolling would require cloning EH regions
+                    // Note that only non-funclet model (x86) could actually have a loop including a handler
+                    // but not it's corresponding `try`, if its `try` was moved due to being marked "rare".
                     JITDUMP("Failed to unroll loop " FMT_LP ": EH constraint\n", lnum);
                     goto DONE_LOOP;
                 }
@@ -5201,8 +5203,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const testToNextWeight  = weightNext * testToNextLikelihood;
         weight_t const testToAfterWeight = weightNext * testToAfterLikelihood;
 
-        flowList* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
-        flowList* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
+        FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
+        FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum,
                 bTest->bbJumpDest->bbNum, testToNextWeight);
@@ -5222,8 +5224,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
         weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
-        flowList* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->bbNext, bNewCond);
-        flowList* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->bbJumpDest, bNewCond);
+        FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->bbNext, bNewCond);
+        FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->bbJumpDest, bNewCond);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
                 bNewCond->bbNext->bbNum, blockToNextWeight);
@@ -5234,10 +5236,20 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->bbJumpDest);
 
 #ifdef DEBUG
-        // Verify profile for the two target blocks is consistent.
+        // If we're checkig profile data, see if profile for the two target blocks is consistent.
         //
-        fgDebugCheckIncomingProfileData(bNewCond->bbNext);
-        fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
+        if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
+        {
+            const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
+            const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbNext, checks);
+            const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest, checks);
+
+            if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
+            {
+                assert(nextProfileOk);
+                assert(jumpProfileOk);
+            }
+        }
 #endif // DEBUG
     }
 
@@ -5393,7 +5405,6 @@ void Compiler::optMarkLoopHeads()
         printf("*************** In optMarkLoopHeads()\n");
     }
 
-    assert(!fgCheapPredsValid);
     assert(fgReachabilitySetsValid);
     fgDebugCheckBBNumIncreasing();
 
@@ -6667,6 +6678,8 @@ PhaseStatus Compiler::optHoistLoopCode()
     }
 #endif
 
+    optComputeInterestingVarSets();
+
     // Consider all the loop nests, in inner-to-outer order
     //
     bool             modified = false;
@@ -6821,9 +6834,8 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     pLoopDsc->lpHoistAddedPreheader = false;
 
 #ifndef TARGET_64BIT
-    unsigned longVarsCount = VarSetOps::Count(this, lvaLongVars);
 
-    if (longVarsCount > 0)
+    if (!VarSetOps::IsEmpty(this, lvaLongVars))
     {
         // Since 64-bit variables take up two registers on 32-bit targets, we increase
         //  the Counts such that each TYP_LONG variable counts twice.
@@ -6858,9 +6870,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     }
 #endif
 
-    unsigned floatVarsCount = VarSetOps::Count(this, lvaFloatVars);
-
-    if (floatVarsCount > 0)
+    if (!VarSetOps::IsEmpty(this, lvaFloatVars))
     {
         VARSET_TP loopFPVars(VarSetOps::Intersection(this, loopVars, lvaFloatVars));
         VARSET_TP inOutFPVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, lvaFloatVars));
@@ -6885,7 +6895,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
         }
 #endif
     }
-    else // (floatVarsCount == 0)
+    else // lvaFloatVars is empty
     {
         pLoopDsc->lpLoopVarFPCount     = 0;
         pLoopDsc->lpVarInOutFPCount    = 0;
@@ -6993,7 +7003,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
     int loopVarCount;
     int varInOutCount;
 
-    if (varTypeIsFloating(tree))
+    if (varTypeUsesFloatReg(tree))
     {
         hoistedExprCount = pLoopDsc->lpHoistedFPExprCount;
         loopVarCount     = pLoopDsc->lpLoopVarFPCount;
@@ -7053,7 +7063,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that are not heavy: tree->GetCostEx() < (2*IND_COST_EX)
         if (tree->GetCostEx() < (2 * IND_COST_EX))
         {
-            JITDUMP("    tree cost too low: %d < %d (loopVarCount %u >= availableRegCount %u)\n", tree->GetCostEx(),
+            JITDUMP("    tree cost too low: %d < %d (loopVarCount %u >= availRegCount %u)\n", tree->GetCostEx(),
                     2 * IND_COST_EX, loopVarCount, availRegCount);
             return false;
         }
@@ -7072,7 +7082,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that barely meet CSE cost requirements: tree->GetCostEx() == MIN_CSE_COST
         if (tree->GetCostEx() <= MIN_CSE_COST + 1)
         {
-            JITDUMP("    tree not good CSE: %d <= %d (varInOutCount %u > availableRegCount %u)\n", tree->GetCostEx(),
+            JITDUMP("    tree not good CSE: %d <= %d (varInOutCount %u > availRegCount %u)\n", tree->GetCostEx(),
                     2 * MIN_CSE_COST + 1, varInOutCount, availRegCount)
             return false;
         }
@@ -8167,8 +8177,8 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
                 if (useEdgeWeights)
                 {
-                    const flowList* edgeToEntry    = fgGetPredForBlock(entry, head);
-                    const flowList* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, head);
+                    const FlowEdge* edgeToEntry    = fgGetPredForBlock(entry, head);
+                    const FlowEdge* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, head);
                     noway_assert(edgeToEntry != nullptr);
                     noway_assert(edgeToSkipLoop != nullptr);
 
@@ -8386,12 +8396,12 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         }
     }
 
-    flowList* const edgeToPreHeader = fgGetPredForBlock(preHead, head);
+    FlowEdge* const edgeToPreHeader = fgGetPredForBlock(preHead, head);
     noway_assert(edgeToPreHeader != nullptr);
     edgeToPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, preHead);
 
     noway_assert(fgGetPredForBlock(entry, preHead) == nullptr);
-    flowList* const edgeFromPreHeader = fgAddRefPred(entry, preHead);
+    FlowEdge* const edgeFromPreHeader = fgAddRefPred(entry, preHead);
     edgeFromPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, entry);
 
     /*
@@ -8486,7 +8496,10 @@ void Compiler::optComputeLoopSideEffects()
             optComputeLoopNestSideEffects(lnum);
         }
     }
+}
 
+void Compiler::optComputeInterestingVarSets()
+{
     VarSetOps::AssignNoCopy(this, lvaFloatVars, VarSetOps::MakeEmpty(this));
 #ifndef TARGET_64BIT
     VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
@@ -8497,7 +8510,7 @@ void Compiler::optComputeLoopSideEffects()
         LclVarDsc* varDsc = lvaGetDesc(i);
         if (varDsc->lvTracked)
         {
-            if (varTypeIsFloating(varDsc->lvType))
+            if (varTypeUsesFloatReg(varDsc->lvType))
             {
                 VarSetOps::AddElemD(this, lvaFloatVars, varDsc->lvVarIndex);
             }
@@ -8796,6 +8809,12 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                 }
             }
         }
+
+        // Clear the Value Number from the statement root node, if it was set above. This is to
+        // ensure that for those blocks that are unreachable, which we still handle in this loop
+        // but not during Value Numbering, fgDebugCheckExceptionSets() will skip the trees. Ideally,
+        // we wouldn't be touching the gtVNPair at all (here) before actual Value Numbering.
+        stmt->GetRootNode()->gtVNPair.SetBoth(ValueNumStore::NoVN);
     }
 
     if (memoryHavoc != emptyMemoryKindSet)
@@ -9765,8 +9784,8 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
 
-        flowList* edge1 = m_comp->fgGetPredForBlock(m_b1->bbJumpDest, m_b1);
-        flowList* edge2;
+        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->bbJumpDest, m_b1);
+        FlowEdge* edge2;
 
         if (m_sameTarget)
         {
@@ -10567,10 +10586,13 @@ void Compiler::optRemoveRedundantZeroInits()
 
                             if (!bbInALoop || bbIsReturn)
                             {
+                                bool neverTracked = lclDsc->IsAddressExposed() || lclDsc->lvPinned ||
+                                                    (lclDsc->lvPromoted && varTypeIsStruct(lclDsc));
+
                                 if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
                                     (lclDsc->lvIsStructField &&
                                      BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
-                                    ((!lclDsc->lvTracked || !isEntire) &&
+                                    ((neverTracked || !isEntire) &&
                                      !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
                                 {
                                     // We are guaranteed to have a zero initialization in the prolog or a

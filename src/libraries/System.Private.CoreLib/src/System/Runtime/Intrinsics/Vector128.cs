@@ -234,6 +234,22 @@ namespace System.Runtime.Intrinsics
         public static Vector128<ulong> AsUInt64<T>(this Vector128<T> vector)
             where T : struct => vector.As<T, ulong>();
 
+        /// <summary>Reinterprets a <see cref="Plane" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <param name="value">The plane to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> AsVector128(this Plane value)
+            => Unsafe.As<Plane, Vector128<float>>(ref value);
+
+        /// <summary>Reinterprets a <see cref="Quaternion" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <param name="value">The quaternion to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> AsVector128(this Quaternion value)
+            => Unsafe.As<Quaternion, Vector128<float>>(ref value);
+
         /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
@@ -3166,6 +3182,34 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             Unsafe.AsRef(in vector._upper) = value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.UnpackLow(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.Arm64.ZipLow(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.UnpackHigh(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.Arm64.ZipHigh(left, right);
         }
     }
 }

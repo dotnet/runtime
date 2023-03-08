@@ -169,11 +169,20 @@ bool IntegralRange::Contains(int64_t value) const
             break;
 
         case GT_LCL_VAR:
-            if (compiler->lvaGetDesc(node->AsLclVar())->lvNormalizeOnStore())
+        {
+            LclVarDsc* const varDsc = compiler->lvaGetDesc(node->AsLclVar());
+
+            if (varDsc->lvNormalizeOnStore())
             {
                 rangeType = compiler->lvaGetDesc(node->AsLclVar())->TypeGet();
             }
+
+            if (varDsc->IsNeverNegative())
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
             break;
+        }
 
         case GT_CNS_INT:
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
@@ -217,6 +226,15 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 #endif // defined(FEATURE_HW_INTRINSICS)
+
+        case GT_FIELD:
+        {
+            if (node->AsField()->IsSpanLength())
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+            break;
+        }
 
         default:
             break;
@@ -3202,7 +3220,9 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             break;
         }
 
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
+        case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
         {
             simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
 
@@ -3213,6 +3233,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             break;
         }
         break;
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
         case TYP_BYREF:
@@ -6139,6 +6160,8 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_ARR_LENGTH:
             break;
 
+        case GT_OBJ:
+        case GT_BLK:
         case GT_IND:
         {
             const ValueNum vn = tree->GetVN(VNK_Conservative);

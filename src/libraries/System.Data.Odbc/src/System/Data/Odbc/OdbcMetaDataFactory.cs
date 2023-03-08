@@ -134,6 +134,7 @@ namespace System.Data.Odbc
             }
         }
 
+#pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6440
         private static object BooleanFromODBC(object odbcSource)
         {
             if (odbcSource != DBNull.Value)
@@ -153,6 +154,7 @@ namespace System.Data.Odbc
 
             return DBNull.Value;
         }
+#pragma warning disable CA1859
 
         private static OdbcCommand GetCommand(OdbcConnection connection)
         {
@@ -164,7 +166,7 @@ namespace System.Data.Odbc
             return command;
         }
 
-        private static DataTable DataTableFromDataReader(IDataReader reader, string tableName)
+        private static DataTable DataTableFromDataReader(OdbcDataReader reader, string tableName)
         {
             // set up the column structure of the data table from the reader
             object[] values;
@@ -425,7 +427,7 @@ namespace System.Data.Odbc
             }
         }
 
-        private static DataTable DataTableFromDataReaderIndex(IDataReader reader,
+        private static DataTable DataTableFromDataReaderIndex(OdbcDataReader reader,
                                                        string tableName,
                                                        string? restrictionIndexName)
         {
@@ -449,7 +451,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private static DataTable DataTableFromDataReaderProcedureColumns(IDataReader reader, string tableName, bool isColumn)
+        private static DataTable DataTableFromDataReaderProcedureColumns(OdbcDataReader reader, string tableName, bool isColumn)
         {
             // set up the column structure of the data table from the reader
             object[] values;
@@ -473,7 +475,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private static DataTable DataTableFromDataReaderProcedures(IDataReader reader, string tableName, short procedureType)
+        private static DataTable DataTableFromDataReaderProcedures(OdbcDataReader reader, string tableName, short procedureType)
         {
             // Build a DataTable from the reader
 
@@ -1061,7 +1063,7 @@ namespace System.Data.Odbc
             return true;
         }
 
-        private static DataTable NewDataTableFromReader(IDataReader reader, out object[] values, string tableName)
+        private static DataTable NewDataTableFromReader(OdbcDataReader reader, out object[] values, string tableName)
         {
             DataTable resultTable = new DataTable(tableName);
             resultTable.Locale = System.Globalization.CultureInfo.InvariantCulture;

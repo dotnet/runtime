@@ -5994,7 +5994,7 @@ bool CEEInfo::getStringChar(CORINFO_OBJECT_HANDLE obj, int index, uint16_t* valu
             result = true;
         }
     }
-    
+
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -8957,7 +8957,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
         if (ret == NULL)
         {
             // should never get here for EnC methods or if interception via remoting stub is required
-            _ASSERTE(!ftn->IsEnCMethod());
+            _ASSERTE(!ftn->InEnCEnabledModule());
 
             ret = (void *)ftn->GetAddrOfSlot();
 
@@ -9840,59 +9840,36 @@ bool CEEInfo::isCompatibleDelegate(
 }
 
 /*********************************************************************/
-    // return address of fixup area for late-bound N/Direct calls.
-void* CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
-                                        void **ppIndirection)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void * result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    MethodDesc* ftn = GetMethod(method);
-    _ASSERTE(ftn->IsNDirect());
-    NDirectMethodDesc *pMD = (NDirectMethodDesc*)ftn;
-
-    result = (LPVOID)&(pMD->GetWriteableData()->m_pNDirectTarget);
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
-/*********************************************************************/
 // return address of fixup area for late-bound N/Direct calls.
 void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
                                         CORINFO_CONST_LOOKUP *pLookup)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pMD = GetMethod(method);
+    _ASSERTE(pMD->IsNDirect());
+
+    NDirectMethodDesc* pNMD = reinterpret_cast<NDirectMethodDesc*>(pMD);
 
     void* pIndirection;
+    if (NDirectMethodDesc::TryGetResolvedNDirectTarget(pNMD, &pIndirection))
     {
-        JIT_TO_EE_TRANSITION_LEAF();
-
-        MethodDesc* pMD = GetMethod(method);
-        if (NDirectMethodDesc::TryResolveNDirectTargetForNoGCTransition(pMD, &pIndirection))
-        {
-            pLookup->accessType = IAT_VALUE;
-            pLookup->addr = pIndirection;
-            return;
-        }
-
-        EE_TO_JIT_TRANSITION_LEAF();
+        pLookup->accessType = IAT_VALUE;
+        pLookup->addr = pIndirection;
+    }
+    else
+    {
+        pLookup->accessType = IAT_PVALUE;
+        pLookup->addr = (LPVOID)&(pNMD->GetWriteableData()->m_pNDirectTarget);
     }
 
-    pLookup->accessType = IAT_PVALUE;
-    pLookup->addr = getAddressOfPInvokeFixup(method, &pIndirection);
-    _ASSERTE(pIndirection == NULL);
+    EE_TO_JIT_TRANSITION();
 }
 
 /*********************************************************************/
@@ -11079,7 +11056,7 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unw
     _ASSERTE_MSG(m_theUnwindBlock == NULL,
         "reserveUnwindInfo() can only be called before allocMem(), but allocMem() has already been called. "
         "This may indicate the JIT has hit a NO_WAY assert after calling allocMem(), and is re-JITting. "
-        "Set COMPlus_JitBreakOnBadCode=1 and rerun to get the real error.");
+        "Set DOTNET_JitBreakOnBadCode=1 and rerun to get the real error.");
 
     uint32_t currentSize  = unwindSize;
 
@@ -11708,7 +11685,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             UINT size = field->GetSize();
             _ASSERTE(baseAddr > 0);
             _ASSERTE(size > 0);
-          
+
             if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
             {
                 memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
@@ -11972,7 +11949,11 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     size_t roDataAlignment = sizeof(void*);
-    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
+    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN)!= 0)
+    {
+        roDataAlignment = 64;
+    }
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
     {
         roDataAlignment = 32;
     }
@@ -14369,10 +14350,10 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     if (pRS == NULL)
         goto Invalid;
 
-    if (!pRS->pjit->JitCodeToMethodInfo(pRS, codeAddress, &m_pMD, this))
+    if (!pRS->_pjit->JitCodeToMethodInfo(pRS, codeAddress, &m_pMD, this))
         goto Invalid;
 
-    m_pJM = pRS->pjit;
+    m_pJM = pRS->_pjit;
     return;
 
 Invalid:

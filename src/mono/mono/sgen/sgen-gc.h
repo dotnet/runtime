@@ -1230,6 +1230,9 @@ sgen_dummy_use (gpointer v)
 #endif
 }
 
+void sgen_add_memory_pressure(guint64 value);
+void sgen_remove_memory_pressure(guint64 value);
+
 #endif /* HAVE_SGEN_GC */
 
 #endif /* __MONO_SGENGC_H__ */

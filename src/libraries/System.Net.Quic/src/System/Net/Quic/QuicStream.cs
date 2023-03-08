@@ -108,15 +108,15 @@ public sealed partial class QuicStream
         }
     };
     private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
-    private object _sendBuffersLock = new object();
+    private readonly object _sendBuffersLock = new object();
 
     private readonly long _defaultErrorCode;
 
-    private bool _canRead;
-    private bool _canWrite;
+    private readonly bool _canRead;
+    private readonly bool _canWrite;
 
     private long _id = -1;
-    private QuicStreamType _type;
+    private readonly QuicStreamType _type;
 
     /// <summary>
     /// Stream id, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier" />.
@@ -349,11 +349,11 @@ public sealed partial class QuicStream
             NetEventSource.Info(this, $"{this} Stream writing memory of '{buffer.Length}' bytes while {(completeWrites ? "completing" : "not completing")} writes.");
         }
 
-        if (_sendTcs.IsCompleted)
+        if (_sendTcs.IsCompleted && cancellationToken.IsCancellationRequested)
         {
             // Special case exception type for pre-canceled token while we've already transitioned to a final state and don't need to abort write.
             // It must happen before we try to get the value task, since the task source is versioned and each instance must be awaited.
-            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromCanceled(cancellationToken);
         }
 
         // Concurrent call, this one lost the race.

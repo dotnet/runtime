@@ -21,9 +21,9 @@ void Compiler::fgPrintEdgeWeights()
         if (bDst->bbPreds != nullptr)
         {
             printf("    Edge weights into " FMT_BB " :", bDst->bbNum);
-            for (flowList* const edge : bDst->PredEdges())
+            for (FlowEdge* const edge : bDst->PredEdges())
             {
-                BasicBlock* bSrc = edge->getBlock();
+                BasicBlock* bSrc = edge->getSourceBlock();
                 // This is the control flow edge (bSrc -> bDst)
 
                 printf(FMT_BB " ", bSrc->bbNum);
@@ -48,7 +48,7 @@ void Compiler::fgPrintEdgeWeights()
                     }
                 }
                 printf(")");
-                if (edge->flNext != nullptr)
+                if (edge->getNextPredEdge() != nullptr)
                 {
                     printf(", ");
                 }
@@ -452,7 +452,7 @@ const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
 //    type        - A (wide) string indicating the type of dump, "dot" or "xml"
 //
 // Notes:
-// The filename to use to write the data comes from the COMPlus_JitDumpFgFile or COMPlus_NgenDumpFgFile
+// The filename to use to write the data comes from the DOTNET_JitDumpFgFile or DOTNET_NgenDumpFgFile
 // configuration. If unset, use "default". The "type" argument is used as a filename extension,
 // e.g., "default.dot".
 //
@@ -731,29 +731,29 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 //    MSAGL has also been open-sourced to https://github.com/Microsoft/automatic-graph-layout.
 //
 //    Here are the config values that control it:
-//      COMPlus_JitDumpFg              A string (ala the COMPlus_JitDump string) indicating what methods to dump
+//      DOTNET_JitDumpFg              A string (ala the DOTNET_JitDump string) indicating what methods to dump
 //                                     flowgraphs for.
-//      COMPlus_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
-//      COMPlus_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
+//      DOTNET_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
+//      DOTNET_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
-//      COMPlus_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
+//      DOTNET_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
 //                                     Set to the short name of a phase to see the flowgraph after that phase.
 //                                     Leave unset to dump after COLD-BLK (determine first cold block) or set to *
 //                                     for all phases.
-//      COMPlus_JitDumpFgPrePhase      Phase(s) before which to dump the flowgraph.
-//      COMPlus_JitDumpFgDot           0 for xml format, non-zero for dot format. (Default is dot format.)
-//      COMPlus_JitDumpFgEH            (dot only) 0 for no exception-handling information; non-zero to include
+//      DOTNET_JitDumpFgPrePhase      Phase(s) before which to dump the flowgraph.
+//      DOTNET_JitDumpFgDot           0 for xml format, non-zero for dot format. (Default is dot format.)
+//      DOTNET_JitDumpFgEH            (dot only) 0 for no exception-handling information; non-zero to include
 //                                     exception-handling regions.
-//      COMPlus_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
-//      COMPlus_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
+//      DOTNET_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
+//      DOTNET_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
 //                                     mostly lexical block linear layout.
-//      COMPlus_JitDumpFgBlockId       Display blocks with block ID, not just bbNum.
+//      DOTNET_JitDumpFgBlockId       Display blocks with block ID, not just bbNum.
 //
 // Example:
 //
 // If you want to dump just before and after a single phase, say loop cloning, use:
-//      set COMPlus_JitDumpFgPhase=LP-CLONE
-//      set COMPlus_JitDumpFgPrePhase=LP-CLONE
+//      set DOTNET_JitDumpFgPhase=LP-CLONE
+//      set DOTNET_JitDumpFgPrePhase=LP-CLONE
 //
 bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 {
@@ -785,7 +785,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
         return false;
     }
 
-    JITDUMP("Dumping flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
+    JITDUMP("Writing out flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
             PhaseNames[phase]);
 
     bool        validWeights  = fgHaveValidEdgeWeights;
@@ -957,7 +957,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             }
 
             // "Raw" Profile weight
-            if (block->hasProfileWeight())
+            if (block->hasProfileWeight() || (JitConfig.JitSynthesizeCounts() > 0))
             {
                 fprintf(fgxFile, "\\n\\n%7.2f", ((double)block->getBBWeight(this)) / BB_UNITY_WEIGHT);
             }
@@ -1043,7 +1043,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
         fprintf(fgxFile, ">");
     }
 
-    if (fgComputePredsDone)
+    if (fgPredsComputed)
     {
         unsigned    edgeNum = 1;
         BasicBlock* bTarget;
@@ -1059,9 +1059,9 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 targetWeightDivisor = (double)bTarget->bbWeight;
             }
 
-            for (flowList* const edge : bTarget->PredEdges())
+            for (FlowEdge* const edge : bTarget->PredEdges())
             {
-                BasicBlock* bSource = edge->getBlock();
+                BasicBlock* bSource = edge->getSourceBlock();
                 double      sourceWeightDivisor;
                 if (bSource->bbWeight == BB_ZERO_WEIGHT)
                 {
@@ -1110,9 +1110,9 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     fprintf(fgxFile, "\n            target=\"%d\"", bTarget->bbNum);
                     if (bSource->bbJumpKind == BBJ_SWITCH)
                     {
-                        if (edge->flDupCount >= 2)
+                        if (edge->getDupCount() >= 2)
                         {
-                            fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->flDupCount);
+                            fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->getDupCount());
                         }
                         if (bSource->bbJumpSwt->getDefault() == bTarget)
                         {
@@ -1177,7 +1177,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 }
             }
 
-            if (fgComputePredsDone)
+            if (fgPredsComputed)
             {
                 // Already emitted pred edges above.
                 //
@@ -1814,7 +1814,7 @@ void Compiler::fgDispDoms()
 
     for (unsigned i = 1; i <= fgBBNumMax; ++i)
     {
-        BasicBlock* current = fgBBInvPostOrder[i];
+        BasicBlock* current = fgBBReversePostorder[i];
         printf(FMT_BB ":  ", current->bbNum);
         while (current != current->bbIDom)
         {
@@ -1871,15 +1871,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     // Display block predecessor list
     //
 
-    unsigned charCnt;
-    if (fgCheapPredsValid)
-    {
-        charCnt = block->dspCheapPreds();
-    }
-    else
-    {
-        charCnt = block->dspPreds();
-    }
+    unsigned charCnt = block->dspPreds();
 
     if (charCnt < 19)
     {
@@ -2283,8 +2275,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         maxBlockNumWidth, "----");
     printf("BBnum %*sBBid ref try hnd %s     weight  %*s%s  lp [IL range]     [jump]%*s    [EH region]         [flags]\n",
         padWidth, "",
-        fgCheapPredsValid       ? "cheap preds" :
-        (fgComputePredsDone     ? "preds      "
+        (fgPredsComputed    ? "preds      "
                                 : "           "),
         ((ibcColWidth > 0) ? ibcColWidth - 3 : 0), "",  // Subtract 3 for the width of "IBC", printed next.
         ((ibcColWidth > 0)      ? "IBC"
@@ -2504,23 +2495,18 @@ private:
 //   the number of incoming edges for the block.
 unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalStamp)
 {
-    if (comp->fgCheapPredsValid)
-    {
-        return 0;
-    }
-
-    if (!comp->fgComputePredsDone)
+    if (!comp->fgPredsComputed)
     {
         assert(block->bbPreds == nullptr);
         return 0;
     }
 
     unsigned blockRefs = 0;
-    for (flowList* const pred : block->PredEdges())
+    for (FlowEdge* const pred : block->PredEdges())
     {
-        blockRefs += pred->flDupCount;
+        blockRefs += pred->getDupCount();
 
-        BasicBlock* blockPred = pred->getBlock();
+        BasicBlock* blockPred = pred->getSourceBlock();
 
         // Make sure this pred is part of the BB list.
         assert(blockPred->bbTraversalStamp == curTraversalStamp);
@@ -2574,6 +2560,14 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     BasicBlock* prevBlock = block->bbPrev;
     if (prevBlock->bbJumpKind == BBJ_CALLFINALLY && block->bbJumpKind == BBJ_ALWAYS &&
         blockPred->bbJumpKind == BBJ_EHFINALLYRET)
+    {
+        return true;
+    }
+
+    // If this is an OSR method and we haven't run post-importation cleanup, we may see a branch
+    // from fgFirstBB to the middle of a try. Those get fixed during cleanup. Tolerate.
+    //
+    if (comp->opts.IsOSR() && !comp->compPostImportationCleanupDone && (blockPred == comp->fgFirstBB))
     {
         return true;
     }
@@ -2653,6 +2647,15 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
                 }
             }
             assert(!"SWITCH in the predecessor list with no jump label to BLOCK!");
+            break;
+
+        case BBJ_LEAVE:
+            // We may see BBJ_LEAVE preds if we haven't done cleanup yet.
+            if (!comp->compPostImportationCleanupDone)
+            {
+                return true;
+            }
+            assert(!"Unexpected BBJ_LEAVE predecessor");
             break;
 
         default:
@@ -2820,25 +2823,28 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
         // lowered GT_SWITCH_TABLE node then make sure it
         // ends with a conditional jump or a GT_SWITCH
-
-        if (block->bbJumpKind == BBJ_COND)
+        //
+        // This may not be true for unimported blocks, if
+        // we haven't run post-importation cleanup yet.
+        //
+        if (compPostImportationCleanupDone || ((block->bbFlags & BBF_IMPORTED) != 0))
         {
-            assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
-                   block->lastNode()->OperIsConditionalJump());
-        }
-        else if (block->bbJumpKind == BBJ_SWITCH)
-        {
-            assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
-                   (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
+            if (block->bbJumpKind == BBJ_COND)
+            {
+                assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
+                       block->lastNode()->OperIsConditionalJump());
+            }
+            else if (block->bbJumpKind == BBJ_SWITCH)
+            {
+                assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
+                       (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
+            }
         }
 
         if (block->bbCatchTyp == BBCT_FILTER)
         {
-            if (!fgCheapPredsValid) // Don't check cheap preds
-            {
-                // A filter has no predecessors
-                assert(block->bbPreds == nullptr);
-            }
+            // A filter has no predecessors
+            assert(block->bbPreds == nullptr);
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -2870,7 +2876,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         if (checkBBRefs)
         {
-            assert(fgComputePredsDone);
+            assert(fgPredsComputed);
         }
 
         BBPredsChecker checker(this);
@@ -2884,7 +2890,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         // Under OSR, if we also are keeping the original method entry around,
         // mark that as implicitly referenced as well.
-        if (opts.IsOSR() && (block == fgEntryBB))
+        if (opts.IsOSR() && (block == fgEntryBB) && fgOSROriginalEntryBBProtected)
         {
             blockRefs += 1;
         }
@@ -3629,7 +3635,7 @@ void Compiler::fgDebugCheckBlockLinks()
             {
                 // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
                 // about the BlockSet epoch.
-                BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
+                BitVecTraits bitVecTraits(impInlineRoot()->fgBBNumMax + 1, this);
                 BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
                 for (BasicBlock* const bTarget : block->SwitchTargets())
                 {

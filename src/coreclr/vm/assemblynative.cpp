@@ -1135,7 +1135,6 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
         {
             // Create a new AssemblyLoaderAllocator for an AssemblyLoadContext
             loaderAllocator = new AssemblyLoaderAllocator();
-            loaderAllocator->SetCollectible();
 
             GCX_COOP();
             LOADERALLOCATORREF pManagedLoaderAllocator = NULL;

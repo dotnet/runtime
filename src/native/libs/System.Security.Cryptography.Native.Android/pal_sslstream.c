@@ -1147,10 +1147,13 @@ bool AndroidCryptoNative_SSLStreamIsLocalCertificateUsed(SSLStream* sslStream)
     JNIEnv* env = GetJNIEnv();
 
     bool ret = false;
-    INIT_LOCALS(loc, localCertificates);
+    INIT_LOCALS(loc, sslSession, localCertificates);
 
     // X509Certificate[] localCertificates = sslSession.getLocalCertificates();
-    loc[localCertificates] = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetLocalCertificates);
+    loc[sslSession] = GetCurrentSslSession(env, sslStream);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[localCertificates] = (*env)->CallObjectMethod(env, loc[sslSession], g_SSLSessionGetLocalCertificates);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     ret = loc[localCertificates] != NULL;

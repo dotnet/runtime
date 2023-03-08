@@ -284,6 +284,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new GVMDependenciesNode(method);
             });
 
+            _gvmImpls = new NodeCache<MethodDesc, GenericVirtualMethodImplNode>(method =>
+            {
+                return new GenericVirtualMethodImplNode(method);
+            });
+
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
@@ -378,6 +383,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
             });
 
+            _dataflowAnalyzedTypeDefinitions = new NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode>((TypeDesc type) =>
+            {
+                return new DataflowAnalyzedTypeDefinitionNode(type);
+            });
+
             _dynamicDependencyAttributesOnEntities = new NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode>((TypeSystemEntity entity) =>
             {
                 return new DynamicDependencyAttributesOnEntityNode(entity);
@@ -460,6 +470,11 @@ namespace ILCompiler.DependencyAnalysis
             _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
             {
                 return new ModuleMetadataNode(module);
+            });
+
+            _inlineableStringResources = new NodeCache<EcmaModule, InlineableStringsResourceNode>(module =>
+            {
+                return new InlineableStringsResourceNode(module);
             });
 
             _customAttributesWithMetadata = new NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode>(ca =>
@@ -704,6 +719,13 @@ namespace ILCompiler.DependencyAnalysis
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
         }
 
+        private NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode> _dataflowAnalyzedTypeDefinitions;
+
+        public DataflowAnalyzedTypeDefinitionNode DataflowAnalyzedTypeDefinition(TypeDesc type)
+        {
+            return _dataflowAnalyzedTypeDefinitions.GetOrAdd(type);
+        }
+
         private NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode> _dynamicDependencyAttributesOnEntities;
 
         public DynamicDependencyAttributesOnEntityNode DynamicDependencyAttributesOnEntity(TypeSystemEntity entity)
@@ -926,6 +948,12 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmDependenciesNode.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, GenericVirtualMethodImplNode> _gvmImpls;
+        public GenericVirtualMethodImplNode GenericVirtualMethodImpl(MethodDesc method)
+        {
+            return _gvmImpls.GetOrAdd(method);
+        }
+
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
@@ -1019,8 +1047,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                _systemArrayOfTClass ??= _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
-                return _systemArrayOfTClass;
+                return _systemArrayOfTClass ??= _context.SystemModule.GetKnownType("System", "Array`1");
             }
         }
 
@@ -1029,8 +1056,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                _systemArrayOfTEnumeratorType ??= _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
-                return _systemArrayOfTEnumeratorType;
+                // This type is optional, but it's fine for this cache to be ineffective if that happens.
+                // Those scenarios are rare and typically deal with small compilations.
+                return _systemArrayOfTEnumeratorType ??= _context.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
             }
         }
 
@@ -1041,9 +1069,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // This helper is optional, but it's fine for this cache to be ineffective if that happens.
                 // Those scenarios are rare and typically deal with small compilations.
-                _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
-
-                return _instanceMethodRemovedHelper;
+                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
             }
         }
 
@@ -1137,6 +1163,12 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _modulesWithMetadata.GetOrAdd(module);
+        }
+
+        private NodeCache<EcmaModule, InlineableStringsResourceNode> _inlineableStringResources;
+        internal InlineableStringsResourceNode InlineableStringResource(EcmaModule module)
+        {
+            return _inlineableStringResources.GetOrAdd(module);
         }
 
         private NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode> _customAttributesWithMetadata;

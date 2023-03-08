@@ -148,6 +148,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             return InstructionSet_Vector256;
         }
+        else if (strncmp(className, "Vector512", 9) == 0)
+        {
+            return InstructionSet_Vector512;
+        }
     }
     else if (strcmp(className, "Fma") == 0)
     {
@@ -506,14 +510,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 
-    if ((isa == InstructionSet_Vector256) && !compExactlyDependsOn(InstructionSet_AVX))
-    {
-        // We don't want to deal with TYP_SIMD32 if the compiler doesn't otherwise support the type.
-        return nullptr;
-    }
-
     var_types simdBaseType = TYP_UNKNOWN;
-
     if (simdSize != 0)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
@@ -892,6 +889,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Create:
         case NI_Vector256_Create:
+        case NI_Vector512_Create:
         {
             if (sig->numArgs == 1)
             {
@@ -944,7 +942,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-            if (isConstant)
+            // TODO-XArch-AVX512 : Add this path for simd64 once vecCon supports simd64.
+            if (isConstant && (simdSize != 64))
             {
                 // Some of the below code assumes 16 or 32 byte SIMD types
                 assert((simdSize == 16) || (simdSize == 32));
@@ -1277,7 +1276,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         simd32_t simd32Val = {};
 
-                        assert((simdSize == 16) || (simdSize == 32));
+                        assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
                         simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
                         // We want to tightly pack the most significant byte of each short/ushort
@@ -1407,6 +1406,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_get_Zero:
         case NI_Vector256_get_Zero:
+        case NI_Vector512_get_Zero:
         {
             assert(sig->numArgs == 0);
             retNode = gtNewZeroConNode(retType);
@@ -2235,6 +2235,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ToVector256:
         case NI_Vector128_ToVector256Unsafe:
+        case NI_Vector256_ToVector512Unsafe:
         case NI_Vector256_GetLower:
         {
             assert(sig->numArgs == 1);
@@ -2363,6 +2364,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(simdSize == 0);
 
             retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+        }
+
+        case NI_X86Base_DivRem:
+        case NI_X86Base_X64_DivRem:
+        {
+            assert(sig->numArgs == 3);
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+            assert(retType == TYP_STRUCT);
+            assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+
+            op3 = impPopStack().val;
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            GenTreeHWIntrinsic* divRemIntrinsic = gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic);
+
+            // Store the type from signature into SIMD base type for convenience
+            divRemIntrinsic->SetSimdBaseJitType(simdBaseJitType);
+
+            retNode = impAssignMultiRegTypeToVar(divRemIntrinsic,
+                                                 sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
 

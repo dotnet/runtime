@@ -123,8 +123,10 @@ FCIMPL3(VOID, MarshalNative::StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR
     }
     else if (pMT->HasLayout())
     {
-        MethodDesc* structMarshalStub;
+        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
+        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
 
+        if (structMarshalStub == NULL)
         {
             GCX_PREEMP();
             structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
@@ -178,8 +180,10 @@ FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, C
     }
     else if (pMT->HasLayout())
     {
-        MethodDesc* structMarshalStub;
+        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
+        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
 
+        if (structMarshalStub == NULL)
         {
             GCX_PREEMP();
             structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
@@ -227,11 +231,14 @@ FCIMPL2(VOID, MarshalNative::DestroyStructure, LPVOID ptr, ReflectClassBaseObjec
     }
     else if (th.HasLayout())
     {
-        MethodDesc* structMarshalStub;
+        MethodTable* pMT = th.GetMethodTable();
+        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
+        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
 
+        if (structMarshalStub == NULL)
         {
             GCX_PREEMP();
-            structMarshalStub = NDirect::CreateStructMarshalILStub(th.GetMethodTable());
+            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
         }
 
         MarshalStructViaILStub(structMarshalStub, nullptr, ptr, StructMarshalStubs::MarshalOperation::Cleanup);
@@ -564,6 +571,7 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
 
     // Retrieve the IErrorInfo to use.
     IErrorInfo *pErrorInfo = (IErrorInfo*)errorInfo;
+#ifdef FEATURE_COMINTEROP
     if (pErrorInfo == (IErrorInfo*)(-1))
     {
         pErrorInfo = NULL;
@@ -574,6 +582,7 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
             pErrorInfo = NULL;
     }
 
+#endif // FEATURE_COMINTEROP
     ::GetExceptionForHR(errorCode, pErrorInfo, &RetExceptionObj);
 
     HELPER_METHOD_FRAME_END();
@@ -582,6 +591,7 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
 }
 FCIMPLEND
 
+#ifdef FEATURE_COMINTEROP
 FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 {
     CONTRACTL {
@@ -601,7 +611,6 @@ FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 }
 FCIMPLEND
 
-#ifdef FEATURE_COMINTEROP
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================

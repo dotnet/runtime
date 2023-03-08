@@ -32,6 +32,7 @@ set_target_properties(System.Net.Security.Native-Static PROPERTIES OUTPUT_NAME S
 
 if (GEN_SHARED_LIB)
     target_link_libraries(System.Net.Security.Native
+        PRIVATE
         ${NATIVE_LIBS_EXTRA}
     )
 

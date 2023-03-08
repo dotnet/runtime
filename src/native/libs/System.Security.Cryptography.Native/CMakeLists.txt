@@ -45,6 +45,7 @@ set(NATIVECRYPTO_SOURCES
 )
 
 if (LOCAL_BUILD)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     add_definitions(-DLOCAL_BUILD)
     add_definitions(-DPALEXPORT=EXTERN_C)
     add_definitions(-DTARGET_UNIX)
@@ -125,6 +126,7 @@ if (GEN_SHARED_LIB)
     endif()
 
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
+        PRIVATE
         ${NATIVE_LIBS_EXTRA}
     )
 endif()
