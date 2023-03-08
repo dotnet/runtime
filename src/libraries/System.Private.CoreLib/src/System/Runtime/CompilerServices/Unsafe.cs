@@ -239,7 +239,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.
+        /// Reinterprets the given value of type <typeparamref name="TFrom" /> as a value of type <typeparamref name="TTo" />.
         /// </summary>
         /// <exception cref="NotSupportedException">The size of <typeparamref name="TFrom" /> and <typeparamref name="TTo" /> are not the same.</exception>
         [Intrinsic]

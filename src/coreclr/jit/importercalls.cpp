@@ -4018,6 +4018,9 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             unsigned fromSize = info.compCompHnd->getClassSize(fromTypeHnd);
             unsigned toSize   = info.compCompHnd->getClassSize(toTypeHnd);
 
+            // Runtime requires all types to be at least 1-byte
+            assert((fromSize != 0) && (toSize != 0));
+
             if (fromSize != toSize)
             {
                 // Fallback to the software implementation to throw when sizes don't match
@@ -4132,7 +4135,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     return gtNewBitCastNode(toType, op1);
                 }
-                break;
             }
 
             // Handle bitcasting for same sized integrals, such as `int` to `uint`
