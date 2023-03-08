@@ -323,6 +323,7 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
 
     await init_polyfills_async();
     await mono_wasm_load_config(Module.configSrc);
+
     if (MonoWasmThreads) {
         preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);
     }
