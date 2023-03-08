@@ -100,7 +100,6 @@ namespace Microsoft.Interop
                 Location interfaceLocation = interfaceData.Syntax.GetLocation();
                 var methods = ImmutableArray.CreateBuilder<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic)>();
                 int methodVtableOffset = interfaceContext.MethodStartIndex;
-                var i = methodVtableOffset;
                 foreach (var member in interfaceData.Symbol.GetMembers())
                 {
                     if (member.Kind == SymbolKind.Method && !member.IsStatic)
@@ -124,7 +123,7 @@ namespace Microsoft.Interop
                             methods.Add((
                                 null!,
                                 (IMethodSymbol)member,
-                                i,
+                                0,
                                 member.CreateDiagnostic(
                                     GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface,
                                     member.ToDisplayString(),
@@ -135,9 +134,8 @@ namespace Microsoft.Interop
                             var syntax = (MethodDeclarationSyntax)interfaceData.Syntax.FindNode(locationInAttributeSyntax.SourceSpan);
                             var method = (IMethodSymbol)member;
                             Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(syntax, method);
-                            methods.Add((syntax, method, diagnostic is not null ? methodVtableOffset++ : i, diagnostic));
+                            methods.Add((syntax, method, diagnostic is null ? methodVtableOffset++ : 0, diagnostic));
                         }
-                        i++;
                     }
                 }
                 return (Interface: interfaceContext, Methods: methods.ToImmutable());
@@ -557,7 +555,7 @@ namespace Microsoft.Interop
                                 ReturnStatement(LiteralExpression(SyntaxKind.NullLiteralExpression)))));
             }
 
-            // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <max(vtableIndex)>);
+            // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <max(vtableIndex) + 1>);
             var vtableDeclarationStatement =
                 LocalDeclarationStatement(
                     VariableDeclaration(
@@ -577,7 +575,7 @@ namespace Microsoft.Interop
                                                 BinaryExpression(
                                                     SyntaxKind.MultiplyExpression,
                                                     SizeOfExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))),
-                                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethodStubs.Max(x => x.VtableIndexData.Index))))))))))));
+                                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1 + interfaceMethodStubs.Max(x => x.VtableIndexData.Index))))))))))));
 
             var fillIUnknownSlots = Block()
                 .AddStatements(
