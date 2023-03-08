@@ -9,6 +9,10 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
+        private static readonly bool UseWindowsThreadPool =
+            Environment.GetEnvironmentVariable("DOTNET_ThreadPool_UseWindowsThreadPool") == "1" ||
+            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", false);
+
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)

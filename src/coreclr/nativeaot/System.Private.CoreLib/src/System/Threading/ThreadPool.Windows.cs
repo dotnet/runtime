@@ -34,6 +34,10 @@ namespace System.Threading
         internal unsafe RegisteredWaitHandle(SafeWaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             uint millisecondsTimeout, bool repeating)
         {
+            if (!ThreadPool.UseWindowsThreadPool)
+            {
+                GC.SuppressFinalize(this);
+            }
             _lock = new Lock();
 
             // Protect the handle from closing while we are waiting on it (VSWhidbey 285642)
@@ -197,6 +201,7 @@ namespace System.Threading
 
         ~RegisteredWaitHandle()
         {
+            Debug.Assert(ThreadPool.UseWindowsThreadPool);
             // If _gcHandle is allocated, it points to this object, so this object must not be collected by the GC
             Debug.Assert(!_gcHandle.IsAllocated);
 
@@ -235,107 +240,22 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        internal const bool IsWorkerTrackingEnabledInConfig = false;
-
-        // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
-        // the runtime may use the thread for processing other work.
-        //
-        // Windows thread pool threads need to yield back to the thread pool periodically, otherwise those threads may be
-        // considered to be doing long-running work and change thread pool heuristics, such as slowing or halting thread
-        // injection.
-        internal static bool YieldFromDispatchLoop => true;
-
-        /// <summary>
-        /// The maximum number of threads in the default thread pool on Windows 10 as computed by
-        /// TppComputeDefaultMaxThreads(TppMaxGlobalPool).
-        /// </summary>
-        /// <remarks>
-        /// Note that Windows 8 and 8.1 used a different value: Math.Max(4 * Environment.ProcessorCount, 512).
-        /// </remarks>
-        private static readonly int MaxThreadCount = Math.Max(8 * Environment.ProcessorCount, 768);
-
-        private static IntPtr s_work;
-
-        private class ThreadCountHolder
-        {
-            internal ThreadCountHolder() => Interlocked.Increment(ref s_threadCount);
-            ~ThreadCountHolder() => Interlocked.Decrement(ref s_threadCount);
-        }
-
-        [ThreadStatic]
-        private static ThreadCountHolder t_threadCountHolder;
-        private static int s_threadCount;
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct WorkingThreadCounter
-        {
-            private readonly Internal.PaddingFor32 pad1;
-
-            public volatile int Count;
-
-            private readonly Internal.PaddingFor32 pad2;
-        }
-
-        // The number of threads executing work items in the Dispatch method
-        private static WorkingThreadCounter s_workingThreadCounter;
-
-        private static readonly ThreadInt64PersistentCounter s_completedWorkItemCounter = new ThreadInt64PersistentCounter();
-
-        [ThreadStatic]
-        private static object? t_completionCountObject;
-
-        internal static void InitializeForThreadPoolThread() => t_threadCountHolder = new ThreadCountHolder();
+        internal static void InitializeForThreadPoolThread() => WindowsThreadPool.InitializeForThreadPoolThread();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void IncrementCompletedWorkItemCount() => ThreadInt64PersistentCounter.Increment(GetOrCreateThreadLocalCompletionCountObject());
+        internal static void IncrementCompletedWorkItemCount() => WindowsThreadPool.IncrementCompletedWorkItemCount();
 
-        internal static object GetOrCreateThreadLocalCompletionCountObject() =>
-            t_completionCountObject ?? CreateThreadLocalCompletionCountObject();
+        internal static object GetOrCreateThreadLocalCompletionCountObject() => WindowsThreadPool.GetOrCreateThreadLocalCompletionCountObject();
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static object CreateThreadLocalCompletionCountObject()
-        {
-            Debug.Assert(t_completionCountObject == null);
+        public static bool SetMaxThreads(int workerThreads, int completionPortThreads) => WindowsThreadPool.SetMaxThreads(workerThreads, completionPortThreads);
 
-            object threadLocalCompletionCountObject = s_completedWorkItemCounter.CreateThreadLocalCountObject();
-            t_completionCountObject = threadLocalCompletionCountObject;
-            return threadLocalCompletionCountObject;
-        }
+        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetMaxThreads(workerThreads, completionPortThreads);
 
-        public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
-        {
-            // Not supported at present
-            return false;
-        }
+        public static bool SetMinThreads(int workerThreads, int completionPortThreads) => WindowsThreadPool.SetMinThreads(workerThreads, completionPortThreads);
 
-        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
-        {
-            // Note that worker threads and completion port threads share the same thread pool.
-            // The total number of threads cannot exceed MaxThreadCount.
-            workerThreads = MaxThreadCount;
-            completionPortThreads = MaxThreadCount;
-        }
+        public static void GetMinThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetMinThreads(workerThreads, completionPortThreads);
 
-        public static bool SetMinThreads(int workerThreads, int completionPortThreads)
-        {
-            // Not supported at present
-            return false;
-        }
-
-        public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
-        {
-            workerThreads = 0;
-            completionPortThreads = 0;
-        }
-
-        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
-        {
-            // Make sure we return a non-negative value if thread pool defaults are changed
-            int availableThreads = Math.Max(MaxThreadCount - s_workingThreadCounter.Count, 0);
-
-            workerThreads = availableThreads;
-            completionPortThreads = availableThreads;
-        }
+        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetAvailableThreads(workerThreads, completionPortThreads);
 
         /// <summary>
         /// Gets the number of thread pool threads that currently exist.
@@ -343,7 +263,7 @@ namespace System.Threading
         /// <remarks>
         /// For a thread pool implementation that may have different types of threads, the count includes all types.
         /// </remarks>
-        public static int ThreadCount => s_threadCount;
+        public static int ThreadCount => WindowsThreadPool.ThreadCount;
 
         /// <summary>
         /// Gets the number of work items that have been processed so far.
@@ -351,95 +271,28 @@ namespace System.Threading
         /// <remarks>
         /// For a thread pool implementation that may have different types of work items, the count includes all types.
         /// </remarks>
-        public static long CompletedWorkItemCount => s_completedWorkItemCounter.Count;
+        public static long CompletedWorkItemCount => WindowsThreadPool.CompletedWorkItemCount;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void NotifyWorkItemProgress() => IncrementCompletedWorkItemCount();
+        internal static void NotifyWorkItemProgress() => WindowsThreadPool.NotifyWorkItemProgress();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int _ /*currentTimeMs*/)
-        {
-            ThreadInt64PersistentCounter.Increment(threadLocalCompletionCountObject);
-            return true;
-        }
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int _ /*currentTimeMs*/) => WindowsThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, _);
 
-        internal static bool NotifyThreadBlocked() { return false; }
-        internal static void NotifyThreadUnblocked() { }
+        internal static bool NotifyThreadBlocked() => WindowsThreadPool.NotifyThreadBlocked();
+        internal static void NotifyThreadUnblocked() => WindowsThreadPool.NotifyThreadUnblocked();
 
-        [UnmanagedCallersOnly]
-        private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)
-        {
-            var wrapper = ThreadPoolCallbackWrapper.Enter();
-            Debug.Assert(s_work == work);
-            Interlocked.Increment(ref s_workingThreadCounter.Count);
-            ThreadPoolWorkQueue.Dispatch();
-            Interlocked.Decrement(ref s_workingThreadCounter.Count);
-            // We reset the thread after executing each callback
-            wrapper.Exit(resetThread: false);
-        }
-
-        internal static unsafe void RequestWorkerThread()
-        {
-            if (s_work == IntPtr.Zero)
-            {
-                IntPtr work = Interop.Kernel32.CreateThreadpoolWork(&DispatchCallback, IntPtr.Zero, IntPtr.Zero);
-                if (work == IntPtr.Zero)
-                    throw new OutOfMemoryException();
-
-                if (Interlocked.CompareExchange(ref s_work, work, IntPtr.Zero) != IntPtr.Zero)
-                    Interop.Kernel32.CloseThreadpoolWork(work);
-            }
-
-            Interop.Kernel32.SubmitThreadpoolWork(s_work);
-        }
-
-        private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle waitObject,
-             WaitOrTimerCallback callBack,
-             object state,
-             uint millisecondsTimeOutInterval,
-             bool executeOnlyOnce,
-             bool flowExecutionContext)
-        {
-            ArgumentNullException.ThrowIfNull(waitObject);
-            ArgumentNullException.ThrowIfNull(callBack);
-
-            var callbackHelper = new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext);
-            var registeredWaitHandle = new RegisteredWaitHandle(waitObject.SafeWaitHandle, callbackHelper, millisecondsTimeOutInterval, !executeOnlyOnce);
-
-            registeredWaitHandle.RestartWait();
-            return registeredWaitHandle;
-        }
-
-        private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
-            IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
+        internal static unsafe void RequestWorkerThread() => WindowsThreadPool.RequestWorkerThread();
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
-        public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
-        {
-            if (overlapped == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
-            }
-
-            // OS doesn't signal handle, so do it here
-            overlapped->InternalLow = (IntPtr)0;
-            // Both types of callbacks are executed on the same thread pool
-            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);
-        }
+        public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) => WindowsThreadPool.UnsafeQueueNativeOverlapped(overlapped);
 
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
         [SupportedOSPlatform("windows")]
-        public static bool BindHandle(IntPtr osHandle)
-        {
-            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
-        }
+        public static bool BindHandle(IntPtr osHandle) => WindowsThreadPool.BindHandle(osHandle);
 
         [SupportedOSPlatform("windows")]
-        public static bool BindHandle(SafeHandle osHandle)
-        {
-            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
-        }
+        public static bool BindHandle(SafeHandle osHandle) => WindowsThreadPool.BindHandle(osHandle);
     }
 }

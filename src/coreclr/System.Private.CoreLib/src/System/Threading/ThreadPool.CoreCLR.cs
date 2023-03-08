@@ -180,7 +180,14 @@ namespace System.Threading
 
         internal static void RequestWorkerThread()
         {
-            PortableThreadPool.ThreadPoolInstance.RequestWorker();
+            if (UseWindowsThreadPool)
+            {
+                WindowsThreadPool.RequestWorkerThread();
+            }
+            else
+            {
+                PortableThreadPool.ThreadPoolInstance.RequestWorker();
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
