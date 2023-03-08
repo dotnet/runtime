@@ -77,22 +77,6 @@ namespace System.Text.Json
         // Otherwise, return false.
         public static bool IsHexDigit(byte nextByte) => HexConverter.IsHexChar(nextByte);
 
-        // https://tools.ietf.org/html/rfc8259
-        // Does the span contain '"', '\',  or any control characters (i.e. 0 to 31)
-        // IndexOfAny(34, 92, < 32)
-        // Borrowed and modified from SpanHelpers.Byte:
-        // https://github.com/dotnet/corefx/blob/fc169cddedb6820aaabbdb8b7bece2a3df0fd1a5/src/Common/src/CoreLib/System/SpanHelpers.Byte.cs#L473-L604
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
-        {
-            return IndexOfOrLessThan(
-                    ref MemoryMarshal.GetReference(span),
-                    JsonConstants.Quote,
-                    JsonConstants.BackSlash,
-                    lessThan: 32,   // Space ' '
-                    span.Length);
-        }
-
         public static bool TryGetEscapedDateTime(ReadOnlySpan<byte> source, out DateTime value)
         {
             Debug.Assert(source.Length <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);

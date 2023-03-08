@@ -4,18 +4,31 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
     {
-        private static unsafe int IndexOfOrLessThan(ref byte searchSpace, byte value0, byte value1, byte lessThan, int length)
+        /// <summary>IndexOfAny('"', '\', less than 32)</summary>
+        /// <remarks>https://tools.ietf.org/html/rfc8259</remarks>
+        public static unsafe int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
         {
+            // Borrowed and modified from SpanHelpers.Byte:
+            // https://github.com/dotnet/corefx/blob/fc169cddedb6820aaabbdb8b7bece2a3df0fd1a5/src/Common/src/CoreLib/System/SpanHelpers.Byte.cs#L473-L604
+
+            ref byte searchSpace = ref MemoryMarshal.GetReference(span);
+            int length = span.Length;
             Debug.Assert(length >= 0);
 
-            uint uValue0 = value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
-            uint uValue1 = value1; // Use uint for comparisons to avoid unnecessary 8->32 extensions
-            uint uLessThan = lessThan; // Use uint for comparisons to avoid unnecessary 8->32 extensions
+            const byte Value0 = JsonConstants.Quote;
+            const byte Value1 = JsonConstants.BackSlash;
+            const byte LessThan = JsonConstants.Space;
+
+            const uint UValue0 = Value0; // Use uint for comparisons to avoid unnecessary 8->32 extensions
+            const uint UValue1 = Value1; // Use uint for comparisons to avoid unnecessary 8->32 extensions
+            const uint ULessThan = LessThan; // Use uint for comparisons to avoid unnecessary 8->32 extensions
+
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr nLength = (IntPtr)length;
 
@@ -31,28 +44,28 @@ namespace System.Text.Json
                 nLength -= 8;
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found3;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 4);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found4;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 5);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found5;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 6);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found6;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 7);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found7;
 
                 index += 8;
@@ -63,16 +76,16 @@ namespace System.Text.Json
                 nLength -= 4;
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 1);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found1;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 2);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found2;
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index + 3);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found3;
 
                 index += 4;
@@ -83,7 +96,7 @@ namespace System.Text.Json
                 nLength -= 1;
 
                 lookUp = Unsafe.AddByteOffset(ref searchSpace, index);
-                if (uValue0 == lookUp || uValue1 == lookUp || uLessThan > lookUp)
+                if (UValue0 == lookUp || UValue1 == lookUp || ULessThan > lookUp)
                     goto Found;
 
                 index += 1;
@@ -94,9 +107,9 @@ namespace System.Text.Json
                 nLength = (IntPtr)((length - (int)(byte*)index) & ~(Vector<byte>.Count - 1));
 
                 // Get comparison Vector
-                Vector<byte> values0 = new Vector<byte>(value0);
-                Vector<byte> values1 = new Vector<byte>(value1);
-                Vector<byte> valuesLessThan = new Vector<byte>(lessThan);
+                Vector<byte> values0 = new Vector<byte>(Value0);
+                Vector<byte> values1 = new Vector<byte>(Value1);
+                Vector<byte> valuesLessThan = new Vector<byte>(LessThan);
 
                 while ((byte*)nLength > (byte*)index)
                 {
