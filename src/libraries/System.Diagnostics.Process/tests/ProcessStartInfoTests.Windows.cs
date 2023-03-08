@@ -69,7 +69,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(ProcessWindowStyle.Normal, true)]
         [InlineData(ProcessWindowStyle.Normal, false)]
