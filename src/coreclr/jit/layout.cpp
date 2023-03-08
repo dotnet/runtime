@@ -20,17 +20,28 @@ class ClassLayoutTable
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
 
-    static const int NumInlineLayouts = 3;
-    alignas(alignof(ClassLayout)) char m_inlineLayouts[sizeof(ClassLayout) * NumInlineLayouts];
-    ClassLayout** m_layoutLargeArray = nullptr;
-    BlkLayoutIndexMap* m_blkLayoutMap = nullptr;
-    ObjLayoutIndexMap* m_objLayoutMap = nullptr;
+    union {
+        // Up to 3 layouts can be stored "inline" and finding a layout by handle/size can be done using linear search.
+        // Most methods need no more than 2 layouts.
+        ClassLayout* m_layoutArray[3];
+        // Otherwise a dynamic array is allocated and hashtables are used to map from handle/size to layout array index.
+        struct
+        {
+            ClassLayout**      m_layoutLargeArray;
+            BlkLayoutIndexMap* m_blkLayoutMap;
+            ObjLayoutIndexMap* m_objLayoutMap;
+        };
+    };
     // The number of layout objects stored in this table.
-    unsigned m_layoutCount = 0;
+    unsigned m_layoutCount;
     // The capacity of m_layoutLargeArray (when more than 3 layouts are stored).
-    unsigned m_layoutLargeCapacity = 0;
+    unsigned m_layoutLargeCapacity;
 
 public:
+    ClassLayoutTable() : m_layoutCount(0), m_layoutLargeCapacity(0)
+    {
+    }
+
     // Get the layout number (FirstLayoutNum-based) of the specified layout.
     unsigned GetLayoutNum(ClassLayout* layout) const
     {
@@ -69,17 +80,22 @@ public:
     }
 
 private:
+    bool HasSmallCapacity() const
+    {
+        return m_layoutCount <= ArrLen(m_layoutArray);
+    }
+
     ClassLayout* GetLayoutByIndex(unsigned index) const
     {
         assert(index < m_layoutCount);
 
-        if (index < NumInlineLayouts)
+        if (HasSmallCapacity())
         {
-            return const_cast<ClassLayout*>(reinterpret_cast<const ClassLayout*>(&m_inlineLayouts[index * sizeof(ClassLayout)]));
+            return m_layoutArray[index];
         }
         else
         {
-            return m_layoutLargeArray[index - NumInlineLayouts];
+            return m_layoutLargeArray[index];
         }
     }
 
@@ -87,18 +103,24 @@ private:
     {
         assert(layout != nullptr);
 
-        if ((reinterpret_cast<char*>(layout) >= m_inlineLayouts) && (reinterpret_cast<char*>(layout) < m_inlineLayouts + ArrLen(m_inlineLayouts)))
+        if (HasSmallCapacity())
         {
-            size_t index = layout - reinterpret_cast<const ClassLayout*>(m_inlineLayouts);
-            assert(index <= UINT_MAX);
-            return static_cast<unsigned>(index);
+            for (unsigned i = 0; i < m_layoutCount; i++)
+            {
+                if (m_layoutArray[i] == layout)
+                {
+                    return i;
+                }
+            }
         }
-
-        unsigned index;
-        if ((layout->IsBlockLayout() && m_blkLayoutMap->Lookup(layout->GetSize(), &index)) ||
-            m_objLayoutMap->Lookup(layout->GetClassHandle(), &index))
+        else
         {
-            return index;
+            unsigned index = 0;
+            if ((layout->IsBlockLayout() && m_blkLayoutMap->Lookup(layout->GetSize(), &index)) ||
+                m_objLayoutMap->Lookup(layout->GetClassHandle(), &index))
+            {
+                return index;
+            }
         }
 
         unreached();
@@ -106,33 +128,41 @@ private:
 
     unsigned GetBlkLayoutIndex(Compiler* compiler, unsigned blockSize)
     {
-        for (unsigned i = 0; i < NumInlineLayouts && i < m_layoutCount; i++)
+        if (HasSmallCapacity())
         {
-            ClassLayout* inlineLayout = reinterpret_cast<ClassLayout*>(&m_inlineLayouts[i * sizeof(ClassLayout)]);
-            if (inlineLayout->IsBlockLayout() && (inlineLayout->GetSize() == blockSize))
+            for (unsigned i = 0; i < m_layoutCount; i++)
             {
-                return i;
+                if (m_layoutArray[i]->IsBlockLayout() && (m_layoutArray[i]->GetSize() == blockSize))
+                {
+                    return i;
+                }
+            }
+        }
+        else
+        {
+            unsigned index;
+            if (m_blkLayoutMap->Lookup(blockSize, &index))
+            {
+                return index;
             }
         }
 
-        unsigned index;
-        if ((m_blkLayoutMap != nullptr) && m_blkLayoutMap->Lookup(blockSize, &index))
-        {
-            return index;
-        }
-
-        return AddBlkLayout(compiler, blockSize);
+        return AddBlkLayout(compiler, CreateBlkLayout(compiler, blockSize));
     }
 
-    unsigned AddBlkLayout(Compiler* compiler, unsigned blockSize)
+    ClassLayout* CreateBlkLayout(Compiler* compiler, unsigned blockSize)
     {
-        if (m_layoutCount < NumInlineLayouts)
+        return new (compiler, CMK_ClassLayout) ClassLayout(blockSize);
+    }
+
+    unsigned AddBlkLayout(Compiler* compiler, ClassLayout* layout)
+    {
+        if (m_layoutCount < ArrLen(m_layoutArray))
         {
-            ClassLayout* inlineLayout = new (&m_inlineLayouts[m_layoutCount * sizeof(ClassLayout)], jitstd::placement_t()) ClassLayout(blockSize);
+            m_layoutArray[m_layoutCount] = layout;
             return m_layoutCount++;
         }
 
-        ClassLayout* layout = new (compiler, CMK_ClassLayout) ClassLayout(blockSize);
         unsigned index = AddLayoutLarge(compiler, layout);
         m_blkLayoutMap->Set(layout->GetSize(), index);
         return index;
@@ -142,54 +172,40 @@ private:
     {
         assert(classHandle != NO_CLASS_HANDLE);
 
-        for (unsigned i = 0; i < NumInlineLayouts && i < m_layoutCount; i++)
+        if (HasSmallCapacity())
         {
-            ClassLayout* inlineLayout = reinterpret_cast<ClassLayout*>(&m_inlineLayouts[i * sizeof(ClassLayout)]);
-            if (inlineLayout->GetClassHandle() == classHandle)
+            for (unsigned i = 0; i < m_layoutCount; i++)
             {
-                return i;
+                if (m_layoutArray[i]->GetClassHandle() == classHandle)
+                {
+                    return i;
+                }
             }
-        }
-
-        unsigned index;
-        if ((m_objLayoutMap != nullptr) && m_objLayoutMap->Lookup(classHandle, &index))
-        {
-            return index;
-        }
-
-        return AddObjLayout(compiler, classHandle);
-    }
-
-    unsigned AddObjLayout(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
-    {
-        bool     isValueClass = compiler->eeIsValueClass(classHandle);
-        unsigned size;
-
-        if (isValueClass)
-        {
-            size = compiler->info.compCompHnd->getClassSize(classHandle);
         }
         else
         {
-            size = compiler->info.compCompHnd->getHeapClassSize(classHandle);
+            unsigned index;
+            if (m_objLayoutMap->Lookup(classHandle, &index))
+            {
+                return index;
+            }
         }
 
-        var_types type = compiler->impNormStructType(classHandle);
+        return AddObjLayout(compiler, CreateObjLayout(compiler, classHandle));
+    }
 
-        INDEBUG(const char* className = compiler->eeGetClassName(classHandle);)
-        INDEBUG(const char* shortClassName = compiler->eeGetShortClassName(classHandle);)
+    ClassLayout* CreateObjLayout(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
+    {
+        return ClassLayout::Create(compiler, classHandle);
+    }
 
-        if (m_layoutCount < NumInlineLayouts)
+    unsigned AddObjLayout(Compiler* compiler, ClassLayout* layout)
+    {
+        if (m_layoutCount < ArrLen(m_layoutArray))
         {
-            ClassLayout* layout = new (&m_inlineLayouts[m_layoutCount * sizeof(ClassLayout)], jitstd::placement_t())
-                ClassLayout(classHandle, isValueClass, size, type DEBUGARG(className) DEBUGARG(shortClassName));
-            layout->InitializeGCPtrs(compiler);
+            m_layoutArray[m_layoutCount] = layout;
             return m_layoutCount++;
         }
-
-        ClassLayout* layout = new (compiler, CMK_ClassLayout)
-            ClassLayout(classHandle, isValueClass, size, type DEBUGARG(className) DEBUGARG(shortClassName));
-        layout->InitializeGCPtrs(compiler);
 
         unsigned index = AddLayoutLarge(compiler, layout);
         m_objLayoutMap->Set(layout->GetClassHandle(), index);
@@ -198,30 +214,45 @@ private:
 
     unsigned AddLayoutLarge(Compiler* compiler, ClassLayout* layout)
     {
-        unsigned count = m_layoutCount - NumInlineLayouts;
-        assert((count == 0) == (m_layoutLargeArray == nullptr));
-        if (count >= m_layoutLargeCapacity)
+        if (m_layoutCount >= m_layoutLargeCapacity)
         {
             CompAllocator alloc       = compiler->getAllocator(CMK_ClassLayout);
-            if (count == 0)
+            unsigned      newCapacity = m_layoutCount * 2;
+            ClassLayout** newArray    = alloc.allocate<ClassLayout*>(newCapacity);
+
+            if (m_layoutCount <= ArrLen(m_layoutArray))
             {
-                m_layoutLargeCapacity = 4;
-                m_layoutLargeArray = alloc.allocate<ClassLayout*>(m_layoutLargeCapacity);
-                m_blkLayoutMap = new (alloc) BlkLayoutIndexMap(alloc);
-                m_objLayoutMap = new (alloc) ObjLayoutIndexMap(alloc);
+                BlkLayoutIndexMap* blkLayoutMap = new (alloc) BlkLayoutIndexMap(alloc);
+                ObjLayoutIndexMap* objLayoutMap = new (alloc) ObjLayoutIndexMap(alloc);
+
+                for (unsigned i = 0; i < m_layoutCount; i++)
+                {
+                    ClassLayout* l = m_layoutArray[i];
+                    newArray[i]    = l;
+
+                    if (l->IsBlockLayout())
+                    {
+                        blkLayoutMap->Set(l->GetSize(), i);
+                    }
+                    else
+                    {
+                        objLayoutMap->Set(l->GetClassHandle(), i);
+                    }
+                }
+
+                m_blkLayoutMap = blkLayoutMap;
+                m_objLayoutMap = objLayoutMap;
             }
             else
             {
-                unsigned      newCapacity = count * 2;
-                ClassLayout** newArray = alloc.allocate<ClassLayout*>(newCapacity);
-                memcpy(newArray, m_layoutLargeArray, count * sizeof(newArray[0]));
-
-                m_layoutLargeArray    = newArray;
-                m_layoutLargeCapacity = newCapacity;
+                memcpy(newArray, m_layoutLargeArray, m_layoutCount * sizeof(newArray[0]));
             }
+
+            m_layoutLargeArray    = newArray;
+            m_layoutLargeCapacity = newCapacity;
         }
 
-        m_layoutLargeArray[count] = layout;
+        m_layoutLargeArray[m_layoutCount] = layout;
         return m_layoutCount++;
     }
 };
