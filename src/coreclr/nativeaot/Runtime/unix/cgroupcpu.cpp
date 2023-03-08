@@ -500,11 +500,6 @@ void InitializeCpuCGroup()
     CGroup::Initialize();
 }
 
-void CleanupCpuCGroup()
-{
-    CGroup::Cleanup();
-}
-
 bool GetCpuLimit(uint32_t* val)
 {
     if (val == nullptr)
