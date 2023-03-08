@@ -15,7 +15,8 @@ class ClassLayoutTable
     // Each layout is assigned a number, starting with TYP_UNKNOWN + 1. This way one could use a single
     // unsigned value to represent the notion of type - values below TYP_UNKNOWN are var_types and values
     // above it are struct layouts.
-    static constexpr unsigned FirstLayoutNum = TYP_UNKNOWN + 1;
+    static constexpr unsigned ZeroSizedBlockLayoutNum = TYP_UNKNOWN + 1;
+    static constexpr unsigned FirstLayoutNum = TYP_UNKNOWN + 2;
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
@@ -51,7 +52,7 @@ public:
     {
         if (layout == &m_zeroSizedBlockLayout)
         {
-            return UINT_MAX;
+            return ZeroSizedBlockLayoutNum;
         }
 
         return GetLayoutIndex(layout) + FirstLayoutNum;
@@ -60,7 +61,7 @@ public:
     // Get the layout that corresponds to the specified identifier number.
     ClassLayout* GetLayoutByNum(unsigned num) const
     {
-        if (num == UINT_MAX)
+        if (num == ZeroSizedBlockLayoutNum)
         {
             // Fine to cast away const as ClassLayout is immutable
             return const_cast<ClassLayout*>(&m_zeroSizedBlockLayout);
@@ -86,7 +87,7 @@ public:
     {
         if (blockSize == 0)
         {
-            return UINT_MAX;
+            return ZeroSizedBlockLayoutNum;
         }
 
         return GetBlkLayoutIndex(compiler, blockSize) + FirstLayoutNum;
