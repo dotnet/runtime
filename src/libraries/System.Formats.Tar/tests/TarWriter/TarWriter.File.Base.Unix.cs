@@ -59,19 +59,44 @@ namespace System.Formats.Tar.Tests
             return GetGroupId(groupName);
         }
 
+        protected int CreateUser(string userName)
+        {
+            Execute("useradd", userName);
+            return GetUserId(userName);
+        }
+
         protected int GetGroupId(string groupName)
         {
             string standardOutput = Execute("getent", $"group {groupName}");
             string[] values = standardOutput.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             return int.Parse(values[^1]);
         }
-        
+
+        protected int GetUserId(string userName)
+        {
+            string standardOutput = Execute("id", $"-u {userName}");
+            return int.Parse(standardOutput);
+        }
+
         protected void SetGroupAsOwnerOfFile(string groupName, string filePath) =>
             Execute("chgrp", $"{groupName} {filePath}");
 
+        protected void SetUserAsOwnerOfFile(string userName, string filePath) =>
+            Execute("chown", $"{userName} {filePath}");
 
-        protected void DeleteGroup(string groupName) =>
+        protected void DeleteGroup(string groupName)
+        {
             Execute("groupdel", groupName);
+            Threading.Thread.Sleep(250);
+            Assert.Throws<IOException>(() => GetGroupId(groupName));
+        }
+
+        protected void DeleteUser(string userName)
+        {
+            Execute("userdel", $"-f {userName}");
+            Threading.Thread.Sleep(250);
+            Assert.Throws<IOException>(() => GetUserId(userName));
+        }
 
         private string Execute(string command, string arguments)
         {
@@ -88,7 +113,7 @@ namespace System.Formats.Tar.Tests
 
             string standardOutput = p.StandardOutput.ReadToEnd();
             string standardError = p.StandardError.ReadToEnd();
-            
+
             if (p.ExitCode != 0)
             {
                 throw new IOException($"Error '{p.ExitCode}' when executing '{command} {arguments}'. Message: {standardError}");
