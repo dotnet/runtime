@@ -3805,9 +3805,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         if (!IsFdPublic(dwMemberAttrs))
             SetHasNonPublicFields();
 
-        if (IsFdNotSerialized(dwMemberAttrs))
-            SetCannotBeBlittedByObjectCloner();
-
         IfFailThrow(pInternalImport->GetSigOfFieldDef(bmtMetaData->pFields[i], &cMemberSignature, &pMemberSignature));
         // Signature validation
         IfFailThrow(validateTokenSig(bmtMetaData->pFields[i],pMemberSignature,cMemberSignature,dwMemberAttrs,pInternalImport));
@@ -3997,8 +3994,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 if (!fIsStatic)
                 {
                     SetHasFieldsWhichMustBeInited();
-                    if (ElementType != ELEMENT_TYPE_STRING)
-                        SetCannotBeBlittedByObjectCloner();
                 }
                 else
                 {   // EnumerateFieldDescs already counted the total number of static vs. instance

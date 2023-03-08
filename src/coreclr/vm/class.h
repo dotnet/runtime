@@ -1394,10 +1394,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_INLINE_ARRAY;
     }
-    void SetCannotBeBlittedByObjectCloner()
-    {
-        /* no op */
-    }
     DWORD HasNonPublicFields()
     {
         LIMITED_METHOD_CONTRACT;
