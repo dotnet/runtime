@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if defined(FEATURE_CFI_SUPPORT)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("mapRegNumToDwarfReg-----unimplemented on RISCV64 yet----");
     return 0;
 }
 #endif // FEATURE_CFI_SUPPORT
@@ -189,7 +189,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 
 void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
 {
-    assert(!"unused on RISCV64 yet");
+    NYI_RISCV64("unwindSaveRegPair-----unused on RISCV64 yet----");
 }
 
 void Compiler::unwindReturn(regNumber reg)
@@ -212,7 +212,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("GetUnwindSizeFromUnwindHeader-----unimplemented on RISCV64 yet----");
     return 0;
 }
 
@@ -997,7 +997,7 @@ int UnwindPrologCodes::Match(UnwindEpilogInfo* pEpi)
 
 void UnwindPrologCodes::CopyFrom(UnwindPrologCodes* pCopyFrom)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("CopyFrom-----unimplemented on RISCV64 yet----");
 }
 
 void UnwindPrologCodes::EnsureSize(int requiredSize)
@@ -1030,7 +1030,7 @@ void UnwindPrologCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindPrologCodes::Dump(int indent)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
 }
 #endif // DEBUG
 
@@ -1069,7 +1069,7 @@ void UnwindEpilogCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindEpilogCodes::Dump(int indent)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
 }
 #endif // DEBUG
 
@@ -1126,7 +1126,7 @@ void UnwindEpilogInfo::FinalizeOffset()
 #ifdef DEBUG
 void UnwindEpilogInfo::Dump(int indent)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
 }
 #endif // DEBUG
 
@@ -1230,7 +1230,7 @@ void UnwindFragmentInfo::AddEpilog()
 
 void UnwindFragmentInfo::CopyPrologCodes(UnwindFragmentInfo* pCopyFrom)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("CopyPrologCodes-----unimplemented on RISCV64 yet----");
 }
 
 // Split the epilog codes that currently exist in 'pSplitFrom'. The ones that represent
@@ -1240,7 +1240,7 @@ void UnwindFragmentInfo::CopyPrologCodes(UnwindFragmentInfo* pCopyFrom)
 
 void UnwindFragmentInfo::SplitEpilogCodes(emitLocation* emitLoc, UnwindFragmentInfo* pSplitFrom)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("SplitEpilogCodes-----unimplemented on RISCV64 yet----");
 }
 
 // Is this epilog at the end of an unwind fragment? Ask the emitter.
@@ -1627,7 +1627,7 @@ void UnwindFragmentInfo::Allocate(
 #ifdef DEBUG
 void UnwindFragmentInfo::Dump(int indent)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
 }
 #endif // DEBUG
 
@@ -1670,7 +1670,7 @@ void UnwindInfo::InitUnwindInfo(Compiler* comp, emitLocation* startLoc, emitLoca
 
 void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("HotColdSplitCodes-----unimplemented on RISCV64 yet----");
 }
 
 // Split the function or funclet into fragments that are no larger than 512K,
@@ -1794,7 +1794,7 @@ void UnwindInfo::Split()
 
 /*static*/ void UnwindInfo::EmitSplitCallback(void* context, emitLocation* emitLoc)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("EmitSplitCallback-----unimplemented on RISCV64 yet----");
 }
 
 // Reserve space for the unwind info for all fragments
@@ -1861,14 +1861,14 @@ void UnwindInfo::CaptureLocation()
 
 void UnwindInfo::AddFragment(emitLocation* emitLoc)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("AddFragment-----unimplemented on RISCV64 yet----");
 }
 
 #ifdef DEBUG
 
 void UnwindInfo::Dump(bool isHotCode, int indent)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
 }
 
 #endif // DEBUG

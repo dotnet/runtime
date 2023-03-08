@@ -1401,7 +1401,7 @@ void emitter::dispIns(instrDesc* id)
 #elif defined(TARGET_RISCV64)
 void emitter::dispIns(instrDesc* id)
 {
-    // For LoongArch64 using the emitDisInsName().
+    // For RISCV64 using the emitDisInsName().
     NYI_RISCV64("Not used on RISCV64.");
 }
 #else
@@ -3251,9 +3251,7 @@ void emitter::emitGenerateUnwindNop(instrDesc* id, void* context)
     Compiler* comp = (Compiler*)context;
 #if defined(TARGET_ARM)
     comp->unwindNop(id->idCodeSize());
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    comp->unwindNop();
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     comp->unwindNop();
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 }
@@ -3697,7 +3695,6 @@ const size_t hexEncodingSize = 11;
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19;
 #elif defined(TARGET_RISCV64)
-// TODO RISCV64
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19;
 #endif
@@ -4080,6 +4077,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
         printf("\n");
 
 #if !defined(TARGET_RISCV64)
+        // TODO-RISCV64-Bug: When JitDump is on, it asserts in emitDispIns which is not implemented.
         if (displayInstructions)
         {
             instrDesc*     id  = emitFirstInstrDesc(ig->igData);
@@ -6271,7 +6269,8 @@ emitter::instrDescAlign* emitter::emitAlignInNextIG(instrDescAlign* alignInstr)
 void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // TODO LoongArch64 / RISCV64: support idDebugOnlyInfo.
+    // TODO-LoongArch64: support idDebugOnlyInfo.
+    // TODO-RISCV64: support idDebugOnlyInfo.
     return;
 #else
 

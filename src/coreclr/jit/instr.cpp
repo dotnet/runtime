@@ -929,12 +929,10 @@ void CodeGen::inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTr
             break;
 
         case OperandKind::Reg:
-#if !defined(TARGET_RISCV64)
             if (emit->IsMovInstruction(ins))
             {
                 emit->emitIns_Mov(ins, size, op1Reg, op2Desc.GetReg(), /* canSkip */ true);
             }
-#endif // !TARGET_RISCV64
             else
             {
                 emit->emitIns_R_R(ins, size, op1Reg, op2Desc.GetReg());
@@ -1695,7 +1693,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
     }
 #elif defined(TARGET_RISCV64)
-    NYI_RISCV64("TODO RISCV64");
+    NYI_RISCV64("insCopy-----unimplemented on RISCV64 yet----");
     return INS_invalid;
 #else // TARGET*
 #error "Unknown TARGET"

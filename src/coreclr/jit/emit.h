@@ -700,12 +700,12 @@ protected:
 #elif defined(TARGET_RISCV64)
         insFormat   idInsFmt() const
         {
-            _ASSERTE(!"TODO RISCV64 NYI");
+            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
             return (insFormat)0;
         }
         void idInsFmt(insFormat insFmt)
         {
-            _ASSERTE(!"TODO RISCV64 NYI");
+            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
         }
 #else
         insFormat   idInsFmt() const
@@ -796,7 +796,7 @@ protected:
 #endif
 
 #ifdef TARGET_RISCV64
-        // TODO RISCV64
+        // TODO-RISCV64: maybe delete on future
         opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
         insOpts  _idInsOpt : 6; // options for instructions
         unsigned _idLclVar : 1; // access a local on stack
@@ -828,7 +828,7 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
 #define ID_EXTRA_BITFIELD_BITS (17)
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) // TODO RISCV64
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
 #error Unsupported or unset target architecture
@@ -3064,9 +3064,7 @@ public:
 
 inline void emitter::instrDesc::checkSizes()
 {
-#ifndef TARGET_RISCV64 // TODO RISCV64
     C_ASSERT(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
-#endif // TARGET_RISCV64
 }
 
 /*****************************************************************************

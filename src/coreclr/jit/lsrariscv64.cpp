@@ -1049,7 +1049,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 //
 int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("BuildPutArgSplit-----unimplemented on RISCV64 yet----");
     return 0;
 }
 

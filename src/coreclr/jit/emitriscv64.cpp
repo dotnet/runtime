@@ -155,7 +155,7 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
     return (ins <= INS_remuw) && (ins >= INS_mov) && !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) &&
                    (CodeGenInterface::instInfo[ins] & ST) == 0
                ? true
-               : false; // TODO CHECK
+               : false;
 }
 
 //------------------------------------------------------------------------
@@ -266,7 +266,7 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
             break;
 
         default:
-            NYI("emitIns_S_R && emitIns_S_R_R");
+            NYI_RISCV64("illegal ins within emitIns_S_R_R!");
             return;
 
     } // end switch (ins)
@@ -280,8 +280,7 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     imm  = offs < 0 ? -offs - 8 : base + offs;
 
     regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
-    // assert(offs >= 0);
-    regNumber reg2 = offs < 0 ? tmpReg : reg3; // TODO R21 => tmpReg
+    regNumber reg2 = offs < 0 ? tmpReg : reg3;
     assert(reg2 != REG_NA && reg2 != REG_RA);
 
     // regNumber reg2 = reg3;
@@ -365,7 +364,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             break;
 
         default:
-            NYI("emitIns_R_S");
+            NYI_RISCV64("illegal ins within emitIns_S_R!");
             return;
 
     } // end switch (ins)
@@ -380,7 +379,6 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
     assert(offs >= 0);
-    // reg2           = offs < 0 ? REG_R21 : reg2; // TODO
     offs = offs < 0 ? -offs - 8 : offs;
 
     reg1 = (regNumber)((char)reg1 & 0x1f);
@@ -462,7 +460,6 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
             code |= ((imm >> 20) & 0x1) << 31;
             break;
         default:
-            fprintf(stderr, "Not implemented instruction in I: 0x%x\n", code);
             NYI_RISCV64("illegal ins within emitIns_I!");
     }
 
@@ -477,7 +474,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 
 void emitter::emitIns_I_I(instruction ins, emitAttr attr, ssize_t cc, ssize_t offs)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("emitIns_I_I-----unimplemented/unused on RISCV64 yet----");
 }
 
 /*****************************************************************************
@@ -511,7 +508,6 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             code |= ((imm >> 20) & 0x1) << 31;
             break;
         default:
-            fprintf(stderr, "Not implemented instruction in R_I: 0x%x\n", code);
             NYI_RISCV64("illegal ins within emitIns_R_I!");
             break;
     } // end switch (ins)
@@ -540,7 +536,6 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
 void emitter::emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
 {
-    // assert(IsMovInstruction(ins));
     if (!canSkip || (dstReg != srcReg))
     {
         if ((EA_4BYTE == attr) && (INS_mov == ins))
@@ -575,7 +570,7 @@ void emitter::emitIns_R_R(
              (INS_fcvt_w_d == ins || INS_fcvt_wu_d == ins) || (INS_fcvt_l_s == ins || INS_fcvt_lu_s == ins) ||
              (INS_fmv_x_d == ins))
     {
-        // TODO CHECK ROUNDING MODE
+        // TODO-RISCV64-CQ: Check rounding mode
         assert(isGeneralRegisterOrR0(reg1));
         assert(isFloatReg(reg2));
         code |= (reg1 & 0x1f) << 7;
@@ -586,7 +581,7 @@ void emitter::emitIns_R_R(
              (INS_fcvt_d_l == ins || INS_fcvt_d_lu == ins))
 
     {
-        // TODO CHECK ROUNDING MODE
+        // TODO-RISCV64-CQ: Check rounding mode
         assert(isFloatReg(reg1));
         assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7;
@@ -601,7 +596,6 @@ void emitter::emitIns_R_R(
     }
     else
     {
-        fprintf(stderr, "Not implemented instruction in R_R: 0x%x\n", code);
         NYI_RISCV64("illegal ins within emitIns_R_R!");
     }
 
@@ -650,7 +644,6 @@ void emitter::emitIns_R_R_I(
     }
     else
     {
-        fprintf(stderr, "Not implemented instruction in R_R_I: 0x%x\n", code);
         NYI_RISCV64("illegal ins within emitIns_R_R_I!");
     }
     instrDesc* id = emitNewInstr(attr);
@@ -746,7 +739,7 @@ void emitter::emitIns_R_R_R(
 
                 break;
             default:
-                NYI_RISCV64("illegal ins within emitIns_R_R_R --1!");
+                NYI_RISCV64("illegal ins within emitIns_R_R_R!");
         }
 
 #endif
@@ -756,7 +749,6 @@ void emitter::emitIns_R_R_R(
     }
     else
     {
-        fprintf(stderr, "Not implemented instruction in R_R_R: 0x%x\n", code);
         NYI_RISCV64("illegal ins within emitIns_R_R_R!");
     }
 
@@ -786,7 +778,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
                               insOpts     opt /* = INS_OPTS_NONE */,
                               emitAttr    attrReg2 /* = EA_UNKNOWN */)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("emitIns_R_R_R_I-----unimplemented/unused on RISCV64 yet----");
 }
 
 /*****************************************************************************
@@ -797,7 +789,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 void emitter::emitIns_R_R_I_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("emitIns_R_R_I_I-----unimplemented/unused on RISCV64 yet----");
 }
 
 /*****************************************************************************
@@ -808,7 +800,7 @@ void emitter::emitIns_R_R_I_I(
 void emitter::emitIns_R_R_R_R(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("emitIns_R_R_R_R-----unimplemented/unused on RISCV64 yet----");
 }
 
 /*****************************************************************************
@@ -1289,8 +1281,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         assert(callType == EC_FUNC_TOKEN);
         assert(addr != NULL);
-        // assert((((size_t)addr) & 3) == 0); // TODO NEED TO CHECK ALIGNMENT (ex. Address of RNGCHKFAIL is 0x2033b32 in
-        // my test.)
 
         addr = (void*)(((size_t)addr) + (isJump ? 0 : 1)); // NOTE: low-bit0 is used for jirl ra/r0,rd,0
         id->idAddr()->iiaAddr = (BYTE*)addr;
@@ -1298,11 +1288,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
         if (emitComp->opts.compReloc)
         {
             id->idSetIsDspReloc();
-            id->idCodeSize(8); // TODO NEED TO CHECK LATER
+            id->idCodeSize(8);
         }
         else
         {
-            id->idCodeSize(32); // TODO NEED TO CHECK LATER // UPDATED BASED on CALLINSTRSIZE in emitOutputCall 6 << 2
+            id->idCodeSize(32);
         }
     }
 
@@ -1416,7 +1406,6 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         emitOutput_Instr(dst, 0x00000067 | (7 << 15) | reg2 << 7);
 
         emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_RISCV64_JALR);
-        // TODO CHECK HOW TO PATCH RELOCATION ADDRESS
     }
     else
     {
@@ -1561,7 +1550,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     return callInstrSize;
 }
 
-void emitter::emitJumpDistBind() // TODO NEED TO CHECK WHAT NUMBERS MEAN
+void emitter::emitJumpDistBind()
 {
 #ifdef DEBUG
     if (emitComp->verbose)
@@ -2203,7 +2192,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(INS_auipc);
                 assert(code == 0x00000017);
 #endif
-                code            = 0x00000017 | (1 << 7); // TODO R21 => RA
+                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                code            = 0x00000017 | (1 << 7);
                 *(code_t*)dstRW = code | ((code_t)((imm + 0x800) & 0xfffff000));
                 dstRW += 4;
 
@@ -2222,7 +2212,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     code = emitInsCode(ins);
                     code |= (code_t)((reg1 & 0x1f) << 7);
-                    code |= (code_t)REG_RA << 15; // NOTE:here must be REG_R21 !!! // TODO R21 => RA
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                    code |= (code_t)REG_RA << 15;
                     code |= (code_t)(doff & 0xfff) << 20;
                     *(code_t*)dstRW = code;
                 }
@@ -2242,7 +2233,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     UINT32 high = imm >> 11;
 
-                    code |= (code_t)REG_RA << 7; // TODO R21 => RA
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                    code |= (code_t)REG_RA << 7;
                     code |= (code_t)(((high + 0x800) >> 12) << 12);
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -2276,7 +2268,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     doff        = imm & 0x7ff;
                     UINT32 high = imm >> 11;
 
-                    code |= (code_t)(REG_RA << 7); // TODO CHECK R21 => RA
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                    code |= (code_t)(REG_RA << 7);
                     code |= (code_t)(((high + 0x800) >> 12) << 12);
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -2340,11 +2333,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 ssize_t imm = (ssize_t)tgtIG->igOffs + (ssize_t)emitCodeBlock;
-                // assert((imm >> 32) == 0xff);
                 assert((imm >> (32 + 20)) == 0);
 
                 code = emitInsCode(INS_lui);
-                code |= (code_t)REG_RA << 7; // TODO CHECK R21 => RA
+                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                code |= (code_t)REG_RA << 7;
                 code |= ((code_t)((imm + 0x800) >> 12) & 0xfffff) << 12;
 
                 *(code_t*)dstRW = code;
@@ -2401,14 +2394,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     case 8:
                     {
                         regNumber reg2 = id->idReg2();
-                        // assert((INS_bceqz <= ins) && (ins <= INS_bgeu));
 
                         if ((INS_beq == ins) || (INS_bne == ins))
                         {
                             if ((-0x1000 <= imm) && (imm < 0x1000))
                             {
                                 code = emitInsCode(INS_xor);
-                                code |= (code_t)REG_RA << 7; // TODO R21 => RA
+                                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                                code |= (code_t)REG_RA << 7;
                                 code |= (code_t)reg1 << 15;
                                 code |= (code_t)reg2 << 20;
 
@@ -2416,7 +2409,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                                 dstRW += 4;
 
                                 code = emitInsCode(ins);
-                                code |= (code_t)REG_RA << 15; // TODO R21 => RA
+                                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                                code |= (code_t)REG_RA << 15;
                                 code |= ((imm >> 11) & 0x1) << 7;
                                 code |= ((imm >> 1) & 0xf) << 8;
                                 code |= ((imm >> 5) & 0x3f) << 25;
@@ -2544,7 +2538,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else
                 {
-                    assert(!"unimplemented on RISCV64 yet");
+                    NYI_RISCV64("unimplemented on RISCV64 yet");
                 }
 
                 *(code_t*)dstRW = code;
@@ -2655,9 +2649,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 #ifdef DEBUG
     /* Make sure we set the instruction descriptor size correctly */
-
-    // size_t expected = emitSizeOfInsDsc(id);
-    // assert(sz == expected);
 
     if (emitComp->opts.disAsm || emitComp->verbose)
     {
@@ -3150,8 +3141,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("Not implemented instruction: 0x%08X\n", code);
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("illegal ins within emitDisInsName!");
             }
             return;
         }
@@ -3200,8 +3190,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x14:            // FMIN.S & FMAX.S
@@ -3215,8 +3204,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x60:            // FCVT.W.S & FCVT.WU.S & FCVT.L.S & FCVT.LU.S
@@ -3238,8 +3226,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x70:            // FMV.X.W & FCLASS.S
@@ -3253,8 +3240,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x50:            // FLE.S & FLT.S & FEQ.S
@@ -3272,8 +3258,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x68:            // FCVT.S.W & FCVT.S.WU & FCVT.S.L & FCVT.S.LU
@@ -3296,8 +3281,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x78: // FMV.W.X
@@ -3333,8 +3317,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x15:            // FMIN.D & FMAX.D
@@ -3348,8 +3331,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x20:            // FCVT.S.D
@@ -3359,8 +3341,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x21:            // FCVT.D.S
@@ -3370,8 +3351,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x51:            // FLE.D & FLT.D & FEQ.D
@@ -3389,8 +3369,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x61: // FCVT.W.D & FCVT.WU.D & FCVT.L.D & FCVT.LU.D
@@ -3414,8 +3393,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x69:            // FCVT.D.W & FCVT.D.WU & FCVT.D.L & FCVT.D.LU
@@ -3438,8 +3416,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
 
                     return;
@@ -3454,8 +3431,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
+                        NYI_RISCV64("illegal ins within emitDisInsName!");
                     }
                     return;
                 case 0x79: // FMV.D.X
@@ -3463,8 +3439,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     printf("fmv.d.x      %s, %s\n", fd, xs1);
                     return;
                 default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    _ASSERTE(!"TODO RISCV64 NYI");
+                    NYI_RISCV64("illegal ins within emitDisInsName!");
                     return;
             }
             return;
@@ -3490,8 +3465,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("Not implemented instruction: 0x%08X\n", code);
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("illegal ins within emitDisInsName!");
             }
             return;
         }
@@ -3515,17 +3489,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("Not implemented instruction: 0x%08X\n", code);
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("illegal ins within emitDisInsName!");
             }
             return;
         }
         default:
-            printf("Not implemented instruction: 0x%08X\n", code);
-            _ASSERTE(!"TODO RISCV64 NYI");
+            NYI_RISCV64("illegal ins within emitDisInsName!");
     }
 
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("illegal ins within emitDisInsName!");
 }
 
 /*****************************************************************************
@@ -3566,7 +3538,7 @@ void emitter::emitDispIns(
 
 void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    NYI_RISCV64("emitDispFrameRef-----unimplemented/unused on RISCV64 yet----");
 }
 
 #endif // DEBUG
@@ -3703,19 +3675,20 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                             ins = INS_sd;
                         break;
                     default:
-                        assert(!"------------TODO for RISCV64: unsupported ins.");
+                        NYI_RISCV64("illegal ins within emitInsLoadStoreOp!");
                 }
 
-                // TODO REG21 => REG_RA
                 if (lsl > 0)
                 {
                     // Then load/store dataReg from/to [memBase + index*scale]
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
                     emitIns_R_R_I(INS_slli, emitActualTypeSize(index->TypeGet()), REG_RA, index->GetRegNum(), lsl);
                     emitIns_R_R_R(INS_add, addType, REG_RA, memBase->GetRegNum(), REG_RA);
                     emitIns_R_R_I(ins, attr, dataReg, REG_RA, 0);
                 }
                 else // no scale
                 {
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
                     emitIns_R_R_R(INS_add, addType, REG_RA, memBase->GetRegNum(), index->GetRegNum());
                     emitIns_R_R_I(ins, attr, dataReg, REG_RA, 0);
                 }
@@ -3788,7 +3761,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
 regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src)
 {
-    NYI_RISCV64("emitInsBinary-----unused");
+    NYI_RISCV64("emitInsBinary-----unimplemented/unused on RISCV64 yet----");
     return REG_R0;
 }
 
@@ -3923,7 +3896,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         if (needCheckOv)
         {
-            emitIns_R_R_R(INS_or, attr, REG_RA, nonIntReg->GetRegNum(), REG_R0); // TODO R21 => RA
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+            emitIns_R_R_R(INS_or, attr, REG_RA, nonIntReg->GetRegNum(), REG_R0);
         }
 
         emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(), imm);
@@ -3935,8 +3909,9 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 // A = B + C
                 if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                 {
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
                     codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dst->GetRegNum(), nullptr,
-                                                     REG_RA); // TODO R21 => RA
+                                                     REG_RA);
                 }
                 else
                 {
@@ -3944,10 +3919,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     {
                         // B > 0 and C > 0, if A < B, goto overflow
                         BasicBlock* tmpLabel = codeGen->genCreateTempLabel();
-                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_R0, REG_RA);               // TODO R21 => RA
-                        emitIns_R_R_I(INS_slti, EA_PTRSIZE, REG_RA, dst->GetRegNum(), imm); // TODO R21 => RA
+                        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_R0, REG_RA);
+                        emitIns_R_R_I(INS_slti, EA_PTRSIZE, REG_RA, dst->GetRegNum(), imm);
 
-                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_RA); // TODO R21 => RA
+                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_RA);
 
                         codeGen->genDefineTempLabel(tmpLabel);
                     }
@@ -3955,11 +3931,12 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     {
                         // B < 0 and C < 0, if A > B, goto overflow
                         BasicBlock* tmpLabel = codeGen->genCreateTempLabel();
-                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_RA, REG_R0); // TODO R21 => RA
-                        emitIns_R_R_I(INS_addi, attr, REG_RA, REG_R0, imm);   // TODO R21 => RA
+                        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_RA, REG_R0);
+                        emitIns_R_R_I(INS_addi, attr, REG_RA, REG_R0, imm);
 
                         codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_RA, nullptr,
-                                                         dst->GetRegNum()); // TODO R21 => RA
+                                                         dst->GetRegNum());
 
                         codeGen->genDefineTempLabel(tmpLabel);
                     }
@@ -3967,7 +3944,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             }
             else
             {
-                assert(!"unimplemented on RISCV64 yet");
+                NYI_RISCV64("-----unimplemented on RISCV64 yet----");
             }
         }
     }
@@ -4140,7 +4117,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 }
                 else
                 {
-                    tempReg1 = REG_T2; // TODO CHECK REG_RA to REG_T2 // src1->GetSingleTempReg();
+                    // TODO-RISCV64-Bug?: Use T2 for temp use
+                    tempReg1 = REG_T2; // src1->GetSingleTempReg();
                     tempReg2 = codeGen->rsGetRsvdReg();
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);
@@ -4191,7 +4169,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 #ifdef DEBUG
                 printf("---------[RISCV64]-NOTE: UnsignedOverflow instruction %d\n", ins);
 #endif
-                assert(!"unimplemented on RISCV64 yet");
+                NYI_RISCV64("unimplemented on RISCV64 yet");
             }
         }
     }
@@ -4267,7 +4245,20 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
 //
 bool emitter::IsMovInstruction(instruction ins)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    switch (ins)
+    {
+        case INS_mov:
+        case INS_fsgnj_s:
+        case INS_fsgnj_d:
+        {
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
     return false;
 }
 

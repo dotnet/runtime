@@ -359,8 +359,9 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
         if (regPair.reg2 != REG_NA)
         {
             // We can use two SD instructions.
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
             genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair,
-                                 REG_RA, // TODO REG_R21 => REG_RA
+                                 REG_RA,
                                  nullptr);
 
             spOffset += 2 * slotSize;
@@ -368,7 +369,8 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
         else
         {
             // No register pair; we use a SD instruction.
-            genPrologSaveReg(regPair.reg1, spOffset, spDelta, REG_RA, nullptr); // TODO REG_R21 => REG_RA
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+            genPrologSaveReg(regPair.reg1, spOffset, spDelta, REG_RA, nullptr);
             spOffset += slotSize;
         }
 
@@ -387,7 +389,8 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
         {
             // Currently this is the case for varargs only
             // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
-            genStackPointerAdjustment(spDelta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => T6
+            // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+            genStackPointerAdjustment(spDelta, REG_T6, nullptr, /* reportUnwindData */ true);
         }
         return;
     }
@@ -439,14 +442,16 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
         {
             spOffset -= 2 * slotSize;
 
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
             genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair,
-                                    REG_RA, // TODO REG_R21 => REG_RA
+                                    REG_RA,
                                     nullptr);
         }
         else
         {
             spOffset -= slotSize;
-            genEpilogRestoreReg(regPair.reg1, spOffset, stackDelta, REG_RA, nullptr); // TODO REG_R21 => REG_RA
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+            genEpilogRestoreReg(regPair.reg1, spOffset, stackDelta, REG_RA, nullptr);
         }
     }
 }
@@ -461,7 +466,8 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         {
             // Currently this is the case for varargs only
             // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
-            genStackPointerAdjustment(spDelta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => T6
+            // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+            genStackPointerAdjustment(spDelta, REG_T6, nullptr, /* reportUnwindData */ true);
         }
         return;
     }
@@ -554,7 +560,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         assert(frameSize >= -2048);
 
         assert(genFuncletInfo.fiSP_to_FPRA_save_delta < 2040);
-        genStackPointerAdjustment(frameSize, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+        // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+        genStackPointerAdjustment(frameSize, REG_T6, nullptr, /* reportUnwindData */ true);
 
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
         compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
@@ -576,7 +583,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         int SP_delta = roundUp((UINT)offset, STACK_ALIGN);
         offset       = SP_delta - offset;
 
-        genStackPointerAdjustment(-SP_delta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+        // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+        genStackPointerAdjustment(-SP_delta, REG_T6, nullptr, /* reportUnwindData */ true);
 
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, offset);
         compiler->unwindSaveReg(REG_FP, offset);
@@ -589,8 +597,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         offset = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
         genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, 0);
 
+        // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
         genStackPointerAdjustment(frameSize + SP_delta, REG_T6, nullptr,
-                                  /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+                                  /* reportUnwindData */ true);
     }
     else
     {
@@ -695,7 +704,8 @@ void CodeGen::genFuncletEpilog()
         compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
 
         // generate daddiu SP,SP,imm
-        genStackPointerAdjustment(-frameSize, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+        // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+        genStackPointerAdjustment(-frameSize, REG_T6, nullptr, /* reportUnwindData */ true);
     }
     else if (genFuncletInfo.fiFrameType == 2)
     {
@@ -707,8 +717,9 @@ void CodeGen::genFuncletEpilog()
         offset       = SP_delta - offset;
 
         // first, generate daddiu SP,SP,imm
+        // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
         genStackPointerAdjustment(-frameSize - SP_delta, REG_T6, nullptr,
-                                  /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+                                  /* reportUnwindData */ true);
 
         int offset2 = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
         assert(offset2 < 2040); // can amend.
@@ -723,7 +734,8 @@ void CodeGen::genFuncletEpilog()
         compiler->unwindSaveReg(REG_FP, offset);
 
         // second, generate daddiu SP,SP,imm for remaine space.
-        genStackPointerAdjustment(SP_delta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+        // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+        genStackPointerAdjustment(SP_delta, REG_T6, nullptr, /* reportUnwindData */ true);
     }
     else
     {
@@ -920,7 +932,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
-                // TODO-LOONGARCH64-CQ: using B/BL for optimization.
+                    // TODO-RISCV64-CQ: using B/BL for optimization.
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
                     // We have to use REG_INDIRECT_CALL_TARGET_REG since we assume the argument registers are in use
@@ -1017,7 +1029,8 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
     regNumber regTmp = initReg;
     *pInitRegZeroed  = false;
 
-    genInstrWithConstant(INS_addi, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta, REG_RA, false); // TODO R21 => RA
+    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+    genInstrWithConstant(INS_addi, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta, REG_RA, false);
     GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
 }
 
@@ -1087,7 +1100,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
                                                                                 // argument reg
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
 
-        // TODO-LOONGARCH64: maybe optimize further
+        // TODO-RISCV64: maybe optimize further
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 8 + padding);
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, rAddr, 0 + padding);
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rCnt, rCnt, -1);
@@ -1183,7 +1196,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
         {
             // Fall-through.
-            // TODO-LOONGARCH64-CQ: Can we get rid of this instruction, and just have the call return directly
+            // TODO-RISCV64-CQ: Can we get rid of this instruction, and just have the call return directly
             // to the next instruction? This would depend on stack walking from within the finally
             // handler working without this instruction being in this special EH region.
             instGen(INS_nop);
@@ -1251,7 +1264,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             ssize_t        cnsVal = con->IconValue();
 
             emitAttr attr = emitActualTypeSize(targetType);
-            // TODO-CQ: Currently we cannot do this for all handles because of
+            // TODO-RISCV64-CQ: Currently we cannot do this for all handles because of
             // https://github.com/dotnet/runtime/issues/60712
             if (con->ImmedValNeedsReloc(compiler))
             {
@@ -1311,7 +1324,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 // Produce code for a GT_INC_SATURATE node.
 void CodeGen::genCodeForIncSaturate(GenTree* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genCodeForIncSaturate-----unimplemented/unused on RISCV64 yet----");
 }
 
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
@@ -1511,7 +1524,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNode);
     if (lclNode->IsMultiReg())
     {
-        NYI_LOONGARCH64("genCodeForStoreLclVar : unimplemented on RISCV64 yet");
+        NYI_RISCV64("genCodeForStoreLclVar-----unimplemented on RISCV64 yet----");
         regNumber    operandReg = genConsumeReg(data);
         unsigned int regCount   = varDsc->lvFieldCnt;
         for (unsigned i = 0; i < regCount; ++i)
@@ -1560,7 +1573,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             {
                 ssize_t imm = data->AsIntConCommon()->IconValue();
                 emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
-                dataReg = REG_RA; // TODO CHECK SIDE EFFECT WHEN REG_R21 => REG_RA
+                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                dataReg = REG_RA;
             }
             else
             {
@@ -1743,10 +1757,11 @@ void CodeGen::genLclHeap(GenTree* tree)
         // regCnt will be the total number of bytes to localloc
         inst_RV_IV(INS_addi, regCnt, (STACK_ALIGN - 1), emitActualTypeSize(type));
 
-        assert(regCnt != REG_RA); // TODO CHECK REG_R21 => RA
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+        assert(regCnt != REG_RA);
         ssize_t imm2 = ~(STACK_ALIGN - 1);
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, imm2);                // TODO CHECK REG_R21 => RA
-        emit->emitIns_R_R_R(INS_and, emitActualTypeSize(type), regCnt, regCnt, REG_RA); // TODO CHECK REG_R21 => RA
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, imm2);
+        emit->emitIns_R_R_R(INS_and, emitActualTypeSize(type), regCnt, regCnt, REG_RA);
     }
 
     // If we have an outgoing arg area then we must adjust the SP by popping off the
@@ -1908,7 +1923,8 @@ void CodeGen::genLclHeap(GenTree* tree)
         regNumber regTmp = tree->GetSingleTempReg();
 
         assert(regCnt != REG_RA);
-        emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, REG_RA, REG_SPBASE, regCnt); // TODO CHECK REG_R21 => RA
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+        emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, REG_RA, REG_SPBASE, regCnt);
 
         //// subu  regCnt, SP, regCnt      // regCnt now holds ultimate SP
         emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
@@ -1926,12 +1942,14 @@ void CodeGen::genLclHeap(GenTree* tree)
         emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SPBASE, 0);
 
         // decrement SP by eeGetPageSize()
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_RA, REG_SPBASE, regTmp); // TODO CHECK REG_R21 => RA
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_RA, REG_SPBASE, regTmp);
 
-        assert(regTmp != REG_RA); // TODO CHECK REG_R21 => RA
+        assert(regTmp != REG_RA);
 
-        ssize_t imm = 3 << 2;                                           // goto done.
-        emit->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, REG_RA, regCnt, imm); // TODO CHECK REG_R21 => RA
+        ssize_t imm = 3 << 2; // goto done.
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+        emit->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, REG_RA, regCnt, imm);
 
         emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
 
@@ -2041,7 +2059,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    NYI_RISCV64("genCodeForBswap unimpleement yet");
+    NYI_RISCV64("genCodeForBswap-----unimplemented on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -2100,8 +2118,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             if (divisorOp->isContainedIntOrIImmed())
             {
                 ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
-                divisorReg       = REG_RA;                        // TODO REG_R21 => REG_RA
-                emit->emitIns_I_la(EA_PTRSIZE, REG_RA, intConst); // TODO REG_R21 => REG_RA
+                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                divisorReg       = REG_RA;
+                emit->emitIns_I_la(EA_PTRSIZE, REG_RA, intConst);
             }
             // Only for commutative operations do we check src1 and allow it to be a contained immediate
             else if (tree->OperIsCommutative())
@@ -2114,8 +2133,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 {
                     assert(!divisorOp->isContainedIntOrIImmed());
                     ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
-                    Reg1             = REG_RA;                        // TODO REG_R21 => REG_RA
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, intConst); // TODO REG_R21 => REG_RA
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                    Reg1             = REG_RA;
+                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, intConst);
                 }
             }
             else
@@ -2153,9 +2173,11 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 if (checkDividend)
                 {
                     // Check if the divisor is not -1 branch to 'sdivLabel'
-                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, -1);   // TODO REG_R21 => REG_RA
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, -1);
                     BasicBlock* sdivLabel = genCreateTempLabel();                    // can optimize for riscv64.
-                    emit->emitIns_J_cond_la(INS_bne, sdivLabel, REG_RA, divisorReg); // TODO REG_R21 => REG_RA
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                    emit->emitIns_J_cond_la(INS_bne, sdivLabel, REG_RA, divisorReg);
 
                     // If control flow continues past here the 'divisorReg' is known to be -1
                     regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
@@ -2166,10 +2188,12 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
                     emit->emitIns_J_cond_la(INS_beq, sdivLabel, dividendReg, REG_R0);
 
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
                     emit->emitIns_R_R_R(size == EA_4BYTE ? INS_addw : INS_add, size, REG_RA,
-                                        dividendReg, // TODO REG_R21 => REG_RA
+                                        dividendReg,
                                         dividendReg);
-                    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, REG_RA); // TODO REG_R21 => REG_RA
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+                    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, REG_RA);
                     genDefineTempLabel(sdivLabel);
                 }
 
@@ -2534,7 +2558,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
     {
         // issue a INS_BARRIER_RMB after a volatile CpObj operation
-        // TODO-LOONGARCH64: there is only BARRIER_FULL for LOONGARCH64.
+        // TODO-RISCV64: there is only BARRIER_FULL for RISCV64.
         instGen_MemoryBarrier(BARRIER_FULL);
     }
 
@@ -2554,8 +2578,9 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
-    GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, idxReg, 2);       // TODO CHECK REG_R21 => RA
-    GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, baseReg, baseReg, REG_RA); // TODO CHECK REG_R21 => RA
+    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+    GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, idxReg, 2);
+    GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, baseReg, baseReg, REG_RA);
     GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, baseReg, baseReg, 0);
 
     // add it to the absolute address of fgFirstBB
@@ -2611,7 +2636,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 //
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genLockedInstructions-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -2622,7 +2647,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genCodeForCmpXchg-----unimplemented/unused on RISCV64 yet----");
 }
 
 static inline bool isImmed(GenTree* treeNode)
@@ -2693,11 +2718,11 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 }
                 break;
             case GT_NEG:
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("GT_NEG-----unimplemented/unused on RISCV64 yet----");
                 break;
 
             default:
-                NYI("Unhandled oper in genGetInsForOper() - float");
+                NYI_RISCV64("Unhandled oper in genGetInsForOper() - float");
                 unreached();
                 break;
         }
@@ -2795,7 +2820,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             case GT_MUL:
-                // TODO CHECK AGAIN
+                // TODO-RISCV64-CQ: Need to implement for complex cases 
                 if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                 {
                     op2 = treeNode->gtGetOp2();
@@ -2811,11 +2836,11 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             case GT_NEG:
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("GT_NEG-----unimplemented/unused on RISCV64 yet----");
                 break;
 
             case GT_NOT:
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("GT_NEG-----unimplemented/unused on RISCV64 yet----");
                 break;
 
             case GT_AND:
@@ -2831,7 +2856,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             case GT_AND_NOT:
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("GT_AND_NOT-----unimplemented/unused on RISCV64 yet----");
                 break;
 
             case GT_OR:
@@ -2928,7 +2953,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             case GT_ROR:
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("GT_ROR-----unimplemented/unused on RISCV64 yet----");
                 break;
 
             case GT_XOR:
@@ -2944,7 +2969,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                 break;
 
             default:
-                NYI("Unhandled oper in genGetInsForOper() - integer");
+                NYI_RISCV64("Unhandled oper in genGetInsForOper() - integer");
                 unreached();
                 break;
         }
@@ -3099,7 +3124,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 //
 void CodeGen::genCodeForSwap(GenTreeOp* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genCodeForSwap-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -3320,7 +3345,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 //
 void CodeGen::genCkfinite(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genCkfinite-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -3366,7 +3391,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
     if (varTypeIsFloating(op1Type))
     {
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
-        NYI_RISCV64("genCodeForCompare not implemented on RISCV64 yet");
+        NYI_RISCV64("genCodeForCompare-----unimplemented on RISCV64 yet----");
     }
     else
     {
@@ -3620,7 +3645,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
 //
 void CodeGen::genCodeForJcc(GenTreeCC* jcc)
 {
-    // TODO CHECK REGISTER ALLOCATION RSVD AND REG_RA
+    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
     emitter* emit = GetEmitter();
 
     instruction ins = INS_invalid;
@@ -3664,7 +3689,8 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     instruction ins;
     int         regs;
     ssize_t     imm = op2->AsIntCon()->gtIconVal;
-    assert(reg != REG_T6); // TODO R21 => T6
+    // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+    assert(reg != REG_T6);
     assert(reg != REG_RA);
 
     if (attr == EA_4BYTE)
@@ -3850,12 +3876,12 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 // TODO-CLEANUP Merge all versions of this function and move to new file simdcodegencommon.cpp.
 void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsic-----unimplemented/unused on RISCV64 yet----");
 }
 
 insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genGetSimdInsOpt-----unimplemented/unused on RISCV64 yet----");
     return INS_OPTS_NONE;
 }
 
@@ -3872,7 +3898,7 @@ insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 //
 instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival /*=nullptr*/)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("getOpForSIMDIntrinsic-----unimplemented/unused on RISCV64 yet----");
     return INS_invalid;
 }
 
@@ -3887,7 +3913,7 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
 //
 void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicInit-----unimplemented/unused on RISCV64 yet----");
 }
 
 //-------------------------------------------------------------------------------------------
@@ -3902,7 +3928,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicInitN-----unimplemented/unused on RISCV64 yet----");
 }
 
 //----------------------------------------------------------------------------------
@@ -3916,7 +3942,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicUnOp-----unimplemented/unused on RISCV64 yet----");
 }
 
 //--------------------------------------------------------------------------------
@@ -3930,7 +3956,7 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicWiden-----unimplemented/unused on RISCV64 yet----");
 }
 
 //--------------------------------------------------------------------------------
@@ -3945,7 +3971,7 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicNarrow-----unimplemented/unused on RISCV64 yet----");
 }
 
 //--------------------------------------------------------------------------------
@@ -3960,7 +3986,7 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicBinOp-----unimplemented/unused on RISCV64 yet----");
 }
 
 //--------------------------------------------------------------------------------
@@ -3975,7 +4001,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicRelOp-----unimplemented/unused on RISCV64 yet----");
 }
 
 //--------------------------------------------------------------------------------
@@ -3989,7 +4015,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicDotProduct-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------------------
@@ -4003,7 +4029,7 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicGetItem-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------------------
@@ -4017,7 +4043,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicSetItem-----unimplemented/unused on RISCV64 yet----");
 }
 
 //-----------------------------------------------------------------------------
@@ -4040,7 +4066,7 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicUpperSave-----unimplemented/unused on RISCV64 yet----");
 }
 
 //-----------------------------------------------------------------------------
@@ -4062,7 +4088,7 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genSIMDIntrinsicUpperRestore-----unimplemented/unused on RISCV64 yet----");
 }
 
 //-----------------------------------------------------------------------------
@@ -4079,7 +4105,7 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 //
 void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genStoreIndTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
 }
 
 //-----------------------------------------------------------------------------
@@ -4096,7 +4122,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
 //
 void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genLoadIndTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
 }
 
 //-----------------------------------------------------------------------------
@@ -4112,14 +4138,14 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
 //
 void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genStoreLclTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
 }
 
 #endif // FEATURE_SIMD
 
 void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genStackPointerAdjustment-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -4137,7 +4163,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
 //
 void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genStackPointerConstantAdjustmentWithProbe-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -4154,7 +4180,7 @@ void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNum
 //
 target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genStackPointerConstantAdjustmentLoopWithProbe-----unimplemented/unused on RISCV64 yet----");
     return 0;
 }
 
@@ -4387,7 +4413,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                 };
                 assert(treeNode_next->OperIs(GT_JCC));
                 treeNode_next->SetRegNum((regNumber)INS_bnez);
-                // Revert JCC Comparison. TODO NEED TO UPDATE LATER.
+                // TODO-RISCV64-CQ: update JCC comparison
                 GenTreeCC*                  jcc         = treeNode_next->AsCC();
                 unsigned                    code        = jcc->gtCondition.GetCode();
                 static constexpr genTreeOps s_gtopers[] = {GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT};
@@ -4552,7 +4578,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                         GenTree::OpName(treeNode->OperGet()));
             NYIRAW(message);
 #else
-            NYI("unimplemented node");
+            NYI_RISCV64("some node type in genCodeForTreeNode-----unimplemented/unused on RISCV64 yet----");
 #endif
         }
         break;
@@ -4690,7 +4716,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 //
 void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genIntrinsic-----unimplemented/unused on RISCV64 yet----");
 }
 
 //---------------------------------------------------------------------
@@ -4750,7 +4776,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     {
         if (varTypeIsSIMD(targetType))
         {
-            NYI("unimplemented on RISCV64 yet");
+            NYI_RISCV64("SIMD in genPutArgStk-----unimplemented/unused on RISCV64 yet----");
         }
 
         instruction storeIns  = ins_Store(targetType);
@@ -5021,7 +5047,7 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
 //
 void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genPutArgSplit-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -5052,19 +5078,22 @@ void CodeGen::genRangeCheck(GenTree* oper)
     {
         src1 = arrLen;
         src2 = arrIndex;
-        reg1 = REG_RA; // TODO CHECK R21 => RA
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+        reg1 = REG_RA;
         reg2 = src1->GetRegNum();
 
         intConst    = src2->AsIntConCommon();
         ssize_t imm = intConst->IconValue();
         if (imm == INT64_MAX)
         {
-            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, -1); // TODO CHECK R21 => RA
-            emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, REG_RA, REG_RA, 1);  // TODO CHECK R21 => RA
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, -1);
+            emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, REG_RA, REG_RA, 1);
         }
         else
         {
-            emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm); // TODO CHECK R21 => RA
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+            emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
         }
     }
     else
@@ -5075,9 +5104,11 @@ void CodeGen::genRangeCheck(GenTree* oper)
 
         if (src2->isContainedIntOrIImmed())
         {
-            reg2        = REG_RA; // TODO CHECK R21 => RA
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+            reg2        = REG_RA;
             ssize_t imm = src2->AsIntConCommon()->IconValue();
-            emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm); // TODO CHECK R21 => RA
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+            emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
         }
         else
         {
@@ -5151,7 +5182,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 //
 void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genCodeForArrIndex-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -5172,7 +5203,7 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
 
 void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genCodeForArrOffset-----unimplemented/unused on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -5356,7 +5387,8 @@ void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg
         }
 
         // target = base + index << scale
-        emit->emitIns_R_R_I(ins, attr, REG_RA, indexReg, scale); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+        emit->emitIns_R_R_I(ins, attr, REG_RA, indexReg, scale);
         emit->emitIns_R_R_R(ins2, attr, targetReg, baseReg, REG_RA);
     }
 }
@@ -5389,8 +5421,9 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     // Generate the bounds check if necessary.
     if (node->IsBoundsChecked())
     {
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
         GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_RA, base->GetRegNum(),
-                                    node->gtLenOffset); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+                                    node->gtLenOffset);
         // if (index >= REG_RA)
         // {
         //   JumpToThrowHlpBlk;
@@ -5419,7 +5452,8 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         }
         else
         {
-            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, scale); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, scale);
 
             instruction ins;
             instruction ins2;
@@ -5433,16 +5467,18 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
                 ins  = INS_sll;
                 ins2 = INS_add;
             }
+            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
             GetEmitter()->emitIns_R_R_R(ins, attr, REG_RA, index->GetRegNum(),
-                                        REG_RA); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+                                        REG_RA);
             GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), REG_RA,
-                                        base->GetRegNum()); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+                                        base->GetRegNum());
         }
     }
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
         // REG_RA = element size
-        instGen_Set_Reg_To_Imm(EA_4BYTE, REG_RA, (ssize_t)node->gtElemSize); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+        instGen_Set_Reg_To_Imm(EA_4BYTE, REG_RA, (ssize_t)node->gtElemSize);
 
         // dest = index * REG_RA + base
         instruction ins;
@@ -5457,10 +5493,12 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             ins  = INS_mul;
             ins2 = INS_add;
         }
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
         GetEmitter()->emitIns_R_R_R(ins, EA_PTRSIZE, REG_RA, index->GetRegNum(),
-                                    REG_RA); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+                                    REG_RA);
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
         GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), REG_RA,
-                                    base->GetRegNum()); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+                                    base->GetRegNum());
     }
 
     // dest = dest + elemOffs
@@ -5631,7 +5669,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     if (size >= 2 * REGSIZE_BYTES)
     {
-        regNumber tempReg2 = REG_RA; // TODO REG_R21 => REG_RA
+        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
+        regNumber tempReg2 = REG_RA;
 
         for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize;
              size -= regSize, srcOffset += regSize, dstOffset += regSize)
@@ -5753,7 +5792,7 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 //   offset: distance from the base from which to load
 void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genCodeForLoadOffset-----unimplemented on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -6156,7 +6195,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 // Therefore the codegen of GT_JMP is to ensure that the callee arguments are correctly setup.
 void CodeGen::genJmpMethod(GenTree* jmp)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genJmpMethod-----unimplemented on RISCV64 yet----");
 }
 
 //------------------------------------------------------------------------
@@ -6534,7 +6573,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     // destReg = baseReg + tmpReg;
     // destReg = destReg + offset;
     //
-    // TODO-LOONGARCH64-CQ: The purpose of the GT_LEA node is to directly reflect a single target architecture
+    // TODO-RISCV64-CQ: The purpose of the GT_LEA node is to directly reflect a single target architecture
     //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
     //             instructions to generate the addressing mode so we need to modify lowering to
     //             produce LEAs that are a 1:1 relationship to the LOONGARCH64 architecture.
@@ -6620,8 +6659,8 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         // when attempting to optimize an arbitrary arithmetic expression during lower.
         // This is currently disabled in LOONGARCH64 since we need to adjust lower to account
         // for the simpler instructions LOONGARCH64 supports.
-        // TODO-LOONGARCH64-CQ:  Fix this and let LEA optimize arithmetic trees too.
-        assert(!"We shouldn't see a baseless address computation during CodeGen for LOONGARCH64");
+        // TODO-RISCV64-CQ:  Fix this and let LEA optimize arithmetic trees too.
+        assert(!"We shouldn't see a baseless address computation during CodeGen for RISCV64");
     }
 
     genProduceReg(lea);
@@ -6662,7 +6701,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genAllocLclFrame-----unimplemented/unused on RISCV64 yet----");
 }
 
 inline void CodeGen::genJumpToThrowHlpBlk_la(
@@ -6746,31 +6785,9 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 
         if (addr == nullptr)
         {
-            _ASSERTE(!"TODO RISCV64 NYI");
+            NYI_RISCV64("part of genJumpToThrowHlpBlk_la-----unimplemented on RISCV64 yet----");
             callType   = emitter::EC_INDIR_R;
             callTarget = REG_DEFAULT_HELPER_CALL_TARGET;
-
-            /*
-            // ssize_t imm = (4 + 1 + 1) << 2;// 4=li, 1=ld, 1=jirl.
-
-            if (compiler->opts.compReloc)
-            {
-                ssize_t imm = (2 + 1) << 2; // , 1=jalr.
-                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-                GetEmitter()->emitIns_R_AI(INS_jalr, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr); // TODO NEED TO
-            CHECK bl => jalr
-            }
-            else
-            {
-                ssize_t imm = (3 + 1) << 2; // , 1=jalr.
-                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-
-                GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, callTarget, ((ssize_t)pAddr & 0xfffff000) >> 12);
-                GetEmitter()->emitIns_R_I(INS_lu32i_d, EA_PTRSIZE, callTarget, (ssize_t)pAddr >> 32);
-                GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, callTarget, callTarget,
-                                            ((ssize_t)pAddr & 0xfff) >> 2);
-            }
-            */
         }
         else
         { // INS_OPTS_C
@@ -6837,7 +6854,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 //
 void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FCN_LEAVE*/)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("genProfilingLeaveCallback-----unimplemented/unused on RISCV64 yet----");
 }
 
 /*-----------------------------------------------------------------------------
@@ -7005,7 +7022,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         // Note that there is no pre-indexed save_lrpair unwind code variant, so we can't allocate the frame using
         // 'sd' if we only have one callee-saved register plus RA to save.
 
-        NYI("Frame without frame pointer");
+        NYI_RISCV64("Frame without frame pointer");
         offset = 0;
     }
 
@@ -7158,8 +7175,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 else
                 {
                     outSzAligned = compiler->lvaOutgoingArgSpaceSize & ~0xf;
+                    // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
                     genStackPointerAdjustment(outSzAligned, REG_T6, nullptr,
-                                              /* reportUnwindData */ true); // TODO CHECK R21 => T6
+                                              /* reportUnwindData */ true);
                 }
 
                 regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
@@ -7170,8 +7188,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
                 compiler->unwindSaveReg(REG_FP, offset2);
 
+                // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
                 genStackPointerAdjustment(calleeSaveSPDelta, REG_T6, nullptr,
-                                          /* reportUnwindData */ true); // TODO CHECK R21 =>T6
+                                          /* reportUnwindData */ true);
 
                 calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
                 calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
@@ -7198,15 +7217,16 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
                 calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
 
+                // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
                 genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_T6, nullptr,
-                                          /* reportUnwindData */ true); // TODO CHECK R21 => T6
+                                          /* reportUnwindData */ true);
             }
         }
     }
     else
     {
         // No frame pointer (no chaining).
-        NYI("Frame without frame pointer");
+        NYI_RISCV64("Frame without frame pointer");
         calleeSaveSPOffset = 0;
     }
 
@@ -7360,7 +7380,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
             }
             else
             {
-                // TODO for RISCV64: should delete this by optimization "struct {long a; int32_t b;};"
+                // TODO-RISCV64: should delete this by optimization "struct {long a; int32_t b;};"
                 // liking AMD64_ABI within morph.
                 if (genIsValidIntReg(varDsc->GetArgReg()) && (varDsc->TypeGet() == TYP_INT))
                 {
@@ -7482,7 +7502,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
             {
                 assert(tmp_reg == REG_NA);
 
-                tmp_reg = REG_T6; // TODO CHECK LATER
+                // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+                tmp_reg = REG_T6;
                 GetEmitter()->emitIns_I_la(EA_PTRSIZE, tmp_reg, baseOffset);
                 // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                 // it means the offset imm had been stored within the `REG_T6`.
@@ -7531,7 +7552,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (tmp_reg == REG_NA)
                         {
-                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_T6, baseOffset); // TODO REG21 => REGT6
+                            // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_T6, baseOffset);
                             // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                             // it means the offset imm had been stored within the `REG_T6`.
                             GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_T6, varNum,
@@ -7539,10 +7561,11 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         }
                         else
                         {
+                            // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
                             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_T6, REG_T6,
-                                                        slotSize); // TODO REG21 => T6
+                                                        slotSize);
                             GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_T6, varNum,
-                                                        -slotSize - 8); // TODO REG21 => T6
+                                                        -slotSize - 8);
                         }
                     }
                     regArgMaskLive &= ~genRegMask(srcRegNum); // maybe do this later is better!
@@ -7578,7 +7601,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (tmp_reg == REG_NA)
                         {
-                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_T6, baseOffset); // TODO REG21 => T6
+                            // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
+                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_T6, baseOffset);
                             // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                             // it means the offset imm had been stored within the `REG_T6`.
                             GetEmitter()->emitIns_S_R_R(INS_sd, size, REG_SCRATCH, REG_T6, varNum, -8);
@@ -7627,7 +7651,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     break;
                 }
                 else if (regArgInit[i] > regArg[i] ||
-                         (regArgInit[i] >= REG_T0 && regArgInit[i] <= REG_S1)) // TODO NEED TO VERIFY
+                         (regArgInit[i] >= REG_T0 && regArgInit[i] <= REG_S1))
                 {
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
                 }
@@ -7662,12 +7686,13 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         }
                         else if (k == i)
                         {
+                            // TODO-RISCV64-Bug?: Set proper temp register instead of T6 
                             GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, REG_T6, (regNumber)regArg[i],
-                                                        0); // TODO REG21 => T6
+                                                        0);
                             GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
                                                         (regNumber)regArg[j], 0);
                             GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, (regNumber)regArgInit[i], REG_T6,
-                                                        0); // TODO REG21 => T6
+                                                        0);
                             regArgNum--;
                             regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
                             regArg[j] = 0;
@@ -7703,7 +7728,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                                                   true);
                         break;
                     }
-                    else if (regArgInit[i] > regArg[i] || (regArgInit[i] <= REG_F9)) // TODO NEED TO VERIFY
+                    else if (regArgInit[i] > regArg[i] || (regArgInit[i] <= REG_F9))
                     {
                         GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[i],
                                                     (regNumber)regArg[i], (regNumber)regArg[i]);
@@ -7792,14 +7817,13 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     {
         return;
     }
-    // TODO RISCV64
 }
 
 // return size
 // alignmentWB is out param
 unsigned CodeGenInterface::InferOpSizeAlign(GenTree* op, unsigned* alignmentWB)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("CodeGenInterface::InferOpSizeAlign-----unimplemented/unused on RISCV64 yet----");
     return 0;
 }
 
@@ -7807,7 +7831,7 @@ unsigned CodeGenInterface::InferOpSizeAlign(GenTree* op, unsigned* alignmentWB)
 // alignmentWB is out param
 unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB)
 {
-    NYI("unimplemented on RISCV64 yet");
+    NYI_RISCV64("CodeGenInterface::InferStructOpSizeAlign-----unimplemented/unused on RISCV64 yet----");
     return 0;
 }
 

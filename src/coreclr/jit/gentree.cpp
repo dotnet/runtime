@@ -4336,7 +4336,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         {
             if (!emitter::isValidSimm12(cns))
             {
-                // TODO-RISCV64: tune for RISCV64.
+                // TODO-RISCV64-CQ: tune for RISCV64.
                 addrModeCostEx += 1;
                 addrModeCostSz += 4;
             }
@@ -4791,7 +4791,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz = 4;
                 goto COMMON_CNS;
 #elif defined(TARGET_RISCV64)
-            // TODO-RISCV64: tune the costs.
+            // TODO-RISCV64-CQ: tune the costs.
             case GT_CNS_STR:
                 costEx = IND_COST_EX + 2;
                 costSz = 4;
@@ -4879,7 +4879,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
-//_ASSERTE(!"TODO RISCV64 NYI");
 #else
 #error "Unknown TARGET"
 #endif
@@ -5084,7 +5083,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 4;
 #elif defined(TARGET_RISCV64)
-                    // TODO-RISCV64: tune the costs.
+                    // TODO-RISCV64-CQ: tune the costs.
                     costEx = 1;
                     costSz = 4;
 #else

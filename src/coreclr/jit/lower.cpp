@@ -6418,7 +6418,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         // Currently there's no GT_MULHI for ARM32
         return nullptr;
 #elif defined(TARGET_RISCV64)
-        NYI_RISCV64("TODO RISCV64");
+        NYI_RISCV64("-----unimplemented on RISCV64 yet----");
         return nullptr;
 #else
 #error Unsupported or unset target architecture

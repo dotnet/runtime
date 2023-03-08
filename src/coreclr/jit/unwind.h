@@ -42,7 +42,7 @@ const unsigned MAX_EPILOG_SIZE_BYTES = 200;
 #define UW_MAX_FRAGMENT_SIZE_BYTES (1U << 20)
 #define UW_MAX_CODE_WORDS_COUNT 31
 #define UW_MAX_EPILOG_START_INDEX 0x3FFU
-#elif defined(TARGET_RISCV64) // TODO RISCV64
+#elif defined(TARGET_RISCV64)
 const unsigned MAX_PROLOG_SIZE_BYTES = 200;
 const unsigned MAX_EPILOG_SIZE_BYTES = 200;
 #define UWC_END 0xE4   // "end" unwind code

@@ -1592,10 +1592,6 @@ void CodeGen::genCheckOverflow(GenTree* tree)
                 jumpKind = EJ_hs;
             }
         }
-#elif defined(TARGET_RISCV64)
-        _ASSERTE(!"TODO RISCV64");
-        jumpKind = EJ_NONE; // TODO RISCV64
-
 #endif // defined(TARGET_ARMARCH)
     }
 
@@ -4224,10 +4220,13 @@ void CodeGen::genEnregisterIncomingStackArgs()
                 {
                     regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
                     tmp_offset     = base;
-                    tmp_reg        = REG_RA; // TODO CHECK R21 => RA
+                    // TODO-RISCV64-Bug?: Use RA for temp use
+                    tmp_reg        = REG_RA;
 
-                    GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, base);                   // TODO CHECK R21 => RA
-                    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2); // TODO CHECK R21 => RA
+                    // TODO-RISCV64-Bug?: Use RA for temp use
+                    GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, base);
+                    // TODO-RISCV64-Bug?: Use RA for temp use
+                    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
                     GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, -8);
                 }
                 else
@@ -4535,7 +4534,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("genZeroInitFltRegs is not implemented");
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -4574,7 +4573,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_LOONGARCH64)
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
-                _ASSERTE(!"TODO RISCV64 NYI");
+                NYI_RISCV64("genZeroInitFltRegs is not implemented.");
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif

@@ -187,7 +187,7 @@ ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of t
     //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
 
 #elif defined (TARGET_RISCV64)
-  // TODO RISCV64
+    //TODO-RISCV64-CQ: add RISCV64's Hardware Intrinsics Instructions if supported.
 
 #else
 #error Unsupported platform
