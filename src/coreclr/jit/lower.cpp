@@ -3278,6 +3278,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 assert(reversed == op1);
             }
 
+            // Relops and SETCC can be either TYP_INT or TYP_LONG typed, so we
+            // may need to retype it.
+            op1->gtType = cmp->TypeGet();
+
             GenTree* next = cmp->gtNext;
             use.ReplaceWith(op1);
             BlockRange().Remove(cmp->gtGetOp2());
