@@ -1132,7 +1132,7 @@ namespace System.Runtime.CompilerServices
             // ..., however, empty to/from a larger type should fail
 
             Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int, EmptyA>(5));
-            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<EmptyA, int>(emptyA));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<EmptyA, int>(empty1));
         }
     }
 
