@@ -30,6 +30,12 @@
           AfterTargets="Build"
           DependsOnTargets="Publish" />
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <!-- non-net4* -->
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

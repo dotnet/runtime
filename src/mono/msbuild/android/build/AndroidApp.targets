@@ -3,9 +3,12 @@
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
     <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
     <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>
+
+    <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
   <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />
@@ -17,11 +20,22 @@
 
     <PropertyGroup>
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
+      <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(PlatformTarget)</TargetArchitecture>
     </PropertyGroup>
 
     <PropertyGroup>
+      <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackRidDir Condition="'$(MicrosoftNetCoreAppRuntimePackRidDir)' == ''">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', '$(TargetOS)-$(TargetArchitecture)'))</MicrosoftNetCoreAppRuntimePackRidDir>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
+      <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AndroidAppDir Condition="'$(AndroidAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(PublishDir)))</AndroidAppDir>
+      <AndroidAppBundleDir Condition="'$(AndroidAppBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</AndroidAppBundleDir>
+
       <BundleDir>$(AndroidAppBundleDir)</BundleDir>
-      <_MonoHeaderPath>$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0</_MonoHeaderPath>
+      <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
       <_AotModuleTablePath>$(AndroidAppBundleDir)\modules.c</_AotModuleTablePath>
     </PropertyGroup>
 
@@ -60,6 +74,11 @@
   </Target>
 
   <Target Name="_AndroidResolveReferences">
+    <ItemGroup Condition="'$(EnableDefaultAssembliesToBundle)' == 'true'">
+      <AndroidAssembliesToBundle Remove="@(AndroidAssembliesToBundle)" />
+      <AndroidAssembliesToBundle Include="$(PublishDir)\**\*.dll" />
+    </ItemGroup>
+
     <ItemGroup>
       <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
       <AppAssembliesInternal Include="@(AndroidAssembliesToBundle)">
