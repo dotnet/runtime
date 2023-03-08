@@ -177,8 +177,6 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     const originalUpdateMemoryViews = replacements.updateMemoryViews;
     runtimeHelpers.updateMemoryViews = () => {
         originalUpdateMemoryViews();
-        // FIXME
-        // afterUpdateGlobalBufferAndViews(buffer);
     };
 }
 
