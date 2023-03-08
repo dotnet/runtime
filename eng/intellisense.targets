@@ -30,7 +30,7 @@
   <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
   <!-- Replace the default xml file generated in the obj folder with the one that comes from the docs feed. -->
   <Target Name="ChangeDocumentationFileForPackaging"
-          AfterTargets="DocumentationProjectOutputGroup"
+          BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup"
           Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">
     <ItemGroup>
       <DocFileItem Remove="@(DocFileItem)" />
@@ -38,10 +38,11 @@
     </ItemGroup>
   </Target>
 
+  <!-- Copy the intellisense file to the folder we use to produce the targeting pack.
+       The condition is for the RID agnostic build of source assemblies that are part of the .NET Core shared framework. -->
   <Target Name="CopyDocumentationFileToXmlDocDir"
           AfterTargets="CopyFilesToOutputDirectory"
-          Condition="'$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
-          DependsOnTargets="ChangeDocumentationFileForPackaging">
+          Condition="'$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Copy SourceFiles="@(DocFileItem)"
           DestinationFolder="$(XmlDocDir)"
           SkipUnchangedFiles="true"
