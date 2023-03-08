@@ -30,5 +30,11 @@ namespace Microsoft.Interop
                     return builder.MoveToImmutable();
                 });
         }
+
+        public static IncrementalValuesProvider<TNode> SelectNormalized<TNode>(this IncrementalValuesProvider<TNode> provider)
+            where TNode : SyntaxNode
+        {
+            return provider.Select((node, ct) => node.NormalizeWhitespace());
+        }
     }
 }

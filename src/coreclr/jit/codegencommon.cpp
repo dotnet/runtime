@@ -1731,6 +1731,7 @@ void CodeGen::genGenerateMachineCode()
 
         printf(" for ");
 
+#if defined(TARGET_X86)
         if (compiler->info.genCPU == CPU_X86)
         {
             printf("generic X86 CPU");
@@ -1739,9 +1740,14 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("Pentium 4");
         }
-        else if (compiler->info.genCPU == CPU_X64)
+#elif defined(TARGET_AMD64)
+        if (compiler->info.genCPU == CPU_X64)
         {
-            if (compiler->canUseVexEncoding())
+            if (compiler->canUseEvexEncoding())
+            {
+                printf("X64 CPU with AVX512");
+            }
+            else if (compiler->canUseVexEncoding())
             {
                 printf("X64 CPU with AVX");
             }
@@ -1750,18 +1756,22 @@ void CodeGen::genGenerateMachineCode()
                 printf("X64 CPU with SSE2");
             }
         }
-        else if (compiler->info.genCPU == CPU_ARM)
+#elif defined(TARGET_ARM)
+        if (compiler->info.genCPU == CPU_ARM)
         {
             printf("generic ARM CPU");
         }
-        else if (compiler->info.genCPU == CPU_ARM64)
+#elif defined(TARGET_ARM64)
+        if (compiler->info.genCPU == CPU_ARM64)
         {
             printf("generic ARM64 CPU");
         }
-        else if (compiler->info.genCPU == CPU_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64)
+        if (compiler->info.genCPU == CPU_LOONGARCH64)
         {
             printf("generic LOONGARCH64 CPU");
         }
+#endif
         else
         {
             printf("unknown architecture");

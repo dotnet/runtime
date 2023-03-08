@@ -860,7 +860,7 @@ BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
 }
 
 //------------------------------------------------------------------------
-// fgDfsReversevPostorderHelper: Helper to assign post-order numbers to blocks.
+// fgDfsReversePostorderHelper: Helper to assign post-order numbers to blocks.
 //
 // Arguments:
 //    block   - The starting entry block
@@ -892,11 +892,6 @@ void Compiler::fgDfsReversePostorderHelper(BasicBlock* block,
             return m_block;
         }
 
-        bool atStart()
-        {
-            return m_iter == 0;
-        }
-
         BasicBlock* getNextSucc(Compiler* comp)
         {
             if (m_iter >= m_nSucc)
@@ -916,30 +911,22 @@ void Compiler::fgDfsReversePostorderHelper(BasicBlock* block,
     // to compute pre/post-ordering of the control flowgraph.
     ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack));
 
-    // Push the first block on the stack to seed the traversal.
+    // Push the first block on the stack to seed the traversal, mark it visited to avoid backtracking,
+    // and give it a preorder number.
     stack.Emplace(this, block);
-
-    // Flag the node we just visited to avoid backtracking.
     BlockSetOps::AddElemD(this, visited, block->bbNum);
+    block->bbPreorderNum = preorderIndex++;
 
     // The search is terminated once all the actions have been processed.
     while (!stack.Empty())
     {
         DfsBlockEntry&    current = stack.TopRef();
-        BasicBlock* const block   = current.getBlock();
-
-        if (current.atStart())
-        {
-            // Initial visit to this node
-            //
-            block->bbPreorderNum = preorderIndex;
-            preorderIndex++;
-        }
-
-        BasicBlock* const succ = current.getNextSucc(this);
+        BasicBlock* const succ    = current.getNextSucc(this);
 
         if (succ == nullptr)
         {
+            BasicBlock* const block = current.getBlock();
+
             // Final visit to this node
             //
             block->bbPostorderNum = postorderIndex;
@@ -963,8 +950,9 @@ void Compiler::fgDfsReversePostorderHelper(BasicBlock* block,
             continue;
         }
 
-        BlockSetOps::AddElemD(this, visited, succ->bbNum);
         stack.Emplace(this, succ);
+        BlockSetOps::AddElemD(this, visited, succ->bbNum);
+        succ->bbPreorderNum = preorderIndex++;
     }
 }
 

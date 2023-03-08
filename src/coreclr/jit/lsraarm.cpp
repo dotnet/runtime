@@ -769,6 +769,11 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildSimple(tree);
             break;
 
+        case GT_JTRUE:
+            BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
+            srcCount = 1;
+            break;
+
         case GT_INDEX_ADDR:
             dstCount = 1;
             buildInternalIntRegisterDefForNode(tree);

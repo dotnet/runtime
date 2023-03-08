@@ -30629,6 +30629,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
         gc_time_info[time_plan] = gc_time_info[time_sweep] - gc_time_info[time_plan];
     }
 #endif //FEATURE_EVENT_TRACE
+
+#ifdef USE_REGIONS
+    if (special_sweep_p)
+    {
+        should_compact = FALSE;
+    }
+#endif //!USE_REGIONS
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_LOH_COMPACTION
