@@ -103,8 +103,6 @@ public:
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes);
 
-extern "C" ULONG QCALLTYPE MdUtf8String_HashCaseInsensitive(LPCUTF8 sz, INT32 stringNumBytes);
-
 class RuntimeTypeHandle;
 
 typedef RuntimeTypeHandle FCALLRuntimeTypeHandle;

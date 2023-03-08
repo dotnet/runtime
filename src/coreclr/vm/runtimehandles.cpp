@@ -59,25 +59,6 @@ extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCU
     return fStringsEqual;
 }
 
-extern "C" ULONG QCALLTYPE MdUtf8String_HashCaseInsensitive(LPCUTF8 sz, INT32 stringNumBytes)
-{
-    QCALL_CONTRACT;
-
-    // Important: the string in pSsz isn't null terminated so the length must be used
-    // when performing operations on the string.
-
-    ULONG hashValue = 0;
-
-    BEGIN_QCALL;
-
-    StackSString str(SString::Utf8, sz, stringNumBytes);
-    hashValue = str.HashCaseInsensitive();
-
-    END_QCALL;
-
-    return hashValue;
-}
-
 static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* pCACtor, MethodTable* pDecoratedMT, Module* pDecoratedModule)
 {
     CONTRACTL
