@@ -13,10 +13,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/mono-debug.h>
 
-// TODO grab the directory where the assemblies are placed on device and remove path hardcode
-static char *bundle_path = "/data/user/0/net.dot.Android.Device_Emulator.Aot_Llvm.Test/files";
-
-#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
+static char *bundle_path;
 
 void register_aot_modules (void);
 bool monoeg_g_module_address (void *addr, char *file_name, size_t file_name_len,
@@ -24,32 +21,25 @@ bool monoeg_g_module_address (void *addr, char *file_name, size_t file_name_len,
                            size_t sym_name_len, void **sym_addr);
 char *mono_path_resolve_symlinks(const char *path);
 char *monoeg_g_path_get_dirname (const char *filename);
+char *monoeg_g_getenv (const char *variable);
 
-void
+static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
     free (args);
     free (user_data);
 }
 
-void register_bundled_modules ()
+static void
+initialize_runtimeconfig ()
 {
-    char *file_name = RUNTIMECONFIG_BIN_FILE;
-    int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the "/"
-    char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
-    int num_char = snprintf (file_path, (str_len + 1), "%s/%s", bundle_path, file_name);
-    struct stat buffer;
+%RUNTIME_CONFIG%
+}
 
-    assert (num_char > 0 && num_char == str_len);
-
-    if (stat (file_path, &buffer) == 0) {
-        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
-        arg->kind = 0;
-        arg->runtimeconfig.name.path = file_path;
-        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
-    } else {
-        free (file_path);
-    }
+static void
+initialize_appctx_env_variables ()
+{
+%APPCTX_ENV_VARIABLES%
 }
 
 static MonoAssembly*
@@ -143,14 +133,18 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
     munmap (handle, size);
 }
 
-void runtime_init_callback ()
+void
+runtime_init_callback ()
 {
+    initialize_runtimeconfig ();
+
+    initialize_appctx_env_variables ();
+
     register_aot_modules ();
 
-    register_bundled_modules ();
+    // register all bundled modules
 
-    char *assemblyPath = assemblies_dir ();
-    mono_set_assemblies_path ((assemblyPath && assemblyPath[0] != '\0') ? assemblyPath : "./");
+    mono_set_assemblies_path ((bundle_path && bundle_path[0] != '\0') ? bundle_path : "./");
 
     mono_jit_set_aot_only (true);
 
@@ -168,15 +162,17 @@ void runtime_init_callback ()
 
     mono_install_load_aot_data_hook (load_aot_data, free_aot_data, NULL);
 
+    mono_set_signal_chaining (true);
+
     mono_jit_init ("dotnet.android"); // Pass in via LibraryBuilder?
 
-    // Load assemblies with UnmanagedCallersOnly exported methods
-    // TODO leverage get_loadable_assemblies and call mono_assembly_open on each
-    mono_assembly_open("Android.Device_Emulator.Aot_Llvm.Test.dll", NULL);
+%ASSEMBLIES_LOADER%
 }
 
-void init_mono_runtime ()
+void
+init_mono_runtime ()
 {
+    bundle_path = monoeg_g_getenv("%ASSETS_PATH%");
     mono_set_runtime_init_callback (&runtime_init_callback);
 }
 

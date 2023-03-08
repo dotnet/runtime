@@ -66,6 +66,26 @@ public class LibraryBuilderTask : AppBuilderTask
         }
     }
 
+    /// <summary>
+    /// Determines whether or not the mono runtime auto initialization
+    /// tremplate, autoinit.c, is used.
+    /// </summary>
+    public bool UsesCustomRuntimeInitCallback { get; set; }
+
+    public string? AssetsPath { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public ITaskItem[] AppContextKeys { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// </summary>
+    public ITaskItem[] AppContextValues { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// </summary>
+    public string? RuntimeConfigBinFile { get; set; }
+
     public bool StripDebugSymbols { get; set; }
 
     /// <summary>
@@ -113,16 +133,23 @@ public class LibraryBuilderTask : AppBuilderTask
         GatherAotSourcesObjects(aotSources, aotObjects, extraSources, linkerArgs);
         GatherLinkerArgs(linkerArgs);
 
+        if (!UsesCustomRuntimeInitCallback)
+        {
+            WriteAutoInitializationFromTemplate();
+        }
+
         WriteCMakeFileFromTemplate(aotSources.ToString(), aotObjects.ToString(), extraSources.ToString(), linkerArgs.ToString());
         OutputPath = BuildLibrary();
 
         return true;
     }
 
+
+    private List<string> exportedAssemblies = new List<string>();
+
     private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
     {
         List<string> exportedSymbols = new List<string>();
-        List<string> exportedAssemblies = new List<string>();
         bool hasExports = false;
 
         foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
@@ -226,6 +253,79 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%GLOBAL_SYMBOLS%", globalExports));
     }
 
+    private void WriteAutoInitializationFromTemplate()
+    {
+        string appContextEnvVariables = GenerateAppContextEnvVariables();
+        string assembliesLoader = GenerateAssembliesLoader();
+        string assetsPath = GenerateAssetsPath();
+        string runtimeConfig = GenerateRuntimeConfig();
+        File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
+            Utils.GetEmbeddedResource("autoinit.c")
+                .Replace("%APPCTX_ENV_VARIABLES%", appContextEnvVariables)
+                .Replace("%ASSEMBLIES_LOADER%", assembliesLoader)
+                .Replace("%ASSETS_PATH%", assetsPath)
+                .Replace("%RUNTIME_CONFIG%", runtimeConfig));
+    }
+
+    private string GenerateAssembliesLoader()
+    {
+        var assembliesLoader = new StringBuilder();
+        foreach (string exportedAssembly in exportedAssemblies)
+        {
+            assembliesLoader.AppendLine($"    mono_assembly_open(\"{exportedAssembly}\", NULL);");
+        }
+        return assembliesLoader.ToString();
+    }
+
+    private string GenerateAssetsPath()
+    {
+        return AssetsPath ?? "DOTNET_ASSETS_PATH";
+    }
+
+    private string GenerateRuntimeConfig()
+    {
+        if (string.IsNullOrEmpty(RuntimeConfigBinFile))
+            return "    return;";
+
+        var runtimeConfig = new StringBuilder();
+        runtimeConfig.Append($"    char *file_name = {RuntimeConfigBinFile};");
+        runtimeConfig.Append("    int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the \"/\"");
+        runtimeConfig.Append("    char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character");
+        runtimeConfig.Append("    int num_char = snprintf (file_path, (str_len + 1), \"%s/%s\", bundle_path, file_name);");
+        runtimeConfig.Append("    struct stat buffer;\n");
+        runtimeConfig.Append("    assert (num_char > 0 && num_char == str_len);\n");
+        runtimeConfig.Append("    if (stat (file_path, &buffer) == 0) {");
+        runtimeConfig.Append("        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));");
+        runtimeConfig.Append("        arg->kind = 0;");
+        runtimeConfig.Append("        arg->runtimeconfig.name.path = file_path;");
+        runtimeConfig.Append("        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);");
+        runtimeConfig.Append("    } else {");
+        runtimeConfig.Append("        free (file_path);");
+        runtimeConfig.Append("    }");
+        return runtimeConfig.ToString();
+    }
+
+    private string GenerateAppContextEnvVariables()
+    {
+        if (AppContextKeys.Length != AppContextValues.Length)
+        {
+            throw new LogAsErrorException($"'{nameof(AppContextKeys)}' length does not match '{nameof(AppContextValues)}' length. {AppContextKeys.Length} != {AppContextValues.Length}");
+        }
+
+        int numArgs = AppContextKeys.Length;
+        var appContextEnvVariables = new StringBuilder();
+
+        appContextEnvVariables.AppendLine($"    const char **appctx_keys, **appctx_values = (char**)malloc({numArgs} * sizeof(char*));");
+        for (int i = 0; i < numArgs; i++)
+        {
+            appContextEnvVariables.AppendLine($"    appctx_keys[{i}] = \"{AppContextKeys[i]}\";");
+            appContextEnvVariables.AppendLine($"    appctx_values[{i}] = \"{AppContextValues[i]}\";");
+        }
+        appContextEnvVariables.AppendLine($"    monovm_initialize({numArgs}, appctx_keys, appctx_values);");
+
+        return appContextEnvVariables.ToString();
+    }
+
     private void WriteCMakeFileFromTemplate(string aotSources, string aotObjects, string extraSources, string linkerArgs)
     {
         // BundleDir
@@ -239,9 +339,6 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%AotObjects%", aotObjects)
                 .Replace("%ExtraSources%", extraSources)
                 .Replace("%LIBRARY_LINKER_ARGS%", linkerArgs));
-
-        File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
-            Utils.GetEmbeddedResource("autoinit.c"));
     }
 
     private void WriteAssembliesToLoadList(List<string> assemblies)

@@ -8,6 +8,8 @@
     <PropertyGroup>
       <_IsSharedLibrary>false</_IsSharedLibrary>
       <_IsSharedLibrary Condition="'$(NativeLib)' == 'shared'">true</_IsSharedLibrary>
+      <_UsesCustomRuntimeInitCallback>false</_UsesCustomRuntimeInitCallback>
+      <_UsesCustomRuntimeInitCallback Condition="$(CustomRuntimeInitCallback) != ''">true</_UsesCustomRuntimeInitCallback>
     </PropertyGroup>
 
     <ItemGroup>
@@ -25,7 +27,8 @@
       OutputDirectory="$(BundleDir)"
       RuntimeIdentifier="$(RuntimeIdentifier)"
       RuntimeLibraries="@(_RuntimeLibraries)"
-      TargetOS="$(TargetOS)">
+      TargetOS="$(TargetOS)"
+      UsesCustomRuntimeInitCallback="$(_UsesCustomRuntimeInitCallback)">
       <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
     </LibraryBuilderTask>
   </Target>
