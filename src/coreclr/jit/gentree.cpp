@@ -6644,8 +6644,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 exSetFlags = ExceptionSetFlags::DivideByZeroException;
             }
 
-            if (!(this->gtFlags & GTF_DIV_MOD_NO_OVERFLOW_CHK) && this->OperIs(GT_DIV, GT_MOD) &&
-                this->CanDivOrModPossiblyOverflow(comp))
+            if (this->OperIs(GT_DIV, GT_MOD) && this->CanDivOrModPossiblyOverflow(comp))
             {
                 exSetFlags |= ExceptionSetFlags::ArithmeticException;
             }
@@ -24825,6 +24824,9 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 {
     assert(this->OperIs(GT_DIV, GT_MOD));
     assert(varTypeIsIntegral(this));
+
+    if (this->gtFlags & GTF_DIV_MOD_NO_OVERFLOW_CHK)
+        return false;
 
     GenTree* op1 = this->gtGetOp1();
     GenTree* op2 = this->gtGetOp2();
