@@ -179,6 +179,7 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_As,
     NI_SRCS_UNSAFE_AsPointer,
     NI_SRCS_UNSAFE_AsRef,
+    NI_SRCS_UNSAFE_BitCast,
     NI_SRCS_UNSAFE_ByteOffset,
     NI_SRCS_UNSAFE_Copy,
     NI_SRCS_UNSAFE_CopyBlock,

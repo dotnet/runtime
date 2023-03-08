@@ -764,7 +764,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A 64-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
         [Intrinsic]
-        public static unsafe long DoubleToInt64Bits(double value) => *((long*)&value);
+        public static unsafe long DoubleToInt64Bits(double value) => Unsafe.BitCast<double, long>(value);
 
         /// <summary>
         /// Converts the specified 64-bit signed integer to a double-precision floating point number.
@@ -772,7 +772,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A double-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [Intrinsic]
-        public static unsafe double Int64BitsToDouble(long value) => *((double*)&value);
+        public static unsafe double Int64BitsToDouble(long value) => Unsafe.BitCast<long, double>(value);
 
         /// <summary>
         /// Converts the specified single-precision floating point number to a 32-bit signed integer.
@@ -780,7 +780,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A 32-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
         [Intrinsic]
-        public static unsafe int SingleToInt32Bits(float value) => *((int*)&value);
+        public static unsafe int SingleToInt32Bits(float value) => Unsafe.BitCast<float, int>(value);
 
         /// <summary>
         /// Converts the specified 32-bit signed integer to a single-precision floating point number.
@@ -788,7 +788,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A single-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [Intrinsic]
-        public static unsafe float Int32BitsToSingle(int value) => *((float*)&value);
+        public static unsafe float Int32BitsToSingle(int value) => Unsafe.BitCast<int, float>(value);
 
         /// <summary>
         /// Converts the specified half-precision floating point number to a 16-bit signed integer.
@@ -813,7 +813,7 @@ namespace System
         /// <returns>A 64-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe ulong DoubleToUInt64Bits(double value) => *((ulong*)&value);
+        public static unsafe ulong DoubleToUInt64Bits(double value) => Unsafe.BitCast<double, ulong>(value);
 
         /// <summary>
         /// Converts the specified 64-bit unsigned integer to a double-precision floating point number.
@@ -822,7 +822,7 @@ namespace System
         /// <returns>A double-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe double UInt64BitsToDouble(ulong value) => *((double*)&value);
+        public static unsafe double UInt64BitsToDouble(ulong value) => Unsafe.BitCast<ulong, double>(value);
 
         /// <summary>
         /// Converts the specified single-precision floating point number to a 32-bit unsigned integer.
@@ -831,7 +831,7 @@ namespace System
         /// <returns>A 32-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe uint SingleToUInt32Bits(float value) => *((uint*)&value);
+        public static unsafe uint SingleToUInt32Bits(float value) => Unsafe.BitCast<float, uint>(value);
 
         /// <summary>
         /// Converts the specified 32-bit unsigned integer to a single-precision floating point number.
@@ -840,7 +840,7 @@ namespace System
         /// <returns>A single-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe float UInt32BitsToSingle(uint value) => *((float*)&value);
+        public static unsafe float UInt32BitsToSingle(uint value) => Unsafe.BitCast<uint, float>(value);
 
         /// <summary>
         /// Converts the specified half-precision floating point number to a 16-bit unsigned integer.
