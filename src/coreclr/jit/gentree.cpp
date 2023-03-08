@@ -24846,16 +24846,10 @@ bool GenTree::CanDivisionPossiblyOverflow(Compiler* comp) const
             return true;
         }
 #ifdef TARGET_64BIT
-        else if (this->TypeIs(TYP_LONG) && op1->IsIntegralConst(INT64_MIN))
+        else if (this->TypeIs(TYP_LONG) && (op1->AsIntConCommon()->IntegralValue() == INT64_MIN))
         {
             return true;
         }
-#else
-        else if (this->TypeIs(TYP_LONG) && op1->TypeIs(TYP_LONG) && (op1->AsLngCon()->LngValue() == INT64_MIN))
-        {
-            return true;
-        }
-#endif // TARGET_64BIT
 
         // Dividend is not a minimum value; therefore we cannot overflow.
         return false;
