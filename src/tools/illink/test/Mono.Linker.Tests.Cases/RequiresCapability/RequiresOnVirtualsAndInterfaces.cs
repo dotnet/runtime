@@ -190,6 +190,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
+			// https://github.com/dotnet/runtime/issues/73321
 			[ExpectedWarning ("IL2026", "--CovariantReturnViaLdftn.Derived.GetRequires--")]
 			[ExpectedWarning ("IL3002", "--CovariantReturnViaLdftn.Derived.GetRequires--", ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3050", "--CovariantReturnViaLdftn.Derived.GetRequires--", ProducedBy = Tool.Analyzer)]
