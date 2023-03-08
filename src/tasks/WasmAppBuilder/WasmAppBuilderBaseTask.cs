@@ -39,6 +39,7 @@ public abstract class WasmAppBuilderBaseTask : Task
     public int DebugLevel { get; set; }
     public ITaskItem[] SatelliteAssemblies { get; set; } = Array.Empty<ITaskItem>();
     public bool InvariantGlobalization { get; set; }
+    public ITaskItem[] FilesToIncludeInFileSystem { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraFilesToDeploy { get; set; } = Array.Empty<ITaskItem>();
 
     public string? DefaultHostConfig { get; set; }
