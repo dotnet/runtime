@@ -9966,8 +9966,7 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq)
 {
     VNFuncApp funcApp;
-    if (tree->TypeIs(TYP_REF) && vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) &&
-        (funcApp.m_func == VNF_PtrToStatic))
+    if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
     {
         FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
         if (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic)
@@ -9977,7 +9976,6 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
             return true;
         }
     }
-
     ssize_t val = 0;
 
     // Special case for NativeAOT: ADD(ICON_STATIC, CNS_INT) where CNS_INT has field sequence corresponding to field's
