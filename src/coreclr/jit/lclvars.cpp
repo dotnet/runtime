@@ -2893,9 +2893,14 @@ bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
     return false;
 }
 
-/*****************************************************************************
- * Set the lvClass for a local variable of a struct type */
-
+//------------------------------------------------------------------------
+// lvaSetStruct: Set the type of a local to a struct, given a layout.
+//
+// Arguments:
+//    varNum              - The local
+//    layout              - The layout
+//    unsafeValueClsCheck - Whether to check if we should potentially emit a GS cookie due to this local.
+//
 void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeValueClsCheck)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
@@ -3016,6 +3021,14 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
     }
 }
 
+//------------------------------------------------------------------------
+// lvaSetStruct: Set the type of a local to a struct, given its type handle.
+//
+// Arguments:
+//    varNum              - The local
+//    typeHnd             - The type handle
+//    unsafeValueClsCheck - Whether to check if we should potentially emit a GS cookie due to this local.
+//
 void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck)
 {
     lvaSetStruct(varNum, typGetObjLayout(typeHnd), unsafeValueClsCheck);
