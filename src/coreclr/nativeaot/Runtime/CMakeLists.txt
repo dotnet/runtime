@@ -153,7 +153,7 @@ else()
   )
 
   list(APPEND FULL_RUNTIME_SOURCES
-    unix/cgroup.cpp
+    unix/cgroupcpu.cpp
     unix/HardwareExceptions.cpp
     unix/UnixContext.cpp
     unix/UnixSignals.cpp

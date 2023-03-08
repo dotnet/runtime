@@ -21,8 +21,6 @@ namespace ComInterfaceGenerator.Unit.Tests
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
 
-        string NativeInterfaceUsage();
-
         string ICustomMarshallingSignatureTestProvider.BasicParametersAndModifiers(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -37,7 +35,7 @@ partial interface INativeAPI
 {{
     {AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+}}" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
         string ICustomMarshallingSignatureTestProvider.BasicParametersAndModifiersNoRef(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -52,7 +50,7 @@ partial interface INativeAPI
 {{
     {AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}
     {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+}}" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         string ICustomMarshallingSignatureTestProvider.BasicParameterByValue(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
@@ -66,7 +64,7 @@ partial interface INativeAPI
 {{
     {AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}
     void Method({typeName} value);
-}}" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+}}" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         string ICustomMarshallingSignatureTestProvider.BasicParameterWithByRefModifier(string modifier, string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
@@ -82,7 +80,7 @@ partial interface INativeAPI
 {{
     {AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}
     void Method({modifier} {typeName} value);
-}}" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+}}" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
         string ICustomMarshallingSignatureTestProvider.BasicReturnType(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -95,7 +93,7 @@ partial interface INativeAPI
 {{
     {AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}
     {typeName} Method();
-}}" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+}}" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
         string ICustomMarshallingSignatureTestProvider.MarshalUsingParametersAndModifiers(string typeName, string marshallerTypeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -113,7 +111,7 @@ partial interface INativeAPI
         [MarshalUsing(typeof({marshallerTypeName}))] in {typeName} pIn,
         [MarshalUsing(typeof({marshallerTypeName}))] ref {typeName} pRef,
         [MarshalUsing(typeof({marshallerTypeName}))] out {typeName} pOut);
-}}" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+}}" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -133,7 +131,7 @@ partial interface INativeAPI
         [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize);
-}}" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+}}" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionParametersAndModifiers(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -155,7 +153,7 @@ partial interface INativeAPI
         [MarshalUsing(typeof({marshallerType}), CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize
         );
-}}" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+}}" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionReturnValueLength(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -171,7 +169,7 @@ partial interface INativeAPI
     int Method(
         [MarshalUsing(typeof({marshallerType}), CountElementName = MarshalUsingAttribute.ReturnsCountValue)] out {collectionType} pOut
         );
-}}" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+}}" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
 
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionOutConstantLength(string collectionType, string predeclaration) => $@"
 using System.Runtime.CompilerServices;
@@ -190,7 +188,7 @@ partial interface INativeAPI
         [MarshalUsing(ConstantElementCount = 10)] out {collectionType} pOut
         );
 }}
-" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
         string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionReturnConstantLength(string collectionType, string predeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -207,7 +205,7 @@ partial interface INativeAPI
     [return:MarshalUsing(ConstantElementCount = 10)]
     {collectionType} Method();
 }}
-" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
         string ICustomMarshallingSignatureTestProvider.CustomElementMarshalling(string collectionType, string elementMarshaller, string predeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -232,6 +230,6 @@ partial interface INativeAPI
         out int pOutSize
         );
 }}
-" + NativeInterfaceUsage() + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
+" + AttributeProvider.AdditionalUserRequiredInterfaces("INativeAPI");
     }
 }

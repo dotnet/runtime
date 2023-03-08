@@ -92,6 +92,21 @@
         <target state="translated">提供的值不是 'ExceptionMarshalling' 列舉的已知旗標。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
+        <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
+        <target state="new">Invalid 'GeneratedComInterfaceAttribute' usage.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
         <target state="translated">'StringMarshalling' 和 'StringMarshallingCustomType' 的設定無效。</target>
