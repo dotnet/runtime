@@ -179,8 +179,8 @@ interface AssetEntry extends ResourceRequest {
 }
 type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
-    "invariant" | //  operate in invariant globalization mode.
-    "auto";
+"invariant" | //  operate in invariant globalization mode.
+"auto";
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;

@@ -214,9 +214,6 @@ async function preRunAsync(userPreRun: (() => void)[]) {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preRunAsync");
     const mark = startMeasure();
     try {
-        if (MonoWasmThreads) {
-            await instantiateWasmPThreadWorkerPool();
-        }
         // all user Module.preRun callbacks
         userPreRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.preRun);
@@ -242,9 +239,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         // load runtime
         await mono_wasm_before_user_runtime_initialized();
 
-        if (config.runtimeOptions) {
-            mono_wasm_set_runtime_options(config.runtimeOptions);
-        }
         // call user code
         try {
             userOnRuntimeInitialized();
@@ -329,6 +323,9 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
 
     await init_polyfills_async();
     await mono_wasm_load_config(Module.configSrc);
+    if (MonoWasmThreads) {
+        preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);
+    }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }
@@ -358,7 +355,7 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
             runtimeHelpers.storeMemorySnapshotPending = false;
         }
         if (MonoWasmThreads) {
-            preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);
+            await instantiateWasmPThreadWorkerPool();
             await mono_wasm_init_diagnostics();
         }
         bindings_init();
@@ -496,7 +493,8 @@ async function instantiate_wasm_module(
 
         if (runtimeHelpers.loadMemorySnapshot) {
             try {
-                const wasmMemory = Module.asm.memory;
+                const wasmMemory = (Module.asm?.memory || Module.wasmMemory)!;
+
                 // .grow() takes a delta compared to the previous size
                 wasmMemory.grow((memorySize! - wasmMemory.buffer.byteLength + 65535) >>> 16);
                 runtimeHelpers.updateGlobalBufferAndViews(wasmMemory.buffer);
