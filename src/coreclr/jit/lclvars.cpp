@@ -2913,7 +2913,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         varDsc->lvExactSize = layout->GetSize();
         assert(layout->IsBlockLayout() || (varDsc->lvExactSize != 0));
 
-        if (!layout->IsBlockLayout() && layout->IsValueClass())
+        if (layout->IsValueClass())
         {
             varDsc->lvType = layout->GetType();
 
