@@ -190,7 +190,7 @@ enum _regMask_enum : unsigned
 #error Unsupported target architecture
 #endif
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
 // AVAILABLE_REG_COUNT is defined to be dynamic, based on whether AVX-512 high registers are available.
 #define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
 #else

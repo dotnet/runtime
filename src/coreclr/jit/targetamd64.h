@@ -94,7 +94,9 @@
   #define REG_MASK_FIRST           REG_K0
   #define REG_MASK_LAST            REG_K7
 
-  #define RBM_ALLMASK              (RBM_K1 | RBM_K2 | RBM_K3 | RBM_K4 | RBM_K5 | RBM_K6 | RBM_K7)
+  #define RBM_ALLMASK              RBM_K1
+
+  #define CNT_MASK_REGS            8
 
 #ifdef    UNIX_AMD64_ABI
   #define LAST_FP_ARGREG        REG_XMM7

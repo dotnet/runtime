@@ -483,21 +483,21 @@ public:
         }
         else
 #endif
-            if (emitter::isFloatReg(reg))
+            if (emitter::isGeneralRegister(reg))
+        {
+            assert(registerType == IntRegisterType);
+        }
+        else if (emitter::isFloatReg(reg))
         {
             registerType = FloatRegisterType;
         }
 #if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
-        else if (emitter::isMaskReg(reg))
+        else 
         {
+            assert(emitter::isMaskReg(reg));
             registerType = MaskRegisterType;
         }
 #endif
-        else
-        {
-            // The constructor defaults to IntRegisterType
-            assert(emitter::isGeneralRegister(reg) && registerType == IntRegisterType);
-        }
         regNum       = reg;
         isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
     }
@@ -1951,10 +1951,11 @@ private:
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
+#if defined(TARGET_XARCH)
+
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
-    unsigned  availableRegCount;
 
     regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -1964,11 +1965,15 @@ private:
     {
         return this->rbmFltCalleeTrash;
     }
+#endif // TARGET_AMD64
+
+    unsigned  availableRegCount;
+
     unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
     // calleeSaveRegs: Get the set of callee-save registers of the given RegisterType
