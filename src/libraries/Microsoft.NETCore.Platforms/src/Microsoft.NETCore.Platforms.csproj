@@ -17,12 +17,14 @@
     <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
     <!-- TODO: Remove with AvoidRestoreCycleOnSelfReference hack. -->
     <PackageValidationBaselineName>$(MSBuildProjectName)</PackageValidationBaselineName>
-    
+
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' == 'core'">$(NetCoreAppToolCurrent)</_generateRuntimeGraphTargetFramework>
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' != 'core'">net472</_generateRuntimeGraphTargetFramework>
     <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
     <!-- When building from source, ensure the RID we're building for is part of the RID graph -->
     <AdditionalRuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
+    <ServicingVersion>1</ServicingVersion>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -52,9 +54,9 @@
     <PackageReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
-  
+
   <Import Project="runtimeGroups.props" />
-  
+
   <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
 
   <Target Name="GenerateRuntimeJson" AfterTargets="Build" Condition="'$(AdditionalRuntimeIdentifiers)' != ''">
