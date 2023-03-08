@@ -29,6 +29,7 @@ const skipDownloadsByAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
+    "dotnetwasm": true,
 };
 
 // `response.arrayBuffer()` can't be called twice. Some usecases are calling it on response in the instantiation.
@@ -37,6 +38,19 @@ const skipBufferByAssetTypes: {
 } = {
     "dotnetwasm": true,
 };
+
+const skipInSnapshotByAssetTypes: {
+    [k: string]: boolean
+} = {
+    "resource": true,
+    "assembly": true,
+    "pdb": true,
+    "heap": true,
+    "icu": true,
+    "js-module-threads": true,
+    "dotnetwasm": true,
+};
+
 
 // these assets are instantiated differently than the main flow
 const skipInstantiateByAssetTypes: {
@@ -59,20 +73,11 @@ export function resolve_asset_path(behavior: AssetBehaviours) {
     return asset;
 }
 export async function mono_download_assets(): Promise<void> {
-    // continue after we know if memory snapshot is available or not
-    await memorySnapshotIsResolved.promise;
-
-    if (runtimeHelpers.useMemorySnapshot) {
-        allAssetsInMemory.promise_control.resolve();
-        return;
-    }
-
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     runtimeHelpers.enableDownloadRetry = runtimeHelpers.config.enableDownloadRetry || runtimeHelpers.enableDownloadRetry;
     try {
-        const promises_of_assets: Promise<AssetEntryInternal>[] = [];
-        // start fetching and instantiating all assets in parallel
+        // just validate all
         for (const a of runtimeHelpers.config.assets!) {
             const asset: AssetEntryInternal = a;
             mono_assert(typeof asset === "object", "asset must be object");
@@ -81,14 +86,44 @@ export async function mono_download_assets(): Promise<void> {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                expected_instantiated_assets_count++;
-            }
-            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                expected_downloaded_assets_count++;
-                promises_of_assets.push(start_asset_download(asset));
+        }
+
+
+        const promises_of_assets: Promise<AssetEntryInternal>[] = [];
+        const nonSnapshotAssets: AssetEntryInternal[] = [];
+        // start fetching and instantiating all assets in parallel
+        for (const a of runtimeHelpers.config.assets!) {
+            const asset: AssetEntryInternal = a;
+            const skipInSnapshot = skipInSnapshotByAssetTypes[asset.behavior];
+            if (!skipInSnapshot) {
+                if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    expected_instantiated_assets_count++;
+                }
+                if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    expected_downloaded_assets_count++;
+                    promises_of_assets.push(start_asset_download(asset));
+                }
+            } else {
+                nonSnapshotAssets.push(asset);
             }
         }
+
+        // continue after we know if memory snapshot is available or not
+        await memorySnapshotIsResolved.promise;
+
+        // and load the rest of the assets if necessary
+        if (!runtimeHelpers.loadMemorySnapshot) {
+            for (const asset of nonSnapshotAssets) {
+                if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    expected_instantiated_assets_count++;
+                }
+                if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    expected_downloaded_assets_count++;
+                    promises_of_assets.push(start_asset_download(asset));
+                }
+            }
+        }
+
         allDownloadsQueued.promise_control.resolve();
 
         const promises_of_asset_instantiation: Promise<void>[] = [];

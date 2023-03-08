@@ -353,8 +353,9 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
         mono_wasm_globalization_init();
 
         if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
-        if (config.cacheMemory && !runtimeHelpers.useMemorySnapshot) {
+        if (config.cacheMemory && !runtimeHelpers.loadMemorySnapshot) {
             await storeMemorySnapshot(Module.HEAP8.buffer);
+            runtimeHelpers.storeMemorySnapshotPending = false;
         }
         if (MonoWasmThreads) {
             preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);
@@ -475,9 +476,10 @@ async function instantiate_wasm_module(
 
         if (config.cacheMemory && config.assetsHash) {
             memorySize = await getMemorySnapshotSize();
-            runtimeHelpers.useMemorySnapshot = !!memorySize;
+            runtimeHelpers.loadMemorySnapshot = !!memorySize;
+            runtimeHelpers.storeMemorySnapshotPending = !runtimeHelpers.loadMemorySnapshot;
         }
-        if (!runtimeHelpers.useMemorySnapshot) {
+        if (!runtimeHelpers.loadMemorySnapshot) {
             // we should start downloading DLLs etc as they are not in the snapshot
             memorySnapshotIsResolved.promise_control.resolve();
         }
@@ -492,7 +494,7 @@ async function instantiate_wasm_module(
         assetToLoad.buffer = null as any; // GC
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
 
-        if (runtimeHelpers.useMemorySnapshot) {
+        if (runtimeHelpers.loadMemorySnapshot) {
             try {
                 const wasmMemory = Module.asm.memory;
                 // .grow() takes a delta compared to the previous size
@@ -505,7 +507,7 @@ async function instantiate_wasm_module(
                 if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Loaded memory from cache");
             } catch (err) {
                 console.warn("MONO_WASM: failed to load memory snapshot", err);
-                runtimeHelpers.useMemorySnapshot = false;
+                runtimeHelpers.loadMemorySnapshot = false;
             }
             // now we know if the loading of memory succeeded or not, we can start loading the rest of the assets
             memorySnapshotIsResolved.promise_control.resolve();
@@ -550,7 +552,7 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
     runtimeHelpers.mono_wasm_load_runtime_done = true;
     try {
         const mark = startMeasure();
-        if (!runtimeHelpers.useMemorySnapshot) {
+        if (!runtimeHelpers.loadMemorySnapshot) {
             if (debugLevel == undefined) {
                 debugLevel = 0;
                 if (config && config.debugLevel) {
