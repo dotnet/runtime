@@ -102,17 +102,25 @@ namespace System.Formats.Tar.Tests
         {
             using Process p = new Process();
 
-            p.StartInfo.UseShellExecute = false;
             p.StartInfo.FileName = command;
             p.StartInfo.Arguments = arguments;
+
+            p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
 
-            p.Start();
-            p.WaitForExit();
+            string standardError = string.Empty;
+            p.ErrorDataReceived += new DataReceivedEventHandler((sender, e) => { standardError += e.Data; });
 
-            string standardOutput = p.StandardOutput.ReadToEnd();
-            string standardError = p.StandardError.ReadToEnd();
+            string standardOutput = string.Empty;
+            p.OutputDataReceived += new DataReceivedEventHandler((sender, e) => { standardOutput += e.Data; });
+
+            p.Start();
+
+            p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
+
+            p.WaitForExit();
 
             if (p.ExitCode != 0)
             {
