@@ -25,6 +25,7 @@ __StackAllocationSize = (128 + 8 + 8 + \Alignment) // red zone + fp + ra + align
 LOCAL_LABEL(SignalHandlerWorkerReturn\Alignment):
     EPILOG_RESTORE_REG_PAIR fp, ra, 0
     EPILOG_STACK_FREE __StackAllocationSize
+    .cfi_adjust_cfa_offset -__StackAllocationSize
     jalr  x0, ra, 0
 
 NESTED_END CallSignalHandlerWrapper\Alignment, _TEXT
