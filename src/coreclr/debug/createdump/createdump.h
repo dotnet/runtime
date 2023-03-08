@@ -23,6 +23,9 @@ extern bool g_diagnosticsVerbose;
 #define TRACE_VERBOSE(args, ...)
 #endif
 
+// Keep in sync with the definitions in dbgutil.cpp and daccess.h
+#define DACCESS_TABLE_SYMBOL "g_dacTable"
+
 #ifdef HOST_64BIT
 #define PRIA "016"
 #else
@@ -89,6 +92,24 @@ typedef int T_CONTEXT;
 #include <vector>
 #include <array>
 #include <string>
+
+typedef struct
+{
+    const char* DumpPathTemplate;
+    const char* DumpType;
+    MINIDUMP_TYPE MinidumpType;
+    bool CreateDump;
+    bool CrashReport;
+    int Pid;
+    int CrashThread;
+    int Signal;
+#if defined(HOST_UNIX) && !defined(HOST_OSX)
+    int SignalCode;
+    int SignalErrno;
+    void* SignalAddress;
+#endif
+} CreateDumpOptions;
+
 #ifdef HOST_UNIX
 #ifdef __APPLE__
 #include <mach/mach.h>
@@ -108,8 +129,8 @@ typedef int T_CONTEXT;
 #define MAX_LONGPATH   1024
 #endif
 
-bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
-bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool crashReport, int crashThread, int signal);
+extern bool CreateDump(const CreateDumpOptions& options);
+extern bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
 
 extern void printf_status(const char* format, ...);
 extern void printf_error(const char* format, ...);
