@@ -9389,9 +9389,11 @@ inline bool OptBoolsDsc::ConditionIsTest(GenTree* condition, bool* isOptBool)
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
 //      *  JTRUE
-//      \--*  AND
-//         +--*  LE a,b
-//         \--*  NE c,d
+//      \--* NE
+//         +--*  AND
+//         |  +--*  LE a,b
+//         |  \--*  NE c,d
+//         \--* CNS_INT 0
 //
 //      ------------ BB03, preds={BB01} succs={BB04}
 //      *  ASG x,y
@@ -9403,9 +9405,11 @@ inline bool OptBoolsDsc::ConditionIsTest(GenTree* condition, bool* isOptBool)
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
 //      *  JTRUE
-//      \--*  AND
-//         +--*  LT a,b
-//         \--*  NE c,d
+//      \--* NE
+//         +--*  AND
+//         |  +--*  LE a,b
+//         |  \--*  NE c,d
+//         \--* CNS_INT 0
 //
 //      ------------ BB03, preds={BB01} succs={BB05}
 //      *  ASG x,y
@@ -9422,11 +9426,13 @@ inline bool OptBoolsDsc::ConditionIsTest(GenTree* condition, bool* isOptBool)
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
 //      *  JTRUE
-//      \--*  AND
+//      \--* NE
 //         +--*  AND
-//            +--*  NE c,d
-//            +--*  GE e,f
-//         \--*  LT a,b
+//         |   +--*  AND
+//         |   |  +--*  NE c,d
+//         |   |  \--*  GE e,f
+//         |   \--*  LT a,b
+//         \--* CNS_INT 0
 //
 //      ------------ BB03, preds={BB01} succs={BB04}
 //      *  ASG x,y
