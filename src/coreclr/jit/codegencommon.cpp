@@ -4221,7 +4221,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
                     regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
                     tmp_offset     = base;
                     // TODO-RISCV64-Bug?: Use RA for temp use
-                    tmp_reg        = REG_RA;
+                    tmp_reg = REG_RA;
 
                     // TODO-RISCV64-Bug?: Use RA for temp use
                     GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, base);

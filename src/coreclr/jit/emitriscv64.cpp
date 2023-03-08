@@ -3910,8 +3910,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                 {
                     // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dst->GetRegNum(), nullptr,
-                                                     REG_RA);
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dst->GetRegNum(), nullptr, REG_RA);
                 }
                 else
                 {
@@ -3935,8 +3934,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         emitIns_J_cond_la(INS_bge, tmpLabel, REG_RA, REG_R0);
                         emitIns_R_R_I(INS_addi, attr, REG_RA, REG_R0, imm);
 
-                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_RA, nullptr,
-                                                         dst->GetRegNum());
+                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_RA, nullptr, dst->GetRegNum());
 
                         codeGen->genDefineTempLabel(tmpLabel);
                     }

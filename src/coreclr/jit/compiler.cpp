@@ -2230,7 +2230,7 @@ void Compiler::compSetProcessor()
 #if defined(TARGET_ARM)
     info.genCPU = CPU_ARM;
 #elif defined(TARGET_ARM64)
-    info.genCPU = CPU_ARM64;
+    info.genCPU      = CPU_ARM64;
 #elif defined(TARGET_AMD64)
     info.genCPU = CPU_X64;
 #elif defined(TARGET_X86)
@@ -2239,7 +2239,7 @@ void Compiler::compSetProcessor()
     else
         info.genCPU = CPU_X86;
 #elif defined(TARGET_LOONGARCH64)
-    info.genCPU = CPU_LOONGARCH64;
+    info.genCPU                   = CPU_LOONGARCH64;
 #elif defined(TARGET_RISCV64)
     info.genCPU = CPU_RISCV64;
 #endif
