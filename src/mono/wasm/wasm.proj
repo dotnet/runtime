@@ -206,6 +206,53 @@
       <EmccExportedFunction Include="_htons" />
       <EmccExportedFunction Include="_ntohs" />
     </ItemGroup>
+    <!-- for the jiterpreter -->
+    <ItemGroup>
+      <EmccExportedFunction Include="_fmod" />
+      <EmccExportedFunction Include="_atan2" />
+      <EmccExportedFunction Include="_fma" />
+      <EmccExportedFunction Include="_pow" />
+      <EmccExportedFunction Include="_fmodf" />
+      <EmccExportedFunction Include="_atan2f" />
+      <EmccExportedFunction Include="_fmaf" />
+      <EmccExportedFunction Include="_powf" />
+
+      <EmccExportedFunction Include="_asin" />
+      <EmccExportedFunction Include="_asinh" />
+      <EmccExportedFunction Include="_acos" />
+      <EmccExportedFunction Include="_acosh" />
+      <EmccExportedFunction Include="_atan" />
+      <EmccExportedFunction Include="_atanh" />
+      <EmccExportedFunction Include="_cbrt" />
+      <EmccExportedFunction Include="_cos" />
+      <EmccExportedFunction Include="_cosh" />
+      <EmccExportedFunction Include="_exp" />
+      <EmccExportedFunction Include="_log" />
+      <EmccExportedFunction Include="_log2" />
+      <EmccExportedFunction Include="_log10" />
+      <EmccExportedFunction Include="_sin" />
+      <EmccExportedFunction Include="_sinh" />
+      <EmccExportedFunction Include="_tan" />
+      <EmccExportedFunction Include="_tanh" />
+
+      <EmccExportedFunction Include="_asinf" />
+      <EmccExportedFunction Include="_asinhf" />
+      <EmccExportedFunction Include="_acosf" />
+      <EmccExportedFunction Include="_acoshf" />
+      <EmccExportedFunction Include="_atanf" />
+      <EmccExportedFunction Include="_atanhf" />
+      <EmccExportedFunction Include="_cbrtf" />
+      <EmccExportedFunction Include="_cosf" />
+      <EmccExportedFunction Include="_coshf" />
+      <EmccExportedFunction Include="_expf" />
+      <EmccExportedFunction Include="_logf" />
+      <EmccExportedFunction Include="_log2f" />
+      <EmccExportedFunction Include="_log10f" />
+      <EmccExportedFunction Include="_sinf" />
+      <EmccExportedFunction Include="_sinhf" />
+      <EmccExportedFunction Include="_tanf" />
+      <EmccExportedFunction Include="_tanhf" />
+    </ItemGroup>
     <!-- after 3.0 -->
     <ItemGroup Condition="$([MSBuild]::VersionGreaterThan('$(_EmccVersion)', '3.0'))">
       <EmccExportedFunction Include="_memset" />
@@ -247,7 +294,7 @@
       <_EmccLinkFlags Include="-s STRICT_JS=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
       <_EmccLinkFlags Include="-s MODULARIZE=1"/>
-      
+
       <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
       <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
            active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
@@ -399,7 +446,7 @@
           SkipUnchangedFiles="true" />
 
     <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" />
-    <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)" 
+    <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)"
           EnvironmentVariables="WasmEnableLegacyJsInterop=$(WasmEnableLegacyJsInterop)" />
 
     <ItemGroup>

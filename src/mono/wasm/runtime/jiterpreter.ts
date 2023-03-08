@@ -224,24 +224,51 @@ export let traceImports : Array<[string, string, Function]> | undefined;
 
 export let _wrap_trace_function: Function;
 
-const mathOps1 = [
-    "asin",
-    "acos",
-    "atan",
-    "cos",
-    "exp",
-    "log",
-    "log2",
-    "log10",
-    "sin",
-    "tan",
-];
-
-const mathOps2 = [
-    "rem",
-    "atan2",
-    "pow",
-];
+const mathOps1d = [
+        "asin",
+        "acos",
+        "atan",
+        "asinh",
+        "acosh",
+        "atanh",
+        "cos",
+        "sin",
+        "tan",
+        "cosh",
+        "sinh",
+        "tanh",
+        "exp",
+        "log",
+        "log2",
+        "log10",
+        "cbrt",
+    ], mathOps2d = [
+        "fmod",
+        "atan2",
+        "pow",
+    ], mathOps1f = [
+        "asinf",
+        "acosf",
+        "atanf",
+        "asinhf",
+        "acoshf",
+        "atanhf",
+        "cosf",
+        "sinf",
+        "tanf",
+        "coshf",
+        "sinhf",
+        "tanhf",
+        "expf",
+        "logf",
+        "log2f",
+        "log10f",
+        "cbrtf",
+    ], mathOps2f = [
+        "fmodf",
+        "atan2f",
+        "powf",
+    ];
 
 function getTraceImports () {
     if (traceImports)
@@ -277,7 +304,8 @@ function getTraceImports () {
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
         importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
-        importDef("fma", getRawCwrap("mono_jiterp_math_fma")),
+        importDef("fma", getRawCwrap("fma")),
+        importDef("fmaf", getRawCwrap("fmaf")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -288,15 +316,17 @@ function getTraceImports () {
     if (nullCheckValidation)
         traceImports.push(importDef("notnull", assert_not_null));
 
-    for (let i = 0; i < mathOps1.length; i++) {
-        const mop = mathOps1[i];
-        traceImports.push([mop, "mathop_d_d", getRawCwrap("mono_jiterp_math_" + mop)]);
-    }
+    const pushMathOps = (list: string[], type: string) => {
+        for (let i = 0; i < list.length; i++) {
+            const mop = list[i];
+            traceImports!.push([mop, type, getRawCwrap(mop)]);
+        }
+    };
 
-    for (let i = 0; i < mathOps2.length; i++) {
-        const mop = mathOps2[i];
-        traceImports.push([mop, "mathop_dd_d", getRawCwrap("mono_jiterp_math_" + mop)]);
-    }
+    pushMathOps(mathOps1f, "mathop_f_f");
+    pushMathOps(mathOps2f, "mathop_ff_f");
+    pushMathOps(mathOps1d, "mathop_d_d");
+    pushMathOps(mathOps2d, "mathop_dd_d");
 
     return traceImports;
 }
@@ -410,6 +440,24 @@ function initialize_builder (builder: WasmBuilder) {
             "lhs": WasmValtype.f64,
             "rhs": WasmValtype.f64,
         }, WasmValtype.f64, true
+    );
+    builder.defineType(
+        "mathop_f_f", {
+            "value": WasmValtype.f32,
+        }, WasmValtype.f32, true
+    );
+    builder.defineType(
+        "mathop_ff_f", {
+            "lhs": WasmValtype.f32,
+            "rhs": WasmValtype.f32,
+        }, WasmValtype.f32, true
+    );
+    builder.defineType(
+        "fmaf", {
+            "x": WasmValtype.f32,
+            "y": WasmValtype.f32,
+            "z": WasmValtype.f32,
+        }, WasmValtype.f32, true
     );
     builder.defineType(
         "fma", {
