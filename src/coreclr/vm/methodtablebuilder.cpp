@@ -1706,8 +1706,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         {
             if (bmtEnumFields->dwNumInstanceFields != 1)
             {
-                // TODO: diagnostics, must have one field.
-                BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
+                BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT);
             }
 
             if (cbVal >= (sizeof(INT32) + 2))
@@ -1720,14 +1719,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 }
                 else
                 {
-                    // TODO: diagnostics, repeat must be > 0
-                    BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_LENGTH);
                 }
 
                 if (HasExplicitFieldOffsetLayout())
                 {
-                    // TODO: diagnostics, must not have explicit offsets
-                    BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT);
                 }
             }
         }
