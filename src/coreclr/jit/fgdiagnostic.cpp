@@ -957,7 +957,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             }
 
             // "Raw" Profile weight
-            if (block->hasProfileWeight())
+            if (block->hasProfileWeight() || (JitConfig.JitSynthesizeCounts() > 0))
             {
                 fprintf(fgxFile, "\\n\\n%7.2f", ((double)block->getBBWeight(this)) / BB_UNITY_WEIGHT);
             }

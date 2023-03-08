@@ -1131,9 +1131,9 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 }
 
 //------------------------------------------------------------------------
-// LIR::Range::GetTreeRange: Computes the subrange that includes all nodes
-//                           in the dataflow trees rooted at a particular
-//                           set of nodes.
+// LIR::Range::GetMarkedRange:
+//   Computes the subrange that includes all nodes in the dataflow trees rooted
+//   at a particular set of nodes.
 //
 // This method logically uses the following algorithm to compute the
 // range:
@@ -1164,14 +1164,29 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 // occurring before uses).
 //
 // Arguments:
-//    root        - The root of the dataflow tree.
-//    isClosed    - An output parameter that is set to true if the returned
-//                  range contains only nodes in the dataflow tree and false
-//                  otherwise.
+//    markCount         - The number of marks initially set on nodes before the
+//                        start node.
+//    start             - The node to start looking backwards from.
+//    isClosed          - [out] Set to true if the returned range contains only
+//                        nodes in the dataflow tree and false otherwise.
+//    sideEffects       - [out] Combined side effect flags for all nodes in the
+//                        returned range.
+//
+// Template arguments:
+//    markFlagsOperands - Whether the dataflow algorithm should also try to
+//                        mark operands that are defining flags. For example,
+//                        GT_JCC implicitly consumes the flags defined by the
+//                        previous node in linear order. If this argument is
+//                        true, then the algorithm will also include the flags
+//                        definition (which is e.g. a CMP node) in the returned
+//                        range.
+//                        This works on a best-effort basis; the user should not
+//                        rely on all flags defs to be found.
 //
 // Returns:
 //    The computed subrange.
 //
+template <bool     markFlagsOperands>
 LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                                               GenTree*  start,
                                               bool*     isClosed,
@@ -1181,6 +1196,12 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
     assert(start != nullptr);
     assert(isClosed != nullptr);
     assert(sideEffects != nullptr);
+
+#ifndef DEBUG
+    // The treatment of flags definitions is on a best-effort basis; it should
+    // be used for debug purposes only.
+    static_assert_no_msg(!markFlagsOperands);
+#endif
 
     bool     sawUnmarkedNode    = false;
     unsigned sideEffectsInRange = 0;
@@ -1202,6 +1223,17 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                 markCount++;
                 return GenTree::VisitResult::Continue;
             });
+
+            if (markFlagsOperands && firstNode->OperConsumesFlags())
+            {
+                GenTree* prev = firstNode->gtPrev;
+                if ((prev != nullptr) && ((prev->gtFlags & GTF_SET_FLAGS) != 0) &&
+                    ((prev->gtLIRFlags & LIR::Flags::Mark) == 0))
+                {
+                    prev->gtLIRFlags |= LIR::Flags::Mark;
+                    markCount++;
+                }
+            }
 
             // Unmark the node and update `firstNode`
             firstNode->gtLIRFlags &= ~LIR::Flags::Mark;
@@ -1281,6 +1313,34 @@ LIR::ReadOnlyRange LIR::Range::GetTreeRange(GenTree* root, bool* isClosed, unsig
 
     return GetMarkedRange(markCount, root, isClosed, sideEffects);
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// LIR::Range::GetTreeRangeWithFlags:
+// Computes the subrange that includes all nodes in the dataflow tree rooted at
+// a particular node, taking into account that the nodes may also implicitly
+// consume flags defined by non-operands.
+//
+// Arguments:
+//    root        - The root of the dataflow tree range of nodes.
+//    isClosed    - An output parameter that is set to true if the returned
+//                  range contains only nodes in the dataflow tree and false
+//                  otherwise.
+//    sideEffects - An output parameter that summarizes the side effects
+//                  contained in the returned range.
+//
+// Returns:
+//    The computed subrange.
+LIR::ReadOnlyRange LIR::Range::GetTreeRangeWithFlags(GenTree* root, bool* isClosed, unsigned* sideEffects) const
+{
+    assert(root != nullptr);
+
+    unsigned markCount = 1;
+    root->gtLIRFlags |= LIR::Flags::Mark;
+
+    return GetMarkedRange<true>(markCount, root, isClosed, sideEffects);
+}
+#endif
 
 //------------------------------------------------------------------------
 // LIR::Range::GetTreeRange: Computes the subrange that includes all nodes

@@ -6386,7 +6386,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             // Block will no longer flow to any of its successors.
             //
-            for (BasicBlock* const succ : block->Succs())
+            for (BasicBlock* const succ : block->Succs(this))
             {
                 // We may have degenerate flow, make sure to fully remove
                 fgRemoveAllRefPreds(succ, block);

@@ -8,7 +8,7 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 
 import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_imports_exports } from "./imports";
-import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType } from "./types";
+import { is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType, DotnetModuleInternal } from "./types";
 import { configure_emscripten_startup, mono_wasm_pthread_worker_init } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
@@ -37,7 +37,7 @@ function initializeImportsAndExports(
     replacements: EarlyReplacements,
     callbackAPI: any
 ): RuntimeAPI {
-    const module = exports.module as DotnetModule;
+    const module = exports.module as DotnetModuleInternal;
     const globalThisAny = globalThis as any;
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iife

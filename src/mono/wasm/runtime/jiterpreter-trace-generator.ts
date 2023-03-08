@@ -18,7 +18,7 @@ import {
     getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 import {
-    sizeOfDataItem, maxModuleSize,
+    sizeOfDataItem,
 
     disabledOpcodes, countCallTargets,
     callTargetCounts, trapTraceErrors,
@@ -178,7 +178,13 @@ export function generate_wasm_body (
             record_abort(traceIp, ip, traceName, "end-of-body");
             break;
         }
+
+        // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
+        //  might generate a ton of code and we generate a bit of an epilogue after
+        //  we finish
+        const maxModuleSize = 3850;
         if (builder.size >= maxModuleSize - builder.bytesGeneratedSoFar) {
+            // console.log(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
             record_abort(traceIp, ip, traceName, "trace-too-big");
             break;
         }
@@ -262,6 +268,56 @@ export function generate_wasm_body (
             case MintOpcode.MINT_INITOBJ: {
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
                 append_memset_dest(builder, 0, getArgU16(ip, 2));
+                break;
+            }
+            case MintOpcode.MINT_CPBLK: {
+                // size (FIXME: uint32 not int32)
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                builder.local("math_rhs32", WasmOpcode.tee_local);
+                // if size is 0 then don't do anything
+                builder.block(WasmValtype.void, WasmOpcode.if_); // if #1
+
+                // stash dest then check for null
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                builder.local("temp_ptr", WasmOpcode.tee_local);
+                builder.appendU8(WasmOpcode.i32_eqz);
+                // stash src then check for null
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                builder.local("math_lhs32", WasmOpcode.tee_local);
+                builder.appendU8(WasmOpcode.i32_eqz);
+
+                // now we memmove if both dest and src are valid. The stack currently has
+                //  the eqz result for each pointer so we can stash a bailout inside of an if
+                builder.appendU8(WasmOpcode.i32_or);
+                builder.block(WasmValtype.void, WasmOpcode.if_); // if #2
+                append_bailout(builder, ip, BailoutReason.NullCheck);
+                builder.endBlock(); // if #2
+
+                // We passed the null check so now prepare the stack
+                builder.local("temp_ptr");
+                builder.local("math_lhs32");
+                builder.local("math_rhs32");
+                // wasm memmove with stack layout dest, src, count
+                builder.appendU8(WasmOpcode.PREFIX_sat);
+                builder.appendU8(10);
+                builder.appendU8(0);
+                builder.appendU8(0);
+                builder.endBlock(); // if #1
+                break;
+            }
+            case MintOpcode.MINT_INITBLK: {
+                // FIXME: This will cause an erroneous bailout if dest and size are both 0
+                //  but that really shouldn't ever happen, and it will only cause a slowdown
+                // dest
+                append_ldloc_cknull(builder, getArgU16(ip, 1), ip, true);
+                // value
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                // size (FIXME: uint32 not int32)
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
+                builder.appendU8(WasmOpcode.PREFIX_sat);
+                builder.appendU8(11);
+                builder.appendU8(0);
                 break;
             }
 
@@ -1188,6 +1244,7 @@ export function generate_wasm_body (
     //  from there.
     builder.local("eip");
     builder.appendU8(WasmOpcode.return_);
+    builder.appendU8(WasmOpcode.end);
 
     return result;
 }
@@ -1337,7 +1394,8 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
         if (traceNullCheckOptimizations)
             console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, fresh null check)`);
         cknullOffset = localOffset;
-    }
+    } else
+        cknullOffset = -1;
 }
 
 const ldcTable : { [opcode: number]: [WasmOpcode, number] } = {
@@ -1585,8 +1643,8 @@ function emit_fieldop (
 
             builder.local("pLocals");
             builder.i32_const(fieldOffset);
-            builder.i32_const(objectOffset);
-            builder.i32_const(localOffset);
+            builder.i32_const(objectOffset); // dest
+            builder.i32_const(localOffset); // src
             builder.callImport("stfld_o");
 
             if (!notNull) {
@@ -1595,11 +1653,15 @@ function emit_fieldop (
                 append_bailout(builder, ip, BailoutReason.NullCheck);
                 builder.endBlock();
             } else {
+                if (traceNullCheckOptimizations)
+                    console.log(`(0x${(<any>ip).toString(16)}) locals[${objectOffset}] not null since 0x${notNullSince.get(objectOffset)!.toString(16)}`);
+
                 builder.appendU8(WasmOpcode.drop);
                 counters.nullChecksEliminated++;
 
                 if (nullCheckValidation) {
-                    builder.local("cknull_ptr");
+                    // cknull_ptr was not used here so all we can do is verify that the target object is not null
+                    append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     builder.i32_const(builder.base);
                     builder.i32_const(ip);

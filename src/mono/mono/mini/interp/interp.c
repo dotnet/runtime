@@ -7733,9 +7733,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						break;
 					case JITERPRETER_NOT_JITTED:
 						// Patch opcode to disable it because this trace failed to JIT.
-						mono_memory_barrier ();
-						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier ();
+						if (!mono_opt_jiterpreter_estimate_heat) {
+							mono_memory_barrier ();
+							*mutable_ip = MINT_TIER_NOP_JITERPRETER;
+							mono_memory_barrier ();
+						}
 						ip += 3;
 						break;
 					default:
