@@ -228,14 +228,38 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77726")]
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
-            using (HttpClient client = CreateHttpClient())
-            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
+            using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
+                {
+                    if (errors == SslPolicyErrors.None)
+                    {
+                        return true;
+                    }
+                    else if (errors == SslPolicyErrors.RemoteCertificateChainErrors)
+                    {
+                        // Ignore certificate expiration
+                        // https://github.com/chromium/badssl.com/issues/515
+                        foreach (var status in chain.ChainStatus)
+                        {
+                            if ((status.Status & ~X509ChainStatusFlags.NotTimeValid) != X509ChainStatusFlags.NoError)
+                            {
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                };
+
+                using (HttpClient client = CreateHttpClient(handler))
+                using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
             }
         }
 
