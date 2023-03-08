@@ -1801,16 +1801,40 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
     ENDFORBIDGC();
+    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+}
+HCIMPLEND
+
+// *** This helper corresponds CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED.
+//      Even though we always check if the class constructor has been run, we have a separate
+//      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
+//      otherwise wouldn't be possible.
+HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID, UINT32 staticBlockIndex)
+{
+    FCALL_CONTRACT;
+
+    // Get the ModuleIndex
+    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
+
+    // Get the relevant ThreadLocalModule
+    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
+
+    // If the TLM has been allocated and the class has been marked as initialized,
+    // get the pointer to the non-GC statics base and return
+    if (pThreadLocalModule != NULL && pThreadLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
+        return (void*)pThreadLocalModule->GetPrecomputedNonGCStaticsBasePointer();
+
+    // If the TLM was not allocated or if the class was not marked as initialized
+    // then we have to go through the slow path
+
+    // Obtain the MethodTable
+    MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
+    _ASSERTE(!pMT->HasGenericsStaticsInfo());
+
+    ENDFORBIDGC();
     void* staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
 
-
-    HANDLE currentThread = GetCurrentThread();
-    DWORD threadID = GetThreadId(currentThread);
 #ifdef TARGET_WINDOWS
-
-
-    if ((staticBlockIndex > 0) /*TODO: Remove this once separate helper*/)
-    {
         if (t_threadStaticBlocksSize <= staticBlockIndex)
         {
             UINT32 prevThreadStaticBlocksSize = t_threadStaticBlocksSize;
@@ -1827,26 +1851,23 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
             }
         }
 
-        //_ASSERTE(staticBlockIndex != 0);
         void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
         // We could be coming here 2nd time after running the ctor when we try to get the static block.
         // In such case, just avoid adding the same entry.
         if (currentEntry != staticBlock)
         {
-            printf("*** [Thread# %d] Saving t_threadStaticBlocks[%u] @ 0x%zx = 0x%zx, ", threadID, staticBlockIndex, (size_t)(&(t_threadStaticBlocks[staticBlockIndex])), (size_t)(staticBlock));
             _ASSERTE(currentEntry == nullptr);
             t_threadStaticBlocks[staticBlockIndex] = staticBlock;
-            printf("OLD_t_maxThreadStaticBlocks: %u, ", t_maxThreadStaticBlocks);
             t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
-            printf("NEW_t_maxThreadStaticBlocks: %u, ", t_maxThreadStaticBlocks);
-            printf("ADDR(t_maxThreadStaticBlocks): 0x%zx\n", (size_t)(&t_maxThreadStaticBlocks));
         }
-            //_ASSERTE(CEEInfo::g_threadStaticBlockTypeIDMap.LookupType(staticBlockIndex));
-    }
+
+        _ASSERTE(CEEInfo::g_threadStaticBlockTypeIDMap.LookupType(staticBlockIndex));
 #endif
+
     return staticBlock;
 }
 HCIMPLEND
+
 #include <optdefault.h>
 
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE and

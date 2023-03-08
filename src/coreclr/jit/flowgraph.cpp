@@ -727,6 +727,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
@@ -783,7 +784,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             opClassIDArg = gtNewIconNode(clsID, TYP_INT);
         }
 
-        if (helper != CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR)
+        if (helper != CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
         {
             result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
         }

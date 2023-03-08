@@ -11882,6 +11882,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedNongcthreadstaticBaseNoctor;
             break;
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetsharedNongcthreadstaticBaseNoctorOptimized;
+            break;
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
             vnf = VNF_GetsharedGcthreadstaticBaseDynamicclass;
             break;

@@ -14371,8 +14371,8 @@ GenTree* Compiler::impThreadLocalFieldRead(CORINFO_RESOLVED_TOKEN& token,
 
     FieldSeq* innerFldSeq = GetFieldSeqStore()->Create(fieldHandle, fieldOffset, FieldSeq::FieldKind::SharedStatic);
     GenTree*  slowPathForThreadStaticBlockNull =
-        fgGetStaticsCCtorHelper(token.hClass, CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
-                                threadLocalInfo.threadStaticBlockIndex); // TODO: fix this
+        fgGetStaticsCCtorHelper(token.hClass, pFieldInfo->helper, threadLocalInfo.threadStaticBlockIndex);
+
     slowPathForThreadStaticBlockNull =
         gtNewOperNode(GT_ADD, slowPathForThreadStaticBlockNull->TypeGet(), slowPathForThreadStaticBlockNull,
                       gtNewIconNode(fieldOffset, innerFldSeq));
@@ -14547,9 +14547,8 @@ GenTree* Compiler::impThreadLocalFieldWrite(CORINFO_RESOLVED_TOKEN& token,
     GenTree* tlsForMaxThreadStaticBlockAccess = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     GenTree* tlsForThreadStaticBlockAccess    = gtCloneExpr(tlsForMaxThreadStaticBlockAccess);
 
-    GenTree*  threadStaticBlockValueSlow =
-        fgGetStaticsCCtorHelper(token.hClass, CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
-                                threadLocalInfo.threadStaticBlockIndex); // TODO: fix the helper name
+    GenTree* threadStaticBlockValueSlow =
+        fgGetStaticsCCtorHelper(token.hClass, pFieldInfo->helper, threadLocalInfo.threadStaticBlockIndex);
     
 
     GenTree* slowPathForMaxThreadStaticBlock = gtCloneExpr(threadStaticBlockValueSlow);

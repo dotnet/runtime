@@ -1542,18 +1542,23 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = intrinsicAccessor;
             }
             else
-            if (// Static fields are not pinned in collectible types. We will always access
-                // them using a helper since the address cannot be embedded into the code.
-                pFieldMT->Collectible() ||
-                // We always treat accessing thread statics as if we are in domain neutral code.
-                pField->IsThreadStatic()
-                )
+            if (pFieldMT->Collectible())
             {
+                // Static fields are not pinned in collectible types. We will always access
+                // them using a helper since the address cannot be embedded into the code.
+                fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
+
+                pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
+            }
+            else if (pField->IsThreadStatic())
+            {
+                 // We always treat accessing thread statics as if we are in domain neutral code.
 #ifdef TARGET_WINDOWS
-                if (pField->IsThreadStatic() && ((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() <= ELEMENT_TYPE_STRING)))
+                if (((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_STRING)))
                 {
-                    // If the field is thread static
                     fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+
+                    pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
                 else
 #endif // TARGET_WINDOWS
