@@ -89,7 +89,6 @@ private:
     insCflags TruthifyingFlags(GenCondition cond);
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
-    void ContainCheckConditionalCompare(GenTreeConditional* ccmp);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);

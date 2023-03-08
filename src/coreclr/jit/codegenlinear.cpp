@@ -1624,14 +1624,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
-        else if (tree->OperIsConditionalCompare())
-        {
-            assert(false);
-            // Conditional compares may be contained.
-            genConsumeRegs(tree->AsConditional()->gtCond);
-            genConsumeRegs(tree->AsConditional()->gtOp1);
-            genConsumeRegs(tree->AsConditional()->gtOp2);
-        }
 #endif
         else if (tree->OperIsLocalRead())
         {

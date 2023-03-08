@@ -689,7 +689,8 @@ bool OptIfConversionDsc::optIfConvert()
     {
         if (m_doElseConversion)
         {
-            selectTrueInput = m_elseOperation.node->gtGetOp2();
+            selectTrueInput  = m_elseOperation.node->gtGetOp2();
+            selectFalseInput = m_thenOperation.node->gtGetOp2();
         }
         else
         {
@@ -700,7 +701,6 @@ bool OptIfConversionDsc::optIfConvert()
 
             selectFalseInput = m_thenOperation.node->gtGetOp2();
         }
-        selectFalseInput = m_thenOperation.node->gtGetOp2();
 
         // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
         selectType = genActualType(m_thenOperation.node->gtGetOp1());

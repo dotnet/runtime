@@ -4504,8 +4504,6 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 // Arguments:
 //    tree - the node
 //
-// Assumptions: The registers for tree have already been consumed.
-//
 void CodeGen::genCodeForCompare(GenTreeOp* tree)
 {
     regNumber targetReg = tree->GetRegNum();
@@ -4585,7 +4583,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 // genCodeForConditionalCompare: Produce code for a compare that's dependent on a previous compare.
 //
 // Arguments:
-//    tree - a conditional compare node (GT_EQ etc)
+//    tree - a compare node (GT_EQ etc)
 //    cond - the condition of the previous generated compare.
 //
 void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
@@ -4622,73 +4620,6 @@ void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
 }
 
 //------------------------------------------------------------------------
-// genCodeForConditionalCompare: Produce code for a conditional compare.
-//
-// Arguments:
-//    tree - the node
-//
-//
-void CodeGen::genCodeForConditionalCompare(GenTreeConditional* tree)
-{
-    assert(tree->OperIsConditionalCompare());
-    emitter* emit = GetEmitter();
-
-    GenTree*  opcond    = tree->gtCond;
-    GenTree*  op1       = tree->gtOp1;
-    GenTree*  op2       = tree->gtOp2;
-    var_types op1Type   = genActualType(op1->TypeGet());
-    var_types op2Type   = genActualType(op2->TypeGet());
-    emitAttr  cmpSize   = EA_ATTR(genTypeSize(op1Type));
-    regNumber targetReg = tree->GetRegNum();
-
-    // No float support or swapping op1 and op2 to generate cmp reg, imm.
-    assert(!varTypeIsFloating(op2Type));
-    assert(!op1->isContainedIntOrIImmed());
-
-    // ConditionalCompare relies on flags, therefore the condition must be contained.
-    assert(opcond->isContained());
-
-    if (opcond->OperIsCompare())
-    {
-        genConsumeRegs(opcond);
-        genCodeForCompare(opcond->AsOp());
-    }
-    else
-    {
-        assert(opcond->OperIsConditionalCompare());
-        genCodeForConditionalCompare(opcond->AsConditional());
-    }
-
-    // For the ccmp flags, invert the condition of the compare.
-    insCflags cflags = InsCflagsForCcmp(GenCondition::FromRelop(tree));
-
-    // For the condition, use the opcond.
-    GenCondition            prevCond    = GenCondition::FromRelop(opcond);
-    const GenConditionDesc& prevDesc    = GenConditionDesc::Get(prevCond);
-    insCond                 prevInsCond = JumpKindToInsCond(prevDesc.jumpKind1);
-
-    regNumber srcReg1 = genConsumeReg(op1);
-
-    if (op2->isContainedIntOrIImmed())
-    {
-        GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-        emit->emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, (int)intConst->IconValue(), cflags, prevInsCond);
-    }
-    else
-    {
-        regNumber srcReg2 = genConsumeReg(op2);
-        emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, cflags, prevInsCond);
-    }
-
-    // Are we evaluating this into a register?
-    if (targetReg != REG_NA)
-    {
-        inst_SETCC(GenCondition::FromRelop(tree), tree->TypeGet(), targetReg);
-        genProduceReg(tree);
-    }
-}
-
-//------------------------------------------------------------------------
 // genCodeForSelect: Produce code for a GT_SELECT node.
 //
 // Arguments:
@@ -4720,7 +4651,6 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
     if (opcond != nullptr)
     {
         // Condition has been generated into a register - move it into flags.
-        genConsumeRegs(opcond);
         emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
         cond = GenCondition::NE;
     }

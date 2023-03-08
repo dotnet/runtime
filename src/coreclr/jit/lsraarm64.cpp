@@ -775,13 +775,7 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_SELECT:
-        case GT_CCMP_EQ:
-        case GT_CCMP_NE:
-        case GT_CCMP_LT:
-        case GT_CCMP_LE:
-        case GT_CCMP_GE:
-        case GT_CCMP_GT:
-            // AHTODO: Rename this to Buildconditional
+            assert(dstCount == 1);
             srcCount = BuildSelect(tree->AsConditional());
             break;
         case GT_SELECTCC:

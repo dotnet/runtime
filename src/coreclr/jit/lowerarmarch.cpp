@@ -2404,11 +2404,10 @@ insCflags Lowering::TruthifyingFlags(GenCondition condition)
             NO_WAY("unexpected condition type");
             return INS_FLAGS_NONE;
     }
-    return false;
 }
 
 //------------------------------------------------------------------------
-// ContainCheckChainedCompare: determine whether the source of a compare within a compare chain should be contained.
+// ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
 //
 // Arguments:
 //    node - pointer to the node
@@ -2426,30 +2425,6 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
             MakeSrcContained(cmp, op2);
         }
     }
-}
-
-//------------------------------------------------------------------------
-// ContainCheckConditionalCompare : determine whether the source of a conditional compare should
-//                                  be contained.
-//
-// Arguments:
-//    node - pointer to the node
-//
-void Lowering::ContainCheckConditionalCompare(GenTreeConditional* ccmp)
-{
-    if (!comp->opts.OptimizationEnabled())
-    {
-        return;
-    }
-
-    // Always try to contain the condition to prevent setting flags.
-    if (IsSafeToContainMem(ccmp, ccmp->gtCond))
-    {
-        ccmp->gtCond->SetContained();
-    }
-
-    // Do the same containing as a standard compare
-    CheckImmedAndMakeContained(ccmp, ccmp->gtOp2);
 }
 
 #endif // TARGET_ARM64

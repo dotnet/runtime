@@ -3134,8 +3134,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 cmp->AsOp()->gtOp1 = castOp;
 
                 BlockRange().Remove(cast);
-                JITDUMP("Removed cast\n");
-                DISPTREERANGE(BlockRange(), cmp);
             }
         }
     }
@@ -3188,8 +3186,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 BlockRange().Remove(cmp->gtGetOp2());
                 BlockRange().Remove(cmp);
 
-                JITDUMP("Removed cast\n");
-                DISPTREERANGE(BlockRange(), cmp);
                 return next;
             }
         }
@@ -3239,8 +3235,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 }
             }
 #endif
-            JITDUMP("Bashed compare to test:\n");
-            DISPTREERANGE(BlockRange(), cmp);
         }
     }
 
@@ -3341,48 +3335,6 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #endif // TARGET_XARCH
-
-#if defined(TARGET_ARM64)
-    // Detect TEST(CMP1, CMP2) and replace with CCMP2(CMP1).
-    if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
-    {
-        GenTree* op1 = cmp->AsOp()->gtGetOp1();
-        GenTree* op2 = cmp->AsOp()->gtGetOp2();
-
-        if (op1->OperIsCmpCompare() && op2->OperIsCmpCompare())
-        {
-            // Get the equivalant CCMP oper.
-            genTreeOps cmpOper = op2->gtOper;
-            if (cmp->OperIs(GT_TEST_EQ))
-            {
-                cmpOper = GenTree::ReverseRelop(cmpOper);
-            }
-            genTreeOps ccmpOper = GenTree::OperCovertCompareToConditionalCompare(cmpOper);
-
-            // Create a ccmp node, insert it and update the use.
-            GenTreeConditional* ccmp = comp->gtNewConditionalNode(ccmpOper, op1, op2->AsOp()->gtGetOp1(),
-                                                                  op2->AsOp()->gtGetOp2(), op2->gtType);
-            BlockRange().InsertAfter(op2, ccmp);
-            LIR::Use useOfCmp;
-            bool     gotUse = BlockRange().TryGetUse(cmp, &useOfCmp);
-            assert(gotUse);
-            useOfCmp.ReplaceWith(ccmp);
-            LowerNode(ccmp);
-
-            // Remove the old nodes.
-            BlockRange().Remove(cmp);
-            BlockRange().Remove(op2);
-
-            ContainCheckConditionalCompare(ccmp);
-
-            JITDUMP("Bashed TEST to CCMP:\n");
-            DISPTREERANGE(BlockRange(), ccmp);
-
-            return ccmp->gtNext;
-        }
-    }
-#endif
-
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
@@ -6959,7 +6911,7 @@ void Lowering::CheckCallArg(GenTree* arg)
         break;
 
         default:
-            // assert(arg->OperIsPutArg());
+            assert(arg->OperIsPutArg());
             break;
     }
 }
@@ -7332,15 +7284,6 @@ void Lowering::ContainCheckNode(GenTree* node)
 
         case GT_SELECT:
             ContainCheckSelect(node->AsConditional());
-            break;
-
-        case GT_CCMP_EQ:
-        case GT_CCMP_NE:
-        case GT_CCMP_LT:
-        case GT_CCMP_LE:
-        case GT_CCMP_GE:
-        case GT_CCMP_GT:
-            ContainCheckConditionalCompare(node->AsConditional());
             break;
 
         case GT_ADD:

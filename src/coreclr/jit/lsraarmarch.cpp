@@ -823,15 +823,15 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
-// BuildSelect: Build RefPositions for a conditional node.
+// BuildSelect: Build RefPositions for a GT_SELECT node.
 //
 // Arguments:
-//    select - The conditional node
+//    select - The GT_SELECT node
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildSelect(GenTreeOp* tree)
+int LinearScan::BuildSelect(GenTreeOp* select)
 {
     assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 

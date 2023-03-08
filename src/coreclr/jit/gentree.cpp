@@ -3475,19 +3475,6 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         //     tbz <=> tbnz
         tree->gtFlags ^= GTF_JCMP_EQ;
     }
-#if defined(TARGET_ARM64)
-    else if (tree->OperIsConditionalCompare())
-    {
-        genTreeOps cmpOper = GenTree::OperCovertConditionalCompareToCompare(tree->OperGet());
-        genTreeOps revOper = GenTree::ReverseRelop(cmpOper);
-        tree->SetOper(GenTree::OperCovertCompareToConditionalCompare(revOper));
-
-        if (varTypeIsFloating(tree->AsConditional()->gtOp1->TypeGet()))
-        {
-            tree->gtFlags ^= GTF_RELOP_NAN_UN;
-        }
-    }
-#endif
     else
     {
         tree = gtNewOperNode(GT_NOT, TYP_INT, tree);
@@ -6397,14 +6384,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         }
 
         case GT_SELECT:
-#if defined(TARGET_ARM64)
-        case GT_CCMP_EQ:
-        case GT_CCMP_NE:
-        case GT_CCMP_LT:
-        case GT_CCMP_LE:
-        case GT_CCMP_GE:
-        case GT_CCMP_GT:
-#endif
         {
             GenTreeConditional* const conditional = this->AsConditional();
             if (operand == conditional->gtCond)
@@ -9716,14 +9695,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         case GT_SELECT:
-#if defined(TARGET_ARM64)
-        case GT_CCMP_EQ:
-        case GT_CCMP_NE:
-        case GT_CCMP_LT:
-        case GT_CCMP_LE:
-        case GT_CCMP_GE:
-        case GT_CCMP_GT:
-#endif
             m_edge = &m_node->AsConditional()->gtCond;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceConditional;
@@ -12446,14 +12417,6 @@ void Compiler::gtDispTree(GenTree*     tree,
             break;
 
         case GT_SELECT:
-#if defined(TARGET_ARM64)
-        case GT_CCMP_EQ:
-        case GT_CCMP_NE:
-        case GT_CCMP_LT:
-        case GT_CCMP_LE:
-        case GT_CCMP_GE:
-        case GT_CCMP_GT:
-#endif
             gtDispCommonEndLine(tree);
 
             if (!topOnly)
@@ -17283,7 +17246,8 @@ bool GenTree::canBeContained() const
         return false;
     }
 
-    if (((DebugOperKind() & DBK_NOCONTAIN) != 0) || (OperIsHWIntrinsic() && !isContainableHWIntrinsic()))
+    // It is not possible for nodes that do not produce values or that are not containable values to be contained.
+    if (!IsValue() || ((DebugOperKind() & DBK_NOCONTAIN) != 0) || (OperIsHWIntrinsic() && !isContainableHWIntrinsic()))
     {
         return false;
     }
