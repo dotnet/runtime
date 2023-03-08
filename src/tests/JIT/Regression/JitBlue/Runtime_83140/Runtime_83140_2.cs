@@ -19,7 +19,7 @@ public class C0
 
 public class Runtime_83140_2
 {
-    public static C0 s_3;
+    public static C0 s_3 = new C0();
     public static int Main()
     {
         // A case where produced incorrectly typed IR when optimizing NE(relop, 0) into relop
