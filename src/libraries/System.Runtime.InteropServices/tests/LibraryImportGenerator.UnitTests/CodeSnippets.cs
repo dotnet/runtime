@@ -982,9 +982,9 @@ partial class Test
         [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] TestCollection<int> p);
 }}
 "
-                    + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.TestCollection()
-                    + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.StatelessSnippets.In
-                    + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.CustomIntMarshaller;
+                    + CustomCollectionMarshallingCodeSnippets.TestCollection()
+                    + CustomCollectionMarshallingCodeSnippets.StatelessSnippets.In
+                    + CustomCollectionMarshallingCodeSnippets.CustomIntMarshaller;
 
         public static string CustomElementMarshallingUnusedElementIndirectionDepth => $@"
 using System.Runtime.InteropServices;
@@ -997,9 +997,9 @@ partial class Test
         [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 2)] TestCollection<int> p);
 }}
 "
-            + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.TestCollection()
-            + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.StatelessSnippets.In
-            + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.CustomIntMarshaller;
+            + CustomCollectionMarshallingCodeSnippets.TestCollection()
+            + CustomCollectionMarshallingCodeSnippets.StatelessSnippets.In
+            + CustomCollectionMarshallingCodeSnippets.CustomIntMarshaller;
 
         public static string RecursiveCountElementNameOnReturnValue => $@"
 using System.Runtime.InteropServices;

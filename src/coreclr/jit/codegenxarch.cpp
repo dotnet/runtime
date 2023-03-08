@@ -10729,7 +10729,6 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     assert(compiler->compGeneratingProlog);
     assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
-    assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
 
     emitter*  emit        = GetEmitter();
     regNumber frameReg    = genFramePointerReg();

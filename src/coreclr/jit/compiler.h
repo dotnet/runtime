@@ -1327,12 +1327,12 @@ public:
         assert(lowerBound <= upperBound);
     }
 
-    SymbolicIntegerValue GetLowerBound()
+    SymbolicIntegerValue GetLowerBound() const
     {
         return m_lowerBound;
     }
 
-    SymbolicIntegerValue GetUpperBound()
+    SymbolicIntegerValue GetUpperBound() const
     {
         return m_upperBound;
     }
@@ -1344,7 +1344,7 @@ public:
         return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
     }
 
-    bool IsPositive()
+    bool IsNonNegative() const
     {
         return m_lowerBound >= SymbolicIntegerValue::Zero;
     }
@@ -1575,6 +1575,53 @@ inline constexpr FlowGraphUpdates operator|(FlowGraphUpdates a, FlowGraphUpdates
 inline constexpr FlowGraphUpdates operator&(FlowGraphUpdates a, FlowGraphUpdates b)
 {
     return (FlowGraphUpdates)((unsigned int)a & (unsigned int)b);
+}
+
+// Profile checking options
+//
+// clang-format off
+enum class ProfileChecks : unsigned int
+{
+    CHECK_NONE          = 0,
+    CHECK_CLASSIC       = 1 << 0, // check "classic" jit weights
+    CHECK_LIKELY        = 1 << 1, // check likelihood based weights
+    RAISE_ASSERT        = 1 << 2, // assert on check failure
+    CHECK_ALL_BLOCKS    = 1 << 3, // check blocks even if bbHasProfileWeight is false
+};
+
+inline constexpr ProfileChecks operator ~(ProfileChecks a)
+{
+    return (ProfileChecks)(~(unsigned int)a);
+}
+
+inline constexpr ProfileChecks operator |(ProfileChecks a, ProfileChecks b)
+{
+    return (ProfileChecks)((unsigned int)a | (unsigned int)b);
+}
+
+inline constexpr ProfileChecks operator &(ProfileChecks a, ProfileChecks b)
+{
+    return (ProfileChecks)((unsigned int)a & (unsigned int)b);
+}
+
+inline ProfileChecks& operator |=(ProfileChecks& a, ProfileChecks b)
+{
+    return a = (ProfileChecks)((unsigned int)a | (unsigned int)b);
+}
+
+inline ProfileChecks& operator &=(ProfileChecks& a, ProfileChecks b)
+{
+    return a = (ProfileChecks)((unsigned int)a & (unsigned int)b);
+}
+
+inline ProfileChecks& operator ^=(ProfileChecks& a, ProfileChecks b)
+{
+    return a = (ProfileChecks)((unsigned int)a ^ (unsigned int)b);
+}
+
+inline bool hasFlag(const ProfileChecks& flagSet, const ProfileChecks& flag)
+{
+    return ((flagSet & flag) == flag);
 }
 
 //---------------------------------------------------------------
@@ -5516,8 +5563,9 @@ public:
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfileWeights();
-    bool fgDebugCheckIncomingProfileData(BasicBlock* block);
-    bool fgDebugCheckOutgoingProfileData(BasicBlock* block);
+    void fgDebugCheckProfileWeights(ProfileChecks checks);
+    bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
+    bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
 #endif // DEBUG
 
@@ -8325,34 +8373,6 @@ private:
     }
 #endif // DEBUG
 
-    // Get highest available level for SIMD codegen
-    SIMDLevel getSIMDSupportLevel()
-    {
-#if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-        {
-            if (compOpportunisticallyDependsOn(InstructionSet_Vector512))
-            {
-                return SIMD_Vector512_Supported;
-            }
-
-            return SIMD_AVX2_Supported;
-        }
-
-        if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
-        {
-            return SIMD_SSE4_Supported;
-        }
-
-        // min bar is SSE2
-        return SIMD_SSE2_Supported;
-#else
-        assert(!"Available instruction set(s) for SIMD codegen is not defined for target arch");
-        unreached();
-        return SIMD_Not_Supported;
-#endif
-    }
-
     bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
     {
         return info.compCompHnd->isIntrinsicType(clsHnd);
@@ -8783,16 +8803,14 @@ private:
     var_types getSIMDVectorType()
     {
 #if defined(TARGET_XARCH)
-        // TODO-XArch-AVX512 : Return TYP_SIMD64 once Vector<T> supports AVX512.
-        if (getSIMDSupportLevel() >= SIMD_AVX2_Supported)
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
+            // TODO-XArch-AVX512 : Return TYP_SIMD64 once Vector<T> supports AVX512.
             return TYP_SIMD32;
         }
         else
         {
-            // Verify and record that AVX2 isn't supported
             compVerifyInstructionSetUnusable(InstructionSet_AVX2);
-            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return TYP_SIMD16;
         }
 #elif defined(TARGET_ARM64)
@@ -8825,16 +8843,14 @@ private:
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(TARGET_XARCH)
-        // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
-        if (getSIMDSupportLevel() >= SIMD_AVX2_Supported)
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
+            // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
             return YMM_REGSIZE_BYTES;
         }
         else
         {
-            // Verify and record that AVX2 isn't supported
             compVerifyInstructionSetUnusable(InstructionSet_AVX2);
-            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8849,9 +8865,11 @@ private:
 
     // maxSIMDStructBytes
     // The minimum SIMD size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
-    // SSE:  16-byte Vector<T> and Vector128<T>
-    // AVX:  32-byte Vector256<T> (Vector<T> is 16-byte)
-    // AVX2: 32-byte Vector<T> and Vector256<T>
+    // Arm.AdvSimd:  16-byte Vector<T> and Vector128<T>
+    // X86.SSE:      16-byte Vector<T> and Vector128<T>
+    // X86.AVX:      16-byte Vector<T> and Vector256<T>
+    // X86.AVX2:     32-byte Vector<T> and Vector256<T>
+    // X86.AVX512F:  32-byte Vector<T> and Vector512<T>
     unsigned int maxSIMDStructBytes()
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
@@ -8861,17 +8879,22 @@ private:
             {
                 return ZMM_REGSIZE_BYTES;
             }
-            return YMM_REGSIZE_BYTES;
+            else
+            {
+                compVerifyInstructionSetUnusable(InstructionSet_AVX512F);
+                return YMM_REGSIZE_BYTES;
+            }
         }
         else
         {
-            // Verify and record that AVX2 isn't supported
-            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
-            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
+            compVerifyInstructionSetUnusable(InstructionSet_AVX);
             return XMM_REGSIZE_BYTES;
         }
+#elif defined(TARGET_ARM64)
+        return FP_REGSIZE_BYTES;
 #else
-        return getSIMDVectorRegisterByteLength();
+        assert(!"maxSIMDStructBytes() unimplemented on target arch");
+        unreached();
 #endif
     }
 
@@ -9136,13 +9159,10 @@ private:
 #endif
     }
 
+#ifdef TARGET_XARCH
     bool canUseVexEncoding() const
     {
-#ifdef TARGET_XARCH
         return compOpportunisticallyDependsOn(InstructionSet_AVX);
-#else
-        return false;
-#endif
     }
 
     //------------------------------------------------------------------------
@@ -9153,8 +9173,6 @@ private:
     //
     bool canUseEvexEncoding() const
     {
-#ifdef TARGET_XARCH
-
 #ifdef DEBUG
         if (JitConfig.JitForceEVEXEncoding())
         {
@@ -9163,9 +9181,6 @@ private:
 #endif // DEBUG
 
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
-#else
-        return false;
-#endif
     }
 
     //------------------------------------------------------------------------
@@ -9176,7 +9191,7 @@ private:
     //
     bool DoJitStressEvexEncoding() const
     {
-#if defined(TARGET_XARCH) && defined(DEBUG)
+#ifdef DEBUG
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
         // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
@@ -9186,14 +9201,16 @@ private:
         {
             return true;
         }
+
         if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
             return true;
         }
-#endif // TARGET_XARCH && DEBUG
+#endif // DEBUG
 
         return false;
     }
+#endif // TARGET_XARCH
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

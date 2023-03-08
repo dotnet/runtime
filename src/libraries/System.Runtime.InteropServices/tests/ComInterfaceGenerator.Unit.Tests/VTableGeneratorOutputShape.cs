@@ -14,7 +14,7 @@ using Xunit;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    public class NativeInterfaceShape
+    public class VTableGeneratorOutputShape
     {
         [Fact]
         public async Task NativeInterfaceNestedInUserInterface()
@@ -26,13 +26,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
                 """;
             Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
@@ -53,13 +52,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
                 """;
             Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
@@ -68,6 +66,32 @@ namespace ComInterfaceGenerator.Unit.Tests
             Assert.NotNull(userDefinedInterface);
 
             Assert.Equal(userDefinedInterface, Assert.Single(Assert.Single(userDefinedInterface.GetTypeMembers("Native")).Interfaces), SymbolEqualityComparer.Default);
+        }
+
+        [Fact]
+        public async Task NativeInterfaceImplementsUserInterfaceMethods()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
+                {
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+
+                // Ensure we can implement the native interface without defining any implementations.
+                class C : INativeAPI.Native {}
+                """;
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            // Allow the Native nested type name to be missing in the pre-source-generator compilation
+            TestUtils.AssertPreSourceGeneratorCompilation(comp, "CS0426");
+
+            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
 
         [Fact]
@@ -80,13 +104,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
                 """;
             Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
@@ -112,13 +135,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
                 """;
             Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());

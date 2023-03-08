@@ -5270,7 +5270,7 @@ struct GenTreeCall final : public GenTree
     }
 #endif // !FEATURE_TAILCALL_OPT
 
-    bool NormalizesSmallTypesOnReturn()
+    bool NormalizesSmallTypesOnReturn() const
     {
         return GetUnmanagedCallConv() == CorInfoCallConvExtension::Managed;
     }
@@ -5406,7 +5406,7 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
     }
 
-    bool IsOptimizingRetBufAsLocal()
+    bool IsOptimizingRetBufAsLocal() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
     }
@@ -5445,7 +5445,7 @@ struct GenTreeCall final : public GenTree
         return WellKnownArg::None;
     }
 
-    CFGCallKind GetCFGCallKind()
+    CFGCallKind GetCFGCallKind() const
     {
 #if defined(TARGET_AMD64)
         // On x64 the dispatcher is more performant, but we cannot use it when
