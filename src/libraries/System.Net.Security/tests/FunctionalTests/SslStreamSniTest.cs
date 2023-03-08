@@ -236,6 +236,7 @@ namespace System.Net.Security.Tests
         [InlineData("www-.volal.cz")]
         [InlineData("www-.colorhexa.com")]
         [InlineData("xn--www-7m0a.thegratuit.com")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_SafeInvalidIdn_Success(string name)
         {
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
