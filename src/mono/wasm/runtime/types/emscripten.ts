@@ -50,16 +50,12 @@ export declare interface EmscriptenModule {
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     FS_readFile(filename: string, opts: any): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
     addFunction(fn: Function, signature: string): number;
-    getWasmTableEntry(index: number): any;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
 
 
-    ready: Promise<unknown>;
     instantiateWasm?: InstantiateWasmCallBack;
     preInit?: (() => any)[] | (() => any);
     preRun?: (() => any)[] | (() => any);
@@ -67,6 +63,18 @@ export declare interface EmscriptenModule {
     postRun?: (() => any)[] | (() => any);
     onAbort?: { (error: any): void };
 }
+
+export declare interface EmscriptenModuleInternal {
+    __locateFile?: (path: string, prefix?: string) => string;
+    locateFile?: (path: string, prefix?: string) => string;
+    mainScriptUrlOrBlob?: string;
+    wasmModule: WebAssembly.Instance | null;
+    ready: Promise<unknown>;
+    getWasmTableEntry(index: number): any;
+    removeRunDependency(id: string): void;
+    addRunDependency(id: string): void;
+}
+
 
 export type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
 export type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;

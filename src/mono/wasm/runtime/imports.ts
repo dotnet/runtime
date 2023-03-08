@@ -6,10 +6,10 @@
 /// <reference path="./types/node.d.ts" />
 
 import type { CreateDotnetRuntimeType, DotnetModule, RuntimeAPI, EarlyExports, EarlyImports, ModuleAPI, RuntimeHelpers } from "./types";
-import type { EmscriptenModule } from "./types/emscripten";
+import type { EmscriptenModule, EmscriptenModuleInternal } from "./types/emscripten";
 
 // these are our public API (except internal)
-export let Module: EmscriptenModule & DotnetModule;
+export let Module: EmscriptenModule & DotnetModule & EmscriptenModuleInternal;
 export let INTERNAL: any;
 export let IMPORTS: any;
 
