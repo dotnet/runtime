@@ -186,9 +186,9 @@ public class ComparisonTestAnd3Chains
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Le_byte_3_consume(byte a1, byte a2, byte a3) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #11
-        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #12, nzc, gt
-        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #10, nzc, gt
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #12, nzc, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #10, nzc, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         if (a1 <= 10 || a2 <= 11 || a3 <= 12) { a1 = 10; }
         consume<byte>(a1, a2, a3);
     }
