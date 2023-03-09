@@ -33,9 +33,7 @@ namespace Sample
         class PageShow : BenchTask.Measurement
         {
             public override string Name => "Page show";
-
             public override int InitialSamples => 3;
-
             public override bool HasRunStepAsync => true;
 
             public override async Task RunStepAsync()
@@ -47,9 +45,8 @@ namespace Sample
         class PageShowCold : BenchTask.Measurement
         {
             public override string Name => "Page show cold";
-
-            public override int InitialSamples => 3;
-
+            public override int InitialSamples => 1;
+            public override int RunLength => 20000;
             public override bool HasRunStepAsync => true;
 
             public override async Task RunStepAsync()
@@ -73,7 +70,8 @@ namespace Sample
         class ReachManagedCold : BenchTask.Measurement
         {
             public override string Name => "Reach managed cold";
-            public override int InitialSamples => 3;
+            public override int InitialSamples => 1;
+            public override int RunLength => 20000;
             public override bool HasRunStepAsync => true;
 
             public override async Task RunStepAsync()
