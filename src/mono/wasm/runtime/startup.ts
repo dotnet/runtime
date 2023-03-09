@@ -182,6 +182,7 @@ async function preInitWorkerAsync() {
     const mark = startMeasure();
     try {
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preInitWorker");
+        beforePreInit.promise_control.resolve();
         mono_wasm_pre_init_essential(true);
         await init_polyfills_async();
         afterPreInit.promise_control.resolve();
