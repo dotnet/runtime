@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
-namespace UnityEmbeddedHost.Generator;
+namespace UnityEmbedHost.Generator;
 
 [Generator]
 public class HostStructGenerator : ISourceGenerator
@@ -86,7 +86,7 @@ static unsafe partial class CoreCLRHost
         var sb = new StringBuilder();
         foreach (var param in methodSymbol.Parameters)
         {
-            sb.Append(param);
+            sb.Append(param.Type);
             sb.Append(", ");
         }
 
