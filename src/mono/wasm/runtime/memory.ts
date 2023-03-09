@@ -5,7 +5,6 @@ import monoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./imports";
 import { mono_assert, MemOffset, NumberOrPointer } from "./types";
 import { VoidPtr, CharPtr } from "./types/emscripten";
-import * as cuint64 from "./cuint64";
 import cwraps, { I52Error } from "./cwraps";
 
 const alloca_stack: Array<VoidPtr> = [];
@@ -170,6 +169,22 @@ export function getU32(offset: MemOffset): number {
     return Module.HEAPU32[<any>offset >>> 2];
 }
 
+export function getI32_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_i32_unaligned(<any>offset);
+}
+
+export function getU32_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_i32_unaligned(<any>offset) >>> 0;
+}
+
+export function getF32_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_f32_unaligned(<any>offset);
+}
+
+export function getF64_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_f64_unaligned(<any>offset);
+}
+
 export function getI8(offset: MemOffset): number {
     return Module.HEAP8[<any>offset];
 }
@@ -223,18 +238,6 @@ export function afterUpdateGlobalBufferAndViews(buffer: ArrayBufferLike): void {
         min_int64_big = BigInt("-9223372036854775808");
         HEAPI64 = new BigInt64Array(buffer);
     }
-}
-
-export function getCU64(offset: MemOffset): cuint64.CUInt64 {
-    const lo = getU32(offset);
-    const hi = getU32(<any>offset + 4);
-    return cuint64.pack32(lo, hi);
-}
-
-export function setCU64(offset: MemOffset, value: cuint64.CUInt64): void {
-    const [lo, hi] = cuint64.unpack32(value);
-    setU32_unchecked(offset, lo);
-    setU32_unchecked(<any>offset + 4, hi);
 }
 
 /// Allocates a new buffer of the given size on the Emscripten stack and passes a pointer to it to the callback.

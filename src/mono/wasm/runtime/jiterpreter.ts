@@ -5,7 +5,7 @@ import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
 import { Module } from "./imports";
 import {
-    getU16, getU32
+    getU16, getU32_unaligned
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode, OpcodeInfo } from "./mintops";
@@ -950,9 +950,9 @@ export function mono_interp_tier_prepare_jiterpreter (
     const methodName = Module.UTF8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
 
-    const imethod = getU32(getMemberOffset(JiterpMember.Imethod) + <any>frame);
-    const backBranchCount = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
-    const pBackBranches = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
+    const imethod = getU32_unaligned(getMemberOffset(JiterpMember.Imethod) + <any>frame);
+    const backBranchCount = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
+    const pBackBranches = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
     let backwardBranchTable = backBranchCount
         ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount)
         : null;
