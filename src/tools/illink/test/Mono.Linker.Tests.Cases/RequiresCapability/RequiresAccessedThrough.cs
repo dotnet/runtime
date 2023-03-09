@@ -137,8 +137,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
 			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
-			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void Test<T> () where T : new()
 			{
 				GenericMethod<NewConstraintTestType> ();
@@ -157,8 +157,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
 			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
-			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void TestNewConstraintOnTypeParameter<T> () where T : new()
 			{
 				_ = new NewConstraintOnTypeParameter<NewConstraintTestType> ();
@@ -192,8 +192,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("--AnnotatedType--")]
 			class AnnotatedType
 			{
-				[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
-				[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
+				[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				public static void Method ()
 				{
 					_ = new NewConstraintOnTypeParameter<NewConstraintTestType> ();
@@ -203,8 +203,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
 			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
-			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void TestNewConstraintOnTypeParameterOfStaticType<T> () where T : new()
 			{
 				NewConstraintOnTypeParameterOfStaticType<NewConstraintTestType>.DoNothing ();
