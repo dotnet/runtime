@@ -9,7 +9,7 @@
           AfterTargets="Restore">
 
     <ItemGroup>
-      <DocFile Include="$(XmlDocFileRoot)**\*.xml"/>
+      <DocFile Include="$(XmlDocFileRoot)\net\**\*.xml;$(XmlDocFileRoot)\dotnet-plat-ext\**\*.xml"/>
       <DocFile>
         <!-- trim off slash since it differs by platform and we need to do a string compare -->
         <LCID>$([System.String]::new('%(RecursiveDir)').TrimEnd('\/'))</LCID>
@@ -35,7 +35,7 @@
     </ItemGroup>
 
     <Error Condition="'%(DocFile.Culture)' == 'unknown'" Text="Unknown language folder '%(LCID)' for doc files '@(DocFile)'" />
-    
+
     <Copy SourceFiles="@(DocFile)"
           DestinationFiles="$(XmlDocDir)\%(SubFolder)%(FileName)%(Extension)"
           SkipUnchangedFiles="true"

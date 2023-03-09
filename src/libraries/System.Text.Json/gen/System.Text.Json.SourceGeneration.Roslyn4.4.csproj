@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AnalyzerRoslynVersion>4.4</AnalyzerRoslynVersion>
-    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_X)</RoslynApiVersion>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
   </PropertyGroup>
 

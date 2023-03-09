@@ -406,6 +406,11 @@ static
 bool
 ep_rt_config_value_get_use_portable_thread_pool (void);
 
+static
+inline
+bool
+ep_rt_config_value_get_enable_stackwalk (void);
+
 /*
  * EventPipeSampleProfiler.
  */
