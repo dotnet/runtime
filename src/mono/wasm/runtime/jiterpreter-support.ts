@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -16,6 +17,60 @@ export const maxFailures = 2,
 export declare interface MintOpcodePtr extends NativePointer {
     __brand: "MintOpcodePtr"
 }
+
+export const enum BailoutReason {
+    Unknown,
+    InterpreterTiering,
+    NullCheck,
+    VtableNotInitialized,
+    Branch,
+    BackwardBranch,
+    ConditionalBranch,
+    ConditionalBackwardBranch,
+    ComplexBranch,
+    ArrayLoadFailed,
+    ArrayStoreFailed,
+    StringOperationFailed,
+    DivideByZero,
+    Overflow,
+    Return,
+    Call,
+    Throw,
+    AllocFailed,
+    SpanOperationFailed,
+    CastFailed,
+    SafepointBranchTaken,
+    UnboxFailed,
+    CallDelegate,
+    Debugging
+}
+
+export const BailoutReasonNames = [
+    "Unknown",
+    "InterpreterTiering",
+    "NullCheck",
+    "VtableNotInitialized",
+    "Branch",
+    "BackwardBranch",
+    "ConditionalBranch",
+    "ConditionalBackwardBranch",
+    "ComplexBranch",
+    "ArrayLoadFailed",
+    "ArrayStoreFailed",
+    "StringOperationFailed",
+    "DivideByZero",
+    "Overflow",
+    "Return",
+    "Call",
+    "Throw",
+    "AllocFailed",
+    "SpanOperationFailed",
+    "CastFailed",
+    "SafepointBranchTaken",
+    "UnboxFailed",
+    "CallDelegate",
+    "Debugging"
+];
 
 type FunctionType = [
     index: FunctionTypeIndex,
@@ -52,6 +107,7 @@ type ImportedFunctionInfo = {
 }
 
 export class WasmBuilder {
+    cfg: Cfg;
     stack: Array<BlobBuilder>;
     stackSize!: number;
     inSection!: boolean;
@@ -89,6 +145,7 @@ export class WasmBuilder {
     constructor (constantSlotCount: number) {
         this.stack = [new BlobBuilder()];
         this.clear(constantSlotCount);
+        this.cfg = new Cfg(this);
     }
 
     clear (constantSlotCount: number) {
@@ -144,7 +201,7 @@ export class WasmBuilder {
             this.appendBytes(av);
             return null;
         } else
-            return av.slice();
+            return av.slice(0, current.size);
     }
 
     // HACK: Approximate amount of space we need to generate the full module at present
@@ -375,7 +432,7 @@ export class WasmBuilder {
             type: string,
             name: string,
             export: boolean,
-            locals: { [name: string]: WasmValtype }
+            locals: { [name: string]: WasmValtype },
         }, generator: Function
     ) {
         const rec : FunctionInfo = {
@@ -387,7 +444,7 @@ export class WasmBuilder {
             locals: options.locals,
             generator,
             error: null,
-            blob: null
+            blob: null,
         };
         this.functions.push(rec);
         if (rec.export)
@@ -403,15 +460,9 @@ export class WasmBuilder {
                 exportCount++;
 
             this.beginFunction(func.typeName, func.locals);
-            try {
-                func.generator();
-            /*
-            } catch (exc) {
-                func.error = <any>exc;
-            */
-            } finally {
+            func.blob = func.generator();
+            if (!func.blob)
                 func.blob = this.endFunction(false);
-            }
         }
 
         this._generateImportSection();
@@ -684,7 +735,8 @@ export class BlobBuilder {
         // FIXME: This should not be necessary
         Module.HEAPU8.fill(0, this.buffer, this.buffer + this.size);
         this.size = 0;
-        this.view = new DataView(Module.HEAPU8.buffer, this.buffer, this.capacity);
+        if (!this.view || this.view.buffer != Module.HEAPU8.buffer)
+            this.view = new DataView(Module.HEAPU8.buffer, this.buffer, this.capacity);
     }
 
     appendU8 (value: number | WasmOpcode) {
@@ -783,6 +835,7 @@ export class BlobBuilder {
     }
 
     appendBytes (bytes: Uint8Array, count?: number) {
+        // FIXME: If source and destination buffers are the same, do copyWithin instead
         const result = this.size;
         if (typeof (count) === "number")
             bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
@@ -828,6 +881,203 @@ export class BlobBuilder {
     }
 }
 
+type CfgBlob = {
+    type: "blob";
+    ip: MintOpcodePtr;
+    start: number;
+    length: number;
+}
+
+type CfgBranchBlockHeader = {
+    type: "branch-block-header";
+    ip: MintOpcodePtr;
+    isBackBranchTarget: boolean;
+}
+
+type CfgBranch = {
+    type: "branch";
+    from: MintOpcodePtr;
+    target: MintOpcodePtr;
+    isBackward: boolean; // FIXME: This should be inferred automatically
+    isConditional: boolean;
+}
+
+type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+
+class Cfg {
+    builder: WasmBuilder;
+    startOfBody!: MintOpcodePtr;
+    segments: Array<CfgSegment> = [];
+    backBranchTargets: Uint16Array | null = null;
+    base!: MintOpcodePtr;
+    ip!: MintOpcodePtr;
+    entryIp!: MintOpcodePtr;
+    exitIp!: MintOpcodePtr;
+    lastSegmentStartIp!: MintOpcodePtr;
+    lastSegmentEnd = 0;
+    overheadBytes = 0;
+    entryBlob!: CfgBlob;
+    blockStack: Array<MintOpcodePtr> = [];
+
+    constructor (builder: WasmBuilder) {
+        this.builder = builder;
+    }
+
+    initialize (startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null) {
+        this.segments.length = 0;
+        this.blockStack.length = 0;
+        this.startOfBody = startOfBody;
+        this.backBranchTargets = backBranchTargets;
+        this.base = this.builder.base;
+        this.ip = this.lastSegmentStartIp = this.builder.base;
+        this.lastSegmentEnd = 0;
+        this.overheadBytes = 10; // epilogue
+    }
+
+    // We have a header containing the table of locals and we need to preserve it
+    entry (ip: MintOpcodePtr) {
+        this.entryIp = ip;
+        this.appendBlob();
+        mono_assert(this.segments.length === 1, "expected 1 segment");
+        mono_assert(this.segments[0].type === "blob", "expected blob");
+        this.entryBlob = <CfgBlob>this.segments[0];
+        this.segments.length = 0;
+        this.overheadBytes += 9; // entry eip init + block + optional loop
+        // this.overheadBytes += this.entryBlob.length;
+    }
+
+    appendBlob () {
+        if (this.builder.current.size === this.lastSegmentEnd)
+            return;
+
+        this.segments.push({
+            type: "blob",
+            ip: this.lastSegmentStartIp,
+            start: this.lastSegmentEnd,
+            length: this.builder.current.size - this.lastSegmentEnd,
+        });
+        this.lastSegmentStartIp = this.ip;
+        this.lastSegmentEnd = this.builder.current.size;
+    }
+
+    startBranchBlock (ip: MintOpcodePtr, isBackBranchTarget: boolean) {
+        this.appendBlob();
+        this.segments.push({
+            type: "branch-block-header",
+            ip,
+            isBackBranchTarget,
+        });
+        this.overheadBytes += 8; // end block + ip + load eip + compare + start block (optimally 7 bytes)
+    }
+
+    branch (target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
+        this.appendBlob();
+        this.segments.push({
+            type: "branch",
+            from: this.ip,
+            target,
+            isBackward,
+            isConditional,
+        });
+        this.overheadBytes += 7; // ip + set local + branch (optimally 6 bytes)
+    }
+
+    emitBlob (segment: CfgBlob, source: Uint8Array) {
+        // console.log(`segment @${(<any>segment.ip).toString(16)} ${segment.start}-${segment.start + segment.length}`);
+        const view = source.subarray(segment.start, segment.start + segment.length);
+        this.builder.appendBytes(view);
+    }
+
+    generate (): Uint8Array {
+        // HACK: Make sure any remaining bytes are inserted into a trailing segment
+        this.appendBlob();
+
+        // Now finish generating the function body and copy it
+        const source = this.builder.endFunction(false)!;
+
+        // Now reclaim the builder that was being used so we can stitch segments together
+        this.builder._push();
+        // HACK: Make sure ip_const works
+        this.builder.base = this.base;
+
+        // Emit the function header
+        this.emitBlob(this.entryBlob, source);
+
+        // We create a block for each of our forward branch targets, which can be used to skip forward to it
+        // The block for each target will end *right before* the branch target, so that br <block nesting level>
+        //  will skip every opcode before it
+        for (let i = 0; i < this.segments.length; i++) {
+            const segment = this.segments[i];
+            if (segment.type !== "branch-block-header")
+                continue;
+            this.blockStack.push(segment.ip);
+        }
+
+        this.blockStack.sort((lhs, rhs) => <any>lhs - <any>rhs);
+        for (let i = 0; i < this.blockStack.length; i++)
+            this.builder.block(WasmValtype.void);
+        console.log("blockStack=", this.blockStack);
+
+        for (let i = 0; i < this.segments.length; i++) {
+            const segment = this.segments[i];
+            switch (segment.type) {
+                case "blob": {
+                    // FIXME: If back branch target, generate a loop and put it on the block stack
+                    this.emitBlob(segment, source);
+                    break;
+                }
+                case "branch-block-header": {
+                    // Create a new branch block that conditionally executes depending on the eip local
+                    // FIXME: For methods containing backward branches, we will have one of these compares
+                    //  at the top of the trace and pay the cost of it on every entry even though it will
+                    //  always pass. If we never generate any backward branches during compilation, we should
+                    //  patch it out
+                    const indexInStack = this.blockStack.indexOf(segment.ip);
+                    mono_assert(indexInStack === 0, () => `expected ${segment.ip} on top of blockStack but found it at index ${indexInStack}, top is ${this.blockStack[0]}`);
+                    this.builder.endBlock();
+                    this.blockStack.shift();
+                    break;
+                }
+                case "branch": {
+                    const indexInStack = this.blockStack.indexOf(segment.target);
+                    if (indexInStack >= 0) {
+                        // FIXME: Back branches
+                        // Conditional branches are nested in an extra block, so the depth is +1
+                        const offset = (segment.isConditional ? 1 : 0);
+                        this.builder.appendU8(WasmOpcode.br);
+                        this.builder.appendULeb(offset + indexInStack);
+                        console.log(`br from ${segment.from} to ${segment.target} breaking out ${offset + indexInStack + 1} level(s)`);
+                    } else {
+                        /*
+                        if ((segment.target < this.exitIp) && (segment.target >= this.base))
+                            mono_assert(indexInStack >= 0, () => `expected to find branch target ${segment.target} in stack but it was not there at location ${segment.from}. stack contents: ${this.blockStack}`);
+                        else
+                        */
+                        console.log(`br from ${segment.from} to ${segment.target} failed`);
+                        append_bailout(this.builder, segment.target, BailoutReason.Branch);
+                    }
+                    break;
+                }
+                default:
+                    console.log(JSON.stringify(segment));
+                    // throw new Error(`segment type not implemented: ${segment.type}`);
+                    break;
+            }
+        }
+
+        mono_assert(this.blockStack.length === 0, () => `expected block stack to be empty at end of function but it was ${this.blockStack}`);
+
+        // Now we generate a ret at the end of the function body so it's Valid(tm)
+        // We will only hit this if execution falls through every block without hitting a bailout
+        this.builder.ip_const(this.exitIp);
+        this.builder.appendU8(WasmOpcode.return_);
+        this.builder.appendU8(WasmOpcode.end);
+
+        const result = this.builder._pop(false)!;
+        return result;
+    }
+}
+
 export const enum WasmValtype {
     void = 0x40,
     i32 = 0x7F,
@@ -863,6 +1113,15 @@ export const _now = (globalThis.performance && globalThis.performance.now)
     : Date.now;
 
 let scratchBuffer : NativePointer = <any>0;
+
+export function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
+    builder.ip_const(ip);
+    if (builder.options.countBailouts) {
+        builder.i32_const(reason);
+        builder.callImport("bailout");
+    }
+    builder.appendU8(WasmOpcode.return_);
+}
 
 export function copyIntoScratchBuffer (src: NativePointer, size: number) : NativePointer {
     if (!scratchBuffer)
