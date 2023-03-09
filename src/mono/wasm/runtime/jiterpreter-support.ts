@@ -919,12 +919,13 @@ class Cfg {
     entryBlob!: CfgBlob;
     blockStack: Array<MintOpcodePtr> = [];
     dispatchTable = new Map<MintOpcodePtr, number>();
+    trace = false;
 
     constructor (builder: WasmBuilder) {
         this.builder = builder;
     }
 
-    initialize (startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null) {
+    initialize (startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null, trace: boolean) {
         this.segments.length = 0;
         this.blockStack.length = 0;
         this.startOfBody = startOfBody;
@@ -934,6 +935,7 @@ class Cfg {
         this.lastSegmentEnd = 0;
         this.overheadBytes = 10; // epilogue
         this.dispatchTable.clear();
+        this.trace = trace;
     }
 
     // We have a header containing the table of locals and we need to preserve it
@@ -1057,7 +1059,8 @@ class Cfg {
             this.blockStack.push(dispatchIp);
         }
 
-        console.log(`blockStack=${this.blockStack}`);
+        if (this.trace)
+            console.log(`blockStack=${this.blockStack}`);
 
         for (let i = 0; i < this.segments.length; i++) {
             const segment = this.segments[i];
@@ -1086,36 +1089,33 @@ class Cfg {
                     if (segment.isBackward && (indexInStack >= 0)) {
                         if (this.dispatchTable.has(segment.target)) {
                             const disp = this.dispatchTable.get(segment.target)!;
-                            console.log(`backward br from ${segment.from} to ${segment.target}: disp=${disp}`);
+                            if (this.trace)
+                                console.log(`backward br from ${segment.from} to ${segment.target}: disp=${disp}`);
                             this.builder.i32_const(disp);
                             this.builder.local("disp", WasmOpcode.set_local);
                         } else {
-                            console.log(`br from ${segment.from} to ${segment.target} failed: back branch target not in dispatch table`);
+                            if (this.trace)
+                                console.log(`br from ${segment.from} to ${segment.target} failed: back branch target not in dispatch table`);
                             indexInStack = -1;
                         }
                     }
 
                     if (indexInStack >= 0) {
                         // Conditional branches are nested in an extra block, so the depth is +1
-                        const offset = (segment.isConditional ? 1 : 0);
+                        const offset = segment.isConditional ? 1 : 0;
                         this.builder.appendU8(WasmOpcode.br);
                         this.builder.appendULeb(offset + indexInStack);
-                        console.log(`br from ${segment.from} to ${segment.target} breaking out ${offset + indexInStack + 1} level(s)`);
+                        if (this.trace)
+                            console.log(`br from ${segment.from} to ${segment.target} breaking out ${offset + indexInStack + 1} level(s)`);
                     } else {
-                        /*
-                        if ((segment.target < this.exitIp) && (segment.target >= this.base))
-                            mono_assert(indexInStack >= 0, () => `expected to find branch target ${segment.target} in stack but it was not there at location ${segment.from}. stack contents: ${this.blockStack}`);
-                        else
-                        */
-                        console.log(`br from ${segment.from} to ${segment.target} failed`);
+                        if (this.trace)
+                            console.log(`br from ${segment.from} to ${segment.target} failed`);
                         append_bailout(this.builder, segment.target, BailoutReason.Branch);
                     }
                     break;
                 }
                 default:
-                    console.log(JSON.stringify(segment));
-                    // throw new Error(`segment type not implemented: ${segment.type}`);
-                    break;
+                    throw new Error("unreachable");
             }
         }
 
