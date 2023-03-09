@@ -476,6 +476,9 @@ enum class AddressExposedReason
     STRESS_LCL_FLD,                // Stress mode replaces localVar with localFld and makes them addrExposed.
     DISPATCH_RET_BUF,              // Caller return buffer dispatch.
     STRESS_POISON_IMPLICIT_BYREFS, // This is an implicit byref we want to poison.
+    EXTERNALLY_VISIBLE_IMPLICITLY, // Local is visible externally without explicit escape in JIT IR.
+                                   // For example because it is used by GC or is the outgoing arg area
+                                   // that belongs to callees.
 };
 
 #endif // DEBUG
@@ -1082,6 +1085,7 @@ public:
         lvStkOffs = offset;
     }
 
+    // TODO-Cleanup: Remove this in favor of GetLayout()->Size/genTypeSize(lvType).
     unsigned lvExactSize; // (exact) size of a STRUCT/SIMD/BLK local in bytes.
 
     unsigned lvSize() const;
@@ -1090,24 +1094,8 @@ public:
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
-    // class handle for the local or null if not known or not a class,
-    // for a struct handle use `GetStructHnd()`.
+    // class handle for the local or null if not known or not a class
     CORINFO_CLASS_HANDLE lvClassHnd;
-
-    // Get class handle for a struct local or implicitByRef struct local.
-    CORINFO_CLASS_HANDLE GetStructHnd() const
-    {
-#ifdef FEATURE_SIMD
-        if (lvSIMDType && (m_layout == nullptr))
-        {
-            return NO_CLASS_HANDLE;
-        }
-#endif
-
-        CORINFO_CLASS_HANDLE structHnd = GetLayout()->GetClassHandle();
-        assert(structHnd != NO_CLASS_HANDLE);
-        return structHnd;
-    }
 
 private:
     ClassLayout* m_layout; // layout info for structs
@@ -1189,6 +1177,16 @@ public:
         assert(varTypeIsStruct(lvType));
         assert((m_layout == nullptr) || ClassLayout::AreCompatible(m_layout, layout));
         m_layout = layout;
+    }
+
+    // Grow the size of a block layout local.
+    void GrowBlockLayout(ClassLayout* layout)
+    {
+        assert(varTypeIsStruct(lvType));
+        assert((m_layout == nullptr) || (m_layout->IsBlockLayout() && (m_layout->GetSize() <= layout->GetSize())));
+        assert(layout->IsBlockLayout());
+        m_layout    = layout;
+        lvExactSize = layout->GetSize();
     }
 
     SsaDefArray<LclSsaVarDsc> lvPerSsaData;
@@ -3272,7 +3270,7 @@ public:
                                         // or if the inlinee has GC ref locals.
 
 #if FEATURE_FIXED_OUT_ARGS
-    unsigned            lvaOutgoingArgSpaceVar;  // dummy TYP_LCLBLK var for fixed outgoing argument space
+    unsigned            lvaOutgoingArgSpaceVar;  // var that represents outgoing argument space
     PhasedVar<unsigned> lvaOutgoingArgSpaceSize; // size of fixed outgoing argument space
 #endif                                           // FEATURE_FIXED_OUT_ARGS
 
@@ -3309,7 +3307,7 @@ public:
 
 #if !defined(FEATURE_EH_FUNCLETS)
     // This is used for the callable handlers
-    unsigned lvaShadowSPslotsVar; // TYP_BLK variable for all the shadow SP slots
+    unsigned lvaShadowSPslotsVar; // Block-layout TYP_STRUCT variable for all the shadow SP slots
 #endif                            // FEATURE_EH_FUNCLETS
 
     int lvaCachedGenericContextArgOffs;
@@ -3520,7 +3518,7 @@ public:
     bool lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVararg);
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
-    CORINFO_CLASS_HANDLE lvaGetStruct(unsigned varNum);
+    void lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeValueClsCheck);
     void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck);
     void lvaSetStructUsedAsVarArg(unsigned varNum);
 
@@ -8715,6 +8713,16 @@ private:
         return true;
     }
 
+    bool isOpaqueSIMDType(ClassLayout* layout) const
+    {
+        if (layout->IsBlockLayout())
+        {
+            return true;
+        }
+
+        return isOpaqueSIMDType(layout->GetClassHandle());
+    }
+
     // Returns true if the lclVar is an opaque SIMD type.
     bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
     {
@@ -8722,7 +8730,13 @@ private:
         {
             return false;
         }
-        return isOpaqueSIMDType(varDsc->GetStructHnd());
+
+        if (varDsc->GetLayout() == nullptr)
+        {
+            return true;
+        }
+
+        return isOpaqueSIMDType(varDsc->GetLayout());
     }
 
     bool isNumericsNamespace(const char* ns)
@@ -10328,6 +10342,7 @@ public:
         unsigned m_dispatchRetBuf;
         unsigned m_wideIndir;
         unsigned m_stressPoisonImplicitByrefs;
+        unsigned m_externallyVisibleImplicitly;
 
     public:
         void RecordLocal(const LclVarDsc* varDsc);

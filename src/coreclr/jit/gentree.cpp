@@ -11294,27 +11294,6 @@ void Compiler::gtDispLclVarStructType(unsigned lclNum)
         assert(layout != nullptr);
         gtDispClassLayout(layout, type);
     }
-    else if (type == TYP_LCLBLK)
-    {
-#if FEATURE_FIXED_OUT_ARGS
-        assert(lclNum == lvaOutgoingArgSpaceVar);
-        // Since lvaOutgoingArgSpaceSize is a PhasedVar we can't read it for Dumping until
-        // after we set it to something.
-        if (lvaOutgoingArgSpaceSize.HasFinalValue())
-        {
-            // A PhasedVar<T> can't be directly used as an arg to a variadic function
-            unsigned value = lvaOutgoingArgSpaceSize;
-            printf("<%u> ", value);
-        }
-        else
-        {
-            printf("<na> "); // The value hasn't yet been determined
-        }
-#else
-        assert(!"Unknown size");
-        NO_WAY("Target doesn't support TYP_LCLBLK");
-#endif // FEATURE_FIXED_OUT_ARGS
-    }
 }
 
 #if defined(DEBUG) && defined(TARGET_ARM64)
@@ -11717,7 +11696,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                         else
 #endif // !defined(TARGET_64BIT)
                         {
-                            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+                            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
                             CORINFO_FIELD_HANDLE fldHnd =
                                 info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
                             fieldName = eeGetFieldName(fldHnd, true, buffer, sizeof(buffer));
@@ -15811,6 +15790,21 @@ GenTree* Compiler::gtNewTempAssign(
     if (dstTyp == TYP_UNDEF)
     {
         varDsc->lvType = dstTyp = genActualType(valTyp);
+
+        if (varTypeIsStruct(dstTyp))
+        {
+            if (varTypeIsSIMD(dstTyp))
+            {
+                varDsc->lvExactSize = genTypeSize(dstTyp);
+#ifdef FEATURE_SIMD
+                varDsc->lvSIMDType = 1;
+#endif
+            }
+            else
+            {
+                lvaSetStruct(tmp, val->GetLayout(this), false);
+            }
+        }
     }
 
 #if FEATURE_SIMD
@@ -15878,40 +15872,13 @@ GenTree* Compiler::gtNewTempAssign(
     GenTree* asg;
     GenTree* dest = gtNewLclvNode(tmp, dstTyp);
 
-    // With first-class structs, we should be propagating the class handle on all non-primitive
-    // struct types. We don't have a convenient way to do that for all SIMD temps, since some
-    // internal trees use SIMD types that are not used by the input IL. In this case, we allow
-    // a null type handle and derive the necessary information about the type from its varType.
-    CORINFO_CLASS_HANDLE valStructHnd = gtGetStructHandleIfPresent(val);
-    if (varTypeIsStruct(varDsc) && (valStructHnd == NO_CLASS_HANDLE) && !varTypeIsSIMD(valTyp))
-    {
-        // There are some cases where we do not have a struct handle on the return value:
-        // 1. Handle-less BLK/LCL_FLD nodes.
-        // 2. The zero constant created by local assertion propagation.
-        // In these cases, we can use the type of the local for the assignment.
-        assert(val->gtEffectiveVal(true)->OperIs(GT_IND, GT_BLK, GT_LCL_FLD, GT_CNS_INT));
-        valStructHnd = lvaGetDesc(tmp)->GetStructHnd();
-        assert(valStructHnd != NO_CLASS_HANDLE);
-    }
-
-    if ((valStructHnd != NO_CLASS_HANDLE) && val->IsConstInitVal())
+    if (val->IsConstInitVal())
     {
         asg = gtNewAssignNode(dest, val);
     }
-    else if (varTypeIsStruct(varDsc) && ((valStructHnd != NO_CLASS_HANDLE) || varTypeIsSIMD(valTyp)))
+    else if (varTypeIsStruct(varDsc))
     {
-        // The struct value may be be a child of a GT_COMMA due to explicit null checks of indirs/fields.
         GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
-
-        if (valStructHnd != NO_CLASS_HANDLE)
-        {
-            lvaSetStruct(tmp, valStructHnd, false);
-        }
-        else
-        {
-            assert(valx->gtOper != GT_OBJ);
-        }
-
         valx->gtFlags |= GTF_DONT_CSE;
         asg = impAssignStruct(dest, val, CHECK_SPILL_NONE, pAfterStmt, di, block);
     }
@@ -17703,8 +17670,14 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 }
                 break;
             case GT_LCL_VAR:
-                structHnd = lvaGetDesc(tree->AsLclVar())->GetStructHnd();
+            {
+                LclVarDsc* dsc = lvaGetDesc(tree->AsLclVar());
+                if ((dsc->GetLayout() != nullptr) && !dsc->GetLayout()->IsBlockLayout())
+                {
+                    structHnd = dsc->GetLayout()->GetClassHandle();
+                }
                 break;
+            }
             case GT_RETURN:
                 structHnd = gtGetStructHandleIfPresent(tree->AsOp()->gtOp1);
                 break;
