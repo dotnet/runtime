@@ -36,16 +36,16 @@
 
 #define check_attribute(vector, value) ((vector->_internal._attributes & (uint32_t)value) == value)
 
-static bool
-vector_ensure_capacity (
+bool
+_dn_vector_ensure_capacity (
 	dn_vector_t *vector,
 	uint32_t capacity,
-	bool init)
+	bool calc_capacity)
 {
 	if (capacity != 0 && capacity <= (uint64_t)(vector->_internal._capacity))
 		return true;
 
-	uint64_t new_capacity = init ? capacity : CALC_NEW_CAPACITY (capacity);
+	uint64_t new_capacity = calc_capacity ? CALC_NEW_CAPACITY (capacity) : capacity;
 
 	if (DN_UNLIKELY (new_capacity > (uint64_t)(UINT32_MAX)))
 		return false;
@@ -86,7 +86,7 @@ _dn_vector_insert_range (
 
 	uint64_t new_capacity = (uint64_t)vector->size + (uint64_t)element_count;
 	if (DN_UNLIKELY (new_capacity > (uint64_t)(vector->_internal._capacity))) {
-		if (DN_UNLIKELY (!vector_ensure_capacity (vector, (uint32_t)new_capacity, false)))
+		if (DN_UNLIKELY (!_dn_vector_ensure_capacity (vector, (uint32_t)new_capacity, true)))
 			return false;
 	}
 
@@ -124,7 +124,7 @@ _dn_vector_append_range (
 
 	uint64_t new_capacity = (uint64_t)vector->size + (uint64_t)element_count;
 	if (DN_UNLIKELY (new_capacity > (uint64_t)(vector->_internal._capacity))) {
-		if (DN_UNLIKELY (!vector_ensure_capacity (vector, (uint32_t)new_capacity, false)))
+		if (DN_UNLIKELY (!_dn_vector_ensure_capacity (vector, (uint32_t)new_capacity, true)))
 			return false;
 	}
 
@@ -183,12 +183,12 @@ _dn_vector_erase_fast (
 	if (dispose_func)
 		dispose_func (element_offset (vector, position->it));
 
+	vector->size --;
+
 	/* element_offset won't overflow since position is smaller than current capacity */
 	/* element_offset won't overflow since vector->size - 1 is smaller than current capacity */
 	/* vector->size - 1 won't underflow since vector->size > 0 */
-	memmove (element_offset (vector, position->it), element_offset (vector, vector->size - 1), element_length (vector, 1));
-
-	vector->size --;
+	memmove (element_offset (vector, position->it), element_offset (vector, vector->size), element_length (vector, 1));
 
 	if (check_attribute (vector, DN_VECTOR_ATTRIBUTE_MEMORY_INIT))
 		memset (element_offset(vector, vector->size), 0, element_length (vector, 1));
@@ -255,7 +255,7 @@ dn_vector_custom_init (
 			capacity = params->capacity;
 	}
 
-	if (DN_UNLIKELY (!vector_ensure_capacity (vector, capacity, true))) {
+	if (DN_UNLIKELY (!_dn_vector_ensure_capacity (vector, capacity, false))) {
 		dn_vector_dispose (vector);
 		return false;
 	}
@@ -294,7 +294,7 @@ dn_vector_reserve (
 	uint32_t capacity)
 {
 	DN_ASSERT (vector);
-	return vector_ensure_capacity (vector, capacity, false);
+	return _dn_vector_ensure_capacity (vector, capacity, true);
 }
 
 uint32_t
@@ -316,7 +316,7 @@ dn_vector_custom_resize (
 		return true;
 
 	if (size > vector->_internal._capacity)
-		if (DN_UNLIKELY (!vector_ensure_capacity (vector, size, false)))
+		if (DN_UNLIKELY (!_dn_vector_ensure_capacity (vector, size, true)))
 			return false;
 	
 	if (size < vector->size) {
