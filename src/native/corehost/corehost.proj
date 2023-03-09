@@ -78,7 +78,7 @@
       <BuildArgs Condition="'$(KeepNativeSymbols)' != 'false'">$(BuildArgs) -keepnativesymbols</BuildArgs>
       <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) -cross</BuildArgs>
       <BuildArgs Condition="'$(Compiler)' != ''">$(BuildArgs) $(Compiler)</BuildArgs>
-      <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
+      <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) -cmakeargs "$(CMakeArgs)"</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs Condition="'$(OfficialBuildId)' != ''">$(BuildArgs) /p:OfficialBuildId="$(OfficialBuildId)"</BuildArgs>
