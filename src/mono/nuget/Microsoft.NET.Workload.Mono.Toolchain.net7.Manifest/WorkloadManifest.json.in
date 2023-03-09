@@ -129,7 +129,7 @@
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
     },
     "runtimes-windows-net7": {
-      "description": "Windows Runtime Packs",
+      "description": "Windows Runtime Packs for net7.0",
       "packs": [
         "Microsoft.NETCore.App.Runtime.net7.win-x64",
         "Microsoft.NETCore.App.Runtime.net7.win-x86",
