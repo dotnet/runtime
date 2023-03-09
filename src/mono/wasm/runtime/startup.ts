@@ -39,7 +39,7 @@ let configLoaded = false;
 export const dotnetReady = createPromiseController<any>();
 export const afterConfigLoaded = createPromiseController<MonoConfig>();
 export const beforeInstantiateWasm = createPromiseController<void>();
-export const memorySnapshotIsResolved = createPromiseController<void>();
+export const memorySnapshotSkippedOrDone = createPromiseController<void>();
 export const afterInstantiateWasm = createPromiseController<void>();
 export const beforePreInit = createPromiseController<void>();
 export const afterPreInit = createPromiseController<void>();
@@ -111,7 +111,7 @@ function instantiateWasm(
     if (userInstantiateWasm) {
         // user wasm doesn't support memory snapshots
         beforeInstantiateWasm.promise_control.resolve();
-        memorySnapshotIsResolved.promise_control.resolve();
+        memorySnapshotSkippedOrDone.promise_control.resolve();
         const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => {
             endMeasure(mark, MeasuredBlock.instantiateWasm);
             afterInstantiateWasm.promise_control.resolve();
@@ -282,7 +282,7 @@ export function abort_startup(reason: any, should_exit: boolean): void {
     if (runtimeHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
     dotnetReady.promise_control.reject(reason);
     beforeInstantiateWasm.promise_control.reject(reason);
-    memorySnapshotIsResolved.promise_control.reject(reason);
+    memorySnapshotSkippedOrDone.promise_control.reject(reason);
     afterInstantiateWasm.promise_control.reject(reason);
     beforePreInit.promise_control.reject(reason);
     afterPreInit.promise_control.reject(reason);
@@ -481,7 +481,7 @@ async function instantiate_wasm_module(
         }
         if (!runtimeHelpers.loadMemorySnapshot) {
             // we should start downloading DLLs etc as they are not in the snapshot
-            memorySnapshotIsResolved.promise_control.resolve();
+            memorySnapshotSkippedOrDone.promise_control.resolve();
         }
 
         await beforePreInit.promise;
@@ -512,7 +512,7 @@ async function instantiate_wasm_module(
                 runtimeHelpers.loadMemorySnapshot = false;
             }
             // now we know if the loading of memory succeeded or not, we can start loading the rest of the assets
-            memorySnapshotIsResolved.promise_control.resolve();
+            memorySnapshotSkippedOrDone.promise_control.resolve();
         }
         afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
