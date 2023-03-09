@@ -1150,7 +1150,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 if (logger.IsVerbose)
-                    logger.LogMessage($"Finalizing output to '{objectFilePath}'...");
+                    logger.LogMessage($"Emitting debug information");
+
+                // Native side of the object writer is going to do more native memory allocations.
+                // Free up as much memory as possible.
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
 
                 objectWriter.EmitDebugModuleInfo();
 
@@ -1158,6 +1164,9 @@ namespace ILCompiler.DependencyAnalysis
             }
             finally
             {
+                if (logger.IsVerbose)
+                    logger.LogMessage($"Finalizing output to '{objectFilePath}'...");
+            
                 objectWriter.Dispose();
 
                 if (!succeeded)
@@ -1173,6 +1182,9 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
+            
+            if (logger.IsVerbose)
+                logger.LogMessage($"Done writing object file");
         }
 
         [DllImport(NativeObjectWriterFileName)]
