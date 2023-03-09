@@ -34,21 +34,14 @@
 #define EXPAND(x) x
 #define PARENTHESIZE(...) (__VA_ARGS__)
 #define EXPAND_FUN(m, ...) EXPAND(m PARENTHESIZE(__VA_ARGS__))
-
-#define OPFMT_DS dreg, sreg1
-#define OPFMT_WDS _w, dreg, sreg1
-#define OPFMT_WTDS _w, _t, dreg, sreg1
 #define OPFMT_WTDSS _w, _t, dreg, sreg1, sreg2
 #define OPFMT_WTDSS_REV _w, _t, dreg, sreg2, sreg1
-#define OPFMT_WTDI(imm) _w, _t, dreg, (imm)
-#define OPFMT_WDDD _w, dreg, dreg, dreg
 #define _UNDEF(...) g_assert_not_reached ()
 #define SIMD_OP_CODE(reg_w, op, c) ((reg_w << 31) | (op) << 16 | (c))
 #define VREG_64 VREG_LOW
 #define VREG_128 VREG_FULL
 #define OPCODE_BASIC 0
 #define OPCODE_SIMD 1
-#define OPCODE_SIMD_EX 2
 
 #define SIMD_OP_INTERNAL(code, reg_w, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
 	if (_f) { \
@@ -314,12 +307,12 @@ mono_arch_init (void)
 
 	mono_arm_gsharedvt_init ();
 
+#ifndef DISABLE_JIT
 	memset(opcode_simd_status, OPCODE_BASIC, OP_LAST - OP_START);
 	#undef SIMD_OP 
-	#undef SIMD_OP_EX
-	#define SIMD_OP(reg_w, op, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) opcode_simd_status[(op) - OP_START] = OPCODE_SIMD;
-	#define SIMD_OP_EX(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) opcode_simd_status[(op) - OP_START] = OPCODE_SIMD_EX;
+	#define SIMD_OP(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) opcode_simd_status[(op) - OP_START] = OPCODE_SIMD;
 	#include "simd-arm64.h"
+#endif
 }
 
 void
@@ -3371,7 +3364,7 @@ get_type_size_macro (MonoTypeEnum type)
 	case MONO_TYPE_R8:
 		return TYPE_F64;
 	default:
-		return TYPE_I8;
+		g_assert_not_reached ();
 	}
 }
 
@@ -3418,30 +3411,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
     	const int _w = get_vector_size_macro (ins);
 
 			#undef SIMD_OP
-			#undef SIMD_OP_EX
-			#define SIMD_OP(reg_w, op, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
-				case SIMD_OP_CODE (VREG_##reg_w, (op), 0): { \
-					SIMD_OP_INTERNAL (code, reg_w, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun); \
-					} break;
-			#define SIMD_OP_EX(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) 
-
-			switch (SIMD_OP_CODE (_w, ins->opcode, 0)) {
-				#include "simd-arm64.h"
-			default:
-				g_assert_not_reached();
-				break;
-			}
-		}
-		else if (handler_kind == OPCODE_SIMD_EX)
-		{
-			const int _t = get_type_size_macro (ins->inst_c1);
-    	const gboolean _f = is_type_float_macro (ins->inst_c1);
-    	const int _w = get_vector_size_macro (ins);
-
-			#undef SIMD_OP
-			#undef SIMD_OP_EX
-			#define SIMD_OP(reg_w, op, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun)
-			#define SIMD_OP_EX(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
+			#define SIMD_OP(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
 				case SIMD_OP_CODE (VREG_##reg_w, (op), (c)): { \
 					SIMD_OP_INTERNAL (code, reg_w, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun); \
 					} break;
@@ -3689,6 +3659,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_ARM64_CBZ);
 			arm_cbnzx (code, sreg1, 0);
 			break;
+
+			/* SIMD that is not table-generated */
+		case OP_ONES_COMPLEMENT:
+			arm_neon_not (code, get_vector_size_macro (ins), dreg, sreg1);
+			break;
+		case OP_NEGATION:
+			if (is_type_float_macro (ins->inst_c1)) {
+				arm_neon_fneg (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1);
+			} else {
+				arm_neon_neg (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1);
+			}
+			break;
+		case OP_XZERO:
+			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			break;
+			
 			/* ALU */
 		case OP_IADD:
 			arm_addw (code, dreg, sreg1, sreg2);
