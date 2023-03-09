@@ -9465,10 +9465,6 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
 //
 bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 {
-    if (m_comp->verbose)
-    {
-        JITDUMP("here\n");
-    }
     assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
     m_t3 = nullptr;
 
@@ -9520,8 +9516,9 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         return false;
     }
 
-    // Avoid cases where the compare will be optimized better later:
-    // * cmp(and(x, y), 0) will be turned into a TEST_ opcode.
+    // Specifically for Arm64, avoid cases where optimizations in lowering will produce better
+    // code than optimizing here. Specificially:
+    // * cmp(and(...), 0) will be turned into a TEST_ opcode.
     // * Compares against zero will be optimized with cbz.
     if (op1IsTestCond || op2IsTestCond)
     {
