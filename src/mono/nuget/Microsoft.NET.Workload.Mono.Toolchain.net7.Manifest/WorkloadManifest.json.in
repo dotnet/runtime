@@ -5,7 +5,7 @@
   },
   "workloads": {
     "wasm-tools-net7": {
-      "description": ".NET WebAssembly build tools",
+      "description": ".NET WebAssembly build tools for net7.0",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk.net7",
         "Microsoft.NETCore.App.Runtime.Mono.net7.browser-wasm",
