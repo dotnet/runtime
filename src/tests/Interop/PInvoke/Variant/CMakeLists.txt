@@ -11,7 +11,7 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 endif(CLR_CMAKE_HOST_WIN32)
 
-target_link_libraries(VariantNative ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(VariantNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets
 install (TARGETS VariantNative DESTINATION bin)

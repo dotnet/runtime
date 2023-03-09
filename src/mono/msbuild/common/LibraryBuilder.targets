@@ -1,0 +1,33 @@
+<Project>
+  <UsingTask TaskName="LibraryBuilderTask" 
+             AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
+
+  <Target Name="_BuildNativeLibrary"
+          Condition="'$(_IsLibraryMode)' == 'true' and '$(RunAOTCompilation)' == 'true'">
+
+    <PropertyGroup>
+      <_IsSharedLibrary>false</_IsSharedLibrary>
+      <_IsSharedLibrary Condition="'$(NativeLib)' == 'shared'">true</_IsSharedLibrary>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
+      <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
+    </ItemGroup>
+
+    <LibraryBuilderTask
+      Assemblies="@(AppAssembliesInternal)"
+      ExtraLinkerArguments="@(_ExtraLinkerArgs)"
+      ExtraSources="@(_ExtraLibrarySources)"
+      IsSharedLibrary="$(_IsSharedLibrary)"
+      Name="$(AssemblyName)"
+      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      OutputDirectory="$(BundleDir)"
+      RuntimeIdentifier="$(RuntimeIdentifier)"
+      RuntimeLibraries="@(_RuntimeLibraries)"
+      TargetOS="$(TargetOS)">
+      <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
+    </LibraryBuilderTask>
+  </Target>
+
+</Project>

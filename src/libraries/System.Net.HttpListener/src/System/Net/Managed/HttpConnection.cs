@@ -43,11 +43,11 @@ namespace System.Net
 {
     internal sealed class HttpConnection
     {
-        private static AsyncCallback s_onreadCallback = new AsyncCallback(OnRead);
+        private static readonly AsyncCallback s_onreadCallback = new AsyncCallback(OnRead);
         private const int BufferSize = 8192;
         private Socket? _socket;
-        private Stream _stream;
-        private HttpEndPointListener _epl;
+        private readonly Stream _stream;
+        private readonly HttpEndPointListener _epl;
         private MemoryStream? _memoryStream;
         private byte[]? _buffer;
         private HttpListenerContext _context;
@@ -58,15 +58,15 @@ namespace System.Net
         private bool _chunked;
         private int _reuses;
         private bool _contextBound;
-        private bool _secure;
-        private X509Certificate _cert;
+        private readonly bool _secure;
+        private readonly X509Certificate _cert;
         private int _timeout = 90000; // 90k ms for first request, 15k ms from then on
-        private Timer _timer;
+        private readonly Timer _timer;
         private IPEndPoint? _localEndPoint;
         private HttpListener? _lastListener;
         private int[]? _clientCertErrors;
         private X509Certificate2? _clientCert;
-        private SslStream? _sslStream;
+        private readonly SslStream? _sslStream;
         private InputState _inputState = InputState.RequestLine;
         private LineState _lineState = LineState.None;
         private int _position;

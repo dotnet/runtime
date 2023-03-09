@@ -815,10 +815,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
-                    vecCon->gtSimd16Val.f32[0] = 1.0f;
-                    vecCon->gtSimd16Val.f32[1] = 0.0f;
-                    vecCon->gtSimd16Val.f32[2] = 0.0f;
-                    vecCon->gtSimd16Val.f32[3] = 0.0f;
+                    vecCon->gtSimdVal.f32[0] = 1.0f;
+                    vecCon->gtSimdVal.f32[1] = 0.0f;
+                    vecCon->gtSimdVal.f32[2] = 0.0f;
+                    vecCon->gtSimdVal.f32[3] = 0.0f;
 
                     return vecCon;
                 }
@@ -829,10 +829,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
-                    vecCon->gtSimd16Val.f32[0] = 0.0f;
-                    vecCon->gtSimd16Val.f32[1] = 1.0f;
-                    vecCon->gtSimd16Val.f32[2] = 0.0f;
-                    vecCon->gtSimd16Val.f32[3] = 0.0f;
+                    vecCon->gtSimdVal.f32[0] = 0.0f;
+                    vecCon->gtSimdVal.f32[1] = 1.0f;
+                    vecCon->gtSimdVal.f32[2] = 0.0f;
+                    vecCon->gtSimdVal.f32[3] = 0.0f;
 
                     return vecCon;
                 }
@@ -842,10 +842,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
-                    vecCon->gtSimd16Val.f32[0] = 0.0f;
-                    vecCon->gtSimd16Val.f32[1] = 0.0f;
-                    vecCon->gtSimd16Val.f32[2] = 1.0f;
-                    vecCon->gtSimd16Val.f32[3] = 0.0f;
+                    vecCon->gtSimdVal.f32[0] = 0.0f;
+                    vecCon->gtSimdVal.f32[1] = 0.0f;
+                    vecCon->gtSimdVal.f32[2] = 1.0f;
+                    vecCon->gtSimdVal.f32[3] = 0.0f;
 
                     return vecCon;
                 }
@@ -855,10 +855,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
-                    vecCon->gtSimd16Val.f32[0] = 0.0f;
-                    vecCon->gtSimd16Val.f32[1] = 0.0f;
-                    vecCon->gtSimd16Val.f32[2] = 0.0f;
-                    vecCon->gtSimd16Val.f32[3] = 1.0f;
+                    vecCon->gtSimdVal.f32[0] = 0.0f;
+                    vecCon->gtSimdVal.f32[1] = 0.0f;
+                    vecCon->gtSimdVal.f32[2] = 0.0f;
+                    vecCon->gtSimdVal.f32[3] = 1.0f;
 
                     return vecCon;
                 }
@@ -937,46 +937,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
-                    vecCon->gtSimd16Val.f32[0] = -1.0f;
-                    vecCon->gtSimd16Val.f32[1] = -1.0f;
-                    vecCon->gtSimd16Val.f32[2] = -1.0f;
-                    vecCon->gtSimd16Val.f32[3] = +1.0f;
+                    vecCon->gtSimdVal.f32[0] = -1.0f;
+                    vecCon->gtSimdVal.f32[1] = -1.0f;
+                    vecCon->gtSimdVal.f32[2] = -1.0f;
+                    vecCon->gtSimdVal.f32[3] = +1.0f;
 
                     return gtNewSimdBinOpNode(GT_MUL, retType, op1, vecCon, simdBaseJitType, simdSize,
                                               /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_Vector2_Distance:
-                case NI_Vector3_Distance:
-                case NI_Vector4_Distance:
-                {
-                    op1 = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ true);
-
-                    GenTree* clonedOp1;
-                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("Clone diff for vector distance"));
-
-                    op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
-                                               /* isSimdAsHWIntrinsic */ true);
-
-                    return new (this, GT_INTRINSIC)
-                        GenTreeIntrinsic(simdBaseType, op1, NI_System_Math_Sqrt, NO_METHOD_HANDLE);
-                }
-
-                case NI_Vector2_DistanceSquared:
-                case NI_Vector3_DistanceSquared:
-                case NI_Vector4_DistanceSquared:
-                {
-                    op1 = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ true);
-
-                    GenTree* clonedOp1;
-                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("Clone diff for vector distance squared"));
-
-                    return gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_Floor:
@@ -999,10 +966,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
-                    vecCon->gtSimd16Val.f32[0] = -1.0f;
-                    vecCon->gtSimd16Val.f32[1] = -1.0f;
-                    vecCon->gtSimd16Val.f32[2] = -1.0f;
-                    vecCon->gtSimd16Val.f32[3] = +1.0f;
+                    vecCon->gtSimdVal.f32[0] = -1.0f;
+                    vecCon->gtSimdVal.f32[1] = -1.0f;
+                    vecCon->gtSimdVal.f32[2] = -1.0f;
+                    vecCon->gtSimdVal.f32[3] = +1.0f;
 
                     GenTree* conjugate = gtNewSimdBinOpNode(GT_MUL, retType, op1, vecCon, simdBaseJitType, simdSize,
                                                             /* isSimdAsHWIntrinsic */ true);
@@ -1380,6 +1347,39 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     copyBlkSrc = op2;
 
                     break;
+                }
+
+                case NI_Vector2_Distance:
+                case NI_Vector3_Distance:
+                case NI_Vector4_Distance:
+                {
+                    op1 = gtNewSimdBinOpNode(GT_SUB, simdType, op1, op2, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ true);
+
+                    GenTree* clonedOp1;
+                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone diff for vector distance"));
+
+                    op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ true);
+
+                    return new (this, GT_INTRINSIC)
+                        GenTreeIntrinsic(retType, op1, NI_System_Math_Sqrt, NO_METHOD_HANDLE);
+                }
+
+                case NI_Vector2_DistanceSquared:
+                case NI_Vector3_DistanceSquared:
+                case NI_Vector4_DistanceSquared:
+                {
+                    op1 = gtNewSimdBinOpNode(GT_SUB, simdType, op1, op2, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ true);
+
+                    GenTree* clonedOp1;
+                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone diff for vector distance squared"));
+
+                    return gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
+                                                /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_Quaternion_Divide:
@@ -1923,8 +1923,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                         float cnsVal = 0;
 
-                        vecCon->gtSimd8Val.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
-                        vecCon->gtSimd8Val.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
 
                         copyBlkSrc = vecCon;
                     }
@@ -1976,11 +1976,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                         if (simdSize == 12)
                         {
-                            vecCon->gtSimd12Val.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
+                            vecCon->gtSimdVal.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
                         }
                         else
                         {
-                            vecCon->gtSimd16Val.f32[3] = static_cast<float>(op3->AsDblCon()->DconValue());
+                            vecCon->gtSimdVal.f32[3] = static_cast<float>(op3->AsDblCon()->DconValue());
                         }
 
                         copyBlkSrc = vecCon;
@@ -2064,9 +2064,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                         float cnsVal = 0;
 
-                        vecCon->gtSimd12Val.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
-                        vecCon->gtSimd12Val.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
-                        vecCon->gtSimd12Val.f32[2] = static_cast<float>(op4->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[2] = static_cast<float>(op4->AsDblCon()->DconValue());
 
                         copyBlkSrc = vecCon;
                     }
@@ -2106,8 +2106,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         GenTreeVecCon* vecCon = op2->AsVecCon();
                         vecCon->gtType        = simdType;
 
-                        vecCon->gtSimd16Val.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
-                        vecCon->gtSimd16Val.f32[3] = static_cast<float>(op4->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[3] = static_cast<float>(op4->AsDblCon()->DconValue());
 
                         copyBlkSrc = vecCon;
                     }
@@ -2191,10 +2191,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                         float cnsVal = 0;
 
-                        vecCon->gtSimd16Val.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
-                        vecCon->gtSimd16Val.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
-                        vecCon->gtSimd16Val.f32[2] = static_cast<float>(op4->AsDblCon()->DconValue());
-                        vecCon->gtSimd16Val.f32[3] = static_cast<float>(op5->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[2] = static_cast<float>(op4->AsDblCon()->DconValue());
+                        vecCon->gtSimdVal.f32[3] = static_cast<float>(op5->AsDblCon()->DconValue());
 
                         copyBlkSrc = vecCon;
                     }

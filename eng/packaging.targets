@@ -2,7 +2,9 @@
 
   <PropertyGroup>
     <!-- Package Validation isn't helpful when authoring shared framework packages. -->
-    <EnablePackageValidation Condition="'$(EnablePackageValidation)' == '' and '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true'">true</EnablePackageValidation>
+    <EnablePackageValidation Condition="'$(EnablePackageValidation)' == '' and
+                                        '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true' and
+                                        '$(DotNetBuildFromSource)' != 'true'">true</EnablePackageValidation>
     <!-- Don't perform baseline validation if we don't have a stable prebuilt version.
          Don't attempt to restore prebuilts during source-build. -->
     <DisablePackageBaselineValidation Condition="'$(IsShipping)' == 'false' or

@@ -58,14 +58,10 @@ declare interface EmscriptenModule {
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     FS_readFile(filename: string, opts: any): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
     addFunction(fn: Function, signature: string): number;
-    getWasmTableEntry(index: number): any;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
-    ready: Promise<unknown>;
     instantiateWasm?: InstantiateWasmCallBack;
     preInit?: (() => any)[] | (() => any);
     preRun?: (() => any)[] | (() => any);
@@ -101,6 +97,10 @@ type MonoConfig = {
      */
     maxParallelDownloads?: number;
     /**
+     * We are making up to 2 more delayed attempts to download same asset. Default true.
+     */
+    enableDownloadRetry?: boolean;
+    /**
      * Name of the assembly with main entrypoint
      */
     mainAssemblyName?: string;
@@ -128,6 +128,10 @@ type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number;
+    /**
+     * hash of assets
+     */
+    assetsHash?: string;
 };
 interface ResourceRequest {
     name: string;

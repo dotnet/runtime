@@ -1,7 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Buffers.Text
 {
@@ -18,6 +23,60 @@ namespace System.Buffers.Text
         private const byte Dash = (byte)'-';
 
         #endregion Constants
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector128<byte>, Vector128<byte>, Vector128<byte>) FormatGuidVector128Utf8(Guid value, bool useDashes)
+        {
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+            // Vectorized implementation for D, N, P and B formats:
+            // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+
+            Vector128<byte> hexMap = Vector128.Create(
+                (byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                (byte)'8', (byte)'9', (byte)'a', (byte)'b',
+                (byte)'c', (byte)'d', (byte)'e', (byte)'f');
+
+            Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref value);
+            (Vector128<byte> hexLow, Vector128<byte> hexHigh) =
+                HexConverter.AsciiToHexVector128(srcVec, hexMap);
+
+            // because of Guid's layout (int _a, short _b, _c, <8 byte fields>)
+            // we have to shuffle some bytes for _a, _b and _c
+            hexLow = Vector128.Shuffle(hexLow.AsInt16(), Vector128.Create(3, 2, 1, 0, 5, 4, 7, 6)).AsByte();
+
+            if (useDashes)
+            {
+                // We divide 16 bytes into 3 x Vector128<byte>:
+                //
+                // ________-____-____-____-____________
+                // xxxxxxxxxxxxxxxx
+                //                     yyyyyyyyyyyyyyyy
+                //         zzzzzzzzzzzzzzzz
+                //
+                // Vector "x" - just one dash, shift all elements after it.
+                Vector128<byte> vecX = Vector128.Shuffle(hexLow,
+                    Vector128.Create(0x706050403020100, 0xD0CFF0B0A0908FF).AsByte());
+
+                // Vector "y" - same here.
+                Vector128<byte> vecY = Vector128.Shuffle(hexHigh,
+                    Vector128.Create(0x7060504FF030201, 0xF0E0D0C0B0A0908).AsByte());
+
+                // Vector "z" - we need to merge some elements of hexLow with hexHigh and add 4 dashes.
+                Vector128<byte> mid1 = Vector128.Shuffle(hexLow,
+                    Vector128.Create(0x0D0CFF0B0A0908FF, 0xFFFFFFFFFFFF0F0E).AsByte());
+                Vector128<byte> mid2 = Vector128.Shuffle(hexHigh,
+                    Vector128.Create(0xFFFFFFFFFFFFFFFF, 0xFF03020100FFFFFF).AsByte());
+                Vector128<byte> dashesMask = Vector128.Shuffle(Vector128.CreateScalarUnsafe((byte)'-'),
+                    Vector128.Create(0xFFFF00FFFFFFFF00, 0x00FFFFFFFF00FFFF).AsByte());
+
+                Vector128<byte> vecZ = (mid1 | mid2 | dashesMask);
+                return (vecX, vecY, vecZ);
+            }
+
+            // N format - no dashes.
+            return (hexLow, hexHigh, default);
+        }
 
         /// <summary>
         /// Formats a Guid as a UTF8 string.
@@ -102,6 +161,35 @@ namespace System.Buffers.Text
                 destination = destination.Slice(1);
             }
             flags >>= 8;
+
+            if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+            {
+                // Vectorized implementation for D, N, P and B formats:
+                // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+                (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) =
+                    FormatGuidVector128Utf8(value, flags < 0 /*dash*/);
+
+                ref byte dest = ref MemoryMarshal.GetReference(destination);
+                if (flags < 0)
+                {
+                    // We need to merge these vectors in this order:
+                    // xxxxxxxxxxxxxxxx
+                    //                     yyyyyyyyyyyyyyyy
+                    //         zzzzzzzzzzzzzzzz
+                    vecX.StoreUnsafe(ref dest, 0);
+                    vecY.StoreUnsafe(ref dest, 20);
+                    vecZ.StoreUnsafe(ref dest, 8);
+                }
+                else
+                {
+                    // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                    vecX.StoreUnsafe(ref dest, 0);
+                    vecY.StoreUnsafe(ref dest, 16);
+                }
+                if ((byte)flags != 0)
+                    Unsafe.Add(ref dest, flags < 0 ? 36 : 32) = (byte)flags;
+                return true;
+            }
 
             // At this point, the low byte of flags contains the closing brace char (if any)
             // And since we're performing arithmetic shifting the high bit of flags is set (flags is negative) if dashes are required

@@ -36,29 +36,28 @@ namespace System.Collections.Frozen
         }
 
         /// <summary>Initializes a frozen hash table.</summary>
-        /// <param name="entries">The set of entries to track from the hash table.</param>
-        /// <param name="hasher">A delegate that produces a hash code for a given entry.</param>
-        /// <param name="setter">A delegate that assigns the index to a specific entry.</param>
+        /// <param name="entriesLength">The number of entries to track from the hash table.</param>
+        /// <param name="hashAtIndex">A delegate that produces a hash code for a given entry. It's passed the index of the entry and returns that entry's hash code.</param>
+        /// <param name="storeDestIndexFromSrcIndex">A delegate that assigns the index to a specific entry. It's passed the destination and source indices.</param>
         /// <param name="optimizeForReading">true to spend additional effort tuning for subsequent read speed on the table; false to prioritize construction time.</param>
-        /// <typeparam name="T">The type of elements in the hash table.</typeparam>
         /// <remarks>
         /// This method will iterate through the incoming entries and will invoke the hasher on each once.
         /// It will then determine the optimal number of hash buckets to allocate and will populate the
-        /// bucket table. In the process of doing so, it calls out to the <paramref name="setter"/> to indicate
+        /// bucket table. In the process of doing so, it calls out to the <paramref name="storeDestIndexFromSrcIndex"/> to indicate
         /// the resulting index for that entry. <see cref="FindMatchingEntries(int, out int, out int)"/>
         /// then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
         /// </remarks>
         /// <returns>A frozen hash table.</returns>
-        public static FrozenHashTable Create<T>(T[] entries, Func<T, int> hasher, Action<int, T> setter, bool optimizeForReading = true)
+        public static FrozenHashTable Create(int entriesLength, Func<int, int> hashAtIndex, Action<int, int> storeDestIndexFromSrcIndex, bool optimizeForReading = true)
         {
-            Debug.Assert(entries.Length != 0);
+            Debug.Assert(entriesLength != 0);
 
             // Calculate the hashcodes for every entry.
-            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entries.Length);
-            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entries.Length);
-            for (int i = 0; i < entries.Length; i++)
+            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entriesLength);
+            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entriesLength);
+            for (int i = 0; i < entriesLength; i++)
             {
-                hashCodes[i] = hasher(entries[i]);
+                hashCodes[i] = hashAtIndex(i);
             }
 
             // Determine how many buckets to use.  This might be fewer than the number of entries
@@ -113,7 +112,7 @@ namespace System.Collections.Frozen
                 while (index >= 0)
                 {
                     hashtableHashcodes[count] = hashCodes[index];
-                    setter(count, entries[index]);
+                    storeDestIndexFromSrcIndex(count, index);
                     count++;
                     bucketCount++;
 
@@ -187,13 +186,14 @@ namespace System.Collections.Frozen
             // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
             // hash codes. If there are more codes than in our precomputed primes table, which accommodates millions of values,
             // give up and just use the next prime.
+            ReadOnlySpan<int> primes = HashHelpers.Primes;
             int minPrimeIndexInclusive = 0;
-            while (minPrimeIndexInclusive < HashHelpers.s_primes.Length && codes.Count > HashHelpers.s_primes[minPrimeIndexInclusive])
+            while ((uint)minPrimeIndexInclusive < (uint)primes.Length && codes.Count > primes[minPrimeIndexInclusive])
             {
                 minPrimeIndexInclusive++;
             }
 
-            if (minPrimeIndexInclusive >= HashHelpers.s_primes.Length)
+            if (minPrimeIndexInclusive >= primes.Length)
             {
                 return HashHelpers.GetPrime(codes.Count);
             }
@@ -206,15 +206,15 @@ namespace System.Collections.Frozen
 
             // Find the index of the smallest prime that accommodates our max buckets.
             int maxPrimeIndexExclusive = minPrimeIndexInclusive;
-            while (maxPrimeIndexExclusive < HashHelpers.s_primes.Length && maxNumBuckets > HashHelpers.s_primes[maxPrimeIndexExclusive])
+            while ((uint)maxPrimeIndexExclusive < (uint)primes.Length && maxNumBuckets > primes[maxPrimeIndexExclusive])
             {
                 maxPrimeIndexExclusive++;
             }
 
-            if (maxPrimeIndexExclusive < HashHelpers.s_primes.Length)
+            if (maxPrimeIndexExclusive < primes.Length)
             {
                 Debug.Assert(maxPrimeIndexExclusive != 0);
-                maxNumBuckets = HashHelpers.s_primes[maxPrimeIndexExclusive - 1];
+                maxNumBuckets = primes[maxPrimeIndexExclusive - 1];
             }
 
             const int BitsPerInt32 = 32;
@@ -228,7 +228,7 @@ namespace System.Collections.Frozen
             for (int primeIndex = minPrimeIndexInclusive; primeIndex < maxPrimeIndexExclusive; primeIndex++)
             {
                 // Get the number of buckets to try, and clear our seen bucket bitmap.
-                int numBuckets = HashHelpers.s_primes[primeIndex];
+                int numBuckets = primes[primeIndex];
                 Array.Clear(seenBuckets, 0, Math.Min(numBuckets, seenBuckets.Length));
 
                 // Determine the bucket for each hash code and mark it as seen. If it was already seen,

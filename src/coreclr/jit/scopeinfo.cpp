@@ -289,8 +289,11 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
-#endif
+        case TYP_SIMD64:
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
 #ifdef TARGET_64BIT
         case TYP_LONG:
         case TYP_DOUBLE:
@@ -423,7 +426,11 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
+        case TYP_SIMD64:
+#endif // TARGET_XARCH
+        {
             this->vlType = VLT_REG_FP;
 
             // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
@@ -433,6 +440,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             // in eeDispVar() --> getRegName() that regNumber is valid.
             this->vlReg.vlrReg = varDsc->GetRegNum();
             break;
+        }
 #endif // FEATURE_SIMD
 
         default:

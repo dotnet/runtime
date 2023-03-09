@@ -106,15 +106,10 @@ namespace System.Threading.Tests
         [Fact]
         public static async Task CaptureAndRunOnFlowSuppressedContext()
         {
-            ExecutionContext.SuppressFlow();
-            try
+            using (ExecutionContext.SuppressFlow())
             {
                 ExecutionContext ec = ExecutionContext.Capture();
                 Assert.Throws<InvalidOperationException>(() => ExecutionContext.Run(ec, _ => { }, null));
-            }
-            finally
-            {
-                ExecutionContext.RestoreFlow();
             }
         }
 
@@ -598,15 +593,10 @@ namespace System.Threading.Tests
             // Check Running with the contexts captured when setting the locals
             TestCapturedExecutionContexts();
 
-            ExecutionContext.SuppressFlow();
-            try
+            using (ExecutionContext.SuppressFlow())
             {
                 // Re-check restoring, but starting with a suppressed flow
                 TestCapturedExecutionContexts();
-            }
-            finally
-            {
-                ExecutionContext.RestoreFlow();
             }
 
             // -- Local functions --

@@ -4374,6 +4374,70 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
     [System.CLSCompliantAttribute(false)]
+    public abstract partial class Avx512BW : System.Runtime.Intrinsics.X86.Avx512F
+    {
+        internal Avx512BW() { }
+        public static new bool IsSupported { get { throw null; } }
+        public new abstract partial class VL : System.Runtime.Intrinsics.X86.Avx512F.VL
+        {
+            internal VL() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512F.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Avx512CD : System.Runtime.Intrinsics.X86.Avx512F
+    {
+        internal Avx512CD() { }
+        public static new bool IsSupported { get { throw null; } }
+        public new abstract partial class VL : System.Runtime.Intrinsics.X86.Avx512F.VL
+        {
+            internal VL() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512F.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Avx512DQ : System.Runtime.Intrinsics.X86.Avx512F
+    {
+        internal Avx512DQ() { }
+        public static new bool IsSupported { get { throw null; } }
+        public new abstract partial class VL : System.Runtime.Intrinsics.X86.Avx512F.VL
+        {
+            internal VL() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512F.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Avx512F : System.Runtime.Intrinsics.X86.Avx2
+    {
+        internal Avx512F() { }
+        public static new bool IsSupported { get { throw null; } }
+        public abstract partial class VL
+        {
+            internal VL() { }
+            public static bool IsSupported { get { throw null; } }
+        }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("AvxVnni is in preview.")]
     public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
     {
@@ -5210,16 +5274,30 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
+
+    [System.CLSCompliantAttribute(false)]
     public abstract partial class X86Base
     {
         internal X86Base() { }
         public static bool IsSupported { get { throw null; } }
         public static (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("DivRem is in preview.")]
+        public static (uint Quotient, uint Remainder) DivRem(uint lower, uint upper, uint divisor) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("DivRem is in preview.")]
+        public static (int Quotient, int Remainder) DivRem(uint lower, int upper, int divisor) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("DivRem is in preview.")]
+        public static (nuint Quotient, nuint Remainder) DivRem(nuint lower, nuint upper, nuint divisor) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("DivRem is in preview.")]
+        public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw null; }
         public static void Pause() { throw null; }
         public abstract partial class X64
         {
             internal X64() { }
             public static bool IsSupported { get { throw null; } }
+            [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("DivRem is in preview.")]
+            public static (ulong Quotient, ulong Remainder) DivRem(ulong lower, ulong upper, ulong divisor) { throw null; }
+            [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("DivRem is in preview.")]
+            public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) { throw null; }
         }
     }
 

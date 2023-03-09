@@ -14,9 +14,6 @@ endif()
 
 list(APPEND COMMON_TEST_LIBRARIES coreclrpal)
 
-# Skip validation of printf format flags.
-add_compile_options(-Wno-format)
-
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
   add_compile_options(-Wno-int-to-void-pointer-cast)
@@ -644,6 +641,7 @@ add_executable_clr(paltests
 add_dependencies(paltests coreclrpal)
 
 target_link_libraries(paltests
+  PUBLIC
   ${COMMON_TEST_LIBRARIES}
 )
 

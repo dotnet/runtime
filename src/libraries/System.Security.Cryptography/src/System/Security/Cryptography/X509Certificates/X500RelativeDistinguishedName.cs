@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates
     /// <seealso cref="X500DistinguishedName"/>
     public sealed class X500RelativeDistinguishedName
     {
-        private Oid? _singleElementType;
+        private readonly Oid? _singleElementType;
         private readonly ReadOnlyMemory<byte> _singleElementValue;
 
         /// <summary>
