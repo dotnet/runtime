@@ -11728,7 +11728,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                             }
                         }
                     }
-                    else
+                    else if (!structType->ContainsPointers())
                     {
                         // No gc pointers in the struct
                         memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
