@@ -550,34 +550,40 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 #if defined(FEATURE_SIMD)
                 case TYP_SIMD8:
                 {
-                    simd8_t              constValue = vecCon->gtSimd8Val;
-                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
+                    simd8_t constValue;
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
 
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(constValue);
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;
                 }
 
                 case TYP_SIMD12:
-                case TYP_SIMD16:
                 {
                     simd16_t constValue = {};
-
-                    if (vecCon->TypeIs(TYP_SIMD12))
-                        memcpy(&constValue, &vecCon->gtSimd12Val, sizeof(simd12_t));
-                    else
-                        constValue = vecCon->gtSimd16Val;
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd12_t));
 
                     CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
 
+                case TYP_SIMD16:
+                {
+                    simd16_t constValue;
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
+
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;
                 }
 
                 case TYP_SIMD32:
                 {
-                    simd32_t             constValue = vecCon->gtSimd32Val;
-                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd32Const(constValue);
+                    simd32_t constValue;
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd32_t));
 
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd32Const(constValue);
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;
                 }
@@ -585,11 +591,9 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 case TYP_SIMD64:
                 {
                     simd64_t constValue;
-                    // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
-                    constValue.v256[0]       = vecCon->gtSimd32Val;
-                    constValue.v256[1]       = vecCon->gtSimd32Val;
-                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd64Const(constValue);
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd64_t));
 
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd64Const(constValue);
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;
                 }
@@ -6361,7 +6365,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
             assert(typeHnd != nullptr);
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
@@ -6411,9 +6415,9 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             // Register argument
             CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_X86
-            noway_assert(
-                isRegParamType(genActualType(varDsc->TypeGet())) ||
-                (varTypeIsStruct(varDsc->TypeGet()) && compiler->isTrivialPointerSizedStruct(varDsc->GetStructHnd())));
+            noway_assert(isRegParamType(genActualType(varDsc->TypeGet())) ||
+                         ((varDsc->TypeGet() == TYP_STRUCT) &&
+                          compiler->isTrivialPointerSizedStruct(varDsc->GetLayout()->GetClassHandle())));
 #else
             noway_assert(isRegParamType(genActualType(varDsc->TypeGet())));
 #endif // TARGET_X86

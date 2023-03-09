@@ -936,7 +936,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             // Both structs should be of the same type, or have the same number of fields of the same type.
             // If not we will use a copy block.
             bool misMatchedTypes = false;
-            if (m_dstVarDsc->GetStructHnd() != m_srcVarDsc->GetStructHnd())
+            if (m_dstVarDsc->GetLayout() != m_srcVarDsc->GetLayout())
             {
                 if (m_dstVarDsc->lvFieldCnt != m_srcVarDsc->lvFieldCnt)
                 {

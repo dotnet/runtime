@@ -988,7 +988,8 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 			// We failed to start a trace at a backwards branch target, but that might just mean
 			//  that the loop body starts with one or two unsupported opcodes, so it may be
 			//  worthwhile to try again later
-			enter_at_next = TRUE;
+			// FIXME: This caused a bunch of regressions
+			// enter_at_next = TRUE;
 		}
 
 		// Increase the instruction counter. If we inserted an entry point at the top of this bb,
@@ -1191,87 +1192,6 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_debug_count ()
 {
 	return mono_debug_count();
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_rem (double lhs, double rhs) {
-	return fmod(lhs, rhs);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_atan2 (double lhs, double rhs) {
-	return atan2(lhs, rhs);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_pow (double lhs, double rhs) {
-	return pow(lhs, rhs);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_acos (double value)
-{
-	return acos(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_cos (double value)
-{
-	return cos(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_asin (double value)
-{
-	return asin(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_sin (double value)
-{
-	return sin(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_atan (double value)
-{
-	return atan(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_tan (double value)
-{
-	return tan(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_exp (double value)
-{
-	return exp(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_log (double value)
-{
-	return log(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_log2 (double value)
-{
-	return log2(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_log10 (double value)
-{
-	return log10(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_fma (double x, double y, double z)
-{
-	return fma(x, y, z);
 }
 
 EMSCRIPTEN_KEEPALIVE int

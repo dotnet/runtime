@@ -1894,9 +1894,8 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     lvaReversePInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Reverse Pinvoke FrameVar"));
 
-    LclVarDsc* varDsc   = lvaGetDesc(lvaReversePInvokeFrameVar);
-    varDsc->lvType      = TYP_BLK;
-    varDsc->lvExactSize = eeGetEEInfo()->sizeOfReversePInvokeFrame;
+    LclVarDsc* varDsc = lvaGetDesc(lvaReversePInvokeFrameVar);
+    lvaSetStruct(lvaReversePInvokeFrameVar, typGetBlkLayout(eeGetEEInfo()->sizeOfReversePInvokeFrame), false);
 
     // Add enter pinvoke exit callout at the start of prolog
 
@@ -2667,9 +2666,8 @@ PhaseStatus Compiler::fgAddInternal()
         lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 
         LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
-        varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.
-        varDsc->lvExactSize = eeGetEEInfo()->inlinedCallFrameInfo.size;
+        lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(eeGetEEInfo()->inlinedCallFrameInfo.size), false);
 #if FEATURE_FIXED_OUT_ARGS
         // Grab and reserve space for TCB, Frame regs used in PInvoke epilog to pop the inlined frame.
         // See genPInvokeMethodEpilog() for use of the grabbed var. This is only necessary if we are
@@ -2678,8 +2676,7 @@ PhaseStatus Compiler::fgAddInternal()
         {
             lvaPInvokeFrameRegSaveVar = lvaGrabTempWithImplicitUse(false DEBUGARG("PInvokeFrameRegSave Var"));
             varDsc                    = lvaGetDesc(lvaPInvokeFrameRegSaveVar);
-            varDsc->lvType            = TYP_BLK;
-            varDsc->lvExactSize       = 2 * REGSIZE_BYTES;
+            lvaSetStruct(lvaPInvokeFrameRegSaveVar, typGetBlkLayout(2 * REGSIZE_BYTES), false);
         }
 #endif
     }
@@ -3043,6 +3040,7 @@ PhaseStatus Compiler::fgSimpleLowering()
     // attempt later will cause an assert.
     lvaOutgoingArgSpaceSize = outgoingArgSpaceSize;
     lvaOutgoingArgSpaceSize.MarkAsReadOnly();
+    lvaGetDesc(lvaOutgoingArgSpaceVar)->GrowBlockLayout(typGetBlkLayout(outgoingArgSpaceSize));
 
 #endif // FEATURE_FIXED_OUT_ARGS
 

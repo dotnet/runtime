@@ -36,6 +36,7 @@ namespace ILCompiler.Dataflow
                 flowAnnotations.RequiresDataflowAnalysisDueToSignature(method) ||
                 GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, method) ||
                 method.DoesMethodRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                method.DoesMethodRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _) ||
                 method.DoesMethodRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
                 IsPInvokeDangerous(method, out _, out _);
         }
@@ -51,6 +52,7 @@ namespace ILCompiler.Dataflow
             return flowAnnotations.RequiresDataflowAnalysisDueToSignature(field) ||
                 GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, field) ||
                 field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                field.DoesFieldRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _) ||
                 field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
         }
 

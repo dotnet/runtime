@@ -1062,19 +1062,11 @@ export function generate_wasm_body (
 
                 // LOCAL_VAR (ip [1], double) = fma (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], double), LOCAL_VAR (ip [4], double));
                 append_ldloc(builder, getArgU16(ip, 2), loadOp);
-                if (isF32)
-                    builder.appendU8(WasmOpcode.f64_promote_f32);
                 append_ldloc(builder, getArgU16(ip, 3), loadOp);
-                if (isF32)
-                    builder.appendU8(WasmOpcode.f64_promote_f32);
                 append_ldloc(builder, getArgU16(ip, 4), loadOp);
-                if (isF32)
-                    builder.appendU8(WasmOpcode.f64_promote_f32);
 
-                builder.callImport("fma");
+                builder.callImport(isF32 ? "fmaf" : "fma");
 
-                if (isF32)
-                    builder.appendU8(WasmOpcode.f32_demote_f64);
                 append_stloc_tail(builder, getArgU16(ip, 1), storeOp);
                 break;
             }
@@ -2584,25 +2576,33 @@ const mathIntrinsicTable : { [opcode: number] : [isUnary: boolean, isF32: boolea
     [MintOpcode.MINT_ABSF]:     [true, true,   WasmOpcode.f32_abs],
 
     [MintOpcode.MINT_ACOS]:     [true, false,  "acos"],
-    [MintOpcode.MINT_ACOSF]:    [true, true,   "acos"],
+    [MintOpcode.MINT_ACOSF]:    [true, true,   "acosf"],
+    [MintOpcode.MINT_ACOSH]:    [true, false,  "acosh"],
+    [MintOpcode.MINT_ACOSHF]:   [true, true,   "acoshf"],
     [MintOpcode.MINT_COS]:      [true, false,  "cos"],
-    [MintOpcode.MINT_COSF]:     [true, true,   "cos"],
+    [MintOpcode.MINT_COSF]:     [true, true,   "cosf"],
     [MintOpcode.MINT_ASIN]:     [true, false,  "asin"],
-    [MintOpcode.MINT_ASINF]:    [true, true,   "asin"],
+    [MintOpcode.MINT_ASINF]:    [true, true,   "asinf"],
+    [MintOpcode.MINT_ASINH]:    [true, false,  "asinh"],
+    [MintOpcode.MINT_ASINHF]:   [true, true,   "asinhf"],
     [MintOpcode.MINT_SIN]:      [true, false,  "sin"],
-    [MintOpcode.MINT_SINF]:     [true, true,   "sin"],
+    [MintOpcode.MINT_SINF]:     [true, true,   "sinf"],
     [MintOpcode.MINT_ATAN]:     [true, false,  "atan"],
-    [MintOpcode.MINT_ATANF]:    [true, true,   "atan"],
+    [MintOpcode.MINT_ATANF]:    [true, true,   "atanf"],
+    [MintOpcode.MINT_ATANH]:    [true, false,  "atanh"],
+    [MintOpcode.MINT_ATANHF]:   [true, true,   "atanhf"],
     [MintOpcode.MINT_TAN]:      [true, false,  "tan"],
-    [MintOpcode.MINT_TANF]:     [true, true,   "tan"],
+    [MintOpcode.MINT_TANF]:     [true, true,   "tanf"],
+    [MintOpcode.MINT_CBRT]:     [true, false,  "cbrt"],
+    [MintOpcode.MINT_CBRTF]:    [true, true,   "cbrtf"],
     [MintOpcode.MINT_EXP]:      [true, false,  "exp"],
-    [MintOpcode.MINT_EXPF]:     [true, true,   "exp"],
+    [MintOpcode.MINT_EXPF]:     [true, true,   "expf"],
     [MintOpcode.MINT_LOG]:      [true, false,  "log"],
-    [MintOpcode.MINT_LOGF]:     [true, true,   "log"],
+    [MintOpcode.MINT_LOGF]:     [true, true,   "logf"],
     [MintOpcode.MINT_LOG2]:     [true, false,  "log2"],
-    [MintOpcode.MINT_LOG2F]:    [true, true,   "log2"],
+    [MintOpcode.MINT_LOG2F]:    [true, true,   "log2f"],
     [MintOpcode.MINT_LOG10]:    [true, false,  "log10"],
-    [MintOpcode.MINT_LOG10F]:   [true, true,   "log10"],
+    [MintOpcode.MINT_LOG10F]:   [true, true,   "log10f"],
 
     [MintOpcode.MINT_MIN]:      [false, false,  WasmOpcode.f64_min],
     [MintOpcode.MINT_MINF]:     [false, true,   WasmOpcode.f32_min],
@@ -2610,11 +2610,11 @@ const mathIntrinsicTable : { [opcode: number] : [isUnary: boolean, isF32: boolea
     [MintOpcode.MINT_MAXF]:     [false, true,   WasmOpcode.f32_max],
 
     [MintOpcode.MINT_ATAN2]:    [false, false, "atan2"],
-    [MintOpcode.MINT_ATAN2F]:   [false, true,  "atan2"],
+    [MintOpcode.MINT_ATAN2F]:   [false, true,  "atan2f"],
     [MintOpcode.MINT_POW]:      [false, false, "pow"],
-    [MintOpcode.MINT_POWF]:     [false, true,  "pow"],
-    [MintOpcode.MINT_REM_R4]:   [false, true,  "rem"],
-    [MintOpcode.MINT_REM_R8]:   [false, false, "rem"],
+    [MintOpcode.MINT_POWF]:     [false, true,  "powf"],
+    [MintOpcode.MINT_REM_R8]:   [false, false, "fmod"],
+    [MintOpcode.MINT_REM_R4]:   [false, true,  "fmodf"],
 };
 
 function emit_math_intrinsic (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
@@ -2644,29 +2644,19 @@ function emit_math_intrinsic (builder: WasmBuilder, ip: MintOpcodePtr, opcode: M
         if (wasmOp) {
             builder.appendU8(wasmOp);
         } else if (name) {
-            if (isF32)
-                builder.appendU8(WasmOpcode.f64_promote_f32);
             builder.callImport(name);
-            if (isF32)
-                builder.appendU8(WasmOpcode.f32_demote_f64);
         } else
             throw new Error("internal error");
         append_stloc_tail(builder, destOffset, isF32 ? WasmOpcode.f32_store : WasmOpcode.f64_store);
         return true;
     } else {
         append_ldloc(builder, srcOffset, isF32 ? WasmOpcode.f32_load : WasmOpcode.f64_load);
-        if (isF32 && name)
-            builder.appendU8(WasmOpcode.f64_promote_f32);
         append_ldloc(builder, rhsOffset, isF32 ? WasmOpcode.f32_load : WasmOpcode.f64_load);
-        if (isF32 && name)
-            builder.appendU8(WasmOpcode.f64_promote_f32);
 
         if (wasmOp) {
             builder.appendU8(wasmOp);
         } else if (name) {
             builder.callImport(name);
-            if (isF32)
-                builder.appendU8(WasmOpcode.f32_demote_f64);
         } else
             throw new Error("internal error");
 
