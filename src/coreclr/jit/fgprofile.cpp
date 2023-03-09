@@ -83,9 +83,15 @@ bool Compiler::fgHaveSufficientProfileWeights()
         case ICorJitInfo::PgoSource::Static:
         case ICorJitInfo::PgoSource::Blend:
         {
-            assert(fgFirstBB != nullptr);
-            const weight_t sufficientSamples = 1000;
-            return fgFirstBB->bbWeight > sufficientSamples;
+            // We sometimes call this very early, eg evaluating the prejit root.
+            //
+            if (fgFirstBB != nullptr)
+            {
+                const weight_t sufficientSamples = 1000;
+                return fgFirstBB->bbWeight > sufficientSamples;
+            }
+            
+            return true;
         }
 
         default:
