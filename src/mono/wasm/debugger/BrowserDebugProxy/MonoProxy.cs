@@ -175,6 +175,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!contexts.ContainsKey(sessionId))
                             return false;
 
+                        if (args?["callFrames"]?.Value<JArray>()?.Count == 0)
+                            return false;
+
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
                         switch (top_func) {

@@ -1670,6 +1670,15 @@ ep_rt_config_value_get_use_portable_thread_pool (void)
 	return ThreadpoolMgr::UsePortableThreadPool ();
 }
 
+static
+inline
+bool
+ep_rt_config_value_get_enable_stackwalk (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeEnableStackwalk) != 0;
+}
+
 /*
  * EventPipeSampleProfiler.
  */
