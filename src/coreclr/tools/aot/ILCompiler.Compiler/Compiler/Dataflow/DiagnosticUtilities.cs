@@ -132,6 +132,14 @@ namespace ILCompiler.Dataflow
                 !owningType.IsArray && TryGetRequiresAttribute(owningType, requiresAttribute, out attribute))
                 return true;
 
+            if (method.GetPropertyForAccessor() is PropertyPseudoDesc @property
+                && TryGetRequiresAttribute(@property, requiresAttribute, out attribute))
+                return true;
+
+            if (method.GetEventForAccessor() is EventPseudoDesc @event
+                && TryGetRequiresAttribute(@event, requiresAttribute, out attribute))
+                return true;
+
             return false;
         }
 
