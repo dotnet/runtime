@@ -97,9 +97,6 @@ let linked_functions = [
     "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
-
-    // pal_icushim_static.c
-    "mono_wasm_load_icu_data",
 ];
 
 if (monoWasmThreads) {

@@ -19,7 +19,6 @@ let actual_instantiated_assets_count = 0;
 let expected_downloaded_assets_count = 0;
 let expected_instantiated_assets_count = 0;
 const loaded_files: { url: string, file: string }[] = [];
-const loaded_assets: { [id: string]: [VoidPtr, number] } = Object.create(null);
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -29,6 +28,7 @@ const skipDownloadsByAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
+    "dotnetwasm": true,
 };
 
 // `response.arrayBuffer()` can't be called twice. Some usecases are calling it on response in the instantiation.
@@ -372,7 +372,6 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
         case "heap":
         case "icu":
             offset = mono_wasm_load_bytes_into_heap(bytes);
-            loaded_assets[virtualName] = [offset, bytes.length];
             break;
 
         case "vfs": {
