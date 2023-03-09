@@ -5351,7 +5351,7 @@ PhaseStatus Compiler::StressSplitTree()
     {
         for (Statement* stmt : block->NonPhiStatements())
         {
-            int  numTrees = 0;
+            int numTrees = 0;
             for (GenTree* tree : stmt->TreeList())
             {
                 if (tree->OperIs(GT_JTRUE)) // Due to relop invariant

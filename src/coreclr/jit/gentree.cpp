@@ -16236,7 +16236,7 @@ void Compiler::gtSplitTree(
 
         Statement* FirstStatement = nullptr;
         GenTree**  SplitNodeUse   = nullptr;
-        bool MadeChanges = false;
+        bool       MadeChanges    = false;
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
@@ -16413,7 +16413,7 @@ void Compiler::gtSplitTree(
             {
                 assert((*use)->OperIs(GT_CAST));
                 user = *use;
-                use = &(*use)->AsCast()->gtOp1;
+                use  = &(*use)->AsCast()->gtOp1;
             }
 #endif
 
@@ -16427,7 +16427,7 @@ void Compiler::gtSplitTree(
                 {
                     stmt = m_compiler->fgNewStmtFromTree(sideEffects, m_splitStmt->GetDebugInfo());
                 }
-                *use = m_compiler->gtNewNothingNode();
+                *use        = m_compiler->gtNewNothingNode();
                 MadeChanges = true;
             }
             else if ((*use)->OperIs(GT_FIELD_LIST, GT_INIT_VAL))
@@ -16454,7 +16454,7 @@ void Compiler::gtSplitTree(
                     GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
                     stmt         = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
                     *use         = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
-                    MadeChanges = true;
+                    MadeChanges  = true;
                 }
             }
 
