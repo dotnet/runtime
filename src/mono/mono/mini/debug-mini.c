@@ -673,7 +673,7 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 	if (only_arguments) {
 		char **names;
 		names = g_new (char *, jit->num_params);
-		mono_method_get_param_names (jinfo_get_method (ji), (const char **) names);
+		mono_method_get_param_names_internal (jinfo_get_method (ji), (const char **) names);
 		if (jit->this_var)
 			print_var_info (jit->this_var, 0, "this", "Arg");
 		for (guint32 i = 0; i < jit->num_params; ++i) {

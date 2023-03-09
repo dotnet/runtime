@@ -946,7 +946,7 @@ protected:
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
-    void genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node);
+    void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node);
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node);
@@ -1610,6 +1610,7 @@ public:
 
     void genCodeForJcc(GenTreeCC* tree);
     void genCodeForSetcc(GenTreeCC* setcc);
+    void genCodeForJTrue(GenTreeOp* jtrue);
 #endif // !TARGET_LOONGARCH64
 };
 

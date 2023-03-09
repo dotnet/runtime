@@ -217,7 +217,8 @@ ep_provider_callback_data_alloc (
 	void *callback_data,
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
-	bool enabled)
+	bool enabled,
+	EventPipeSessionID session_id)
 {
 	EventPipeProviderCallbackData *instance = ep_rt_object_alloc (EventPipeProviderCallbackData);
 	ep_raise_error_if_nok (instance != NULL);
@@ -229,7 +230,8 @@ ep_provider_callback_data_alloc (
 		callback_data,
 		keywords,
 		provider_level,
-		enabled) != NULL);
+		enabled,
+		session_id) != NULL);
 
 ep_on_exit:
 	return instance;
@@ -288,7 +290,8 @@ ep_provider_callback_data_init (
 	void *callback_data,
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
-	bool enabled)
+	bool enabled,
+	EventPipeSessionID session_id)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
@@ -298,6 +301,7 @@ ep_provider_callback_data_init (
 	provider_callback_data->keywords = keywords;
 	provider_callback_data->provider_level = provider_level;
 	provider_callback_data->enabled = enabled;
+	provider_callback_data->session_id = session_id;
 
 	return provider_callback_data;
 }

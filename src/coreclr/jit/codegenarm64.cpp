@@ -2388,16 +2388,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         // Get a temp integer register to compute long address.
                         regNumber addrReg = tree->GetSingleTempReg();
 
-                        simd8_t              constValue = vecCon->gtSimd8Val;
-                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
+                        simd8_t constValue;
+                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
 
+                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(constValue);
                         emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
                     }
                     break;
                 }
 
                 case TYP_SIMD12:
-                case TYP_SIMD16:
                 {
                     if (vecCon->IsAllBitsSet())
                     {
@@ -2413,14 +2413,33 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         regNumber addrReg = tree->GetSingleTempReg();
 
                         simd16_t constValue = {};
-
-                        if (vecCon->TypeIs(TYP_SIMD12))
-                            memcpy(&constValue, &vecCon->gtSimd12Val, sizeof(simd12_t));
-                        else
-                            constValue = vecCon->gtSimd16Val;
+                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd12_t));
 
                         CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
+                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                    }
+                    break;
+                }
 
+                case TYP_SIMD16:
+                {
+                    if (vecCon->IsAllBitsSet())
+                    {
+                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_4S);
+                    }
+                    else if (vecCon->IsZero())
+                    {
+                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, INS_OPTS_4S);
+                    }
+                    else
+                    {
+                        // Get a temp integer register to compute long address.
+                        regNumber addrReg = tree->GetSingleTempReg();
+
+                        simd16_t constValue;
+                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
+
+                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
                         emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
                     }
                     break;
@@ -4565,6 +4584,21 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForJTrue: Produce code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - the node
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+    GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->bbJumpDest, reg);
+}
+
+//------------------------------------------------------------------------
 // genCodeForConditionalCompare: Produce code for a compare that's dependent on a previous compare.
 //
 // Arguments:
@@ -5289,7 +5323,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 /*****************************************************************************
  * Unit testing of the ARM64 emitter: generate a bunch of instructions into the prolog
- * (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late
+ * (it's as good a place as any), then use DOTNET_JitLateDisasm=* to see if the late
  * disassembler thinks the instructions as the same as we do.
  */
 

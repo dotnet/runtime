@@ -85,7 +85,7 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
 #ifdef TARGET_ARM64
-    GenTree* TryLowerAndToCCMP(GenTreeOp* tree);
+    GenTree* TryLowerAndOrToCCMP(GenTreeOp* tree);
     insCflags TruthifyingFlags(GenCondition cond);
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
@@ -136,7 +136,7 @@ private:
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
     GenTree* LowerSelect(GenTreeConditional* cond);
-    bool TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond);
+    bool TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* code);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);

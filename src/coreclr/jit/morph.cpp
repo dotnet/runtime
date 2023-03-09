@@ -1726,24 +1726,9 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     {
                         setupArg = comp->fgMorphCopyBlock(setupArg);
 #if defined(TARGET_ARMARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
-#if defined(TARGET_LOONGARCH64)
-                        // On LoongArch64, "getPrimitiveTypeForStruct" will incorrectly return "TYP_LONG"
-                        // for "struct { float, float }", and retyping to a primitive here will cause the
-                        // multi-reg morphing to not kick in (the struct in question needs to be passed in
-                        // two FP registers).
-                        // TODO-LoongArch64: fix "getPrimitiveTypeForStruct" or use the ABI information in
-                        // the arg entry instead of calling it here.
-                        if ((lclVarType == TYP_STRUCT) && (arg.AbiInfo.NumRegs == 1))
-#else
-                        if (lclVarType == TYP_STRUCT)
-#endif
+                        if ((lclVarType == TYP_STRUCT) && (arg.AbiInfo.ArgType != TYP_STRUCT))
                         {
-                            // This scalar LclVar widening step is only performed for ARM architectures.
-                            //
-                            CORINFO_CLASS_HANDLE clsHnd     = comp->lvaGetStruct(tmpVarNum);
-                            unsigned             structSize = varDsc->lvExactSize;
-
-                            scalarType = comp->getPrimitiveTypeForStruct(structSize, clsHnd, m_isVarArgs);
+                            scalarType = arg.AbiInfo.ArgType;
                         }
 #endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
                     }
@@ -4033,8 +4018,9 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     if (!opts.MinOpts())
     {
         found = ForEachHbvBitSet(*fgAvailableOutgoingArgTemps, [&](indexType lclNum) {
-                    LclVarDsc* varDsc = lvaGetDesc((unsigned)lclNum);
-                    if ((varDsc->GetStructHnd() == copyBlkClass))
+                    LclVarDsc*   varDsc = lvaGetDesc((unsigned)lclNum);
+                    ClassLayout* layout = varDsc->GetLayout();
+                    if (!layout->IsBlockLayout() && (layout->GetClassHandle() == copyBlkClass))
                     {
                         tmp = (unsigned)lclNum;
                         JITDUMP("reusing outgoing struct arg V%02u\n", tmp);
@@ -6021,6 +6007,12 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     assert(lvaIsImplicitByRefLocal(lvaTable[varDsc->lvFieldLclStart].lvParentLcl));
                     assert(fgGlobalMorph);
                 }
+#if FEATURE_FIXED_OUT_ARGS
+                else if (varNum == lvaOutgoingArgSpaceVar)
+                {
+                    // The outgoing arg space is exposed only at callees, which is ok for our purposes.
+                }
+#endif
                 else
                 {
                     failTailCall("Local address taken", varNum);
@@ -10163,7 +10155,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
             cast->SetAllEffectsFlags(src);
 
             // Try and see if we can make this cast into a cheaper zero-extending version.
-            if (genActualTypeIsInt(src) && cast->TypeIs(TYP_LONG) && srcRange.IsPositive())
+            if (genActualTypeIsInt(src) && cast->TypeIs(TYP_LONG) && srcRange.IsNonNegative())
             {
                 cast->SetUnsigned();
             }
@@ -10779,9 +10771,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         return node;
     }
 
-    simd32_t simd32Val = {};
+    simd_t simdVal = {};
 
-    if (GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val))
+    if (GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal))
     {
         GenTreeVecCon* vecCon = gtNewVconNode(node->TypeGet());
 
@@ -10790,7 +10782,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             DEBUG_DESTROY_NODE(arg);
         }
 
-        vecCon->gtSimd32Val = simd32Val;
+        vecCon->gtSimdVal = simdVal;
         INDEBUG(vecCon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
         return vecCon;
     }
@@ -11386,7 +11378,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
             return true;
         }
 
-        return IntegralRange::ForNode(op->AsCast()->CastOp(), this).IsPositive();
+        return IntegralRange::ForNode(op->AsCast()->CastOp(), this).IsNonNegative();
     };
 
     // If both operands have zero as the upper half then any signed/unsigned
@@ -14869,14 +14861,14 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 // This implicit-by-ref was promoted; create a new temp to represent the
                 // promoted struct before rewriting this parameter as a pointer.
                 unsigned newLclNum = lvaGrabTemp(false DEBUGARG("Promoted implicit byref"));
-                lvaSetStruct(newLclNum, lvaGetStruct(lclNum), true);
+                // Update varDsc since lvaGrabTemp might have re-allocated the var dsc array.
+                varDsc = lvaGetDesc(lclNum);
+
+                lvaSetStruct(newLclNum, varDsc->GetLayout(), true);
                 if (info.compIsVarArgs)
                 {
                     lvaSetStructUsedAsVarArg(newLclNum);
                 }
-
-                // Update varDsc since lvaGrabTemp might have re-allocated the var dsc array.
-                varDsc = lvaGetDesc(lclNum);
 
                 // Copy the struct promotion annotations to the new temp.
                 LclVarDsc* newVarDsc       = lvaGetDesc(newLclNum);

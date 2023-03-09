@@ -164,8 +164,7 @@ enum MethodDescClassification
     // Is the method synchronized
     mdcSynchronized                     = 0x4000,
 
-    // Does the method's slot number require all 16 bits
-    mdcRequiresFullSlotNumber           = 0x8000
+    // unused                           = 0x8000
 };
 
 #define METHOD_MAX_RVA                          0x7FFFFFFF
@@ -321,8 +320,6 @@ public:
     LPCUTF8 GetName(USHORT slot);
 
     LPCUTF8 GetNameThrowing();
-
-    BOOL MightHaveName(ULONG nameHashValue);
 
     FORCEINLINE LPCUTF8 GetNameOnNonArrayClass()
     {
@@ -1028,36 +1025,13 @@ public:
     inline WORD GetSlot()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        // Check if this MD is using the packed slot layout
-        if (!RequiresFullSlotNumber())
-        {
-            return (m_wSlotNumber & enum_packedSlotLayout_SlotMask);
-        }
-
         return m_wSlotNumber;
     }
 
     inline VOID SetSlot(WORD wSlotNum)
     {
         LIMITED_METHOD_CONTRACT;
-
-        // Check if we have to avoid using the packed slot layout
-        if (wSlotNum > enum_packedSlotLayout_SlotMask)
-        {
-            SetRequiresFullSlotNumber();
-        }
-
-        // Set only the portion of m_wSlotNumber we are using
-        if (!RequiresFullSlotNumber())
-        {
-            m_wSlotNumber &= ~enum_packedSlotLayout_SlotMask;
-            m_wSlotNumber |= wSlotNum;
-        }
-        else
-        {
-            m_wSlotNumber = wSlotNum;
-        }
+        m_wSlotNumber = wSlotNum;
     }
 
     inline BOOL IsVirtualSlot()
@@ -1072,19 +1046,6 @@ public:
     PTR_PCODE GetAddrOfSlot();
 
     PTR_MethodDesc GetDeclMethodDesc(UINT32 slotNumber);
-
-protected:
-    inline void SetRequiresFullSlotNumber()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcRequiresFullSlotNumber;
-    }
-
-    inline DWORD RequiresFullSlotNumber()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcRequiresFullSlotNumber) != 0;
-    }
 
 public:
     mdMethodDef GetMemberDef() const;
@@ -1687,18 +1648,8 @@ protected:
     BYTE        m_bFlags2;
 
     // The slot number of this MethodDesc in the vtable array.
-    // Note that we may store other information in the high bits if available --
-    // see enum_packedSlotLayout and mdcRequiresFullSlotNumber for details.
     WORD m_wSlotNumber;
-
-    enum {
-        enum_packedSlotLayout_SlotMask      = 0x03FF,
-        enum_packedSlotLayout_NameHashMask  = 0xFC00
-    };
-
     WORD m_wFlags;
-
-
 
 public:
 #ifdef DACCESS_COMPILE

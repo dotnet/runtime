@@ -126,12 +126,6 @@ export const traceInfo : { [key: string] : TraceInfo } = {};
 export const
     sizeOfDataItem = 4,
     sizeOfObjectHeader = 8,
-
-    // HACK: Typically we generate ~12 bytes of extra gunk after the function body so we are
-    //  subtracting 20 from the maximum size to make sure we don't produce too much
-    // Also subtract some more size since the wasm we generate for one opcode could be big
-    // WASM implementations only allow compiling 4KB of code at once :-)
-    maxModuleSize = 4000 - 160,
     // While stats are enabled, dump concise stats every N traces so that it's clear a long-running
     //  task isn't frozen if it's jitting lots of traces
     autoDumpInterval = 500;
@@ -230,19 +224,51 @@ export let traceImports : Array<[string, string, Function]> | undefined;
 
 export let _wrap_trace_function: Function;
 
-const mathOps1 = [
-    "acos",
-    "cos",
-    "sin",
-    "asin",
-    "tan",
-    "atan"
-];
-
-const mathOps2 = [
-    "rem",
-    "atan2",
-];
+const mathOps1d = [
+        "asin",
+        "acos",
+        "atan",
+        "asinh",
+        "acosh",
+        "atanh",
+        "cos",
+        "sin",
+        "tan",
+        "cosh",
+        "sinh",
+        "tanh",
+        "exp",
+        "log",
+        "log2",
+        "log10",
+        "cbrt",
+    ], mathOps2d = [
+        "fmod",
+        "atan2",
+        "pow",
+    ], mathOps1f = [
+        "asinf",
+        "acosf",
+        "atanf",
+        "asinhf",
+        "acoshf",
+        "atanhf",
+        "cosf",
+        "sinf",
+        "tanf",
+        "coshf",
+        "sinhf",
+        "tanhf",
+        "expf",
+        "logf",
+        "log2f",
+        "log10f",
+        "cbrtf",
+    ], mathOps2f = [
+        "fmodf",
+        "atan2f",
+        "powf",
+    ];
 
 function getTraceImports () {
     if (traceImports)
@@ -278,6 +304,8 @@ function getTraceImports () {
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
         importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
+        importDef("fma", getRawCwrap("fma")),
+        importDef("fmaf", getRawCwrap("fmaf")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -288,15 +316,17 @@ function getTraceImports () {
     if (nullCheckValidation)
         traceImports.push(importDef("notnull", assert_not_null));
 
-    for (let i = 0; i < mathOps1.length; i++) {
-        const mop = mathOps1[i];
-        traceImports.push([mop, "mathop_d_d", getRawCwrap("mono_jiterp_math_" + mop)]);
-    }
+    const pushMathOps = (list: string[], type: string) => {
+        for (let i = 0; i < list.length; i++) {
+            const mop = list[i];
+            traceImports!.push([mop, type, getRawCwrap(mop)]);
+        }
+    };
 
-    for (let i = 0; i < mathOps2.length; i++) {
-        const mop = mathOps2[i];
-        traceImports.push([mop, "mathop_dd_d", getRawCwrap("mono_jiterp_math_" + mop)]);
-    }
+    pushMathOps(mathOps1f, "mathop_f_f");
+    pushMathOps(mathOps2f, "mathop_ff_f");
+    pushMathOps(mathOps1d, "mathop_d_d");
+    pushMathOps(mathOps2d, "mathop_dd_d");
 
     return traceImports;
 }
@@ -409,6 +439,31 @@ function initialize_builder (builder: WasmBuilder) {
         "mathop_dd_d", {
             "lhs": WasmValtype.f64,
             "rhs": WasmValtype.f64,
+        }, WasmValtype.f64, true
+    );
+    builder.defineType(
+        "mathop_f_f", {
+            "value": WasmValtype.f32,
+        }, WasmValtype.f32, true
+    );
+    builder.defineType(
+        "mathop_ff_f", {
+            "lhs": WasmValtype.f32,
+            "rhs": WasmValtype.f32,
+        }, WasmValtype.f32, true
+    );
+    builder.defineType(
+        "fmaf", {
+            "x": WasmValtype.f32,
+            "y": WasmValtype.f32,
+            "z": WasmValtype.f32,
+        }, WasmValtype.f32, true
+    );
+    builder.defineType(
+        "fma", {
+            "x": WasmValtype.f64,
+            "y": WasmValtype.f64,
+            "z": WasmValtype.f64,
         }, WasmValtype.f64, true
     );
     builder.defineType(
@@ -657,73 +712,60 @@ function generate_wasm (
         for (let i = 0; i < traceImports.length; i++) {
             mono_assert(traceImports[i], () => `trace #${i} missing`);
             const wasmName = compress ? i.toString(shortNameBase) : undefined;
-            builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], wasmName);
+            builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], false, wasmName);
         }
 
-        builder.generateImportSection();
+        let keep = true,
+            opcodesProcessed = 0;
+        builder.defineFunction(
+            {
+                type: "trace",
+                name: traceName,
+                export: true,
+                locals: {
+                    "eip": WasmValtype.i32,
+                    "temp_ptr": WasmValtype.i32,
+                    "cknull_ptr": WasmValtype.i32,
+                    "math_lhs32": WasmValtype.i32,
+                    "math_rhs32": WasmValtype.i32,
+                    "math_lhs64": WasmValtype.i64,
+                    "math_rhs64": WasmValtype.i64,
+                    "temp_f32": WasmValtype.f32,
+                    "temp_f64": WasmValtype.f64,
+                }
+            }, () => {
+                if (emitPadding) {
+                    builder.appendU8(WasmOpcode.nop);
+                    builder.appendU8(WasmOpcode.nop);
+                }
 
-        // Function section
-        builder.beginSection(3);
-        builder.appendULeb(1);
-        // Function type for our compiled trace
-        mono_assert(builder.functionTypes["trace"], "func type missing");
-        builder.appendULeb(builder.functionTypes["trace"][0]);
+                builder.base = ip;
+                if (getU16(ip) !== MintOpcode.MINT_TIER_PREPARE_JITERPRETER)
+                    throw new Error(`Expected *ip to be MINT_TIER_PREPARE_JITERPRETER but was ${getU16(ip)}`);
 
-        // Export section
-        builder.beginSection(7);
-        builder.appendULeb(1);
-        builder.appendName(traceName);
-        builder.appendU8(0);
-        // Imports get added to the function index space, so we need to add
-        //  the count of imported functions to get the index of our compiled trace
-        builder.appendULeb(builder.importedFunctionCount + 0);
-
-        // Code section
-        builder.beginSection(10);
-        builder.appendULeb(1);
-        builder.beginFunction("trace", {
-            "eip": WasmValtype.i32,
-            "temp_ptr": WasmValtype.i32,
-            "cknull_ptr": WasmValtype.i32,
-            "math_lhs32": WasmValtype.i32,
-            "math_rhs32": WasmValtype.i32,
-            "math_lhs64": WasmValtype.i64,
-            "math_rhs64": WasmValtype.i64,
-            "temp_f32": WasmValtype.f32,
-            "temp_f64": WasmValtype.f64,
-        });
-
-        if (emitPadding) {
-            builder.appendU8(WasmOpcode.nop);
-            builder.appendU8(WasmOpcode.nop);
-        }
-
-        builder.base = ip;
-        if (getU16(ip) !== MintOpcode.MINT_TIER_PREPARE_JITERPRETER)
-            throw new Error(`Expected *ip to be MINT_TIER_PREPARE_JITERPRETER but was ${getU16(ip)}`);
-
-        // TODO: Call generate_wasm_body before generating any of the sections and headers.
-        // This will allow us to do things like dynamically vary the number of locals, in addition
-        //  to using global constants and figuring out how many constant slots we need in advance
-        //  since a long trace might need many slots and that bloats the header.
-        const opcodes_processed = generate_wasm_body(
-            frame, traceName, ip, startOfBody, endOfBody,
-            builder, instrumentedTraceId, backwardBranchTable
+                // TODO: Call generate_wasm_body before generating any of the sections and headers.
+                // This will allow us to do things like dynamically vary the number of locals, in addition
+                //  to using global constants and figuring out how many constant slots we need in advance
+                //  since a long trace might need many slots and that bloats the header.
+                opcodesProcessed = generate_wasm_body(
+                    frame, traceName, ip, startOfBody, endOfBody,
+                    builder, instrumentedTraceId, backwardBranchTable
+                );
+                keep = (opcodesProcessed >= mostRecentOptions!.minimumTraceLength);
+            }
         );
-        const keep = (opcodes_processed >= mostRecentOptions.minimumTraceLength);
+
+        builder.emitImportsAndFunctions();
 
         if (!keep) {
             const ti = traceInfo[<any>ip];
             if (ti && (ti.abortReason === "end-of-body"))
                 ti.abortReason = "trace-too-small";
 
-            if (traceTooSmall && (opcodes_processed > 1))
-                console.log(`${traceName} too small: ${opcodes_processed} opcodes, ${builder.current.size} wasm bytes`);
+            if (traceTooSmall && (opcodesProcessed > 1))
+                console.log(`${traceName} too small: ${opcodesProcessed} opcodes, ${builder.current.size} wasm bytes`);
             return 0;
         }
-
-        builder.appendU8(WasmOpcode.end);
-        builder.endSection();
 
         compileStarted = _now();
         const buffer = builder.getArrayView();
@@ -1007,6 +1049,9 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
             //  logging it.
             if (!traces[i].name)
                 continue;
+            // This means the trace did compile and just aborted later on
+            if (traces[i].fnPtr)
+                continue;
             // Filter out noisy methods that we don't care about optimizing
             if (traces[i].name!.indexOf("Xunit.") >= 0)
                 continue;
@@ -1024,6 +1069,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                 switch (traces[i].abortReason) {
                     // not feasible to fix
                     case "trace-too-small":
+                    case "trace-too-big":
                     case "call":
                     case "callvirt.fast":
                     case "calli.nat.fast":

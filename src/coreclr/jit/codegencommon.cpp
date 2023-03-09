@@ -1731,6 +1731,7 @@ void CodeGen::genGenerateMachineCode()
 
         printf(" for ");
 
+#if defined(TARGET_X86)
         if (compiler->info.genCPU == CPU_X86)
         {
             printf("generic X86 CPU");
@@ -1739,9 +1740,14 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("Pentium 4");
         }
-        else if (compiler->info.genCPU == CPU_X64)
+#elif defined(TARGET_AMD64)
+        if (compiler->info.genCPU == CPU_X64)
         {
-            if (compiler->canUseVexEncoding())
+            if (compiler->canUseEvexEncoding())
+            {
+                printf("X64 CPU with AVX512");
+            }
+            else if (compiler->canUseVexEncoding())
             {
                 printf("X64 CPU with AVX");
             }
@@ -1750,18 +1756,22 @@ void CodeGen::genGenerateMachineCode()
                 printf("X64 CPU with SSE2");
             }
         }
-        else if (compiler->info.genCPU == CPU_ARM)
+#elif defined(TARGET_ARM)
+        if (compiler->info.genCPU == CPU_ARM)
         {
             printf("generic ARM CPU");
         }
-        else if (compiler->info.genCPU == CPU_ARM64)
+#elif defined(TARGET_ARM64)
+        if (compiler->info.genCPU == CPU_ARM64)
         {
             printf("generic ARM64 CPU");
         }
-        else if (compiler->info.genCPU == CPU_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64)
+        if (compiler->info.genCPU == CPU_LOONGARCH64)
         {
             printf("generic LOONGARCH64 CPU");
         }
+#endif
         else
         {
             printf("unknown architecture");
@@ -1946,7 +1956,7 @@ void CodeGen::genEmitMachineCode()
     // ugliness of having the failure here.
     if (!compiler->jitFallbackCompile)
     {
-        // Use COMPlus_JitNoForceFallback=1 to prevent NOWAY assert testing from happening,
+        // Use DOTNET_JitNoForceFallback=1 to prevent NOWAY assert testing from happening,
         // especially that caused by enabling JIT stress.
         if (!JitConfig.JitNoForceFallback())
         {
@@ -3032,7 +3042,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
             assert(typeHnd != nullptr);
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -3340,7 +3350,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
                     // Each field will be inserted into the same destination register.
-                    assert(varTypeIsSIMD(varDsc) && !compiler->isOpaqueSIMDType(varDsc->GetStructHnd()));
+                    assert(varTypeIsSIMD(varDsc) && !compiler->isOpaqueSIMDType(varDsc->GetLayout()));
                     assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].varNum == varNum);

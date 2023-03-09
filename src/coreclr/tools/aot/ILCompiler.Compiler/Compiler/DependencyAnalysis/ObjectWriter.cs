@@ -1150,7 +1150,20 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 if (logger.IsVerbose)
-                    logger.LogMessage($"Finalizing output to '{objectFilePath}'...");
+                    logger.LogMessage($"Emitting debug information");
+
+                // Native side of the object writer is going to do more native memory allocations.
+                // Free up as much memory as possible so that we don't get OOM killed.
+                // This is potentially a waste of time. We're about to end the process and let the
+                // OS "garbage collect" the entire address space.
+                var gcMemoryInfo = GC.GetGCMemoryInfo();
+                if (gcMemoryInfo.TotalCommittedBytes > gcMemoryInfo.TotalAvailableMemoryBytes / 2)
+                {
+                    if (logger.IsVerbose)
+                        logger.LogMessage($"Freeing up memory");
+
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive);
+                }
 
                 objectWriter.EmitDebugModuleInfo();
 
@@ -1158,6 +1171,9 @@ namespace ILCompiler.DependencyAnalysis
             }
             finally
             {
+                if (logger.IsVerbose)
+                    logger.LogMessage($"Finalizing output to '{objectFilePath}'...");
+
                 objectWriter.Dispose();
 
                 if (!succeeded)
@@ -1173,6 +1189,9 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
+
+            if (logger.IsVerbose)
+                logger.LogMessage($"Done writing object file");
         }
 
         [DllImport(NativeObjectWriterFileName)]

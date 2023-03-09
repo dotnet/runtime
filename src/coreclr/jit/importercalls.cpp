@@ -2619,19 +2619,44 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
 
-            // Simple cases
+            // These may lead to early dead code elimination
+            case NI_System_Type_get_IsValueType:
+            case NI_System_Type_get_IsEnum:
+            case NI_System_Type_get_IsByRefLike:
+            case NI_System_Type_IsAssignableFrom:
+            case NI_System_Type_IsAssignableTo:
+
+            // Lightweight intrinsics
             case NI_System_String_get_Chars:
             case NI_System_String_get_Length:
             case NI_System_Span_get_Item:
             case NI_System_Span_get_Length:
             case NI_System_ReadOnlySpan_get_Item:
             case NI_System_ReadOnlySpan_get_Length:
+            case NI_System_BitConverter_DoubleToInt64Bits:
+            case NI_System_BitConverter_Int32BitsToSingle:
+            case NI_System_BitConverter_Int64BitsToDouble:
+            case NI_System_BitConverter_SingleToInt32Bits:
+            case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
+            case NI_System_Type_GetEnumUnderlyingType:
+
+            // Most atomics are compiled to single instructions
+            case NI_System_Threading_Interlocked_And:
+            case NI_System_Threading_Interlocked_Or:
+            case NI_System_Threading_Interlocked_CompareExchange:
+            case NI_System_Threading_Interlocked_Exchange:
+            case NI_System_Threading_Interlocked_ExchangeAdd:
+            case NI_System_Threading_Interlocked_MemoryBarrier:
+            case NI_System_Threading_Interlocked_ReadMemoryBarrier:
+
                 betterToExpand = true;
                 break;
 
             default:
                 // Unsafe.* are all small enough to prefer expansions.
-                betterToExpand = ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
+                betterToExpand |= ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
+                // Same for these
+                betterToExpand |= ni >= NI_PRIMITIVE_START && ni <= NI_PRIMITIVE_END;
                 break;
         }
     }
@@ -3497,11 +3522,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (callJitType == CORINFO_TYPE_FLOAT)
                 {
-                    vecCon->gtSimd16Val.f32[0] = (float)op1->AsDblCon()->DconValue();
+                    vecCon->gtSimdVal.f32[0] = (float)op1->AsDblCon()->DconValue();
                 }
                 else
                 {
-                    vecCon->gtSimd16Val.f64[0] = op1->AsDblCon()->DconValue();
+                    vecCon->gtSimdVal.f64[0] = op1->AsDblCon()->DconValue();
                 }
 
                 op1 = vecCon;
@@ -3999,6 +4024,145 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // ldarg.0
             // ret
 
+            return impPopStack().val;
+        }
+
+        case NI_SRCS_UNSAFE_BitCast:
+        {
+            assert(sig->sigInst.methInstCount == 2);
+
+            CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
+            CORINFO_CLASS_HANDLE toTypeHnd   = sig->sigInst.methInst[1];
+
+            if (fromTypeHnd == toTypeHnd)
+            {
+                // Handle the easy case of matching type handles, such as `int` to `int`
+                return impPopStack().val;
+            }
+
+            unsigned fromSize = info.compCompHnd->getClassSize(fromTypeHnd);
+            unsigned toSize   = info.compCompHnd->getClassSize(toTypeHnd);
+
+            // Runtime requires all types to be at least 1-byte
+            assert((fromSize != 0) && (toSize != 0));
+
+            if (fromSize != toSize)
+            {
+                // Fallback to the software implementation to throw when sizes don't match
+                return nullptr;
+            }
+
+            CorInfoType fromJitType = info.compCompHnd->asCorInfoType(fromTypeHnd);
+            var_types   fromType    = JITtype2varType(fromJitType);
+
+            CorInfoType toJitType = info.compCompHnd->asCorInfoType(toTypeHnd);
+            var_types   toType    = JITtype2varType(toJitType);
+
+            bool involvesStructType = false;
+
+            if (fromType == TYP_STRUCT)
+            {
+                involvesStructType = true;
+
+                if (toType == TYP_STRUCT)
+                {
+                    ClassLayout* fromLayout = typGetObjLayout(fromTypeHnd);
+                    ClassLayout* toLayout   = typGetObjLayout(toTypeHnd);
+
+                    if (ClassLayout::AreCompatible(fromLayout, toLayout))
+                    {
+                        // Handle compatible struct layouts where we can simply return op1
+                        return impPopStack().val;
+                    }
+                }
+            }
+            else if (toType == TYP_STRUCT)
+            {
+                involvesStructType = true;
+            }
+
+            if (involvesStructType)
+            {
+                // TODO-CQ: Handle this by getting the address of `op1` and then dereferencing
+                // that as TTo, much as `Unsafe.As<TFrom, TTo>(ref op1)` would work.
+                return nullptr;
+            }
+
+            if (varTypeIsFloating(fromType))
+            {
+                // Handle bitcasting from floating to same sized integral, such as `float` to `int`
+                assert(varTypeIsIntegral(toType));
+
+#if !TARGET_64BIT
+                if ((fromType == TYP_DOUBLE) && !impStackTop().val->IsCnsFltOrDbl())
+                {
+                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+                    return nullptr;
+                }
+#endif // !TARGET_64BIT
+
+                GenTree* op1 = impPopStack().val;
+
+                if (op1->IsCnsFltOrDbl())
+                {
+                    if (fromType == TYP_DOUBLE)
+                    {
+                        double f64Cns = static_cast<double>(op1->AsDblCon()->DconValue());
+                        return gtNewLconNode(static_cast<int64_t>(BitOperations::DoubleToUInt64Bits(f64Cns)));
+                    }
+                    else
+                    {
+                        assert(fromType == TYP_FLOAT);
+                        float f32Cns = static_cast<float>(op1->AsDblCon()->DconValue());
+                        return gtNewIconNode(static_cast<int32_t>(BitOperations::SingleToUInt32Bits(f32Cns)));
+                    }
+                }
+                else
+                {
+                    toType = varTypeToSigned(toType);
+                    op1    = impImplicitR4orR8Cast(op1, fromType);
+                    return gtNewBitCastNode(toType, op1);
+                }
+                break;
+            }
+
+            if (varTypeIsFloating(toType))
+            {
+                // Handle bitcasting from integral to same sized floating, such as `int` to `float`
+                assert(varTypeIsIntegral(fromType));
+
+#if !TARGET_64BIT
+                if ((toType == TYP_DOUBLE) && !impStackTop().val->IsIntegralConst())
+                {
+                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
+                    return nullptr;
+                }
+#endif // !TARGET_64BIT
+
+                GenTree* op1 = impPopStack().val;
+
+                if (op1->IsIntegralConst())
+                {
+                    if (toType == TYP_DOUBLE)
+                    {
+                        uint64_t u64Cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                        return gtNewDconNode(BitOperations::UInt64BitsToDouble(u64Cns), TYP_DOUBLE);
+                    }
+                    else
+                    {
+                        assert(toType == TYP_FLOAT);
+
+                        uint32_t u32Cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                        return gtNewDconNode(BitOperations::UInt32BitsToSingle(u32Cns), TYP_FLOAT);
+                    }
+                }
+                else
+                {
+                    return gtNewBitCastNode(toType, op1);
+                }
+            }
+
+            // Handle bitcasting for same sized integrals, such as `int` to `uint`
             return impPopStack().val;
         }
 
@@ -6111,7 +6275,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     }
 #endif
 
-    // Check for COMPlus_AggressiveInlining
+    // Check for DOTNET_AggressiveInlining
     if (compDoAggressiveInlining)
     {
         methAttr |= CORINFO_FLG_FORCEINLINE;
@@ -8201,6 +8365,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "AsRef") == 0)
                         {
                             result = NI_SRCS_UNSAFE_AsRef;
+                        }
+                        else if (strcmp(methodName, "BitCast") == 0)
+                        {
+                            result = NI_SRCS_UNSAFE_BitCast;
                         }
                         else if (strcmp(methodName, "ByteOffset") == 0)
                         {

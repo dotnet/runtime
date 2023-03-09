@@ -9,8 +9,8 @@
  */
 
 
-#ifndef __MONO_NETWORKING_H__
-#define __MONO_NETWORKING_H__
+#ifndef __MONO_DEBUGGER_NETWORKING_H__
+#define __MONO_DEBUGGER_NETWORKING_H__
 
 #include <config.h>
 #include <glib.h>
@@ -77,18 +77,14 @@ typedef union {
 } MonoSocketAddress;
 
 /* This only supports IPV4 / IPV6 and tcp */
-MONO_COMPONENT_API int mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInfo **res);
+int mono_debugger_get_address_info (const char *hostname, int port, int flags, MonoAddressInfo **res);
 
-MONO_COMPONENT_API void mono_free_address_info (MonoAddressInfo *ai);
+void mono_debugger_free_address_info (MonoAddressInfo *ai);
 
-MONO_COMPONENT_API void mono_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, const void *address, int port);
+void mono_debugger_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, const void *address, int port);
 
-#ifndef HAVE_INET_PTON
-int inet_pton (int family, const char *address, void *inaddrp);
-#endif
-
-MONO_COMPONENT_API void mono_networking_init (void);
-void mono_networking_shutdown (void);
+void mono_debugger_networking_init (void);
+void mono_debugger_networking_shutdown (void);
 
 
 #endif

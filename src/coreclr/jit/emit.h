@@ -511,24 +511,30 @@ protected:
 
     enum opSize : unsigned
     {
-        OPSZ1      = 0,
-        OPSZ2      = 1,
-        OPSZ4      = 2,
-        OPSZ8      = 3,
-        OPSZ16     = 4,
+        OPSZ1  = 0,
+        OPSZ2  = 1,
+        OPSZ4  = 2,
+        OPSZ8  = 3,
+        OPSZ16 = 4,
+
+#if defined(TARGET_XARCH)
         OPSZ32     = 5,
-        OPSZ_COUNT = 6,
+        OPSZ64     = 6,
+        OPSZ_COUNT = 7,
+#else
+        OPSZ_COUNT = 5,
+#endif
+
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
-        OPSZP = OPSZ4,
+        OPSZP      = OPSZ4,
 #endif
     };
 
 #define OPSIZE_INVALID ((opSize)0xffff)
 
-    static const emitter::opSize emitSizeEncode[];
-    static const emitAttr        emitSizeDecode[];
+    static const emitAttr emitSizeDecode[];
 
     static emitter::opSize emitEncodeSize(emitAttr size);
     static emitAttr emitDecodeSize(emitter::opSize ensz);
@@ -2067,6 +2073,7 @@ private:
     CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
 #if defined(TARGET_XARCH)
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
+    CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
@@ -2078,6 +2085,10 @@ private:
     insFormat emitMapFmtAtoM(insFormat fmt);
     void emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void spillIntArgRegsToShadowSlots();
+
+#ifdef TARGET_XARCH
+    bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
+#endif // TARGET_XARCH
 
     /************************************************************************/
     /*      The logic that creates and keeps track of instruction groups    */
@@ -2762,11 +2773,11 @@ public:
 
     struct dataSection
     {
-        // Note to use alignments greater than 32 requires modification in the VM
+        // Note to use alignments greater than 64 requires modification in the VM
         // to support larger alignments (see ICorJitInfo::allocMem)
         //
         const static unsigned MIN_DATA_ALIGN = 4;
-        const static unsigned MAX_DATA_ALIGN = 32;
+        const static unsigned MAX_DATA_ALIGN = 64;
 
         enum sectionType
         {
@@ -3076,16 +3087,13 @@ inline emitAttr emitActualTypeSize(T type)
 
 /* static */ inline emitter::opSize emitter::emitEncodeSize(emitAttr size)
 {
-    assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE ||
-           size == EA_32BYTE);
-
-    return emitSizeEncode[((int)size) - 1];
+    assert((size != EA_UNKNOWN) && ((size & EA_SIZE_MASK) == size));
+    return static_cast<emitter::opSize>(genLog2(size));
 }
 
 /* static */ inline emitAttr emitter::emitDecodeSize(emitter::opSize ensz)
 {
-    assert(((unsigned)ensz) < OPSZ_COUNT);
-
+    assert(static_cast<unsigned>(ensz) < OPSZ_COUNT);
     return emitSizeDecode[ensz];
 }
 

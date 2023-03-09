@@ -91,6 +91,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 	if (id == -1)
 		return FALSE;
 
+	MonoClass *vector_klass = mono_class_from_mono_type_internal (csignature->ret);
 	if (id == SN_get_IsHardwareAccelerated) {
 		interp_add_ins (td, MINT_LDC_I4_1);
 		goto opcode_added;
@@ -98,8 +99,6 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
-
-	MonoClass *vector_klass = mono_class_from_mono_type_internal (csignature->ret);
 	if (!m_class_is_simd_type (vector_klass))
 		vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
 	if (!m_class_is_simd_type (vector_klass))

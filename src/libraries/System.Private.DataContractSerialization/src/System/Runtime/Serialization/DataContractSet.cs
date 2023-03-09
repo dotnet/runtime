@@ -650,7 +650,7 @@ namespace System.Runtime.Serialization.DataContracts
         public void ImportSchemaSet(XmlSchemaSet schemaSet, IEnumerable<XmlQualifiedName>? typeNames, bool importXmlDataType)
         {
             SchemaImporter importer = new SchemaImporter(schemaSet, typeNames, null, this, importXmlDataType);
-            importer.Import(out List<XmlQualifiedName> _);
+            importer.Import(out _);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]

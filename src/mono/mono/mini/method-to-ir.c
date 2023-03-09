@@ -1696,10 +1696,10 @@ MONO_RESTORE_WARNING
 static MonoInst*
 mono_create_fast_tls_getter (MonoCompile *cfg, MonoTlsKey key)
 {
-	int tls_offset = mono_tls_get_tls_offset (key);
-
 	if (cfg->compile_aot)
 		return NULL;
+
+	int tls_offset = mono_tls_get_tls_offset (key);
 
 	if (tls_offset != -1 && mono_arch_have_fast_tls ()) {
 		MonoInst *ins;
@@ -5816,7 +5816,8 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 	if (!iface_method ||
 		iface_method->is_generic ||
 		iface_method->dynamic || 					// Reflection.Emit-generated methods should have this flag
-		!strcmp (iface_method->name, "GetHashCode")) // the callvirt handler itself optimizes those
+		!strcmp (iface_method->name, "GetHashCode") || // the callvirt handler itself optimizes those
+		(iface_method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return NULL;
 
 	MonoMethodSignature* iface_method_sig;

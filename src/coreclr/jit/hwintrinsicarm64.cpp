@@ -458,8 +458,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         GenTreeVecCon* vecCon = op1->AsVecCon();
                         vecCon->gtType        = TYP_SIMD16;
 
-                        vecCon->gtSimd16Val.f32[2] = 0.0f;
-                        vecCon->gtSimd16Val.f32[3] = 0.0f;
+                        vecCon->gtSimdVal.f32[2] = 0.0f;
+                        vecCon->gtSimdVal.f32[3] = 0.0f;
 
                         return vecCon;
                     }
@@ -488,7 +488,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         GenTreeVecCon* vecCon = op1->AsVecCon();
                         vecCon->gtType        = TYP_SIMD16;
 
-                        vecCon->gtSimd16Val.f32[3] = 0.0f;
+                        vecCon->gtSimdVal.f32[3] = 0.0f;
                         return vecCon;
                     }
 
@@ -712,7 +712,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
                             cnsVal = static_cast<uint8_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
-                            vecCon->gtSimd16Val.u8[simdLength - 1 - index] = cnsVal;
+                            vecCon->gtSimdVal.u8[simdLength - 1 - index] = cnsVal;
                         }
                         break;
                     }
@@ -725,7 +725,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
                             cnsVal = static_cast<uint16_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
-                            vecCon->gtSimd16Val.u16[simdLength - 1 - index] = cnsVal;
+                            vecCon->gtSimdVal.u16[simdLength - 1 - index] = cnsVal;
                         }
                         break;
                     }
@@ -738,7 +738,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
                             cnsVal = static_cast<uint32_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
-                            vecCon->gtSimd16Val.u32[simdLength - 1 - index] = cnsVal;
+                            vecCon->gtSimdVal.u32[simdLength - 1 - index] = cnsVal;
                         }
                         break;
                     }
@@ -751,7 +751,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
                             cnsVal = static_cast<uint64_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
-                            vecCon->gtSimd16Val.u64[simdLength - 1 - index] = cnsVal;
+                            vecCon->gtSimdVal.u64[simdLength - 1 - index] = cnsVal;
                         }
                         break;
                     }
@@ -763,7 +763,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
                             cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->DconValue());
-                            vecCon->gtSimd16Val.f32[simdLength - 1 - index] = cnsVal;
+                            vecCon->gtSimdVal.f32[simdLength - 1 - index] = cnsVal;
                         }
                         break;
                     }
@@ -775,7 +775,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
                             cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->DconValue());
-                            vecCon->gtSimd16Val.f64[simdLength - 1 - index] = cnsVal;
+                            vecCon->gtSimdVal.f64[simdLength - 1 - index] = cnsVal;
                         }
                         break;
                     }
@@ -969,13 +969,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     simdBaseType    = TYP_UBYTE;
                     simdBaseJitType = CORINFO_TYPE_UBYTE;
 
-                    vecCon2->gtSimd16Val.u64[0] = 0x8080808080808080;
-                    vecCon3->gtSimd16Val.u64[0] = 0x00FFFEFDFCFBFAF9;
+                    vecCon2->gtSimdVal.u64[0] = 0x8080808080808080;
+                    vecCon3->gtSimdVal.u64[0] = 0x00FFFEFDFCFBFAF9;
 
                     if (simdSize == 16)
                     {
-                        vecCon2->gtSimd16Val.u64[1] = 0x8080808080808080;
-                        vecCon3->gtSimd16Val.u64[1] = 0x00FFFEFDFCFBFAF9;
+                        vecCon2->gtSimdVal.u64[1] = 0x8080808080808080;
+                        vecCon3->gtSimdVal.u64[1] = 0x00FFFEFDFCFBFAF9;
                     }
                     break;
                 }
@@ -986,13 +986,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     simdBaseType    = TYP_USHORT;
                     simdBaseJitType = CORINFO_TYPE_USHORT;
 
-                    vecCon2->gtSimd16Val.u64[0] = 0x8000800080008000;
-                    vecCon3->gtSimd16Val.u64[0] = 0xFFF4FFF3FFF2FFF1;
+                    vecCon2->gtSimdVal.u64[0] = 0x8000800080008000;
+                    vecCon3->gtSimdVal.u64[0] = 0xFFF4FFF3FFF2FFF1;
 
                     if (simdSize == 16)
                     {
-                        vecCon2->gtSimd16Val.u64[1] = 0x8000800080008000;
-                        vecCon3->gtSimd16Val.u64[1] = 0xFFF8FFF7FFF6FFF5;
+                        vecCon2->gtSimdVal.u64[1] = 0x8000800080008000;
+                        vecCon3->gtSimdVal.u64[1] = 0xFFF8FFF7FFF6FFF5;
                     }
                     break;
                 }
@@ -1004,13 +1004,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     simdBaseType    = TYP_INT;
                     simdBaseJitType = CORINFO_TYPE_INT;
 
-                    vecCon2->gtSimd16Val.u64[0] = 0x8000000080000000;
-                    vecCon3->gtSimd16Val.u64[0] = 0xFFFFFFE2FFFFFFE1;
+                    vecCon2->gtSimdVal.u64[0] = 0x8000000080000000;
+                    vecCon3->gtSimdVal.u64[0] = 0xFFFFFFE2FFFFFFE1;
 
                     if (simdSize == 16)
                     {
-                        vecCon2->gtSimd16Val.u64[1] = 0x8000000080000000;
-                        vecCon3->gtSimd16Val.u64[1] = 0xFFFFFFE4FFFFFFE3;
+                        vecCon2->gtSimdVal.u64[1] = 0x8000000080000000;
+                        vecCon3->gtSimdVal.u64[1] = 0xFFFFFFE4FFFFFFE3;
                     }
                     break;
                 }
@@ -1022,13 +1022,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     simdBaseType    = TYP_LONG;
                     simdBaseJitType = CORINFO_TYPE_LONG;
 
-                    vecCon2->gtSimd16Val.u64[0] = 0x8000000000000000;
-                    vecCon3->gtSimd16Val.u64[0] = 0xFFFFFFFFFFFFFFC1;
+                    vecCon2->gtSimdVal.u64[0] = 0x8000000000000000;
+                    vecCon3->gtSimdVal.u64[0] = 0xFFFFFFFFFFFFFFC1;
 
                     if (simdSize == 16)
                     {
-                        vecCon2->gtSimd16Val.u64[1] = 0x8000000000000000;
-                        vecCon3->gtSimd16Val.u64[1] = 0xFFFFFFFFFFFFFFC2;
+                        vecCon2->gtSimdVal.u64[1] = 0x8000000000000000;
+                        vecCon3->gtSimdVal.u64[1] = 0xFFFFFFFFFFFFFFC2;
                     }
                     break;
                 }

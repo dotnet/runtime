@@ -5,11 +5,11 @@
 /// <reference path="./types/v8.d.ts" />
 /// <reference path="./types/node.d.ts" />
 
-import { CreateDotnetRuntimeType, DotnetModule, RuntimeAPI, EarlyExports, EarlyImports, ModuleAPI, RuntimeHelpers } from "./types";
-import { EmscriptenModule } from "./types/emscripten";
+import type { CreateDotnetRuntimeType, DotnetModule, RuntimeAPI, EarlyExports, EarlyImports, ModuleAPI, RuntimeHelpers } from "./types";
+import type { EmscriptenModule, EmscriptenModuleInternal } from "./types/emscripten";
 
 // these are our public API (except internal)
-export let Module: EmscriptenModule & DotnetModule;
+export let Module: EmscriptenModule & DotnetModule & EmscriptenModuleInternal;
 export let INTERNAL: any;
 export let IMPORTS: any;
 
@@ -60,5 +60,6 @@ const initialRuntimeHelpers: Partial<RuntimeHelpers> =
     },
     diagnosticTracing: false,
     enablePerfMeasure: true,
+    loadedFiles: []
 };
 export const runtimeHelpers: RuntimeHelpers = initialRuntimeHelpers as any;
