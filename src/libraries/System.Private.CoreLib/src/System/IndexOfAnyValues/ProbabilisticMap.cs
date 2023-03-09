@@ -118,14 +118,14 @@ namespace System.Buffers
                 (source0 >>> 8).AsInt16(),
                 (source1 >>> 8).AsInt16());
 
-            Vector256<byte> resultLower = IsCharBitNotSetAvx2(charMapLower, charMapUpper, sourceLower);
-            Vector256<byte> resultUpper = IsCharBitNotSetAvx2(charMapLower, charMapUpper, sourceUpper);
+            Vector256<byte> resultLower = IsCharBitSetAvx2(charMapLower, charMapUpper, sourceLower);
+            Vector256<byte> resultUpper = IsCharBitSetAvx2(charMapLower, charMapUpper, sourceUpper);
 
-            return ~(resultLower | resultUpper);
+            return resultLower & resultUpper;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<byte> IsCharBitNotSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
+        private static Vector256<byte> IsCharBitSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
         {
             // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
             Vector256<byte> highNibble = (values.AsInt32() >>> VectorizedIndexShift).AsByte() & Vector256.Create((byte)15);
@@ -138,7 +138,7 @@ namespace System.Buffers
             Vector256<byte> mask = Vector256.GreaterThan(index, Vector256.Create((byte)15));
             Vector256<byte> bitMask = Vector256.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
 
-            return Vector256.Equals(bitMask & bitPositions, Vector256<byte>.Zero);
+            return ~Vector256.Equals(bitMask & bitPositions, Vector256<byte>.Zero);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -155,14 +155,14 @@ namespace System.Buffers
                 ? Sse2.PackUnsignedSaturate((source0 >>> 8).AsInt16(), (source1 >>> 8).AsInt16())
                 : AdvSimd.Arm64.UnzipOdd(source0.AsByte(), source1.AsByte());
 
-            Vector128<byte> resultLower = IsCharBitNotSet(charMapLower, charMapUpper, sourceLower);
-            Vector128<byte> resultUpper = IsCharBitNotSet(charMapLower, charMapUpper, sourceUpper);
+            Vector128<byte> resultLower = IsCharBitSet(charMapLower, charMapUpper, sourceLower);
+            Vector128<byte> resultUpper = IsCharBitSet(charMapLower, charMapUpper, sourceUpper);
 
-            return ~(resultLower | resultUpper);
+            return resultLower & resultUpper;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<byte> IsCharBitNotSet(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, Vector128<byte> values)
+        private static Vector128<byte> IsCharBitSet(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, Vector128<byte> values)
         {
             // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
             Vector128<byte> highNibble = Sse2.IsSupported
@@ -177,7 +177,7 @@ namespace System.Buffers
             Vector128<byte> mask = Vector128.GreaterThan(index, Vector128.Create((byte)15));
             Vector128<byte> bitMask = Vector128.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
 
-            return Vector128.Equals(bitMask & bitPositions, Vector128<byte>.Zero);
+            return ~Vector128.Equals(bitMask & bitPositions, Vector128<byte>.Zero);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
