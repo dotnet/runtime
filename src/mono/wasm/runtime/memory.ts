@@ -5,7 +5,6 @@ import monoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./imports";
 import { mono_assert, MemOffset, NumberOrPointer } from "./types";
 import { VoidPtr, CharPtr } from "./types/emscripten";
-import * as cuint64 from "./cuint64";
 import cwraps, { I52Error } from "./cwraps";
 
 const alloca_stack: Array<VoidPtr> = [];
@@ -239,18 +238,6 @@ export function afterUpdateGlobalBufferAndViews(buffer: ArrayBufferLike): void {
         min_int64_big = BigInt("-9223372036854775808");
         HEAPI64 = new BigInt64Array(buffer);
     }
-}
-
-export function getCU64(offset: MemOffset): cuint64.CUInt64 {
-    const lo = getU32_unaligned(offset);
-    const hi = getU32_unaligned(<any>offset + 4);
-    return cuint64.pack32(lo, hi);
-}
-
-export function setCU64(offset: MemOffset, value: cuint64.CUInt64): void {
-    const [lo, hi] = cuint64.unpack32(value);
-    setU32_unchecked(offset, lo);
-    setU32_unchecked(<any>offset + 4, hi);
 }
 
 /// Allocates a new buffer of the given size on the Emscripten stack and passes a pointer to it to the callback.
