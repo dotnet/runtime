@@ -22,6 +22,11 @@ echo EXECUTION_DIR=$EXECUTION_DIR
 echo XHARNESS_OUT=$XHARNESS_OUT
 echo XHARNESS_CLI_PATH=$XHARNESS_CLI_PATH
 
+echo "User:" && whoami
+echo "Session ID:" && cat /proc/self/sessionid && echo ""
+echo "Contents of /tmp/.dotnet/shm/"
+ls -la /tmp/.dotnet/shm/
+
 function set_env_vars()
 {
     if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
