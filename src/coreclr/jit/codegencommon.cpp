@@ -1835,9 +1835,9 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; instrumented for collecting profile data\n");
         }
-        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && compiler->fgHaveProfileData())
+        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && compiler->fgHaveProfileWeights())
         {
-            printf("; optimized using profile data\n");
+            printf("; optimized using %s\n", compiler->compGetPgoSourceName());
         }
 
 #if DOUBLE_ALIGN
@@ -1856,7 +1856,7 @@ void CodeGen::genGenerateMachineCode()
             printf("; partially interruptible\n");
         }
 
-        if (compiler->fgHaveProfileData())
+        if (compiler->fgHaveProfileWeights())
         {
             printf("; with %s: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
                    compiler->compGetPgoSourceName(), compiler->fgHaveValidEdgeWeights ? "valid" : "invalid",
