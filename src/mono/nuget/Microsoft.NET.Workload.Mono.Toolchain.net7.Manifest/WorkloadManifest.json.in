@@ -15,7 +15,7 @@
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "wasm-experimental-net7": {
-      "description": ".NET WebAssembly experimental tooling",
+      "description": ".NET WebAssembly experimental tooling for net7.0",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Templates.net7",
         "Microsoft.NETCore.App.Runtime.Mono.multithread.net7.browser-wasm",
