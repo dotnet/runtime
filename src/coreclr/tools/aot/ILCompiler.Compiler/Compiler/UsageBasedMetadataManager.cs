@@ -766,11 +766,11 @@ namespace ILCompiler
 
         public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
         {
-            if (baseMethod == overridingMethod)
-                return;
-
             baseMethod = baseMethod.GetTypicalMethodDefinition();
             overridingMethod = overridingMethod.GetTypicalMethodDefinition();
+
+            if (baseMethod == overridingMethod)
+                return;
 
             bool baseMethodTypeIsInterface = baseMethod.OwningType.IsInterface;
             foreach (var requiresAttribute in _requiresAttributeMismatchNameAndId)
