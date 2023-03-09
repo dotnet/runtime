@@ -136,6 +136,7 @@ public:
     inline const uint64_t GetFramePointer() const { return m_gpRegisters.ARM_fp; }
 #endif
 #endif // __APPLE__
+    bool IsCrashThread() const;
 
 private:
     void UnwindNativeFrames(CONTEXT* pContext);

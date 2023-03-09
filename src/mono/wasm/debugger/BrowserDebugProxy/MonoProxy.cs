@@ -147,6 +147,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
                             return false;
 
+                        if (args?["callFrames"]?.Value<JArray>()?.Count == 0)
+                            return false;
+
                         if (!context.IsRuntimeReady)
                         {
                             string reason = args?["reason"]?.Value<string>();
