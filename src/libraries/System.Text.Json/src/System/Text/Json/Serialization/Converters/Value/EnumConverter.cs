@@ -216,7 +216,7 @@ namespace System.Text.Json.Serialization.Converters
             int rightIdx = span.Length - 1;
             for (; rightIdx > leftIdx; rightIdx--)
             {
-                if (span[leftIdx] != ' ')
+                if (span[rightIdx] != ' ')
                 {
                     break;
                 }
