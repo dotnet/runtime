@@ -766,6 +766,9 @@ namespace ILCompiler
 
         public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
         {
+            if (baseMethod == overridingMethod)
+                return;
+
             baseMethod = baseMethod.GetTypicalMethodDefinition();
             overridingMethod = overridingMethod.GetTypicalMethodDefinition();
 
@@ -794,8 +797,8 @@ namespace ILCompiler
 
         public static bool HasMismatchingAttributes(MethodDesc baseMethod, MethodDesc overridingMethod, string requiresAttributeName)
         {
-            bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequire(requiresAttributeName, out _);
-            bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequire(requiresAttributeName, out _);
+            bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequire(requiresAttributeName, checkAssociatedSymbol: false, out _);
+            bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequire(requiresAttributeName, checkAssociatedSymbol: false, out _);
             bool baseMethodFulfillsRequirement = baseMethod.IsOverrideInRequiresScope(requiresAttributeName);
             bool overridingMethodFulfillsRequirement = overridingMethod.IsOverrideInRequiresScope(requiresAttributeName);
             return (baseMethodCreatesRequirement && !overridingMethodFulfillsRequirement) || (overridingMethodCreatesRequirement && !baseMethodFulfillsRequirement);

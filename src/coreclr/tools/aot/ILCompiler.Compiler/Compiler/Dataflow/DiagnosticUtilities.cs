@@ -116,10 +116,16 @@ namespace ILCompiler.Dataflow
             if (checkAssociatedSymbol && method.GetPropertyForAccessor() is PropertyPseudoDesc property && TryGetRequiresAttribute(property, requiresAttribute, out _))
                 return true;
 
+            if (checkAssociatedSymbol && method.GetEventForAccessor() is EventPseudoDesc @event && TryGetRequiresAttribute(@event, requiresAttribute, out _))
+                return true;
+
             return false;
         }
 
         internal static bool DoesMethodRequire(this MethodDesc method, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
+            => DoesMethodRequire(method, requiresAttribute, true, out attribute);
+
+        internal static bool DoesMethodRequire(this MethodDesc method, string requiresAttribute, bool checkAssociatedSymbol, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             attribute = null;
             if (method.IsStaticConstructor)
@@ -132,13 +138,16 @@ namespace ILCompiler.Dataflow
                 !owningType.IsArray && TryGetRequiresAttribute(owningType, requiresAttribute, out attribute))
                 return true;
 
-            if (method.GetPropertyForAccessor() is PropertyPseudoDesc @property
-                && TryGetRequiresAttribute(@property, requiresAttribute, out attribute))
-                return true;
+            if (checkAssociatedSymbol)
+            {
+                if (method.GetPropertyForAccessor() is PropertyPseudoDesc @property
+                    && TryGetRequiresAttribute(@property, requiresAttribute, out attribute))
+                    return true;
 
-            if (method.GetEventForAccessor() is EventPseudoDesc @event
-                && TryGetRequiresAttribute(@event, requiresAttribute, out attribute))
-                return true;
+                if (method.GetEventForAccessor() is EventPseudoDesc @event
+                    && TryGetRequiresAttribute(@event, requiresAttribute, out attribute))
+                    return true;
+            }
 
             return false;
         }
