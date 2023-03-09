@@ -106,13 +106,10 @@ namespace System.Buffers.Text.Tests
                 double expectedDouble = (double)(object)expected;
                 double actualDouble = (double)(object)actual;
 
-                unsafe
-                {
-                    if (*((ulong*)&expectedDouble) != *((ulong*)&actualDouble))
-                        return false;
+                if (BitConverter.DoubleToUInt64Bits(expectedDouble) != BitConverter.DoubleToUInt64Bits(actualDouble))
+                    return false;
 
-                    return true;
-                }
+                return true;
             }
 
             // Parsed floating points are constructed, not computed. Thus, we can do the exact compare.
@@ -121,13 +118,10 @@ namespace System.Buffers.Text.Tests
                 float expectedSingle = (float)(object)expected;
                 float actualSingle = (float)(object)actual;
 
-                unsafe
-                {
-                    if (*((uint*)&expectedSingle) != *((uint*)&actualSingle))
-                        return false;
+                if (BitConverter.SingleToUInt32Bits(expectedSingle) != BitConverter.SingleToUInt32Bits(actualSingle))
+                    return false;
 
-                    return true;
-                }
+                return true;
             }
 
             return expected.Equals(actual);

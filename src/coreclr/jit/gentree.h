@@ -6316,7 +6316,13 @@ struct GenTreeVecCon : public GenTree
         simd8_t  gtSimd8Val;
         simd12_t gtSimd12Val;
         simd16_t gtSimd16Val;
+
+#if defined(TARGET_XARCH)
         simd32_t gtSimd32Val;
+        simd64_t gtSimd64Val;
+#endif // TARGET_XARCH
+
+        simd_t gtSimdVal;
     };
 
 #if defined(FEATURE_HW_INTRINSICS)
@@ -6539,26 +6545,28 @@ struct GenTreeVecCon : public GenTree
 #if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
-                return (gtSimd8Val.u64[0] == 0xFFFFFFFFFFFFFFFF);
+                return gtSimd8Val.IsAllBitsSet();
             }
 
             case TYP_SIMD12:
             {
-                return (gtSimd12Val.u32[0] == 0xFFFFFFFF) && (gtSimd12Val.u32[1] == 0xFFFFFFFF) &&
-                       (gtSimd12Val.u32[2] == 0xFFFFFFFF);
+                return gtSimd12Val.IsAllBitsSet();
             }
 
             case TYP_SIMD16:
             {
-                return (gtSimd16Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd16Val.u64[1] == 0xFFFFFFFFFFFFFFFF);
+                return gtSimd16Val.IsAllBitsSet();
             }
 
 #if defined(TARGET_XARCH)
             case TYP_SIMD32:
-            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             {
-                return (gtSimd32Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[1] == 0xFFFFFFFFFFFFFFFF) &&
-                       (gtSimd32Val.u64[2] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[3] == 0xFFFFFFFFFFFFFFFF);
+                return gtSimd32Val.IsAllBitsSet();
+            }
+
+            case TYP_SIMD64:
+            {
+                return gtSimd64Val.IsAllBitsSet();
             }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -6584,30 +6592,28 @@ struct GenTreeVecCon : public GenTree
 #if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
-                return (left->gtSimd8Val.u64[0] == right->gtSimd8Val.u64[0]);
+                return left->gtSimd8Val == right->gtSimd8Val;
             }
 
             case TYP_SIMD12:
             {
-                return (left->gtSimd12Val.u32[0] == right->gtSimd12Val.u32[0]) &&
-                       (left->gtSimd12Val.u32[1] == right->gtSimd12Val.u32[1]) &&
-                       (left->gtSimd12Val.u32[2] == right->gtSimd12Val.u32[2]);
+                return left->gtSimd12Val == right->gtSimd12Val;
             }
 
             case TYP_SIMD16:
             {
-                return (left->gtSimd16Val.u64[0] == right->gtSimd16Val.u64[0]) &&
-                       (left->gtSimd16Val.u64[1] == right->gtSimd16Val.u64[1]);
+                return left->gtSimd16Val == right->gtSimd16Val;
             }
 
 #if defined(TARGET_XARCH)
             case TYP_SIMD32:
-            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             {
-                return (left->gtSimd32Val.u64[0] == right->gtSimd32Val.u64[0]) &&
-                       (left->gtSimd32Val.u64[1] == right->gtSimd32Val.u64[1]) &&
-                       (left->gtSimd32Val.u64[2] == right->gtSimd32Val.u64[2]) &&
-                       (left->gtSimd32Val.u64[3] == right->gtSimd32Val.u64[3]);
+                return left->gtSimd32Val == right->gtSimd32Val;
+            }
+
+            case TYP_SIMD64:
+            {
+                return left->gtSimd64Val == right->gtSimd64Val;
             }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -6626,26 +6632,28 @@ struct GenTreeVecCon : public GenTree
 #if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
-                return (gtSimd8Val.u64[0] == 0x0000000000000000);
+                return gtSimd8Val.IsZero();
             }
 
             case TYP_SIMD12:
             {
-                return (gtSimd12Val.u32[0] == 0x00000000) && (gtSimd12Val.u32[1] == 0x00000000) &&
-                       (gtSimd12Val.u32[2] == 0x00000000);
+                return gtSimd12Val.IsZero();
             }
 
             case TYP_SIMD16:
             {
-                return (gtSimd16Val.u64[0] == 0x0000000000000000) && (gtSimd16Val.u64[1] == 0x0000000000000000);
+                return gtSimd16Val.IsZero();
             }
 
 #if defined(TARGET_XARCH)
             case TYP_SIMD32:
-            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             {
-                return (gtSimd32Val.u64[0] == 0x0000000000000000) && (gtSimd32Val.u64[1] == 0x0000000000000000) &&
-                       (gtSimd32Val.u64[2] == 0x0000000000000000) && (gtSimd32Val.u64[3] == 0x0000000000000000);
+                return gtSimd32Val.IsZero();
+            }
+
+            case TYP_SIMD64:
+            {
+                return gtSimd64Val.IsZero();
             }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -6660,6 +6668,12 @@ struct GenTreeVecCon : public GenTree
     GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
     {
         assert(varTypeIsSIMD(type));
+
+#if defined(TARGET_XARCH)
+        assert(sizeof(simd_t) == sizeof(simd64_t));
+#else
+        assert(sizeof(simd_t) == sizeof(simd16_t));
+#endif
     }
 
 #if DEBUGGABLE_GENTREE
@@ -9050,44 +9064,44 @@ inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index, var_types s
         {
             case TYP_BYTE:
             {
-                return node->gtSimd32Val.i8[index];
+                return node->gtSimdVal.i8[index];
             }
 
             case TYP_UBYTE:
             {
-                return node->gtSimd32Val.u8[index];
+                return node->gtSimdVal.u8[index];
             }
 
             case TYP_SHORT:
             {
-                return node->gtSimd32Val.i16[index];
+                return node->gtSimdVal.i16[index];
             }
 
             case TYP_USHORT:
             {
-                return node->gtSimd32Val.u16[index];
+                return node->gtSimdVal.u16[index];
             }
 
             case TYP_INT:
             case TYP_FLOAT:
             {
-                return node->gtSimd32Val.i32[index];
+                return node->gtSimdVal.i32[index];
             }
 
             case TYP_UINT:
             {
-                return node->gtSimd32Val.u32[index];
+                return node->gtSimdVal.u32[index];
             }
 
             case TYP_LONG:
             case TYP_DOUBLE:
             {
-                return node->gtSimd32Val.i64[index];
+                return node->gtSimdVal.i64[index];
             }
 
             case TYP_ULONG:
             {
-                return node->gtSimd32Val.u64[index];
+                return node->gtSimdVal.u64[index];
             }
 
             default:
@@ -9865,7 +9879,13 @@ inline GenTree* GenTree::GetIndirOrArrMetaDataAddr()
 /*****************************************************************************/
 
 const size_t TREE_NODE_SZ_SMALL = sizeof(GenTreeLclFld);
-const size_t TREE_NODE_SZ_LARGE = sizeof(GenTreeCall);
+
+// For some configurations, such as x86 release, GenTreeVecCon is
+// the largest by a small margin due to needing to carry a simd64_t
+// constant value. Otherwise, GenTreeCall is the largest.
+
+const size_t TREE_NODE_SZ_LARGE =
+    (sizeof(GenTreeVecCon) < sizeof(GenTreeCall)) ? sizeof(GenTreeCall) : sizeof(GenTreeVecCon);
 
 enum varRefKinds
 {

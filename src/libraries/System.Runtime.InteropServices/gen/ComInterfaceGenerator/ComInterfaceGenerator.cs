@@ -134,7 +134,7 @@ namespace Microsoft.Interop
                             var syntax = (MethodDeclarationSyntax)interfaceData.Syntax.FindNode(locationInAttributeSyntax.SourceSpan);
                             var method = (IMethodSymbol)member;
                             Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(syntax, method);
-                            methods.Add((syntax, method, diagnostic is not null ? methodVtableOffset++ : 0, diagnostic));
+                            methods.Add((syntax, method, diagnostic is null ? methodVtableOffset++ : 0, diagnostic));
                         }
                     }
                 }
@@ -313,7 +313,7 @@ namespace Microsoft.Interop
 
                 private static void** m_vtable;
 
-                public static void* VirtualMethodTableManagedImplementation
+                public static void** ManagedVirtualMethodTable
                 {
                     get
                     {
@@ -555,7 +555,7 @@ namespace Microsoft.Interop
                                 ReturnStatement(LiteralExpression(SyntaxKind.NullLiteralExpression)))));
             }
 
-            // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <interfaceMethodStubs.Array.Length>);
+            // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <max(vtableIndex) + 1>);
             var vtableDeclarationStatement =
                 LocalDeclarationStatement(
                     VariableDeclaration(
@@ -575,7 +575,7 @@ namespace Microsoft.Interop
                                                 BinaryExpression(
                                                     SyntaxKind.MultiplyExpression,
                                                     SizeOfExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))),
-                                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethodStubs.Length)))))))))));
+                                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1 + interfaceMethodStubs.Max(x => x.VtableIndexData.Index))))))))))));
 
             var fillIUnknownSlots = Block()
                 .AddStatements(
@@ -680,7 +680,7 @@ namespace Microsoft.Interop
                     FieldDeclaration(VariableDeclaration(VoidStarStarSyntax, SingletonSeparatedList(VariableDeclarator(vtableFieldName))))
                         .AddModifiers(Token(SyntaxKind.PrivateKeyword), Token(SyntaxKind.StaticKeyword)),
                     // public static void* VirtualMethodTableManagedImplementation => _vtable != null ? _vtable : (_vtable = InterfaceImplementation.CreateManagedVirtualMethodTable());
-                    PropertyDeclaration(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))), "VirtualMethodTableManagedImplementation")
+                    PropertyDeclaration(VoidStarStarSyntax, "ManagedVirtualMethodTable")
                         .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                         .WithExpressionBody(
                             ArrowExpressionClause(

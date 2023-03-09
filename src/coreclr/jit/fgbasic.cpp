@@ -1485,6 +1485,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 #endif // FEATURE_HW_INTRINSICS
                             case NI_SRCS_UNSAFE_As:
                             case NI_SRCS_UNSAFE_AsRef:
+                            case NI_SRCS_UNSAFE_BitCast:
                             case NI_SRCS_UNSAFE_SkipInit:
                             {
                                 // TODO-CQ: These are no-ops in that they never produce any IR
