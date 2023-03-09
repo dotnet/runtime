@@ -3,6 +3,7 @@
 
 import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { runtimeHelpers } from "./imports";
 
 const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
@@ -96,8 +97,12 @@ export async function storeMemorySnapshot(memory: ArrayBuffer) {
         if (!cache) {
             return;
         }
+        const copy = MonoWasmThreads
+            // storing SHaredArrayBuffer in the cache is not working
+            ? (new Int8Array(memory)).slice(0)
+            : memory;
 
-        const responseToCache = new Response(memory, {
+        const responseToCache = new Response(copy, {
             headers: {
                 "content-type": "wasm-memory",
                 "content-length": memory.byteLength.toString(),
