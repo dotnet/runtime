@@ -36,7 +36,7 @@
 
     <!-- common linker arguments for app and library builds -->
     <ItemGroup>
-      <_CommonLinkerArgs Condition="'$(TargetOS)' != 'tvos'" Include="-framework GSS" />
+      <_CommonLinkerArgs Condition="'$(_IsLibraryMode)' == 'true' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator'" Include="-framework GSS" />
     </ItemGroup>
 
     <PropertyGroup>
