@@ -5,17 +5,16 @@ import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
 import {
     getU16, getI16,
-    getU32, getI32, getF32, getF64,
+    getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned,
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
-    copyIntoScratchBuffer, append_memset_dest,
-    append_memmove_dest_src, try_append_memset_fast,
-    try_append_memmove_fast, counters,
-    getMemberOffset, JiterpMember
+    append_memset_dest, append_memmove_dest_src,
+    try_append_memset_fast, try_append_memmove_fast,
+    counters, getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 import {
     sizeOfDataItem,
@@ -89,31 +88,31 @@ function getArgI16 (ip: MintOpcodePtr, indexPlusOne: number) {
 }
 
 function getArgI32 (ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 4);
-    return getI32(src);
+    const src = <any>ip + (2 * indexPlusOne);
+    return getI32_unaligned(src);
 }
 
 function getArgU32 (ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 4);
-    return getU32(src);
+    const src = <any>ip + (2 * indexPlusOne);
+    return getU32_unaligned(src);
 }
 
 function getArgF32 (ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 4);
-    return getF32(src);
+    const src = <any>ip + (2 * indexPlusOne);
+    return getF32_unaligned(src);
 }
 
 function getArgF64 (ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 8);
-    return getF64(src);
+    const src = <any>ip + (2 * indexPlusOne);
+    return getF64_unaligned(src);
 }
 
 function get_imethod_data (frame: NativePointer, index: number) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
-    const iMethod = getU32(<any>frame + getMemberOffset(JiterpMember.Imethod));
-    const pData = getU32(iMethod + getMemberOffset(JiterpMember.DataItems));
+    const iMethod = getU32_unaligned(<any>frame + getMemberOffset(JiterpMember.Imethod));
+    const pData = getU32_unaligned(iMethod + getMemberOffset(JiterpMember.DataItems));
     const dataOffset = pData + (index * sizeOfDataItem);
-    return getU32(dataOffset);
+    return getU32_unaligned(dataOffset);
 }
 
 function is_backward_branch_target (
@@ -361,7 +360,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_TIER_PATCHPOINT: {
                 // We need to make sure to notify the interpreter about tiering opcodes
                 //  so that tiering up will still happen
-                const iMethod = getU32(<any>frame + getMemberOffset(JiterpMember.Imethod));
+                const iMethod = getU32_unaligned(<any>frame + getMemberOffset(JiterpMember.Imethod));
                 builder.ptr_const(iMethod);
                 // increase_entry_count will return 1 if we can continue, otherwise
                 //  we need to bail out into the interpreter so it can perform tiering
@@ -836,7 +835,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CALL: {
                 if (countCallTargets) {
                     const targetImethod = get_imethod_data(frame, getArgU16(ip, 3));
-                    const targetMethod = <MonoMethod><any>getU32(targetImethod);
+                    const targetMethod = <MonoMethod><any>getU32_unaligned(targetImethod);
                     const count = callTargetCounts[<any>targetMethod];
                     if (typeof (count) === "number")
                         callTargetCounts[<any>targetMethod] = count + 1;

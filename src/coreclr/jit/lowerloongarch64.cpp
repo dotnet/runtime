@@ -186,11 +186,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
     jtrue->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
 
-    if ((cond.GetCode() == GenCondition::EQ) || (cond.GetCode() == GenCondition::NE))
-    {
-        jtrue->gtFlags &= ~GTF_UNSIGNED;
-    }
-
     if (cmpOp2->IsCnsIntOrI())
     {
         cmpOp2->SetContained();
