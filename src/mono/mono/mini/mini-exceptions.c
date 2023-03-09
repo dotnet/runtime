@@ -369,7 +369,7 @@ is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 
 #ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
 
-#if 0
+#if 1
 static gboolean show_native_addresses = TRUE;
 #else
 static gboolean show_native_addresses = FALSE;

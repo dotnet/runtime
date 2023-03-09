@@ -198,7 +198,7 @@ typedef struct {
 
 #endif
 
-#if defined(TARGET_IOS) || defined(TARGET_WATCHOS)
+#if defined(TARGET_IOS) || defined(TARGET_WATCHOS)  || defined(__linux__)
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 
