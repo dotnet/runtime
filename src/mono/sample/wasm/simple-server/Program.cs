@@ -138,13 +138,26 @@ namespace HttpServer
             if (Verbose)
                 Console.WriteLine($"  serving: {path}");
 
-            if (path.StartsWith("/"))
+            var throttleMbps = 0.0;
+            var latencyMs = 0;
+            if (path.StartsWith("/unique/")) // like /unique/7a3da2c7-bf35-477e-a585-a207ea30730c/dotnet.js
+            {
+                path = path.Substring(45);
+                throttleMbps = 30.0;
+                latencyMs = 100;
+            }
+            else if (path.StartsWith("/"))
                 path = path.Substring(1);
 
             byte[]? buffer;
             try
             {
                 buffer = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
+                if (throttleMbps > 0) {
+                    double delaySeconds = (buffer.Length * 8) / (throttleMbps * 1024 * 1024);
+                    int delayMs = (int)(delaySeconds * 1000) + latencyMs;
+                    await Task.Delay(delayMs);
+                }
             }
             catch (Exception)
             {
