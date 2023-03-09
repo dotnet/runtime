@@ -321,8 +321,7 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
 
     *isTestCondition = false;
 
-    if (condition->OperIs(GT_EQ, GT_NE) && condOp2->IsIntegralConst() && condOp2->AsIntCon()->IconValue() == 0 &&
-        condOp1->OperIs(GT_AND))
+    if (condition->OperIs(GT_EQ, GT_NE) && condOp2->IsIntegralConst() && condOp2->AsIntCon()->IconValue() == 0)
     {
         // Found a test condition. Does it contain a compare chain?
 
@@ -330,7 +329,7 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
         // the condition the new link in the chain will connect with.
         // We are allowing for the first operand of the not be a valid chain, as this would require
         // a full recursive search through the children.
-        if (condOp1->gtGetOp2()->OperIsCmpCompare())
+        if (condOp1->OperIs(GT_AND) && condOp1->gtGetOp2()->OperIsCmpCompare())
         {
             return true;
         }
