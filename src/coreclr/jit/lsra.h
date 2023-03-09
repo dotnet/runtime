@@ -492,7 +492,7 @@ public:
             registerType = FloatRegisterType;
         }
 #if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
-        else 
+        else
         {
             assert(emitter::isMaskReg(reg));
             registerType = MaskRegisterType;
@@ -1967,7 +1967,7 @@ private:
     }
 #endif // TARGET_AMD64
 
-    unsigned  availableRegCount;
+    unsigned availableRegCount;
 
     unsigned get_AVAILABLE_REG_COUNT() const
     {

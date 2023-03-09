@@ -67,18 +67,6 @@ INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     
 // See comment around quarter way through this file for more information.
 INST5(bswap,            "bswap",            IUM_RW, 0x0F00C8,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C80F,    INS_TT_NONE,    INS_FLAGS_None )
 
-INST5(FIRST_K_INSTRUCTION, "FIRST_K_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None )
-
-//    id                nm                  um      mr            mi            rm            a4            rr                                        tt              flags
-// TODO-XARCH-AVX512 add the proper W bit switch 
-INST5(kmovb,         "kmovb",            IUM_WR, BAD_CODE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     PACK3(0x66, 0x0F, 0x92),                  INS_TT_NONE,    INS_FLAGS_Has_Wbit )
-INST5(kmovw,         "kmovw",            IUM_WR, BAD_CODE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     PACK2(0x0F, 0x92),                        INS_TT_NONE,    INS_FLAGS_Has_Wbit )
-INST5(kmovd,         "kmovd",            IUM_WR, BAD_CODE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     PACK3(0xF2, 0x0F, 0x92),                  INS_TT_NONE,    INS_FLAGS_Has_Wbit )
-INST5(kmovq,         "kmovq",            IUM_WR, BAD_CODE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     PACK3(0xF2, 0x0F, 0x92),                  INS_TT_NONE,    INS_FLAGS_Has_Wbit )
-
-INST5(LAST_K_INSTRUCTION, "LAST_K_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None )
-
-
 //    id                nm                  um      mr            mi            rm            a4                         tt              flags
 INST4(add,              "add",              IUM_RW, 0x000000,     0x000080,     0x000002,     0x000004,                  INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
 INST4(or,               "or",               IUM_RW, 0x000008,     0x000880,     0x00000A,     0x00000C,                  INS_TT_NONE,    Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Resets_CF                  | INS_FLAGS_Has_Sbit | INS_FLAGS_Has_Wbit )
@@ -638,6 +626,18 @@ INST3(shrx,             "shrx",             IUM_WR, BAD_CODE,     BAD_CODE,     
 #endif
 
 INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
+
+INST3(FIRST_K_INSTRUCTION, "FIRST_K_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None )
+
+//    id                nm                  um      mr            mi            rm              tt              flags
+// TODO-XARCH-AVX512 add the proper W bit switch 
+INST3(kmovb,         "kmovb",            IUM_WR, PACK3(0x66, 0x0F, 0x91), BAD_CODE,     PACK3(0x66, 0x0F, 0x90), INS_TT_NONE,    INS_FLAGS_Has_Wbit )
+INST3(kmovw,         "kmovw",            IUM_WR, PACK2(0x0F, 0x91),       BAD_CODE,     PACK2(0x0F, 0x90),       INS_TT_NONE,    INS_FLAGS_Has_Wbit )
+INST3(kmovd,         "kmovd",            IUM_WR, PACK3(0xF2, 0x0F, 0x91), BAD_CODE,     PACK3(0xF2, 0x0F, 0x90), INS_TT_NONE,    INS_FLAGS_Has_Wbit )
+INST3(kmovq,         "kmovq",            IUM_WR, PACK3(0xF2, 0x0F, 0x91), BAD_CODE,     PACK3(0xF2, 0x0F, 0x90), INS_TT_NONE,    INS_FLAGS_Has_Wbit )
+
+INST3(LAST_K_INSTRUCTION, "LAST_K_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None )
+
 
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 

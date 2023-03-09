@@ -642,22 +642,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+#endif
 
     if (!compiler->DoJitStressEvexEncoding())
     {
         availableRegCount -= CNT_HIGHFLOAT;
-    }
-#endif // TARGET_AMD64
-
-#if defined(TARGET_XARCH)
-    if (!compiler->DoJitStressEvexEncoding())
-    {
         availableRegCount -= CNT_MASK_REGS;
     }
-#endif
-
 #endif // TARGET_XARCH
-
 
     regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
@@ -711,10 +703,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
 #if defined(TARGET_XARCH)
-    if (compiler->DoJitStressEvexEncoding())
-    {
-        availableMaskRegs = RBM_ALLMASK;
-    }
+    availableMaskRegs = RBM_ALLMASK;
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)

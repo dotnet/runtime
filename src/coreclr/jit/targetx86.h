@@ -98,6 +98,8 @@
 
   #define RBM_ALLMASK              REG_K1
 
+  #define CNT_HIGHFLOAT           0
+
   // TODO-CQ: Currently we are following the x86 ABI for SSE2 registers.
   // This should be reconsidered.
   #define RBM_FLT_CALLEE_SAVED     RBM_NONE

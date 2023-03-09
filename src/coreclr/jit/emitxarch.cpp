@@ -53,7 +53,7 @@ bool emitter::IsKInstruction(instruction ins)
 bool emitter::IsAvx512OrPriorInstruction(instruction ins)
 {
     // TODO-XArch-AVX512: Fix check once AVX512 instructions are added.
-    return ((ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION)) || IsKInstruction(ins);
+    return ((ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION));
 }
 
 bool emitter::IsAVXOnlyInstruction(instruction ins)
@@ -161,7 +161,7 @@ regNumber emitter::getSseShiftRegNumber(instruction ins)
 
 bool emitter::IsVexEncodedInstruction(instruction ins) const
 {
-    return UseVEXEncoding() && (IsSSEOrAVXInstruction(ins) || IsKInstruction(ins));
+    return UseVEXEncoding() && IsSSEOrAVXInstruction(ins);
 }
 
 //------------------------------------------------------------------------
@@ -1308,6 +1308,7 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_shlx:
             case INS_sarx:
             case INS_shrx:
+            case INS_kmovq: // kmovq always takes W1 bit, regardless of form.
                 return true;
             default:
                 return false;
@@ -1321,7 +1322,7 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
     // so we never need it
     if ((ins != INS_push) && (ins != INS_pop) && (ins != INS_movq) && (ins != INS_movzx) && (ins != INS_push_hide) &&
         (ins != INS_pop_hide) && (ins != INS_ret) && (ins != INS_call) && (ins != INS_tail_i_jmp) &&
-        !((ins >= INS_i_jmp) && (ins <= INS_l_jg)) && (ins != INS_kmovb) && (ins != INS_kmovw) && (ins != INS_kmovd))
+        !((ins >= INS_i_jmp) && (ins <= INS_l_jg)))
     {
         return true;
     }
@@ -3491,15 +3492,10 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
     // This would probably be better expressed as a different format or something?
-    code_t code;
+    code_t code = insCodeRM(ins);
     if (IsKInstruction(ins))
     {
-        code = insCodeRR(ins);
         code = AddVexPrefix(ins, code, EA_SIZE(id->idOpSize()));
-    }
-    else
-    {
-        code = insCodeRM(ins);
     }
 
     UNATIVE_OFFSET sz = emitGetAdjustedSize(id, code);
@@ -3514,7 +3510,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
         emitAttr  size = EA_SIZE(attr);
 
         if ((TakesRexWPrefix(ins, size) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
-            IsExtendedReg(reg2, attr))
+            IsExtendedReg(reg2, attr) || (ins == INS_kmovd && isMaskReg(reg1) && isMaskReg(reg2)))
         {
             sz += emitGetRexPrefixSize(ins);
             includeRexPrefixSize = false;
@@ -13849,13 +13845,26 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         assert((ins != INS_movd) || (isFloatReg(reg1) != isFloatReg(reg2)));
 
-        if (IsKInstruction(ins))
+        if (ins == INS_kmovb || ins == INS_kmovw || ins == INS_kmovd || ins == INS_kmovq)
         {
-            code = insCodeRR(ins);
+            assert(!(isGeneralRegister(reg1) && isGeneralRegister(reg2)));
+
+            code = insCodeRM(ins);
             if (isGeneralRegister(reg1))
             {
-                // kmov r, k form, flip last byte of opcode from 0x92 to 0x93
-                code |= 0x01;
+                // kmov r, k form, flip last byte of opcode from 0x90 to 0x92
+                code |= 0x03;
+            }
+            else if (isGeneralRegister(reg2))
+            {
+                // kmov r, k form, flip last byte of opcode from 0x90 to 0x92
+                code |= 0x02;
+            }
+
+            // kmovd RR form requires W bit
+            if (!(code & 0x02) && ins == INS_kmovd)
+            {
+                AddRexWPrefix(id, code);
             }
         }
         else if ((ins != INS_movd) || isFloatReg(reg1))
