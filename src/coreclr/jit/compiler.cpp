@@ -5351,27 +5351,16 @@ PhaseStatus Compiler::StressSplitTree()
     {
         for (Statement* stmt : block->NonPhiStatements())
         {
-            bool skip     = false;
             int  numTrees = 0;
             for (GenTree* tree : stmt->TreeList())
             {
-                if (tree->OperIs(GT_JTRUE))
+                if (tree->OperIs(GT_JTRUE)) // Due to relop invariant
                 {
                     continue;
                 }
 
-                if (varTypeIsSIMD(tree))
-                {
-                    // Cannot always create locals for these due to bug in gtGetStructHandleForSIMD
-                    skip = true;
-                    break;
-                }
-
                 numTrees++;
             }
-
-            if (skip)
-                continue;
 
             int splitTree = rng.Next(numTrees);
             for (GenTree* tree : stmt->TreeList())
