@@ -464,8 +464,8 @@ namespace System
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            return _this.Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(_this);
+            T[] @this = Unsafe.As<T[]>(this);
+            return @this.Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(@this);
         }
 
         private void CopyTo<T>(T[] array, int index)
@@ -473,42 +473,42 @@ namespace System
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
 
-            T[] _this = Unsafe.As<T[]>(this);
-            Array.Copy(_this, 0, array, index, _this.Length);
+            T[] @this = Unsafe.As<T[]>(this);
+            Array.Copy(@this, 0, array, index, @this.Length);
         }
 
         internal int get_Count<T>()
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            return _this.Length;
+            T[] @this = Unsafe.As<T[]>(this);
+            return @this.Length;
         }
 
         internal T get_Item<T>(int index)
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            if ((uint)index >= (uint)_this.Length)
+            T[] @this = Unsafe.As<T[]>(this);
+            if ((uint)index >= (uint)@this.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
-            return _this[index];
+            return @this[index];
         }
 
         internal void set_Item<T>(int index, T value)
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            if ((uint)index >= (uint)_this.Length)
+            T[] @this = Unsafe.As<T[]>(this);
+            if ((uint)index >= (uint)@this.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
-            _this[index] = value;
+            @this[index] = value;
         }
 
         private void Add<T>(T _)
@@ -521,8 +521,8 @@ namespace System
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            return Array.IndexOf(_this, value, 0, _this.Length) >= 0;
+            T[] @this = Unsafe.As<T[]>(this);
+            return Array.IndexOf(@this, value, 0, @this.Length) >= 0;
         }
 
         private bool get_IsReadOnly<T>()
@@ -542,8 +542,8 @@ namespace System
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            return Array.IndexOf(_this, value, 0, _this.Length);
+            T[] @this = Unsafe.As<T[]>(this);
+            return Array.IndexOf(@this, value, 0, @this.Length);
         }
 
         private void Insert<T>(int _, T _1)

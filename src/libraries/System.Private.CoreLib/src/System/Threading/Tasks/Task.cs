@@ -6828,7 +6828,7 @@ namespace System.Threading.Tasks
 
     // Special internal struct that we use to signify that we are not interested in
     // a Task<VoidTaskResult>'s result.
-    internal struct VoidTaskResult { }
+    internal readonly struct VoidTaskResult { }
 
     // Interface to which all completion actions must conform.
     // This interface allows us to combine functionality and reduce allocations.

@@ -25,6 +25,7 @@ Design Docs
 =================
 
 - [.NET Globalization Invariant Mode](design/features/globalization-invariant-mode.md)
+- [WASM Globalization Icu](design/features/globalization-icu-wasm.md)
 - [Cross-Platform Cryptography](design/features/cross-platform-cryptography.md)
 - Many more under [design/features](design/features/)
 

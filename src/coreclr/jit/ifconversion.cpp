@@ -61,8 +61,6 @@ private:
     void IfConvertDump();
 #endif
 
-    bool IsHWIntrinsicCC(GenTree* node);
-
 public:
     bool optIfConvert();
 };
@@ -406,69 +404,6 @@ void OptIfConversionDsc::IfConvertDump()
 }
 #endif
 
-#ifdef TARGET_XARCH
-//-----------------------------------------------------------------------------
-// IsHWIntrinsicCC:
-//   Check if this is a HW intrinsic node that can be compared efficiently
-//   against 0.
-//
-// Returns:
-//   True if so.
-//
-// Notes:
-//   For xarch, we currently skip if-conversion for these cases as the backend can handle them more efficiently
-//   when they are normal compares.
-//
-bool OptIfConversionDsc::IsHWIntrinsicCC(GenTree* node)
-{
-#ifdef FEATURE_HW_INTRINSICS
-    if (!node->OperIs(GT_HWINTRINSIC))
-    {
-        return false;
-    }
-
-    switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
-    {
-        case NI_SSE_CompareScalarOrderedEqual:
-        case NI_SSE_CompareScalarOrderedNotEqual:
-        case NI_SSE_CompareScalarOrderedLessThan:
-        case NI_SSE_CompareScalarOrderedLessThanOrEqual:
-        case NI_SSE_CompareScalarOrderedGreaterThan:
-        case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
-        case NI_SSE_CompareScalarUnorderedEqual:
-        case NI_SSE_CompareScalarUnorderedNotEqual:
-        case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
-        case NI_SSE_CompareScalarUnorderedLessThan:
-        case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
-        case NI_SSE_CompareScalarUnorderedGreaterThan:
-        case NI_SSE2_CompareScalarOrderedEqual:
-        case NI_SSE2_CompareScalarOrderedNotEqual:
-        case NI_SSE2_CompareScalarOrderedLessThan:
-        case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
-        case NI_SSE2_CompareScalarOrderedGreaterThan:
-        case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
-        case NI_SSE2_CompareScalarUnorderedEqual:
-        case NI_SSE2_CompareScalarUnorderedNotEqual:
-        case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
-        case NI_SSE2_CompareScalarUnorderedLessThan:
-        case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
-        case NI_SSE2_CompareScalarUnorderedGreaterThan:
-        case NI_SSE41_TestC:
-        case NI_SSE41_TestZ:
-        case NI_SSE41_TestNotZAndNotC:
-        case NI_AVX_TestC:
-        case NI_AVX_TestZ:
-        case NI_AVX_TestNotZAndNotC:
-            return true;
-        default:
-            return false;
-    }
-#else
-    return false;
-#endif
-}
-#endif
-
 //-----------------------------------------------------------------------------
 // optIfConvert
 //
@@ -625,15 +560,6 @@ bool OptIfConversionDsc::IsHWIntrinsicCC(GenTree* node)
 //
 bool OptIfConversionDsc::optIfConvert()
 {
-    // Don't optimise the block if it is inside a loop
-    // When inside a loop, branches are quicker than selects.
-    // Detect via the block weight as that will be high when inside a loop.
-    if ((m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT) &&
-        !m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
-    {
-        return false;
-    }
-
     // Does the block end by branching via a JTRUE after a compare?
     if (m_startBlock->bbJumpKind != BBJ_COND || m_startBlock->NumSucc() != 2)
     {
@@ -727,44 +653,30 @@ bool OptIfConversionDsc::optIfConvert()
             }
         }
 
-#ifdef TARGET_XARCH
-        // Currently the xarch backend does not handle SELECT (EQ/NE (arithmetic op that sets ZF) 0) ...
-        // as efficiently as JTRUE (EQ/NE (arithmetic op that sets ZF) 0). The support is complicated
-        // to add due to the destructive nature of xarch instructions.
-        // The exception is for cases that can be transformed into TEST_EQ/TEST_NE.
-        // TODO-CQ: Fix this.
-        if (m_cond->OperIs(GT_EQ, GT_NE) && m_cond->gtGetOp2()->IsIntegralConst(0) &&
-            !m_cond->gtGetOp1()->OperIs(GT_AND) &&
-            (m_cond->gtGetOp1()->SupportsSettingZeroFlag() || IsHWIntrinsicCC(m_cond->gtGetOp1())))
-        {
-            JITDUMP("Skipping if-conversion where condition is EQ/NE 0 with operation that sets ZF");
-            return false;
-        }
-
-        // However, in some cases bit tests can emit 'bt' when not going
-        // through the GT_SELECT path.
-        if (m_cond->OperIs(GT_EQ, GT_NE) && m_cond->gtGetOp1()->OperIs(GT_AND) &&
-            m_cond->gtGetOp2()->IsIntegralConst(0))
-        {
-            // A bit test that can be transformed into 'bt' will look like
-            // EQ/NE(AND(x, LSH(1, y)), 0)
-
-            GenTree* andOp1 = m_cond->gtGetOp1()->gtGetOp1();
-            GenTree* andOp2 = m_cond->gtGetOp1()->gtGetOp2();
-
-            if (andOp2->OperIs(GT_LSH) && andOp2->gtGetOp1()->IsIntegralConst(1))
-            {
-                JITDUMP("Skipping if-conversion where condition is amenable to be transformed to BT");
-                return false;
-            }
-        }
-#endif
-
         // Cost to allow for "x = cond ? a + b : c + d".
         if (thenCost > 7 || elseCost > 7)
         {
             JITDUMP("Skipping if-conversion that will evaluate RHS unconditionally at costs %d,%d\n", thenCost,
                     elseCost);
+            return false;
+        }
+    }
+
+    if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
+    {
+        // Don't optimise the block if it is inside a loop
+        // When inside a loop, branches are quicker than selects.
+        // Detect via the block weight as that will be high when inside a loop.
+        if (m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT)
+        {
+            JITDUMP("Skipping if-conversion inside loop (via weight)\n");
+            return false;
+        }
+
+        // We may be inside an unnatural loop, so do the expensive check.
+        if (m_comp->optReachable(m_finalBlock, m_startBlock, nullptr))
+        {
+            JITDUMP("Skipping if-conversion inside loop (via FG walk)\n");
             return false;
         }
     }
@@ -878,10 +790,8 @@ PhaseStatus Compiler::optIfConversion()
 
     // This phase does not repect SSA: assignments are deleted/moved.
     assert(!fgDomsComputed);
+    optReachableBitVecTraits = nullptr;
 
-    // Currently only enabled on arm64 and under debug on xarch, since we only
-    // do it under stress.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_ARM64) || defined(TARGET_XARCH)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;

@@ -215,17 +215,35 @@ namespace ILCompiler.Dataflow
                 }
                 else
                 {
-                    var diagnosticContext = new DiagnosticContext(
-                        origin,
-                        _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                        _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
-                        _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
-                        _logger);
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
+                }
+            }
 
-                    string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
-                    string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
+            if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+            {
+                if (_typeHierarchyDataFlowOrigin is not null)
+                {
+                    // For now we decided to not report single-file warnings due to type hierarchy marking.
+                    // It is considered too complex to figure out for the user and the likelihood of this
+                    // causing problems is pretty low.
+                }
+                else
+                {
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute);
+                }
+            }
 
-                    diagnosticContext.AddDiagnostic(DiagnosticId.RequiresUnreferencedCode, entity.GetDisplayName(), arg1, arg2);
+            if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _))
+            {
+                if (_typeHierarchyDataFlowOrigin is not null)
+                {
+                    // For now we decided to not report dynamic code warnings due to type hierarchy marking.
+                    // It is considered too complex to figure out for the user and the likelihood of this
+                    // causing problems is pretty low.
+                }
+                else
+                {
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute);
                 }
             }
 
@@ -257,6 +275,18 @@ namespace ILCompiler.Dataflow
                     }
                 }
             }
+        }
+
+        private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName)
+        {
+            var diagnosticContext = new DiagnosticContext(
+                origin,
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                _logger);
+
+            ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, entity, requiresAttributeName);
         }
     }
 }

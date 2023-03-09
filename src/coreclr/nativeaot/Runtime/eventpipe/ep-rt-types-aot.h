@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // Implementation of ep-rt-types.h targeting AOT runtime.
 #ifndef __EVENTPIPE_RT_TYPES_AOT_H__
 #define __EVENTPIPE_RT_TYPES_AOT_H__
@@ -133,11 +136,6 @@ struct _rt_aot_event_internal_t {
 class CrstStatic;
 struct _rt_aot_lock_internal_t {
     CrstStatic *lock;
-};
-
-class SpinLock;
-struct _rt_aot_spin_lock_internal_t {
-    SpinLock *lock;
 };
 
 /*
@@ -300,7 +298,8 @@ typedef struct _rt_aot_event_internal_t ep_rt_wait_event_handle_t;
 typedef struct _rt_aot_lock_internal_t ep_rt_lock_handle_t;
 
 #undef ep_rt_spin_lock_handle_t
-typedef _rt_aot_spin_lock_internal_t ep_rt_spin_lock_handle_t;
+// NativeAOT will start with CrstStatic instead of a SpinLock and change as needed if performance is an issue
+typedef struct _rt_aot_lock_internal_t ep_rt_spin_lock_handle_t;
 
 /*
  * Thread.

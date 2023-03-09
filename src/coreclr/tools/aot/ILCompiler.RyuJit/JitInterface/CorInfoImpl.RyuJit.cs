@@ -261,6 +261,10 @@ namespace Internal.JitInterface
                     lookup.lookupKind.runtimeLookupFlags = (ushort)genericLookup.HelperId;
                     lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(genericLookup.HelperObject);
                 }
+                else if (genericLookup.UseNull)
+                {
+                    lookup.runtimeLookup.indirections = CORINFO.USENULL;
+                }
                 else
                 {
                     if (genericLookup.ContextSource == GenericContextSource.MethodParameter)

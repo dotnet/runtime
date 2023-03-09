@@ -523,7 +523,7 @@ void CodeGen::genCodeForBBlist()
         {
 // Unit testing of the emitter: generate a bunch of instructions into the last block
 // (it's as good as any, but better than the prologue, which can only be a single instruction
-// group) then use COMPlus_JitLateDisasm=* to see if the late disassembler
+// group) then use DOTNET_JitLateDisasm=* to see if the late disassembler
 // thinks the instructions are the same as we do.
 #if defined(TARGET_AMD64) && defined(LATE_DISASM)
             genAmd64EmitterUnitTests();
@@ -2588,51 +2588,6 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 #endif // !defined(TARGET_64BIT)
 
 #ifndef TARGET_LOONGARCH64
-//------------------------------------------------------------------------
-// genCodeForJumpTrue: Generate code for a GT_JTRUE node.
-//
-// Arguments:
-//    jtrue - The node
-//
-void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
-{
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-    assert(jtrue->OperIs(GT_JTRUE));
-
-    GenTreeOp*   relop     = jtrue->gtGetOp1()->AsOp();
-    GenCondition condition = GenCondition::FromRelop(relop);
-
-    if (condition.PreferSwap())
-    {
-        condition = GenCondition::Swap(condition);
-    }
-
-#if defined(TARGET_XARCH)
-    if ((condition.GetCode() == GenCondition::FNEU) &&
-        (relop->gtGetOp1()->GetRegNum() == relop->gtGetOp2()->GetRegNum()) &&
-        !relop->gtGetOp1()->isUsedFromSpillTemp() && !relop->gtGetOp2()->isUsedFromSpillTemp())
-    {
-        // For floating point, `x != x` is a common way of
-        // checking for NaN. So, in the case where both
-        // operands are the same, we can optimize codegen
-        // to only do a single check.
-
-        condition = GenCondition(GenCondition::P);
-    }
-
-    if (relop->MarkedForSignJumpOpt())
-    {
-        // If relop was previously marked for a signed jump check optimization because of SF flag
-        // reuse, replace jge/jl with jns/js.
-
-        assert(relop->OperGet() == GT_LT || relop->OperGet() == GT_GE);
-        condition = (relop->OperGet() == GT_LT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
-    }
-
-#endif
-
-    inst_JCC(condition, compiler->compCurBB->bbJumpDest);
-}
 
 //------------------------------------------------------------------------
 // genCodeForJcc: Generate code for a GT_JCC node.

@@ -9,8 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    // this maps to src\mono\wasm\runtime\legacy\corebindings.ts
-    // the public methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
+    // the public methods are protected from trimming by ILLink.Descriptors.LegacyJsInterop.xml
     internal static unsafe partial class LegacyExports
     {
         public static void GetCSOwnedObjectByJSHandleRef(nint jsHandle, int shouldAddInflight, out JSObject? result)
@@ -197,7 +196,7 @@ namespace System.Runtime.InteropServices.JavaScript
             result = unixTime.DateTime;
         }
 
-        // we do this via reflection to allow linker to trim dependency on Uri class and it's assembly
+        // we do this via reflection to allow trimming tools to trim dependency on Uri class and it's assembly
         // if the user code has methods with Uri signature, they probably also have the Uri constructor
         // if they don't have it, they could configure ILLing to protect it after they enabled trimming
         // We believe that this code path is probably not even used in the wild

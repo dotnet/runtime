@@ -6,11 +6,11 @@ using System.Diagnostics;
 
 namespace Microsoft.Extensions.Internal
 {
-    internal struct ValueStopwatch
+    internal readonly struct ValueStopwatch
     {
-        private static readonly double TimestampToTicks = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
+        private static readonly double s_timestampToTicks = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
 
-        private long _startTimestamp;
+        private readonly long _startTimestamp;
 
         public bool IsActive => _startTimestamp != 0;
 
@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Internal
 
             long end = Stopwatch.GetTimestamp();
             long timestampDelta = end - _startTimestamp;
-            long ticks = (long)(TimestampToTicks * timestampDelta);
+            long ticks = (long)(s_timestampToTicks * timestampDelta);
             return new TimeSpan(ticks);
         }
     }

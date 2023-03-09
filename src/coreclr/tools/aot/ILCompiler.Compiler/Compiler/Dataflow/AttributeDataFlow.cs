@@ -42,7 +42,7 @@ namespace ILCompiler.Dataflow
             DependencyList? result = null;
 
             // First do the dataflow for the constructor parameters if necessary.
-            if (_annotations.RequiresDataflowAnalysis(method))
+            if (_annotations.RequiresDataflowAnalysisDueToSignature(method))
             {
                 var builder = ImmutableArray.CreateBuilder<object?>(arguments.FixedArguments.Length);
                 foreach (var argument in arguments.FixedArguments)

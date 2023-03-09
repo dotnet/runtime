@@ -24,6 +24,9 @@ private:
     // Indicates whether optimization tiers should be shown for methods in perf maps
     static bool s_ShowOptimizationTiers;
 
+    // Set to true if an error is encountered when writing to the file.
+    static unsigned s_StubsMapped;
+
     // The file stream to write the map to.
     CFileStream * m_FileStream;
 
@@ -32,9 +35,6 @@ private:
 
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
-
-    // Set to true if an error is encountered when writing to the file.
-    unsigned m_StubsMapped;
 
     // Construct a new map for the specified pid.
     PerfMap(int pid);

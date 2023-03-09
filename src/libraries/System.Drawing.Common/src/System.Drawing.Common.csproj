@@ -30,6 +30,7 @@ Since .NET 7, non-Windows platforms are not supported, even with the runtime con
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="SRDescriptionAttribute.cs" />
+    <Compile Include="System.Drawing.Common.Forwards.cs" />
     <Compile Include="System\Drawing\Bitmap.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />

@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 	// For netcoreapp we don't have to specify the assembly for the attribute, since the attribute comes from corelib
 	// and will be found always.
 	// For mono though, we have to specify the assembly (Mono.Linker.Tests.Cases.Expectations) because at the time of processing
-	// that assembly is not yet loaded into the closure in the linker, so it won't find the attribute type.
+	// that assembly is not yet loaded into the closure in ILLink, so it won't find the attribute type.
 #if NETCOREAPP
 	[SetupLinkAttributesFile ("DynamicDependencyFromAttributeXml.netcore.Attributes.xml")]
 #else
@@ -30,7 +30,8 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		{
 		}
 
-		[Kept]
+		// https://github.com/dotnet/runtime/issues/79393
+		[Kept (By = Tool.Trimmer)]
 		static void UnusedMethod ()
 		{
 		}
@@ -42,12 +43,14 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 
 		class NonUsedType
 		{
-			[Kept]
+			// https://github.com/dotnet/runtime/issues/79393
+			[Kept (By = Tool.Trimmer)]
 			public NonUsedType ()
 			{
 			}
 
-			[Kept]
+			// https://github.com/dotnet/runtime/issues/79393
+			[Kept (By = Tool.Trimmer)]
 			public static void PleasePreserveThisMethod ()
 			{
 			}

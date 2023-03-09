@@ -147,6 +147,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.HaveStdErrContaining($"Using specified additional deps.json: '{depsFilePath}'");
         }
 
+        public static AndConstraint<CommandResultAssertions> HaveUsedFallbackRid(this CommandResultAssertions assertion, bool usedFallbackRid)
+        {
+            string msg = "Falling back to base HostRID";
+            return usedFallbackRid ? assertion.HaveStdErrContaining(msg) : assertion.NotHaveStdErrContaining(msg);
+        }
+
         private static string GetAppMockPropertyValue(CommandResultAssertions assertion, string propertyName) =>
             GetMockPropertyValue(assertion, $"mock property[{propertyName}] = ");
 

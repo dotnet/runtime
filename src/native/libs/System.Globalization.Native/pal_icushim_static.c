@@ -45,17 +45,10 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
     printf("[ICUDT] %s: %s\n", utrace_functionName(fnNumber), buf);
 }
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-
 static int32_t load_icu_data(const void* pData);
 
-EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
-
-EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
-{
-    return GlobalizationNative_GetICUDTName(culture);
-}
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData);
 
@@ -63,7 +56,6 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
 {
     return load_icu_data(pData);
 }
-
 
 /*
  * driver.c calls this to make sure this file is linked, otherwise
@@ -77,6 +69,13 @@ void mono_wasm_link_icu_shim(void)
 }
 
 #endif
+
+int32_t mono_wasi_load_icu_data(const void* pData);
+
+int32_t mono_wasi_load_icu_data(const void* pData)
+{
+    return load_icu_data(pData);
+}
 
 static int32_t load_icu_data(const void* pData)
 {
@@ -169,6 +168,14 @@ error:
 int32_t
 GlobalizationNative_LoadICUData(const char* path)
 {
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+    if (!path)
+    {
+        // fallback to icudt.dat in the app bundle root in case the path isn't set
+        path = GlobalizationNative_GetICUDataPathFallback();
+    }
+#endif
+
     const char *icu_data = cstdlib_load_icu_data(path);
 
     if (icu_data == NULL)
@@ -184,35 +191,6 @@ GlobalizationNative_LoadICUData(const char* path)
     }
 
     return GlobalizationNative_LoadICU();
-}
-
-const char* GlobalizationNative_GetICUDTName(const char* culture)
-{
-    // Based on https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-
-    // Use full one if culture is null or empty
-    if (!culture || strlen(culture) < 2)
-        return "icudt.dat";
-
-    // CJK: starts with "ja", "ko" or "zh"
-    if (!strncasecmp("ja", culture, 2) ||
-        !strncasecmp("ko", culture, 2) ||
-        !strncasecmp("zh", culture, 2))
-        return "icudt_CJK.dat"; // contains "en" as well.
-
-    // EFIGS
-    const char* efigsCultures[15] = {
-        "en-US", "fr-FR", "es-ES", "it-IT", "de-DE",
-        "en_US", "fr_FR", "es_ES", "it_IT", "de_DE",
-        "en",    "fr",    "es",    "it",    "de"
-    };
-
-    for (int i = 0; i < 15; i++)
-        if (!strcasecmp(culture, efigsCultures[i]))
-            return "icudt_EFIGS.dat";
-
-    // full except CJK cultures
-    return "icudt_no_CJK.dat";
 }
 
 int32_t GlobalizationNative_LoadICU(void)
