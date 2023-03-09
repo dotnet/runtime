@@ -10,7 +10,7 @@ namespace System.Threading
         /// <summary>
         /// The worker thread infastructure for the CLR thread pool.
         /// </summary>
-        private static class WorkerThread
+        private static partial class WorkerThread
         {
             // This value represents an assumption of how much uncommited stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
@@ -99,6 +99,12 @@ namespace System.Threading
                             // the number of working workers to reflect that we are done working for now
                             RemoveWorkingWorker(threadPoolInstance);
                         }
+                    }
+
+                    // The thread cannot exit if it has IO pending, otherwise the IO may be canceled
+                    if (IsIOPending)
+                    {
+                        continue;
                     }
 
                     threadAdjustmentLock.Acquire();

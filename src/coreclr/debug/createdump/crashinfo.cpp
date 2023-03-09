@@ -8,16 +8,16 @@ CrashInfo* g_crashInfo;
 
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
 
-CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal) :
+CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_ref(1),
-    m_pid(pid),
+    m_pid(options.Pid),
     m_ppid(-1),
     m_hdac(nullptr),
     m_pClrDataEnumRegions(nullptr),
     m_pClrDataProcess(nullptr),
-    m_gatherFrames(gatherFrames),
-    m_crashThread(crashThread),
-    m_signal(signal),
+    m_gatherFrames(options.CrashReport),
+    m_crashThread(options.CrashThread),
+    m_signal(options.Signal),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr)
 {
@@ -27,6 +27,11 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
 #else
     m_auxvValues.fill(0);
     m_fd = -1;
+    memset(&m_siginfo, 0, sizeof(m_siginfo));
+    m_siginfo.si_signo = options.Signal;
+    m_siginfo.si_code = options.SignalCode;
+    m_siginfo.si_errno = options.SignalErrno;
+    m_siginfo.si_addr = options.SignalAddress;
 #endif
 }
 
@@ -214,8 +219,6 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     {
         return false;
     }
-    // Join all adjacent memory regions
-    CombineMemoryRegions();
     return true;
 }
 
