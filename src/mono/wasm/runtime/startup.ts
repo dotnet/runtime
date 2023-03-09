@@ -350,7 +350,9 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
         await _apply_configuration_from_args();
         mono_wasm_globalization_init();
 
-        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
+        if (!config.startupMemoryCache || !runtimeHelpers.loadMemorySnapshot) {
+            if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
+        }
         if (config.startupMemoryCache && !runtimeHelpers.loadMemorySnapshot) {
             await storeMemorySnapshot(Module.HEAP8.buffer);
             runtimeHelpers.storeMemorySnapshotPending = false;
