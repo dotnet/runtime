@@ -24,6 +24,14 @@ echo XHARNESS_CLI_PATH=$XHARNESS_CLI_PATH
 
 echo "User:" && whoami
 echo "Session ID:" && cat /proc/self/sessionid && echo ""
+echo "Info about /"
+ls -lad /
+echo "Info about /tmp/"
+ls -lad /tmp/
+echo "Info about /tmp/.dotnet/"
+ls -lad /tmp/.dotnet/
+echo "Contents of /tmp/.dotnet/"
+ls -la /tmp/.dotnet/
 echo "Contents of /tmp/.dotnet/shm/"
 ls -la /tmp/.dotnet/shm/
 
