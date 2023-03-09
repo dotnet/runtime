@@ -9587,7 +9587,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgSetStmtSeq(s2);
 
     // Update the flow.
-    m_comp->fgRemoveAllRefPreds(m_b1->bbJumpDest, m_b1);
+    m_comp->fgRemoveRefPred(m_b1->bbJumpDest, m_b1);
     m_b1->bbJumpKind = BBJ_NONE;
 
     // Fixup flags.
