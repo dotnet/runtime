@@ -9,7 +9,7 @@
     <CompilerGeneratedFilesOutputPath>$(IntermediateOutputPath)</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\UnityEmbeddedHost.Generator\UnityEmbeddedHost.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\UnityEmbedHost.Generator\UnityEmbedHost.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

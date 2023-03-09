@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unity-embed-host", "unity-e
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "forwarder-test", "forwarder-test\forwarder-test.csproj", "{E64EA1ED-731D-4391-86A2-764487F0D8AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityEmbeddedHost.Generator", "UnityEmbeddedHost.Generator\UnityEmbeddedHost.Generator.csproj", "{2D9A1C12-9323-428E-BBC8-BFF177325D00}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityEmbedHost.Generator", "UnityEmbedHost.Generator\UnityEmbedHost.Generator.csproj", "{2D9A1C12-9323-428E-BBC8-BFF177325D00}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
