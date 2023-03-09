@@ -809,6 +809,9 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		} else {
 			g_async_safe_printf ("\t%p - %s : %s\n", ip, fname, sname);
 		}
+		char *method_name = mono_pmip_u (ip);
+		if (method_name)
+			g_async_safe_printf ("\t\t%p - %s\n", ip, method_name);
 	}
 
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && ((!defined(HOST_DARWIN) && defined(SYS_fork)) || HAVE_FORK)
