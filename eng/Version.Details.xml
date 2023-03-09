@@ -85,18 +85,18 @@
       <Sha>b126490cd618d6066ed44e0369b4585e845cf9ab</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-preview.3" Version="8.0.0-preview.3.23128.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-preview.3" Version="8.0.0-preview.3.23159.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>9caae336ae0eade717689fa3b75f23de226811f4</Sha>
+      <Sha>2552272b2e678e92cff067653709f93ab52f5f39</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-8.0.100-preview.3" Version="8.0.0-preview.3.23128.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-8.0.100-preview.3" Version="8.0.0-preview.3.23159.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>9caae336ae0eade717689fa3b75f23de226811f4</Sha>
+      <Sha>2552272b2e678e92cff067653709f93ab52f5f39</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-8.0.100-preview.3" Version="8.0.0-preview.3.23128.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-8.0.100-preview.3" Version="8.0.0-preview.3.23159.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>9caae336ae0eade717689fa3b75f23de226811f4</Sha>
+      <Sha>2552272b2e678e92cff067653709f93ab52f5f39</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
