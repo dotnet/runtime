@@ -51,7 +51,6 @@ export function set_emscripten_entrypoint(
 const initialRuntimeHelpers: Partial<RuntimeHelpers> =
 {
     javaScriptExports: {} as any,
-    mono_wasm_load_runtime_done: false,
     mono_wasm_bindings_is_ready: false,
     maxParallelDownloads: 16,
     enableDownloadRetry: true,

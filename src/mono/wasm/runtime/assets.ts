@@ -114,7 +114,7 @@ export async function mono_download_assets(): Promise<void> {
         await memorySnapshotSkippedOrDone.promise;
 
         // start fetching and assets in parallel, only if memory snapshot is not available
-        if (!runtimeHelpers.loadMemorySnapshot) {
+        if (!runtimeHelpers.loadedMemorySnapshot) {
             for (const asset of afterSnapshotAssets) {
                 countAndStartDownload(asset);
             }
@@ -135,8 +135,10 @@ export async function mono_download_assets(): Promise<void> {
                         asset.pendingDownload = null as any; // GC
                         asset.buffer = null as any; // GC
 
+                        // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
+                        await memorySnapshotSkippedOrDone.promise;
                         await beforeOnRuntimeInitialized.promise;
-                        // this is after onRuntimeInitialized
+
                         _instantiate_asset(asset, url, data);
                     }
                 } else {

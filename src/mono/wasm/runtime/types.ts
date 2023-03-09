@@ -213,7 +213,6 @@ export type RuntimeHelpers = {
     runtime_interop_exports_class: MonoClass;
 
     _i52_error_scratch_buffer: Int32Ptr;
-    mono_wasm_load_runtime_done: boolean;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
     mono_wasm_symbols_are_ready: boolean;
@@ -233,7 +232,7 @@ export type RuntimeHelpers = {
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
     loadedFiles: string[],
-    loadMemorySnapshot: boolean,
+    loadedMemorySnapshot: boolean,
     storeMemorySnapshotPending: boolean,
     subtle: SubtleCrypto | null,
     preferredIcuAsset: string | null,

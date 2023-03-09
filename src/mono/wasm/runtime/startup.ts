@@ -236,8 +236,23 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
     beforeOnRuntimeInitialized.promise_control.resolve();
     try {
         await wait_for_all_assets();
-        // load runtime
-        await mono_wasm_before_user_runtime_initialized();
+
+        // load runtime and apply environment settings (if necessary)
+        await mono_wasm_before_memory_snapshot();
+
+        if (MonoWasmThreads) {
+            await instantiateWasmPThreadWorkerPool();
+            await mono_wasm_init_diagnostics();
+        }
+
+        bindings_init();
+        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
+        if (!runtimeHelpers.mono_wasm_symbols_are_ready) readSymbolMapFile("dotnet.js.symbols");
+
+        setTimeout(() => {
+            // when there are free CPU cycles
+            string_decoder.init_fields();
+        });
 
         // call user code
         try {
@@ -265,6 +280,11 @@ async function postRunAsync(userpostRun: (() => void)[]) {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: postRunAsync");
     try {
         const mark = startMeasure();
+
+        // create /usr/share folder which is SpecialFolder.CommonApplicationData
+        Module["FS_createPath"]("/", "usr", true, true);
+        Module["FS_createPath"]("/", "usr/share", true, true);
+
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.postRun);
@@ -343,35 +363,37 @@ async function mono_wasm_pre_init_full(): Promise<void> {
     Module.removeRunDependency("mono_wasm_pre_init_full");
 }
 
-async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
-    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_before_user_runtime_initialized");
+async function mono_wasm_before_memory_snapshot() {
+    if (runtimeHelpers.loadedMemorySnapshot) {
+        // all things below are loaded from the snapshot
+        return;
+    }
 
-    try {
-        await _apply_configuration_from_args();
-        mono_wasm_globalization_init();
+    for (const k in config.environmentVariables) {
+        const v = config.environmentVariables![k];
+        if (typeof (v) === "string")
+            mono_wasm_setenv(k, v);
+        else
+            throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
+    }
 
-        if (!config.startupMemoryCache || !runtimeHelpers.loadMemorySnapshot) {
-            if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
-        }
-        if (config.startupMemoryCache && !runtimeHelpers.loadMemorySnapshot) {
-            await storeMemorySnapshot(Module.HEAP8.buffer);
-            runtimeHelpers.storeMemorySnapshotPending = false;
-        }
-        if (MonoWasmThreads) {
-            await instantiateWasmPThreadWorkerPool();
-            await mono_wasm_init_diagnostics();
-        }
-        bindings_init();
-        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
-        if (!runtimeHelpers.mono_wasm_symbols_are_ready) readSymbolMapFile("dotnet.js.symbols");
+    if (config.runtimeOptions)
+        mono_wasm_set_runtime_options(config.runtimeOptions);
 
-        setTimeout(() => {
-            // when there are free CPU cycles
-            string_decoder.init_fields();
-        });
-    } catch (err: any) {
-        _print_error("MONO_WASM: Error in mono_wasm_before_user_runtime_initialized", err);
-        throw err;
+    if (config.aotProfilerOptions)
+        mono_wasm_init_aot_profiler(config.aotProfilerOptions);
+
+    if (config.browserProfilerOptions)
+        mono_wasm_init_browser_profiler(config.browserProfilerOptions);
+
+    mono_wasm_globalization_init();
+
+    mono_wasm_load_runtime("unused", config.debugLevel);
+
+    // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
+    if (config.startupMemoryCache) {
+        await storeMemorySnapshot(Module.HEAP8.buffer);
+        runtimeHelpers.storeMemorySnapshotPending = false;
     }
 }
 
@@ -476,10 +498,10 @@ async function instantiate_wasm_module(
 
         if (config.startupMemoryCache && config.assetsHash) {
             memorySize = await getMemorySnapshotSize();
-            runtimeHelpers.loadMemorySnapshot = !!memorySize;
-            runtimeHelpers.storeMemorySnapshotPending = !runtimeHelpers.loadMemorySnapshot;
+            runtimeHelpers.loadedMemorySnapshot = !!memorySize;
+            runtimeHelpers.storeMemorySnapshotPending = !runtimeHelpers.loadedMemorySnapshot;
         }
-        if (!runtimeHelpers.loadMemorySnapshot) {
+        if (!runtimeHelpers.loadedMemorySnapshot) {
             // we should start downloading DLLs etc as they are not in the snapshot
             memorySnapshotSkippedOrDone.promise_control.resolve();
         }
@@ -494,7 +516,7 @@ async function instantiate_wasm_module(
         assetToLoad.buffer = null as any; // GC
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
 
-        if (runtimeHelpers.loadMemorySnapshot) {
+        if (runtimeHelpers.loadedMemorySnapshot) {
             try {
                 const wasmMemory = (Module.asm?.memory || Module.wasmMemory)!;
 
@@ -509,7 +531,7 @@ async function instantiate_wasm_module(
                 if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Loaded memory from cache");
             } catch (err) {
                 console.warn("MONO_WASM: failed to load memory snapshot", err);
-                runtimeHelpers.loadMemorySnapshot = false;
+                runtimeHelpers.loadedMemorySnapshot = false;
             }
             // now we know if the loading of memory succeeded or not, we can start loading the rest of the assets
             memorySnapshotSkippedOrDone.promise_control.resolve();
@@ -523,46 +545,17 @@ async function instantiate_wasm_module(
     Module.removeRunDependency("instantiate_wasm_module");
 }
 
-async function _apply_configuration_from_args() {
-    // create /usr/share folder which is SpecialFolder.CommonApplicationData
-    Module["FS_createPath"]("/", "usr", true, true);
-    Module["FS_createPath"]("/", "usr/share", true, true);
-
-    for (const k in config.environmentVariables) {
-        const v = config.environmentVariables![k];
-        if (typeof (v) === "string")
-            mono_wasm_setenv(k, v);
-        else
-            throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
-    }
-
-    if (config.runtimeOptions)
-        mono_wasm_set_runtime_options(config.runtimeOptions);
-
-    if (config.aotProfilerOptions)
-        mono_wasm_init_aot_profiler(config.aotProfilerOptions);
-
-    if (config.browserProfilerOptions)
-        mono_wasm_init_browser_profiler(config.browserProfilerOptions);
-}
-
 export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_runtime");
-    if (runtimeHelpers.mono_wasm_load_runtime_done) {
-        return;
-    }
-    runtimeHelpers.mono_wasm_load_runtime_done = true;
     try {
         const mark = startMeasure();
-        if (!runtimeHelpers.loadMemorySnapshot) {
-            if (debugLevel == undefined) {
-                debugLevel = 0;
-                if (config && config.debugLevel) {
-                    debugLevel = 0 + debugLevel;
-                }
+        if (debugLevel == undefined) {
+            debugLevel = 0;
+            if (config && config.debugLevel) {
+                debugLevel = 0 + debugLevel;
             }
-            cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
         }
+        cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
         if (!config.startupMemoryCache) bindings_init();
