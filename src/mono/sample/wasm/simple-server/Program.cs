@@ -11,7 +11,8 @@ namespace HttpServer
     public sealed class Session
     {
         public Task CurrentDelay { get; set; } = Task.CompletedTask;
-        public int InProgress { get; set; } = 0;
+        public int Started { get; set; } = 0;
+        public int Finished { get; set; } = 0;
     }
 
     public sealed class Program
@@ -170,24 +171,31 @@ namespace HttpServer
                     int delayMs = (int)(delaySeconds * 1000);
                     if(session != null)
                     {
+                        Task currentDelay;
+                        int myIndex;
+                        lock(session)
+                        {
+                            currentDelay = session.CurrentDelay;
+                            myIndex = session.Started;
+                            session.Started++;
+                        }
+
                         while (true)
                         {
-                            Task currentDelay;
-                            lock(session)
-                            {
-                                currentDelay = session.CurrentDelay;
-                            }
                             // wait for everybody else to finish in this while loop
                             await currentDelay;
 
                             lock(session)
                             {
-                                // this thread won the opportunity insert delay
-                                if(session.CurrentDelay == currentDelay)
+                                // it's my turn to insert delay for others
+                                if(session.Finished == myIndex)
                                 {
-                                    currentDelay = session.CurrentDelay = Task.Delay(delayMs);
-                                    session.InProgress++;
+                                    session.CurrentDelay = Task.Delay(delayMs);
                                     break;
+                                }
+                                else
+                                {
+                                    currentDelay = session.CurrentDelay;
                                 }
                             }
                         }
@@ -196,8 +204,8 @@ namespace HttpServer
 
                         lock(session)
                         {
-                            session.InProgress--;
-                            if(session.InProgress==0)
+                            session.Finished++;
+                            if(session.Finished == session.Started)
                             {
                                 Sessions.TryRemove(sessionId!, out _);
                             }
