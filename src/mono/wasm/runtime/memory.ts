@@ -170,6 +170,22 @@ export function getU32(offset: MemOffset): number {
     return Module.HEAPU32[<any>offset >>> 2];
 }
 
+export function getI32_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_i32_unaligned(<any>offset);
+}
+
+export function getU32_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_i32_unaligned(<any>offset) >>> 0;
+}
+
+export function getF32_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_f32_unaligned(<any>offset);
+}
+
+export function getF64_unaligned(offset: MemOffset): number {
+    return cwraps.mono_wasm_get_f64_unaligned(<any>offset);
+}
+
 export function getI8(offset: MemOffset): number {
     return Module.HEAP8[<any>offset];
 }
@@ -226,8 +242,8 @@ export function afterUpdateGlobalBufferAndViews(buffer: ArrayBufferLike): void {
 }
 
 export function getCU64(offset: MemOffset): cuint64.CUInt64 {
-    const lo = getU32(offset);
-    const hi = getU32(<any>offset + 4);
+    const lo = getU32_unaligned(offset);
+    const hi = getU32_unaligned(<any>offset + 4);
     return cuint64.pack32(lo, hi);
 }
 

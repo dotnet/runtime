@@ -5,7 +5,7 @@ import { mono_assert, MonoType, MonoMethod } from "./types";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
 import { Module } from "./imports";
 import {
-    getU8, getI32, getU32, setU32_unchecked
+    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
@@ -98,11 +98,11 @@ class TrampolineInfo {
         this.rmethod = rmethod;
         this.catchExceptions = catch_exceptions;
         this.cinfo = cinfo;
-        this.addr = getU32(<any>cinfo + offsetOfAddr);
-        this.wrapper = getU32(<any>cinfo + offsetOfWrapper);
-        this.signature = <any>getU32(<any>cinfo + offsetOfSig);
+        this.addr = getU32_unaligned(<any>cinfo + offsetOfAddr);
+        this.wrapper = getU32_unaligned(<any>cinfo + offsetOfWrapper);
+        this.signature = <any>getU32_unaligned(<any>cinfo + offsetOfSig);
         this.noWrapper = getU8(<any>cinfo + offsetOfNoWrapper) !== 0;
-        this.hasReturnValue = getI32(<any>cinfo + offsetOfRetMt) !== -1;
+        this.hasReturnValue = getI32_unaligned(<any>cinfo + offsetOfRetMt) !== -1;
 
         this.returnType = cwraps.mono_jiterp_get_signature_return_type(this.signature);
         this.paramCount = cwraps.mono_jiterp_get_signature_param_count(this.signature);
@@ -111,13 +111,13 @@ class TrampolineInfo {
         const ptr = cwraps.mono_jiterp_get_signature_params(this.signature);
         this.paramTypes = new Array(this.paramCount);
         for (let i = 0; i < this.paramCount; i++)
-            this.paramTypes[i] = <any>getU32(<any>ptr + (i * 4));
+            this.paramTypes[i] = <any>getU32_unaligned(<any>ptr + (i * 4));
 
         // See initialize_arg_offsets for where this array is built
         const argOffsetCount = this.paramCount + (this.hasThisReference ? 1 : 0);
         this.argOffsets = new Array(this.paramCount);
         for (let i = 0; i < argOffsetCount; i++)
-            this.argOffsets[i] = <any>getU32(<any>arg_offsets + (i * 4));
+            this.argOffsets[i] = <any>getU32_unaligned(<any>arg_offsets + (i * 4));
 
         this.target = this.noWrapper ? this.addr : this.wrapper;
         this.result = 0;
@@ -191,7 +191,7 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
     //  we want to immediately store its pointer into the cinfo, otherwise we add it to
     //  a queue inside the info object so that all the cinfos will get updated once a
     //  jit operation happens
-    const cacheKey = getU32(<any>cinfo + offsetOfAddr),
+    const cacheKey = getU32_unaligned(<any>cinfo + offsetOfAddr),
         existing = targetCache[cacheKey];
     if (existing) {
         if (existing.result > 0)
@@ -678,7 +678,7 @@ function generate_wasm_body (
     for (let i = 0; i < info.paramCount; i++) {
         // FIXME: STACK_ADD_BYTES does alignment, but we probably don't need to?
         const svalOffset = info.argOffsets[stack_index + i];
-        const argInfoOffset = getU32(<any>info.cinfo + offsetOfArgInfo) + i;
+        const argInfoOffset = getU32_unaligned(<any>info.cinfo + offsetOfArgInfo) + i;
         const argInfo = getU8(argInfoOffset);
 
         if (argInfo == JIT_ARG_BYVAL) {

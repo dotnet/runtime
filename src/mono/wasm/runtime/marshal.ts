@@ -3,7 +3,7 @@
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
 import { Module, runtimeHelpers } from "./imports";
-import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
+import { getF32, getF64_unaligned, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot } from "./types";
 import { CharPtr, TypedArray, VoidPtr } from "./types/emscripten";
@@ -23,8 +23,8 @@ export const imported_js_function_symbol = Symbol.for("wasm imported_js_function
  *      arg1: { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
  *      arg2: { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
  *      ...
- *      ] 
- * 
+ *      ]
+ *
  * Layout of the call stack frame buffers is array of JSMarshalerArgument
  * JSMarshalerArguments is pointer to [
  *      exc:  {type:MarshalerType, handle: IntPtr, data: Int64|Ref*|Void* },
@@ -171,7 +171,7 @@ export function get_arg_intptr(arg: JSMarshalerArgument): number {
 export function get_arg_i52(arg: JSMarshalerArgument): number {
     mono_assert(arg, "Null arg");
     // we know that the range check and conversion from Int64 was be done on C# side
-    return getF64(<any>arg);
+    return getF64_unaligned(<any>arg);
 }
 
 export function get_arg_i64_big(arg: JSMarshalerArgument): bigint {
@@ -181,7 +181,7 @@ export function get_arg_i64_big(arg: JSMarshalerArgument): bigint {
 
 export function get_arg_date(arg: JSMarshalerArgument): Date {
     mono_assert(arg, "Null arg");
-    const unixTime = getF64(<any>arg);
+    const unixTime = getF64_unaligned(<any>arg);
     const date = new Date(unixTime);
     return date;
 }
@@ -193,7 +193,7 @@ export function get_arg_f32(arg: JSMarshalerArgument): number {
 
 export function get_arg_f64(arg: JSMarshalerArgument): number {
     mono_assert(arg, "Null arg");
-    return getF64(<any>arg);
+    return getF64_unaligned(<any>arg);
 }
 
 export function set_arg_b8(arg: JSMarshalerArgument, value: boolean): void {
