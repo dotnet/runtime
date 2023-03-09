@@ -117,7 +117,7 @@ public class XUnitLogChecker
         PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
         Console.WriteLine("[XUnitLogChecker]: Log was fixed successfully!");
 
-        var test = new CoreclrTestWrapperLib();
+        // var test = new CoreclrTestWrapperLib();
 
         // Rename the temp log to the final log, so that Helix can use it without
         // knowing what transpired here.
