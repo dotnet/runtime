@@ -290,6 +290,14 @@ async function run() {
             const { dotnet: dry_run, exit: dry_exit, INTERNAL: DRY_INTERNAL } = await loadDotnet('./dotnet.js?dry-run=true');
             mono_exit = dry_exit;
             configureRuntime(dry_run, runArgs, DRY_INTERNAL);
+            // silent minimal startup
+            dry_run.withConfig({
+                forwardConsoleLogsToWS: false,
+                diagnosticTracing: false,
+                appendElementOnExit: false,
+                logExitCode: false,
+                pthreadPoolSize: 0,
+            });
             await dry_run.create();
         }
 

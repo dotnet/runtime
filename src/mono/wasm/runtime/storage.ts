@@ -144,10 +144,23 @@ export async function getInputsHash(): Promise<string | null> {
     // above already has env variables, runtime options, etc
     // above also already has config.assetsHash for this. It has all the asserts (DLLs, ICU, .wasms, etc). 
     // So we could remove assets collectionfrom the hash.
-    inputs.assets = null;
+    delete inputs.assets;
     // some things are calculated at runtime, so we need to add them to the hash
     inputs.preferredIcuAsset = runtimeHelpers.preferredIcuAsset;
     inputs.timezone = runtimeHelpers.timezone;
+    // some things are not relevant for memory snapshot
+    delete inputs.forwardConsoleLogsToWS;
+    delete inputs.diagnosticTracing;
+    delete inputs.appendElementOnExit;
+    delete inputs.logExitCode;
+    delete inputs.pthreadPoolSize;
+    delete inputs.asyncFlushOnExit;
+    delete inputs.assemblyRootFolder;
+    delete inputs.remoteSources;
+    delete inputs.ignorePdbLoadErrors;
+    delete inputs.maxParallelDownloads;
+    delete inputs.enableDownloadRetry;
+
     const inputsJson = JSON.stringify(inputs);
     const sha256Buffer = await runtimeHelpers.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));
     const uint8ViewOfHash = new Uint8Array(sha256Buffer);
