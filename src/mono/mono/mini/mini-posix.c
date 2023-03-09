@@ -80,6 +80,10 @@
 #include "jit-icalls.h"
 #include <glib.h>
 
+#ifdef HAVE_UNWIND_H
+#include <unwind.h>
+#endif
+
 #ifdef HOST_DARWIN
 #include <mach/mach.h>
 #include <mach/mach_time.h>
@@ -774,6 +778,21 @@ fork_crash_safe (void)
 }
 #endif
 
+#ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
+static _Unwind_Reason_Code
+dump_unwind_backtrace (struct _Unwind_Context *frame_ctx, G_GNUC_UNUSED void *state)
+{
+	uintptr_t ip = _Unwind_GetIP (frame_ctx);
+
+	g_async_safe_printf ("\t Frame: %p\n\t\t");
+	mono_print_method_from_ip ((void*)ip);	
+	g_async_safe_printf ("\n");
+
+	return _URC_NO_REASON;
+}
+
+#endif
+
 static void
 dump_native_stacktrace (const char *signal, MonoContext *mctx)
 {
@@ -788,6 +807,13 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		g_async_safe_printf ("\nAn error has occurred in the native fault reporting. Some diagnostic information will be unavailable.\n");
 
 	}
+
+#ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
+	g_async_safe_printf ("\n=================================================================\n");
+	g_async_safe_printf (" _Unwind_Backtrace stacktrace:\n");
+	g_async_safe_printf ("=================================================================\n");
+	_Unwind_Backtrace (dump_unwind_backtrace, NULL);
+#endif
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
 
@@ -809,9 +835,6 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		} else {
 			g_async_safe_printf ("\t%p - %s : %s\n", ip, fname, sname);
 		}
-		char *method_name = mono_pmip_u (ip);
-		if (method_name)
-			g_async_safe_printf ("\t\t%p - %s\n", ip, method_name);
 	}
 
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && ((!defined(HOST_DARWIN) && defined(SYS_fork)) || HAVE_FORK)
