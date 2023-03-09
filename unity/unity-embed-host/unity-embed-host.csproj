@@ -5,6 +5,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>net7.0</TargetFramework>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(IntermediateOutputPath)</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UnityEmbeddedHost.Generator\UnityEmbeddedHost.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 
 </Project>

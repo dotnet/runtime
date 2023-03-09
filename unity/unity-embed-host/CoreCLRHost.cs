@@ -9,7 +9,7 @@ using System.Text;
 namespace Unity.CoreCLRHelpers;
 
 using StringPtr = IntPtr;
-static unsafe class CoreCLRHost
+static unsafe partial class CoreCLRHost
 {
     static ALCWrapper alcWrapper;
     static FieldInfo assemblyHandleField;
@@ -24,14 +24,12 @@ static unsafe class CoreCLRHost
         if (assemblyHandleField == null)
             throw new Exception("Failed to find RuntimeAssembly.m_assembly field.");
 
-        functionStruct->LoadFromMemory = &CallLoadFromAssemblyData;
-        functionStruct->LoadFromPath = &CallLoadFromAssemblyPath;
-        functionStruct->string_from_utf16 = &string_from_utf16;
-        functionStruct->string_new_len = &string_new_len;
-        functionStruct->string_new_utf16 = &string_new_utf16;
+        InitHostStruct(functionStruct);
 
         return 0;
     }
+
+    static partial void InitHostStruct(HostStruct* functionStruct);
 
     [UnmanagedCallersOnly]
     static IntPtr /*Assembly*/ CallLoadFromAssemblyData(byte* data, long size)
