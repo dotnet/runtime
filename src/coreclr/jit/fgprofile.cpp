@@ -90,7 +90,7 @@ bool Compiler::fgHaveSufficientProfileWeights()
                 const weight_t sufficientSamples = 1000;
                 return fgFirstBB->bbWeight > sufficientSamples;
             }
-            
+
             return true;
         }
 
