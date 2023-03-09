@@ -974,8 +974,7 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
-                            couldBeCollectionData = (string.CompareOrdinal(elementName, name) == 0) &&
-                                (string.CompareOrdinal(elementNs, ns) == 0);
+                            couldBeCollectionData = elementName == name && elementNs == ns;
                         }
                     }
                 }

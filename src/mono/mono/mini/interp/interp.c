@@ -66,6 +66,10 @@
 #include "interp-intrins.h"
 #include "tiering.h"
 
+#ifdef INTERP_ENABLE_SIMD
+#include "interp-simd.h"
+#endif
+
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/aot-runtime.h>
@@ -3794,31 +3798,6 @@ max_d (double lhs, double rhs)
 		return fmax (lhs, rhs);
 }
 
-#ifdef HOST_BROWSER
-MONO_ALWAYS_INLINE static ptrdiff_t
-mono_interp_tier_enter_jiterpreter (
-	JiterpreterThunk thunk, InterpFrame *frame, unsigned char *locals, ThreadContext *context,
-	const guint16 *ip
-)
-{
-	// g_assert(thunk);
-	ptrdiff_t offset = thunk(frame, locals);
-	/*
-	* Verify that the offset returned by the thunk is not total garbage
-	* FIXME: These constants might actually be too small since a method
-	*  could have massive amounts of IL - maybe we should disable the jiterpreter
-	*  for methods that big
-	*/
-	// g_assertf((offset >= -0xFFFFF) && (offset <= 0xFFFFF), "thunk returned an obviously invalid offset: %i", offset);
-#ifdef ENABLE_EXPERIMENT_TIERED
-	if (offset < 0) {
-		mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
-	}
-#endif
-	return offset;
-}
-#endif // HOST_BROWSER
-
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -5816,6 +5795,86 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 7;
 			goto call;
 		}
+#ifdef INTERP_ENABLE_SIMD
+		MINT_IN_CASE(MINT_SIMD_V128_LDC) {
+			memcpy (locals + ip [1], ip + 2, SIZEOF_V128);
+			ip += 10;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint8);
+			gint8 res_buffer [num_elements];
+			gint8 *args = (gint8*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint8);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint16);
+			gint16 res_buffer [num_elements];
+			gint16 *args = (gint16*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint16);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint32);
+			gint32 res_buffer [num_elements];
+			gint32 *args = (gint32*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint32);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint64);
+			gint64 res_buffer [num_elements];
+			gint64 *args = (gint64*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint64);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_P)
+			interp_simd_p_p_table [ip [3]] (locals + ip [1], locals + ip [2]);
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PP)
+			interp_simd_p_pp_table [ip [4]] (locals + ip [1], locals + ip [2], locals + ip [3]);
+			ip += 5;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PPP)
+			interp_simd_p_ppp_table [ip [5]] (locals + ip [1], locals + ip [2], locals + ip [3], locals + ip [4]);
+			ip += 6;
+			MINT_IN_BREAK;
+#else
+		MINT_IN_CASE(MINT_SIMD_V128_LDC)
+		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_P)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PP)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PPP)
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
+#endif
+
 		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
 			gpointer ptr = LOCAL_VAR (ip [2], gpointer);
 			int len = LOCAL_VAR (ip [3], gint32);
@@ -7674,9 +7733,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						break;
 					case JITERPRETER_NOT_JITTED:
 						// Patch opcode to disable it because this trace failed to JIT.
-						mono_memory_barrier ();
-						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier ();
+						if (!mono_opt_jiterpreter_estimate_heat) {
+							mono_memory_barrier ();
+							*mutable_ip = MINT_TIER_NOP_JITERPRETER;
+							mono_memory_barrier ();
+						}
 						ip += 3;
 						break;
 					default:
@@ -7696,9 +7757,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						// now execute the trace
 						// this isn't important for performance, but it makes it easier to use the
 						//  jiterpreter early in automated tests where code only runs once
-						offset = mono_interp_tier_enter_jiterpreter (
-							prepare_result, frame, locals, context, ip
-						);
+						offset = prepare_result(frame, locals);
 						ip = (guint16*) (((guint8*)ip) + offset);
 						break;
 				}
@@ -7711,9 +7770,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
 			JiterpreterThunk thunk = (void*)READ32(ip + 1);
-			ptrdiff_t offset = mono_interp_tier_enter_jiterpreter (
-				thunk, frame, locals, context, ip
-			);
+			ptrdiff_t offset = thunk(frame, locals);
 			ip = (guint16*) (((guint8*)ip) + offset);
 			MINT_IN_BREAK;
 		}
@@ -7829,6 +7886,8 @@ interp_parse_options (const char *options)
 				opt = INTERP_OPT_BBLOCKS;
 			else if (strncmp (arg, "tiering", 7) == 0)
 				opt = INTERP_OPT_TIERING;
+			else if (strncmp (arg, "simd", 7) == 0)
+				opt = INTERP_OPT_SIMD;
 			else if (strncmp (arg, "all", 3) == 0)
 				opt = ~INTERP_OPT_NONE;
 

@@ -1743,7 +1743,9 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
 
    1. pLookup->indirections == CORINFO_USEHELPER : Call a helper passing it the
       instantiation-specific handle, and the tokens to lookup the handle.
-   2. pLookup->indirections != CORINFO_USEHELPER :
+   2. pLookup->indirections == CORINFO_USENULL : Pass null. Callee won't dereference
+      the context.
+   3. pLookup->indirections != CORINFO_USEHELPER or CORINFO_USENULL :
       2a. pLookup->testForNull == false : Dereference the instantiation-specific handle
           to get the handle.
       2b. pLookup->testForNull == true : Dereference the instantiation-specific handle.
@@ -1770,6 +1772,13 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 #endif
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
     }
+
+#ifdef FEATURE_READYTORUN
+    if (pRuntimeLookup->indirections == CORINFO_USENULL)
+    {
+        return gtNewIconNode(0, TYP_I_IMPL);
+    }
+#endif
 
     // Slot pointer
     GenTree* slotPtrTree = ctxTree;
@@ -2789,10 +2798,6 @@ typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-    if ((varDsc->TypeGet() == TYP_BLK) || (varDsc->TypeGet() == TYP_LCLBLK))
-    {
-        return typeInfo();
-    }
     if (varDsc->TypeGet() == TYP_BYREF)
     {
         // Pretend all byrefs are pointing to bytes.
@@ -2800,7 +2805,7 @@ typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
     }
     if (varTypeIsStruct(varDsc))
     {
-        return typeInfo(TI_STRUCT, varDsc->GetStructHnd());
+        return typeInfo(TI_STRUCT, varDsc->GetLayout()->GetClassHandle());
     }
 
     return typeInfo(varDsc->TypeGet());
@@ -3116,58 +3121,75 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo)
 {
-    if ((pCallInfo->methodFlags & CORINFO_FLG_EnC) && !(pCallInfo->classFlags & CORINFO_FLG_INTERFACE))
+    const bool isInterface = (pCallInfo->classFlags & CORINFO_FLG_INTERFACE) == CORINFO_FLG_INTERFACE;
+
+    if ((pCallInfo->methodFlags & CORINFO_FLG_EnC) && !isInterface)
     {
         NO_WAY("Virtual call to a function added via EnC is not supported");
     }
+
+    GenTreeCall* call = nullptr;
 
     // NativeAOT generic virtual method
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         GenTree* runtimeMethodHandle =
             impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
-        return gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
+        call = gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
     }
 
 #ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
+    else if (opts.IsReadyToRun())
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
         {
-            GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr);
-
+            call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr);
             call->setEntryPoint(pCallInfo->codePointerLookup.constLookup);
-
-            return call;
         }
-
         // We need a runtime lookup. NativeAOT has a ReadyToRun helper for that too.
-        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
 
-            return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
+            call = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
                                              &pCallInfo->codePointerLookup.lookupKind, ctxTree);
         }
     }
 #endif
 
-    // Get the exact descriptor for the static callsite
-    GenTree* exactTypeDesc = impParentClassTokenToHandle(pResolvedToken);
-    if (exactTypeDesc == nullptr)
-    { // compDonotInline()
-        return nullptr;
+    if (call == nullptr)
+    {
+        // Get the exact descriptor for the static callsite
+        GenTree* exactTypeDesc = impParentClassTokenToHandle(pResolvedToken);
+        if (exactTypeDesc == nullptr)
+        {
+            assert(compIsForInlining());
+            return nullptr;
+        }
+
+        GenTree* exactMethodDesc = impTokenToHandle(pResolvedToken);
+        if (exactMethodDesc == nullptr)
+        {
+            assert(compIsForInlining());
+            return nullptr;
+        }
+
+        // Call helper function.  This gets the target address of the final destination callsite.
+        //
+        call = gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
     }
 
-    GenTree* exactMethodDesc = impTokenToHandle(pResolvedToken);
-    if (exactMethodDesc == nullptr)
-    { // compDonotInline()
-        return nullptr;
+    assert(call != nullptr);
+
+    if (isInterface)
+    {
+        // Annotate helper so later on if helper result is unconsumed we know it is not sound
+        // to optimize the call into a null check.
+        //
+        call->gtCallMoreFlags |= GTF_CALL_M_LDVIRTFTN_INTERFACE;
     }
 
-    // Call helper function.  This gets the target address of the final destination callsite.
-
-    return gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
+    return call;
 }
 
 //------------------------------------------------------------------------
@@ -3782,20 +3804,22 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     GenTree* node;
 
+    unsigned dimensionsSize = pCallInfo->sig.numArgs * sizeof(INT32);
     // Reuse the temp used to pass the array dimensions to avoid bloating
     // the stack frame in case there are multiple calls to multi-dim array
     // constructors within a single method.
     if (lvaNewObjArrayArgs == BAD_VAR_NUM)
     {
-        lvaNewObjArrayArgs                       = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
-        lvaTable[lvaNewObjArrayArgs].lvType      = TYP_BLK;
-        lvaTable[lvaNewObjArrayArgs].lvExactSize = 0;
+        lvaNewObjArrayArgs = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+        lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
     // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
     // for our call to CORINFO_HELP_NEW_MDARR.
-    lvaTable[lvaNewObjArrayArgs].lvExactSize =
-        max(lvaTable[lvaNewObjArrayArgs].lvExactSize, pCallInfo->sig.numArgs * sizeof(INT32));
+    if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize)
+    {
+        lvaTable[lvaNewObjArrayArgs].GrowBlockLayout(typGetBlkLayout(dimensionsSize));
+    }
 
     // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
     // to ensure that the shared lvaNewObjArrayArgs local variable is only ever used to pass arguments
@@ -3955,7 +3979,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                     if (hwAccelerated)
                     {
                         GenTreeVecCon* vec = gtNewVconNode(simdType);
-                        memcpy(&vec->gtSimd32Val, buffer, totalSize);
+                        memcpy(&vec->gtSimdVal, buffer, totalSize);
                         return vec;
                     }
                 }
@@ -5698,7 +5722,6 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
             if (isExact && !isCastClass)
             {
                 JITDUMP("Cast will fail, optimizing to return null\n");
-                GenTree* result = gtNewIconNode(0, TYP_REF);
 
                 // If the cast was fed by a box, we can remove that too.
                 if (op1->IsBoxedValue())
@@ -5707,7 +5730,11 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                     gtTryRemoveBoxUpstreamEffects(op1);
                 }
 
-                return result;
+                if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
+                {
+                    impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                }
+                return gtNewNull();
             }
             else if (isExact)
             {
@@ -5934,8 +5961,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass && !partialExpand)
+    if (isCastClass && !partialExpand && (exactCls == NO_CLASS_HANDLE))
     {
+        // if exactCls is not null we won't have to clone op2 (it will be used only for the fallback)
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
@@ -6356,7 +6384,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             // Block will no longer flow to any of its successors.
             //
-            for (BasicBlock* const succ : block->Succs())
+            for (BasicBlock* const succ : block->Succs(this))
             {
                 // We may have degenerate flow, make sure to fully remove
                 fgRemoveAllRefPreds(succ, block);
@@ -6397,8 +6425,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     int  prefixFlags = 0;
     bool explicitTailCall, constraintCall, readonlyCall;
 
-    typeInfo tiRetVal;
-
     unsigned numArgs = info.compArgsCount;
 
     /* Now process all the opcodes in the block */
@@ -6418,17 +6444,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         impSpillSpecialSideEff();
     }
 
+    CORINFO_RESOLVED_TOKEN constrainedResolvedToken = {};
+
     while (codeAddr < codeEndp)
     {
 #ifdef FEATURE_READYTORUN
         bool usingReadyToRunHelper = false;
 #endif
         CORINFO_RESOLVED_TOKEN resolvedToken;
-        CORINFO_RESOLVED_TOKEN constrainedResolvedToken = {};
         CORINFO_CALL_INFO      callInfo;
         CORINFO_FIELD_INFO     fieldInfo;
 
-        tiRetVal = typeInfo(); // Default type info
+        typeInfo tiRetVal = typeInfo(); // Default type info
 
         //---------------------------------------------------------------------
 
@@ -8228,7 +8255,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1->gtFlags |= (GTF_OVERFLOW | GTF_EXCEPT);
                     }
 
-                    if (op1->gtGetOp1()->OperIsConst() && opts.OptimizationEnabled())
+                    if (op1->gtGetOp1()->OperIsConst())
                     {
                         // Try and fold the introduced cast
                         op1 = gtFoldExprConst(op1);
@@ -9834,7 +9861,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 // If the localloc is not in a loop and its size is a small constant,
-                // create a new local var of TYP_BLK and return its address.
+                // create a new block layout struct local var and return its address.
                 {
                     bool convertedToLocal = false;
 
@@ -9870,13 +9897,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("stackallocLocal"));
                                 JITDUMP("Converting stackalloc of %zd bytes to new local V%02u\n", allocSize,
                                         stackallocAsLocal);
-                                lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
-                                lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
+                                lvaSetStruct(stackallocAsLocal, typGetBlkLayout((unsigned)allocSize), false);
                                 lvaTable[stackallocAsLocal].lvHasLdAddrOp    = true;
                                 lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
-                                op1              = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
-                                op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
-                                convertedToLocal = true;
+                                op1                                          = gtNewLclVarAddrNode(stackallocAsLocal);
+                                convertedToLocal                             = true;
 
                                 if (!this->opts.compDbgEnC)
                                 {
@@ -10585,7 +10610,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto EVAL_APPEND;
 
             case CEE_INITOBJ:
-
+            {
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Class);
@@ -10593,6 +10618,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 lclTyp = JITtype2varType(info.compCompHnd->asCorInfoType(resolvedToken.hClass));
+
+                ClassLayout* layout = nullptr;
+
+                if (lclTyp == TYP_STRUCT)
+                {
+                    layout = typGetObjLayout(resolvedToken.hClass);
+                    lclTyp = layout->GetType();
+                }
+
                 if (lclTyp != TYP_STRUCT)
                 {
                     op2 = gtNewZeroConNode(genActualType(lclTyp));
@@ -10600,10 +10634,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1 = impPopStack().val;
-                op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
+                op1 = gtNewStructVal(layout, op1);
                 op2 = gtNewIconNode(0);
                 op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 goto SPILL_APPEND;
+            }
 
             case CEE_INITBLK:
 
@@ -11081,7 +11116,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             if (!isTailCall && opts.compGcChecks && (info.compRetType == TYP_REF))
             {
                 // DDB 3483  : JIT Stress: early termination of GC ref's life time in exception code path
-                // VSW 440513: Incorrect gcinfo on the return value under COMPlus_JitGCChecks=1 for methods with
+                // VSW 440513: Incorrect gcinfo on the return value under DOTNET_JitGCChecks=1 for methods with
                 // one-return BB.
 
                 assert(op2->gtType == TYP_REF);

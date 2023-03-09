@@ -41,7 +41,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
+		// https://github.com/dotnet/linker/issues/2739 - the discussion there explains why (at least for now) we don't produce
+		// RAF and RDC warnings from the analyzer in these cases.
 		[ExpectedWarning ("IL2026", "--RequiresOnlyThroughReflection--")]
+		[ExpectedWarning ("IL3002", "--RequiresOnlyThroughReflection--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "--RequiresOnlyThroughReflection--", ProducedBy = Tool.NativeAot)]
 		static void TestRequiresOnlyThroughReflection ()
 		{
 			typeof (RequiresAccessedThrough)
@@ -59,6 +63,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--GenericType.RequiresOnlyThroughReflection--")]
+			[ExpectedWarning ("IL3002", "--GenericType.RequiresOnlyThroughReflection--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--GenericType.RequiresOnlyThroughReflection--", ProducedBy = Tool.NativeAot)]
 			public static void Test ()
 			{
 				typeof (AccessedThroughReflectionOnGenericType<T>)
@@ -99,12 +105,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// https://github.com/mono/linker/issues/2116
-			[ExpectedWarning ("IL2026", "--PInvokeReturnType.ctor--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--PInvokeReturnType.ctor--", ProducedBy = Tool.Trimmer)]
 			[DllImport ("nonexistent")]
 			static extern PInvokeReturnType PInvokeReturnsType ();
 
 			// Analyzer doesn't support IL2050 yet
-			[ExpectedWarning ("IL2050", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL2050", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			public static void Test ()
 			{
 				PInvokeReturnsType ();
@@ -129,12 +135,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			static void GenericMethod<T> () where T : new() { }
 
-			// NativeAOT doesnt generate warnings when marking generic constraints
-			// https://github.com/dotnet/runtime/issues/68688
-			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer | ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--", ProducedBy = ProducedBy.Analyzer | ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
+			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void Test<T> () where T : new()
 			{
 				GenericMethod<NewConstraintTestType> ();
@@ -151,12 +155,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
-			// NativeAOT doesnt generate warnings when marking generic constraints
-			// https://github.com/dotnet/runtime/issues/68688
-			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer | ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--", ProducedBy = ProducedBy.Analyzer | ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
+			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void TestNewConstraintOnTypeParameter<T> () where T : new()
 			{
 				_ = new NewConstraintOnTypeParameter<NewConstraintTestType> ();
@@ -165,8 +167,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--AnnotatedMethod--")]
-			[ExpectedWarning ("IL3002", "--AnnotatedMethod--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AnnotatedMethod--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL3002", "--AnnotatedMethod--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--AnnotatedMethod--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void TestNewConstraintOnTypeParameterInAnnotatedMethod ()
 			{
 				AnnotatedMethod ();
@@ -190,8 +192,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("--AnnotatedType--")]
 			class AnnotatedType
 			{
-				[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				public static void Method ()
 				{
 					_ = new NewConstraintOnTypeParameter<NewConstraintTestType> ();
@@ -199,10 +201,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer | ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--", ProducedBy = ProducedBy.Analyzer | ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestType.ctor--")]
+			[ExpectedWarning ("IL2026", "--NewConstraintTestAnnotatedType--")]
+			[ExpectedWarning ("IL3002", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--NewConstraintTestType.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void TestNewConstraintOnTypeParameterOfStaticType<T> () where T : new()
 			{
 				NewConstraintOnTypeParameterOfStaticType<NewConstraintTestType>.DoNothing ();
@@ -222,12 +224,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			// NativeAOT should produce diagnostics when using Func
-			// https://github.com/dotnet/runtime/issues/73321
 			[ExpectedWarning ("IL2026", "--PropertyWithLdToken.get--")]
-			[ExpectedWarning ("IL2026", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL3002", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3050", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2026", "--PropertyWithLdToken.get--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--PropertyWithLdToken.get--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--PropertyWithLdToken.get--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--PropertyWithLdToken.get--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--PropertyWithLdToken.get--", ProducedBy = Tool.NativeAot)]
 			public static void Test ()
 			{
 				Expression<Func<bool>> getter = () => PropertyWithLdToken;

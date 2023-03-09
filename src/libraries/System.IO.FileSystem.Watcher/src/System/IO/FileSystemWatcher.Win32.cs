@@ -218,8 +218,8 @@ namespace System.IO
                     const int ERROR_OPERATION_ABORTED = 995;
                     if (errorCode != ERROR_OPERATION_ABORTED)
                     {
-                        OnError(new ErrorEventArgs(new Win32Exception((int)errorCode)));
                         EnableRaisingEvents = false;
+                        OnError(new ErrorEventArgs(new Win32Exception((int)errorCode)));
                     }
                     return;
                 }

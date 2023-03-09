@@ -10,7 +10,7 @@ namespace System.Threading
         /// <summary>
         /// The worker thread infastructure for the CLR thread pool.
         /// </summary>
-        private static class WorkerThread
+        private static partial class WorkerThread
         {
             private const int SemaphoreSpinCountDefaultBaseline = 70;
 #if !TARGET_ARM64 && !TARGET_ARM && !TARGET_LOONGARCH64
@@ -113,6 +113,12 @@ namespace System.Threading
                             // the number of working workers to reflect that we are done working for now
                             RemoveWorkingWorker(threadPoolInstance);
                         }
+                    }
+
+                    // The thread cannot exit if it has IO pending, otherwise the IO may be canceled
+                    if (IsIOPending)
+                    {
+                        continue;
                     }
 
                     threadAdjustmentLock.Acquire();

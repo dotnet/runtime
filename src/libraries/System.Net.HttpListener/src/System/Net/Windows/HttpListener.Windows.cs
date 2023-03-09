@@ -1625,7 +1625,7 @@ namespace System.Net
                                 &httpResponse,
                                 null,
                                 &DataWritten,
-                                SafeLocalAllocHandle.Zero,
+                                null,
                                 0,
                                 null,
                                 null);

@@ -969,6 +969,7 @@ namespace System.Security.Cryptography
         public virtual byte[] DeriveKeyFromHmac(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[]? hmacKey, byte[]? secretPrepend, byte[]? secretAppend) { throw null; }
         public virtual byte[] DeriveKeyMaterial(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
         public virtual byte[] DeriveKeyTls(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed) { throw null; }
+        public virtual byte[] DeriveRawSecretAgreement(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
         public override void FromXmlString(string xmlString) { }
         public override string ToXmlString(bool includePrivateParameters) { throw null; }
     }
@@ -1873,6 +1874,7 @@ namespace System.Security.Cryptography
         public virtual byte[] ExportRSAPublicKey() { throw null; }
         public string ExportRSAPublicKeyPem() { throw null; }
         public override void FromXmlString(string xmlString) { }
+        public int GetMaxOutputSize() { throw null; }
         protected virtual byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected virtual byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public override void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }

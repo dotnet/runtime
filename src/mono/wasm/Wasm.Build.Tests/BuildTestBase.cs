@@ -30,6 +30,7 @@ namespace Wasm.Build.Tests
     {
         public const string DefaultTargetFramework = "net8.0";
         public const string DefaultTargetFrameworkForBlazor = "net8.0";
+        private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -39,8 +40,13 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
 
+        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        // changing Windows's language programistically is complicated and Node is using OS's language to determine
+        // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
+        // on Linux sharding does not work because we rely on LANG env var to check locale and emcc is overwriting it
+        protected static RunHost s_hostsForOSLocaleSensitiveTests = RunHost.Chrome;
         // FIXME: use an envvar to override this
-        protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
+        protected static int s_defaultPerTestTimeoutMs = s_isWindows ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
@@ -103,25 +109,28 @@ namespace Wasm.Build.Tests
             - aot but no wrapper - check that AppBundle wasn't generated
         */
 
-        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config=null)
+        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config=null, string? extraArgs=null)
         {
+            if (extraArgs == null)
+                extraArgs = string.Empty;
+
             if (config == null)
             {
                 return new IEnumerable<object?>[]
                     {
     #if TEST_DEBUG_CONFIG_ALSO
                         // list of each member data - for Debug+@aot
-                        new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", string.Empty) }.AsEnumerable(),
+                        new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", extraArgs) }.AsEnumerable(),
     #endif
                         // list of each member data - for Release+@aot
-                        new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", string.Empty) }.AsEnumerable()
+                        new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", extraArgs) }.AsEnumerable()
                     }.AsEnumerable();
             }
             else
             {
                 return new IEnumerable<object?>[]
                 {
-                    new object?[] { new BuildArgs("placeholder", config, aot, "placeholder", string.Empty) }.AsEnumerable()
+                    new object?[] { new BuildArgs("placeholder", config, aot, "placeholder", extraArgs) }.AsEnumerable()
                 };
             }
         }
@@ -139,7 +148,8 @@ namespace Wasm.Build.Tests
                                            string targetFramework = DefaultTargetFramework,
                                            string? extraXHarnessMonoArgs = null,
                                            string? extraXHarnessArgs = null,
-                                           string jsRelativePath = "test-main.js")
+                                           string jsRelativePath = "test-main.js",
+                                           string environmentLocale = DefaultEnvironmentLocale)
         {
             buildDir ??= _projectDir;
             envVars ??= new();
@@ -157,16 +167,15 @@ namespace Wasm.Build.Tests
             }
 
             bundleDir ??= Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
-            if (host is RunHost.V8 && OperatingSystem.IsWindows())
+            IHostRunner hostRunner = GetHostRunnerFromRunHost(host);
+            if (!hostRunner.CanRunWBT())
                 throw new InvalidOperationException("Running tests with V8 on windows isn't supported");
 
             // Use wasm-console.log to get the xharness output for non-browser cases
-            (string testCommand, string xharnessArgs, bool useWasmConsoleOutput) = host switch
-            {
-                RunHost.V8     => ("wasm test", $"--js-file={jsRelativePath} --engine=V8 -v trace", true),
-                RunHost.NodeJS => ("wasm test", $"--js-file={jsRelativePath} --engine=NodeJS -v trace", true),
-                _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop", false)
-            };
+            string testCommand = hostRunner.GetTestCommand();
+            XHarnessArgsOptions options = new XHarnessArgsOptions(jsRelativePath, environmentLocale, host);
+            string xharnessArgs = s_isWindows ? hostRunner.GetXharnessArgsWindowsOS(options) : hostRunner.GetXharnessArgsOtherOS(options);
+            bool useWasmConsoleOutput = hostRunner.UseWasmConsoleOutput();
 
             extraXHarnessArgs += " " + xharnessArgs;
 
@@ -336,12 +345,14 @@ namespace Wasm.Build.Tests
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
+                extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>\n";
             }
 
             if (UseWebcil) {
                 extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
             }
+
+            extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
 
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
@@ -378,6 +389,8 @@ namespace Wasm.Build.Tests
                 File.Copy(Path.Combine(AppContext.BaseDirectory,
                                         options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
                             Path.Combine(_projectDir, "test-main.js"));
+
+                File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
             }
             else if (_projectDir is null)
             {
@@ -429,9 +442,11 @@ namespace Wasm.Build.Tests
                                          options.MainJS ?? "test-main.js",
                                          options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
-                                         options.HasIcudt,
+                                         options.GlobalizationMode,
+                                         options.PredefinedIcudt ?? "",
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
-                                         UseWebcil);
+                                         UseWebcil,
+                                         options.IsBrowserProject);
                 }
 
                 if (options.UseCache)
@@ -499,7 +514,15 @@ namespace Wasm.Build.Tests
                 extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
             if (UseWebcil)
                 extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>";
-            AddItemsPropertiesToProject(projectfile, extraProperties);
+
+            // TODO: Can be removed after updated templates propagate in.
+            string extraItems = string.Empty;
+            if (template == "wasmbrowser")
+                extraItems += "<WasmExtraFilesToDeploy Include=\"main.js\" />";
+            else
+                extraItems += "<WasmExtraFilesToDeploy Include=\"main.mjs\" />";
+
+            AddItemsPropertiesToProject(projectfile, extraProperties, extraItems);
 
             return projectfile;
         }
@@ -524,7 +547,7 @@ namespace Wasm.Build.Tests
             if (options.WarnAsError)
                 extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-            var res = BuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
+            var res = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
             _testOutput.WriteLine($"BlazorBuild, options.tfm: {options.TargetFramework}");
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: false, targetFramework: options.TargetFramework);
             AssertBlazorBundle(options.Config,
@@ -537,7 +560,7 @@ namespace Wasm.Build.Tests
 
         protected (CommandResult, string) BlazorPublish(BlazorBuildOptions options, params string[] extraArgs)
         {
-            var res = BuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
+            var res = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: true, targetFramework: options.TargetFramework);
             AssertBlazorBundle(options.Config,
                                isPublish: true,
@@ -552,11 +575,20 @@ namespace Wasm.Build.Tests
 
                 // make sure this assembly gets skipped
                 Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Item1.Output);
+
             }
+
+            string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework, "wasm", "for-build");
+            // Check that we linked only for publish
+            if (options.ExpectRelinkDirWhenPublishing)
+                Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is liokely a test authoring error");
+            else
+                Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets created when relinking during Build");
+
             return res;
         }
 
-        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
+        protected (CommandResult, string) BlazorBuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
         {
             string label = publish ? "publish" : "build";
             _testOutput.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
@@ -633,22 +665,27 @@ namespace Wasm.Build.Tests
                                                    string mainJS,
                                                    bool hasV8Script,
                                                    string targetFramework,
-                                                   bool hasIcudt = true,
+                                                   GlobalizationMode? globalizationMode,
+                                                   string predefinedIcudt = "",
                                                    bool dotnetWasmFromRuntimePack = true,
-                                                   bool useWebcil = true)
+                                                   bool useWebcil = true,
+                                                   bool isBrowserProject = true)
         {
-            AssertFilesExist(bundleDir, new []
+            var filesToExist = new List<string>()
             {
-                "index.html",
                 mainJS,
-                "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
                 "dotnet.js"
-            });
+            };
+
+            if (isBrowserProject)
+                filesToExist.Add("index.html");
+
+            AssertFilesExist(bundleDir, filesToExist);
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
-            AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
+            AssertIcuAssets();
 
             string managedDir = Path.Combine(bundleDir, "managed");
             string bundledMainAppAssembly =
@@ -670,6 +707,53 @@ namespace Wasm.Build.Tests
             }
 
             AssertDotNetWasmJs(bundleDir, fromRuntimePack: dotnetWasmFromRuntimePack, targetFramework);
+
+            void AssertIcuAssets()
+            {
+                bool expectEFIGS = false;
+                bool expectCJK = false;
+                bool expectNOCJK = false;
+                bool expectFULL = false;
+                switch (globalizationMode)
+                {
+                    case GlobalizationMode.Invariant:
+                        break;
+                    case GlobalizationMode.FullIcu:
+                        expectFULL = true;
+                        break;
+                    case GlobalizationMode.PredefinedIcu:
+                        if (string.IsNullOrEmpty(predefinedIcudt))
+                            throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
+                        AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
+                        // predefined ICU name can be identical with the icu files from runtime pack
+                        switch (predefinedIcudt)
+                        {
+                            case "icudt.dat":
+                                expectFULL = true;
+                                break;
+                            case "icudt_EFIGS.dat":
+                                expectEFIGS = true;
+                                break;
+                            case "icudt_CJK.dat":
+                                expectCJK = true;
+                                break;
+                            case "icudt_no_CJK.dat":
+                                expectNOCJK = true;
+                                break;
+                        }
+                        break;
+                    default:
+                        // icu shard chosen based on the locale
+                        expectCJK = true;
+                        expectEFIGS = true;
+                        expectNOCJK = true;
+                        break;
+                }
+                AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
+                AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
+                AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
+                AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+            }
         }
 
         protected static void AssertDotNetWasmJs(string bundleDir, bool fromRuntimePack, string targetFramework)
@@ -693,7 +777,7 @@ namespace Wasm.Build.Tests
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
             => AssertFilesExist(dir, filenames, label, expectToExist: false);
 
-        protected static void AssertFilesExist(string dir, string[] filenames, string? label = null, bool expectToExist=true)
+        protected static void AssertFilesExist(string dir, IEnumerable<string> filenames, string? label = null, bool expectToExist=true)
         {
             string prefix = label != null ? $"{label}: " : string.Empty;
             if (!Directory.Exists(dir))
@@ -850,13 +934,26 @@ namespace Wasm.Build.Tests
             File.WriteAllText(counterRazorPath, oldContent + additionalCode);
         }
 
-        public async Task BlazorRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
+        // Keeping these methods with explicit Build/Publish in the name
+        // so in the test code it is evident which is being run!
+        public Task BlazorRunForBuildWithDotnetRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
+            => BlazorRunTest($"run -c {config} {extraArgs}", _projectDir!, test);
+
+        public Task BlazorRunForPublishWithWebServer(string config, Func<IPage, Task>? test=null, string extraArgs="")
+            => BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files {extraArgs}",
+                             Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(config, forPublish: true), "..")),
+                             test);
+
+        public async Task BlazorRunTest(string runArgs,
+                                        string workingDirectory,
+                                        Func<IPage, Task>? test = null,
+                                        bool detectRuntimeFailures = true)
         {
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!);
+                                        .WithWorkingDirectory(workingDirectory);
 
             await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, $"run -c {config} {extraArgs}", onConsoleMessage: OnConsoleMessage);
+            var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage);
 
             await page.Locator("text=Counter").ClickAsync();
             var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
@@ -874,6 +971,12 @@ namespace Wasm.Build.Tests
                 if (EnvironmentVariables.ShowBuildOutput)
                     Console.WriteLine($"[{msg.Type}] {msg.Text}");
                 _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+
+                if (detectRuntimeFailures)
+                {
+                    if (msg.Text.Contains("[MONO] * Assertion") || msg.Text.Contains("Error: [MONO] "))
+                        throw new XunitException($"Detected a runtime failure at line: {msg.Text}");
+                }
             }
         }
 
@@ -1093,6 +1196,13 @@ namespace Wasm.Build.Tests
                     return 42;
                 }
             }";
+
+        private IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
+        {
+            RunHost.V8 => new V8HostRunner(),
+            RunHost.NodeJS => new NodeJSHostRunner(),
+            _ => new BrowserHostRunner(),
+        };
     }
 
     public record BuildArgs(string ProjectName,
@@ -1106,20 +1216,22 @@ namespace Wasm.Build.Tests
 
     public record BuildProjectOptions
     (
-        Action? InitProject               = null,
-        bool?   DotnetWasmFromRuntimePack = null,
-        bool    HasIcudt                  = true,
-        bool    UseCache                  = true,
-        bool    ExpectSuccess             = true,
-        bool    AssertAppBundle           = true,
-        bool    CreateProject             = true,
-        bool    Publish                   = true,
-        bool    BuildOnlyAfterPublish     = true,
-        bool HasV8Script = true,
-        string? Verbosity                 = null,
-        string? Label                     = null,
-        string? TargetFramework           = null,
-        string? MainJS                    = null,
+        Action?             InitProject               = null,
+        bool?               DotnetWasmFromRuntimePack = null,
+        GlobalizationMode?  GlobalizationMode         = null,
+        string?             PredefinedIcudt           = null,
+        bool                UseCache                  = true,
+        bool                ExpectSuccess             = true,
+        bool                AssertAppBundle           = true,
+        bool                CreateProject             = true,
+        bool                Publish                   = true,
+        bool                BuildOnlyAfterPublish     = true,
+        bool                HasV8Script               = true,
+        string?             Verbosity                 = null,
+        string?             Label                     = null,
+        string?             TargetFramework           = null,
+        string?             MainJS                    = null,
+        bool                IsBrowserProject          = true,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 
@@ -1129,8 +1241,16 @@ namespace Wasm.Build.Tests
         string Config,
         NativeFilesType ExpectedFileType,
         string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
-        bool WarnAsError = true
+        bool WarnAsError = true,
+        bool ExpectRelinkDirWhenPublishing=false
     );
+
+    public enum GlobalizationMode
+    {
+        Invariant,       // no icu
+        FullIcu,         // full icu data: icudt.dat is loaded
+        PredefinedIcu   // user set WasmIcuDataFileName value and we are loading that file
+    };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }

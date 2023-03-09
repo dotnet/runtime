@@ -540,6 +540,7 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif //DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
     OBJECTREF GetManagedClassObject();
 
     OBJECTREF GetManagedClassObjectIfExists()
@@ -552,23 +553,37 @@ public:
         }
         CONTRACTL_END;
 
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedClassObject, &objRet);
-        return objRet;
+        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
+
+        OBJECTREF retVal;
+        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
+            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
+        {
+            return NULL;
+        }
+
+        COMPILER_ASSUME(retVal != NULL);
+        return retVal;
     }
 
     OBJECTREF GetManagedClassObjectFast()
     {
         LIMITED_METHOD_CONTRACT;
 
-        OBJECTREF objRet = NULL;
-        LoaderAllocator::GetHandleValueFast(m_hExposedClassObject, &objRet);
-        return objRet;
-    }    
+        OBJECTREF objRef;
+        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
+        {
+            return FALSE;
+        }
+        COMPILER_ASSUME(objRef != NULL);
+        return objRef;
+    }
+#endif
 
 protected:
-    // Handle back to the internal reflection Type object
-    LOADERHANDLE m_hExposedClassObject;
+    // Non-unloadable context: internal RuntimeType object handle
+    // Unloadable context: slot index in LoaderAllocator's pinned table
+    RUNTIMETYPEHANDLE m_hExposedClassObject;
 
     // Number of arguments
     DWORD m_NumArgs;

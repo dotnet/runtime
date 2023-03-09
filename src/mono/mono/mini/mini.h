@@ -303,15 +303,7 @@ enum {
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
-#ifdef TARGET_ARM64
-/*
- * SIMD is only supported on arm64 when using the LLVM backend. When not using
- * the LLVM backend, treat SIMD datatypes as regular value types.
- */
-#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && COMPILE_LLVM (cfg) && m_class_is_simd_type (klass))
-#else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass) && (COMPILE_LLVM (cfg) || mono_type_size (m_class_get_byval_arg (klass), NULL) == 16))
-#endif
 
 #else
 
@@ -1679,9 +1671,6 @@ typedef struct {
 
 	MonoProfilerCallInstrumentationFlags prof_flags;
 	gboolean prof_coverage;
-
-	/* For deduplication */
-	gboolean skip;
 } MonoCompile;
 
 #define MONO_CFG_PROFILE(cfg, flag) \
@@ -1705,7 +1694,6 @@ typedef enum {
 
 typedef enum {
 	MONO_CFG_USES_SIMD_INTRINSICS = 1 << 0,
-	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1
 } MonoSimdIntrinsicsFlags;
 
 typedef struct {
@@ -2938,11 +2926,13 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
+int mini_primitive_type_size (MonoTypeEnum type);
+MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
+
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
-void        mono_simd_simplify_indirection (MonoCompile *cfg);
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
 MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);

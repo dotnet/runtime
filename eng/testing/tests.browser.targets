@@ -30,6 +30,15 @@
 
     <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetRuntimePackNuGetsToBuild;_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
+    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
+  </PropertyGroup>
+
+  <!-- We expect WASM users to indicate they would like to have bigger download size by adding WasmIncludeFullIcuData, -->
+  <!-- by default we make their icu small by sharding. -->
+  <!-- Trimming test InvariantGlobalizationFalse requires full ICU data. -->
+  <!-- ToDo: edit after https://github.com/dotnet/runtime/issues/82819 is merged -->
+  <PropertyGroup Condition="'$(TestTrimming)' == 'true'">
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
@@ -118,6 +127,11 @@
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
   </PropertyGroup>
+  <ItemGroup Condition="'$(BuildAOTTestsOn)' == 'helix'">
+    <TrimmerRootDescriptor
+      Condition="'$(WasmEnableLegacyJsInterop)' == 'true'"
+      Include="$(MonoProjectRoot)\wasm\build\ILLink.Descriptors.LegacyJsInterop.xml" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
     <WasmBuildOnlyAfterPublish>true</WasmBuildOnlyAfterPublish>
@@ -132,6 +146,8 @@
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
+      <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName> 
+      <WasmMainHtmlPath>$(PublishDir)index.html</WasmMainHtmlPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
 
@@ -148,6 +164,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" />
+      <WasmExtraFilesToDeploy Include="$(WasmMainHtmlPath)" />
+
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" Condition="'$(BuildAOTTestsOnHelix)' == 'true'" />
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
 
@@ -166,6 +185,8 @@
               TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
+
+    <WriteLinesToFile File="$(WasmMainHtmlPath)" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='$(WasmMainJSFileName)'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" Overwrite="True" Condition="!Exists('$(WasmMainHtmlPath)')"/>
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">
@@ -184,6 +205,8 @@
       <_WasmPropertyNames Include="DisableParallelEmccCompile" />
       <_WasmPropertyNames Include="EmccCompileOptimizationFlag" />
       <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
+      <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
+      <_WasmPropertyNames Include="WasmIcuDataFileName" />
     </ItemGroup>
   </Target>
 
@@ -222,17 +245,19 @@
       <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
                             Variant="net7"
-                            Version="$(PackageVersionForWorkloadManifests)" />
+                            Version="$(PackageVersionForWorkloadManifests)"
+                            Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
       <WorkloadIdForTesting Include="wasm-tools-net6"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
                             Variant="net6"
                             Version="$(PackageVersionForWorkloadManifests)"
-                            IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)" />
+                            IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
+                            Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
-      <WorkloadCombinationsToInstall Include="latest"   Variants="latest" />
-      <WorkloadCombinationsToInstall Include="net7"     Variants="net7" />
-      <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" />
+      <WorkloadCombinationsToInstall Include="latest"        Variants="latest" />
+      <WorkloadCombinationsToInstall Include="net7"          Variants="net7" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
+      <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
       <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
       <!--<WorkloadCombinationsToInstall Include="none" />-->
