@@ -134,6 +134,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 else()
     set(NATIVE_LIBS
         coreclr_static
+        createdump_static
 
         System.Globalization.Native-Static
         System.IO.Compression.Native-Static
@@ -142,7 +143,9 @@ else()
         System.Security.Cryptography.Native.OpenSsl-Static
 
         palrt
-        coreclrpal
+        coreclrpal_dac
+        corguids
+        dbgutil
         eventprovider
         nativeresourcestring
     )

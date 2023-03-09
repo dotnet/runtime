@@ -14,6 +14,7 @@ bool
 CreateDump(const CreateDumpOptions& options)
 {
     ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(options);
+    DumpType dumpType = options.DumpType;
     DumpWriter dumpWriter(*crashInfo);
     std::string dumpPath;
     bool result = false;
@@ -42,7 +43,7 @@ CreateDump(const CreateDumpOptions& options)
         goto exit;
     }
     // Gather all the info about the process, threads (registers, etc.) and memory regions
-    if (!crashInfo->GatherCrashInfo(options.MinidumpType))
+    if (!crashInfo->GatherCrashInfo(&dumpType))
     {
         goto exit;
     }
@@ -51,8 +52,8 @@ CreateDump(const CreateDumpOptions& options)
     {
         goto exit;
     }
-    // Write the crash report json file if enabled
-    if (options.CrashReport)
+    // Write the crash report json file if enabled and createdump isn't statically linked into the runtime
+    if (options.CrashReport && !options.SingleFile && !options.NativeAOT)
     {
         CrashReportWriter crashReportWriter(*crashInfo);
         crashReportWriter.WriteCrashReport(dumpPath);
@@ -60,14 +61,14 @@ CreateDump(const CreateDumpOptions& options)
     if (options.CreateDump)
     {
         // Gather all the useful memory regions from the DAC
-        if (!crashInfo->EnumerateMemoryRegionsWithDAC(options.MinidumpType))
+        if (!crashInfo->EnumerateMemoryRegionsWithDAC(dumpType))
         {
             goto exit;
         }
         // Join all adjacent memory regions
         crashInfo->CombineMemoryRegions();
     
-        printf_status("Writing %s to file %s\n", options.DumpType, dumpPath.c_str());
+        printf_status("Writing %s to file %s\n", GetDumpTypeString(dumpType), dumpPath.c_str());
 
         // Write the actual dump file
         if (!dumpWriter.OpenDump(dumpPath.c_str()))

@@ -3,6 +3,9 @@
 
 #include "createdump.h"
 
+typedef BOOL (PALAPI_NOEXPORT *PFN_DLLMAIN)(HINSTANCE, DWORD, LPVOID);      /* entry point of module */
+typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* used to create the HINSTANCE for above DLLMain entry point */
+
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
@@ -12,9 +15,11 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_ref(1),
     m_pid(options.Pid),
     m_ppid(-1),
-    m_hdac(nullptr),
+    m_dacModule(nullptr),
     m_pClrDataEnumRegions(nullptr),
     m_pClrDataProcess(nullptr),
+    m_singleFile(options.SingleFile),
+    m_nativeAOT(options.NativeAOT),
     m_gatherFrames(options.CrashReport),
     m_crashThread(options.CrashThread),
     m_signal(options.Signal),
@@ -30,12 +35,12 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
 #else
     m_auxvValues.fill(0);
     m_fdMem = -1;
+#endif
     memset(&m_siginfo, 0, sizeof(m_siginfo));
     m_siginfo.si_signo = options.Signal;
     m_siginfo.si_code = options.SignalCode;
     m_siginfo.si_errno = options.SignalErrno;
     m_siginfo.si_addr = options.SignalAddress;
-#endif
 }
 
 CrashInfo::~CrashInfo()
@@ -64,10 +69,10 @@ CrashInfo::~CrashInfo()
         m_pClrDataProcess->Release();
     }
     // Unload DAC module
-    if (m_hdac != nullptr)
+    if (m_dacModule != nullptr)
     {
-        FreeLibrary(m_hdac);
-        m_hdac = nullptr;
+        dlclose(m_dacModule);
+        m_dacModule = nullptr;
     }
 #ifdef __APPLE__
     if (m_task != 0)
@@ -145,7 +150,7 @@ CrashInfo::LogMessage(
 // Gather all the necessary crash dump info.
 //
 bool
-CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
+CrashInfo::GatherCrashInfo(DumpType* dumpType)
 {
     // Get the info about the threads (registers, etc.)
     for (ThreadInfo* thread : m_threads)
@@ -204,8 +209,13 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
             region.Trace();
         }
     }
+    // If the DAC module present side-by-side (the default for single-file and native AOT apps), fallback to full dump.
+    if (m_pClrDataProcess == nullptr)
+    {
+        *dumpType = DumpType::Full;
+    }
     // If full memory dump, include everything regardless of permissions
-    if (minidumpType & MiniDumpWithFullMemory)
+    if (*dumpType == DumpType::Full)
     {
         for (const MemoryRegion& region : m_moduleMappings)
         {
@@ -224,7 +234,7 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
     {
         // Add all the heap read/write memory regions (m_otherMappings contains the heaps). On Alpine
         // the heap regions are marked RWX instead of just RW.
-        if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
+        if (*dumpType == DumpType::Heap)
         {
             for (const MemoryRegion& region : m_otherMappings)
             {
@@ -254,18 +264,18 @@ GetHResultString(HRESULT hr)
 {
     switch (hr)
     {
-        case E_FAIL:
-            return "The operation has failed";
-        case E_INVALIDARG:
-            return "Invalid argument";
-        case E_OUTOFMEMORY:
-            return "Out of memory";
-        case CORDBG_E_INCOMPATIBLE_PLATFORMS:
-            return "The operation failed because debuggee and debugger are on incompatible platforms";
-        case CORDBG_E_MISSING_DEBUGGER_EXPORTS:
-            return "The debuggee memory space does not have the expected debugging export table";
-        case CORDBG_E_UNSUPPORTED:
-            return "The specified action is unsupported by this version of the runtime";
+    case E_FAIL:
+        return "The operation has failed";
+    case E_INVALIDARG:
+        return "Invalid argument";
+    case E_OUTOFMEMORY:
+        return "Out of memory";
+    case CORDBG_E_INCOMPATIBLE_PLATFORMS:
+        return "The operation failed because debuggee and debugger are on incompatible platforms";
+    case CORDBG_E_MISSING_DEBUGGER_EXPORTS:
+        return "The debuggee memory space does not have the expected debugging export table";
+    case CORDBG_E_UNSUPPORTED:
+        return "The specified action is unsupported by this version of the runtime";
     }
     return "";
 }
@@ -276,47 +286,77 @@ GetHResultString(HRESULT hr)
 bool
 CrashInfo::InitializeDAC()
 {
+    // Don't attempt to load the DAC if createdump is statically linked into the runtime
+    //if (m_singleFile || m_nativeAOT)
+    if (m_nativeAOT)
+    {
+        return true;
+    }
+    // Can't load the DAC if the runtime wasn't found
+    if (m_coreclrPath.empty())
+    {
+        printf_error("InitializeDAC: coreclr not found; not using DAC\n");
+        return true;
+    }
     ReleaseHolder<DumpDataTarget> dataTarget = new DumpDataTarget(*this);
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
+    PFN_DLLMAIN pfnDllMain = nullptr;
     bool result = false;
     HRESULT hr = S_OK;
 
-    if (!m_coreclrPath.empty())
-    {
-        // We assume that the DAC is in the same location as the libcoreclr.so module
-        std::string dacPath;
-        dacPath.append(m_coreclrPath);
-        dacPath.append(MAKEDLLNAME_A("mscordaccore"));
+    // We assume that the DAC is in the same location as the libcoreclr.so module
+    std::string dacPath;
+    dacPath.append(m_coreclrPath);
+    dacPath.append(MAKEDLLNAME_A("mscordaccore"));
 
-        // Load and initialize the DAC
-        m_hdac = LoadLibraryA(dacPath.c_str());
-        if (m_hdac == nullptr)
+    // Load and initialize the DAC
+    m_dacModule = dlopen(dacPath.c_str(), RTLD_LAZY);
+    if (m_dacModule == nullptr)
+    {
+        // Don't fail for single-file apps when the DAC can't be found. Will fall back to full dump.
+        if (m_singleFile)
         {
-            printf_error("InitializeDAC: LoadLibraryA(%s) FAILED %s\n", dacPath.c_str(), GetLastErrorString().c_str());
+            result = true;
+        }
+        else
+        {
+            printf_error("InitializeDAC: dlopen(%s) FAILED %s\n", dacPath.c_str(), dlerror());
+        }
+        goto exit;
+    }
+    pfnDllMain = (PFN_DLLMAIN)dlsym(m_dacModule, "DllMain");
+    if (pfnDllMain != nullptr)
+    {
+        PFN_REGISTER_MODULE registerModule = (PFN_REGISTER_MODULE)dlsym(m_dacModule, "PAL_RegisterModule");
+        if (registerModule == nullptr)
+        {
+            printf_error("InitializeDAC: PAL_RegisterModule FAILED\n");
             goto exit;
         }
-        pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(m_hdac, "CLRDataCreateInstance");
-        if (pfnCLRDataCreateInstance == nullptr)
+        HINSTANCE hModule = registerModule(dacPath.c_str());
+        if (!pfnDllMain(hModule, DLL_PROCESS_ATTACH, nullptr))
         {
-            printf_error("InitializeDAC: GetProcAddress(CLRDataCreateInstance) FAILED %s\n", GetLastErrorString().c_str());
-            goto exit;
-        }
-        hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
-        if (FAILED(hr))
-        {
-            printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
-            goto exit;
-        }
-        hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
-        if (FAILED(hr))
-        {
-            printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
+            printf_error("InitializeDAC: DllMain(DLL_PROCESS_ATTACH) FAILED\n");
             goto exit;
         }
     }
-    else
+    pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)dlsym(m_dacModule, "CLRDataCreateInstance");
+    if (pfnCLRDataCreateInstance == nullptr)
     {
-        printf_error("InitializeDAC: coreclr not found; not using DAC\n");
+        printf_error("InitializeDAC: GetProcAddress(CLRDataCreateInstance) FAILED %s\n", dlerror());
+        goto exit;
+    }
+    hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
+    if (FAILED(hr))
+    {
+        printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
+        goto exit;
+    }
+    hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
+    if (FAILED(hr))
+    {
+        printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
+        goto exit;
     }
     result = true;
 exit:
@@ -327,9 +367,9 @@ exit:
 // Enumerate all the memory regions using the DAC memory region support given a minidump type
 //
 bool
-CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
+CrashInfo::EnumerateMemoryRegionsWithDAC(DumpType dumpType)
 {
-    if (m_pClrDataEnumRegions != nullptr && (minidumpType & MiniDumpWithFullMemory) == 0)
+    if (m_pClrDataEnumRegions != nullptr && dumpType != DumpType::Full)
     {
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
 
@@ -337,7 +377,8 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
         // low level data structures and adds all the loader allocator heaps instead. The older 'DbgEnableFastHeapDumps'
         // env var didn't generate a complete enough heap dump on Linux and this new path does.
         CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_HEAP2;
-        if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
+        MINIDUMP_TYPE minidumpType = GetMiniDumpType(dumpType);
+        if (dumpType == DumpType::Heap)
         {
             // This is the old fast heap env var for backwards compatibility for VS4Mac.
             CLRConfigNoCache fastHeapDumps = CLRConfigNoCache::Get("DbgEnableFastHeapDumps", /*noprefix*/ false, &getenv);
