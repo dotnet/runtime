@@ -3210,6 +3210,8 @@ private:
     PER_HEAP_FIELD_SINGLE_GC bool no_gc_oom_p;
     PER_HEAP_FIELD_SINGLE_GC heap_segment* saved_loh_segment_no_gc;
 
+    PER_HEAP_FIELD_SINGLE_GC bool maxgen_size_inc_per_heap_p;
+
 #ifdef MULTIPLE_HEAPS
 #ifndef USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;

@@ -2777,6 +2777,7 @@ BOOL        gc_heap::heap_analyze_enabled = FALSE;
 
 #ifndef MULTIPLE_HEAPS
 
+bool gc_heap::maxgen_size_inc_per_heap_p = false;
 alloc_list gc_heap::loh_alloc_list [NUM_LOH_ALIST-1];
 alloc_list gc_heap::gen2_alloc_list[NUM_GEN2_ALIST-1];
 alloc_list gc_heap::poh_alloc_list [NUM_POH_ALIST-1];
@@ -14358,6 +14359,8 @@ gc_heap::init_gc_heap (int h_number)
 
     gen0_allocated_after_gc_p = false;
 
+    maxgen_size_inc_per_heap_p = false;
+
 #ifdef RECORD_LOH_STATE
     loh_state_index = 0;
 #endif //RECORD_LOH_STATE
@@ -20712,11 +20715,21 @@ int gc_heap::generation_to_condemn (int n_initial,
 
             high_memory_load = TRUE;
 
+            BOOL check_fragmentation = TRUE;
+            if (conserve_mem_setting != 0)
+            {
+                // optimization for high memory situations: check fragmentation only if
+                // we are about to do a gen 2 collection anyway or gen 2 grew in the last gen 1.
+                dynamic_data* dd_max = dynamic_data_of (max_generation);
+                bool would_trigger_gen2_p = (n == max_generation) || (((float)dd_new_allocation (dd_max) / (float)dd_desired_allocation (dd_max)) < 0.9);
+                check_fragmentation = (would_trigger_gen2_p || maxgen_size_inc_per_heap_p);
+            }
+
             if (memory_load >= v_high_memory_load_th || low_memory_detected)
             {
                 // TODO: Perhaps in 64-bit we should be estimating gen1's fragmentation as well since
                 // gen1/gen0 may take a lot more memory than gen2.
-                if (!high_fragmentation)
+                if (!high_fragmentation && check_fragmentation)
                 {
                     high_fragmentation = dt_estimate_reclaim_space_p (tuning_deciding_condemned_gen, max_generation);
                 }
@@ -20724,7 +20737,7 @@ int gc_heap::generation_to_condemn (int n_initial,
             }
             else
             {
-                if (!high_fragmentation)
+                if (!high_fragmentation && check_fragmentation)
                 {
                     high_fragmentation = dt_estimate_high_frag_p (tuning_deciding_condemned_gen, max_generation, available_physical);
                 }
@@ -26518,6 +26531,9 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     static BOOL do_mark_steal_p = FALSE;
 #endif //MH_SC_MARK
 
+    if (condemned_gen_number >= (max_generation - 1))
+        maxgen_size_inc_per_heap_p = false;
+
 #ifdef FEATURE_CARD_MARKING_STEALING
     reset_card_marking_enumerators();
 #endif // FEATURE_CARD_MARKING_STEALING
@@ -30291,7 +30307,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             dprintf (1, ("gen2 grew %zd (end seg alloc: %zd, condemned alloc: %zd",
                          growth, end_seg_allocated, condemned_allocated));
 
-            maxgen_size_inc_p = true;
+            maxgen_size_inc_per_heap_p = true;
         }
         else
         {
@@ -30441,6 +30457,19 @@ void gc_heap::plan_phase (int condemned_gen_number)
             }
         }
 #endif //!USE_REGIONS
+        // count number of heaps seeing gen 2 growth
+        int maxgen_size_inc_count = 0;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            if (g_heaps[i]->maxgen_size_inc_per_heap_p)
+            {
+                maxgen_size_inc_count += 1;
+            }
+        }
+        // if it's the majority, set the global flag
+        if (maxgen_size_inc_count > (n_heaps / 2))
+            maxgen_size_inc_p = true;
+
         if (maxgen_size_inc_p && provisional_mode_triggered
 #ifdef BACKGROUND_GC
             && !is_bgc_in_progress()
@@ -30582,6 +30611,9 @@ void gc_heap::plan_phase (int condemned_gen_number)
         rearrange_uoh_segments ();
     }
 #endif //!USE_REGIONS
+
+    maxgen_size_inc_p = maxgen_size_inc_per_heap_p;
+
     if (maxgen_size_inc_p && provisional_mode_triggered
 #ifdef BACKGROUND_GC
         && !is_bgc_in_progress()
@@ -41643,8 +41675,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
             num_heaps = gc_heap::n_heaps;
 #endif // MULTIPLE_HEAPS
 
-            ptrdiff_t reclaim_space = generation_size(max_generation) - generation_plan_size(max_generation);
-
+            ptrdiff_t reclaim_space = fragmentation;
             if((settings.entry_memory_load >= high_memory_load_th) && (settings.entry_memory_load < v_high_memory_load_th))
             {
                 if(reclaim_space > (int64_t)(min_high_fragmentation_threshold (entry_available_physical_mem, num_heaps)))
@@ -43193,6 +43224,11 @@ void gc_heap::background_sweep()
     // a segment that might've been deleted at the beginning of an FGC.
     current_sweep_seg = 0;
 #endif //DOUBLY_LINKED_FL
+
+    // we just finished sweeping and thus created more space in gen 2
+    // so turn off this flag which may have been turned on by a gen 1
+    // collection that occurred before or during this background GC
+    maxgen_size_inc_per_heap_p = false;
 
     enable_preemptive ();
 
