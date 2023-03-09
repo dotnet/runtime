@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal, DotnetModuleInternal } from "./types";
+import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal, DotnetModuleInternal, mono_assert } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -504,6 +504,7 @@ async function instantiate_wasm_module(
 
                 // get the bytes after we re-sized the memory, so that we don't have too much memory in use at the same time
                 const memoryBytes = await getMemorySnapshot();
+                mono_assert(memoryBytes!.byteLength === memorySize!, "MONO_WASM: Loaded memory is not the expected size");
                 Module.HEAP8.set(new Int8Array(memoryBytes!), 0);
                 if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Loaded memory from cache");
             } catch (err) {
