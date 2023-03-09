@@ -6651,7 +6651,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             return exSetFlags;
         }
-        break;
 
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
