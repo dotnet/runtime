@@ -11699,7 +11699,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                         for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
                         {
                             // TODO: If subField is also a struct we might want to inspect its fields too
-                            if (subField->GetOffset() == (DWORD)valueOffset && subField->GetSize() == (UINT)bufferSize &&
+                            if (subField->GetOffset() == (DWORD)valueOffset && sizeof(CORINFO_OBJECT_HANDLE)) == (UINT)bufferSize &&
                                 subField->IsObjRef())
                             {
                                 GCX_COOP();
