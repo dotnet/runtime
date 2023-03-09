@@ -9111,7 +9111,7 @@ private:
     GenTree* optIsBoolComp(OptTestInfo* pOptTest);
     bool        optOptimizeBoolsChkTypeCostCond();
     void        optOptimizeBoolsUpdateTrees();
-    inline bool ConditionIsTest(GenTree* condition, bool* isOptBool);
+    inline bool FindCompareChain(GenTree* condition, bool* isTestCondition);
 };
 
 //-----------------------------------------------------------------------------
@@ -9337,23 +9337,44 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     return true;
 }
 
-inline bool OptBoolsDsc::ConditionIsTest(GenTree* condition, bool* isOptBool)
+//-----------------------------------------------------------------------------
+//  FindCompareChain:  Check if the given condition is a compare chain.
+//
+// Arguments:
+//      condition:        Condition to check.
+//      isTestCondition:  Returns true if condition is a EQ/NE(AND(...),0) but is not a compare chain.
+//
+//  Returns:
+//      true if chain optimization is a compare chain.
+//
+//  Assumptions:
+//      m_b1 and m_b2 are set on entry.
+//
+
+inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 {
     GenTree* condOp1 = condition->gtGetOp1();
     GenTree* condOp2 = condition->gtGetOp2();
 
+    *isTestCondition = false;
+
     if (condition->OperIs(GT_EQ, GT_NE) && condOp2->IsIntegralConst() && condOp2->AsIntCon()->IconValue() == 0 &&
         condOp1->OperIs(GT_AND))
     {
-        if (condOp1->gtGetOp1()->OperIsCompare() && condOp1->gtGetOp2()->OperIsCompare())
+        // Found a test condition. Does it contain a compare chain?
+
+        // Only test that the second operand of AND ends with a compare operation, as this will be
+        // the condition the new link in the chain will connect with.
+        // We are allowing for the first operand of the not be a valid chain, as this would require
+        // a full recursive search through the children.
+        if (condOp1->gtGetOp2()->OperIsCmpCompare())
         {
-            // Found chained conditions previously optimized via optimize bools.
-            *isOptBool = true;
-            return false;
+            return true;
         }
-        // Found a TEST_EQ or TEST_NE equivalent.
-        return true;
+
+        *isTestCondition = true;
     }
+
     return false;
 }
 
@@ -9384,8 +9405,8 @@ inline bool OptBoolsDsc::ConditionIsTest(GenTree* condition, bool* isOptBool)
 //      ------------ BB03, preds={BB01, BB02} succs={BB04}
 //      *  ASG x,y
 //
-//      These operands will be combined into a single AND chain in the first block (with the first
-//      condition inverted).
+//      These operands will be combined into a single AND in the first block (with the first
+//      condition inverted), wrapped by the test condition (NE(...,0)).
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
 //      *  JTRUE
@@ -9422,7 +9443,8 @@ inline bool OptBoolsDsc::ConditionIsTest(GenTree* condition, bool* isOptBool)
 //      iterating through the blocks. For example:
 //          If ( a > b || c == d || e < f ) { x = y; }
 //      The first pass will combine "c == d" and "e < f" into a chain. The second pass will then
-//      combine the "a > b" with the earlier chain, giving:
+//      combine the "a > b" with the earlier chain. Where possible, the new condition is placed
+//      within the test condition (NE(...,0)).
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
 //      *  JTRUE
@@ -9443,6 +9465,10 @@ inline bool OptBoolsDsc::ConditionIsTest(GenTree* condition, bool* isOptBool)
 //
 bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 {
+    if (m_comp->verbose)
+    {
+        JITDUMP("here\n");
+    }
     assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
     m_t3 = nullptr;
 
@@ -9464,11 +9490,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     GenTree* cond2 = m_testInfo2.testTree->gtGetOp1();
 
     // Ensure both conditions are suitable.
-    if (!cond1->OperIsCmpCompare())
-    {
-        return false;
-    }
-    if (!(cond2->OperIsCmpCompare() || cond2->OperIs(GT_AND)))
+    if (!cond1->OperIsCompare() || !cond2->OperIsCompare())
     {
         return false;
     }
@@ -9486,23 +9508,51 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         return false;
     }
 
-    // Avoid cases where the compare will be optimized better later:
-    // * cmp(and(x, y), 0) will be turned into a TEST_ opcode.
-    // * Compares against zero will be optimized with cbz.
-    // Make sure to avoid matching previous optimize bool cases.
-    bool op1IsCondChain = false;
-    bool op2IsCondChain = false;
-    if (ConditionIsTest(cond1, &op1IsCondChain) || ConditionIsTest(cond2, &op2IsCondChain))
+    // Check for previously optimized compare chains.
+    bool op1IsTestCond;
+    bool op2IsTestCond;
+    bool op1IsCondChain = FindCompareChain(cond1, &op1IsTestCond);
+    bool op2IsCondChain = FindCompareChain(cond2, &op2IsTestCond);
+    // Don't support combining multiple chains. Allowing this would give minimal benefit, as
+    // costing checks would disallow most instances.
+    if (op1IsCondChain && op2IsCondChain)
     {
         return false;
     }
 
-    GenTree* newchain = nullptr;
+    // Avoid cases where the compare will be optimized better later:
+    // * cmp(and(x, y), 0) will be turned into a TEST_ opcode.
+    // * Compares against zero will be optimized with cbz.
+    if (op1IsTestCond || op2IsTestCond)
+    {
+        return false;
+    }
 
-    // If a previous optimize bools happened, then reuse the AND operand.
+    // Combining conditions means that all conditions are always fully evaluated.
+    // Put a limit on the max size that can be combined.
+    if (!m_comp->compStressCompile(Compiler::STRESS_OPT_BOOLS_COMPARE_CHAIN_COST, 25))
+    {
+        int op1Cost = cond1->GetCostEx();
+        int op2Cost = cond2->GetCostEx();
+        int maxOp1Cost = op1IsCondChain ? 35 : 7;
+        int maxOp2Cost = op2IsCondChain ? 35 : 7;
+
+        // Cost to allow for chain size of three.
+        if (op1Cost > maxOp1Cost || op2Cost > maxOp2Cost)
+        {
+            JITDUMP("Skipping CompareChainCond that will evaluate conditions unconditionally at costs %d,%d\n",
+                    op1Cost, op2Cost);
+            return false;
+        }
+    }
+
+    GenTree* testcondition = nullptr;
+
+    // If a previous optimize bools happened for op2, then reuse the test condition.
+    // Cannot reuse for op1, as the condition needs reversing.
     if (op2IsCondChain)
     {
-        newchain = cond2;
+        testcondition = cond2;
         cond2    = cond2->gtGetOp1();
     }
 
@@ -9522,20 +9572,20 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     cond2->gtFlags &= ~GTF_RELOP_JMP_USED;
     andconds->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
-    // Add a NE condition onto the front of the AND.
+    // Add a test condition onto the front of the AND (or resuse an exisiting one).
     if (op2IsCondChain)
     {
-        newchain->AsOp()->gtOp1 = andconds;
-        newchain->AsOp()->gtFlags |= (andconds->gtFlags & GTF_ALL_EFFECT);
+        testcondition->AsOp()->gtOp1 = andconds;
+        testcondition->AsOp()->gtFlags |= (andconds->gtFlags & GTF_ALL_EFFECT);
     }
     else
     {
-        newchain = m_comp->gtNewOperNode(GT_NE, TYP_INT, andconds, m_comp->gtNewZeroConNode(TYP_INT));
+        testcondition = m_comp->gtNewOperNode(GT_NE, TYP_INT, andconds, m_comp->gtNewZeroConNode(TYP_INT));
     }
 
     // Wire the chain into the second block
-    m_testInfo2.testTree->AsOp()->gtOp1 = newchain;
-    m_testInfo2.testTree->AsOp()->gtFlags |= (newchain->gtFlags & GTF_ALL_EFFECT);
+    m_testInfo2.testTree->AsOp()->gtOp1 = testcondition;
+    m_testInfo2.testTree->AsOp()->gtFlags |= (testcondition->gtFlags & GTF_ALL_EFFECT);
     m_comp->gtSetEvalOrder(m_testInfo2.testTree);
     m_comp->fgSetStmtSeq(s2);
 
