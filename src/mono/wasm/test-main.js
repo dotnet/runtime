@@ -291,14 +291,15 @@ async function run() {
             mono_exit = dry_exit;
             configureRuntime(dry_run, runArgs, DRY_INTERNAL);
             // silent minimal startup
-            dry_run.withConfig({
-                forwardConsoleLogsToWS: false,
-                diagnosticTracing: false,
-                appendElementOnExit: false,
-                logExitCode: false,
-                pthreadPoolSize: 0,
-            });
-            await dry_run.create();
+            await dry_run.withModuleConfig({
+                onConfigLoaded: (config) => {
+                    config.forwardConsoleLogsToWS = false;
+                    config.diagnosticTracing = false;
+                    config.appendElementOnExit = false;
+                    config.logExitCode = false;
+                    config.pthreadPoolSize = 0;
+                }
+            }).create();
         }
 
         // this is subsequent run with the actual tests. It will use whatever was cached in the previous run. 
