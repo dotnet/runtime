@@ -119,8 +119,8 @@
   #define REG_SCRATCH_FLT          REG_F28
 
   // This is a general register that can be optionally reserved for other purposes during codegen
-  #define REG_OPT_RSVD             REG_T1
-  #define RBM_OPT_RSVD             RBM_T1
+  #define REG_OPT_RSVD             REG_T6
+  #define RBM_OPT_RSVD             RBM_T6
 
   // Where is the exception object on entry to the handler block?
   #define REG_EXCEPTION_OBJECT     REG_A0
@@ -169,8 +169,8 @@
   #define RBM_SECRET_STUB_PARAM     RBM_T2
 
   // R2R indirect call. Use the same registers as VSD
-  #define REG_R2R_INDIRECT_PARAM          REG_T6
-  #define RBM_R2R_INDIRECT_PARAM          RBM_T6
+  #define REG_R2R_INDIRECT_PARAM          REG_T5
+  #define RBM_R2R_INDIRECT_PARAM          RBM_T5
 
   // JMP Indirect call register
   #define REG_INDIRECT_CALL_TARGET_REG    REG_T5

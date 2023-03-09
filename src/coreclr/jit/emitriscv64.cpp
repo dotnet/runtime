@@ -250,7 +250,7 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
 {
     ssize_t imm;
 
-    assert(tmpReg != REG_RA);
+    assert(tmpReg != codeGen->rsGetRsvdReg());
 
     emitAttr size = EA_SIZE(attr);
 
@@ -281,7 +281,7 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
 
     regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
     regNumber reg2 = offs < 0 ? tmpReg : reg3;
-    assert(reg2 != REG_NA && reg2 != REG_RA);
+    assert(reg2 != REG_NA && reg2 != codeGen->rsGetRsvdReg());
 
     // regNumber reg2 = reg3;
     offs = offs < 0 ? -offs - 8 : offs;
@@ -296,13 +296,13 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
         // ssize_t imm2 = imm + imm3;
 
         assert(isValidSimm20((imm + 0x800) >> 12));
-        emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
+        emitIns_R_I(INS_lui, EA_PTRSIZE, codeGen->rsGetRsvdReg(), (imm + 0x800) >> 12);
 
-        emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
+        emitIns_R_R_R(INS_add, EA_PTRSIZE, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), reg2);
         // imm2 = imm2 & 0x7ff;
         // imm  = imm3 ? imm2 - imm3 : imm2;
         imm  = imm & 0xfff;
-        reg2 = REG_RA;
+        reg2 = codeGen->rsGetRsvdReg();
     }
 
     if (tmpReg != REG_NA)
@@ -399,27 +399,27 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         if (ins == INS_lea)
         {
             assert(isValidSimm20((imm + 0x800) >> 12));
-            emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
+            emitIns_R_I(INS_lui, EA_PTRSIZE, codeGen->rsGetRsvdReg(), (imm + 0x800) >> 12);
             ssize_t imm2 = imm & 0xfff;
-            emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_RA, imm2);
+            emitIns_R_R_I(INS_addi, EA_PTRSIZE, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), imm2);
 
             ins  = INS_add;
             code = emitInsCode(ins);
             code |= (code_t)reg1 << 7;
             code |= (code_t)reg2 << 15;
-            code |= (code_t)REG_RA << 20;
+            code |= (code_t)codeGen->rsGetRsvdReg() << 20;
         }
         else
         {
             assert(isValidSimm20((imm + 0x800) >> 12));
-            emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
+            emitIns_R_I(INS_lui, EA_PTRSIZE, codeGen->rsGetRsvdReg(), (imm + 0x800) >> 12);
 
-            emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
+            emitIns_R_R_R(INS_add, EA_PTRSIZE, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), reg2);
 
             ssize_t imm2 = imm & 0xfff;
             code         = emitInsCode(ins);
             code |= (code_t)reg1 << 7;
-            code |= (code_t)REG_RA << 15;
+            code |= (code_t)codeGen->rsGetRsvdReg() << 15;
             code |= (code_t)(imm2 & 0xfff) << 20;
         }
     }
@@ -1398,12 +1398,12 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
 #ifdef DEBUG
         code = emitInsCode(INS_auipc);
-        assert((code | (7 << 7)) == 0x00000397);
+        assert((code | (REG_T2 << 7)) == 0x00000397);
         assert((int)REG_T2 == 7);
         code = emitInsCode(INS_jalr);
         assert(code == 0x00000067);
 #endif
-        emitOutput_Instr(dst, 0x00000067 | (7 << 15) | reg2 << 7);
+        emitOutput_Instr(dst, 0x00000067 | (REG_T2 << 15) | reg2 << 7);
 
         emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_RISCV64_JALR);
     }
@@ -2192,8 +2192,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(INS_auipc);
                 assert(code == 0x00000017);
 #endif
-                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                code            = 0x00000017 | (1 << 7);
+                code            = 0x00000017 | (codeGen->rsGetRsvdReg() << 7);
                 *(code_t*)dstRW = code | ((code_t)((imm + 0x800) & 0xfffff000));
                 dstRW += 4;
 
@@ -2205,15 +2204,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code = emitInsCode(INS_addi);
                     assert(code == 0x00000013);
 #endif
-                    code            = 0x00000013 | (1 << 15);
+                    code            = 0x00000013 | (codeGen->rsGetRsvdReg() << 15);
                     *(code_t*)dstRW = code | ((code_t)(reg1 & 0x1f) << 7) | (((code_t)doff & 0xfff) << 20);
                 }
                 else
                 {
                     code = emitInsCode(ins);
                     code |= (code_t)((reg1 & 0x1f) << 7);
-                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                     code |= (code_t)(doff & 0xfff) << 20;
                     *(code_t*)dstRW = code;
                 }
@@ -2233,22 +2231,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     UINT32 high = imm >> 11;
 
-                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                    code |= (code_t)REG_RA << 7;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
                     code |= (code_t)(((high + 0x800) >> 12) << 12);
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(INS_addi);
-                    code |= (code_t)REG_RA << 7;
-                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                     code |= (code_t)(high & 0xFFF) << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(INS_slli);
-                    code |= (code_t)REG_RA << 7;
-                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                     code |= (code_t)11 << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -2256,7 +2253,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     ins  = INS_addi;
                     code = emitInsCode(INS_addi);
                     code |= (code_t)reg1 << 7;
-                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                     code |= (code_t)doff << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -2268,29 +2265,28 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     doff        = imm & 0x7ff;
                     UINT32 high = imm >> 11;
 
-                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                    code |= (code_t)(REG_RA << 7);
+                    code |= (code_t)(codeGen->rsGetRsvdReg() << 7);
                     code |= (code_t)(((high + 0x800) >> 12) << 12);
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(INS_addi);
-                    code |= (code_t)REG_RA << 7;
-                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                     code |= (code_t)(high & 0xFFF) << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(INS_slli);
-                    code |= (code_t)REG_RA << 7;
-                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 7;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                     code |= (code_t)11 << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(ins);
                     code |= (code_t)(reg1 & 0x1f) << 7;
-                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                     code |= (code_t)doff << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -2336,16 +2332,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert((imm >> (32 + 20)) == 0);
 
                 code = emitInsCode(INS_lui);
-                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                code |= (code_t)REG_RA << 7;
+                code |= (code_t)codeGen->rsGetRsvdReg() << 7;
                 code |= ((code_t)((imm + 0x800) >> 12) & 0xfffff) << 12;
 
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 
                 code = emitInsCode(INS_addi);
-                code |= (code_t)REG_RA << 7;
-                code |= (code_t)REG_RA << 15;
+                code |= (code_t)codeGen->rsGetRsvdReg() << 7;
+                code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                 code |= (code_t)(imm & 0xfff) << 20;
                 *(code_t*)dstRW = code;
                 dstRW += 4;
@@ -2367,7 +2362,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(INS_add);
                 code |= (code_t)reg1 << 7;
                 code |= (code_t)reg1 << 15;
-                code |= (code_t)REG_RA << 20;
+                code |= (code_t)codeGen->rsGetRsvdReg() << 20;
                 *(code_t*)dstRW = code;
             }
 
@@ -2400,8 +2395,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                             if ((-0x1000 <= imm) && (imm < 0x1000))
                             {
                                 code = emitInsCode(INS_xor);
-                                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                                code |= (code_t)REG_RA << 7;
+                                code |= (code_t)codeGen->rsGetRsvdReg() << 7;
                                 code |= (code_t)reg1 << 15;
                                 code |= (code_t)reg2 << 20;
 
@@ -2409,8 +2403,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                                 dstRW += 4;
 
                                 code = emitInsCode(ins);
-                                // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                                code |= (code_t)REG_RA << 15;
+                                code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                                 code |= ((imm >> 11) & 0x1) << 7;
                                 code |= ((imm >> 1) & 0xf) << 8;
                                 code |= ((imm >> 5) & 0x3f) << 25;
@@ -3681,16 +3674,16 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 if (lsl > 0)
                 {
                     // Then load/store dataReg from/to [memBase + index*scale]
-                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                    emitIns_R_R_I(INS_slli, emitActualTypeSize(index->TypeGet()), REG_RA, index->GetRegNum(), lsl);
-                    emitIns_R_R_R(INS_add, addType, REG_RA, memBase->GetRegNum(), REG_RA);
-                    emitIns_R_R_I(ins, attr, dataReg, REG_RA, 0);
+                    emitIns_R_R_I(INS_slli, emitActualTypeSize(index->TypeGet()), codeGen->rsGetRsvdReg(),
+                                  index->GetRegNum(), lsl);
+                    emitIns_R_R_R(INS_add, addType, codeGen->rsGetRsvdReg(), memBase->GetRegNum(),
+                                  codeGen->rsGetRsvdReg());
+                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), 0);
                 }
                 else // no scale
                 {
-                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                    emitIns_R_R_R(INS_add, addType, REG_RA, memBase->GetRegNum(), index->GetRegNum());
-                    emitIns_R_R_I(ins, attr, dataReg, REG_RA, 0);
+                    emitIns_R_R_R(INS_add, addType, codeGen->rsGetRsvdReg(), memBase->GetRegNum(), index->GetRegNum());
+                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), 0);
                 }
             }
         }
@@ -3896,8 +3889,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         if (needCheckOv)
         {
-            // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-            emitIns_R_R_R(INS_or, attr, REG_RA, nonIntReg->GetRegNum(), REG_R0);
+            emitIns_R_R_R(INS_or, attr, codeGen->rsGetRsvdReg(), nonIntReg->GetRegNum(), REG_R0);
         }
 
         emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(), imm);
@@ -3906,11 +3898,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             if (ins == INS_addi || ins == INS_addiw)
             {
-                // A = B + C
+                // AS11 = B + C
                 if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                 {
-                    // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dst->GetRegNum(), nullptr, REG_RA);
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dst->GetRegNum(), nullptr,
+                                                     codeGen->rsGetRsvdReg());
                 }
                 else
                 {
@@ -3918,11 +3910,10 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     {
                         // B > 0 and C > 0, if A < B, goto overflow
                         BasicBlock* tmpLabel = codeGen->genCreateTempLabel();
-                        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_R0, REG_RA);
-                        emitIns_R_R_I(INS_slti, EA_PTRSIZE, REG_RA, dst->GetRegNum(), imm);
+                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_R0, codeGen->rsGetRsvdReg());
+                        emitIns_R_R_I(INS_slti, EA_PTRSIZE, codeGen->rsGetRsvdReg(), dst->GetRegNum(), imm);
 
-                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_RA);
+                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, codeGen->rsGetRsvdReg());
 
                         codeGen->genDefineTempLabel(tmpLabel);
                     }
@@ -3930,11 +3921,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     {
                         // B < 0 and C < 0, if A > B, goto overflow
                         BasicBlock* tmpLabel = codeGen->genCreateTempLabel();
-                        // TODO-RISCV64-Bug?: Set proper temp register instead of RA
-                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_RA, REG_R0);
-                        emitIns_R_R_I(INS_addi, attr, REG_RA, REG_R0, imm);
+                        emitIns_J_cond_la(INS_bge, tmpLabel, codeGen->rsGetRsvdReg(), REG_R0);
+                        emitIns_R_R_I(INS_addi, attr, codeGen->rsGetRsvdReg(), REG_R0, imm);
 
-                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_RA, nullptr, dst->GetRegNum());
+                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, codeGen->rsGetRsvdReg(), nullptr,
+                                                         dst->GetRegNum());
 
                         codeGen->genDefineTempLabel(tmpLabel);
                     }
@@ -3960,38 +3951,38 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             if (needCheckOv)
             {
+                assert(codeGen->rsGetRsvdReg() != dst->GetRegNum());
+                assert(codeGen->rsGetRsvdReg() != src1->GetRegNum());
+                assert(codeGen->rsGetRsvdReg() != src2->GetRegNum());
+
                 assert(REG_RA != dst->GetRegNum());
                 assert(REG_RA != src1->GetRegNum());
                 assert(REG_RA != src2->GetRegNum());
-
-                assert(REG_T6 != dst->GetRegNum());
-                assert(REG_T6 != src1->GetRegNum());
-                assert(REG_T6 != src2->GetRegNum());
 
                 if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                 {
                     if (attr == EA_4BYTE)
                     {
-                        emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, src1->GetRegNum(), 32);
-                        emitIns_R_R_I(INS_slli, EA_8BYTE, REG_T6, src2->GetRegNum(), 32);
-                        emitIns_R_R_R(INS_mulhu, EA_8BYTE, REG_RA, REG_RA, REG_T6);
-                        emitIns_R_R_I(INS_srai, attr, REG_RA, REG_RA, 32);
+                        emitIns_R_R_I(INS_slli, EA_8BYTE, codeGen->rsGetRsvdReg(), src1->GetRegNum(), 32);
+                        emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, src2->GetRegNum(), 32);
+                        emitIns_R_R_R(INS_mulhu, EA_8BYTE, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), REG_RA);
+                        emitIns_R_R_I(INS_srai, attr, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), 32);
                     }
                     else
                     {
-                        emitIns_R_R_R(INS_mulhu, attr, REG_RA, src1->GetRegNum(), src2->GetRegNum());
+                        emitIns_R_R_R(INS_mulhu, attr, codeGen->rsGetRsvdReg(), src1->GetRegNum(), src2->GetRegNum());
                     }
                 }
                 else
                 {
                     if (attr == EA_4BYTE)
                     {
-                        emitIns_R_R_R(INS_mul, EA_8BYTE, REG_RA, src1->GetRegNum(), src2->GetRegNum());
-                        emitIns_R_R_I(INS_srai, attr, REG_RA, REG_RA, 32);
+                        emitIns_R_R_R(INS_mul, EA_8BYTE, codeGen->rsGetRsvdReg(), src1->GetRegNum(), src2->GetRegNum());
+                        emitIns_R_R_I(INS_srai, attr, codeGen->rsGetRsvdReg(), codeGen->rsGetRsvdReg(), 32);
                     }
                     else
                     {
-                        emitIns_R_R_R(INS_mulhu, attr, REG_RA, src1->GetRegNum(), src2->GetRegNum());
+                        emitIns_R_R_R(INS_mulhu, attr, codeGen->rsGetRsvdReg(), src1->GetRegNum(), src2->GetRegNum());
                     }
                 }
             }
@@ -4010,13 +4001,13 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
             if (needCheckOv)
             {
-                assert(REG_RA != dst->GetRegNum());
-                assert(REG_RA != src1->GetRegNum());
-                assert(REG_RA != src2->GetRegNum());
+                assert(codeGen->rsGetRsvdReg() != dst->GetRegNum());
+                assert(codeGen->rsGetRsvdReg() != src1->GetRegNum());
+                assert(codeGen->rsGetRsvdReg() != src2->GetRegNum());
 
                 if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                 {
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_RA);
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, codeGen->rsGetRsvdReg());
                 }
                 else
                 {
@@ -4027,7 +4018,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     size_t imm = (EA_SIZE(attr) == EA_8BYTE) ? 63 : 31;
                     emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai : INS_sraiw, attr, tmpReg, dst->GetRegNum(),
                                   imm);
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_RA, nullptr, tmpReg);
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, codeGen->rsGetRsvdReg(), nullptr, tmpReg);
                 }
             }
         }
@@ -4064,21 +4055,21 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             assert(!varTypeIsFloating(dst));
 
-            assert(REG_RA != dst->GetRegNum());
+            assert(codeGen->rsGetRsvdReg() != dst->GetRegNum());
 
             if (dst->GetRegNum() == regOp1)
             {
-                assert(REG_RA != regOp1);
-                saveOperReg1 = REG_RA;
+                assert(codeGen->rsGetRsvdReg() != regOp1);
+                saveOperReg1 = codeGen->rsGetRsvdReg();
                 saveOperReg2 = regOp2;
-                emitIns_R_R_I(INS_addi, attr, REG_RA, regOp1, 0);
+                emitIns_R_R_I(INS_addi, attr, codeGen->rsGetRsvdReg(), regOp1, 0);
             }
             else if (dst->GetRegNum() == regOp2)
             {
-                assert(REG_RA != regOp2);
+                assert(codeGen->rsGetRsvdReg() != regOp2);
                 saveOperReg1 = regOp1;
-                saveOperReg2 = REG_RA;
-                emitIns_R_R_I(INS_addi, attr, REG_RA, regOp2, 0);
+                saveOperReg2 = codeGen->rsGetRsvdReg();
+                emitIns_R_R_I(INS_addi, attr, codeGen->rsGetRsvdReg(), regOp2, 0);
             }
             else
             {
@@ -4115,8 +4106,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 }
                 else
                 {
-                    // TODO-RISCV64-Bug?: Use T2 for temp use
-                    tempReg1 = REG_T2; // src1->GetSingleTempReg();
+                    tempReg1 = REG_RA; // src1->GetSingleTempReg();
                     tempReg2 = codeGen->rsGetRsvdReg();
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);

@@ -4205,37 +4205,6 @@ void CodeGen::genEnregisterIncomingStackArgs()
                 }
             }
         }
-#elif defined(TARGET_RISCV64)
-        {
-            bool FPbased;
-            int  base = compiler->lvaFrameAddress(varNum, &FPbased);
-
-            if (emitter::isValidSimm12(base))
-            {
-                GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
-            }
-            else
-            {
-                if (tmp_reg == REG_NA)
-                {
-                    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-                    tmp_offset     = base;
-                    // TODO-RISCV64-Bug?: Use RA for temp use
-                    tmp_reg = REG_RA;
-
-                    // TODO-RISCV64-Bug?: Use RA for temp use
-                    GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, base);
-                    // TODO-RISCV64-Bug?: Use RA for temp use
-                    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
-                    GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, -8);
-                }
-                else
-                {
-                    int baseOffset = -(base - tmp_offset) - 8;
-                    GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, baseOffset);
-                }
-            }
-        }
 #else // !TARGET_LOONGARCH64
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
 #endif // !TARGET_LOONGARCH64
@@ -5005,7 +4974,7 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
                          compiler->lvaCachedGenericContextArgOffset(), REG_R21);
 #elif defined(TARGET_RISCV64)
     genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
-                         compiler->lvaCachedGenericContextArgOffset(), REG_RA);
+                         compiler->lvaCachedGenericContextArgOffset(), rsGetRsvdReg());
 #else  // !ARM64 !ARM !LOONGARCH64 !RISCV64
     // mov [ebp-lvaCachedGenericContextArgOffset()], reg
     GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
