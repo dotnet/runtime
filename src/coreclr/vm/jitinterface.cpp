@@ -11693,14 +11693,13 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 if (!field->IsRVA() && field->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
                 {
                     PTR_MethodTable structType = field->GetFieldTypeHandleThrowing().AsMethodTable();
-                    if (structType->ContainsPointers())
+                    if (structType->ContainsPointers() && (UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE))
                     {
                         ApproxFieldDescIterator fieldIterator(structType, ApproxFieldDescIterator::INSTANCE_FIELDS);
                         for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
                         {
                             // TODO: If subField is also a struct we might want to inspect its fields too
-                            if (subField->GetOffset() == (DWORD)valueOffset && sizeof(CORINFO_OBJECT_HANDLE)) == (UINT)bufferSize &&
-                                subField->IsObjRef())
+                            if (subField->GetOffset() == (DWORD)valueOffset && subField->IsObjRef())
                             {
                                 GCX_COOP();
 
