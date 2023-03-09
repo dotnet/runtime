@@ -238,7 +238,7 @@ To build a library's package, simply invoke `dotnet pack` on the src project aft
 
 ```cmd
 build libs
-dotnet.cmd/.sh pack src\libraries\System.Text.Json\src\
+dotnet.cmd pack src\libraries\System.Text.Json\src\
 ```
 
 Same as for `dotnet build` or `dotnet publish`, you can specify the desired configuration via the `-c` flag:
