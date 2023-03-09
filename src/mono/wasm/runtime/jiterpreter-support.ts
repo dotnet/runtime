@@ -918,6 +918,7 @@ class Cfg {
     overheadBytes = 0;
     entryBlob!: CfgBlob;
     blockStack: Array<MintOpcodePtr> = [];
+    dispatchTable = new Map<MintOpcodePtr, number>();
 
     constructor (builder: WasmBuilder) {
         this.builder = builder;
@@ -932,6 +933,7 @@ class Cfg {
         this.ip = this.lastSegmentStartIp = this.builder.base;
         this.lastSegmentEnd = 0;
         this.overheadBytes = 10; // epilogue
+        this.dispatchTable.clear();
     }
 
     // We have a header containing the table of locals and we need to preserve it
@@ -967,7 +969,7 @@ class Cfg {
             ip,
             isBackBranchTarget,
         });
-        this.overheadBytes += 8; // end block + ip + load eip + compare + start block (optimally 7 bytes)
+        this.overheadBytes += 3; // each branch block just costs us a block (2 bytes) and an end
     }
 
     branch (target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
@@ -979,7 +981,9 @@ class Cfg {
             isBackward,
             isConditional,
         });
-        this.overheadBytes += 7; // ip + set local + branch (optimally 6 bytes)
+        this.overheadBytes += 3; // forward branches are a constant br + depth (optimally 2 bytes)
+        if (isBackward)
+            this.overheadBytes += 4; // back branches are more complex
     }
 
     emitBlob (segment: CfgBlob, source: Uint8Array) {
@@ -1003,6 +1007,14 @@ class Cfg {
         // Emit the function header
         this.emitBlob(this.entryBlob, source);
 
+        // We wrap the entire trace in a loop that starts with a dispatch br_table in order to support
+        //  backwards branches.
+        if (this.backBranchTargets) {
+            this.builder.i32_const(0);
+            this.builder.local("disp", WasmOpcode.set_local);
+            this.builder.block(WasmValtype.void, WasmOpcode.loop);
+        }
+
         // We create a block for each of our forward branch targets, which can be used to skip forward to it
         // The block for each target will end *right before* the branch target, so that br <block nesting level>
         //  will skip every opcode before it
@@ -1016,7 +1028,36 @@ class Cfg {
         this.blockStack.sort((lhs, rhs) => <any>lhs - <any>rhs);
         for (let i = 0; i < this.blockStack.length; i++)
             this.builder.block(WasmValtype.void);
-        console.log("blockStack=", this.blockStack);
+
+        const dispatchIp = <MintOpcodePtr><any>0;
+        if (this.backBranchTargets) {
+            // the loop needs to start with a br_table that performs dispatch based on the current value
+            //  of the dispatch index local
+            // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
+            // We wrap it in an additional block so we can have a trap for unexpected disp values
+            this.builder.block(WasmValtype.void);
+            this.builder.block(WasmValtype.void);
+            this.builder.local("disp");
+            this.builder.appendU8(WasmOpcode.br_table);
+            // br_table <number of values starting from 0> <labels for values starting from 0> <default>
+            // we have to assign disp==0 to fallthrough so that we start at the top of the fn body, then
+            //  assign disp values starting from 1 to branch targets
+            this.builder.appendULeb(this.blockStack.length + 1);
+            this.builder.appendULeb(1); // br depth of 1 = skip the unreachable and fall through to the start
+            for (let i = 0; i < this.blockStack.length; i++) {
+                this.dispatchTable.set(this.blockStack[i], i + 1);
+                this.builder.appendULeb(i + 2); // add 2 to the depth because of the double block around it
+            }
+            this.builder.appendULeb(0); // for unrecognized value we br 0, which causes us to trap
+            this.builder.endBlock();
+            this.builder.appendU8(WasmOpcode.unreachable);
+            this.builder.endBlock();
+            // We put a dummy IP at the end of the block stack to represent the dispatch loop
+            // We will use this dummy IP to find the appropriate br depth when restarting the loop later
+            this.blockStack.push(dispatchIp);
+        }
+
+        console.log(`blockStack=${this.blockStack}`);
 
         for (let i = 0; i < this.segments.length; i++) {
             const segment = this.segments[i];
@@ -1027,11 +1068,9 @@ class Cfg {
                     break;
                 }
                 case "branch-block-header": {
-                    // Create a new branch block that conditionally executes depending on the eip local
-                    // FIXME: For methods containing backward branches, we will have one of these compares
-                    //  at the top of the trace and pay the cost of it on every entry even though it will
-                    //  always pass. If we never generate any backward branches during compilation, we should
-                    //  patch it out
+                    // When we reach a branch target, we pop the current block off the stack, because it is used
+                    //  to jump to this instruction pointer. So the result is that when previous code BRs to the
+                    //  current block, it will skip everything remaining in it and resume from segment.ip
                     const indexInStack = this.blockStack.indexOf(segment.ip);
                     mono_assert(indexInStack === 0, () => `expected ${segment.ip} on top of blockStack but found it at index ${indexInStack}, top is ${this.blockStack[0]}`);
                     this.builder.endBlock();
@@ -1039,9 +1078,24 @@ class Cfg {
                     break;
                 }
                 case "branch": {
-                    const indexInStack = this.blockStack.indexOf(segment.target);
+                    const lookupTarget = segment.isBackward ? dispatchIp : segment.target;
+                    let indexInStack = this.blockStack.indexOf(lookupTarget);
+
+                    // Back branches will target the dispatcher loop so we need to update the dispatch index
+                    //  which will be used by the loop dispatch br_table to jump to the correct location
+                    if (segment.isBackward && (indexInStack >= 0)) {
+                        if (this.dispatchTable.has(segment.target)) {
+                            const disp = this.dispatchTable.get(segment.target)!;
+                            console.log(`backward br from ${segment.from} to ${segment.target}: disp=${disp}`);
+                            this.builder.i32_const(disp);
+                            this.builder.local("disp", WasmOpcode.set_local);
+                        } else {
+                            console.log(`br from ${segment.from} to ${segment.target} failed: back branch target not in dispatch table`);
+                            indexInStack = -1;
+                        }
+                    }
+
                     if (indexInStack >= 0) {
-                        // FIXME: Back branches
                         // Conditional branches are nested in an extra block, so the depth is +1
                         const offset = (segment.isConditional ? 1 : 0);
                         this.builder.appendU8(WasmOpcode.br);
@@ -1063,6 +1117,13 @@ class Cfg {
                     // throw new Error(`segment type not implemented: ${segment.type}`);
                     break;
             }
+        }
+
+        // Close the dispatch loop
+        if (this.backBranchTargets) {
+            mono_assert(this.blockStack[0] === <any>0, "expected one zero entry on the block stack for the dispatch loop");
+            this.blockStack.shift();
+            this.builder.endBlock();
         }
 
         mono_assert(this.blockStack.length === 0, () => `expected block stack to be empty at end of function but it was ${this.blockStack}`);

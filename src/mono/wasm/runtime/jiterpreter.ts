@@ -670,7 +670,7 @@ function generate_wasm (
                 name: traceName,
                 export: true,
                 locals: {
-                    "eip": WasmValtype.i32,
+                    "disp": WasmValtype.i32,
                     "temp_ptr": WasmValtype.i32,
                     "cknull_ptr": WasmValtype.i32,
                     "math_lhs32": WasmValtype.i32,
