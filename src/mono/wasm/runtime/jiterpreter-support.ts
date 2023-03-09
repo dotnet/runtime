@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { mono_assert } from "./types";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
 import { Module } from "./imports";
 import { WasmOpcode } from "./jiterpreter-opcodes";
@@ -30,11 +31,32 @@ type FunctionTypeByIndex = [
     returnType: WasmValtype,
 ];
 
+type FunctionInfo = {
+    index: number;
+    name: string;
+    typeName: string;
+    typeIndex: number;
+    locals: { [name: string]: WasmValtype };
+    export: boolean;
+    generator: Function;
+    error: Error | null;
+    blob: Uint8Array | null;
+}
+
+type ImportedFunctionInfo = {
+    index?: number;
+    typeIndex: number;
+    module: string;
+    name: string;
+    friendlyName: string;
+}
+
 export class WasmBuilder {
     stack: Array<BlobBuilder>;
     stackSize!: number;
     inSection!: boolean;
     inFunction!: boolean;
+    allowNullCheckOptimization!: boolean;
     locals = new Map<string, [WasmValtype, number]>();
 
     permanentFunctionTypeCount = 0;
@@ -48,10 +70,12 @@ export class WasmBuilder {
     functionTypesByIndex: { [index: number] : FunctionTypeByIndex } = {};
 
     importedFunctionCount!: number;
-    importedFunctions!: { [name: string] : [
-        index: number, typeIndex: number, unknown: string
-    ] };
-    importsToEmit!: Array<[string, string, number, number]>;
+    importedFunctions!: { [name: string] : ImportedFunctionInfo };
+    nextImportIndex = 0;
+
+    functions: Array<FunctionInfo> = [];
+    estimatedExportBytes = 0;
+
     argumentCount!: number;
     activeBlocks!: number;
     base!: MintOpcodePtr;
@@ -59,6 +83,7 @@ export class WasmBuilder {
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;
     constantSlots: Array<number> = [];
+    backBranchOffsets: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
 
     constructor (constantSlotCount: number) {
@@ -78,9 +103,13 @@ export class WasmBuilder {
         this.functionTypesByShape = Object.create(this.permanentFunctionTypesByShape);
         this.functionTypesByIndex = Object.create(this.permanentFunctionTypesByIndex);
 
+        this.nextImportIndex = 0;
         this.importedFunctionCount = 0;
         this.importedFunctions = {};
-        this.importsToEmit = [];
+
+        this.functions.length = 0;
+        this.estimatedExportBytes = 0;
+
         this.argumentCount = 0;
         this.current.clear();
         this.traceBuf.length = 0;
@@ -90,29 +119,47 @@ export class WasmBuilder {
         this.constantSlots.length = this.options.useConstants ? constantSlotCount : 0;
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
+        this.backBranchOffsets.length = 0;
+
+        this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
 
-    push () {
+    _push () {
         this.stackSize++;
         if (this.stackSize >= this.stack.length)
             this.stack.push(new BlobBuilder());
         this.current.clear();
     }
 
-    pop () {
+    _pop (writeToOutput: boolean) {
         if (this.stackSize <= 1)
             throw new Error("Stack empty");
 
         const current = this.current;
         this.stackSize--;
 
-        this.appendULeb(current.size);
         const av = current.getArrayView();
-        this.appendBytes(av);
+        if (writeToOutput) {
+            this.appendULeb(current.size);
+            this.appendBytes(av);
+            return null;
+        } else
+            return av.slice();
     }
 
+    // HACK: Approximate amount of space we need to generate the full module at present
+    // FIXME: This does not take into account any other functions already generated if they weren't
+    //  emitted into the module immediately
     get bytesGeneratedSoFar () {
-        return this.stack[0].size;
+        return this.stack[0].size +
+            // HACK: A random constant for section headers and padding
+            32 +
+            // mod (2 bytes) name (2-3 bytes) type (1 byte) typeidx (1-2 bytes)
+            (this.importedFunctionCount * 8) +
+            // type index for each function
+            (this.functions.length * 2) +
+            // export entry for each export
+            this.estimatedExportBytes;
     }
 
     get current() {
@@ -139,6 +186,10 @@ export class WasmBuilder {
 
     appendF64 (value: number) {
         return this.current.appendF64(value);
+    }
+
+    appendBoundaryValue (bits: number, sign: number) {
+        return this.current.appendBoundaryValue(bits, sign);
     }
 
     appendULeb (value: number | MintOpcodePtr) {
@@ -190,15 +241,9 @@ export class WasmBuilder {
         }
     }
 
-    ip_const (value: MintOpcodePtr, highBit?: boolean) {
+    ip_const (value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
-        let relativeValue = <any>value - <any>this.base;
-        if (highBit) {
-            // it is impossible to do this in JS as far as i can tell
-            // relativeValue |= 0x80000000;
-            relativeValue += 0xF000000;
-        }
-        this.appendLeb(relativeValue);
+        this.appendLeb(<any>value - <any>this.base);
     }
 
     i52_const (value: number) {
@@ -271,17 +316,23 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    generateImportSection () {
+    _generateImportSection () {
+        const allImports = Object.values(this.importedFunctions);
+        const importsToEmit = allImports.filter(f => f.index !== undefined);
+        importsToEmit.sort((lhs, rhs) => lhs.index! - rhs.index!);
+
         // Import section
         this.beginSection(2);
-        this.appendULeb(1 + this.importsToEmit.length + this.constantSlots.length);
+        this.appendULeb(1 + importsToEmit.length + this.constantSlots.length);
 
-        for (let i = 0; i < this.importsToEmit.length; i++) {
-            const tup = this.importsToEmit[i];
-            this.appendName(tup[0]);
-            this.appendName(tup[1]);
-            this.appendU8(tup[2]);
-            this.appendULeb(tup[3]);
+        // console.log(`referenced ${importsToEmit.length}/${allImports.length} import(s)`);
+        for (let i = 0; i < importsToEmit.length; i++) {
+            const ifi = importsToEmit[i];
+            // console.log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.friendlyName}`);
+            this.appendName(ifi.module);
+            this.appendName(ifi.name);
+            this.appendU8(0x0); // function
+            this.appendU8(ifi.typeIndex);
         }
 
         for (let i = 0; i < this.constantSlots.length; i++) {
@@ -303,33 +354,113 @@ export class WasmBuilder {
 
     defineImportedFunction (
         module: string, name: string, functionTypeName: string,
-        wasmName?: string
-    ) {
-        const index = this.importedFunctionCount++;
+        assumeUsed: boolean, wasmName?: string
+    ) : ImportedFunctionInfo {
         const type = this.functionTypes[functionTypeName];
         if (!type)
             throw new Error("No function type named " + functionTypeName);
         const typeIndex = type[0];
-        this.importedFunctions[name] = [
-            index, typeIndex, type[3]
-        ];
-        this.importsToEmit.push([module, wasmName || name, 0, typeIndex]);
-        return index;
+        const result = this.importedFunctions[name] = {
+            index: assumeUsed ? this.importedFunctionCount++ : undefined,
+            typeIndex,
+            module,
+            name: wasmName || name,
+            friendlyName: name,
+        };
+        return result;
+    }
+
+    defineFunction (
+        options: {
+            type: string,
+            name: string,
+            export: boolean,
+            locals: { [name: string]: WasmValtype }
+        }, generator: Function
+    ) {
+        const rec : FunctionInfo = {
+            index: this.functions.length,
+            name: options.name,
+            typeName: options.type,
+            typeIndex: this.functionTypes[options.type][0],
+            export: options.export,
+            locals: options.locals,
+            generator,
+            error: null,
+            blob: null
+        };
+        this.functions.push(rec);
+        if (rec.export)
+            this.estimatedExportBytes += rec.name.length + 8;
+        return rec;
+    }
+
+    emitImportsAndFunctions () {
+        let exportCount = 0;
+        for (let i = 0; i < this.functions.length; i++) {
+            const func = this.functions[i];
+            if (func.export)
+                exportCount++;
+
+            this.beginFunction(func.typeName, func.locals);
+            try {
+                func.generator();
+            /*
+            } catch (exc) {
+                func.error = <any>exc;
+            */
+            } finally {
+                func.blob = this.endFunction(false);
+            }
+        }
+
+        this._generateImportSection();
+
+        // Function section
+        this.beginSection(3);
+        this.appendULeb(this.functions.length);
+        for (let i = 0; i < this.functions.length; i++)
+            this.appendULeb(this.functions[i].typeIndex);
+
+        // Export section
+        this.beginSection(7);
+        this.appendULeb(exportCount);
+        for (let i = 0; i < this.functions.length; i++) {
+            const func = this.functions[i];
+            if (!func.export)
+                continue;
+            this.appendName(func.name);
+            this.appendU8(0); // func export
+            this.appendULeb(this.importedFunctionCount + i);
+        }
+
+        // Code section
+        this.beginSection(10);
+        this.appendULeb(this.functions.length);
+        for (let i = 0; i < this.functions.length; i++) {
+            const func = this.functions[i];
+            mono_assert(func.blob, () => `expected function ${func.name} to have a body`);
+            this.appendULeb(func.blob.length);
+            this.appendBytes(func.blob);
+        }
+        this.endSection();
     }
 
     callImport (name: string) {
         const func = this.importedFunctions[name];
         if (!func)
             throw new Error("No imported function named " + name);
+        if (func.index === undefined)
+            func.index = this.importedFunctionCount++;
         this.appendU8(WasmOpcode.call);
-        this.appendULeb(func[0]);
+        this.appendULeb(func.index);
     }
 
     beginSection (type: number) {
         if (this.inSection)
-            this.pop();
+            this._pop(true);
         this.appendU8(type);
-        this.push();
+        this._push();
         this.inSection = true;
     }
 
@@ -337,8 +468,8 @@ export class WasmBuilder {
         if (!this.inSection)
             throw new Error("Not in section");
         if (this.inFunction)
-            this.endFunction();
-        this.pop();
+            this.endFunction(true);
+        this._pop(true);
         this.inSection = false;
     }
 
@@ -347,8 +478,8 @@ export class WasmBuilder {
         locals?: {[name: string]: WasmValtype}
     ) {
         if (this.inFunction)
-            this.endFunction();
-        this.push();
+            throw new Error("Already in function");
+        this._push();
 
         const signature = this.functionTypes[type];
         this.locals.clear();
@@ -446,13 +577,14 @@ export class WasmBuilder {
         this.inFunction = true;
     }
 
-    endFunction () {
+    endFunction (writeToOutput: boolean) {
         if (!this.inFunction)
             throw new Error("Not in function");
         if (this.activeBlocks > 0)
             throw new Error(`${this.activeBlocks} unclosed block(s) at end of function`);
-        this.pop();
+        const result = this._pop(writeToOutput);
         this.inFunction = false;
+        return result;
     }
 
     block (type?: WasmValtype, opcode?: WasmOpcode) {
@@ -517,7 +649,7 @@ export class WasmBuilder {
 
     getArrayView (fullCapacity?: boolean) {
         if (this.stackSize > 1)
-            throw new Error("Stack not empty");
+            throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
 
@@ -535,12 +667,15 @@ export class BlobBuilder {
     size: number;
     capacity: number;
     encoder?: TextEncoder;
+    textBuf = new Uint8Array(1024);
 
     constructor () {
         this.capacity = 32000;
         this.buffer = <any>Module._malloc(this.capacity);
         this.size = 0;
         this.clear();
+        if (typeof (TextEncoder) === "function")
+            this.encoder = new TextEncoder();
     }
 
     // It is necessary for you to call this before using the builder so that the DataView
@@ -603,6 +738,17 @@ export class BlobBuilder {
         return result;
     }
 
+    appendBoundaryValue (bits: number, sign: number) {
+        if (this.size + 8 >= this.capacity)
+            throw new Error("Buffer full");
+
+        const bytesWritten = cwraps.mono_jiterp_encode_leb_signed_boundary(<any>(this.buffer + this.size), bits, sign);
+        if (bytesWritten < 1)
+            throw new Error(`Failed to encode ${bits} bit boundary value with sign ${sign}`);
+        this.size += bytesWritten;
+        return bytesWritten;
+    }
+
     appendULeb (value: number) {
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
@@ -636,8 +782,10 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendBytes (bytes: Uint8Array) {
+    appendBytes (bytes: Uint8Array, count?: number) {
         const result = this.size;
+        if (typeof (count) === "number")
+            bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
         const av = this.getArrayView(true);
         av.set(bytes, this.size);
         this.size += bytes.length;
@@ -645,24 +793,34 @@ export class BlobBuilder {
     }
 
     appendName (text: string) {
-        let bytes: any = null;
+        let count = text.length;
+        // TextEncoder overhead is significant for short strings, and lots of our strings
+        //  are single-character import names, so add a fast path for single characters
+        let singleChar = text.length === 1 ? text.charCodeAt(0) : -1;
+        if (singleChar > 0x7F)
+            singleChar = -1;
 
-        if (typeof (TextEncoder) === "function") {
-            if (!this.encoder)
-                this.encoder = new TextEncoder();
-            bytes = this.encoder.encode(text);
-        } else {
-            bytes = new Uint8Array(text.length);
-            for (let i = 0; i < text.length; i++) {
-                const ch = text.charCodeAt(i);
-                if (ch > 0x7F)
-                    throw new Error("Out of range character and no TextEncoder available");
-                else
-                    bytes[i] = ch;
+        // Also don't bother running the encode path for empty strings
+        if (count && (singleChar < 0)) {
+            if (this.encoder) {
+                const temp = this.encoder.encodeInto(text, this.textBuf);
+                count = temp.written || 0;
+            } else {
+                for (let i = 0; i < count; i++) {
+                    const ch = text.charCodeAt(i);
+                    if (ch > 0x7F)
+                        throw new Error("Out of range character and no TextEncoder available");
+                    else
+                        this.textBuf[i] = ch;
+                }
             }
         }
-        this.appendULeb(bytes.length);
-        this.appendBytes(bytes);
+
+        this.appendULeb(count);
+        if (singleChar >= 0)
+            this.appendU8(singleChar);
+        else if (count > 1)
+            this.appendBytes(this.textBuf, count);
     }
 
     getArrayView (fullCapacity?: boolean) {
@@ -696,6 +854,8 @@ export const counters = {
     failures: 0,
     bytesGenerated: 0,
     nullChecksEliminated: 0,
+    backBranchesEmitted: 0,
+    backBranchesNotEmitted: 0,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -912,6 +1072,31 @@ export function recordFailure () : void {
     }
 }
 
+export const enum JiterpMember {
+    VtableInitialized = 0,
+    ArrayData = 1,
+    StringLength = 2,
+    StringData = 3,
+    Imethod = 4,
+    DataItems = 5,
+    Rmethod = 6,
+    SpanLength = 7,
+    SpanData = 8,
+    ArrayLength = 9,
+    BackwardBranchOffsets = 10,
+    BackwardBranchOffsetsCount = 11,
+}
+
+const memberOffsets : { [index: number] : number } = {};
+
+export function getMemberOffset (member: JiterpMember) {
+    const cached = memberOffsets[member];
+    if (cached === undefined)
+        return memberOffsets[member] = cwraps.mono_jiterp_get_member_offset(<any>member);
+    else
+        return cached;
+}
+
 export function getRawCwrap (name: string): Function {
     const result = (<any>Module)["asm"][name];
     if (typeof (result) !== "function")
@@ -945,6 +1130,8 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
+    // Enable performing backward branches without exiting traces
+    noExitBackwardBranches: boolean;
     // Unwrap gsharedvt wrappers when compiling jitcalls if possible
     directJitCalls: boolean;
     eliminateNullChecks: boolean;
@@ -972,6 +1159,7 @@ const optionNames : { [jsName: string] : string } = {
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
     "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
+    "noExitBackwardBranches": "jiterpreter-backward-branches-enabled",
     "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",

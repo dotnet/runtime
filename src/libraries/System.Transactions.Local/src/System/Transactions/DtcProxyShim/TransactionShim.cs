@@ -8,8 +8,8 @@ namespace System.Transactions.DtcProxyShim;
 
 internal sealed class TransactionShim
 {
-    private DtcProxyShimFactory _shimFactory;
-    private TransactionNotifyShim _transactionNotifyShim;
+    private readonly DtcProxyShimFactory _shimFactory;
+    private readonly TransactionNotifyShim _transactionNotifyShim;
 
     internal ITransaction Transaction { get; set; }
 

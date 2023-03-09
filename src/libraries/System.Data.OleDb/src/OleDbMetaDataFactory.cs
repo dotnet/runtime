@@ -13,7 +13,7 @@ namespace System.Data.OleDb
     internal sealed class OleDbMetaDataFactory : DbMetaDataFactory
     { // V1.2.3300
 
-        private struct SchemaRowsetName
+        private readonly struct SchemaRowsetName
         {
             internal SchemaRowsetName(string schemaName, Guid schemaRowset)
             {

@@ -34,7 +34,7 @@ jiterp_preserve_module ();
 
 // HACK: Pass void* so that this header can include safely in files without definition for TransformData
 void
-jiterp_insert_entry_points (void *td);
+jiterp_insert_entry_points (void *imethod, void *td);
 
 // used by the typescript JIT implementation to notify the runtime that it has finished jitting a thunk
 //  for a specific callsite, since it can take a while before it happens
@@ -124,8 +124,11 @@ typedef struct {
 	JiterpEntryDataCache cache;
 } JiterpEntryData;
 
+volatile size_t *
+mono_jiterp_get_polling_required_address (void);
+
 void
-mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip);
+mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip);
 
 void
 mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);

@@ -29,7 +29,7 @@ namespace System.IO.Pipelines
         // Mutable struct! Don't make this readonly
         private BufferSegmentStack _bufferSegmentPool;
 
-        private StreamPipeReaderOptions _options;
+        private readonly StreamPipeReaderOptions _options;
 
         /// <summary>
         /// Creates a new StreamPipeReader.
@@ -262,11 +262,16 @@ namespace System.IO.Pipelines
                             reader._isStreamCompleted = true;
                         }
                     }
-                    catch (OperationCanceledException)
+                    catch (OperationCanceledException ex)
                     {
                         reader.ClearCancellationToken();
 
-                        if (tokenSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            // Simulate an OCE triggered directly by the cancellationToken rather than the InternalTokenSource
+                            throw new OperationCanceledException(ex.Message, ex, cancellationToken);
+                        }
+                        else if (tokenSource.IsCancellationRequested)
                         {
                             // Catch cancellation and translate it into setting isCanceled = true
                             isCanceled = true;
@@ -275,7 +280,6 @@ namespace System.IO.Pipelines
                         {
                             throw;
                         }
-
                     }
 
                     return new ReadResult(reader.GetCurrentReadOnlySequence(), isCanceled, reader._isStreamCompleted);

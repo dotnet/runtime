@@ -1451,6 +1451,9 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         if (CanCastByVarianceToInterfaceOrDelegate(pTargetMT, pVisited))
             return TRUE;
 
+        if (pTargetMT->IsSpecialMarkerTypeForGenericCasting())
+            return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
+
         InterfaceMapIterator it = IterateInterfaceMap();
         while (it.Next())
         {
@@ -1959,6 +1962,10 @@ MethodTable::Debug_DumpDispatchMap()
 NOINLINE BOOL MethodTable::ImplementsInterface(MethodTable *pInterface)
 {
     WRAPPER_NO_CONTRACT;
+
+    if (pInterface->IsSpecialMarkerTypeForGenericCasting())
+        return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
+
     return ImplementsInterfaceInline(pInterface);
 }
 
@@ -1972,6 +1979,9 @@ BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
         PRECONDITION(pInterface->IsInterface()); // class we are looking up should be an interface
     }
     CONTRACTL_END;
+
+    if (pInterface->IsSpecialMarkerTypeForGenericCasting())
+        return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
 
     // look for exact match first (optimize for success)
     if (ImplementsInterfaceInline(pInterface))
@@ -8259,23 +8269,24 @@ MethodTable::ResolveVirtualStaticMethod(
                         }
                     }
                 }
+            }
 
-                BOOL haveUniqueDefaultImplementation = pMT->FindDefaultInterfaceImplementation(
-                    pInterfaceMD,
-                    pInterfaceType,
-                    &pMD,
-                    /* allowVariance */ allowVariantMatches,
-                    /* throwOnConflict */ uniqueResolution == nullptr,
-                    level);
-                if (haveUniqueDefaultImplementation || (pMD != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+            MethodDesc *pMDDefaultImpl = nullptr;
+            BOOL haveUniqueDefaultImplementation = FindDefaultInterfaceImplementation(
+                pInterfaceMD,
+                pInterfaceType,
+                &pMDDefaultImpl,
+                /* allowVariance */ allowVariantMatches,
+                /* throwOnConflict */ uniqueResolution == nullptr,
+                level);
+            if (haveUniqueDefaultImplementation || (pMDDefaultImpl != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+            {
+                // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
+                if (uniqueResolution != nullptr)
                 {
-                    // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
-                    if (uniqueResolution != nullptr)
-                    {
-                        *uniqueResolution = haveUniqueDefaultImplementation;
-                    }
-                    return pMD;
+                    *uniqueResolution = haveUniqueDefaultImplementation;
                 }
+                return pMDDefaultImpl;
             }
         }
 
@@ -8513,6 +8524,7 @@ MethodTable::TryResolveConstraintMethodApprox(
             &uniqueResolution);
         if (result == NULL || !uniqueResolution)
         {
+            _ASSERTE(pfForceUseRuntimeLookup != NULL);
             *pfForceUseRuntimeLookup = TRUE;
             result = NULL;
         }

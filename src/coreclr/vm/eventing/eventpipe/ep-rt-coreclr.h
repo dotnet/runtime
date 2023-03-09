@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // Implementation of ep-rt.h targeting CoreCLR runtime.
 #ifndef __EVENTPIPE_RT_CORECLR_H__
 #define __EVENTPIPE_RT_CORECLR_H__
@@ -1686,6 +1689,15 @@ ep_rt_config_value_get_output_streaming (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputStreaming) != 0;
+}
+
+static
+inline
+bool
+ep_rt_config_value_get_enable_stackwalk (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeEnableStackwalk) != 0;
 }
 
 /*

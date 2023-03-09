@@ -28,7 +28,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		// Limit tracking array values to 32 values for performance reasons.
 		// There are many arrays much longer than 32 elements in .NET,
-		// but the interesting ones for the linker are nearly always less than 32 elements.
+		// but the interesting ones for the ILLink are nearly always less than 32 elements.
 		const int MaxTrackedArrayValues = 32;
 
 		public TrimAnalysisVisitor (
@@ -79,7 +79,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var elements = operation.Initializer?.ElementValues.Select (val => Visit (val, state)).ToArray () ?? System.Array.Empty<MultiValue> ();
 			foreach (var array in arrayValue.Cast<ArrayValue> ()) {
 				for (int i = 0; i < elements.Length; i++) {
-					array.IndexValues.Add (i, elements[i]);
+					array.IndexValues.Add (i, ArrayValue.SanitizeArrayElementValue(elements[i]));
 				}
 			}
 
@@ -229,9 +229,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 						arr.IndexValues.Clear ();
 					} else {
 						if (arr.IndexValues.TryGetValue (index.Value, out _)) {
-							arr.IndexValues[index.Value] = valueToWrite;
+							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
 						} else if (arr.IndexValues.Count < MaxTrackedArrayValues) {
-							arr.IndexValues[index.Value] = valueToWrite;
+							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
 						}
 					}
 				}
@@ -248,7 +248,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// - The return here is also technically problematic, the return value is an instance of a known type,
 			//   but currently we return empty (since the .ctor is declared as returning void).
 			//   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
-			//   to noise). Linker has the same problem currently: https://github.com/dotnet/linker/issues/1952
+			//   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
 			var diagnosticContext = DiagnosticContext.CreateDisabled ();
 			var handleCallAction = new HandleCallAction (diagnosticContext, Method, operation);

@@ -57,7 +57,6 @@
     <PropertyGroup>
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
       <WasmAppDir>$(AppDir)</WasmAppDir>
-      <WasmMainJSPath>debugger-main.js</WasmMainJSPath>
       <!-- -1 enabled debugging and disables debug logging. -->
       <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">-1</WasmDebugLevel>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
@@ -78,6 +77,7 @@
       <!-- Assemblies only dynamically loaded -->
       <WasmFilesToIncludeInFileSystem Include="$(OutDir)\%(_AssemblyForDynamicLoading.Identity).dll" />
 
+      <WasmExtraFilesToDeploy Include="debugger-main.js" />
       <WasmExtraFilesToDeploy Include="$(OutDir)\%(_AssemblyForDynamicLoading.Identity).*" />
       <WasmExtraFilesToDeploy Include="$(OutDir)\lazy-debugger-test-embedded.*" />
       <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />

@@ -1,4 +1,7 @@
-// Implementation of ep-rt.h targeting CoreCLR runtime.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// Implementation of ep-rt.h targeting NativeAOT runtime.
 #ifndef __EVENTPIPE_RT_AOT_H__
 #define __EVENTPIPE_RT_AOT_H__
 
@@ -1130,9 +1133,8 @@ inline
 ep_rt_lock_handle_t *
 ep_rt_aot_config_lock_get (void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe locking for NativeAOT
-    return nullptr;
+    extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
+	return &_ep_rt_aot_config_lock_handle;
 }
 
 static
@@ -1317,8 +1319,8 @@ static
 void
 ep_rt_init (void) 
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe locking for NativeAOT
+    extern void ep_rt_aot_init (void);
+    ep_rt_aot_init();
 }
 
 static
@@ -1342,9 +1344,7 @@ inline
 bool
 ep_rt_config_acquire (void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe locking for NativeAOT
-    return true;   
+    return ep_rt_lock_acquire (ep_rt_aot_config_lock_get ());
 }
 
 static
@@ -1352,9 +1352,7 @@ inline
 bool
 ep_rt_config_release (void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe locking for NativeAOT
-    return true;
+    return ep_rt_lock_release (ep_rt_aot_config_lock_get ());
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -1363,9 +1361,7 @@ inline
 void
 ep_rt_config_requires_lock_held (void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe locking for NativeAOT
-    return;
+    ep_rt_lock_requires_lock_held (ep_rt_aot_config_lock_get ());
 }
 
 static
@@ -1373,9 +1369,7 @@ inline
 void
 ep_rt_config_requires_lock_not_held (void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe locking for NativeAOT
-    return;
+    ep_rt_lock_requires_lock_not_held (ep_rt_aot_config_lock_get ());
 }
 #endif
 
@@ -1634,6 +1628,19 @@ ep_rt_config_value_get_output_streaming (void)
     // (CLRConfig::INTERNAL_EventPipeOutputStreaming)
     //PalDebugBreak();
     return false;
+}
+
+static
+inline
+bool
+ep_rt_config_value_get_enable_stackwalk (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+    // TODO: EventPipe Configuration values - RhConfig?
+    // (CLRConfig::INTERNAL_EventPipeEnableStackwalk)
+    //PalDebugBreak();
+    return true;
 }
 
 /*
@@ -2280,12 +2287,8 @@ bool
 ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    bool result = true;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe locking for NativeAOT	
-
-    return result;
+    extern bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock);
+    return ep_rt_aot_lock_acquire(lock);
 }
 
 static
@@ -2293,12 +2296,8 @@ bool
 ep_rt_lock_release (ep_rt_lock_handle_t *lock)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    bool result = true;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe locking for NativeAOT	
-
-    return result;
+    extern bool ep_rt_aot_lock_release (ep_rt_lock_handle_t *lock);
+    return ep_rt_aot_lock_release(lock);
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -2309,7 +2308,8 @@ ep_rt_lock_requires_lock_held (const ep_rt_lock_handle_t *lock)
 {
 
     STATIC_CONTRACT_NOTHROW;
-    //EP_ASSERT (((ep_rt_lock_handle_t *)lock)->lock->OwnedByCurrentThread ());
+    extern void ep_rt_aot_lock_requires_lock_held (const ep_rt_lock_handle_t *lock);
+    ep_rt_aot_lock_requires_lock_held(lock);
 }
 
 static
@@ -2318,7 +2318,8 @@ void
 ep_rt_lock_requires_lock_not_held (const ep_rt_lock_handle_t *lock)
 {
     STATIC_CONTRACT_NOTHROW;
-    //EP_ASSERT (lock->lock == NULL || !((ep_rt_lock_handle_t *)lock)->lock->OwnedByCurrentThread ());
+    extern void ep_rt_aot_lock_requires_lock_not_held (const ep_rt_lock_handle_t *lock);
+    ep_rt_aot_lock_requires_lock_not_held(lock);
 }
 #endif
 
@@ -2331,8 +2332,7 @@ void
 ep_rt_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
-    extern void
-    ep_rt_aot_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock);
+    extern void ep_rt_aot_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock);
     ep_rt_aot_spin_lock_alloc(spin_lock);
 }
 
@@ -2342,8 +2342,7 @@ void
 ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
-    extern void
-    ep_rt_aot_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock);
+    extern void ep_rt_aot_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock);
     ep_rt_aot_spin_lock_free(spin_lock);
 }
 
@@ -2353,12 +2352,9 @@ bool
 ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
-//    EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
-
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement locking (maybe by making the manual Lock and Unlock functions public)
-    // SpinLock::Lock (*(spin_lock->lock));
-    return true;
+    EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
+    extern bool ep_rt_aot_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock);
+    return ep_rt_aot_spin_lock_acquire(spin_lock);
 }
 
 static
@@ -2368,11 +2364,8 @@ ep_rt_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
-
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement locking (maybe by making the manual Lock and Unlock functions public)
-    // SpinLock::Unlock (*(spin_lock->lock));
-    return true;
+    extern bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock);
+    return ep_rt_aot_spin_lock_release(spin_lock);
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -2382,8 +2375,8 @@ void
 ep_rt_spin_lock_requires_lock_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
-
+    extern void ep_rt_aot_spin_lock_requires_lock_held (const ep_rt_spin_lock_handle_t *spin_lock);
+    ep_rt_aot_spin_lock_requires_lock_held(spin_lock);
 }
 
 static
@@ -2392,7 +2385,8 @@ void
 ep_rt_spin_lock_requires_lock_not_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
-
+    extern void ep_rt_aot_spin_lock_requires_lock_not_held (const ep_rt_spin_lock_handle_t *spin_lock);
+    ep_rt_aot_spin_lock_requires_lock_not_held(spin_lock);
 }
 #endif
 
@@ -2624,7 +2618,7 @@ ep_rt_utf16_to_utf8_string (
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Temp implementation that is the reverse of ep_rt_utf8_to_utf16le_string
     size_t len_utf16 = len;
-    if(len_utf16 == -1)
+    if(len_utf16 == (size_t)-1)
     {
         len_utf16 = ep_rt_utf16_string_len (str);
     }

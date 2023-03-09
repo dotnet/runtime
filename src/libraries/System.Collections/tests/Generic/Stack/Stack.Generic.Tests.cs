@@ -32,6 +32,9 @@ namespace System.Collections.Tests
 
         protected override Type IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
+
         #endregion
 
         protected override IEnumerable<T> GenericIEnumerableFactory()
@@ -239,6 +242,17 @@ namespace System.Collections.Tests
             }
         }
 
+        [Fact]
+        public void Stack_Generic_TrimExcess_DoesNotInvalidateEnumeration()
+        {
+            Stack<T> stack = GenericStackFactory(10);
+            stack.EnsureCapacity(100);
+
+            IEnumerator<T> enumerator = stack.GetEnumerator();
+            stack.TrimExcess();
+            enumerator.MoveNext();
+        }
+
         #endregion
 
         [Theory]
@@ -289,7 +303,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void Stack_Generic_EnsureCapacity_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
+        public void Stack_Generic_EnsureCapacity_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
             IEnumerator<T> copiedEnumerator = new List<T>(stack).GetEnumerator();
@@ -297,7 +311,7 @@ namespace System.Collections.Tests
 
             stack.EnsureCapacity(count + 1);
 
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            enumerator.MoveNext();
         }
 
         [Fact]

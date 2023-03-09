@@ -39,7 +39,6 @@
     <Compile Include="$(CommonTestPath)System\IO\WrappedStream.cs" Link="Common\System\IO\WrappedStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs" Link="Common\System\IO\Compression\ZipTestHelper.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />

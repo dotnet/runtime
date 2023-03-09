@@ -6,14 +6,6 @@
 
 #include "coretls_structs.h"
 
-// 10.13.4 introduced public API but linking would fail on all prior versions.
-// For that reason we use function pointers instead of direct call.
-// This can be revisited after we drop support for 10.12 and iOS 10
-
-static OSStatus (*SSLSetALPNProtocolsPtr)(SSLContextRef context, CFArrayRef protocols) = NULL;
-static OSStatus (*SSLCopyALPNProtocolsPtr)(SSLContextRef context, CFArrayRef* protocols) = NULL;
-// end of ALPN.
-
 SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer)
 {
     if (isServer != 0 && isServer != 1)
@@ -229,14 +221,12 @@ int32_t AppleCryptoNative_SSLSetALPNProtocols(SSLContextRef sslContext,
     if (sslContext == NULL || protocols == NULL || pOSStatus == NULL)
         return -1;
 
-    if (!SSLSetALPNProtocolsPtr)
-    {
-        // not available.
-        *pOSStatus = 0;
-        return 1;
-    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     // The underlying call handles NULL inputs, so just pass it through
-    *pOSStatus = (*SSLSetALPNProtocolsPtr)(sslContext, protocols);
+    *pOSStatus = SSLSetALPNProtocols(sslContext, protocols);
+#pragma clang diagnostic pop
+
     return *pOSStatus == noErr;
 }
 
@@ -244,13 +234,6 @@ int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* pro
 {
     if (sslContext == NULL || protocol == NULL || length <= 0 || pOSStatus == NULL)
         return -1;
-
-    if (!SSLSetALPNProtocolsPtr)
-    {
-        // not available.
-        *pOSStatus = errSecNotAvailable;
-        return 1;
-    }
 
     CFStringRef value = CFStringCreateWithBytes(NULL, protocol, length, kCFStringEncodingASCII, 0);
     if (!value)
@@ -267,8 +250,11 @@ int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* pro
         return -2;
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    *pOSStatus = SSLSetALPNProtocols(sslContext, protocolList);
+#pragma clang diagnostic pop
 
-    *pOSStatus = (*SSLSetALPNProtocolsPtr)(sslContext, protocolList);
     if  (*pOSStatus == 0)
     {
         struct SSLContext* ctx = (struct SSLContext*)sslContext;
@@ -298,14 +284,12 @@ int32_t AppleCryptoNative_SslGetAlpnSelected(SSLContextRef sslContext, CFDataRef
         return -1;
 
     *protocol = NULL;
-    if (!SSLCopyALPNProtocolsPtr)
-    {
-        // not available.
-        return 0;
-    }
-
     CFArrayRef protocols = NULL;
-    OSStatus osStatus = (*SSLCopyALPNProtocolsPtr)(sslContext, &protocols);
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    OSStatus osStatus = SSLCopyALPNProtocols(sslContext, &protocols);
+#pragma clang diagnostic pop
 
     if (osStatus == noErr && protocols != NULL && CFArrayGetCount(protocols) > 0)
     {
@@ -705,28 +689,17 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     }
 }
 
-// This API is present on macOS 10.5 and newer only
-static OSStatus (*SSLSetCertificateAuthoritiesPtr)(SSLContextRef context, CFArrayRef certificates, int32_t replaceExisting) = NULL;
-
 PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef sslContext, CFArrayRef certificates, int32_t replaceExisting)
 {
+#if defined(TARGET_OSX)
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     // The underlying call handles NULL inputs, so just pass it through
-
-    if (!SSLSetCertificateAuthoritiesPtr)
-    {
-        // not available.
-        return 0;
-    }
-
-    return SSLSetCertificateAuthoritiesPtr(sslContext, certificates, replaceExisting);
+    return SSLSetCertificateAuthorities(sslContext, certificates, replaceExisting);
 #pragma clang diagnostic pop
-}
 
-__attribute__((constructor)) static void InitializeAppleCryptoSslShim(void)
-{
-    SSLSetCertificateAuthoritiesPtr = (OSStatus(*)(SSLContextRef, CFArrayRef, int32_t))dlsym(RTLD_DEFAULT, "SSLSetCertificateAuthorities");
-    SSLSetALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef))dlsym(RTLD_DEFAULT, "SSLSetALPNProtocols");
-    SSLCopyALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef*))dlsym(RTLD_DEFAULT, "SSLCopyALPNProtocols");
+#else
+    return 0;
+#endif
 }

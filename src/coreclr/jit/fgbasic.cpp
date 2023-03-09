@@ -276,7 +276,8 @@ bool Compiler::fgEnsureFirstBBisScratch()
         fgFirstBB->bbRefs--;
 
         // The new scratch bb will fall through to the old first bb
-        fgAddRefPred(fgFirstBB, block);
+        FlowEdge* const edge = fgAddRefPred(fgFirstBB, block);
+        edge->setLikelihood(1.0);
         fgInsertBBbefore(fgFirstBB, block);
     }
     else
@@ -583,6 +584,10 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             unreached();
             break;
     }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    fgFixFinallyTargetFlags(block, oldTarget, newTarget);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1188,6 +1193,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_POPCNT_PopCount:
                             case NI_POPCNT_X64_PopCount:
                             case NI_Vector256_Create:
+                            case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
                             case NI_VectorT256_CreateBroadcast:
@@ -1479,6 +1485,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 #endif // FEATURE_HW_INTRINSICS
                             case NI_SRCS_UNSAFE_As:
                             case NI_SRCS_UNSAFE_AsRef:
+                            case NI_SRCS_UNSAFE_BitCast:
                             case NI_SRCS_UNSAFE_SkipInit:
                             {
                                 // TODO-CQ: These are no-ops in that they never produce any IR
@@ -2741,7 +2748,7 @@ void Compiler::fgLinkBasicBlocks()
             {
                 BasicBlock* const jumpDest = fgLookupBB(curBBdesc->bbJumpOffs);
                 curBBdesc->bbJumpDest      = jumpDest;
-                fgAddRefPred(jumpDest, curBBdesc, oldEdge, initializingPreds);
+                fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
                 if (curBBdesc->bbJumpDest->bbNum <= curBBdesc->bbNum)
                 {
@@ -2765,7 +2772,7 @@ void Compiler::fgLinkBasicBlocks()
                 FALLTHROUGH;
 
             case BBJ_NONE:
-                fgAddRefPred(curBBdesc->bbNext, curBBdesc, oldEdge, initializingPreds);
+                fgAddRefPred<initializingPreds>(curBBdesc->bbNext, curBBdesc, oldEdge);
                 break;
 
             case BBJ_EHFILTERRET:
@@ -2791,7 +2798,7 @@ void Compiler::fgLinkBasicBlocks()
                 {
                     BasicBlock* jumpDest = fgLookupBB((unsigned)*(size_t*)jumpPtr);
                     *jumpPtr             = jumpDest;
-                    fgAddRefPred(jumpDest, curBBdesc, oldEdge, initializingPreds);
+                    fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
                     if ((*jumpPtr)->bbNum <= curBBdesc->bbNum)
                     {
                         fgMarkBackwardJump(*jumpPtr, curBBdesc);
@@ -2810,6 +2817,18 @@ void Compiler::fgLinkBasicBlocks()
                 noway_assert(!"Unexpected bbJumpKind");
                 break;
         }
+    }
+
+    // If this is an OSR compile, note the original entry and
+    // the OSR entry block.
+    //
+    // We don't yet alter flow; see fgFixEntryFlowForOSR.
+    //
+    if (opts.IsOSR())
+    {
+        assert(info.compILEntry >= 0);
+        fgEntryBB    = fgLookupBB(0);
+        fgOSREntryBB = fgLookupBB(info.compILEntry);
     }
 
     // Pred lists now established.
@@ -3416,7 +3435,7 @@ void Compiler::fgFindBasicBlocks()
 
     /* Now create the basic blocks */
 
-    unsigned retBlocks = fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
+    fgReturnCount = fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
 
     if (compIsForInlining())
     {
@@ -3425,7 +3444,7 @@ void Compiler::fgFindBasicBlocks()
         // If fgFindJumpTargets marked the call as "no return" there
         // really should be no BBJ_RETURN blocks in the method.
         bool markedNoReturn = (impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
-        assert((markedNoReturn && (retBlocks == 0)) || (!markedNoReturn && (retBlocks >= 1)));
+        assert((markedNoReturn && (fgReturnCount == 0)) || (!markedNoReturn && (fgReturnCount >= 1)));
 #endif // DEBUG
 
         if (compInlineResult->IsFailure())
@@ -3442,7 +3461,7 @@ void Compiler::fgFindBasicBlocks()
 
         // Use a spill temp for the return value if there are multiple return blocks,
         // or if the inlinee has GC ref locals.
-        if ((info.compRetNativeType != TYP_VOID) && ((retBlocks > 1) || impInlineInfo->HasGcRefLocals()))
+        if ((info.compRetNativeType != TYP_VOID) && ((fgReturnCount > 1) || impInlineInfo->HasGcRefLocals()))
         {
             // If we've spilled the ret expr to a temp we can reuse the temp
             // as the inlinee return spill temp.
@@ -3461,7 +3480,7 @@ void Compiler::fgFindBasicBlocks()
                     // We may have co-opted an existing temp for the return spill.
                     // We likely assumed it was single-def at the time, but now
                     // we can see it has multiple definitions.
-                    if ((retBlocks > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
+                    if ((fgReturnCount > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
                     {
                         // Make sure it is no longer marked single def. This is only safe
                         // to do if we haven't ever updated the type.
@@ -3483,7 +3502,7 @@ void Compiler::fgFindBasicBlocks()
                 if (info.compRetType == TYP_REF)
                 {
                     // The return spill temp is single def only if the method has a single return block.
-                    if (retBlocks == 1)
+                    if (fgReturnCount == 1)
                     {
                         lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 1;
                         JITDUMP("Marked return spill temp V%02u as a single def temp\n", lvaInlineeReturnSpillTemp);
@@ -3943,39 +3962,36 @@ void Compiler::fgCheckForLoopsInHandlers()
 //
 void Compiler::fgFixEntryFlowForOSR()
 {
-    // Ensure lookup IL->BB lookup table is valid
+    // We should have looked for these blocks in fgLinkBasicBlocks.
     //
-    fgInitBBLookup();
+    assert(fgEntryBB != nullptr);
+    assert(fgOSREntryBB != nullptr);
 
-    // Remember the original entry block in case this method is tail recursive.
-    //
-    fgEntryBB = fgLookupBB(0);
-
-    // Find the OSR entry block.
-    //
-    assert(info.compILEntry >= 0);
-    BasicBlock* const osrEntry = fgLookupBB(info.compILEntry);
-
-    // Remember the OSR entry block so we can find it again later.
-    //
-    fgOSREntryBB = osrEntry;
-
-    // Now branch from method start to the right spot.
+    // Now branch from method start to the OSR entry.
     //
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->bbJumpKind == BBJ_NONE);
     fgRemoveRefPred(fgFirstBB->bbNext, fgFirstBB);
     fgFirstBB->bbJumpKind = BBJ_ALWAYS;
-    fgFirstBB->bbJumpDest = osrEntry;
-    fgAddRefPred(osrEntry, fgFirstBB);
+    fgFirstBB->bbJumpDest = fgOSREntryBB;
+    FlowEdge* const edge  = fgAddRefPred(fgOSREntryBB, fgFirstBB);
+    edge->setLikelihood(1.0);
 
-    // Give the method entry (which will be a scratch BB)
-    // the same weight as the OSR Entry.
+    // We don't know the right weight for this block, since
+    // execution of the method was interrupted within the
+    // loop containing fgOSREntryBB.
     //
-    fgFirstBB->inheritWeight(fgOSREntryBB);
+    // A plausible guess might be to sum the non-backedge
+    // weights of fgOSREntryBB and use those, but we don't
+    // have edge weights available yet. Note that might be
+    // an underestimate.
+    //
+    // For now we just guess that the loop will execute 100x.
+    //
+    fgFirstBB->inheritWeightPercentage(fgOSREntryBB, 1);
 
-    JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
-            fgFirstBB->bbNum, osrEntry->bbNum);
+    JITDUMP("OSR: redirecting flow at method entry from " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
+            fgFirstBB->bbNum, fgOSREntryBB->bbNum);
 }
 
 /*****************************************************************************
@@ -4768,6 +4784,10 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         curr->bbJumpDest = newBlock;
         fgAddRefPred(newBlock, curr);
     }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    fgFixFinallyTargetFlags(curr, succ, newBlock);
+#endif
 
     // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
     // branch 50% of the time.

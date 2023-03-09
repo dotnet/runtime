@@ -66,6 +66,9 @@
 
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
+    <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
+    <XUnitLogCheckerDirectory>$(TestBinDir)Common\XUnitLogChecker\</XUnitLogCheckerDirectory>
+    <XUnitLogCheckerDirectory>$([MSBuild]::NormalizeDirectory($(XUnitLogCheckerDirectory)))</XUnitLogCheckerDirectory>
     <LegacyPayloadsRootDirectory>$(TestBinDir)LegacyPayloads\</LegacyPayloadsRootDirectory>
     <LegacyPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(LegacyPayloadsRootDirectory)))</LegacyPayloadsRootDirectory>
     <MergedPayloadsRootDirectory>$(TestBinDir)MergedPayloads\</MergedPayloadsRootDirectory>
@@ -362,14 +365,19 @@
     <ItemGroup>
       <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
     </ItemGroup>
+
     <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperDirectory>$([System.IO.Path]::GetDirectoryName('%(_MergedWrapperRunScript.Identity)'))</_MergedWrapperDirectory>
       <_MergedWrapperParentDirectory>$([System.IO.Path]::GetDirectoryName('$(_MergedWrapperDirectory)'))</_MergedWrapperParentDirectory>
       <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
+
       <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath($(TestBinDir), %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptDirectoryRelative Condition="'$(_MergedWrapperRunScriptRelative)' != ''">$([System.IO.Path]::GetDirectoryName($(_MergedWrapperRunScriptRelative)))</_MergedWrapperRunScriptDirectoryRelative>
+
       <!-- On Windows, you need to "call" a script or else the cmd.exe instance it is running in will exit, and the HelixPostCommands will not execute. -->
       <_MergedWrapperRunScriptPrefix Condition="'$(TestWrapperTargetsWindows)' == 'true'">call </_MergedWrapperRunScriptPrefix>
     </PropertyGroup>
+
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperOutOfProcessTestMarkers Include="$(_MergedWrapperParentDirectory)/**/*.OutOfProcessTest" />
       <_MergedWrapperOutOfProcessTestFiles
@@ -391,6 +399,12 @@
       <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest'" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <XUnitLogCheckerCommand Condition="'$(TestWrapperTargetsWindows)' != 'true'">dotnet %24HELIX_CORRELATION_PAYLOAD/XUnitLogChecker/</XUnitLogCheckerCommand>
+      <XUnitLogCheckerCommand Condition="'$(TestWrapperTargetsWindows)' == 'true'">dotnet %25HELIX_CORRELATION_PAYLOAD%25/XUnitLogChecker/</XUnitLogCheckerCommand>
+      <XUnitLogCheckerCommand>$(XUnitLogCheckerCommand)XUnitLogChecker.dll $(_MergedWrapperRunScriptDirectoryRelative) $(_MergedWrapperName)</XUnitLogCheckerCommand>
+    </PropertyGroup>
+
     <ItemGroup>
       <!-- We need to ensure that the test run script is marked as executable. -->
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
@@ -399,6 +413,7 @@
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
       <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load" />
       <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative)" />
+      <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
@@ -449,8 +464,10 @@
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+
       <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
       <_MergedWrapperRunScriptRelative Condition="'$(TestWrapperTargetsWindows)' != 'true'">./$(_MergedWrapperRunScriptRelative)</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptDirectoryRelative Condition="'$(_MergedWrapperRunScriptRelative)' != ''">$([System.IO.Path]::GetDirectoryName($(_MergedWrapperRunScriptRelative)))</_MergedWrapperRunScriptDirectoryRelative>
     </PropertyGroup>
 
     <ItemGroup>
@@ -552,7 +569,7 @@
       DestinationFile="$(MergedPayloadsRootDirectory)\%(MergedPayloads.PayloadGroup).zip" />
   </Target>
 
-  
+
   <PropertyGroup>
     <EnableAzurePipelinesReporter>$(PublishTestResults)</EnableAzurePipelinesReporter>
     <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>
@@ -611,6 +628,7 @@
     <HelixPreCommand Include="set __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
     <HelixPreCommand Include="set __CollectDumps=1" />
     <HelixPreCommand Include="set __CrashDumpFolder=%HELIX_DUMP_FOLDER%" />
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
     <HelixPreCommand Include="type %__TestEnv%" />
   </ItemGroup>
 
@@ -660,6 +678,7 @@
     <HelixPreCommand Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
     <HelixPreCommand Include="export __CollectDumps=1" />
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
     <HelixPreCommand Include="cat $__TestEnv" />
 
     <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name '*testResults.xml' -exec cp {} $HELIX_DUMP_FOLDER\; " />
@@ -703,6 +722,7 @@
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" />
 
     <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
     <LegacyPayloads Update="@(LegacyPayloads)">
@@ -763,8 +783,8 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="PrepareMergedStressHelixWorkItems" 
-          BeforeTargets="PrepareMergedHelixWorkItems" 
+  <Target Name="PrepareMergedStressHelixWorkItems"
+          BeforeTargets="PrepareMergedHelixWorkItems"
           Condition="'$(StripeMergedStressWorkItems)'=='true'"
           Outputs="%(_MergedStressWrapperMarker.Identity).dummy">
     <PropertyGroup>
@@ -812,14 +832,14 @@
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
       <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessApkToTest>
-    
+
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
       <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
       <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessApkToTest>
-    
+
     <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
       <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
       <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
