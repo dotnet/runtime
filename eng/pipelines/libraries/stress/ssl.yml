@@ -83,5 +83,5 @@ extends:
           # The workaround should be removed when the official fix is propagated into 1es-windows-2022-open, or when we switch to another image.
         - powershell: |
             cd '$(sslStressProject)'
-            & C:/ProgramData/docker/cli-plugins/docker-compose.exe up --abort-on-container-exit --no-color
+            C:\ProgramData\docker\cli-plugins\docker-compose.exe up --abort-on-container-exit --no-color
           displayName: Run SslStress
