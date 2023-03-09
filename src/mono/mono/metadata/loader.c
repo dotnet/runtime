@@ -1412,6 +1412,18 @@ mono_free_method  (MonoMethod *method)
 void
 mono_method_get_param_names (MonoMethod *method, const char **names)
 {
+	MONO_ENTER_GC_UNSAFE;
+	mono_method_get_param_names_internal (method, names);
+	mono_error_assert_ok (error);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+/**
+ * mono_method_get_param_names:
+ */
+void
+mono_method_get_param_names_internal (MonoMethod *method, const char **names, MonoError *error)
+{
 	int i, lastp;
 	MonoClass *klass;
 	MonoTableInfo *paramt;
