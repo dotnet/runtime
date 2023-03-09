@@ -16442,29 +16442,6 @@ void Compiler::gtSplitTree(
             {
                 unsigned lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling to split statement for tree"));
 
-                if ((*use)->TypeIs(TYP_STRUCT))
-                {
-                    ClassLayout* layout = (*use)->GetLayout(m_compiler);
-                    assert(layout != nullptr);
-                    if (layout->IsBlockLayout())
-                    {
-                        LclVarDsc* dsc   = m_compiler->lvaGetDesc(lclNum);
-                        dsc->lvType      = TYP_BLK;
-                        dsc->lvExactSize = max(layout->GetSize(), 1);
-                        m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-
-                        GenTreeLclFld* fldDst = m_compiler->gtNewLclFldNode(lclNum, TYP_STRUCT, 0);
-                        fldDst->SetLayout(layout);
-                        GenTree* asg = m_compiler->gtNewAssignNode(fldDst, *use);
-                        stmt         = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
-
-                        GenTreeLclFld* fldSrc = m_compiler->gtNewLclFldNode(lclNum, TYP_STRUCT, 0);
-                        fldSrc->SetLayout(layout);
-                        *use = fldSrc;
-                        MadeChanges = true;
-                    }
-                }
-
                 if (varTypeIsStruct(*use) &&
                     ((*use)->IsMultiRegNode() ||
                      ((user != nullptr) && user->OperIs(GT_RETURN) && m_compiler->compMethodReturnsMultiRegRetType())))
