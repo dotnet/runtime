@@ -153,7 +153,7 @@ jobs:
             targetRID: banana.24-x64
             runtimeOS: linux
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'MacCatalyst') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'iOSSimulator', 'tvOS', 'tvOSSimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
         displayName: Install Build Dependencies
 

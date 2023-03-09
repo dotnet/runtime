@@ -98,6 +98,10 @@ jobs:
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
 
+        - ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'iOSSimulator', 'tvOS', 'tvOSSimulator') }}:
+          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+            displayName: Install Build Dependencies
+
         - ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc', 'gcstress-extra') }}:
           # We need to find and download the GC stress dependencies (namely, coredistools). Put them
           # in the 'sharedFramework' directory where we unpacked the CoreCLR build artifacts. The 'sharedFramework'
