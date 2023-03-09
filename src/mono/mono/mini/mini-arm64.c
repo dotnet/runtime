@@ -300,9 +300,12 @@ static guint8*
 emit_imm (guint8 *code, int dreg, int imm)
 {
 	if (imm < 0) {
-		gint64 limm = imm;
+		int limm = imm;
+		int himm = (limm >> 16) & 0xffff;
 		arm_movnx (code, dreg, (~limm) & 0xffff, 0);
-		arm_movkx (code, dreg, (limm >> 16) & 0xffff, 16);
+		if (himm != 0xffff)
+			arm_movkx (code, dreg, himm, 16);
+
 	} else {
 		int low = imm & 0xffff;
 		int hi = (imm >> 16) & 0xffff;
