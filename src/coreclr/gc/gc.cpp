@@ -6172,7 +6172,12 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            return proc_no_to_heap_no[proc_no];
+            int best_heap = proc_no_to_heap_no[proc_no];
+            if (best_heap >= gc_heap::n_heaps)
+            {
+                best_heap %= gc_heap::n_heaps;
+            }
+            return best_heap;
         }
 
         unsigned sniff_index = Interlocked::Increment(&cur_sniff_index);
@@ -18308,7 +18313,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
                             if (heap_num >= end)
                                 heap_num -= count;
                             // wrap around if we hit the end of the heap numbers
-                            if (heap_num >= n_heaps)
+                            while (heap_num >= n_heaps)
                                 heap_num -= n_heaps;
 
                             assert (heap_num < n_heaps);
@@ -21167,6 +21172,9 @@ size_t gc_heap::exponential_smoothing (int gen, size_t collection_count, size_t 
     return Align (smoothed_desired_per_heap[gen], get_alignment_constant (gen <= soh_gen2));
 }
 
+static int saved_n_heaps;
+static size_t prev_redistribute_regions_gc_index;
+
 //internal part of gc used by the serial and concurrent version
 void gc_heap::gc1()
 {
@@ -21671,6 +21679,16 @@ void gc_heap::gc1()
 #ifdef USE_REGIONS
             initGCShadow();
             distribute_free_regions();
+            // quick hack for initial testing
+            if (settings.gc_index >= prev_redistribute_regions_gc_index + 100)
+            {
+                if (saved_n_heaps = 0)
+                {
+                    saved_n_heaps = n_heaps;
+                }
+                redistribute_regions ((int)gc_rand::get_rand(n_heaps-1)+1);
+                prev_redistribute_regions_gc_index = settings.gc_index;
+            }
             verify_region_to_generation_map ();
             compute_gc_and_ephemeral_range (settings.condemned_generation, true);
             stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
@@ -23236,6 +23254,10 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
         heap_segment_next (region) = generation_start_segment (gen);
         generation_start_segment (gen) = region;
     }
+    if (heap_segment_next (region) == nullptr)
+    {
+        generation_tail_region (gen) = region;
+    }
     dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %p", heap_number, gen_idx, heap_segment_mem (region)));
 
 #if defined(_DEBUG) && defined(HOST_64BIT)
@@ -23257,14 +23279,13 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
 }
 #endif // MULTIPLE_HEAPS
 
-void gc_heap::equalize_promoted_bytes()
+void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
 {
 #ifdef MULTIPLE_HEAPS
     // algorithm to roughly balance promoted bytes across heaps by moving regions between heaps
     // goal is just to balance roughly, while keeping computational complexity low
     // hope is to achieve better work balancing in relocate and compact phases
     //
-    int condemned_gen_number = settings.condemned_generation;
     int highest_gen_number = ((condemned_gen_number == max_generation) ?
                               (total_generation_count - 1) : condemned_gen_number);
     int stop_gen_idx = get_stop_generation_index (condemned_gen_number);
@@ -23473,7 +23494,21 @@ void gc_heap::equalize_promoted_bytes()
         // check we didn't screw up the data structures
         for (int i = 0; i < n_heaps; i++)
         {
-            g_heaps[i]->verify_regions (gen_idx, false);
+            gc_heap* hp = g_heaps[i];
+
+            generation* gen = hp->generation_of (gen_idx);
+
+            // if the number of heaps changes, some heaps may end up with
+            // no regions at all - repair this here
+            if (heap_segment_rw (generation_start_segment (gen)) == nullptr)
+            {
+                size_t size = gen_idx > max_generation ? global_region_allocator.get_large_region_alignment() : 0;
+                heap_segment* start_region = hp->get_free_region (gen_idx, size);
+                assert (start_region);
+                hp->thread_start_region (gen, start_region);
+            }
+
+            hp->verify_regions (gen_idx, true, true);
         }
 #ifdef TRACE_GC
         max_surv_per_heap = 0;
@@ -23487,6 +23522,108 @@ void gc_heap::equalize_promoted_bytes()
         }
 #endif // TRACE_GC
     }
+#endif //MULTIPLE_HEAPS
+}
+
+void gc_heap::redistribute_regions (int new_n_heaps)
+{
+#ifdef MULTIPLE_HEAPS
+    // prepare the regions by pretending all their allocated space survives
+    for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+    {
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            generation* gen = hp->generation_of (gen_idx);
+            for (heap_segment* region = heap_segment_rw (generation_start_segment (gen));
+                 region != nullptr;
+                 region = heap_segment_next (region))
+            {
+                heap_segment_survived (region) = heap_segment_allocated (region) - heap_segment_mem (region);
+            }
+        }
+    }
+    if (n_heaps < new_n_heaps)
+    {
+        // initialize the region lists of the new heaps
+        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+        {
+            for (int i = n_heaps; i < new_n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+
+                generation* gen = hp->generation_of (gen_idx);
+                generation_start_segment (gen) = nullptr;
+                generation_tail_ro_region (gen) = nullptr;
+                generation_tail_region (gen) = nullptr;
+            }
+        }
+    }
+    if (new_n_heaps < n_heaps)
+    {
+        // move all regions from the heaps about to be retired to heap 0,
+        // which should always be present
+
+        assert (new_n_heaps > 0);
+
+        gc_heap* hp0 = g_heaps[0];
+        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+        {
+            generation* hp0_gen = hp0->generation_of (gen_idx);
+            for (int i = new_n_heaps; i < n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+
+                generation* gen = hp->generation_of (gen_idx);
+
+                heap_segment* start_region = generation_start_segment (gen);
+                heap_segment* tail_ro_region = generation_tail_ro_region (gen);
+                heap_segment* tail_region = generation_tail_region (gen);
+
+                if (tail_ro_region != nullptr)
+                {
+                    // the first r/w region is the one after tail_ro_region
+                    heap_segment* start_rw_region = heap_segment_next (tail_ro_region);
+
+                    heap_segment* hp0_tail_ro_region = generation_tail_ro_region (hp0_gen);
+                    if (hp0_tail_ro_region != nullptr)
+                    {
+                        // insert the list of r/o regions between the r/o and the r/w regions already present
+                        heap_segment_next (tail_ro_region) = heap_segment_next (hp0_tail_ro_region);
+                        heap_segment_next (hp0_tail_ro_region) = start_region;
+                    }
+                    else
+                    {
+                        // put the list of r/o regions before the r/w regions present
+                        heap_segment_next (tail_ro_region) = generation_start_segment (hp0_gen);
+                        generation_start_segment (hp0_gen) = start_region;
+                    }
+                    generation_tail_ro_region (hp0_gen) = tail_ro_region;
+
+                    // we took care of our r/o regions, we still have to do the r/w regions
+                    start_region = start_rw_region;
+                }
+                // put the r/w regions at the tail of heap 0
+                heap_segment* hp0_tail_region = generation_tail_region (hp0_gen);
+                heap_segment_next (hp0_tail_region) = start_region;
+                generation_tail_region (hp0_gen) = tail_region;
+
+                generation_start_segment (gen) = nullptr;
+                generation_tail_ro_region (gen) = nullptr;
+                generation_tail_region (gen) = nullptr;
+            }
+        }
+    }
+
+    // update number of heaps
+    n_heaps = new_n_heaps;
+
+    // even out the regions over the current number of heaps
+    equalize_promoted_bytes (max_generation);
+
+    // re-thread free lists
+
 #endif //MULTIPLE_HEAPS
 }
 #endif //USE_REGIONS
@@ -26983,7 +27120,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
 #ifdef USE_REGIONS
         sync_promoted_bytes();
-        equalize_promoted_bytes();
+        equalize_promoted_bytes(settings.condemned_generation);
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
@@ -47723,6 +47860,8 @@ bool GCHeap::IsThreadUsingAllocationContextHeap(gc_alloc_context* context, int t
 {
     alloc_context* acontext = static_cast<alloc_context*>(context);
 #ifdef MULTIPLE_HEAPS
+    if (thread_number >= gc_heap::n_heaps)
+        return false;
     return ((acontext->get_home_heap() == GetHeap(thread_number)) ||
             ((acontext->get_home_heap() == 0) && (thread_number == 0)));
 #else

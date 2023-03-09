@@ -2377,7 +2377,9 @@ private:
 
     PER_HEAP_METHOD void thread_rw_region_front (int gen_idx, heap_segment* region);
 
-    PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes();
+    PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes(int condemned_gen_number);
+
+    PER_HEAP_ISOLATED_METHOD void redistribute_regions(int new_n_heaps);
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
