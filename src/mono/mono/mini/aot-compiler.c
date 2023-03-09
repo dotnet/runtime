@@ -8570,6 +8570,9 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 	for (guint i = 0; i < args->len; ++i) {
 		const char *arg = (const char *)g_ptr_array_index (args, i);
 
+		opts->dump_json = TRUE;
+
+
 		if (str_begins_with (arg, "outfile=")) {
 			opts->outfile = g_strdup (arg + strlen ("outfile="));
 		} else if (str_begins_with (arg, "llvm-outfile=")) {
@@ -14069,8 +14072,8 @@ get_wrapper_type_name (int type)
 	return wrapper_type_names [type];
 }
 
-//#define DUMP_PLT
-//#define DUMP_GOT
+#define DUMP_PLT
+#define DUMP_GOT
 
 static void aot_dump (MonoAotCompile *acfg)
 {
