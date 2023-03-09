@@ -1157,7 +1157,9 @@ namespace ILCompiler.DependencyAnalysis
                 // This is potentially a waste of time. We're about to end the process and let the
                 // OS "garbage collect" the entire address space.
                 // https://github.com/dotnet/runtime/issues/83180
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive););
+                var gcMemoryInfo = GC.GetGCMemoryInfo();
+                if (gcMemoryInfo.TotalCommittedBytes > gcMemoryInfo.TotalAvailableMemoryBytes / 2)
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive));
 
                 objectWriter.EmitDebugModuleInfo();
 
@@ -1167,6 +1169,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (logger.IsVerbose)
                     logger.LogMessage($"Finalizing output to '{objectFilePath}'...");
+
                 objectWriter.Dispose();
 
                 if (!succeeded)
@@ -1182,6 +1185,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
+
             if (logger.IsVerbose)
                 logger.LogMessage($"Done writing object file");
         }
