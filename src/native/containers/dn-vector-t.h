@@ -255,11 +255,6 @@ DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, pop_back) (DN_DEFINE_VECTOR_T_NAME(name) *v
 { \
 	dn_vector_pop_back ((dn_vector_t*)vector); \
 } \
-static inline uint32_t \
-DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, buffer_capacity) (size_t buffer_byte_size) \
-{ \
-	return dn_vector_buffer_capacity_t (buffer_byte_size, type); \
-} \
 static inline void \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, for_each) (const DN_DEFINE_VECTOR_T_NAME(name) *vector, dn_vector_for_each_func_t for_each_func, void *user_data) \
 { \

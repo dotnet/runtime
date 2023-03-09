@@ -30,11 +30,6 @@ _dn_vector_erase_fast (
 	dn_vector_it_t *position,
 	dn_vector_dispose_func_t dispose_func);
 
-uint32_t
-_dn_vector_buffer_capacity (
-	size_t buffer_size,
-	uint32_t element_size);
-
 dn_vector_it_t
 _dn_vector_custom_find (
 	dn_vector_t *vector,

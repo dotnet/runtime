@@ -25,7 +25,7 @@
 
 #include "dn-vector.h"
 
-#define INITIAL_CAPACITY 16
+#define INITIAL_CAPACITY 64
 #define CALC_NEW_CAPACITY(capacity) ((capacity + (capacity >> 1) + 63) & ~63)
 
 #define element_offset(p,i) \
@@ -37,16 +37,15 @@
 #define check_attribute(vector, value) ((vector->_internal._attributes & (uint32_t)value) == value)
 
 static bool
-ensure_capacity (
+vector_ensure_capacity (
 	dn_vector_t *vector,
-	uint32_t capacity)
+	uint32_t capacity,
+	bool init)
 {
-	uint64_t new_capacity;
-
 	if (capacity != 0 && capacity <= (uint64_t)(vector->_internal._capacity))
 		return true;
 
-	new_capacity = CALC_NEW_CAPACITY (capacity);
+	uint64_t new_capacity = init ? capacity : CALC_NEW_CAPACITY (capacity);
 
 	if (DN_UNLIKELY (new_capacity > (uint64_t)(UINT32_MAX)))
 		return false;
@@ -87,7 +86,7 @@ _dn_vector_insert_range (
 
 	uint64_t new_capacity = (uint64_t)vector->size + (uint64_t)element_count;
 	if (DN_UNLIKELY (new_capacity > (uint64_t)(vector->_internal._capacity))) {
-		if (DN_UNLIKELY (!ensure_capacity (vector, (uint32_t)new_capacity)))
+		if (DN_UNLIKELY (!vector_ensure_capacity (vector, (uint32_t)new_capacity, false)))
 			return false;
 	}
 
@@ -125,7 +124,7 @@ _dn_vector_append_range (
 
 	uint64_t new_capacity = (uint64_t)vector->size + (uint64_t)element_count;
 	if (DN_UNLIKELY (new_capacity > (uint64_t)(vector->_internal._capacity))) {
-		if (DN_UNLIKELY (!ensure_capacity (vector, (uint32_t)new_capacity)))
+		if (DN_UNLIKELY (!vector_ensure_capacity (vector, (uint32_t)new_capacity, false)))
 			return false;
 	}
 
@@ -197,24 +196,6 @@ _dn_vector_erase_fast (
 	return true;
 }
 
-uint32_t
-_dn_vector_buffer_capacity (
-	size_t buffer_byte_size,
-	uint32_t element_size)
-{
-	// Estimate maximum array capacity for buffer size.
-	size_t max_capacity = (buffer_byte_size - DN_ALLOCATOR_ALIGN_SIZE (sizeof (dn_vector_t), DN_ALLOCATOR_MEM_ALIGN8) - 32 /* padding */) / element_size;
-	if (DN_UNLIKELY (max_capacity > buffer_byte_size || max_capacity > (size_t)UINT32_MAX))
-		return 0;
-
-	// Adjust to heuristics in ensure_capacity.
-	uint32_t capacity = 1;
-	while(CALC_NEW_CAPACITY (capacity) <= (uint32_t)max_capacity)
-		capacity <<= 1;
-
-	return (uint32_t)(capacity >> 1);
-}
-
 dn_vector_it_t
 _dn_vector_custom_find (
 	dn_vector_t *vector,
@@ -274,7 +255,7 @@ dn_vector_custom_init (
 			capacity = params->capacity;
 	}
 
-	if (DN_UNLIKELY (!ensure_capacity (vector, capacity))) {
+	if (DN_UNLIKELY (!vector_ensure_capacity (vector, capacity, true))) {
 		dn_vector_dispose (vector);
 		return false;
 	}
@@ -313,7 +294,7 @@ dn_vector_reserve (
 	uint32_t capacity)
 {
 	DN_ASSERT (vector);
-	return ensure_capacity (vector, capacity);
+	return vector_ensure_capacity (vector, capacity, false);
 }
 
 uint32_t
@@ -335,7 +316,7 @@ dn_vector_custom_resize (
 		return true;
 
 	if (size > vector->_internal._capacity)
-		if (DN_UNLIKELY (!ensure_capacity (vector, size)))
+		if (DN_UNLIKELY (!vector_ensure_capacity (vector, size, false)))
 			return false;
 	
 	if (size < vector->size) {

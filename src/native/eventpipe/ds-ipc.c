@@ -265,7 +265,7 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 
 		dn_vector_ptr_custom_alloc_params_t params = {0, };
 		params.allocator = (dn_allocator_t *)&allocator;
-		params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
+		params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
 
 		dn_vector_ptr_t *port_configs = dn_vector_ptr_custom_alloc (&params);
 		dn_vector_ptr_t *port_config_parts = dn_vector_ptr_custom_alloc (&params);
