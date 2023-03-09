@@ -41,16 +41,16 @@
     these snapshot urls.
   -->
 
-  <!--<PropertyGroup Label="Use specific version of chrome" Condition="$([MSBuild]::IsOSPlatform('linux'))">-->
-    <!--<ChromeVersion>109.0.5414.119</ChromeVersion>-->
-    <!--<ChromeRevision>1070088</ChromeRevision>-->
-    <!--<_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1070096</_ChromeBaseSnapshotUrl>-->
-  <!--</PropertyGroup>-->
-  <!--<PropertyGroup Label="Use specific version of chrome" Condition="$([MSBuild]::IsOSPlatform('windows'))">-->
-    <!--<ChromeVersion>109.0.5414.120</ChromeVersion>-->
-    <!--<ChromeRevision>1070088</ChromeRevision>-->
-    <!--<_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1070094</_ChromeBaseSnapshotUrl>-->
-  <!--</PropertyGroup>-->
+  <PropertyGroup Label="Use specific version of chrome" Condition="$([MSBuild]::IsOSPlatform('linux'))">
+    <ChromeVersion>109.0.5414.119</ChromeVersion>
+    <ChromeRevision>1070088</ChromeRevision>
+    <_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1070096</_ChromeBaseSnapshotUrl>
+  </PropertyGroup>
+  <PropertyGroup Label="Use specific version of chrome" Condition="$([MSBuild]::IsOSPlatform('windows'))">
+    <ChromeVersion>109.0.5414.120</ChromeVersion>
+    <ChromeRevision>1070088</ChromeRevision>
+    <_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1070094</_ChromeBaseSnapshotUrl>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
     <FirefoxRevision>108.0.1</FirefoxRevision>
