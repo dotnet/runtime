@@ -1026,6 +1026,21 @@ ep_rt_config_value_get_rundown (void)
 	return value_uint32_t;
 }
 
+static
+inline
+bool
+ep_rt_config_value_get_enable_stackwalk (void)
+{
+	uint32_t value_uint32_t = 1;
+	gchar *value = g_getenv ("DOTNET_EventPipeEnableStackwalk");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeEnableStackwalk");
+	if (value)
+		value_uint32_t = (uint32_t)atoi (value);
+	g_free (value);
+	return value_uint32_t != 0;
+}
+
 /*
  * EventPipeSampleProfiler.
  */
