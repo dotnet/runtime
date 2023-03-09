@@ -1,0 +1,10 @@
+﻿# the following suppression are for back-compatibility with legacy Xamarin which had these types in System.Drawing.Common.dll
+
+TypesMustExist : Type 'System.Drawing.Color' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Drawing.KnownColor' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Drawing.Point' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Drawing.PointF' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Drawing.Rectangle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Drawing.RectangleF' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Drawing.Size' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Drawing.SizeF' does not exist in the reference but it does exist in the implementation.
