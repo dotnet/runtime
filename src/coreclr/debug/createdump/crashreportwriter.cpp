@@ -175,17 +175,17 @@ CrashReportWriter::WriteCrashReport()
     }
     CloseArray();               // threads
     CloseObject();              // payload
-#ifdef __APPLE__
     OpenObject("parameters");
     if (exceptionType != nullptr)
     {
         WriteValue("ExceptionType", exceptionType);
     }
+#ifdef __APPLE__
     WriteSysctl("kern.osproductversion", "OSVersion");
     WriteSysctl("hw.model", "SystemModel");
     WriteValue("SystemManufacturer", "apple");
-    CloseObject();              // parameters
 #endif // __APPLE__
+    CloseObject();              // parameters
 }
 
 #ifdef __APPLE__

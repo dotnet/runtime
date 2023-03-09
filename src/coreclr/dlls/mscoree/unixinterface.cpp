@@ -22,6 +22,25 @@
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
+#ifdef TARGET_UNIX
+#define NO_HOSTING_API_RETURN_ADDRESS ((void*)ULONG_PTR_MAX)
+void* g_hostingApiReturnAddress = NO_HOSTING_API_RETURN_ADDRESS;
+
+class HostingApiFrameHolder
+{
+public:
+    HostingApiFrameHolder(void* returnAddress)
+    {
+        g_hostingApiReturnAddress = returnAddress;
+    }
+
+    ~HostingApiFrameHolder()
+    {
+        g_hostingApiReturnAddress = NO_HOSTING_API_RETURN_ADDRESS;
+    }
+};
+#endif // TARGET_UNIX
+
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
 
@@ -179,6 +198,7 @@ extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const c
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+NOINLINE
 DLLEXPORT
 int coreclr_initialize(
             const char* exePath,
@@ -196,6 +216,10 @@ int coreclr_initialize(
     BundleProbeFn* bundleProbe = nullptr;
     bool hostPolicyEmbedded = false;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
+
+#ifdef TARGET_UNIX
+    HostingApiFrameHolder apiFrameHolder(_ReturnAddress());
+#endif
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -421,6 +445,7 @@ int coreclr_create_delegate(
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+NOINLINE
 DLLEXPORT
 int coreclr_execute_assembly(
             void* hostHandle,
@@ -435,6 +460,10 @@ int coreclr_execute_assembly(
         return HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER);
     }
     *exitCode = -1;
+
+#ifdef TARGET_UNIX
+    HostingApiFrameHolder apiFrameHolder(_ReturnAddress());
+#endif
 
     ICLRRuntimeHost4* host = reinterpret_cast<ICLRRuntimeHost4*>(hostHandle);
 
