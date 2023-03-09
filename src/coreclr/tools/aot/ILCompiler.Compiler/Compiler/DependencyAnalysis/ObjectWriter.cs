@@ -1156,10 +1156,14 @@ namespace ILCompiler.DependencyAnalysis
                 // Free up as much memory as possible so that we don't get OOM killed.
                 // This is potentially a waste of time. We're about to end the process and let the
                 // OS "garbage collect" the entire address space.
-                // https://github.com/dotnet/runtime/issues/83180
                 var gcMemoryInfo = GC.GetGCMemoryInfo();
                 if (gcMemoryInfo.TotalCommittedBytes > gcMemoryInfo.TotalAvailableMemoryBytes / 2)
-                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive));
+                {
+                    if (logger.IsVerbose)
+                        logger.LogMessage($"Freeing up memory");
+
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive);
+                }
 
                 objectWriter.EmitDebugModuleInfo();
 
