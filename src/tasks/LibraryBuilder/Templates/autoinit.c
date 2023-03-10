@@ -16,7 +16,6 @@
 static char *bundle_path;
 
 void register_aot_modules (void);
-char *monoeg_g_getenv (const char *variable);
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -138,6 +137,8 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
 void
 runtime_init_callback ()
 {
+    bundle_path = strdup(getenv("%ASSETS_PATH%"));
+
     initialize_runtimeconfig ();
 
     initialize_appctx_env_variables ();
@@ -157,11 +158,11 @@ runtime_init_callback ()
     mono_jit_init ("mono.self.contained.library"); // Pass in via LibraryBuilder?
 
 %ASSEMBLIES_LOADER%
+    free (bundle_path);
 }
 
 void __attribute__((constructor))
 autoinit ()
 {
-    bundle_path = monoeg_g_getenv("%ASSETS_PATH%");
     mono_set_runtime_init_callback (&runtime_init_callback);
 }
