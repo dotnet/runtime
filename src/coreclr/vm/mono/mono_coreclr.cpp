@@ -52,10 +52,14 @@ unsigned int g_RootDomainId;
 
 typedef intptr_t ManagedStringPtr_t;
 
+// Needs to match source generated GeneratedHostStruct.gen.cs
 struct HostStruct
 {
     intptr_t (*load_assembly_from_data)(const char* data, int64_t length);
     intptr_t (*load_assembly_from_path)(const char* path, int32_t length);
+    intptr_t (*gchandle_get_target_v2)(intptr_t gchandle);
+    uintptr_t (*gchandle_new_v2)(MonoObject *obj, gboolean pinned);
+    uintptr_t (*gchandle_new_weakref_v2)(MonoObject *obj, gboolean track_resurrection);
     ManagedStringPtr_t (*string_from_utf16)(const gunichar2* text);
     ManagedStringPtr_t (*string_new_len)(MonoDomain *domain, const char *text, guint32 length);
     ManagedStringPtr_t (*string_new_utf16)(MonoDomain * domain, const guint16 * text, gint32 length);
@@ -1852,12 +1856,8 @@ static inline uintptr_t handle_to_uintptr(OBJECTHANDLE h, bool pinned)
 
 extern "C" EXPORT_API MonoObject* EXPORT_CC mono_gchandle_get_target_v2(uintptr_t gchandle)
 {
-    GCX_COOP();
-    // TODO: This method is not accurate with Cooperative/Preemptive mode
-
-    OBJECTHANDLE objectHandle = handle_from_uintptr(gchandle);
-    OBJECTREF objref = ObjectFromHandle(objectHandle);
-    return (MonoObject*)OBJECTREFToObject(objref);
+    GCX_PREEMP(); // temporary until we sort out our GC thread model
+    return (MonoObject*)g_HostStruct->gchandle_get_target_v2(gchandle);
 }
 
 extern "C" EXPORT_API gboolean EXPORT_CC mono_gchandle_is_in_domain_v2(uintptr_t gchandle, MonoDomain *domain)
@@ -1875,40 +1875,14 @@ extern "C" EXPORT_API void EXPORT_CC mono_gchandle_free_v2(uintptr_t gchandle)
 
 extern "C" EXPORT_API uintptr_t EXPORT_CC mono_gchandle_new_v2(MonoObject *obj, gboolean pinned)
 {
-    TRACE_API("%p, %d", obj, pinned);
-    CONTRACTL
-    {
-        PRECONDITION(obj != NULL);
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    // TODO: This method is not accurate with Cooperative/Preemptive mode
-
-    auto objref = ObjectToOBJECTREF((MonoObject_clr*)obj);
-    OBJECTHANDLE rawHandle = pinned ?
-        GetAppDomain()->CreatePinningHandle(objref) :
-        GetAppDomain()->CreateHandle(objref);
-
-    return handle_to_uintptr(rawHandle, pinned);
+    GCX_PREEMP(); // temporary until we sort out our GC thread model
+    return g_HostStruct->gchandle_new_v2(obj, pinned);
 }
 
 extern "C" EXPORT_API uintptr_t EXPORT_CC mono_gchandle_new_weakref_v2(MonoObject *obj, gboolean track_resurrection)
 {
-    CONTRACTL
-    {
-        PRECONDITION(obj != NULL);
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    // TODO: This method is not accurate with Cooperative/Preemptive mode
-    auto objref = ObjectToOBJECTREF((MonoObject_clr*)obj);
-    OBJECTHANDLE rawHandle = track_resurrection ?
-        GetAppDomain()->CreateLongWeakHandle(objref) :
-        GetAppDomain()->CreateShortWeakHandle(objref);
-
-    return handle_to_uintptr(rawHandle, false);
+    GCX_PREEMP(); // temporary until we sort out our GC thread model
+    return g_HostStruct->gchandle_new_weakref_v2(obj, track_resurrection);
 }
 
 extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_array_class()

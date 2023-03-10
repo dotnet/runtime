@@ -70,6 +70,28 @@ static unsafe partial class CoreCLRHost
 
     }
 
+    [UnmanagedCallersOnly]
+    static IntPtr gchandle_new_v2(IntPtr obj, bool pinned)
+    {
+        GCHandle handle = GCHandle.Alloc(Unsafe.As<IntPtr, Object>(ref obj), pinned ? GCHandleType.Pinned : GCHandleType.Normal);
+        return GCHandle.ToIntPtr(handle);
+    }
+
+    [UnmanagedCallersOnly]
+    static IntPtr gchandle_new_weakref_v2(IntPtr obj, bool track_resurrection)
+    {
+        GCHandle handle = GCHandle.Alloc(Unsafe.As<IntPtr, Object>(ref obj), track_resurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+        return GCHandle.ToIntPtr(handle);
+    }
+
+    [UnmanagedCallersOnly]
+    static IntPtr gchandle_get_target_v2(IntPtr handleIn)
+    {
+        GCHandle handle = GCHandle.FromIntPtr(handleIn);
+        object obj = handle.Target;
+        return Unsafe.As<object, IntPtr>(ref obj);
+    }
+
     static StringPtr StringToPtr(string s)
     {
         // Return raw object pointer for now with the NullGC.
