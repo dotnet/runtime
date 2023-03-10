@@ -13,7 +13,6 @@ let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
 
 export function init_polyfills(replacements: EarlyReplacements): void {
-    const anyModule = Module as any;
 
     // performance.now() is used by emscripten and doesn't work in JSC
     if (typeof globalThis.performance === "undefined") {
@@ -123,7 +122,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     }
 
     // require replacement
-    const imports = anyModule.imports = (Module.imports || {}) as DotnetModuleConfigImports;
+    const imports = Module.imports = (Module.imports || {}) as DotnetModuleConfigImports;
     const requireWrapper = (wrappedRequire: Function) => (name: string) => {
         const resolved = (<any>Module.imports)[name];
         if (resolved) {
@@ -146,20 +145,20 @@ export function init_polyfills(replacements: EarlyReplacements): void {
 
     // script location
     runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
-    anyModule.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
+    Module.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
     if (BuildConfiguration === "Debug") {
         console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
         console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
     }
-    if (anyModule.__locateFile === anyModule.locateFile) {
+    if (Module.__locateFile === Module.locateFile) {
         // above it's our early version from dotnet.es6.pre.js, we could replace it with better
-        anyModule.locateFile = runtimeHelpers.locateFile = (path) => {
+        Module.locateFile = runtimeHelpers.locateFile = (path) => {
             if (isPathAbsolute(path)) return path;
             return runtimeHelpers.scriptDirectory + path;
         };
     } else {
         // we use what was given to us
-        runtimeHelpers.locateFile = anyModule.locateFile;
+        runtimeHelpers.locateFile = Module.locateFile!;
     }
 
     // prefer fetch_like over global fetch for assets
@@ -177,7 +176,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
 
     // memory
     const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
-    replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
+    runtimeHelpers.updateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
         originalUpdateGlobalBufferAndViews(buffer);
         afterUpdateGlobalBufferAndViews(buffer);
     };

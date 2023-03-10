@@ -476,6 +476,9 @@ enum class AddressExposedReason
     STRESS_LCL_FLD,                // Stress mode replaces localVar with localFld and makes them addrExposed.
     DISPATCH_RET_BUF,              // Caller return buffer dispatch.
     STRESS_POISON_IMPLICIT_BYREFS, // This is an implicit byref we want to poison.
+    EXTERNALLY_VISIBLE_IMPLICITLY, // Local is visible externally without explicit escape in JIT IR.
+                                   // For example because it is used by GC or is the outgoing arg area
+                                   // that belongs to callees.
 };
 
 #endif // DEBUG
@@ -1082,6 +1085,7 @@ public:
         lvStkOffs = offset;
     }
 
+    // TODO-Cleanup: Remove this in favor of GetLayout()->Size/genTypeSize(lvType).
     unsigned lvExactSize; // (exact) size of a STRUCT/SIMD/BLK local in bytes.
 
     unsigned lvSize() const;
@@ -1090,24 +1094,8 @@ public:
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
-    // class handle for the local or null if not known or not a class,
-    // for a struct handle use `GetStructHnd()`.
+    // class handle for the local or null if not known or not a class
     CORINFO_CLASS_HANDLE lvClassHnd;
-
-    // Get class handle for a struct local or implicitByRef struct local.
-    CORINFO_CLASS_HANDLE GetStructHnd() const
-    {
-#ifdef FEATURE_SIMD
-        if (lvSIMDType && (m_layout == nullptr))
-        {
-            return NO_CLASS_HANDLE;
-        }
-#endif
-
-        CORINFO_CLASS_HANDLE structHnd = GetLayout()->GetClassHandle();
-        assert(structHnd != NO_CLASS_HANDLE);
-        return structHnd;
-    }
 
 private:
     ClassLayout* m_layout; // layout info for structs
@@ -1189,6 +1177,16 @@ public:
         assert(varTypeIsStruct(lvType));
         assert((m_layout == nullptr) || ClassLayout::AreCompatible(m_layout, layout));
         m_layout = layout;
+    }
+
+    // Grow the size of a block layout local.
+    void GrowBlockLayout(ClassLayout* layout)
+    {
+        assert(varTypeIsStruct(lvType));
+        assert((m_layout == nullptr) || (m_layout->IsBlockLayout() && (m_layout->GetSize() <= layout->GetSize())));
+        assert(layout->IsBlockLayout());
+        m_layout    = layout;
+        lvExactSize = layout->GetSize();
     }
 
     SsaDefArray<LclSsaVarDsc> lvPerSsaData;
@@ -2799,7 +2797,6 @@ public:
                                                    NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(
         var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
-    CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType);
     CorInfoType getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
                                               CORINFO_CLASS_HANDLE clsHnd,
                                               CORINFO_SIG_INFO*    sig,
@@ -3272,7 +3269,7 @@ public:
                                         // or if the inlinee has GC ref locals.
 
 #if FEATURE_FIXED_OUT_ARGS
-    unsigned            lvaOutgoingArgSpaceVar;  // dummy TYP_LCLBLK var for fixed outgoing argument space
+    unsigned            lvaOutgoingArgSpaceVar;  // var that represents outgoing argument space
     PhasedVar<unsigned> lvaOutgoingArgSpaceSize; // size of fixed outgoing argument space
 #endif                                           // FEATURE_FIXED_OUT_ARGS
 
@@ -3309,7 +3306,7 @@ public:
 
 #if !defined(FEATURE_EH_FUNCLETS)
     // This is used for the callable handlers
-    unsigned lvaShadowSPslotsVar; // TYP_BLK variable for all the shadow SP slots
+    unsigned lvaShadowSPslotsVar; // Block-layout TYP_STRUCT variable for all the shadow SP slots
 #endif                            // FEATURE_EH_FUNCLETS
 
     int lvaCachedGenericContextArgOffs;
@@ -3520,7 +3517,7 @@ public:
     bool lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVararg);
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
-    CORINFO_CLASS_HANDLE lvaGetStruct(unsigned varNum);
+    void lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeValueClsCheck);
     void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck);
     void lvaSetStructUsedAsVarArg(unsigned varNum);
 
@@ -8410,80 +8407,28 @@ private:
 
     struct SIMDHandlesCache
     {
-        // SIMD Types
-        CORINFO_CLASS_HANDLE SIMDFloatHandle;
-        CORINFO_CLASS_HANDLE SIMDDoubleHandle;
-        CORINFO_CLASS_HANDLE SIMDIntHandle;
-        CORINFO_CLASS_HANDLE SIMDUShortHandle;
-        CORINFO_CLASS_HANDLE SIMDUByteHandle;
-        CORINFO_CLASS_HANDLE SIMDShortHandle;
-        CORINFO_CLASS_HANDLE SIMDByteHandle;
-        CORINFO_CLASS_HANDLE SIMDLongHandle;
-        CORINFO_CLASS_HANDLE SIMDUIntHandle;
-        CORINFO_CLASS_HANDLE SIMDULongHandle;
-        CORINFO_CLASS_HANDLE SIMDNIntHandle;
-        CORINFO_CLASS_HANDLE SIMDNUIntHandle;
+        // BYTE, UBYTE, SHORT, USHORT, INT, UINT, LONG, ULONG
+        // NATIVEINT, NATIVEUINT, FLOAT, and DOUBLE
+        static const uint32_t SupportedTypeCount = 12;
 
-        CORINFO_CLASS_HANDLE SIMDPlaneHandle;
-        CORINFO_CLASS_HANDLE SIMDQuaternionHandle;
-        CORINFO_CLASS_HANDLE SIMDVector2Handle;
-        CORINFO_CLASS_HANDLE SIMDVector3Handle;
-        CORINFO_CLASS_HANDLE SIMDVector4Handle;
-        CORINFO_CLASS_HANDLE SIMDVectorHandle;
+        // SIMD Types
+        CORINFO_CLASS_HANDLE VectorTHandles[SupportedTypeCount];
+
+        CORINFO_CLASS_HANDLE PlaneHandle;
+        CORINFO_CLASS_HANDLE QuaternionHandle;
+        CORINFO_CLASS_HANDLE Vector2Handle;
+        CORINFO_CLASS_HANDLE Vector3Handle;
+        CORINFO_CLASS_HANDLE Vector4Handle;
+        CORINFO_CLASS_HANDLE VectorHandle;
 
 #ifdef FEATURE_HW_INTRINSICS
 #if defined(TARGET_ARM64)
-        CORINFO_CLASS_HANDLE Vector64FloatHandle;
-        CORINFO_CLASS_HANDLE Vector64DoubleHandle;
-        CORINFO_CLASS_HANDLE Vector64IntHandle;
-        CORINFO_CLASS_HANDLE Vector64UShortHandle;
-        CORINFO_CLASS_HANDLE Vector64UByteHandle;
-        CORINFO_CLASS_HANDLE Vector64ShortHandle;
-        CORINFO_CLASS_HANDLE Vector64ByteHandle;
-        CORINFO_CLASS_HANDLE Vector64LongHandle;
-        CORINFO_CLASS_HANDLE Vector64UIntHandle;
-        CORINFO_CLASS_HANDLE Vector64ULongHandle;
-        CORINFO_CLASS_HANDLE Vector64NIntHandle;
-        CORINFO_CLASS_HANDLE Vector64NUIntHandle;
+        CORINFO_CLASS_HANDLE Vector64THandles[SupportedTypeCount];
 #endif // defined(TARGET_ARM64)
-        CORINFO_CLASS_HANDLE Vector128FloatHandle;
-        CORINFO_CLASS_HANDLE Vector128DoubleHandle;
-        CORINFO_CLASS_HANDLE Vector128IntHandle;
-        CORINFO_CLASS_HANDLE Vector128UShortHandle;
-        CORINFO_CLASS_HANDLE Vector128UByteHandle;
-        CORINFO_CLASS_HANDLE Vector128ShortHandle;
-        CORINFO_CLASS_HANDLE Vector128ByteHandle;
-        CORINFO_CLASS_HANDLE Vector128LongHandle;
-        CORINFO_CLASS_HANDLE Vector128UIntHandle;
-        CORINFO_CLASS_HANDLE Vector128ULongHandle;
-        CORINFO_CLASS_HANDLE Vector128NIntHandle;
-        CORINFO_CLASS_HANDLE Vector128NUIntHandle;
+        CORINFO_CLASS_HANDLE Vector128THandles[SupportedTypeCount];
 #if defined(TARGET_XARCH)
-        CORINFO_CLASS_HANDLE Vector256FloatHandle;
-        CORINFO_CLASS_HANDLE Vector256DoubleHandle;
-        CORINFO_CLASS_HANDLE Vector256IntHandle;
-        CORINFO_CLASS_HANDLE Vector256UShortHandle;
-        CORINFO_CLASS_HANDLE Vector256UByteHandle;
-        CORINFO_CLASS_HANDLE Vector256ShortHandle;
-        CORINFO_CLASS_HANDLE Vector256ByteHandle;
-        CORINFO_CLASS_HANDLE Vector256LongHandle;
-        CORINFO_CLASS_HANDLE Vector256UIntHandle;
-        CORINFO_CLASS_HANDLE Vector256ULongHandle;
-        CORINFO_CLASS_HANDLE Vector256NIntHandle;
-        CORINFO_CLASS_HANDLE Vector256NUIntHandle;
-
-        CORINFO_CLASS_HANDLE Vector512FloatHandle;
-        CORINFO_CLASS_HANDLE Vector512DoubleHandle;
-        CORINFO_CLASS_HANDLE Vector512IntHandle;
-        CORINFO_CLASS_HANDLE Vector512UShortHandle;
-        CORINFO_CLASS_HANDLE Vector512UByteHandle;
-        CORINFO_CLASS_HANDLE Vector512ShortHandle;
-        CORINFO_CLASS_HANDLE Vector512ByteHandle;
-        CORINFO_CLASS_HANDLE Vector512LongHandle;
-        CORINFO_CLASS_HANDLE Vector512UIntHandle;
-        CORINFO_CLASS_HANDLE Vector512ULongHandle;
-        CORINFO_CLASS_HANDLE Vector512NIntHandle;
-        CORINFO_CLASS_HANDLE Vector512NUIntHandle;
+        CORINFO_CLASS_HANDLE Vector256THandles[SupportedTypeCount];
+        CORINFO_CLASS_HANDLE Vector512THandles[SupportedTypeCount];
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
@@ -8494,16 +8439,148 @@ private:
 
         SIMDHandlesCache()
         {
+            assert(SupportedTypeCount == static_cast<uint32_t>(CORINFO_TYPE_DOUBLE - CORINFO_TYPE_BYTE + 1));
             memset(this, 0, sizeof(*this));
         }
     };
 
     SIMDHandlesCache* m_simdHandleCache;
 
-    // Get the handle for a SIMD type.
+#if defined(FEATURE_HW_INTRINSICS)
     CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, CorInfoType simdBaseJitType)
     {
         assert(varTypeIsSIMD(simdType));
+        assert((simdBaseJitType >= CORINFO_TYPE_BYTE) && (simdBaseJitType <= CORINFO_TYPE_DOUBLE));
+
+        // We should only be called from gtGetStructHandleForSimdOrHW and this should've been checked already
+        assert(m_simdHandleCache != nullptr);
+
+        if (simdBaseJitType == CORINFO_TYPE_FLOAT)
+        {
+            switch (simdType)
+            {
+                case TYP_SIMD8:
+                {
+                    return m_simdHandleCache->Vector2Handle;
+                }
+
+                case TYP_SIMD12:
+                {
+                    return m_simdHandleCache->Vector3Handle;
+                }
+
+                case TYP_SIMD16:
+                {
+                    // We order the checks roughly by expected hit count so early exits are possible
+
+                    if (m_simdHandleCache->Vector4Handle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->Vector4Handle;
+                    }
+
+                    if (m_simdHandleCache->QuaternionHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->QuaternionHandle;
+                    }
+
+                    if (m_simdHandleCache->PlaneHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->PlaneHandle;
+                    }
+
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
+                case TYP_SIMD32:
+                case TYP_SIMD64:
+                {
+                    // This should be handled by the Vector<T> path below
+                    break;
+                }
+#endif // TARGET_XARCH
+
+                default:
+                {
+                    unreached();
+                }
+            }
+        }
+
+        if (emitTypeSize(simdType) != getSIMDVectorRegisterByteLength())
+        {
+            // We have scenarios, such as shifting Vector<T> by a non-constant
+            // which may introduce different sized vectors that are marked as
+            // isSimdAsHWIntrinsic.
+
+            return NO_CLASS_HANDLE;
+        }
+
+        uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
+        assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
+
+        return m_simdHandleCache->VectorTHandles[handleIndex];
+    }
+
+    CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType)
+    {
+        assert(varTypeIsSIMD(simdType));
+        assert((simdBaseJitType >= CORINFO_TYPE_BYTE) && (simdBaseJitType <= CORINFO_TYPE_DOUBLE));
+
+        // We should only be called from gtGetStructHandleForSimdOrHW and this should've been checked already
+        assert(m_simdHandleCache != nullptr);
+
+        uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
+        assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
+
+        switch (simdType)
+        {
+            case TYP_SIMD8:
+            {
+#if defined(TARGET_ARM64)
+                return m_simdHandleCache->Vector64THandles[handleIndex];
+#else
+                // This can only be Vector2 and should've been handled by gtGetStructHandleForSIMD
+                return NO_CLASS_HANDLE;
+#endif
+            }
+
+            case TYP_SIMD12:
+            {
+                // This can only be Vector3 and should've been handled by gtGetStructHandleForSIMD
+                return NO_CLASS_HANDLE;
+            }
+
+            case TYP_SIMD16:
+            {
+                return m_simdHandleCache->Vector128THandles[handleIndex];
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                return m_simdHandleCache->Vector256THandles[handleIndex];
+            }
+
+            case TYP_SIMD64:
+            {
+                return m_simdHandleCache->Vector512THandles[handleIndex];
+            }
+#endif // TARGET_XARCH
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    CORINFO_CLASS_HANDLE gtGetStructHandleForSimdOrHW(var_types   simdType,
+                                                      CorInfoType simdBaseJitType,
+                                                      bool        isSimdAsHWIntrinsic = false)
+    {
+        assert(varTypeIsSIMD(simdType));
+        assert((simdBaseJitType >= CORINFO_TYPE_BYTE) && (simdBaseJitType <= CORINFO_TYPE_DOUBLE));
 
         if (m_simdHandleCache == nullptr)
         {
@@ -8512,118 +8589,21 @@ private:
             return NO_CLASS_HANDLE;
         }
 
-        if (simdBaseJitType == CORINFO_TYPE_FLOAT)
-        {
-            switch (simdType)
-            {
-                case TYP_SIMD8:
-                {
-                    return m_simdHandleCache->SIMDVector2Handle;
-                }
-
-                case TYP_SIMD12:
-                {
-                    return m_simdHandleCache->SIMDVector3Handle;
-                }
-
-                case TYP_SIMD16:
-                {
-                    // We order the checks roughly by expected hit count so early exits are possible
-
-                    if (simdBaseJitType != CORINFO_TYPE_FLOAT)
-                    {
-                        // We could be Vector<T>, so handle below
-                        assert(getSIMDVectorType() == TYP_SIMD16);
-                        break;
-                    }
-
-                    if (m_simdHandleCache->SIMDVector4Handle != NO_CLASS_HANDLE)
-                    {
-                        return m_simdHandleCache->SIMDVector4Handle;
-                    }
-
-                    if (m_simdHandleCache->SIMDQuaternionHandle != NO_CLASS_HANDLE)
-                    {
-                        return m_simdHandleCache->SIMDQuaternionHandle;
-                    }
-
-                    if (m_simdHandleCache->SIMDPlaneHandle != NO_CLASS_HANDLE)
-                    {
-                        return m_simdHandleCache->SIMDPlaneHandle;
-                    }
-
-                    return NO_CLASS_HANDLE;
-                }
-
-#if defined(TARGET_XARCH)
-                case TYP_SIMD32:
-                case TYP_SIMD64:
-                    break;
-#endif // TARGET_XARCH
-
-                default:
-                    unreached();
-            }
-        }
-
-        assert(emitTypeSize(simdType) <= largestEnregisterableStructSize());
-
-        switch (simdBaseJitType)
-        {
-            case CORINFO_TYPE_FLOAT:
-                return m_simdHandleCache->SIMDFloatHandle;
-            case CORINFO_TYPE_DOUBLE:
-                return m_simdHandleCache->SIMDDoubleHandle;
-            case CORINFO_TYPE_INT:
-                return m_simdHandleCache->SIMDIntHandle;
-            case CORINFO_TYPE_USHORT:
-                return m_simdHandleCache->SIMDUShortHandle;
-            case CORINFO_TYPE_UBYTE:
-                return m_simdHandleCache->SIMDUByteHandle;
-            case CORINFO_TYPE_SHORT:
-                return m_simdHandleCache->SIMDShortHandle;
-            case CORINFO_TYPE_BYTE:
-                return m_simdHandleCache->SIMDByteHandle;
-            case CORINFO_TYPE_LONG:
-                return m_simdHandleCache->SIMDLongHandle;
-            case CORINFO_TYPE_UINT:
-                return m_simdHandleCache->SIMDUIntHandle;
-            case CORINFO_TYPE_ULONG:
-                return m_simdHandleCache->SIMDULongHandle;
-            case CORINFO_TYPE_NATIVEINT:
-                return m_simdHandleCache->SIMDNIntHandle;
-            case CORINFO_TYPE_NATIVEUINT:
-                return m_simdHandleCache->SIMDNUIntHandle;
-            default:
-                assert(!"Didn't find a class handle for simdType");
-        }
-
-        return NO_CLASS_HANDLE;
-    }
-
-#if defined(FEATURE_HW_INTRINSICS)
-    CORINFO_CLASS_HANDLE gtGetStructHandleForSimdOrHW(var_types   simdType,
-                                                      CorInfoType simdBaseJitType,
-                                                      bool        isSimdAsHWIntrinsic = false)
-    {
-        assert(varTypeIsSIMD(simdType));
-
         CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
 
         if (isSimdAsHWIntrinsic)
         {
             clsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
         }
-        else
+
+        if (clsHnd == NO_CLASS_HANDLE)
         {
             clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
         }
 
-        // Currently there are cases where isSimdAsHWIntrinsic is passed
-        // incorrectly. Fall back to the canonical SIMD handle in that case.
-        // TODO-cleanup: We can probably just always use the canonical handle.
         if (clsHnd == NO_CLASS_HANDLE)
         {
+            // TODO-cleanup: We can probably just always use the canonical handle.
             clsHnd = gtGetCanonicalStructHandleForSIMD(simdType);
         }
 
@@ -8659,7 +8639,7 @@ private:
             case TYP_SIMD8:
                 return m_simdHandleCache->CanonicalSimd8Handle;
             case TYP_SIMD12:
-                return m_simdHandleCache->SIMDVector3Handle;
+                return m_simdHandleCache->Vector3Handle;
             case TYP_SIMD16:
                 return m_simdHandleCache->CanonicalSimd16Handle;
 #if defined(TARGET_XARCH)
@@ -8687,32 +8667,42 @@ private:
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDVector4Handle)
+        if (structHandle == m_simdHandleCache->Vector4Handle)
         {
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDVector3Handle)
+        if (structHandle == m_simdHandleCache->Vector3Handle)
         {
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDVector2Handle)
+        if (structHandle == m_simdHandleCache->Vector2Handle)
         {
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDQuaternionHandle)
+        if (structHandle == m_simdHandleCache->QuaternionHandle)
         {
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDPlaneHandle)
+        if (structHandle == m_simdHandleCache->PlaneHandle)
         {
             return false;
         }
 
         return true;
+    }
+
+    bool isOpaqueSIMDType(ClassLayout* layout) const
+    {
+        if (layout->IsBlockLayout())
+        {
+            return true;
+        }
+
+        return isOpaqueSIMDType(layout->GetClassHandle());
     }
 
     // Returns true if the lclVar is an opaque SIMD type.
@@ -8722,7 +8712,13 @@ private:
         {
             return false;
         }
-        return isOpaqueSIMDType(varDsc->GetStructHnd());
+
+        if (varDsc->GetLayout() == nullptr)
+        {
+            return true;
+        }
+
+        return isOpaqueSIMDType(varDsc->GetLayout());
     }
 
     bool isNumericsNamespace(const char* ns)
@@ -9731,7 +9727,6 @@ public:
         }
     }
 
-    const char* pgoSourceToString(ICorJitInfo::PgoSource p);
     const char* devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail);
 
 #endif // DEBUG
@@ -10328,6 +10323,7 @@ public:
         unsigned m_dispatchRetBuf;
         unsigned m_wideIndir;
         unsigned m_stressPoisonImplicitByrefs;
+        unsigned m_externallyVisibleImplicitly;
 
     public:
         void RecordLocal(const LclVarDsc* varDsc);

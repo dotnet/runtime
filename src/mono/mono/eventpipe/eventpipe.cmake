@@ -26,7 +26,18 @@ if(ENABLE_PERFTRACING)
         add_definitions(-DBIGENDIAN)
     endif (TARGET_S390X)
 
-    include (${SHARED_EVENTPIPE_SOURCE_PATH}CMakeLists.txt)
+    include (${SHARED_CONTAINERS_SOURCE_PATH}containers.cmake)
+
+    set(container_sources "")
+
+    list(APPEND container_sources
+        ${SHARED_CONTAINER_SOURCES}
+        ${SHARED_CONTAINER_HEADERS}
+    )
+
+    addprefix(container_sources ${SHARED_CONTAINERS_SOURCE_PATH} "${container_sources}")
+
+    include (${SHARED_EVENTPIPE_SOURCE_PATH}eventpipe.cmake)
 
     set(MONO_EVENTPIPE_SHIM_SOURCES "")
     set(MONO_EVENTPIPE_SHIM_HEADERS "")

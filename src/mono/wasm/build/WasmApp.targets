@@ -135,6 +135,10 @@
 
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Remove="@(SupportedPlatform)" />
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Include="browser" />
+
+    <TrimmerRootDescriptor
+      Condition="'$(WasmEnableLegacyJsInterop)' == 'true'"
+      Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.LegacyJsInterop.xml" />
   </ItemGroup>
 
   <PropertyGroup Label="Identify app bundle directory to run from">
