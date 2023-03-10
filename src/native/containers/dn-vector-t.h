@@ -209,9 +209,9 @@ DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, erase) (DN_DEFINE_VECTOR_IT_T_NAME(name) po
 static inline DN_DEFINE_VECTOR_RESULT_T_NAME(name) \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_erase_fast) (DN_DEFINE_VECTOR_IT_T_NAME(name) position, dn_vector_dispose_func_t dispose_func) \
 { \
-	DN_ASSERT (!dn_vector_it_end (position)); \
 	DN_DEFINE_VECTOR_T_NAME(name) *vector = position._internal._vector; \
 	DN_ASSERT (vector && vector->size != 0); \
+	DN_ASSERT (position.it != position._internal._vector->size); \
 	vector->size --; \
 	if (dispose_func) \
 		dispose_func (vector->data + position.it); \
@@ -224,9 +224,9 @@ DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_erase_fast) (DN_DEFINE_VECTOR_IT_T_N
 static inline DN_DEFINE_VECTOR_RESULT_T_NAME(name) \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, erase_fast) (DN_DEFINE_VECTOR_IT_T_NAME(name) position) \
 { \
-	DN_ASSERT (!dn_vector_it_end (position)); \
 	DN_DEFINE_VECTOR_T_NAME(name) *vector = position._internal._vector; \
 	DN_ASSERT (vector && vector->size != 0); \
+	DN_ASSERT (position.it != position._internal._vector->size); \
 	vector->size --; \
 	vector->data [position.it] = vector->data [vector->size]; \
 	if ((vector->_internal._attributes & (uint32_t)DN_VECTOR_ATTRIBUTE_MEMORY_INIT) == DN_VECTOR_ATTRIBUTE_MEMORY_INIT) \
