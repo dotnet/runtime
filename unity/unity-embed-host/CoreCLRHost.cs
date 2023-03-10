@@ -9,12 +9,12 @@ using System.Text;
 namespace Unity.CoreCLRHelpers;
 
 using StringPtr = IntPtr;
-static unsafe partial class CoreCLRHost
+public static unsafe partial class CoreCLRHost
 {
     static ALCWrapper alcWrapper;
     static FieldInfo assemblyHandleField;
 
-    public static int InitMethod(HostStruct* functionStruct, int structSize)
+    internal static int InitMethod(HostStruct* functionStruct, int structSize)
     {
         if (Marshal.SizeOf<HostStruct>() != structSize)
             throw new Exception("Invalid struct size");

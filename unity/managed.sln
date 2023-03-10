@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "forwarder-test", "forwarder
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityEmbedHost.Generator", "UnityEmbedHost.Generator\UnityEmbedHost.Generator.csproj", "{2D9A1C12-9323-428E-BBC8-BFF177325D00}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityEmbedHost.Tests", "UnityEmbedHost.Tests\UnityEmbedHost.Tests.csproj", "{13C2644A-7DB4-4CE1-AC30-C23613878271}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{2D9A1C12-9323-428E-BBC8-BFF177325D00}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D9A1C12-9323-428E-BBC8-BFF177325D00}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D9A1C12-9323-428E-BBC8-BFF177325D00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13C2644A-7DB4-4CE1-AC30-C23613878271}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13C2644A-7DB4-4CE1-AC30-C23613878271}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13C2644A-7DB4-4CE1-AC30-C23613878271}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13C2644A-7DB4-4CE1-AC30-C23613878271}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
