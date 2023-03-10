@@ -1776,6 +1776,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 
+    compNumStatementLinksTraversed = 0;
     compPoisoningAnyImplicitByrefs = false;
 #endif
 
@@ -4996,9 +4997,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDomsComputed    = false;
     optLoopTableValid = false;
 
-#ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
-#endif
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -5341,9 +5340,37 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
 }
 #endif
 
+//------------------------------------------------------------------------
+// StressSplitTree: A phase that stresses the gtSplitTree function.
+//
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//   Stress is applied on a function-by-function basis
+//
 PhaseStatus Compiler::StressSplitTree()
 {
-#ifdef DEBUG
+    if (compStressCompile(STRESS_SPLIT_TREES_RANDOMLY, 10))
+    {
+        SplitTreesRandomly();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    if (compStressCompile(STRESS_SPLIT_TREES_REMOVE_COMMAS, 10))
+    {
+        SplitTreesRemoveCommas();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
+// SplitTreesRandomly: Split all statements at a random location.
+//
+void Compiler::SplitTreesRandomly()
+{
     CLRRandom rng;
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
@@ -5371,9 +5398,19 @@ PhaseStatus Compiler::StressSplitTree()
                 if (splitTree == 0)
                 {
                     JITDUMP("Splitting " FMT_STMT " at [%06u]\n", stmt->GetID(), dspTreeID(tree));
-                    Statement* firstNewStmt;
+                    Statement* newStmt;
                     GenTree**  use;
-                    gtSplitTree(block, stmt, tree, &firstNewStmt, &use);
+                    if (gtSplitTree(block, stmt, tree, &newStmt, &use))
+                    {
+                        while ((newStmt != nullptr) && (newStmt != stmt))
+                        {
+                            fgMorphStmtBlockOps(block, newStmt);
+                            newStmt = newStmt->GetNextStmt();
+                        }
+
+                        fgMorphStmtBlockOps(block, stmt);
+                    }
+
                     break;
                 }
 
@@ -5381,9 +5418,77 @@ PhaseStatus Compiler::StressSplitTree()
             }
         }
     }
-#endif
+}
 
-    return PhaseStatus::MODIFIED_EVERYTHING;
+//------------------------------------------------------------------------
+// SplitTreesRemoveCommas: Split trees to remove all commas.
+//
+void Compiler::SplitTreesRemoveCommas()
+{
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            while (true)
+            {
+                bool again = false;
+                for (GenTree* tree : stmt->TreeList())
+                {
+                    if (!tree->OperIs(GT_COMMA))
+                    {
+                        continue;
+                    }
+
+                    // Supporting this weird construct would require additional
+                    // handling, we need to sort of move the comma into to the
+                    // next node in execution order. We don't see this so just
+                    // skip it.
+                    assert(!tree->IsReverseOp());
+
+                    JITDUMP("Removing COMMA [%06u]\n", dspTreeID(tree));
+                    Statement* newStmt;
+                    GenTree**  use;
+                    gtSplitTree(block, stmt, tree, &newStmt, &use);
+                    GenTree* op1SideEffects = nullptr;
+                    gtExtractSideEffList(tree->gtGetOp1(), &op1SideEffects);
+
+                    if (op1SideEffects != nullptr)
+                    {
+                        fgInsertStmtBefore(block, stmt, fgNewStmtFromTree(op1SideEffects));
+                    }
+
+                    *use = tree->gtGetOp2();
+
+                    while ((newStmt != nullptr) && (newStmt != stmt))
+                    {
+                        fgMorphStmtBlockOps(block, newStmt);
+                        newStmt = newStmt->GetNextStmt();
+                    }
+
+                    fgMorphStmtBlockOps(block, stmt);
+
+                    again = true;
+                    break;
+                }
+
+                if (!again)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            for (GenTree* tree : stmt->TreeList())
+            {
+                assert(!tree->OperIs(GT_COMMA));
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------

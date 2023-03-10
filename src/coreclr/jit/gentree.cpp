@@ -16201,7 +16201,14 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
 //   this involves introducing new locals for those values, such that they can
 //   be used in the original statement.
 //
-void Compiler::gtSplitTree(
+//   Note that this function may introduce new block ops that need to be
+//   morphed if called after morph. fgMorphStmtBlockOps can be used for this
+//   purpose.
+//
+// Returns:
+//   True if any changes were made; false if nothing needed to be done to split the tree.
+//
+bool Compiler::gtSplitTree(
     BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
 {
     class Splitter final : public GenTreeVisitor<Splitter>
@@ -16392,7 +16399,7 @@ void Compiler::gtSplitTree(
                     return;
                 }
 
-                // Only a handful of nodes can be location, and htey are all unary or nullary.
+                // Only a handful of nodes can be location, and they are all unary or nullary.
                 assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
                 if ((*use)->OperIsUnary())
                 {
@@ -16417,6 +16424,15 @@ void Compiler::gtSplitTree(
             }
 #endif
 
+            if ((*use)->OperIs(GT_FIELD_LIST, GT_INIT_VAL))
+            {
+                for (GenTree** operandUse : (*use)->UseEdges())
+                {
+                    SplitOutUse(UseInfo{operandUse, *use}, false);
+                }
+                return;
+            }
+
             Statement* stmt = nullptr;
             if (!(*use)->IsValue() || (*use)->OperIs(GT_ASG) || (user == nullptr) ||
                 (user->OperIs(GT_COMMA) && (user->gtGetOp1() == *use)))
@@ -16430,14 +16446,6 @@ void Compiler::gtSplitTree(
                 *use        = m_compiler->gtNewNothingNode();
                 MadeChanges = true;
             }
-            else if ((*use)->OperIs(GT_FIELD_LIST, GT_INIT_VAL))
-            {
-                for (GenTree** operandUse : (*use)->UseEdges())
-                {
-                    SplitOutUse(UseInfo{operandUse, *use}, false);
-                }
-                return;
-            }
             else
             {
                 unsigned lclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling to split statement for tree"));
@@ -16449,13 +16457,10 @@ void Compiler::gtSplitTree(
                     m_compiler->lvaGetDesc(lclNum)->lvIsMultiRegRet = true;
                 }
 
-                if (stmt == nullptr)
-                {
-                    GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
-                    stmt         = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
-                    *use         = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
-                    MadeChanges  = true;
-                }
+                GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
+                stmt         = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
+                *use         = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
+                MadeChanges  = true;
             }
 
             if (stmt != nullptr)
@@ -16465,8 +16470,6 @@ void Compiler::gtSplitTree(
                     FirstStatement = stmt;
                 }
 
-                m_compiler->gtSetStmtInfo(stmt);
-                m_compiler->fgSetStmtSeq(stmt);
                 m_compiler->fgInsertStmtBefore(m_bb, m_splitStmt, stmt);
             }
         }
@@ -16480,9 +16483,9 @@ void Compiler::gtSplitTree(
     if (splitter.MadeChanges)
     {
         gtUpdateStmtSideEffects(stmt);
-        // We may have introduced new LCL_VAR struct uses that need to go through block morphing.
-        fgMorphBlockStmt(block, stmt DEBUGARG("gtSplitTree"));
     }
+
+    return splitter.MadeChanges;
 }
 
 //------------------------------------------------------------------------
