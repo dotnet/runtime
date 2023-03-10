@@ -3,7 +3,7 @@
 
 .assembly extern System.Console { auto }
 .assembly extern xunit.core {}
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly 'signed_overflow_conversions_are_not_treated_as_unsigned' { }
 
 .class public auto SignedOverflowConversionsAreNotTreatedAsUnsigned extends [System.Runtime]System.Object
