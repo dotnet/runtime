@@ -82,10 +82,6 @@ extends:
             $(sslStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
           displayName: Build SslStress
 
-          # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
-          # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
-          # This is worked around by handpicking the V2 executable.
-          # The workaround should be removed when the official fix is propagated into 1es-windows-2022-open, or when we switch to another image.
         - powershell: |
             cd '$(sslStressProject)'
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
