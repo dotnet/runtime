@@ -8917,49 +8917,6 @@ private:
         return emitTypeSize(TYP_SIMD8);
     }
 
-    enum UnrollKind
-    {
-        Memset, // Initializing memory with some value
-        Memcpy  // Copying memory from src to dst
-    };
-
-    unsigned int getUnrollThreshold(UnrollKind type)
-    {
-        unsigned threshold = maxSIMDStructBytes();
-#if defined(TARGET_ARM64)
-        // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
-        //
-        //   ldp q0, q1, [x1]
-        //   stp q0, q1, [x0]
-        //
-        threshold *= 2;
-#elif defined(TARGET_XARCH)
-        // Ignore AVX-512 for now
-        threshold = max(threshold, YMM_REGSIZE_BYTES);
-#endif
-
-        if (type == UnrollKind::Memset)
-        {
-            // Typically, memset-like operations require less instructions than memcpy
-            threshold *= 2;
-        }
-
-        // Use 4 as a multiplier by default, thus, the final threshold will be:
-        //
-        // | arch       | memset | memcpy |
-        // |------------|--------|--------|
-        // | x86 avx512 |   512  |   256  | (ignored for now)
-        // | x86 avx    |   256  |   128  |
-        // | x86 sse    |   128  |    64  |
-        // | arm64      |   256  |   128  |
-        // | arm        |   128  |    64  |
-        //
-        // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
-        //
-        // As of today, we don't use SVE/SVE2, DC ZVA and hardware memset/memcpy instructions on ARM64
-        return threshold * 4;
-    }
-
 public:
     // Returns the codegen type for a given SIMD size.
     static var_types getSIMDTypeForSize(unsigned size)
@@ -9005,6 +8962,53 @@ private:
 #endif // FEATURE_SIMD
 
 public:
+    enum UnrollKind
+    {
+        Memset, // Initializing memory with some value
+        Memcpy  // Copying memory from src to dst
+    };
+
+    unsigned int getUnrollThreshold(UnrollKind type)
+    {
+        unsigned threshold = TARGET_POINTER_SIZE;
+
+#if defined(FEATURE_SIMD)
+        threshold = maxSIMDStructBytes();
+#if defined(TARGET_ARM64)
+        // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
+        //
+        //   ldp q0, q1, [x1]
+        //   stp q0, q1, [x0]
+        //
+        threshold *= 2;
+#elif defined(TARGET_XARCH)
+        // Ignore AVX-512 for now
+        threshold = max(threshold, YMM_REGSIZE_BYTES);
+#endif
+#endif
+
+        if (type == UnrollKind::Memset)
+        {
+            // Typically, memset-like operations require less instructions than memcpy
+            threshold *= 2;
+        }
+
+        // Use 4 as a multiplier by default, thus, the final threshold will be:
+        //
+        // | arch       | memset | memcpy |
+        // |------------|--------|--------|
+        // | x86 avx512 |   512  |   256  | (ignored for now)
+        // | x86 avx    |   256  |   128  |
+        // | x86 sse    |   128  |    64  |
+        // | arm64      |   256  |   128  |
+        // | arm        |   128  |    64  |
+        //
+        // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
+        //
+        // As of today, we don't use SVE/SVE2, DC ZVA and hardware memset/memcpy instructions on ARM64
+        return threshold * 4;
+    }
+
     //------------------------------------------------------------------------
     // largestEnregisterableStruct: The size in bytes of the largest struct that can be enregistered.
     //

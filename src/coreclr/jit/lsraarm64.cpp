@@ -591,7 +591,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     // localloc.
                     sizeVal = AlignUp(sizeVal, STACK_ALIGN);
 
-                    if (sizeVal <= getUnrollThreshold(UnrollKind::Memset))
+                    if (sizeVal <= compiler->getUnrollThreshold(Compiler::UnrollKind::Memset))
                     {
                         // Need no internal registers
                     }
