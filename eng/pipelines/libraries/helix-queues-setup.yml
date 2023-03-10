@@ -127,7 +127,7 @@ jobs:
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
       # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
       - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.1015.Amd64.AppleTV.Open
+        - OSX.13.Amd64.AppleTV.Open
       - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
         - OSX.1100.Amd64.AppleTV.Open
 
