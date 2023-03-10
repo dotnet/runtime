@@ -27,8 +27,11 @@ public class NativeLibraryToLoad
 
     public static string GetFullPath()
     {
-        Assembly assembly = Assembly.GetExecutingAssembly();
-        string directory = Path.GetDirectoryName(assembly.Location);
-        return Path.Combine(directory, GetFileName());
+        return Path.Combine(GetDirectory(), GetFileName());
+    }
+
+    public static string GetDirectory()
+    {
+        return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
     }
 }

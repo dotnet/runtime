@@ -141,7 +141,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return;
             }
 
-            if (!NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
+            // Windows ships msquic in the assembly directory. Non-Windows relies an the package being installed on the system.
+            DllImportSearchPath? searchPath = OperatingSystem.IsWindows() ? DllImportSearchPath.AssemblyDirectory : null;
+            if (!NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, searchPath, out IntPtr msQuicHandle))
             {
                 // MsQuic library not loaded
                 return;
