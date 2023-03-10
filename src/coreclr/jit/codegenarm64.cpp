@@ -4749,7 +4749,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     {
         assert(op2->IsIntegralConst(0));
 
-        instruction ins = INS_tbz;
+        instruction ins = INS_tbnz;
         int         imm = (int)attr * 8 - 1;
 
         GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->bbJumpDest, reg, imm);
@@ -4758,7 +4758,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     {
         assert(op2->IsIntegralConst(0));
 
-        instruction ins = INS_tbnz;
+        instruction ins = INS_tbz;
         int         imm = (int)attr * 8 - 1;
 
         GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->bbJumpDest, reg, imm);

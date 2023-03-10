@@ -3314,20 +3314,6 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #endif // TARGET_XARCH
-
-//#ifdef TARGET_ARM64
-//    if (comp->opts.OptimizationEnabled() && !cmp->gtSetFlags() && cmp->TypeIs(TYP_INT, TYP_LONG) && cmp->OperIs(GT_LT) &&
-//        cmp->gtGetOp2()->IsIntegralConst(0))
-//    {
-//        ssize_t shiftAmount = cmp->TypeIs(TYP_LONG) ? 63 : 31;
-//
-//        cmp->ChangeOper(GT_RSZ);
-//        cmp->gtGetOp2()->AsIntConCommon()->SetIntegralValue(shiftAmount);
-//
-//        return LowerNode(cmp);
-//    }
-//#endif // TARGET_ARM64
-
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
