@@ -279,10 +279,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            Debug.Assert(type is DefType);
-            DefType defType = (DefType)type;
-            bool isInlineArray = defType.IsInlineArray;
-            foreach (FieldDesc field in defType.GetFields())
+            Debug.Assert(type is MetadataType);
+            MetadataType structType = (MetadataType)type;
+            bool isInlineArray = structType.IsInlineArray;
+            foreach (FieldDesc field in structType.GetFields())
             {
                 if (field.IsStatic)
                     continue;
@@ -290,7 +290,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (isInlineArray)
                 {
                     var elementSize = field.FieldType.GetElementSize().AsInt;
-                    var totalSize = defType.InstanceFieldSize.AsInt;
+                    var totalSize = structType.InstanceFieldSize.AsInt;
 
                     for (int offset = 0; offset < totalSize; offset += elementSize)
                     {

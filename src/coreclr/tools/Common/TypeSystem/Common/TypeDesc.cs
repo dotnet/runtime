@@ -677,17 +677,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating whether this is an inline array type
-        /// </summary>
-        public bool IsInlineArray
-        {
-            get
-            {
-                return (GetTypeFlags(TypeFlags.IsInlineArray | TypeFlags.AttributeCacheComputed) & TypeFlags.IsInlineArray) != 0;
-            }
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this type implements <code>IDynamicInterfaceCastable</code>
         /// </summary>
         public bool IsIDynamicInterfaceCastable

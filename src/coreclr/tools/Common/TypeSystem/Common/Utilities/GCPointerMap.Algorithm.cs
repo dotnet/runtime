@@ -10,7 +10,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Computes the GC pointer map for the instance fields of <paramref name="type"/>.
         /// </summary>
-        public static GCPointerMap FromInstanceLayout(DefType type)
+        public static GCPointerMap FromInstanceLayout(MetadataType type)
         {
             Debug.Assert(type.ContainsGCPointers);
 
@@ -21,11 +21,11 @@ namespace Internal.TypeSystem
             return builder.ToGCMap();
         }
 
-        private static void FromInstanceLayoutHelper(ref GCPointerMapBuilder builder, DefType type, int pointerSize)
+        private static void FromInstanceLayoutHelper(ref GCPointerMapBuilder builder, MetadataType type, int pointerSize)
         {
             if (!type.IsValueType && type.HasBaseType)
             {
-                DefType baseType = type.BaseType;
+                MetadataType baseType = (MetadataType)type.BaseType;
                 GCPointerMapBuilder baseLayoutBuilder = builder.GetInnerBuilder(0, baseType.InstanceByteCount.AsInt);
                 FromInstanceLayoutHelper(ref baseLayoutBuilder, baseType, pointerSize);
             }
@@ -51,7 +51,7 @@ namespace Internal.TypeSystem
                 }
                 else if (fieldType.IsValueType)
                 {
-                    var fieldDefType = (DefType)fieldType;
+                    var fieldDefType = (MetadataType)fieldType;
                     if (fieldDefType.ContainsGCPointers)
                     {
                         for (int i = 0; i < repeat; i++)
@@ -69,7 +69,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Computes the GC pointer map of the GC static region of the type.
         /// </summary>
-        public static GCPointerMap FromStaticLayout(DefType type)
+        public static GCPointerMap FromStaticLayout(MetadataType type)
         {
             GCPointerMapBuilder builder = new GCPointerMapBuilder(type.GCStaticFieldSize.AsInt, type.Context.Target.PointerSize);
 
@@ -87,7 +87,7 @@ namespace Internal.TypeSystem
                 else
                 {
                     Debug.Assert(fieldType.IsValueType);
-                    var fieldDefType = (DefType)fieldType;
+                    var fieldDefType = (MetadataType)fieldType;
                     if (fieldDefType.ContainsGCPointers)
                     {
                         int pointerSize = type.Context.Target.PointerSize;
@@ -105,7 +105,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Computes the GC pointer map of the thread static region of the type.
         /// </summary>
-        public static GCPointerMap FromThreadStaticLayout(DefType type)
+        public static GCPointerMap FromThreadStaticLayout(MetadataType type)
         {
             GCPointerMapBuilder builder = new GCPointerMapBuilder(type.ThreadGcStaticFieldSize.AsInt, type.Context.Target.PointerSize);
 
@@ -121,7 +121,7 @@ namespace Internal.TypeSystem
                 }
                 else if (fieldType.IsValueType)
                 {
-                    var fieldDefType = (DefType)fieldType;
+                    var fieldDefType = (MetadataType)fieldType;
                     if (fieldDefType.ContainsGCPointers)
                     {
                         int pointerSize = type.Context.Target.PointerSize;

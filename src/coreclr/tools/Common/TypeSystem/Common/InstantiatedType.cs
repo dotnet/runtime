@@ -74,6 +74,10 @@ namespace Internal.TypeSystem
         // will provide an implementation that adds the flag if necessary.
         partial void AddComputedIntrinsicFlag(ref TypeFlags flags);
 
+        // Type system implementations that support the notion of inline arrays
+        // will provide an implementation that adds the flag if necessary.
+        partial void AddComputedInlineArrayFlag(ref TypeFlags flags);
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;
@@ -106,8 +110,7 @@ namespace Internal.TypeSystem
                 if (_typeDef.IsByRefLike)
                     flags |= TypeFlags.IsByRefLike;
 
-                if (_typeDef.IsInlineArray)
-                    flags |= TypeFlags.IsInlineArray;
+                AddComputedInlineArrayFlag(ref flags);
 
                 AddComputedIntrinsicFlag(ref flags);
             }

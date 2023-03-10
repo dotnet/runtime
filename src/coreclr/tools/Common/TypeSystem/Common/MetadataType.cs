@@ -92,11 +92,18 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract MetadataType GetNestedType(string name);
 
-        public virtual int GetInlineArrayLength()
+        /// <summary>
+        /// Gets a value indicating whether this is an inline array type
+        /// </summary>
+        public virtual bool IsInlineArray
         {
-            Debug.Assert(this.IsInlineArray);
-            return 1;
+            get
+            {
+                return (GetTypeFlags(TypeFlags.IsInlineArray | TypeFlags.AttributeCacheComputed) & TypeFlags.IsInlineArray) != 0;
+            }
         }
+
+        public abstract int GetInlineArrayLength();
     }
 
     public struct ClassLayoutMetadata
