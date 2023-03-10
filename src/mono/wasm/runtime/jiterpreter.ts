@@ -787,6 +787,7 @@ function generate_wasm (
         rejected = false;
         console.error(`MONO_WASM: ${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
         recordFailure();
+        throw exc;
         return 0;
     } finally {
         const finished = _now();
