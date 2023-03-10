@@ -5,15 +5,13 @@ project(%LIBRARY_NAME%)
 enable_language(%CMAKE_LANGS%)
 
 set(DOTNET_AOT_SOURCES
-    %AotSources%
+%AotSources%
 )
 set(DOTNET_AOT_OBJECTS
-    %AotObjects%
+%AotObjects%
 )
 set(DOTNET_EXTRA_SOURCES
-    %ExtraSources%
-    load_assemblies.c
-    autoinit.c
+%ExtraSources%    load_assemblies.c
 )
 
 include_directories("%MonoInclude%")
@@ -54,5 +52,4 @@ target_link_libraries(
     PUBLIC
     aot_library
     ${MOBILE_SYSTEM_LIBS}
-    %LIBRARY_LINKER_ARGS%
-)
+%LIBRARY_LINKER_ARGS%)

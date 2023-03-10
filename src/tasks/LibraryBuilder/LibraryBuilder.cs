@@ -136,6 +136,7 @@ public class LibraryBuilderTask : AppBuilderTask
         if (!UsesCustomRuntimeInitCallback)
         {
             WriteAutoInitializationFromTemplate();
+            extraSources.AppendLine("    autoinit.c");
         }
 
         GenerateAssembliesLoader();
@@ -158,7 +159,7 @@ public class LibraryBuilderTask : AppBuilderTask
         {
             if (!string.IsNullOrEmpty(compiledAssembly.AssemblerFile))
             {
-                aotSources.AppendLine(compiledAssembly.AssemblerFile);
+                aotSources.AppendLine($"    {compiledAssembly.AssemblerFile}");
             }
 
             if (!string.IsNullOrEmpty(compiledAssembly.LlvmObjectFile))
@@ -198,7 +199,7 @@ public class LibraryBuilderTask : AppBuilderTask
 
         foreach (ITaskItem item in ExtraSources)
         {
-            extraSources.AppendLine(item.ItemSpec);
+            extraSources.AppendLine($"    {item.ItemSpec}");
         }
     }
 
