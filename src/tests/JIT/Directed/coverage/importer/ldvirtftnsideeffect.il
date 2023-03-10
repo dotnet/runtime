@@ -17,6 +17,7 @@ ret
 //-------------------------
 // Entry point - Main     -
 //-------------------------
+.class public auto ansi ldvirtftnsideeffect {
 .method public static int32 main() {
 .locals	(int32, class MyTest)
 .entrypoint
@@ -41,6 +42,7 @@ FAIL:
 	ldc.i4	0x0
 END:
 	ret
+}
 }
 // ---------------------------------------------------------
 

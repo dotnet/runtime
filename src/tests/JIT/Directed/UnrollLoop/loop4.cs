@@ -6,7 +6,7 @@
 
 using System;
 
-internal class SmallLoop1
+public class SmallLoop1
 {
     public static int Main()
     {

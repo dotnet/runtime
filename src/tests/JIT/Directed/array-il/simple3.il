@@ -12,7 +12,7 @@
 {
 }
 
-.class auto ansi Simple2_Array_Test
+.class public auto ansi Simple2_Array_Test
 {
   .method public static int32 test(int32[,,,] Odd_Variable) il managed
   {

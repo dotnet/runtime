@@ -19,7 +19,7 @@ internal class CL
     public String str;
 }
 
-internal class StrAccess1
+public class StrAccess1
 {
     public static String str1;
     public const int DefaultSeed = 20010415;

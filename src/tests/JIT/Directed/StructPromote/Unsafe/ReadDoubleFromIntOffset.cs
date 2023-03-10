@@ -79,7 +79,7 @@ class TestReadIntAsDouble
         d.x = Unsafe.As<Dec, DecCalc2>(ref p).ulo;
     }
 
-    static int Main()
+    public static int Main()
     {
         TestDoubleAssignment(default);
         TestIntAssignment(default);

@@ -10,7 +10,7 @@
 .assembly 'SideEffects'
 {
 }
-.class SideEffects
+.class public SideEffects
 {
   .field public static int32 m_i
   .field public static int32 s_i

@@ -16,6 +16,7 @@ volatile. ldind.i4
 pop
 ret
 }
+.class public auto ansi volatilldind {
 .method public static int32 Main()
 {
 .entrypoint
@@ -34,4 +35,5 @@ ret
 PASS:
 ldc.i4 100
 ret
+}
 }

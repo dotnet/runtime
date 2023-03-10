@@ -5,7 +5,7 @@
 using System.Runtime.CompilerServices;
 using System;
 
-class SP2c
+public class SP2c
 {
 
     // Struct in reg (int, long)

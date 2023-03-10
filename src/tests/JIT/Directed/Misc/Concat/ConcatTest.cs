@@ -3,7 +3,7 @@
 
 using System;
 
-internal class ConcatTest
+public class ConcatTest
 {
     static string strA = "A";
     static string strB = "B";

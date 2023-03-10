@@ -5,7 +5,7 @@
 using System;
 namespace A
 {
-    internal class B
+    public class B
     {
         public static int downBy1ge(int amount)
         {

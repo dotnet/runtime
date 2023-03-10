@@ -39,7 +39,7 @@
 
 } // end of class A
 
-.class private auto ansi beforefieldinit B
+.class public auto ansi beforefieldinit B
        extends A
 {
   .method public hidebysig virtual instance int32 

@@ -14,7 +14,7 @@ struct Complex
   }
 };
 public 
-class Complex_Array_Test
+public class Complex_Array_Test
 {
 	public static int Main()
 	{

@@ -5,7 +5,7 @@
 using System.Runtime.CompilerServices;
 using System;
 
-class SpAddrAT
+public class SpAddrAT
 {
 
     // This one makes sure that we don't (independently) promote a struct local that is address-taken.

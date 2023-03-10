@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly legacy library 'stfldstatic1_importer' {}
-.class private auto ansi beforefieldinit stfldstatic1
+.class public auto ansi beforefieldinit stfldstatic1
        extends [mscorlib]System.Object
 {
   .field private static int32 fld

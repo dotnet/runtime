@@ -8,7 +8,7 @@ internal struct VT
     public double delta;
     public double temp;
 }
-internal class loop6
+public class loop6
 {
     public static int cnt;
 

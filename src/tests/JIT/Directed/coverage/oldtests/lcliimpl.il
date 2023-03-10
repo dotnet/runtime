@@ -8,11 +8,13 @@
   .ver 4:0:0:0
 }
 .assembly lcliimpl {}
+.class public auto ansi lcliimpl {
 .method public static int32 main() cil managed
 {
   .entrypoint
   call int32 f()
   ret
+}
 }
 
 .method public static int32 f() cil managed

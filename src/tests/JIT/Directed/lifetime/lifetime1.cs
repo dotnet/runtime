@@ -6,7 +6,7 @@
 
 using System;
 
-internal class Test_lifetime1
+public class Test_lifetime1
 {
     private class A
     {
@@ -102,7 +102,7 @@ internal class Test_lifetime1
     }
 
 
-    private static int Main()
+    public static int Main()
     {
         if (f1() != 100) return -1;
         CleanGC();

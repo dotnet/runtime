@@ -13,7 +13,7 @@
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
 
-.class explicit _add {
+.class public explicit _add {
 
 .field [0] int32 global0
 .field [4] int32 global1
@@ -26,7 +26,7 @@ ret
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	6
 .locals init (class _add target)

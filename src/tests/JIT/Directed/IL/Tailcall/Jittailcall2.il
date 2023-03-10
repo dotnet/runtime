@@ -17,7 +17,7 @@
 }
 .namespace DefaultNamespace
 {
-  .class auto ansi dotailcall extends [mscorlib]System.Object
+  .class public auto ansi dotailcall extends [mscorlib]System.Object
   {
     .field private static int32 ifoo
     .field private static int32 iboo

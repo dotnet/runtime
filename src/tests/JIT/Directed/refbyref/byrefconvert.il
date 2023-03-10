@@ -9,6 +9,7 @@
 }
 .assembly byrefconvert {}
 .module byrefconvert.exe
+.class public auto ansi byrefconvert {
 .method public static int32 Main() cil managed
 {
   .entrypoint
@@ -25,4 +26,5 @@
   call       void [System.Console]System.Console::WriteLine(string)
   ldc.i4 100
   ret
+}
 }

@@ -6,7 +6,7 @@
 .assembly extern System.Runtime { auto }
 .assembly 'signed_overflow_conversions_are_not_treated_as_unsigned' { }
 
-.class auto SignedOverflowConversionsAreNotTreatedAsUnsigned extends [System.Runtime]System.Object
+.class public auto SignedOverflowConversionsAreNotTreatedAsUnsigned extends [System.Runtime]System.Object
 {
   .method private static void Print(class [System.Runtime]System.String) cil managed
   {
@@ -15,7 +15,7 @@
     ret
   }
 
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

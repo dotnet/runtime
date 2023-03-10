@@ -4692,9 +4692,9 @@ internal class NullableTest45
 }
 
 
-internal class Test_castclassvaluetype
+public class Test_castclassvaluetype
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

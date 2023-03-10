@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly 'tail_zeroinit' { }
-.class private auto ansi beforefieldinit AA
+.class public auto ansi beforefieldinit AA
        extends [mscorlib]System.Object
 {
   .method private hidebysig static void  Callee1(int64& B) cil managed
@@ -64,7 +64,7 @@
     jmp  int64 AA::Callee2()
   } // end of method AA::Caller2
 
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

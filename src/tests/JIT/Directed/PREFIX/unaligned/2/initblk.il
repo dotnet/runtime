@@ -11,7 +11,7 @@
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
 
-.class _initblk {
+.class public _initblk {
 
 
 //    .data DATA = int32(0x00000000)
@@ -20,7 +20,7 @@
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 //----------------

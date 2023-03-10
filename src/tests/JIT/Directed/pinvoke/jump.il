@@ -11,7 +11,7 @@
 .assembly jump { }
 .namespace JitTest
 {
-  .class private sequential ansi sealed beforefieldinit SYSTEM_INFO
+  .class public sequential ansi sealed beforefieldinit SYSTEM_INFO
          extends [mscorlib]System.ValueType
   {
     .field private unsigned int32 dwOemId

@@ -10,10 +10,10 @@
   .ver 4:0:0:0
 }
 .assembly ovflrem2 {}
-.class private auto ansi beforefieldinit ovflrem2
+.class public auto ansi beforefieldinit ovflrem2
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

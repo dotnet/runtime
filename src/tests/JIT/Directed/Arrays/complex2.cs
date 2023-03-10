@@ -16,7 +16,7 @@ public struct Yak
 }
 
 
-internal class Complex2_Array_Test
+public class Complex2_Array_Test
 {
     public static void test(Yak[,,,,,,] Odd_Variable)
     {

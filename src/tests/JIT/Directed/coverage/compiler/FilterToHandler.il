@@ -54,7 +54,8 @@ done2:
 }
 
 
-.method static int32 Main() {
+.class public auto ansi FilterToHandler {
+.method public static int32 Main() {
 .entrypoint
 .maxstack	20
   .try
@@ -78,4 +79,5 @@ FAIL:
   call       void [System.Console]System.Console::WriteLine(string)
   ldc.i4.0
   ret
+}
 }

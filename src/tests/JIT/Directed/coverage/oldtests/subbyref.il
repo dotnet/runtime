@@ -14,7 +14,7 @@
   .ver 4:0:0:0
 }
 .assembly subbyref {}
-.class a extends [mscorlib]System.Object
+.class public a extends [mscorlib]System.Object
 {
 .field static class ctest S_1
 .method public static int32 main() cil managed

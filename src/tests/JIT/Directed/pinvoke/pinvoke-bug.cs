@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace PInvokeTest
 {
-    internal class Test
+    public class Test
     {
         [DllImport("msvcrt", EntryPoint = "sin", CallingConvention = CallingConvention.Cdecl)]
         private static extern double sin(double x);

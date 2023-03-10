@@ -5,7 +5,7 @@
 using System.Runtime.CompilerServices;
 using System;
 
-class SP1
+public class SP1
 {
 
     // Struct in reg (2 ints)

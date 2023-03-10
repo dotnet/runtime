@@ -6,7 +6,7 @@
 using System.Runtime.CompilerServices;
 using System;
 
-class SP2
+public class SP2
 {
 
 #if USE_STRUCT

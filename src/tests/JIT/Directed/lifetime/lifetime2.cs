@@ -7,7 +7,7 @@
 using System;
 using System.Collections.Generic;
 
-internal class Test_lifetime2
+public class Test_lifetime2
 {
     public static int aExists;
     public static int bExists;
@@ -180,7 +180,7 @@ internal class Test_lifetime2
         return 100;
     }
 
-    private static int Main()
+    public static int Main()
     {
         if (f1() != 100)
             return -1;

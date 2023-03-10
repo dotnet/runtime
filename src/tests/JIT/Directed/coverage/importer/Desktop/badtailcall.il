@@ -11,6 +11,7 @@ ldc.i4 1
 tail. call int32 f()
 ret
 }
+.class public auto ansi badtailcall {
 .method public static int32 Main()
 {
 .entrypoint
@@ -29,4 +30,5 @@ ret
 PASS:
 ldc.i4 100
 ret
+}
 }

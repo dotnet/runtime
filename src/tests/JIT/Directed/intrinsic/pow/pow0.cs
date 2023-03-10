@@ -6,7 +6,7 @@
 
 using System;
 
-internal class pow0
+public class pow0
 {
     public static int Main()
     {

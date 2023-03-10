@@ -797,9 +797,9 @@ internal class NullableTest18
 
 
 
-internal class Test_boxunboxinterface
+public class Test_boxunboxinterface
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

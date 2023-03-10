@@ -15,7 +15,7 @@
 //	This test ensures that fault handlers are called
 //	when exception raised.
 
-.class TEST
+.class public TEST
 {
 	.field public static int32 result
 	

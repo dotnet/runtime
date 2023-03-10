@@ -779,9 +779,9 @@ internal class NullableTest18
 
 
 
-internal class Test_castclassinterface
+public class Test_castclassinterface
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

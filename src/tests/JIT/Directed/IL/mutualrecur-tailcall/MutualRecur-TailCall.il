@@ -3409,6 +3409,7 @@
   IL_003d:  ret
 } 
 
+.class public auto ansi MutualRecur_TailCall {
 .method public static int32 main() il managed 
 {
   .entrypoint
@@ -4636,3 +4637,4 @@
   IL_0e47:  ldc.i4     0x64
   IL_0e4c:  ret
 } 
+}

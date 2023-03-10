@@ -14,9 +14,9 @@ using System.Runtime.CompilerServices;
 
 namespace Test
 {
-    static class App
+    public static class App
     {
-        static int Main()
+        public static int Main()
         {
             new DerivedClass(3);
             new DerivedClass(8);

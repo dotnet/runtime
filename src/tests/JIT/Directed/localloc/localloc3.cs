@@ -4,7 +4,7 @@
 
 using System;
 
-internal unsafe class test1
+public unsafe class test1
 {
     static public int f(int i)
     {

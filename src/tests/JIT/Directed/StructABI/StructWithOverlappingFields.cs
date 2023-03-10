@@ -64,7 +64,7 @@ namespace Opt_Error
         }
     }
 
-    class Program
+    public class Program
     {
         static void TestClass(int initVal)
         {
@@ -118,7 +118,7 @@ namespace Opt_Error
             Debug.Assert(cse_val_2 == 52);
         }
 
-        static int Main()
+        public static int Main()
         {
             TestClass(2);
             TestStruct(2);

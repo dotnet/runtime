@@ -134,9 +134,9 @@ internal class NullableTest3
 
 
 
-internal class Test_castclassenum
+public class Test_castclassenum
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

@@ -8,7 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly byrefsubbyref1 {}
-.class a extends [mscorlib]System.Object
+.class public a extends [mscorlib]System.Object
 {
 .field static class ctest S_1
 .method public static native int byrefsubbyref(class ctest& V_1, class ctest& V_2)

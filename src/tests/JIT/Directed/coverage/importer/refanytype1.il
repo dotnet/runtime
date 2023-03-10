@@ -13,6 +13,7 @@
 ldc.i4 100
 ret
 }
+.class public auto ansi refanytype1 {
 .method public static int32 Main()
 {
 .entrypoint
@@ -22,4 +23,5 @@ refanytype
 pop
 ldc.i4 100
 ret
+}
 }

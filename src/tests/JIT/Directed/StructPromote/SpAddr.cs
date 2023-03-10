@@ -5,7 +5,7 @@
 using System.Runtime.CompilerServices;
 using System;
 
-class SpAddr
+public class SpAddr
 {
 
     // Struct in reg (2 ints)

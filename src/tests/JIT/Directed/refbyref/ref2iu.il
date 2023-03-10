@@ -8,6 +8,7 @@
 }
 .assembly extern legacy library mscorlib {}
 .assembly ref2iu {}
+.class public auto ansi ref2iu {
 .method public static int32 Main()
 {
 	.entrypoint
@@ -98,4 +99,5 @@
 
 	ldc.i4 100
 	ret
+}
 }
