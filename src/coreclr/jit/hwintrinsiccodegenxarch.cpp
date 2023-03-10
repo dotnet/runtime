@@ -1687,24 +1687,24 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                 case TYP_BYTE:
                 case TYP_UBYTE:
                     maskIns = INS_vpmovb2m;
-                    kmovIns = INS_kmovq;
+                    kmovIns = INS_kmovq_gpr;
                     break;
                 case TYP_SHORT:
                 case TYP_USHORT:
                     maskIns = INS_vpmovw2m;
-                    kmovIns = INS_kmovd;
+                    kmovIns = INS_kmovd_gpr;
                     break;
                 case TYP_INT:
                 case TYP_UINT:
                 case TYP_FLOAT:
                     maskIns = INS_vpmovd2m;
-                    kmovIns = INS_kmovw;
+                    kmovIns = INS_kmovw_gpr;
                     break;
                 case TYP_DOUBLE:
                 case TYP_LONG:
                 case TYP_ULONG:
                     maskIns = INS_vpmovq2m;
-                    kmovIns = INS_kmovb;
+                    kmovIns = INS_kmovb_gpr;
                     break;
                 default:
                     unreached();

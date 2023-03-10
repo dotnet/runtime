@@ -270,10 +270,14 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
         case INS_vbroadcastf128: // INS_vbroadcastf32x4, INS_vbroadcastf64x2.
         case INS_vbroadcasti128: // INS_vbroadcasti32x4, INS_vbroadcasti64x2.
 
-        case INS_kmovb:
-        case INS_kmovw:
-        case INS_kmovd:
-        case INS_kmovq:
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
 
             // TODO-XARCH-AVX512 these need to be encoded with the proper individual EVEX instructions (movdqu8,
             // movdqu16 etc)
@@ -1308,7 +1312,9 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_shlx:
             case INS_sarx:
             case INS_shrx:
-            case INS_kmovq: // kmovq always takes W1 bit, regardless of form.
+            case INS_kmovq_msk:
+            case INS_kmovq_gpr:
+            case INS_kmovd_msk:
                 return true;
             default:
                 return false;
@@ -3510,7 +3516,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
         emitAttr  size = EA_SIZE(attr);
 
         if ((TakesRexWPrefix(ins, size) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
-            IsExtendedReg(reg2, attr) || (ins == INS_kmovd && isMaskReg(reg1) && isMaskReg(reg2)))
+            IsExtendedReg(reg2, attr))
         {
             sz += emitGetRexPrefixSize(ins);
             includeRexPrefixSize = false;
@@ -5869,10 +5875,14 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movupd:
         case INS_movups:
         case INS_movzx:
-        case INS_kmovb:
-        case INS_kmovw:
-        case INS_kmovd:
-        case INS_kmovq:
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
         {
             return true;
         }
@@ -5994,10 +6004,14 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         }
 #endif // TARGET_AMD64
 
-        case INS_kmovb:
-        case INS_kmovw:
-        case INS_kmovd:
-        case INS_kmovq:
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
         {
             hasSideEffect = true;
             break;
@@ -6214,11 +6228,24 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         }
 #endif // TARGET_AMD64
 
-        case INS_kmovb:
-        case INS_kmovw:
-        case INS_kmovd:
-        case INS_kmovq:
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
+        {
+            assert((isMaskReg(dstReg) || isMaskReg(srcReg)) && !isGeneralRegister(dstReg) &&
+                   !isGeneralRegister(srcReg));
             break;
+        }
+
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
+        {
+            assert(isGeneralRegister(dstReg) || isGeneralRegister(srcReg));
+            break;
+        }
 
         default:
         {
@@ -13845,26 +13872,15 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         assert((ins != INS_movd) || (isFloatReg(reg1) != isFloatReg(reg2)));
 
-        if (ins == INS_kmovb || ins == INS_kmovw || ins == INS_kmovd || ins == INS_kmovq)
+        if (ins == INS_kmovb_gpr || ins == INS_kmovw_gpr || ins == INS_kmovd_gpr || ins == INS_kmovq_gpr)
         {
             assert(!(isGeneralRegister(reg1) && isGeneralRegister(reg2)));
 
             code = insCodeRM(ins);
             if (isGeneralRegister(reg1))
             {
-                // kmov r, k form, flip last byte of opcode from 0x90 to 0x92
-                code |= 0x03;
-            }
-            else if (isGeneralRegister(reg2))
-            {
-                // kmov r, k form, flip last byte of opcode from 0x90 to 0x92
-                code |= 0x02;
-            }
-
-            // kmovd RR form requires W bit
-            if (!(code & 0x02) && ins == INS_kmovd)
-            {
-                AddRexWPrefix(id, code);
+                // kmov r, k form, flip last byte of opcode from 0x92 to 0x93
+                code |= 0x01;
             }
         }
         else if ((ins != INS_movd) || isFloatReg(reg1))
@@ -18179,10 +18195,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        case INS_kmovb:
-        case INS_kmovw:
-        case INS_kmovd:
-        case INS_kmovq:
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
         {
             result.insLatency += PERFSCORE_LATENCY_3C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
