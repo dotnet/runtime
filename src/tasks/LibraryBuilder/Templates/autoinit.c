@@ -144,23 +144,11 @@ runtime_init_callback ()
 
     register_aot_modules ();
 
-    // register all bundled modules
-
     mono_set_assemblies_path ((bundle_path && bundle_path[0] != '\0') ? bundle_path : "./");
 
     mono_jit_set_aot_only (true);
 
     mono_install_assembly_preload_hook (mono_assembly_preload_hook, NULL);
-
-    // TODO test debug scenario
-#if DEBUG_ENABLED
-    bool wait_for_debugger = false;
-    mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-    if (wait_for_debugger) {
-        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55555" };
-        mono_jit_parse_options (1, options);
-    }
-#endif
 
     mono_install_load_aot_data_hook (load_aot_data, free_aot_data, NULL);
 
