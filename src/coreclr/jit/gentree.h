@@ -7340,6 +7340,7 @@ public:
     void Initialize(ClassLayout* layout)
     {
         assert(OperIsBlk(OperGet()) && ((layout != nullptr) || OperIs(GT_STORE_DYN_BLK)));
+        assert((layout == nullptr) || (layout->GetSize() != 0));
 
         m_layout    = layout;
         gtBlkOpKind = BlkOpKindInvalid;
