@@ -1336,6 +1336,8 @@ HRESULT RunMain(MethodDesc *pFD ,
     CorEntryPointType EntryType = EntryManagedMain;
     ValidateMainMethod(pFD, &EntryType);
 
+    _ASSERTE(1 == 2);
+
     if ((EntryType == EntryManagedMain) &&
         (stringArgs == NULL)) {
         return E_INVALIDARG;

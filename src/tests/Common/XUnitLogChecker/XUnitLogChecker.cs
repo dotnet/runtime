@@ -32,131 +32,139 @@ public class XUnitLogChecker
     private const int SUCCESS = 0;
     private const int MISSING_ARGS = -1;
 
+    // static int Main(string[] args)
+    // {
+    //     if (args.Length < 2)
+    //     {
+    //         Console.WriteLine("[XUnitLogChecker]: The path to the log file and"
+    //                           + " the name of the wrapper are required for an"
+    //                           + " accurate check and fixing.");
+    //         return MISSING_ARGS;
+    //     }
+
+    //     // Creating variables for code clarity and ease of understanding.
+
+    //     string resultsDir = args[0];
+    //     string wrapperName = args[1];
+
+    //     string tempLogName = $"{wrapperName}.tempLog.xml";
+    //     string finalLogName = $"{wrapperName}.testResults.xml";
+    //     string statsCsvName = $"{wrapperName}.testStats.csv";
+
+    //     string tempLogPath = Path.Combine(resultsDir, tempLogName);
+    //     string finalLogPath = Path.Combine(resultsDir, finalLogName);
+    //     string statsCsvPath = Path.Combine(resultsDir, statsCsvName);
+
+    //     // If there are no logs, then this work item was probably entirely skipped.
+    //     // This can happen under certain specific circumstances, such as with the
+    //     // JIT Hardware Intrinsics tests with DOTNET_GCStress enabled. See Github
+    //     // Issue dotnet/runtime #82143 for more info.
+    //     //
+    //     // The other possibility would be that something went very badly with
+    //     // the work item in question. It will need a developer/engineer to look
+    //     // at it urgently.
+
+    //     if (!File.Exists(tempLogPath))
+    //     {
+    //         Console.WriteLine("[XUnitLogChecker]: No logs were found. This work"
+    //                           + " item was skipped.");
+    //         Console.WriteLine($"[XUnitLogChecker]: If this is a mistake, then"
+    //                           + " something went very wrong. The expected temp"
+    //                           + $" log name would be: '{tempLogName}'");
+    //         return SUCCESS;
+    //     }
+
+    //     // Read the stats csv file.
+    //     IEnumerable<string> workItemStats = File.ReadLines(statsCsvPath);
+
+    //     // The first value at the top of the csv represents the amount of tests
+    //     // that were expected to be run.
+    //     //
+    //     // NOTE: We know for certain the csv only includes numbers. Therefore,
+    //     // we're fine in using Int32.Parse() directly.
+
+    //     int numExpectedTests = Int32.Parse(workItemStats.First().Split(',').First());
+
+    //     // The last line of the csv represents the status when the work item
+    //     // finished, successfully or not. It has the following format:
+    //     //     (Tests Run, Tests Passed, Tests Failed, Tests Skipped)
+
+    //     int[] workItemEndStatus = workItemStats.Last()
+    //                                            .Split(',')
+    //                                            .Select(x => Int32.Parse(x))
+    //                                            .ToArray();
+
+    //     // If the final results log file is present, then we can assume everything
+    //     // went fine, and it's ready to go without any further processing. We just
+    //     // check the stats csv file to know how many tests were run, and display a
+    //     // brief summary of the work item.
+
+    //     if (File.Exists(finalLogPath))
+    //     {
+    //         Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
+    //                           + " complete successfully!");
+
+    //         PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
+    //         return SUCCESS;
+    //     }
+
+    //     // Here goes the main core of the XUnit Log Checker :)
+    //     Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did not"
+    //                     + " finish running. Checking and fixing the log...");
+
+    //     FixTheXml(tempLogPath);
+    //     PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
+    //     Console.WriteLine("[XUnitLogChecker]: Log was fixed successfully!");
+
+    //     // var test = new CoreclrTestWrapperLib();
+
+    //     // Rename the temp log to the final log, so that Helix can use it without
+    //     // knowing what transpired here.
+    //     File.Move(tempLogPath, finalLogPath);
+
+    //     if (args.Length > 2)
+    //     {
+    //         string dumpPath = args[2];
+
+    //         if (File.Exists(dumpPath))
+    //         {
+    //             if (!OperatingSystem.IsWindows())
+    //             {
+    //                 string crashReportPath = $"{dumpPath}.crashreport.json";
+
+    //                 if (File.Exists(crashReportPath))
+    //                 {
+    //                     Console.WriteLine("[XUnitLogChecker]: Found the following crash"
+    //                                     + $" report in the path '{crashReportPath}':");
+
+    //                     CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport(crashReportPath,
+    //                                                                             Console.Out);
+    //                 }
+    //                 else
+    //                 {
+    //                     PrintMissingCrashPath(wrapperName, "crash report", crashReportPath);
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath, Console.Out);
+    //             }
+    //         }
+    //         else
+    //         {
+    //             PrintMissingCrashPath(wrapperName, "crash dump", dumpPath);
+    //         }
+    //     }
+
+    //     return SUCCESS;
+    // }
+
     static int Main(string[] args)
     {
-        // Maybe add a '--help' flag that also gets triggered in this case.
-        if (args.Length < 2)
-        {
-            Console.WriteLine("[XUnitLogChecker]: The path to the log file and"
-                              + " the name of the wrapper are required for an"
-                              + " accurate check and fixing.");
-            return MISSING_ARGS;
-        }
-
-        // Creating variables for code clarity and ease of understanding.
-
-        string resultsDir = args[0];
-        string wrapperName = args[1];
-
-        string tempLogName = $"{wrapperName}.tempLog.xml";
-        string finalLogName = $"{wrapperName}.testResults.xml";
-        string statsCsvName = $"{wrapperName}.testStats.csv";
-
-        string tempLogPath = Path.Combine(resultsDir, tempLogName);
-        string finalLogPath = Path.Combine(resultsDir, finalLogName);
-        string statsCsvPath = Path.Combine(resultsDir, statsCsvName);
-
-        // If there are no logs, then this work item was probably entirely skipped.
-        // This can happen under certain specific circumstances, such as with the
-        // JIT Hardware Intrinsics tests with DOTNET_GCStress enabled. See Github
-        // Issue dotnet/runtime #82143 for more info.
-        //
-        // The other possibility would be that something went very badly with
-        // the work item in question. It will need a developer/engineer to look
-        // at it urgently.
-
-        if (!File.Exists(tempLogPath))
-        {
-            Console.WriteLine("[XUnitLogChecker]: No logs were found. This work"
-                              + " item was skipped.");
-            Console.WriteLine($"[XUnitLogChecker]: If this is a mistake, then"
-                              + " something went very wrong. The expected temp"
-                              + $" log name would be: '{tempLogName}'");
-            return SUCCESS;
-        }
-
-        // Read the stats csv file.
-        IEnumerable<string> workItemStats = File.ReadLines(statsCsvPath);
-
-        // The first value at the top of the csv represents the amount of tests
-        // that were expected to be run.
-        //
-        // NOTE: We know for certain the csv only includes numbers. Therefore,
-        // we're fine in using Int32.Parse() directly.
-
-        int numExpectedTests = Int32.Parse(workItemStats.First().Split(',').First());
-
-        // The last line of the csv represents the status when the work item
-        // finished, successfully or not. It has the following format:
-        //     (Tests Run, Tests Passed, Tests Failed, Tests Skipped)
-
-        int[] workItemEndStatus = workItemStats.Last()
-                                               .Split(',')
-                                               .Select(x => Int32.Parse(x))
-                                               .ToArray();
-
-        // If the final results log file is present, then we can assume everything
-        // went fine, and it's ready to go without any further processing. We just
-        // check the stats csv file to know how many tests were run, and display a
-        // brief summary of the work item.
-
-        if (File.Exists(finalLogPath))
-        {
-            Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
-                              + " complete successfully!");
-
-            PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
-            return SUCCESS;
-        }
-
-        // Here goes the main core of the XUnit Log Checker :)
-        Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did not"
-                        + " finish running. Checking and fixing the log...");
-
-        FixTheXml(tempLogPath);
-        PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
-        Console.WriteLine("[XUnitLogChecker]: Log was fixed successfully!");
-
-        // var test = new CoreclrTestWrapperLib();
-
-        // Rename the temp log to the final log, so that Helix can use it without
-        // knowing what transpired here.
-        File.Move(tempLogPath, finalLogPath);
-
-        if (args.Length > 2)
-        {
-            string dumpPath = args[2];
-
-            if (File.Exists(dumpPath))
-            {
-                if (!OperatingSystem.IsWindows())
-                {
-                    string crashReportPath = $"{dumpPath}.crashreport.json";
-
-                    if (File.Exists(crashReportPath))
-                    {
-                        Console.WriteLine("[XUnitLogChecker]: Found the following crash"
-                                        + $" report in the path '{crashReportPath}':");
-
-                        CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport(crashReportPath,
-                                                                                Console.Out);
-                    }
-                    else
-                    {
-                        PrintMissingCrashPath(wrapperName, "crash report", crashReportPath);
-                    }
-                }
-                else
-                {
-                    CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath, Console.Out);
-                }
-            }
-            else
-            {
-                PrintMissingCrashPath(wrapperName, "crash dump", dumpPath);
-            }
-        }
-
+        string dumpPath = $"{args[0]}/crash.dump";
+        string crashReportPath = $"{dumpPath}.crashreport.json";
+        Console.WriteLine($"Reading {crashReportPath}...");
+        CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport(crashReportPath, Console.Out);
         return SUCCESS;
     }
 
