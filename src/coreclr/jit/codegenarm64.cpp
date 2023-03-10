@@ -4560,7 +4560,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 return;
             }
 
-            emit->emitIns_R_I(ins, cmpSize, op1->GetRegNum(), intConst->IconValue());
+            emit->emitIns_R_I(ins, cmpSize, op1Reg, intConst->IconValue());
         }
         else
         {
@@ -4742,6 +4742,24 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
 
         instruction ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_tbz : INS_tbnz;
         int         imm = genLog2((size_t)compareImm);
+
+        GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->bbJumpDest, reg, imm);
+    }
+    else if (tree->gtFlags & GTF_JCMP_LT)
+    {
+        assert(op2->IsIntegralConst(0));
+
+        instruction ins = INS_tbz;
+        int         imm = (int)attr * 8 - 1;
+
+        GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->bbJumpDest, reg, imm);
+    }
+    else if (tree->gtFlags & GTF_JCMP_GE)
+    {
+        assert(op2->IsIntegralConst(0));
+
+        instruction ins = INS_tbnz;
+        int         imm = (int)attr * 8 - 1;
 
         GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->bbJumpDest, reg, imm);
     }

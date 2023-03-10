@@ -3314,6 +3314,20 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #endif // TARGET_XARCH
+
+//#ifdef TARGET_ARM64
+//    if (comp->opts.OptimizationEnabled() && !cmp->gtSetFlags() && cmp->TypeIs(TYP_INT, TYP_LONG) && cmp->OperIs(GT_LT) &&
+//        cmp->gtGetOp2()->IsIntegralConst(0))
+//    {
+//        ssize_t shiftAmount = cmp->TypeIs(TYP_LONG) ? 63 : 31;
+//
+//        cmp->ChangeOper(GT_RSZ);
+//        cmp->gtGetOp2()->AsIntConCommon()->SetIntegralValue(shiftAmount);
+//
+//        return LowerNode(cmp);
+//    }
+//#endif // TARGET_ARM64
+
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
@@ -3352,6 +3366,12 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
             useJCMP = true;
         }
+        else if (relop->OperIs(GT_LT, GT_GE) && relopOp2->IsIntegralConst(0))
+        {
+            // Codegen will use tbz or tbnz in codegen which do not affect the flag register
+            flags   = relop->OperIs(GT_LT) ? GTF_JCMP_LT : GTF_JCMP_GE;
+            useJCMP = true;
+        }
         else if (relop->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {
             // Codegen will use tbz or tbnz in codegen which do not affect the flag register
@@ -3362,7 +3382,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         if (useJCMP)
         {
             relop->SetOper(GT_JCMP);
-            relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
+            relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_LT);
             relop->gtFlags |= flags;
             relop->gtType = TYP_VOID;
 
