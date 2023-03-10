@@ -17,6 +17,13 @@ export declare interface MintOpcodePtr extends NativePointer {
     __brand: "MintOpcodePtr"
 }
 
+export const enum JiterpNumberMode {
+    U32 = 0,
+    I32 = 1,
+    F32 = 2,
+    F64 = 3
+}
+
 export const enum BailoutReason {
     Unknown,
     InterpreterTiering,
@@ -713,7 +720,6 @@ export class WasmBuilder {
 
 export class BlobBuilder {
     buffer: number;
-    view!: DataView;
     size: number;
     capacity: number;
     encoder?: TextEncoder;
@@ -734,8 +740,6 @@ export class BlobBuilder {
         // FIXME: This should not be necessary
         Module.HEAPU8.fill(0, this.buffer, this.buffer + this.size);
         this.size = 0;
-        if (!this.view || this.view.buffer != Module.HEAPU8.buffer)
-            this.view = new DataView(Module.HEAPU8.buffer, this.buffer, this.capacity);
     }
 
     appendU8 (value: number | WasmOpcode) {
@@ -747,44 +751,30 @@ export class BlobBuilder {
         return result;
     }
 
-    appendU16 (value: number) {
-        const result = this.size;
-        this.view.setUint16(this.size, value, true);
-        this.size += 2;
-        return result;
-    }
-
-    appendI16 (value: number) {
-        const result = this.size;
-        this.view.setInt16(this.size, value, true);
-        this.size += 2;
-        return result;
-    }
-
     appendU32 (value: number) {
         const result = this.size;
-        this.view.setUint32(this.size, value, true);
+        cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.U32);
         this.size += 4;
         return result;
     }
 
     appendI32 (value: number) {
         const result = this.size;
-        this.view.setInt32(this.size, value, true);
+        cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.I32);
         this.size += 4;
         return result;
     }
 
     appendF32 (value: number) {
         const result = this.size;
-        this.view.setFloat32(this.size, value, true);
+        cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.F32);
         this.size += 4;
         return result;
     }
 
     appendF64 (value: number) {
         const result = this.size;
-        this.view.setFloat64(this.size, value, true);
+        cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.F64);
         this.size += 8;
         return result;
     }
@@ -834,13 +824,19 @@ export class BlobBuilder {
     }
 
     appendBytes (bytes: Uint8Array, count?: number) {
-        // FIXME: If source and destination buffers are the same, do copyWithin instead
         const result = this.size;
-        if (typeof (count) === "number")
-            bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
-        const av = this.getArrayView(true);
-        av.set(bytes, this.size);
-        this.size += bytes.length;
+        if (bytes.buffer === Module.HEAPU8.buffer) {
+            if (typeof (count) !== "number")
+                count = bytes.length;
+            Module.HEAPU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + count);
+            this.size += count;
+        } else {
+            if (typeof (count) === "number")
+                bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
+            const av = this.getArrayView(true);
+            av.set(bytes, this.size);
+            this.size += bytes.length;
+        }
         return result;
     }
 
@@ -946,7 +942,8 @@ class Cfg {
         this.entryBlob = <CfgBlob>this.segments[0];
         this.segments.length = 0;
         this.overheadBytes += 9; // entry eip init + block + optional loop
-        // this.overheadBytes += this.entryBlob.length;
+        if (this.backBranchTargets)
+            this.overheadBytes += 24; // some extra padding for the dispatch br_table
     }
 
     appendBlob () {
@@ -971,6 +968,8 @@ class Cfg {
             isBackBranchTarget,
         });
         this.overheadBytes += 3; // each branch block just costs us a block (2 bytes) and an end
+        if (this.backBranchTargets)
+            this.overheadBytes += 3; // size of the br_table entry for this branch target
     }
 
     branch (target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
