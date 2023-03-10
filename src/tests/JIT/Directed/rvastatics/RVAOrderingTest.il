@@ -13,8 +13,7 @@
 .class private auto ansi beforefieldinit RVAOrderingTest
        extends [System.Runtime]System.Object
 {
-  .method private hidebysig static int32 
-          Main() cil managed
+  .method private hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

@@ -18,8 +18,7 @@
     .field private static class [mscorlib]System.Random rand
     .field private valuetype [nativeinthelper]PrimitiveVT.VT1A vt1a
     .field private static valuetype [nativeinthelper]PrimitiveVT.VT1A x
-    .method private hidebysig static int32 
-            Main() cil managed
+    .method private hidebysig static int32 Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
