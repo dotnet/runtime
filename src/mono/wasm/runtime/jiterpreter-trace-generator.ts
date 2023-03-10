@@ -2396,6 +2396,7 @@ function emit_branch (
                 // Simple branches are enabled and this is a forward branch. We
                 //  don't need to wrap things in a block here, we can just exit
                 //  the current branch block after updating eip
+                builder.branchTargets.add(destination);
                 builder.ip_const(destination);
                 builder.local("eip", WasmOpcode.set_local);
                 builder.appendU8(WasmOpcode.br);
