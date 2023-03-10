@@ -2601,6 +2601,10 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	MonoTableInfo  *t;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	GHashTable *nspace_table;
+#ifdef DEBUG_AOT_NAME_TABLE
+	char *debug_full_name;
+	uint32_t debug_hash;
+#endif
 
 	if (!amodule || !amodule->class_name_table)
 		return FALSE;
@@ -2634,6 +2638,10 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 			full_name = g_strdup_printf ("%s.%s", name_space, name);
 		}
 	}
+#ifdef DEBUG_AOT_NAME_TABLE
+	debug_full_name = g_strdup (full_name);
+	debug_hash = mono_metadata_str_hash (full_name) % table_size;
+#endif
 	hash = mono_metadata_str_hash (full_name) % table_size;
 	if (full_name != full_name_buf)
 		g_free (full_name);
@@ -2673,6 +2681,9 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 					g_hash_table_insert (nspace_table, (char*)name2, *klass);
 					amodule_unlock (amodule);
 				}
+#ifdef DEBUG_AOT_NAME_TABLE
+				g_free (debug_full_name);
+#endif
 				return TRUE;
 			}
 
@@ -2685,6 +2696,13 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	}
 
 	amodule_unlock (amodule);
+
+#ifdef DEBUG_AOT_NAME_TABLE
+	if (*klass == NULL) {
+		g_warning ("AOT class name cache '%s'=%08x not found\n", debug_full_name, debug_hash);
+	}
+	g_free (debug_full_name);
+#endif
 
 	return TRUE;
 }
