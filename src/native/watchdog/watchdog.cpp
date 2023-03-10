@@ -78,10 +78,7 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
 
 #else // !TARGET_WINDOWS
 
-    // TODO: Describe what the 'ms_factor' is, and why it's being used here.
-    const int ms_factor = 40;
-    const int check_interval = 1000 / ms_factor;
-
+    const int check_interval_ms = 25;
     int check_count = 0;
     std::vector<const char*> args;
 
@@ -118,16 +115,16 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
             if (wait_code == -1)
                 return EINVAL;
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(check_interval));
+            std::this_thread::sleep_for(std::chrono::milliseconds(check_interval_ms));
 
             if (wait_code)
             {
                 if (WIFEXITED(child_status))
                     return WEXITSTATUS(child_status);
             }
-            check_count += ms_factor;
+            check_count++;
 
-        } while (check_count < ((timeout_ms / check_interval) * ms_factor));
+        } while (check_count < (timeout_ms / check_interval_ms));
     }
 
     printf("Child process took too long. Timed out... Exiting...\n");
