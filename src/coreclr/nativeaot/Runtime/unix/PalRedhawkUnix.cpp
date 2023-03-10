@@ -1178,12 +1178,21 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
 
 #if HAVE_PTHREAD_ATTR_GET_NP
         status = pthread_attr_get_np(thread, &attr);
+        ASSERT_MSG(status == 0, "pthread_attr_get_np call failed");
 #elif HAVE_PTHREAD_GETATTR_NP
         status = pthread_getattr_np(thread, &attr);
+        if (status != 0)
+        {
+            size_t addr = (size_t)&status;
+
+            *ppStackLowOut = (void*)(addr + 1);
+            *ppStackHighOut = (void*)(((size_t)*ppStackLowOut) + (1024 * 1024));
+
+            return true;
+        }
 #else
 #error Dont know how to get thread attributes on this platform!
 #endif
-        ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
 
         status = pthread_attr_getstack(&attr, &pStackLowOut, &stackSize);
         ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
