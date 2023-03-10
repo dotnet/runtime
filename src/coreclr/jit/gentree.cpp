@@ -16431,7 +16431,7 @@ bool Compiler::gtSplitTree(
                 assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
                 if ((*use)->OperIsUnary())
                 {
-                    SplitOutUse(UseInfo{ &(*use)->AsUnOp()->gtOp1, user }, false, false);
+                    SplitOutUse(UseInfo{&(*use)->AsUnOp()->gtOp1, user}, false, false);
                 }
 
                 return;
@@ -16444,7 +16444,7 @@ bool Compiler::gtSplitTree(
             if ((user != nullptr) && user->OperIs(GT_MUL) && user->Is64RsltMul())
             {
                 assert((*use)->OperIs(GT_CAST));
-                SplitOutUse(UseInfo{ &(*use)->AsCast()->gtOp1, *use }, false, false);
+                SplitOutUse(UseInfo{&(*use)->AsCast()->gtOp1, *use}, false, false);
                 return;
             }
 #endif
