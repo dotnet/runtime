@@ -159,7 +159,7 @@ namespace System.Reflection.Runtime.General
             return p.GetImplicitlyOverriddenBaseClassMember(PropertyPolicies.Instance);
         }
 
-        private static FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
+        private static RuntimeFieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
@@ -393,11 +393,11 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
-        public sealed override EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(Type type)
+        public sealed override EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create)
         {
             RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
 
-            EnumInfo<TUnderlyingValue>? info = runtimeType.GenericCache as EnumInfo<TUnderlyingValue>;
+            var info = runtimeType.GenericCache as EnumInfo;
             if (info != null)
                 return info;
 
@@ -407,12 +407,8 @@ namespace System.Reflection.Runtime.General
             // That codepath would bring functionality to compare everything that was ever allocated in the program.
             ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
 
-            // Only after we've sorted, create the underlying array.
-            var values = new TUnderlyingValue[unsortedValues.Length];
-            for (int i = 0; i < unsortedValues.Length; i++)
-                values[i] = (TUnderlyingValue)unsortedValues[i];
+            info = create(RuntimeAugments.GetEnumUnderlyingType(type.TypeHandle), unsortedNames, unsortedValues, isFlags);
 
-            info = new EnumInfo<TUnderlyingValue>(RuntimeAugments.GetEnumUnderlyingType(runtimeType.TypeHandle), values, unsortedNames, isFlags);
             runtimeType.GenericCache = info;
             return info;
         }

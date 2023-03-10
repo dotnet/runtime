@@ -597,7 +597,7 @@ namespace Mono.Options
             return type == '=' ? OptionValueType.Required : OptionValueType.Optional;
         }
 
-        private static void AddSeparators(string name, int end, ICollection<string> seps)
+        private static void AddSeparators(string name, int end, List<string> seps)
         {
             int start = -1;
             for (int i = end + 1; i < name.Length; ++i)
@@ -1135,7 +1135,7 @@ namespace Mono.Options
             return false;
         }
 
-        private static bool Unprocessed(ICollection<string> extra, Option def, OptionContext c, string argument)
+        private static bool Unprocessed(List<string> extra, Option def, OptionContext c, string argument)
         {
             if (def == null)
             {

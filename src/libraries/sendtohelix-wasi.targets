@@ -1,0 +1,186 @@
+<Project>
+  <!--
+      ** Running extension targets **
+
+      To run a custom project specific target for adding/editing @(HelixWorkItem):
+
+      - In the project add:
+        <HelixTargetsFile Condition="'$(TargetOS)' == 'browser'">wasm.helix.targets</HelixTargetsFile>
+        - This files gets copied next to the test archive as $(MSBuildProjectName).helix.targets
+
+      - In this `wasm.helix.targets` file, add to $(HelixExtensionTargets) to run your custom target
+
+          <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(Scenario)' == 'WasmTestOnBrowser'">
+            <HelixExtensionTargets>$(HelixExtensionTargets);_AddHelixCrypoItems</HelixExtensionTargets>
+
+        - Useful properties to condition on: $(Scenario), $(IsRunningLibraryTests)
+        - And add to, change, or remove from @(HelixWorkItem)
+
+      ** Staging system directories before use as helix payloads **
+
+      Helix tries to write a `.payload` file to the payload directory, but if that is
+      not writable then it needs to be staged first. For example:
+
+        <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)"   Include="$(WasmtimeDirForHelixPayload)" />
+
+      Then the payload can use specified as:
+
+        <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
+  -->
+
+  <PropertyGroup>
+    <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''">true</IsRunningLibraryTests>
+    <WasiEngine Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps' or '$(Scenario)' == ''">wasmtime</WasiEngine>
+    <NeedsWasmtime Condition="'$(WasiEngine)' == 'wasmtime'">true</NeedsWasmtime>
+
+    <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
+    <PrepareForBuildHelixWorkItems_WasiDependsOn>
+        PrepareHelixCorrelationPayload_Wasi;
+        _AddWorkItemsForLibraryTests;
+        _AddWorkItemsForBuildWasmApps
+    </PrepareForBuildHelixWorkItems_WasiDependsOn>
+
+    <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);PrepareForBuildHelixWorkItems_Wasi</BuildHelixWorkItemsDependsOn>
+    <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
+    <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
+
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(RepoRoot)src\mono\wasi\wasi-sdk\</WASI_SDK_PATH>
+    <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\wasi-sdk</WasiSdkDirForHelixPayload>
+    <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)\wasmtime</WasmtimeDirForHelixPayload>
+
+    <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
+    <NeedsWasiSdk Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsWasiSdk>
+    <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+
+    <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-latest</SdkForWorkloadTestingDirName>
+    <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">dotnet-none</SdkForWorkloadTestingDirName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixDependenciesToStage Condition="'$(NeedsWasiSdk)' == 'true'"  SourcePath="$(WASI_SDK_PATH)" Include="$(WasiSdkDirForHelixPayload)" />
+    <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)"   Include="$(WasmtimeDirForHelixPayload)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(WindowsShell)' != 'true'">
+    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
+    <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasmtime:$PATH" />
+    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasi-sdk:$PATH" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(WindowsShell)' == 'true'">
+    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="set SCENARIO=$(Scenario)" />
+    <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\wasmtime%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\wasi-sdk%3B%PATH%" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
+    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;WASI_SDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;WASI_SDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(NeedsWasiSdk)' == 'true'">
+    <NeedsDotNetSdk>true</NeedsDotNetSdk>
+    <!-- <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson> -->
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
+
+  <Target Name="PrepareHelixCorrelationPayload_Wasi">
+    <Error Text="Cannot find %24(WasmtimeDir)=$(WasmtimeDir)" Condition="'$(WasmtimeDir)' == '' or !Exists($(WasmtimeDir))" />
+    <ItemGroup>
+      <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
+
+      <HelixCorrelationPayload Include="$(_ShippingPackagesPath)"  Destination="built-nugets" Condition="'$(NeedsBuiltNugets)' == 'true'" />
+      <HelixCorrelationPayload Include="$(WasiSdkDirForHelixPayload)" Destination="build/wasi-sdk" Condition="'$(NeedsWasiSdk)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrepareForBuildHelixWorkItems_Wasi"
+          DependsOnTargets="$(PrepareForBuildHelixWorkItems_WasiDependsOn);$(HelixExtensionTargets)" />
+
+  <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
+    <ItemGroup Label="Add samples">
+      <_WasiWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <HelixWorkItem Include="@(_WasiWorkItem -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <!-- Create work items for run-only WASM sample apps  -->
+    <ItemGroup>
+      <_WasiSampleZipFile Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''" Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
+
+      <HelixWorkItem Include="@(_WasiSampleZipFile -> '%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+
+      <_DefaultWorkItems Remove="@(_DefaultWorkItems)" />
+      <_DefaultWorkItems Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+
+      <HelixWorkItem Include="@(_DefaultWorkItems -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <PropertyGroup>
+      <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- for buildwasmapps, the archive path is set in src/libraries/Directory.Build.props, so use that -->
+      <_WasmWorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasi.Build.Tests" Condition="'$(TestUsingWorkloads)' == 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasi.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+</Project>

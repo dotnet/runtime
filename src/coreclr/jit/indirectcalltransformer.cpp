@@ -279,7 +279,7 @@ private:
         //
         virtual void ChainFlow()
         {
-            assert(compiler->fgComputePredsDone);
+            assert(compiler->fgPredsComputed);
 
             // currBlock
             compiler->fgRemoveRefPred(remainderBlock, currBlock);
@@ -1377,7 +1377,7 @@ private:
         //
         virtual void ChainFlow() override
         {
-            assert(compiler->fgComputePredsDone);
+            assert(compiler->fgPredsComputed);
 
             // currBlock
             compiler->fgRemoveRefPred(remainderBlock, currBlock);

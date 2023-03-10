@@ -127,6 +127,58 @@ namespace System
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), text.Length - start);
         }
 
+        /// <summary>Creates a new <see cref="ReadOnlySpan{Char}"/> over a portion of the target string from a specified position to the end of the string.</summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="startIndex">The index at which to begin this slice.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than 0 or greater than <paramref name="text"/>.Length.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> AsSpan(this string? text, Index startIndex)
+        {
+            if (text is null)
+            {
+                if (!startIndex.Equals(Index.Start))
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex);
+                }
+
+                return default;
+            }
+
+            int actualIndex = startIndex.GetOffset(text.Length);
+            if ((uint)actualIndex > (uint)text.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex);
+            }
+
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)actualIndex /* force zero-extension */), text.Length - actualIndex);
+        }
+
+        /// <summary>Creates a new <see cref="ReadOnlySpan{Char}"/> over a portion of a target string using the range start and end indexes.</summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="range">The range which has start and end indexes to use for slicing the string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="range"/>'s start or end index is not within the bounds of the string.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="range"/>'s start index is greater than its end index.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> AsSpan(this string? text, Range range)
+        {
+            if (text is null)
+            {
+                Index startIndex = range.Start;
+                Index endIndex = range.End;
+
+                if (!startIndex.Equals(Index.Start) || !endIndex.Equals(Index.Start))
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+                }
+
+                return default;
+            }
+
+            (int start, int length) = range.GetOffsetAndLength(text.Length);
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), length);
+        }
+
         /// <summary>
         /// Creates a new readonly span over the portion of the target string.
         /// </summary>
@@ -3353,8 +3405,8 @@ namespace System
             string.CheckStringSplitOptions(options);
 
             // If the separators list is empty, whitespace is used as separators.  In that case, we want to ignore TrimEntries if specified,
-            // since TrimEntries also impacts whitespace.
-            if (separators.IsEmpty)
+            // since TrimEntries also impacts whitespace.  The TrimEntries flag must be left intact if we are constrained by count because we need to process last substring.
+            if (separators.IsEmpty && destination.Length > source.Length)
             {
                 options &= ~StringSplitOptions.TrimEntries;
             }
@@ -3394,8 +3446,8 @@ namespace System
             string.CheckStringSplitOptions(options);
 
             // If the separators list is empty, whitespace is used as separators.  In that case, we want to ignore TrimEntries if specified,
-            // since TrimEntries also impacts whitespace.
-            if (separators.IsEmpty)
+            // since TrimEntries also impacts whitespace.  The TrimEntries flag must be left intact if we are constrained by count because we need to process last substring.
+            if (separators.IsEmpty && destination.Length > source.Length)
             {
                 options &= ~StringSplitOptions.TrimEntries;
             }

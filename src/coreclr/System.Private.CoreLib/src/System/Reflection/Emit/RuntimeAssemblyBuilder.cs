@@ -32,7 +32,7 @@ namespace System.Reflection.Emit
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
                 => DefineDynamicAssembly(name, access, assemblyAttributes, Assembly.GetCallingAssembly());
 
-        private static AssemblyBuilder DefineDynamicAssembly(
+        private static RuntimeAssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes,

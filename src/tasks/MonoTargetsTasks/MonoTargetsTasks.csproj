@@ -3,7 +3,7 @@
     <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETCoreTasks)'">
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />

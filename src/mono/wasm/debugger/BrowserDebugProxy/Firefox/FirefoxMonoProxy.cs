@@ -254,11 +254,11 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     var topFunc = args["frame"]["displayName"].Value<string>();
                     switch (topFunc)
                     {
-                        case "mono_wasm_fire_debugger_agent_message":
-                        case "_mono_wasm_fire_debugger_agent_message":
+                        case "mono_wasm_fire_debugger_agent_message_with_data_to_pause":
+                        case "_mono_wasm_fire_debugger_agent_message_with_data_to_pause":
                             {
                                 ctx.PausedOnWasm = true;
-                                return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
+                                return await OnReceiveDebuggerAgentEvent(sessionId, args, GetLastDebuggerAgentBuffer(args), token);
                             }
                         default:
                             ctx.PausedOnWasm = false;
@@ -694,15 +694,28 @@ internal sealed class FirefoxMonoProxy : MonoProxy
 
         context.LastDebuggerAgentBufferReceived = debuggerAgentBufferTask;
     }
+    internal static Result GetLastDebuggerAgentBuffer(JObject args)
+    {
+        var result = new JArray();
+        result.Add(JObject.FromObject(new { value = new {value = args?["frame"]?["arguments"]?[0].Value<string>()}}));
+        Result res = Result.OkFromObject(new
+                    {
+                        result
+                    });
+        return res;
+    }
 
     private async Task<bool> SendPauseToBrowser(SessionId sessionId, JObject args, CancellationToken token)
     {
         var context = GetContextFixefox(sessionId);
         Result res = await context.LastDebuggerAgentBufferReceived;
-        if (!res.IsOk)
+        if (!res.IsOk || res.Value?["result"].Value<JArray>().Count == 0)
+        {
+            logger.LogTrace($"Unexpected DebuggerAgentBufferReceived {res}");
             return false;
+        }
         context.LastDebuggerAgentBufferReceived = null;
-        byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
+        byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?[0]?["value"]?["value"]?.Value<string>());
         using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
         retDebuggerCmdReader.ReadBytes(11);
         retDebuggerCmdReader.ReadByte();
@@ -817,7 +830,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return SendCommand(id, "evaluateJSAsync", o, token);
     }
 
-    internal override async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
+    internal override async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token, bool resolveBreakpoints = true)
     {
         //different behavior when debugging from VSCode and from Firefox
         var ctx = context as FirefoxExecutionContext;
@@ -852,7 +865,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             });
         }
         await SendEvent(sessionId, "", sourcesJObj, token);
-
+        if (!resolveBreakpoints)
+            return;
         foreach (var req in context.BreakpointRequests.Values)
         {
             if (req.TryResolve(source))
@@ -881,7 +895,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             if (method is null)
                 return false;
 
-            if (await ShouldSkipMethod(sessionId, context, event_kind, 0, method, token))
+            if (await ShouldSkipMethod(sessionId, context, event_kind, 0, frame_count, method, token))
             {
                 await SendResume(sessionId, token);
                 return true;
@@ -970,8 +984,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             string function_name = frame["displayName"]?.Value<string>();
             if (function_name != null && !(function_name.StartsWith("Module._mono_wasm", StringComparison.Ordinal) ||
                     function_name.StartsWith("Module.mono_wasm", StringComparison.Ordinal) ||
-                    function_name == "mono_wasm_fire_debugger_agent_message" ||
-                    function_name == "_mono_wasm_fire_debugger_agent_message" ||
+                    function_name == "mono_wasm_fire_debugger_agent_message_with_data" ||
+                    function_name == "_mono_wasm_fire_debugger_agent_message_with_data" ||
                     function_name == "(wasmcall)"))
             {
                 callFrames.Add(frame);

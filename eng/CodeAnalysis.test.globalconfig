@@ -462,6 +462,12 @@ dotnet_diagnostic.CA1857.severity = none
 # CA1858: Use 'StartsWith' instead of 'IndexOf'
 dotnet_diagnostic.CA1858.severity = none
 
+# CA1859: Use concrete types when possible for improved performance
+dotnet_diagnostic.CA1859.severity = none
+
+# CA1860: Prefer Length/Count/IsEmpty property check over Any()
+dotnet_diagnostic.CA1860.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -506,6 +512,9 @@ dotnet_diagnostic.CA2019.severity = none
 
 # CA2020: Prevent behavioral changes
 dotnet_diagnostic.CA2020.severity = none
+
+# CA2021: Do not call Enumerable.Cast<T> or Enumerable.OfType<T> with incompatible types
+dotnet_diagnostic.CA2021.severity = none
 
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none

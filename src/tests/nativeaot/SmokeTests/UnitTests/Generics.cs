@@ -50,13 +50,12 @@ class Generics
         TestGvmLookupDependency.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
-#if !CODEGEN_CPP
         TestNullableCasting.Run();
         TestVariantCasting.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
-#endif
+
         return 100;
     }
 

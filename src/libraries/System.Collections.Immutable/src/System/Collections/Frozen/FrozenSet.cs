@@ -127,33 +127,21 @@ namespace System.Collections.Frozen
             if (typeof(T).IsValueType)
             {
                 // Optimize for value types when the default comparer is being used. In such a case, the implementation
-                // may use EqualityComparer<T>.Default.Equals/GetHashCode directly, with generic specialization enabling
+                // may use {Equality}Comparer<T>.Default.Compare/Equals/GetHashCode directly, with generic specialization enabling
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<T>.Default))
                 {
-#if NET7_0_OR_GREATER
-                    if (typeof(T) == typeof(sbyte)) return PickIntegerSet<sbyte>(source);
-                    if (typeof(T) == typeof(byte)) return PickIntegerSet<byte>(source);
-                    if (typeof(T) == typeof(short)) return PickIntegerSet<short>(source);
-                    if (typeof(T) == typeof(ushort)) return PickIntegerSet<ushort>(source);
-                    if (typeof(T) == typeof(int)) return PickIntegerSet<int>(source);
-                    if (typeof(T) == typeof(uint)) return PickIntegerSet<uint>(source);
-                    if (typeof(T) == typeof(long)) return PickIntegerSet<long>(source);
-                    if (typeof(T) == typeof(ulong)) return PickIntegerSet<ulong>(source);
+                    if (default(T) is IComparable<T> &&
+                        source.Count <= Constants.MaxItemsInSmallComparableValueTypeFrozenCollection)
+                    {
+                        return (FrozenSet<T>)(object)new SmallComparableValueTypeFrozenSet<T>(source);
+                    }
 
-                    static FrozenSet<T> PickIntegerSet<TInt>(HashSet<T> source)
-                        where TInt : struct, IBinaryInteger<TInt> => (FrozenSet<T>)(object)
-                        (source.Count <= Constants.MaxItemsInSmallIntegerFrozenCollection ? new SmallIntegerFrozenSet<TInt>((HashSet<TInt>)(object)source) :
-                        typeof(T) == typeof(int) ? new Int32FrozenSet((HashSet<int>)(object)source) :
-                        new ValueTypeDefaultComparerFrozenSet<T>(source));
-#else
                     if (typeof(T) == typeof(int))
                     {
-                        return (FrozenSet<T>)(object)(source.Count <= Constants.MaxItemsInSmallIntegerFrozenCollection ?
-                            new SmallInt32FrozenSet((HashSet<int>)(object)source) :
-                            new Int32FrozenSet((HashSet<int>)(object)source));
+                        return (FrozenSet<T>)(object)new Int32FrozenSet((HashSet<int>)(object)source);
                     }
-#endif
+
                     return new ValueTypeDefaultComparerFrozenSet<T>(source);
                 }
             }

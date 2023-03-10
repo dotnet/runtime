@@ -202,6 +202,9 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
+  <data name="Arg_ByteArrayTooSmallForValue" xml:space="preserve">
+    <value>The array starting from the specified index is not long enough to read a value of the specified type.</value>
+  </data>
   <data name="Arg_ArrayTypeMismatchException" xml:space="preserve">
     <value>Attempted to access an element as a type incompatible with the array.</value>
   </data>
@@ -2422,12 +2425,6 @@
   <data name="InvalidOperation_CannotRestoreUnsuppressedFlow" xml:space="preserve">
     <value>Cannot restore context flow when it is not suppressed.</value>
   </data>
-  <data name="InvalidOperation_CannotSuppressFlowMultipleTimes" xml:space="preserve">
-    <value>Context flow is already suppressed.</value>
-  </data>
-  <data name="InvalidOperation_CannotUseAFCMultiple" xml:space="preserve">
-    <value>AsyncFlowControl object can be used only once to call Undo().</value>
-  </data>
   <data name="InvalidOperation_CannotUseAFCOtherThread" xml:space="preserve">
     <value>AsyncFlowControl object must be used on the thread where it was created.</value>
   </data>
@@ -3991,5 +3988,14 @@
   </data>
   <data name="Argument_DirectorySeparatorInvalid" xml:space="preserve">
     <value>The value may not contain directory separator characters.</value>
+  </data>
+  <data name="InvalidOperation_NotFunctionPointer" xml:space="preserve">
+    <value>Method may only be called on a Type for which Type.IsFunctionPointer is true.</value>
+  </data>
+  <data name="NotSupported_ModifiedType" xml:space="preserve">
+    <value>Modified types do not support this member. Use the UnderlyingSystemType property to call this member.</value>
+  </data>
+  <data name="Argument_UnexpectedStateForKnownCallback" xml:space="preserve">
+    <value>An unexpected state object was encountered. This is usually a sign of a bug in async method custom infrastructure, such as a custom awaiter or IValueTaskSource implementation.</value>
   </data>
 </root>

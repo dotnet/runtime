@@ -10,7 +10,7 @@ dotnet_diagnostic.IL3000.severity = suggestion
 # CS0176: Cannot be accessed with an instance ref
 dotnet_diagnostic.CS0176.severity = silent
 
-# Linker port settings:
+# ILLink port settings:
 # A newline ending every file
 # Use tabs as indentation
 [ILLink.Shared/**.cs]

@@ -526,7 +526,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBaked);
         }
 
-        private static Exception NotSupported()
+        private static NotSupportedException NotSupported()
         {
             return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
@@ -543,7 +543,7 @@ namespace System.Reflection.Emit
                 ArgumentNullException.ThrowIfNull(type, nameof(typeArguments));
             }
 
-            return new MethodOnTypeBuilderInst(this, typeArguments);
+            return new MethodOnTypeBuilderInstantiation(this, typeArguments);
         }
 
         public override bool IsGenericMethodDefinition

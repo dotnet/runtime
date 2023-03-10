@@ -245,7 +245,7 @@ namespace DebuggerTests
             await SetBreakpoint("/debugger-driver.html", line_bp, column_bp, condition: condition);
             await SetBreakpoint("/debugger-driver.html", 80, 11);
 
-            await EvaluateAndCheck(
+            var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { conditional_breakpoint_test(5, 10, null); }, 1);",
                 "debugger-driver.html", line_expected, column_expected, "conditional_breakpoint_test");
         }

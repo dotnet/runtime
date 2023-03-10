@@ -73,7 +73,7 @@ public:
         CORJIT_FLAG_BBINSTR                 = 29, // Collect basic block profile information
         CORJIT_FLAG_BBOPT                   = 30, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED                  = 31, // All methods have an EBP frame
-        CORJIT_FLAG_UNUSED12                = 32,
+        CORJIT_FLAG_BBINSTR_IF_LOOPS        = 32, // JIT must instrument current method if it has loops
         CORJIT_FLAG_PUBLISH_SECRET_PARAM    = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
         CORJIT_FLAG_UNUSED13                = 34,
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background

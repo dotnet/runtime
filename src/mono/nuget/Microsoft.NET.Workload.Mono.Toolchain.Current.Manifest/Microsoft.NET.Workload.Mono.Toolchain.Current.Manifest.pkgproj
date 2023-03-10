@@ -6,19 +6,24 @@
   </PropertyGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
+    <Error Condition="'$(SdkBandVersionForWorkload_FromRuntimeVersions)' == ''"
+           Text="%24(SdkBandVersionForWorkload_FromRuntimeVersions) is not set" />
+
     <!-- Override the id to include the sdk band as per the workload installer spec -->
     <PropertyGroup>
-      <Id>Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest-$(SdkBandVersionForWorkload)</Id>
+      <Id>Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest-$(SdkBandVersionForWorkload_FromRuntimeVersions)</Id>
     </PropertyGroup>
 
     <PropertyGroup>
       <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
       <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
+      <WorkloadManifestWasiTargetsPath>$(IntermediateOutputPath)WorkloadManifest.Wasi.targets</WorkloadManifestWasiTargetsPath>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTargetsPath)" TargetPath="data" />
+      <PackageFile Include="$(WorkloadManifestWasiTargetsPath)" TargetPath="data" />
     </ItemGroup>
 
     <ItemGroup>
@@ -53,6 +58,11 @@
       TemplateFile="WorkloadManifest.targets.in"
       Properties="@(_WorkloadManifestValues)"
       OutputPath="$(WorkloadManifestTargetsPath)" />
+
+    <GenerateFileFromTemplate
+      TemplateFile="WorkloadManifest.Wasi.targets.in"
+      Properties="@(_WorkloadManifestValues)"
+      OutputPath="$(WorkloadManifestWasiTargetsPath)" />
   </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

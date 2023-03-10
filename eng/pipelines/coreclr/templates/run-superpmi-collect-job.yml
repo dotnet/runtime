@@ -46,14 +46,8 @@ jobs:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
-
     - ${{ each variable in parameters.variables }}:
-      - ${{ if ne(variable.name, '') }}:
-        - name: ${{ variable.name }}
-          value: ${{ variable.value }}
-      - ${{ if ne(variable.group, '') }}:
-        - group: ${{ variable.group }}
-
+      - ${{insert}}: ${{ variable }}
     - HelixApiAccessToken: ''
     - HelixPreCommand: ''
     - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'

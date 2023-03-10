@@ -591,7 +591,7 @@ namespace System.Collections.Generic
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         #endregion
 

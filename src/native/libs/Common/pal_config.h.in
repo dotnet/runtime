@@ -43,6 +43,7 @@
 #cmakedefine01 PRIORITY_REQUIRES_INT_WHO
 #cmakedefine01 KEVENT_REQUIRES_INT_PARAMS
 #cmakedefine01 HAVE_IOCTL
+#cmakedefine01 HAVE_IOCTL_WITH_INT_REQUEST
 #cmakedefine01 HAVE_TIOCGWINSZ
 #cmakedefine01 HAVE_TIOCSWINSZ
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
@@ -147,6 +148,10 @@
 #cmakedefine01 HAVE_MAKEDEV_SYSMACROSH
 #cmakedefine01 HAVE_GETGRGID_R
 #cmakedefine01 HAVE_TERMIOS2
+
+#ifndef HOST_WASI
+#cmakedefine01 HAVE_GETRUSAGE
+#endif
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5
