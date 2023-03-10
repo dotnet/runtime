@@ -160,6 +160,7 @@ export async function getInputsHash(): Promise<string | null> {
     delete inputs.ignorePdbLoadErrors;
     delete inputs.maxParallelDownloads;
     delete inputs.enableDownloadRetry;
+    delete inputs.exitAfterSnapshot;
 
     const inputsJson = JSON.stringify(inputs);
     const sha256Buffer = await runtimeHelpers.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));

@@ -334,7 +334,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             throw new LogAsErrorException($"PThreadPoolSize must be -1, 0 or positive, but got {PThreadPoolSize}");
         }
-        else
+        else if (PThreadPoolSize > -1)
         {
             config.Extra["pthreadPoolSize"] = PThreadPoolSize;
         }

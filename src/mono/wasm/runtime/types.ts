@@ -138,6 +138,7 @@ export type MonoConfigInternal = MonoConfig & {
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
+    exitAfterSnapshot?: number,
 };
 
 export type RunArguments = {

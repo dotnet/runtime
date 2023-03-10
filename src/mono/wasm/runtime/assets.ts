@@ -138,7 +138,6 @@ export async function mono_download_assets(): Promise<void> {
                         // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
                         await memorySnapshotSkippedOrDone.promise;
                         await beforeOnRuntimeInitialized.promise;
-
                         _instantiate_asset(asset, url, data);
                     }
                 } else {

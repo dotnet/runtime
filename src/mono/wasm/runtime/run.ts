@@ -118,8 +118,10 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
                     Module.printErr(JSON.stringify(reason));
             }
         }
-        else {
+        else if (!reason) {
             reason = new runtimeHelpers.ExitStatus(exit_code);
+        } else {
+            exit_code = reason.status;
         }
     }
     logErrorOnExit(exit_code, reason);

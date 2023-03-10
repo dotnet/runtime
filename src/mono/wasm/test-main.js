@@ -246,7 +246,7 @@ function configureRuntime(dotnet, runArgs, INTERNAL) {
     dotnet
         .withVirtualWorkingDirectory(runArgs.workingDirectory)
         .withEnvironmentVariables(runArgs.environmentVariables)
-        //.withDiagnosticTracing(runArgs.diagnosticTracing)
+        .withDiagnosticTracing(runArgs.diagnosticTracing)
         .withDiagnosticTracing(true)
         .withExitOnUnhandledError()
         .withExitCodeLogging()
@@ -281,25 +281,42 @@ function configureRuntime(dotnet, runArgs, INTERNAL) {
     }
 }
 
+async function dry_run(runArgs) {
+    try {
+        console.log("Silently starting separate runtime instance as another ES6 module to populate caches...");
+        // this separate instance of the ES6 module, in which we just populate the caches
+        const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js?dry_run=true');
+        mono_exit = exit;
+        configureRuntime(dotnet, runArgs, INTERNAL);
+        // silent minimal startup
+        await dotnet.withConfig({
+            forwardConsoleLogsToWS: false,
+            diagnosticTracing: false,
+            appendElementOnExit: false,
+            logExitCode: false,
+            pthreadPoolSize: 0,
+            exitAfterSnapshot: true
+        }).create();
+    } catch (err) {
+        if (err && err.status !== 0) {
+            return false;
+        }
+    }
+    console.log("Separate runtime instance finished loading.");
+    return true;
+}
+
 async function run() {
     try {
         const runArgs = await getArgs();
+        console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
         if (is_browser) {
-            // this separate instance of the ES6 module, in which we just populate the caches
-            const { dotnet: dry_run, exit: dry_exit, INTERNAL: DRY_INTERNAL } = await loadDotnet('./dotnet.js?dry-run=true');
-            mono_exit = dry_exit;
-            configureRuntime(dry_run, runArgs, DRY_INTERNAL);
-            // silent minimal startup
-            await dry_run.withModuleConfig({
-                onConfigLoaded: (config) => {
-                    config.forwardConsoleLogsToWS = false;
-                    config.diagnosticTracing = false;
-                    config.appendElementOnExit = false;
-                    config.logExitCode = false;
-                    config.pthreadPoolSize = 0;
-                }
-            }).create();
+            const dryOk = await dry_run(runArgs);
+            if (!dryOk) {
+                mono_exit(1, "Failed during dry run");
+                return;
+            }
         }
 
         // this is subsequent run with the actual tests. It will use whatever was cached in the previous run. 
@@ -311,7 +328,6 @@ async function run() {
             mono_exit(1, "Missing required --run argument");
             return;
         }
-        console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
         configureRuntime(dotnet, runArgs, INTERNAL);
 
