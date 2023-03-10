@@ -4551,21 +4551,10 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
             regNumber op1Reg = op1->GetRegNum();
 
-            if (compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && (targetReg != REG_NA) &&
-                (targetReg == op1Reg) && tree->OperIs(GT_LT) && intConst->IsIntegralConst(0) &&
-                !op1->isUsedFromMemory() && ((cmpSize == EA_4BYTE) || (cmpSize == EA_8BYTE)))
+            if (compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && !op1->isUsedFromMemory() &&
+                (targetReg != REG_NA) && tree->OperIs(GT_LT) && intConst->IsIntegralConst(0) &&
+                ((cmpSize == EA_4BYTE) || (cmpSize == EA_8BYTE)))
             {
-                // if (targetReg != op1Reg)
-                //{
-                //     emit->emitIns_Mov(INS_mov, cmpSize, targetReg, op1Reg, /* canSkip */ false);
-                // }
-
-                // if (tree->OperIs(GT_GE))
-                //{
-                //     // emit "neg" for "x>=0" case
-                //     emit->emitIns_R_R(INS_neg, cmpSize, targetReg, targetReg);
-                // }
-
                 emit->emitIns_R_R_I(INS_lsr, cmpSize, targetReg, op1Reg, (int)cmpSize * 8 - 1);
                 genProduceReg(tree);
                 return;
