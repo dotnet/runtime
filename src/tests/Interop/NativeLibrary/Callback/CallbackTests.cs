@@ -99,7 +99,7 @@ public class CallbackTests
             if (string.Equals(libraryName, NativeLibraryToLoad.InvalidName))
             {
                 Assert.Equal(DllImportSearchPath.System32, dllImportSearchPath);
-                return NativeLibrary.Load(NativeLibraryToLoad.Name, asm, null);
+                return NativeLibrary.Load(NativeLibraryToLoad.GetFullPath(), asm, null);
             }
 
             return IntPtr.Zero;

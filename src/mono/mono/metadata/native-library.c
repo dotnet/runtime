@@ -533,10 +533,13 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, Mo
 
 	ERROR_DECL (bad_image_error);
 
-	// Try without any path additions
+#if defined(HOST_ANDROID)
+	// On Android, try without any path additions first. It is sensitive to probing that will always miss
+    // and lookup for some libraries is required to use a relative path
 	module = netcore_probe_for_module_variations (NULL, file_name, lflags, error);
 	if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE)
 		mono_error_move (bad_image_error, error);
+#endif
 
 	// Check the NATIVE_DLL_SEARCH_DIRECTORIES
 	for (int i = 0; i < pinvoke_search_directories_count && module == NULL; ++i) {
@@ -559,6 +562,16 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, Mo
 			module = netcore_probe_for_module_variations (mdirname, file_name, lflags, error);
 		g_free (mdirname);
 	}
+
+#if !defined(HOST_ANDROID)
+	// Try without any path additions
+	if (module == NULL)
+	{
+		module = netcore_probe_for_module_variations (NULL, file_name, lflags, error);
+		if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE)
+			mono_error_move (bad_image_error, error);
+	}
+#endif
 
 	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
 

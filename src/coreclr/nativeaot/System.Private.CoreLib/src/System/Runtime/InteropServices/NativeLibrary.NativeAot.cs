@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
             bool searchAssemblyDirectory;
             if (searchPath.HasValue)
             {
-                searchPathFlags = (int)(searchPath.Value & ~DllImportSearchPath.AssemblyDirectory);
+                searchPathFlags = (int)(searchPath!.Value & ~DllImportSearchPath.AssemblyDirectory);
                 searchAssemblyDirectory = (searchPath.Value & DllImportSearchPath.AssemblyDirectory) != 0;
             }
             else

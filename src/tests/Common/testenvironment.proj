@@ -258,6 +258,8 @@
       <!-- Mono interpreter -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="set MONO_ENV_OPTIONS=--interpreter" />
 
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="set DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
+
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set COMPlus_InterpreterHWIntrinsicsIsSupportedFalse=1" />
@@ -272,6 +274,8 @@
 
       <!-- Mono interpreter -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
+
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="export DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
 
       <!-- Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
