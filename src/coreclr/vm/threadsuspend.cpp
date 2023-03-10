@@ -3050,6 +3050,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
 
     ////////////////////////////////////////////////////
     // Now redirect the thread to the helper function
+
     SetIP(pCurrentThreadCtx, (PCODE)pTgt);
 
 #ifdef TARGET_ARM
