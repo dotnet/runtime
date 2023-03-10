@@ -238,10 +238,8 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100-preview_2
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview3Version>8.0.0-preview.3.23158.1</MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview3Version>
-    <MicrosoftNETWorkloadEmscriptennet7Manifest80100preview3Version>8.0.0-preview.3.23158.1</MicrosoftNETWorkloadEmscriptennet7Manifest80100preview3Version>
-    <MicrosoftNETWorkloadEmscriptennet6Manifest80100preview3Version>8.0.0-preview.3.23158.1</MicrosoftNETWorkloadEmscriptennet6Manifest80100preview3Version>
-    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview3Version)</MicrosoftNETRuntimeEmscriptenVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-preview.3.23159.3</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
