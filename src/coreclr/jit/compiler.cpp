@@ -5371,6 +5371,7 @@ PhaseStatus Compiler::StressSplitTree()
 //
 void Compiler::SplitTreesRandomly()
 {
+#ifdef DEBUG
     CLRRandom rng;
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
@@ -5418,6 +5419,7 @@ void Compiler::SplitTreesRandomly()
             }
         }
     }
+#endif
 }
 
 //------------------------------------------------------------------------
