@@ -11,7 +11,7 @@ public class Program
 {
     public static int Main()
     {
-        var attr = typeof (Program).GetCustomAttribute(typeof(MySpecialAttribute), false);
+        var attr = (MySpecialAttribute)Attribute.GetCustomAttribute(typeof (Program), typeof(MySpecialAttribute), false);
         if (attr == null)
             return 101;
         if (attr.Type == null)
