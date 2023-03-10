@@ -59,11 +59,6 @@ namespace ILLink.RoslynAnalyzer
 		{
 			var dangerousPatternsBuilder = ImmutableArray.CreateBuilder<ISymbol> ();
 
-			// Add the getters for all of the interesting properties into the set as well
-			// some of them have RequiresAssemblyFiles attribute on them and we want to avoid producing IL3002
-			// so we need to react to them as special.
-			// Below we will only produce diagnostics for the properties and not for the getters.
-
 			var assemblyType = compilation.GetTypeByMetadataName ("System.Reflection.Assembly");
 			if (assemblyType != null) {
 				// Properties

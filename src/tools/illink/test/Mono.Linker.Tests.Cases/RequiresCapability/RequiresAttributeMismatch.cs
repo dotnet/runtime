@@ -76,7 +76,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[ExpectedWarning ("IL3002", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.get", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL3002", "IBaseWithRequires.PropertyAnnotationInProperty.get", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL3002", "IBaseWithRequires.PropertyAnnotationInProperty.set", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL3002", "IBaseWithRequires.PropertyAnnotationInPropertyAndAccessor.set", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "IBaseWithRequires.Method()")]
 		[ExpectedWarning ("IL3002", "IBaseWithRequires.Method()", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL3050", "IBaseWithRequires.Method()", ProducedBy = Tool.NativeAot)]
