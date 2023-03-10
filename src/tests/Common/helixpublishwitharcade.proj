@@ -552,7 +552,7 @@
     <ZipDirectory
       Condition="'@(LegacyPayloads)' != ''"
       SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))"
-      DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />  
+      DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
   </Target>
 
   <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(TargetsBrowser)' == 'true'">
