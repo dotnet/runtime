@@ -35,7 +35,7 @@ public static unsafe partial class Native
 }
 
 
-public class FunctionalTests
+public class RcwTests
 {
 #pragma warning disable xUnit1004 // Test methods should not be skipped
     [Fact(Skip = "Generated ABI isn't complete")]
