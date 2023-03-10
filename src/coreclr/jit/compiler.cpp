@@ -5429,55 +5429,57 @@ void Compiler::SplitTreesRemoveCommas()
 {
     for (BasicBlock* block : Blocks())
     {
-        for (Statement* stmt : block->NonPhiStatements())
+        Statement* stmt = block->FirstNonPhiDef();
+        while (stmt != nullptr)
         {
-            while (true)
+            Statement* nextStmt = stmt->GetNextStmt();
+            for (GenTree* tree : stmt->TreeList())
             {
-                bool again = false;
-                for (GenTree* tree : stmt->TreeList())
+                if (!tree->OperIs(GT_COMMA))
                 {
-                    if (!tree->OperIs(GT_COMMA))
-                    {
-                        continue;
-                    }
-
-                    // Supporting this weird construct would require additional
-                    // handling, we need to sort of move the comma into to the
-                    // next node in execution order. We don't see this so just
-                    // skip it.
-                    assert(!tree->IsReverseOp());
-
-                    JITDUMP("Removing COMMA [%06u]\n", dspTreeID(tree));
-                    Statement* newStmt;
-                    GenTree**  use;
-                    gtSplitTree(block, stmt, tree, &newStmt, &use);
-                    GenTree* op1SideEffects = nullptr;
-                    gtExtractSideEffList(tree->gtGetOp1(), &op1SideEffects);
-
-                    if (op1SideEffects != nullptr)
-                    {
-                        fgInsertStmtBefore(block, stmt, fgNewStmtFromTree(op1SideEffects));
-                    }
-
-                    *use = tree->gtGetOp2();
-
-                    while ((newStmt != nullptr) && (newStmt != stmt))
-                    {
-                        fgMorphStmtBlockOps(block, newStmt);
-                        newStmt = newStmt->GetNextStmt();
-                    }
-
-                    fgMorphStmtBlockOps(block, stmt);
-
-                    again = true;
-                    break;
+                    continue;
                 }
 
-                if (!again)
+                // Supporting this weird construct would require additional
+                // handling, we need to sort of move the comma into to the
+                // next node in execution order. We don't see this so just
+                // skip it.
+                assert(!tree->IsReverseOp());
+
+                JITDUMP("Removing COMMA [%06u]\n", dspTreeID(tree));
+                Statement* newStmt;
+                GenTree**  use;
+                gtSplitTree(block, stmt, tree, &newStmt, &use);
+                GenTree* op1SideEffects = nullptr;
+                gtExtractSideEffList(tree->gtGetOp1(), &op1SideEffects);
+
+                if (op1SideEffects != nullptr)
                 {
-                    break;
+                    Statement* op1Stmt = fgNewStmtFromTree(op1SideEffects);
+                    fgInsertStmtBefore(block, stmt, op1Stmt);
+                    if (newStmt == nullptr)
+                    {
+                        newStmt = op1Stmt;
+                    }
                 }
+
+                *use = tree->gtGetOp2();
+
+                for (Statement* cur = newStmt; (cur != nullptr) && (cur != stmt); cur = cur->GetNextStmt())
+                {
+                    fgMorphStmtBlockOps(block, cur);
+                }
+
+                fgMorphStmtBlockOps(block, stmt);
+
+                // Morphing block ops can introduce commas (and the original
+                // statement can also have more commas left). Proceed from the
+                // earliest newly introduced statement.
+                nextStmt = newStmt != nullptr ? newStmt : stmt;
+                break;
             }
+
+            stmt = nextStmt;
         }
     }
 
