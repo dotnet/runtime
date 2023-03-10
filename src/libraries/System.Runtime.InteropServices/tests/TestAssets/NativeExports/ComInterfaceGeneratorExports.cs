@@ -152,6 +152,5 @@ public static unsafe class ComInterfaceGeneratorExports
                 }
             }
         }
-
     }
 }
