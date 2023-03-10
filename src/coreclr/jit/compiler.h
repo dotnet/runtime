@@ -2042,6 +2042,7 @@ class Compiler
     friend class ProfileSynthesis;
 
 #ifdef FEATURE_HW_INTRINSICS
+    friend struct GenTreeHWIntrinsic;
     friend struct HWIntrinsicInfo;
     friend struct SimdAsHWIntrinsicInfo;
 #endif // FEATURE_HW_INTRINSICS

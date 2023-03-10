@@ -6292,6 +6292,11 @@ private:
 
     void Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWIntrinsic)
     {
+        if (isSimdAsHWIntrinsic)
+        {
+            gtFlags |= GTF_SIMDASHW_OP;
+        }
+
         SetHWIntrinsicId(intrinsicId);
 
         bool isStore = OperIsMemoryStore();
@@ -6305,11 +6310,6 @@ private:
             {
                 gtFlags |= GTF_ASG;
             }
-        }
-
-        if (isSimdAsHWIntrinsic)
-        {
-            gtFlags |= GTF_SIMDASHW_OP;
         }
     }
 };

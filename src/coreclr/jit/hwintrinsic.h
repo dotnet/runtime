@@ -159,7 +159,7 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_MaybeCommutative = 0x80000,
 
     // The intrinsic has no EVEX compatible form
-    HW_Flag_NoEvexSemantics = 0x100000
+    HW_Flag_NoEvexSemantics = 0x100000,
 
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
@@ -179,6 +179,9 @@ enum HWIntrinsicFlag : unsigned int
 #else
 #error Unsupported platform
 #endif
+
+    // The return type of the intrinsic may not be the same as the tracked simdSize of the input
+    HW_Flag_MismatchedReturnType = 0x80000000,
 };
 
 #if defined(TARGET_XARCH)
@@ -679,6 +682,12 @@ struct HWIntrinsicInfo
 #else
 #error Unsupported platform
 #endif
+    }
+
+    static bool HasMismatchedReturnType(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MismatchedReturnType) != 0;
     }
 
 #if defined(TARGET_XARCH)

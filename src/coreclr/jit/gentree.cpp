@@ -20628,7 +20628,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
                                          bool        isSimdAsHWIntrinsic)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(type == TYP_BOOL);
+    assert(type == TYP_INT);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
@@ -20762,7 +20762,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
                                          bool        isSimdAsHWIntrinsic)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(type == TYP_BOOL);
+    assert(type == TYP_INT);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
@@ -22087,11 +22087,11 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
-                tmp1 = gtNewSimdHWIntrinsicNode(type, op1, vecCon1, NI_SSE2_And, simdBaseJitType, simdSize,
+                tmp1 = gtNewSimdHWIntrinsicNode(type, op1, vecCon1, NI_AVX2_And, simdBaseJitType, simdSize,
                                                 isSimdAsHWIntrinsic);
-                tmp2 = gtNewSimdHWIntrinsicNode(type, op2, vecCon2, NI_SSE2_And, simdBaseJitType, simdSize,
+                tmp2 = gtNewSimdHWIntrinsicNode(type, op2, vecCon2, NI_AVX2_And, simdBaseJitType, simdSize,
                                                 isSimdAsHWIntrinsic);
-                tmp3 = gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_SSE2_PackUnsignedSaturate, CORINFO_TYPE_UBYTE,
+                tmp3 = gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_AVX2_PackUnsignedSaturate, CORINFO_TYPE_UBYTE,
                                                 simdSize, isSimdAsHWIntrinsic);
 
                 CorInfoType permuteBaseJitType = (simdBaseType == TYP_BYTE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
@@ -22130,11 +22130,11 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
-                tmp1 = gtNewSimdHWIntrinsicNode(type, op1, vecCon1, NI_SSE2_And, simdBaseJitType, simdSize,
+                tmp1 = gtNewSimdHWIntrinsicNode(type, op1, vecCon1, NI_AVX2_And, simdBaseJitType, simdSize,
                                                 isSimdAsHWIntrinsic);
-                tmp2 = gtNewSimdHWIntrinsicNode(type, op2, vecCon2, NI_SSE2_And, simdBaseJitType, simdSize,
+                tmp2 = gtNewSimdHWIntrinsicNode(type, op2, vecCon2, NI_AVX2_And, simdBaseJitType, simdSize,
                                                 isSimdAsHWIntrinsic);
-                tmp3 = gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_SSE41_PackUnsignedSaturate, CORINFO_TYPE_USHORT,
+                tmp3 = gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_AVX2_PackUnsignedSaturate, CORINFO_TYPE_USHORT,
                                                 simdSize, isSimdAsHWIntrinsic);
 
                 CorInfoType permuteBaseJitType = (simdBaseType == TYP_BYTE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
@@ -22590,7 +22590,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
             GenTree* op1Dup   = fgMakeMultiUse(&op1, clsHnd);
-            GenTree* op1Lower = gtNewSimdHWIntrinsicNode(type, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize,
+            GenTree* op1Lower = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize,
                                                          isSimdAsHWIntrinsic);
 
             op2                          = gtNewVconNode(TYP_SIMD16);
@@ -22599,7 +22599,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             op1Lower = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lower, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
                                                 isSimdAsHWIntrinsic);
 
-            GenTree* op1Upper = gtNewSimdHWIntrinsicNode(type, op1Dup, gtNewIconNode(1), NI_AVX_ExtractVector128,
+            GenTree* op1Upper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Dup, gtNewIconNode(1), NI_AVX_ExtractVector128,
                                                          simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
             op2                          = gtNewVconNode(TYP_SIMD16);
@@ -23008,12 +23008,12 @@ GenTree* Compiler::gtNewSimdSumNode(
         op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(0x01, TYP_INT), NI_AVX_ExtractVector128,
                                        simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
-        tmp = gtNewSimdHWIntrinsicNode(simdType, tmp, NI_Vector256_GetLower, simdBaseJitType, simdSize,
+        tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, NI_Vector256_GetLower, simdBaseJitType, simdSize,
                                        isSimdAsHWIntrinsic);
         op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, tmp, intrinsic, simdBaseJitType, 16, isSimdAsHWIntrinsic);
     }
 
-    return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, 16, isSimdAsHWIntrinsic);
 #elif defined(TARGET_ARM64)
     switch (simdBaseType)
     {
@@ -23199,7 +23199,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
         assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
         tmp1 =
-            gtNewSimdHWIntrinsicNode(type, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
         switch (simdBaseType)
         {
@@ -23237,7 +23237,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
         }
 
         assert(intrinsic != NI_Illegal);
-        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, 16, isSimdAsHWIntrinsic);
     }
     else if ((simdBaseType == TYP_FLOAT) || compOpportunisticallyDependsOn(InstructionSet_SSE41))
     {
@@ -23360,7 +23360,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
-        tmp1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode(1), NI_AVX_ExtractVector128, simdBaseJitType, simdSize,
+        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(1), NI_AVX_ExtractVector128, simdBaseJitType, simdSize,
                                         isSimdAsHWIntrinsic);
 
         switch (simdBaseType)
@@ -23399,7 +23399,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
         }
 
         assert(intrinsic != NI_Illegal);
-        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, 16, isSimdAsHWIntrinsic);
     }
     else if (varTypeIsFloating(simdBaseType))
     {
@@ -23902,13 +23902,649 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicId() const
 
 void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 {
-#ifdef DEBUG
-    size_t oldOperandCount = GetOperandCount();
-    int    newOperandCount = HWIntrinsicInfo::lookupNumArgs(intrinsicId);
-    bool   newCountUnknown = newOperandCount < 0;
+    assert((intrinsicId > NI_HW_INTRINSIC_START) && (intrinsicId < NI_HW_INTRINSIC_END));
 
-    // We'll choose to trust the programmer here.
-    assert((oldOperandCount == static_cast<size_t>(newOperandCount)) || newCountUnknown);
+#ifdef DEBUG
+    // Try to catch any "common" mistakes that might be caused due to a mismatch in
+    // node configuration compared to the metadata in the hwintrinsic info table.
+
+    Compiler*              comp     = JitTls::GetCompiler();
+    const HWIntrinsicInfo& info     = HWIntrinsicInfo::lookup(intrinsicId);
+    var_types              retType  = TypeGet();
+    var_types              baseType = GetSimdBaseType();
+    int                    numArgs  = static_cast<int>(GetOperandCount());
+    int                    simdSize = static_cast<int>(GetSimdSize());
+    int                    elemSize = static_cast<int>(genTypeSize(baseType));
+
+    assert(comp->compIsaSupportedDebugOnly(info.isa));
+
+    if (info.simdSize >= 0)
+    {
+        if (IsSimdAsHWIntrinsic() || (comp->mostRecentlyActivePhase == PHASE_LOWERING))
+        {
+#if defined(TARGET_ARM64)
+            assert((simdSize == info.simdSize) || ((simdSize == 12) && (info.simdSize == 16)));
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+            assert((simdSize == info.simdSize) || ((simdSize < 16) && (info.simdSize == 16)));
+#endif // TARGET_XARCH
+        }
+        else
+        {
+            assert(simdSize == info.simdSize);
+        }
+    }
+    else
+    {
+        switch (intrinsicId)
+        {
+            case NI_Vector128_AsVector128:
+            {
+                assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16));
+                break;
+            }
+
+#if defined(TARGET_ARM64)
+            case NI_AdvSimd_Abs:
+            case NI_AdvSimd_AbsSaturate:
+            case NI_AdvSimd_AbsoluteCompareGreaterThan:
+            case NI_AdvSimd_AbsoluteCompareGreaterThanOrEqual:
+            case NI_AdvSimd_AbsoluteCompareLessThan:
+            case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_AbsoluteDifference:
+            case NI_AdvSimd_AbsoluteDifferenceAdd:
+            case NI_AdvSimd_Add:
+            case NI_AdvSimd_AddPairwiseWidening:
+            case NI_AdvSimd_AddPairwiseWideningAndAdd:
+            case NI_AdvSimd_AddSaturate:
+            case NI_AdvSimd_And:
+            case NI_AdvSimd_BitwiseClear:
+            case NI_AdvSimd_BitwiseSelect:
+            case NI_AdvSimd_Ceiling:
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_CompareGreaterThan:
+            case NI_AdvSimd_CompareGreaterThanOrEqual:
+            case NI_AdvSimd_CompareLessThan:
+            case NI_AdvSimd_CompareLessThanOrEqual:
+            case NI_AdvSimd_CompareTest:
+            case NI_AdvSimd_ConvertToInt32RoundAwayFromZero:
+            case NI_AdvSimd_ConvertToInt32RoundToEven:
+            case NI_AdvSimd_ConvertToInt32RoundToNegativeInfinity:
+            case NI_AdvSimd_ConvertToInt32RoundToPositiveInfinity:
+            case NI_AdvSimd_ConvertToInt32RoundToZero:
+            case NI_AdvSimd_ConvertToSingle:
+            case NI_AdvSimd_ConvertToUInt32RoundAwayFromZero:
+            case NI_AdvSimd_ConvertToUInt32RoundToEven:
+            case NI_AdvSimd_ConvertToUInt32RoundToNegativeInfinity:
+            case NI_AdvSimd_ConvertToUInt32RoundToPositiveInfinity:
+            case NI_AdvSimd_ConvertToUInt32RoundToZero:
+            case NI_AdvSimd_DuplicateSelectedScalarToVector64:
+            case NI_AdvSimd_DuplicateSelectedScalarToVector128:
+            case NI_AdvSimd_Extract:
+            case NI_AdvSimd_Floor:
+            case NI_AdvSimd_FusedAddHalving:
+            case NI_AdvSimd_FusedAddRoundedHalving:
+            case NI_AdvSimd_FusedMultiplyAdd:
+            case NI_AdvSimd_FusedMultiplySubtract:
+            case NI_AdvSimd_FusedSubtractHalving:
+            case NI_AdvSimd_Insert:
+            case NI_AdvSimd_LeadingSignCount:
+            case NI_AdvSimd_LeadingZeroCount:
+            case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_Max:
+            case NI_AdvSimd_MaxNumber:
+            case NI_AdvSimd_Min:
+            case NI_AdvSimd_MinNumber:
+            case NI_AdvSimd_Multiply:
+            case NI_AdvSimd_MultiplyAdd:
+            case NI_AdvSimd_MultiplyAddByScalar:
+            case NI_AdvSimd_MultiplyAddBySelectedScalar:
+            case NI_AdvSimd_MultiplyByScalar:
+            case NI_AdvSimd_MultiplyBySelectedScalar:
+            case NI_AdvSimd_MultiplyDoublingByScalarSaturateHigh:
+            case NI_AdvSimd_MultiplyDoublingBySelectedScalarSaturateHigh:
+            case NI_AdvSimd_MultiplyDoublingSaturateHigh:
+            case NI_AdvSimd_MultiplyRoundedDoublingByScalarSaturateHigh:
+            case NI_AdvSimd_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
+            case NI_AdvSimd_MultiplyRoundedDoublingSaturateHigh:
+            case NI_AdvSimd_MultiplySubtract:
+            case NI_AdvSimd_MultiplySubtractByScalar:
+            case NI_AdvSimd_MultiplySubtractBySelectedScalar:
+            case NI_AdvSimd_Negate:
+            case NI_AdvSimd_NegateSaturate:
+            case NI_AdvSimd_Not:
+            case NI_AdvSimd_Or:
+            case NI_AdvSimd_OrNot:
+            case NI_AdvSimd_PolynomialMultiply:
+            case NI_AdvSimd_PopCount:
+            case NI_AdvSimd_ReciprocalEstimate:
+            case NI_AdvSimd_ReciprocalSquareRootEstimate:
+            case NI_AdvSimd_ReciprocalSquareRootStep:
+            case NI_AdvSimd_ReciprocalStep:
+            case NI_AdvSimd_ReverseElement16:
+            case NI_AdvSimd_ReverseElement32:
+            case NI_AdvSimd_ReverseElement8:
+            case NI_AdvSimd_RoundAwayFromZero:
+            case NI_AdvSimd_RoundToNearest:
+            case NI_AdvSimd_RoundToNegativeInfinity:
+            case NI_AdvSimd_RoundToPositiveInfinity:
+            case NI_AdvSimd_RoundToZero:
+            case NI_AdvSimd_ShiftArithmetic:
+            case NI_AdvSimd_ShiftArithmeticRounded:
+            case NI_AdvSimd_ShiftArithmeticRoundedSaturate:
+            case NI_AdvSimd_ShiftArithmeticSaturate:
+            case NI_AdvSimd_ShiftLeftAndInsert:
+            case NI_AdvSimd_ShiftLeftLogical:
+            case NI_AdvSimd_ShiftLeftLogicalSaturate:
+            case NI_AdvSimd_ShiftLeftLogicalSaturateUnsigned:
+            case NI_AdvSimd_ShiftLogical:
+            case NI_AdvSimd_ShiftLogicalRounded:
+            case NI_AdvSimd_ShiftLogicalRoundedSaturate:
+            case NI_AdvSimd_ShiftLogicalSaturate:
+            case NI_AdvSimd_ShiftRightAndInsert:
+            case NI_AdvSimd_ShiftRightArithmetic:
+            case NI_AdvSimd_ShiftRightArithmeticAdd:
+            case NI_AdvSimd_ShiftRightArithmeticRounded:
+            case NI_AdvSimd_ShiftRightArithmeticRoundedAdd:
+            case NI_AdvSimd_ShiftRightLogical:
+            case NI_AdvSimd_ShiftRightLogicalAdd:
+            case NI_AdvSimd_ShiftRightLogicalRounded:
+            case NI_AdvSimd_ShiftRightLogicalRoundedAdd:
+            case NI_AdvSimd_Store:
+            case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_Subtract:
+            case NI_AdvSimd_SubtractSaturate:
+            case NI_AdvSimd_Xor:
+            case NI_AdvSimd_Arm64_AddAcross:
+            case NI_AdvSimd_Arm64_AddAcrossWidening:
+            case NI_AdvSimd_Arm64_AddPairwiseScalar:
+            case NI_AdvSimd_Arm64_AddSaturate:
+            case NI_AdvSimd_Arm64_ConvertToDouble:
+            case NI_AdvSimd_Arm64_Divide:
+            case NI_AdvSimd_Arm64_FusedMultiplyAddByScalar:
+            case NI_AdvSimd_Arm64_FusedMultiplyAddBySelectedScalar:
+            case NI_AdvSimd_Arm64_FusedMultiplySubtractByScalar:
+            case NI_AdvSimd_Arm64_FusedMultiplySubtractBySelectedScalar:
+            case NI_AdvSimd_Arm64_InsertSelectedScalar:
+            case NI_AdvSimd_Arm64_MaxAcross:
+            case NI_AdvSimd_Arm64_MaxNumberPairwise:
+            case NI_AdvSimd_Arm64_MaxNumberPairwiseScalar:
+            case NI_AdvSimd_Arm64_MaxPairwiseScalar:
+            case NI_AdvSimd_Arm64_MinAcross:
+            case NI_AdvSimd_Arm64_MinNumberPairwise:
+            case NI_AdvSimd_Arm64_MinNumberPairwiseScalar:
+            case NI_AdvSimd_Arm64_MinPairwiseScalar:
+            case NI_AdvSimd_Arm64_MultiplyExtended:
+            case NI_AdvSimd_Arm64_MultiplyExtendedBySelectedScalar:
+            case NI_AdvSimd_Arm64_ReverseElementBits:
+            case NI_AdvSimd_Arm64_Sqrt:
+            case NI_AdvSimd_Arm64_StorePair:
+            case NI_AdvSimd_Arm64_StorePairNonTemporal:
+            case NI_AdvSimd_Arm64_TransposeEven:
+            case NI_AdvSimd_Arm64_TransposeOdd:
+            case NI_AdvSimd_Arm64_UnzipEven:
+            case NI_AdvSimd_Arm64_UnzipOdd:
+            case NI_AdvSimd_Arm64_ZipHigh:
+            case NI_AdvSimd_Arm64_ZipLow:
+            case NI_Dp_DotProduct:
+            case NI_Dp_DotProductBySelectedQuadruplet:
+            case NI_Rdm_MultiplyRoundedDoublingAndAddSaturateHigh:
+            case NI_Rdm_MultiplyRoundedDoublingAndSubtractSaturateHigh:
+            case NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndAddSaturateHigh:
+            case NI_Rdm_MultiplyRoundedDoublingBySelectedScalarAndSubtractSaturateHigh:
+            {
+                assert((simdSize == 8) || (simdSize == 16));
+                break;
+            }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+            case NI_AVX_Compare:
+            case NI_AVX_MaskLoad:
+            case NI_AVX_MaskStore:
+            case NI_AVX_Permute:
+            case NI_AVX_PermuteVar:
+            case NI_AVX_TestC:
+            case NI_AVX_TestNotZAndNotC:
+            case NI_AVX_TestZ:
+            case NI_AVX2_Blend:
+            case NI_AVX2_MaskLoad:
+            case NI_AVX2_MaskStore:
+            case NI_AVX2_ShiftLeftLogicalVariable:
+            case NI_AVX2_ShiftRightArithmeticVariable:
+            case NI_AVX2_ShiftRightLogicalVariable:
+            case NI_AVXVNNI_MultiplyWideningAndAdd:
+            case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+            case NI_FMA_MultiplyAdd:
+            case NI_FMA_MultiplyAddNegated:
+            case NI_FMA_MultiplyAddSubtract:
+            case NI_FMA_MultiplySubtract:
+            case NI_FMA_MultiplySubtractAdd:
+            case NI_FMA_MultiplySubtractNegated:
+            case NI_AVX_PTEST:
+            {
+                assert((simdSize == 16) || (simdSize == 32));
+                break;
+            }
+#endif // TARGET_XARCH
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    if (info.numArgs >= 0)
+    {
+        assert(numArgs == info.numArgs);
+    }
+    else
+    {
+        switch (intrinsicId)
+        {
+            case NI_Vector128_Create:
+            {
+                assert((numArgs == 1) || (numArgs == 2) || (numArgs == (simdSize / elemSize)));
+                break;
+            }
+
+            case NI_Vector128_LoadUnsafe:
+            {
+                assert((numArgs == 1) || (numArgs == 2));
+                break;
+            }
+
+            case NI_Vector128_Shuffle:
+            case NI_Vector128_StoreUnsafe:
+            {
+                assert((numArgs == 2) || (numArgs == 3));
+                break;
+            }
+
+#if defined(TARGET_ARM64)
+            case NI_Vector64_Create:
+            {
+                assert((numArgs == 1) || (numArgs == 2) || (numArgs == (simdSize / elemSize)));
+                break;
+            }
+
+            case NI_Vector64_LoadUnsafe:
+            {
+                assert((numArgs == 1) || (numArgs == 2));
+                break;
+            }
+
+            case NI_Vector64_Shuffle:
+            case NI_Vector64_StoreUnsafe:
+            {
+                assert((numArgs == 2) || (numArgs == 3));
+                break;
+            }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+            case NI_Vector512_Create:
+            {
+                assert((numArgs == 1) || (numArgs == 2) || (numArgs == (simdSize / elemSize)));
+                break;
+            }
+
+            case NI_Vector256_LoadUnsafe:
+            case NI_Vector512_LoadUnsafe:
+            case NI_SSE_ReciprocalScalar:
+            case NI_SSE_ReciprocalSqrtScalar:
+            case NI_SSE_SqrtScalar:
+            case NI_SSE2_MoveScalar:
+            case NI_SSE2_SqrtScalar:
+            case NI_SSE41_CeilingScalar:
+            case NI_SSE41_FloorScalar:
+            case NI_SSE41_RoundCurrentDirectionScalar:
+            case NI_SSE41_RoundToNearestIntegerScalar:
+            case NI_SSE41_RoundToNegativeInfinityScalar:
+            case NI_SSE41_RoundToPositiveInfinityScalar:
+            case NI_SSE41_RoundToZeroScalar:
+            {
+                assert((numArgs == 1) || (numArgs == 2));
+                break;
+            }
+
+            case NI_Vector256_Shuffle:
+            case NI_Vector256_StoreUnsafe:
+            case NI_Vector512_StoreUnsafe:
+            case NI_SSE2_Shuffle:
+            case NI_BMI2_MultiplyNoFlags:
+            case NI_BMI2_X64_MultiplyNoFlags:
+            {
+                assert((numArgs == 2) || (numArgs == 3));
+                break;
+            }
+#endif // TARGET_XARCH
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    if (simdSize == 0)
+    {
+        assert(!varTypeIsSIMD(retType));
+    }
+    else if (HWIntrinsicInfo::HasMismatchedReturnType(intrinsicId))
+    {
+        switch (intrinsicId)
+        {
+            case NI_Vector128_AsVector2:
+            {
+                assert(retType == TYP_SIMD8);
+                break;
+            }
+
+            case NI_Vector128_AsVector3:
+            {
+                assert(retType == TYP_SIMD12);
+                break;
+            }
+
+            case NI_Vector128_EqualsAll:
+            case NI_Vector128_EqualsAny:
+            case NI_Vector128_GreaterThanAll:
+            case NI_Vector128_GreaterThanAny:
+            case NI_Vector128_GreaterThanOrEqualAll:
+            case NI_Vector128_GreaterThanOrEqualAny:
+            case NI_Vector128_LessThanAll:
+            case NI_Vector128_LessThanAny:
+            case NI_Vector128_LessThanOrEqualAll:
+            case NI_Vector128_LessThanOrEqualAny:
+            case NI_Vector128_op_Equality:
+            case NI_Vector128_op_Inequality:
+            {
+                assert(retType == TYP_INT);
+                break;
+            }
+
+            case NI_Vector128_ExtractMostSignificantBits:
+            {
+                assert(retType == TYP_INT);
+                break;
+            }
+
+            case NI_Vector128_Store:
+            case NI_Vector128_StoreAligned:
+            case NI_Vector128_StoreAlignedNonTemporal:
+            case NI_Vector128_StoreUnsafe:
+            {
+                assert(retType == TYP_VOID);
+                break;
+            }
+
+            case NI_Vector128_Dot:
+            {
+                assert((retType == genActualType(baseType)) || (retType == Compiler::getSIMDTypeForSize(simdSize)));
+                break;
+            }
+
+            case NI_Vector128_GetElement:
+            case NI_Vector128_Sum:
+            case NI_Vector128_ToScalar:
+            {
+                assert(retType == genActualType(baseType));
+                break;
+            }
+
+#if defined(TARGET_ARM64)
+            case NI_Vector64_EqualsAll:
+            case NI_Vector64_EqualsAny:
+            case NI_Vector64_GreaterThanAll:
+            case NI_Vector64_GreaterThanAny:
+            case NI_Vector64_GreaterThanOrEqualAll:
+            case NI_Vector64_GreaterThanOrEqualAny:
+            case NI_Vector64_LessThanAll:
+            case NI_Vector64_LessThanAny:
+            case NI_Vector64_LessThanOrEqualAll:
+            case NI_Vector64_LessThanOrEqualAny:
+            case NI_Vector64_op_Equality:
+            case NI_Vector64_op_Inequality:
+            {
+                assert(retType == TYP_INT);
+                break;
+            }
+
+            case NI_Vector64_ExtractMostSignificantBits:
+            {
+                assert(retType == TYP_INT);
+                break;
+            }
+
+            case NI_Vector64_ToVector128:
+            case NI_Vector64_ToVector128Unsafe:
+            {
+                assert(retType == TYP_SIMD16);
+                break;
+            }
+
+            case NI_Vector128_GetLower:
+            case NI_Vector128_GetUpper:
+            {
+                assert(retType == TYP_SIMD8);
+                break;
+            }
+
+            case NI_Vector64_Dot:
+            case NI_Vector64_GetElement:
+            case NI_Vector64_Sum:
+            case NI_Vector64_ToScalar:
+            case NI_AdvSimd_Extract:
+            {
+                assert(retType == genActualType(baseType));
+                break;
+            }
+
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            {
+                assert(retType == TYP_STRUCT);
+                break;
+            }
+
+            case NI_AdvSimd_Store:
+            case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_Arm64_StorePair:
+            case NI_AdvSimd_Arm64_StorePairNonTemporal:
+            case NI_AdvSimd_Arm64_StorePairScalar:
+            case NI_AdvSimd_Arm64_StorePairScalarNonTemporal:
+            {
+                assert(retType == TYP_VOID);
+                break;
+            }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+            case NI_Vector256_EqualsAll:
+            case NI_Vector256_EqualsAny:
+            case NI_Vector256_GreaterThanAll:
+            case NI_Vector256_GreaterThanAny:
+            case NI_Vector256_GreaterThanOrEqualAll:
+            case NI_Vector256_GreaterThanOrEqualAny:
+            case NI_Vector256_LessThanAll:
+            case NI_Vector256_LessThanAny:
+            case NI_Vector256_LessThanOrEqualAll:
+            case NI_Vector256_LessThanOrEqualAny:
+            case NI_Vector256_op_Equality:
+            case NI_Vector256_op_Inequality:
+            case NI_SSE_CompareScalarOrderedEqual:
+            case NI_SSE_CompareScalarUnorderedEqual:
+            case NI_SSE_CompareScalarOrderedGreaterThan:
+            case NI_SSE_CompareScalarUnorderedGreaterThan:
+            case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
+            case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
+            case NI_SSE_CompareScalarOrderedLessThan:
+            case NI_SSE_CompareScalarUnorderedLessThan:
+            case NI_SSE_CompareScalarOrderedLessThanOrEqual:
+            case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
+            case NI_SSE_CompareScalarOrderedNotEqual:
+            case NI_SSE_CompareScalarUnorderedNotEqual:
+            case NI_SSE2_CompareScalarOrderedEqual:
+            case NI_SSE2_CompareScalarUnorderedEqual:
+            case NI_SSE2_CompareScalarOrderedGreaterThan:
+            case NI_SSE2_CompareScalarUnorderedGreaterThan:
+            case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
+            case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
+            case NI_SSE2_CompareScalarOrderedLessThan:
+            case NI_SSE2_CompareScalarUnorderedLessThan:
+            case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
+            case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
+            case NI_SSE2_CompareScalarOrderedNotEqual:
+            case NI_SSE2_CompareScalarUnorderedNotEqual:
+            case NI_SSE41_TestC:
+            case NI_SSE41_TestNotZAndNotC:
+            case NI_SSE41_TestZ:
+            case NI_AVX_TestC:
+            case NI_AVX_TestNotZAndNotC:
+            case NI_AVX_TestZ:
+            {
+                assert(retType == TYP_INT);
+                break;
+            }
+
+            case NI_Vector256_ExtractMostSignificantBits:
+            case NI_SSE_ConvertToInt32:
+            case NI_SSE_ConvertToInt32WithTruncation:
+            case NI_SSE_MoveMask:
+            case NI_SSE2_ConvertToInt32:
+            case NI_SSE2_ConvertToInt32WithTruncation:
+            case NI_SSE2_ConvertToUInt32:
+            case NI_SSE2_MoveMask:
+            case NI_AVX_MoveMask:
+            case NI_AVX2_ConvertToInt32:
+            case NI_AVX2_ConvertToUInt32:
+            case NI_AVX2_MoveMask:
+            {
+                assert(retType == TYP_INT);
+                break;
+            }
+
+            case NI_SSE_X64_ConvertToInt64:
+            case NI_SSE_X64_ConvertToInt64WithTruncation:
+            case NI_SSE2_X64_ConvertToInt64:
+            case NI_SSE2_X64_ConvertToInt64WithTruncation:
+            case NI_SSE2_X64_ConvertToUInt64:
+            {
+                assert(retType == TYP_LONG);
+                break;
+            }
+
+            case NI_Vector256_Store:
+            case NI_Vector256_StoreAligned:
+            case NI_Vector256_StoreAlignedNonTemporal:
+            case NI_Vector256_StoreUnsafe:
+            case NI_Vector512_Store:
+            case NI_Vector512_StoreAligned:
+            case NI_Vector512_StoreAlignedNonTemporal:
+            case NI_Vector512_StoreUnsafe:
+            case NI_SSE_Store:
+            case NI_SSE_StoreAligned:
+            case NI_SSE_StoreAlignedNonTemporal:
+            case NI_SSE_StoreHigh:
+            case NI_SSE_StoreLow:
+            case NI_SSE_StoreScalar:
+            case NI_SSE2_MaskMove:
+            case NI_SSE2_Store:
+            case NI_SSE2_StoreAligned:
+            case NI_SSE2_StoreAlignedNonTemporal:
+            case NI_SSE2_StoreHigh:
+            case NI_SSE2_StoreLow:
+            case NI_SSE2_StoreNonTemporal:
+            case NI_SSE2_StoreScalar:
+            case NI_SSE2_X64_StoreNonTemporal:
+            case NI_AVX_MaskStore:
+            case NI_AVX_Store:
+            case NI_AVX_StoreAligned:
+            case NI_AVX_StoreAlignedNonTemporal:
+            case NI_AVX2_MaskStore:
+            case NI_AVX512F_StoreAligned:
+            case NI_AVX512F_StoreAlignedNonTemporal:
+            case NI_SSE_COMISS:
+            case NI_SSE_UCOMISS:
+            case NI_SSE2_COMISD:
+            case NI_SSE2_UCOMISD:
+            case NI_SSE41_PTEST:
+            case NI_AVX_PTEST:
+            {
+                assert(retType == TYP_VOID);
+                break;
+            }
+
+            case NI_Vector128_ToVector256:
+            case NI_Vector128_ToVector256Unsafe:
+            case NI_AVX_BroadcastVector128ToVector256:
+            case NI_AVX_ConvertToVector256Double:
+            case NI_AVX2_BroadcastVector128ToVector256:
+            case NI_AVX2_ConvertToVector256Int16:
+            case NI_AVX2_ConvertToVector256Int32:
+            case NI_AVX2_ConvertToVector256Int64:
+            {
+                assert(retType == TYP_SIMD32);
+                break;
+            }
+
+            case NI_Vector256_GetLower:
+            case NI_AVX_ConvertToVector128Int32:
+            case NI_AVX_ConvertToVector128Int32WithTruncation:
+            case NI_AVX_ConvertToVector128Single:
+            case NI_AVX_ExtractVector128:
+            case NI_AVX2_ExtractVector128:
+            {
+                assert(retType == TYP_SIMD16);
+                break;
+            }
+
+            case NI_Vector256_ToVector512Unsafe:
+            {
+                assert(retType == TYP_SIMD64);
+                break;
+            }
+
+            case NI_Vector256_Dot:
+            case NI_Vector256_GetElement:
+            case NI_Vector256_Sum:
+            case NI_Vector256_ToScalar:
+            case NI_SSE2_Extract:
+            case NI_SSE41_Extract:
+            case NI_SSE41_X64_Extract:
+            {
+                assert(retType == genActualType(baseType));
+                break;
+            }
+#endif // TARGET_XARCH
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+    else if (IsSimdAsHWIntrinsic() || (comp->mostRecentlyActivePhase == PHASE_LOWERING))
+    {
+#if defined(TARGET_ARM64)
+        assert((retType == Compiler::getSIMDTypeForSize(simdSize)) || (retType == TYP_SIMD12));
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+        assert((retType == Compiler::getSIMDTypeForSize(simdSize)) || (retType == TYP_SIMD8) ||
+               (retType == TYP_SIMD12));
+#endif // TARGET_XARCH
+    }
+    else
+    {
+        assert(retType == Compiler::getSIMDTypeForSize(simdSize));
+    }
 #endif // DEBUG
 
     gtHWIntrinsicId = intrinsicId;

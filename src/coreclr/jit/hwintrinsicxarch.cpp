@@ -517,6 +517,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         assert(varTypeIsArithmetic(simdBaseType));
     }
 
+    retType = genActualType(retType);
+
     switch (intrinsic)
     {
         case NI_Vector128_Abs:
@@ -1294,7 +1296,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             simdVal.u64[3] = 0x8080808080808080;
 
                             shuffleIntrinsic  = NI_AVX2_Shuffle;
-                            moveMaskIntrinsic = NI_AVX2_MoveMask;
+                            moveMaskIntrinsic = NI_SSE2_MoveMask;
                         }
                         else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                         {
@@ -1327,7 +1329,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                             simdType = TYP_SIMD16;
 
-                            op1 = gtNewSimdHWIntrinsicNode(simdType, op1, NI_Vector256_GetLower, simdBaseJitType,
+                            op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector256_GetLower, simdBaseJitType,
                                                            simdSize);
 
                             simdSize = 16;

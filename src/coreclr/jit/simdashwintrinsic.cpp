@@ -416,6 +416,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
     assert(retType != TYP_UNKNOWN);
+    retType = genActualType(retType);
+
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
     assert(SimdAsHWIntrinsicInfo::lookupHWIntrinsic(intrinsic, simdBaseType) == intrinsic);
@@ -1124,12 +1126,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT256_Sum:
 #endif // TARGET_XARCH
                 {
-                    return gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                    return gtNewSimdSumNode(genActualType(retType), op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_ToScalar:
                 {
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize,
+                    return gtNewSimdHWIntrinsicNode(genActualType(retType), op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize,
                                                     /* isSimdAsHWIntrinsic */ true);
                 }
 
@@ -1182,7 +1184,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT256_ToScalar:
                 {
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector256_ToScalar, simdBaseJitType, simdSize,
+                    return gtNewSimdHWIntrinsicNode(genActualType(retType), op1, NI_Vector256_ToScalar, simdBaseJitType, simdSize,
                                                     /* isSimdAsHWIntrinsic */ true);
                 }
 #elif defined(TARGET_ARM64)
@@ -1410,7 +1412,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT256_Dot:
 #endif // TARGET_XARCH
                 {
-                    return gtNewSimdDotProdNode(retType, op1, op2, simdBaseJitType, simdSize,
+                    return gtNewSimdDotProdNode(genActualType(retType), op1, op2, simdBaseJitType, simdSize,
                                                 /* isSimdAsHWIntrinsic */ true);
                 }
 
@@ -1470,7 +1472,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT256_GetElement:
 #endif // TARGET_XARCH
                 {
-                    return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize,
+                    return gtNewSimdGetElementNode(genActualType(retType), op1, op2, simdBaseJitType, simdSize,
                                                    /* isSimdAsHWIntrinsic */ true);
                 }
 

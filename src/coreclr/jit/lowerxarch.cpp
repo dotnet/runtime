@@ -864,8 +864,8 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
     GenTreeCC* cc = LowerNodeCC(node, condition);
 
     assert(HWIntrinsicInfo::lookupNumArgs(newIntrinsicId) == 2);
-    node->ChangeHWIntrinsicId(newIntrinsicId);
     node->gtType = TYP_VOID;
+    node->ChangeHWIntrinsicId(newIntrinsicId);
     node->ClearUnusedValue();
 
     bool swapOperands    = false;
@@ -1547,7 +1547,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
-    assert(node->gtType == TYP_BOOL);
+    assert(node->gtType == TYP_INT);
     assert((cmpOp == GT_EQ) || (cmpOp == GT_NE));
 
     // We have the following (with the appropriate simd size and where the intrinsic could be op_Inequality):
@@ -1976,6 +1976,9 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     {
         if (isCreateScalar)
         {
+            node->gtType = TYP_SIMD16;
+            node->SetSimdSize(16);
+
             switch (simdBaseType)
             {
                 case TYP_BYTE:
@@ -2273,6 +2276,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   ...
             //   return Avx2.BroadcastScalarToVector128(tmp1);
 
+            node->SetSimdSize(16);
             node->ChangeHWIntrinsicId(NI_AVX2_BroadcastScalarToVector128, tmp1);
 
             return LowerNode(node);
@@ -2488,6 +2492,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 idx = comp->gtNewIconNode(0x00, TYP_INT);
                 BlockRange().InsertAfter(tmp2, idx);
 
+                node->SetSimdSize(16);
                 node->ResetHWIntrinsicId(NI_SSE_Shuffle, comp, tmp1, tmp2, idx);
                 break;
             }
@@ -3262,6 +3267,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
                 unreached();
         }
 
+        node->SetSimdSize(16);
         node->ResetHWIntrinsicId(resIntrinsic, op1);
     }
     else
@@ -3306,10 +3312,9 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
                 unreached();
         }
 
+        node->SetSimdSize(16);
         node->ResetHWIntrinsicId(resIntrinsic, op1, op2);
     }
-
-    node->SetSimdSize(16);
 
     if (node->GetHWIntrinsicId() != intrinsicId)
     {
@@ -3885,6 +3890,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                     if (varTypeIsSIMD(node->gtType))
                     {
                         // We're producing a vector result, so just emit DotProduct directly
+                        node->SetSimdSize(16);
                         node->ResetHWIntrinsicId(NI_SSE41_DotProduct, comp, op1, op2, idx);
                     }
                     else
@@ -4310,6 +4316,8 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         //   var tmp1 = Isa.Add(tmp1, tmp2);
         //   ...
 
+        assert(simdBaseType != TYP_FLOAT);
+
         node->Op(1) = tmp1;
         LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
         ReplaceWithLclVar(tmp1Use);
@@ -4326,7 +4334,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         BlockRange().InsertAfter(idx, tmp2);
         LowerNode(tmp2);
 
-        tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, tmp2, add, simdBaseJitType, 16);
+        tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, tmp2, NI_SSE2_Add, simdBaseJitType, 16);
         BlockRange().InsertAfter(tmp2, tmp1);
         LowerNode(tmp1);
 

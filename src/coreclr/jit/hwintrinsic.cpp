@@ -975,6 +975,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         const bool isScalar = (category == HW_Category_Scalar);
 
         assert(numArgs >= 0);
+        retType = genActualType(retType);
 
         if (!isScalar && ((HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType) == INS_invalid) ||
                           ((simdSize != 8) && (simdSize != 16) && (simdSize != 32))))
