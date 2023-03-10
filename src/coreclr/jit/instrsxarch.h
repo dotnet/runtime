@@ -629,8 +629,6 @@ INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, 
 
 INST3(FIRST_K_INSTRUCTION, "FIRST_K_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None )
 
-//    id                nm                  um      mr            mi            rm              tt              flags
-// TODO-XARCH-AVX512 add the proper W bit switch 
 INST3(kmovb_msk,         "kmovb",            IUM_WR, PACK3(0x66, 0x0F, 0x91), BAD_CODE,     PACK3(0x66, 0x0F, 0x90), INS_TT_NONE,    INS_FLAGS_None )
 INST3(kmovw_msk,         "kmovw",            IUM_WR, PACK2(0x0F, 0x91),       BAD_CODE,     PACK2(0x0F, 0x90),       INS_TT_NONE,    INS_FLAGS_None )
 INST3(kmovd_msk,         "kmovd",            IUM_WR, PACK3(0xF2, 0x0F, 0x91), BAD_CODE,     PACK3(0xF2, 0x0F, 0x90), INS_TT_NONE,    INS_FLAGS_None )
