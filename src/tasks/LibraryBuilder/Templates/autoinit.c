@@ -137,7 +137,7 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
 void
 runtime_init_callback ()
 {
-    bundle_path = strdup(getenv("%ASSETS_PATH%"));
+    bundle_path = strdup(getenv(%ASSEMBLIES_LOCATION%));
 
     initialize_runtimeconfig ();
 

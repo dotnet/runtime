@@ -72,7 +72,7 @@ public class LibraryBuilderTask : AppBuilderTask
     /// </summary>
     public bool UsesCustomRuntimeInitCallback { get; set; }
 
-    public string? AssetsPath { get; set; }
+    public string? AssembliesLocation { get; set; }
 
     /// <summary>
     /// </summary>
@@ -256,11 +256,11 @@ public class LibraryBuilderTask : AppBuilderTask
     private void WriteAutoInitializationFromTemplate()
     {
         string assembliesLoader = GenerateAssembliesLoader();
-        string assetsPath = GenerateAssetsPath();
+        string assembliesLocation = GenerateAssembliesLocation();
         File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
             Utils.GetEmbeddedResource("autoinit.c")
                 .Replace("%ASSEMBLIES_LOADER%", assembliesLoader)
-                .Replace("%ASSETS_PATH%", assetsPath)
+                .Replace("%ASSEMBLIES_LOCATION%", assembliesLocation)
                 .Replace("%RUNTIME_IDENTIFIER%", RuntimeIdentifier));
     }
 
@@ -274,9 +274,9 @@ public class LibraryBuilderTask : AppBuilderTask
         return assembliesLoader.ToString();
     }
 
-    private string GenerateAssetsPath()
+    private string GenerateAssembliesLocation()
     {
-        return AssetsPath ?? "DOTNET_ASSETS_PATH";
+        return AssembliesLocation ?? "DOTNET_ASSETS_PATH";
     }
 
     private void WriteCMakeFileFromTemplate(string aotSources, string aotObjects, string extraSources, string linkerArgs)
