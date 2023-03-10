@@ -523,6 +523,7 @@ async function instantiate_wasm_module(
 }
 
 async function mono_wasm_before_memory_snapshot() {
+    const mark = startMeasure();
     if (runtimeHelpers.loadedMemorySnapshot) {
         // get the bytes after we re-sized the memory, so that we don't have too much memory in use at the same time
         const memoryBytes = await getMemorySnapshot();
@@ -554,7 +555,6 @@ async function mono_wasm_before_memory_snapshot() {
 
     mono_wasm_globalization_init();
 
-
     mono_wasm_load_runtime("unused", config.debugLevel);
 
     // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
@@ -562,6 +562,8 @@ async function mono_wasm_before_memory_snapshot() {
         await storeMemorySnapshot(Module.HEAP8.buffer);
         runtimeHelpers.storeMemorySnapshotPending = false;
     }
+
+    endMeasure(mark, MeasuredBlock.memorySnapshot);
 }
 
 export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
