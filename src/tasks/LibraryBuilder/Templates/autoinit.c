@@ -28,13 +28,36 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 static void
 initialize_runtimeconfig ()
 {
-%RUNTIME_CONFIG%
+    char *file_name = "runtimeconfig.bin";
+    int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the \"/\"
+    char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
+    int num_char = snprintf (file_path, (str_len + 1), "%s/%s", bundle_path, file_name);
+    struct stat buffer;
+
+    assert (num_char > 0 && num_char == str_len);
+
+    if (stat (file_path, &buffer) == 0) {
+        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+        arg->kind = 0;
+        arg->runtimeconfig.name.path = file_path;
+        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+    } else {
+        free (file_path);
+    }
 }
 
 static void
 initialize_appctx_env_variables ()
 {
-%APPCTX_ENV_VARIABLES%
+    const char *appctx_keys[2], *appctx_values[2];
+
+    appctx_keys[0] = "RUNTIME_IDENTIFIER";
+    appctx_values[0] = "%RUNTIME_IDENTIFIER%";
+
+    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
+    appctx_values[1] = bundle_path;
+
+    monovm_initialize(2, appctx_keys, appctx_values);
 }
 
 static MonoAssembly*
