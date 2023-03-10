@@ -730,5 +730,38 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(OperationStatus.Done, result);
             Assert.Equal(0, bytesWritten);
         }
+
+        [Theory]
+        [InlineData("AQ==", 4, 1)]
+        [InlineData("AQ== ", 5, 1)]
+        [InlineData("AQ==  ", 6, 1)]
+        [InlineData("AQ==   ", 7, 1)]
+        [InlineData("AQ==    ", 8, 1)]
+        [InlineData("AQ==     ", 9, 1)]
+        [InlineData("AQ==\n", 5, 1)]
+        [InlineData("AQ==\n\n", 6, 1)]
+        [InlineData("AQ==\n\n\n", 7, 1)]
+        [InlineData("AQ==\n\n\n\n", 8, 1)]
+        [InlineData("AQ==\n\n\n\n\n", 9, 1)]
+        [InlineData("AQ==\t", 5, 1)]
+        [InlineData("AQ==\t\t", 6, 1)]
+        [InlineData("AQ==\t\t\t", 7, 1)]
+        [InlineData("AQ==\t\t\t\t", 8, 1)]
+        [InlineData("AQ==\t\t\t\t\t", 9, 1)]
+        [InlineData("AQ==\r", 5, 1)]
+        [InlineData("AQ==\r\r", 6, 1)]
+        [InlineData("AQ==\r\r\r", 7, 1)]
+        [InlineData("AQ==\r\r\r\r", 8, 1)]
+        [InlineData("AQ==\r\r\r\r\r", 9, 1)]
+        public void BasicDecodingWithExtraWhitespaceShouldBeCountedInConsumedBytes(string inputString, int expectedConsumed, int expectedWritten)
+        {
+            Span<byte> source = Encoding.ASCII.GetBytes(inputString);
+            Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
+
+            Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, decodedByteCount);
+            Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, expectedWritten, source, decodedBytes));
+        }
     }
 }
