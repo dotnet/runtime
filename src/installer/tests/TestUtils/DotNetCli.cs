@@ -11,6 +11,7 @@ namespace Microsoft.DotNet.Cli.Build
     public partial class DotNetCli
     {
         public string BinPath { get; }
+        public string SharedFxPath { get; }
         public string GreatestVersionSharedFxPath { get; }
         public string GreatestVersionHostFxrPath { get; }
         public string GreatestVersionHostFxrFilePath { get => Path.Combine(
@@ -28,10 +29,10 @@ namespace Microsoft.DotNet.Cli.Build
         {
             BinPath = binPath;
 
-            var sharedFxBaseDirectory = Path.Combine(BinPath, "shared", "Microsoft.NETCore.App");
-            if (Directory.Exists(sharedFxBaseDirectory))
+            SharedFxPath = Path.Combine(BinPath, "shared", Constants.MicrosoftNETCoreApp);
+            if (Directory.Exists(SharedFxPath))
             {
-                var sharedFxVersionDirectories = Directory.EnumerateDirectories(sharedFxBaseDirectory);
+                var sharedFxVersionDirectories = Directory.EnumerateDirectories(SharedFxPath);
                 GreatestVersionSharedFxPath = sharedFxVersionDirectories
                     .OrderByDescending(p => p.ToLower())
                     .First();

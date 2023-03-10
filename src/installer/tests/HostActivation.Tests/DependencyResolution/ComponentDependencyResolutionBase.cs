@@ -31,10 +31,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 CustomizeDotNetWithNetCoreApp(dotNetBuilder);
                 DotNetWithNetCoreApp = dotNetBuilder.Build();
 
-                TestApp app = CreateTestFrameworkReferenceApp();
-                FrameworkReferenceApp = NetCoreAppBuilder.PortableForNETCoreApp(app)
-                    .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
-                    .Build(app);
+                FrameworkReferenceApp = CreateTestFrameworkReferenceApp();
 
                 _nativeHostingState = new NativeHosting.SharedTestStateBase();
             }
