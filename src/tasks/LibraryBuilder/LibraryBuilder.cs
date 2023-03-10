@@ -255,16 +255,10 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private void WriteAutoInitializationFromTemplate()
     {
-        string assembliesLocation = GenerateAssembliesLocation();
         File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
             Utils.GetEmbeddedResource("autoinit.c")
-                .Replace("%ASSEMBLIES_LOCATION%", assembliesLocation)
+                .Replace("%ASSEMBLIES_LOCATION%", AssembliesLocation ?? "DOTNET_ASSETS_PATH")
                 .Replace("%RUNTIME_IDENTIFIER%", RuntimeIdentifier));
-    }
-
-    private string GenerateAssembliesLocation()
-    {
-        return AssembliesLocation ?? "DOTNET_ASSETS_PATH";
     }
 
     private void GenerateAssembliesLoader()
