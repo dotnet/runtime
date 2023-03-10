@@ -16263,6 +16263,7 @@ bool Compiler::gtSplitTree(
             if (*use == m_splitNode)
             {
                 bool userIsLocation = false;
+                bool userIsReturned = false;
                 // Split all siblings and ancestor siblings.
                 int i;
                 for (i = 0; i < m_useStack.Height() - 1; i++)
@@ -16278,25 +16279,26 @@ bool Compiler::gtSplitTree(
                     // that contains the split node.
                     if (m_useStack.BottomRef(i + 1).User == useInf.User)
                     {
-                        SplitOutUse(useInf, IsLocation(useInf, userIsLocation));
+                        SplitOutUse(useInf, userIsLocation, userIsReturned);
                     }
                     else
                     {
                         // This is an ancestor of the node we're splitting on.
                         userIsLocation = IsLocation(useInf, userIsLocation);
+                        userIsReturned = IsReturned(useInf, userIsReturned);
                     }
                 }
 
                 assert(m_useStack.Bottom(i).Use == use);
                 userIsLocation = IsLocation(m_useStack.BottomRef(i), userIsLocation);
+                userIsReturned = IsReturned(m_useStack.BottomRef(i), userIsReturned);
 
                 // The remaining nodes should be operands of the split node.
                 for (i++; i < m_useStack.Height(); i++)
                 {
                     const UseInfo& useInf = m_useStack.BottomRef(i);
                     assert(useInf.User == *use);
-                    bool isLocation = IsLocation(useInf, userIsLocation);
-                    SplitOutUse(useInf, isLocation);
+                    SplitOutUse(useInf, userIsLocation, userIsReturned);
                 }
 
                 SplitNodeUse = use;
@@ -16337,7 +16339,25 @@ bool Compiler::gtSplitTree(
             return false;
         }
 
-        void SplitOutUse(const UseInfo& useInf, bool isLocation)
+        bool IsReturned(const UseInfo& useInf, bool userIsReturned)
+        {
+            if (useInf.User != nullptr)
+            {
+                if (useInf.User->OperIs(GT_RETURN))
+                {
+                    return true;
+                }
+
+                if (userIsReturned && useInf.User->OperIs(GT_COMMA) && (useInf.Use == &useInf.User->AsOp()->gtOp2))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void SplitOutUse(const UseInfo& useInf, bool userIsLocation, bool userIsReturned)
         {
             GenTree** use  = useInf.Use;
             GenTree*  user = useInf.User;
@@ -16368,7 +16388,7 @@ bool Compiler::gtSplitTree(
                 return;
             }
 
-            if (isLocation)
+            if (IsLocation(useInf, userIsLocation))
             {
                 if ((*use)->OperIs(GT_COMMA))
                 {
@@ -16392,15 +16412,17 @@ bool Compiler::gtSplitTree(
                     *use = (*use)->gtGetOp2();
                     UseInfo use2{use, user};
 
+                    // Locations are never returned.
+                    assert(!IsReturned(useInf, userIsReturned));
                     if ((*use)->IsReverseOp())
                     {
-                        SplitOutUse(use2, true);
-                        SplitOutUse(use1, false);
+                        SplitOutUse(use2, true, false);
+                        SplitOutUse(use1, false, false);
                     }
                     else
                     {
-                        SplitOutUse(use1, false);
-                        SplitOutUse(use2, true);
+                        SplitOutUse(use1, false, false);
+                        SplitOutUse(use2, true, false);
                     }
                     return;
                 }
@@ -16409,13 +16431,10 @@ bool Compiler::gtSplitTree(
                 assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
                 if ((*use)->OperIsUnary())
                 {
-                    user = *use;
-                    use  = &(*use)->AsUnOp()->gtOp1;
+                    SplitOutUse(UseInfo{ &(*use)->AsUnOp()->gtOp1, user }, false, false);
                 }
-                else
-                {
-                    return;
-                }
+
+                return;
             }
 
 #ifndef TARGET_64BIT
@@ -16425,8 +16444,8 @@ bool Compiler::gtSplitTree(
             if ((user != nullptr) && user->OperIs(GT_MUL) && user->Is64RsltMul())
             {
                 assert((*use)->OperIs(GT_CAST));
-                user = *use;
-                use  = &(*use)->AsCast()->gtOp1;
+                SplitOutUse(UseInfo{ &(*use)->AsCast()->gtOp1, *use }, false, false);
+                return;
             }
 #endif
 
@@ -16434,7 +16453,7 @@ bool Compiler::gtSplitTree(
             {
                 for (GenTree** operandUse : (*use)->UseEdges())
                 {
-                    SplitOutUse(UseInfo{operandUse, *use}, false);
+                    SplitOutUse(UseInfo{operandUse, *use}, false, false);
                 }
                 return;
             }
@@ -16458,7 +16477,7 @@ bool Compiler::gtSplitTree(
 
                 if (varTypeIsStruct(*use) &&
                     ((*use)->IsMultiRegNode() ||
-                     ((user != nullptr) && user->OperIs(GT_RETURN) && m_compiler->compMethodReturnsMultiRegRetType())))
+                     (IsReturned(useInf, userIsReturned) && m_compiler->compMethodReturnsMultiRegRetType())))
                 {
                     m_compiler->lvaGetDesc(lclNum)->lvIsMultiRegRet = true;
                 }
