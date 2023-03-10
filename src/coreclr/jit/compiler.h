@@ -9745,7 +9745,6 @@ public:
         }
     }
 
-    const char* pgoSourceToString(ICorJitInfo::PgoSource p);
     const char* devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail);
 
 #endif // DEBUG

@@ -1179,7 +1179,7 @@ int64_t
 ep_rt_mono_system_timestamp_get (void);
 
 void
-ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
+ep_rt_mono_os_environment_get_utf16 (dn_vector_ptr_t *os_env);
 
 void
 ep_rt_mono_init_providers_and_events (void);
@@ -1216,7 +1216,7 @@ ep_rt_mono_method_get_full_name (
 	size_t name_len);
 
 void
-ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
+ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
 
 static
 inline
@@ -2620,15 +2620,15 @@ G_END_DECLS
 #endif /* !defined (HOST_WIN32) */
 
 void
-ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
+ep_rt_mono_os_environment_get_utf16 (dn_vector_ptr_t *os_env)
 {
-	EP_ASSERT (env_array != NULL);
+	EP_ASSERT (os_env != NULL);
 #ifdef HOST_WIN32
 	LPWSTR envs = GetEnvironmentStringsW ();
 	if (envs) {
 		LPWSTR next = envs;
 		while (*next) {
-			ep_rt_env_array_utf16_append (env_array, ep_rt_utf16_string_dup (next));
+			dn_vector_ptr_push_back (os_env, ep_rt_utf16_string_dup (next));
 			next += ep_rt_utf16_string_len (next) + 1;
 		}
 		FreeEnvironmentStringsW (envs);
@@ -2636,7 +2636,7 @@ ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 #else
 	gchar **next = NULL;
 	for (next = environ; *next != NULL; ++next)
-		ep_rt_env_array_utf16_append (env_array, ep_rt_utf8_to_utf16le_string (*next, -1));
+		dn_vector_ptr_push_back (os_env, ep_rt_utf8_to_utf16le_string (*next, -1));
 #endif
 }
 
@@ -2855,7 +2855,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 }
 
 void
-ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
+ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
 {
 	ep_char8_t runtime_module_path [256];
 	const uint8_t object_guid [EP_GUID_SIZE] = { 0 };
@@ -2887,17 +2887,14 @@ ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkp
 		NULL);
 
 	if (execution_checkpoints) {
-		ep_rt_execution_checkpoint_array_iterator_t execution_checkpoints_iterator = ep_rt_execution_checkpoint_array_iterator_begin (execution_checkpoints);
-		while (!ep_rt_execution_checkpoint_array_iterator_end (execution_checkpoints, &execution_checkpoints_iterator)) {
-			EventPipeExecutionCheckpoint *checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&execution_checkpoints_iterator);
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeExecutionCheckpoint *, checkpoint, execution_checkpoints) {
 			FireEtwExecutionCheckpointDCEnd (
 				clr_instance_get_id (),
 				checkpoint->name,
 				checkpoint->timestamp,
 				NULL,
 				NULL);
-			ep_rt_execution_checkpoint_array_iterator_next (&execution_checkpoints_iterator);
-		}
+		} DN_VECTOR_PTR_FOREACH_END;
 	}
 
 	FireEtwDCEndInit_V1 (

@@ -109,7 +109,7 @@ function instantiateWasm(
 
     const mark = startMeasure();
     if (userInstantiateWasm) {
-        // user wasm doesn't support memory snapshots
+        // user wasm instantiation doesn't support memory snapshots
         beforeInstantiateWasm.promise_control.resolve();
         memorySnapshotSkippedOrDone.promise_control.resolve();
         const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => {
@@ -243,6 +243,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         if (MonoWasmThreads) {
             await instantiateWasmPThreadWorkerPool();
+            // FIXME
             await mono_wasm_init_diagnostics();
         }
 
@@ -364,40 +365,6 @@ async function mono_wasm_pre_init_full(): Promise<void> {
     Module.removeRunDependency("mono_wasm_pre_init_full");
 }
 
-async function mono_wasm_before_memory_snapshot() {
-    if (runtimeHelpers.loadedMemorySnapshot) {
-        // all things below are loaded from the snapshot
-        return;
-    }
-
-    for (const k in config.environmentVariables) {
-        const v = config.environmentVariables![k];
-        if (typeof (v) === "string")
-            mono_wasm_setenv(k, v);
-        else
-            throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
-    }
-
-    if (config.runtimeOptions)
-        mono_wasm_set_runtime_options(config.runtimeOptions);
-
-    if (config.aotProfilerOptions)
-        mono_wasm_init_aot_profiler(config.aotProfilerOptions);
-
-    if (config.browserProfilerOptions)
-        mono_wasm_init_browser_profiler(config.browserProfilerOptions);
-
-    mono_wasm_globalization_init();
-
-    mono_wasm_load_runtime("unused", config.debugLevel);
-
-    // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
-    if (config.startupMemoryCache) {
-        await storeMemorySnapshot(Module.HEAP8.buffer);
-        runtimeHelpers.storeMemorySnapshotPending = false;
-    }
-}
-
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized");
     try {
@@ -515,6 +482,7 @@ async function instantiate_wasm_module(
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
         assetToLoad.buffer = null as any; // GC
+
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
 
         if (runtimeHelpers.loadedMemorySnapshot) {
@@ -546,6 +514,46 @@ async function instantiate_wasm_module(
     Module.removeRunDependency("instantiate_wasm_module");
 }
 
+async function mono_wasm_before_memory_snapshot() {
+    if (runtimeHelpers.loadedMemorySnapshot) {
+        // all things below are loaded from the snapshot
+        return;
+    }
+
+    for (const k in config.environmentVariables) {
+        const v = config.environmentVariables![k];
+        if (typeof (v) === "string")
+            mono_wasm_setenv(k, v);
+        else
+            throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
+    }
+
+    if (config.runtimeOptions)
+        mono_wasm_set_runtime_options(config.runtimeOptions);
+
+    if (config.aotProfilerOptions)
+        mono_wasm_init_aot_profiler(config.aotProfilerOptions);
+
+    if (config.browserProfilerOptions)
+        mono_wasm_init_browser_profiler(config.browserProfilerOptions);
+
+    mono_wasm_globalization_init();
+
+    // init diagnostics after environment variables are set
+    if (MonoWasmThreads) {
+        // FIXME
+        await mono_wasm_init_diagnostics();
+    }
+
+    mono_wasm_load_runtime("unused", config.debugLevel);
+
+    // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
+    if (config.startupMemoryCache) {
+        await storeMemorySnapshot(Module.HEAP8.buffer);
+        runtimeHelpers.storeMemorySnapshotPending = false;
+    }
+}
+
 export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_runtime");
     try {
@@ -559,7 +567,6 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
         cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
-        if (!config.startupMemoryCache) bindings_init();
     } catch (err: any) {
         _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
 
@@ -578,7 +585,6 @@ export function bindings_init(): void {
     }
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: bindings_init");
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
-    runtimeHelpers.waitForDebugger = config.waitForDebugger;
     try {
         const mark = startMeasure();
         init_managed_exports();
