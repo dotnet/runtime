@@ -5,6 +5,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class Foo
 {
     private static int s_taskIdCounter;
@@ -19,7 +20,8 @@ public class Foo
         }
         return _taskId;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (new Foo().Function() == 1) return 100; else return 101;
     }

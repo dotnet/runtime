@@ -3,6 +3,7 @@
 
  .module 'rethrow.exe'
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -136,6 +137,9 @@ ldstr "In Catch"
 .class public auto ansi leave1 {
 .method public static int32 main() il managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .vtentry 1 : 1
 .entrypoint
   // Code size       110 (0x6e)

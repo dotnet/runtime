@@ -65,7 +65,8 @@ unsafe class PlatformDefaultMemberFunctionNative
 
 public unsafe class PlatformDefaultMemberFunctionTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

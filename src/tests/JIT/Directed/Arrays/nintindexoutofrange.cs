@@ -3,6 +3,7 @@
 //
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class NintIndexOutOfRangeTest
 {
@@ -20,7 +21,8 @@ public class NintIndexOutOfRangeTest
         LdElemATestHelper(ref arr[i]);
     }
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         long longIndex = ((long)1) << 32;
         nint index = (nint)longIndex;

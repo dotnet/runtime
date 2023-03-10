@@ -78,7 +78,8 @@ unsafe class ThisCallNative
 
 public unsafe class ThisCallTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

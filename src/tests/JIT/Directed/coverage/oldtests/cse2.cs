@@ -4,6 +4,7 @@
 //Testing common sub-expression elimination in random code
 
 using System;
+using Xunit;
 public unsafe class testout1
 {
     public static int sa = 2;
@@ -513,7 +514,8 @@ public unsafe class testout1
         return retval_0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         sa = 10;
         sb = 5;

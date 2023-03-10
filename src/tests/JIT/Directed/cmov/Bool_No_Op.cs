@@ -5,6 +5,7 @@
 #pragma warning disable
 
 using System;
+using Xunit;
 public class testout1
 {
     static bool static_field_bool;
@@ -891,7 +892,8 @@ public class testout1
         return (True_Sum * 2) - False_Sum;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int Sum = 0;
         Sum += Sub_Funclet_0();

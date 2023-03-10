@@ -3,12 +3,14 @@
 //
 
 using System;
+using Xunit;
 
 // Do a simple 5 dimensional Jagged array.
 
 public class Simple_Array_Test
 {
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Console.WriteLine("Starting...");
 		int SIZE = 10;

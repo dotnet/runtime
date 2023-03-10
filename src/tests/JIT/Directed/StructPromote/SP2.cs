@@ -5,6 +5,7 @@
 #define USE_STRUCT
 using System.Runtime.CompilerServices;
 using System;
+using Xunit;
 
 public class SP2
 {
@@ -43,7 +44,8 @@ public class SP2
 #endif
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long res = M(1, 2);
         Console.WriteLine("M(1, 2) is {0}.", res);

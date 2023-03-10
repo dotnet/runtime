@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class ConcatTest
 {
@@ -19,7 +20,8 @@ public class ConcatTest
 
     static int iReturn = 100;
 
-    static public int Main()
+    [Fact]
+    static public int TestEntryPoint()
     {
         iReturn = 100;
         try

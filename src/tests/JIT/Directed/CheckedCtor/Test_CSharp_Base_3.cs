@@ -11,12 +11,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Test
 {
     public static class App
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new DerivedClass(7);
             return 100;

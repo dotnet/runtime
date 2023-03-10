@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace NativeVarargTest
 {
@@ -4550,7 +4551,8 @@ namespace NativeVarargTest
         ////////////////////////////////////////////////////////////////////////////
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int success = 100;
             m_testCount = 0;

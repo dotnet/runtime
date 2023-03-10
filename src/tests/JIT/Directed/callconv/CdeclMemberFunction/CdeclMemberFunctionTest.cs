@@ -65,7 +65,8 @@ unsafe class CdeclMemberFunctionNative
 
 public unsafe class CdeclMemberFunctionTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

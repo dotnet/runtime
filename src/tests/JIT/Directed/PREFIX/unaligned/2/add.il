@@ -4,6 +4,7 @@
 // (04/08/09) Updated the layout field values to match unaligned.0x2. Else the test fails on IA64 if explicit layouts are specified.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -26,6 +27,9 @@
 // Entry point - Main     -
 //-------------------------
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	6
 .locals init	(class _add target)

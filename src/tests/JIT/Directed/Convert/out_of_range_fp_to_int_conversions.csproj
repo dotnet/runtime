@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for GCStressIncompatible, JitOptimizationSensitive, CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <Optimize>True</Optimize>
     <!-- This test can run for a very long time in stress modes -->
     <JitOptimizationSensitive>true</JitOptimizationSensitive>

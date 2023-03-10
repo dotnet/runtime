@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -37,7 +38,8 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool I8_BT_mem_reg(ref long x, int y) => (x & (1L << y)) != 0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         sbyte i1min = sbyte.MinValue;
         sbyte i1one = 1;

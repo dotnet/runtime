@@ -5,6 +5,7 @@
 //Similar to StrAccess1, but instead of using constants, different expression is used as the index to access the string
 
 using System;
+using Xunit;
 
 internal struct VT
 {
@@ -47,7 +48,8 @@ public unsafe class StrAccess2
     };
 
     public static Random rand = new Random(Seed);
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         int* p = stackalloc int[11];

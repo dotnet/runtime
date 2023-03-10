@@ -5,6 +5,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class CMPXCHG
 {
     public static int g_static = -1;
@@ -33,7 +34,8 @@ public class CMPXCHG
             }
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for (int i = 0; i < 10; ++i)
         {

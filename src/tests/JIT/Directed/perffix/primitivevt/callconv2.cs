@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace PrimitiveVT
 {
@@ -35,7 +36,8 @@ namespace PrimitiveVT
         private uint f10(params VT2B[] args) { uint sum = 0; for (uint i = 0; i < args.Length; sum += args[i], i++) { }; return sum; }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             uint a = (uint)s_rand.Next();
 

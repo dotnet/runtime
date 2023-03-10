@@ -1,4 +1,5 @@
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 .assembly badtailcall { }
 .method public static int32 f()
 {
@@ -14,6 +15,9 @@ ret
 .class public auto ansi badtailcall {
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .try
 {

@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
+using Xunit;
 
 public class TestReadIntAsDouble
 {
@@ -79,7 +80,8 @@ public class TestReadIntAsDouble
         d.x = Unsafe.As<Dec, DecCalc2>(ref p).ulo;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestDoubleAssignment(default);
         TestIntAssignment(default);

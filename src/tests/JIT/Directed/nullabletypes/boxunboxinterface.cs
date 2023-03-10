@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 
 internal class NullableTest1
@@ -799,7 +800,8 @@ internal class NullableTest18
 
 public class Test_boxunboxinterface
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

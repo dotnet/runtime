@@ -1,4 +1,5 @@
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 .assembly ldvirtftnsideeffect { }
 .method public static class MyTest f(class MyTest)
 {
@@ -8,6 +9,9 @@ ret
 
 .class public auto ansi ldvirtftnsideeffect {
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .locals	(int32, class MyTest)
 .entrypoint
 .maxstack	4

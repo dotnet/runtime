@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 
 internal class NullableTest1
@@ -136,7 +137,8 @@ internal class NullableTest3
 
 public class Test_castclassenum
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -6,6 +6,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace Opt_Error
 {
@@ -118,7 +119,8 @@ namespace Opt_Error
             Debug.Assert(cse_val_2 == 52);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestClass(2);
             TestStruct(2);

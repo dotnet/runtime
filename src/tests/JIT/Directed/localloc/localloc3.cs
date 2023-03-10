@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public unsafe class test1
 {
@@ -26,7 +27,8 @@ public unsafe class test1
         char* p = stackalloc char[1000000];
     }
 
-    unsafe public static int Main()
+    [Fact]
+    unsafe public static int TestEntryPoint()
     {
         bool pass = true;
 
