@@ -5410,6 +5410,7 @@ void Compiler::SplitTreesRandomly()
                         }
 
                         fgMorphStmtBlockOps(block, stmt);
+                        gtUpdateStmtSideEffects(stmt);
                     }
 
                     break;
@@ -5471,6 +5472,7 @@ void Compiler::SplitTreesRemoveCommas()
                 }
 
                 fgMorphStmtBlockOps(block, stmt);
+                gtUpdateStmtSideEffects(stmt);
 
                 // Morphing block ops can introduce commas (and the original
                 // statement can also have more commas left). Proceed from the

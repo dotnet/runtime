@@ -16201,9 +16201,15 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
 //   this involves introducing new locals for those values, such that they can
 //   be used in the original statement.
 //
-//   Note that this function may introduce new block ops that need to be
-//   morphed if called after morph. fgMorphStmtBlockOps can be used for this
-//   purpose.
+//   This function does not update the flags on the original statement as it is
+//   expected that the caller is going to modify the use further. Thus, the
+//   caller is responsible for calling gtUpdateStmtSideEffects on the statement,
+//   though this is only necessary if the function returned true.
+//
+//   The function may introduce new block ops that need to be morphed when used
+//   after morph. fgMorphStmtBlockOps can be used on the new statements for
+//   this purpose. Note that this will invalidate the use, so it should be done
+//   after any further modifications have been made.
 //
 // Returns:
 //   True if any changes were made; false if nothing needed to be done to split the tree.
@@ -16479,11 +16485,6 @@ bool Compiler::gtSplitTree(
     splitter.WalkTree(stmt->GetRootNodePointer(), nullptr);
     *firstNewStmt = splitter.FirstStatement;
     *splitNodeUse = splitter.SplitNodeUse;
-
-    if (splitter.MadeChanges)
-    {
-        gtUpdateStmtSideEffects(stmt);
-    }
 
     return splitter.MadeChanges;
 }
