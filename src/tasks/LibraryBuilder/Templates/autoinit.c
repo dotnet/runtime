@@ -140,7 +140,8 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
 void
 runtime_init_callback ()
 {
-    bundle_path = strdup(getenv("%ASSEMBLIES_LOCATION%"));
+    const char *assemblies_path = strdup(getenv("%ASSEMBLIES_LOCATION%"));
+    bundle_path = (assemblies_path && assemblies_path[0] != '\0') ? assemblies_path : "./";
 
     initialize_runtimeconfig ();
 
@@ -148,7 +149,7 @@ runtime_init_callback ()
 
     register_aot_modules ();
 
-    mono_set_assemblies_path ((bundle_path && bundle_path[0] != '\0') ? bundle_path : "./");
+    mono_set_assemblies_path (bundle_path);
 
     mono_jit_set_aot_only (true);
 
@@ -158,11 +159,11 @@ runtime_init_callback ()
 
     mono_set_signal_chaining (true);
 
-    mono_jit_init ("mono.self.contained.library"); // Pass in via LibraryBuilder?
+    mono_jit_init ("mono.self.contained.library");
 
     load_assemblies_with_exported_symbols ();
 
-    free (bundle_path);
+    free (assemblies_path);
 }
 
 void __attribute__((constructor))
