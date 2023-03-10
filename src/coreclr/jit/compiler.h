@@ -8995,17 +8995,17 @@ public:
 
         // Use 4 as a multiplier by default, thus, the final threshold will be:
         //
-        // | arch       | memset | memcpy |
-        // |------------|--------|--------|
-        // | x86 avx512 |   512  |   256  | (ignored for now)
-        // | x86 avx    |   256  |   128  |
-        // | x86 sse    |   128  |    64  |
-        // | arm64      |   256  |   128  |
-        // | arm        |   128  |    64  |
+        // | arch        | memset | memcpy |
+        // |-------------|--------|--------|
+        // | x86 avx512  |   512  |   256  | (ignored for now)
+        // | x86 avx     |   256  |   128  |
+        // | x86 sse     |   128  |    64  | 
+        // | arm64       |   256  |   128  | ldp/stp (2x128bit)
+        // | arm         |    32  |    16  | no SIMD support
+        // | loongarch64 |    64  |    32  | no SIMD support
         //
         // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
         //
-        // As of today, we don't use SVE/SVE2, DC ZVA and hardware memset/memcpy instructions on ARM64
         return threshold * 4;
     }
 
