@@ -15,7 +15,7 @@ using Mono.Linker.Dataflow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	public sealed partial class FlowAnnotations
+	internal sealed partial class FlowAnnotations
 	{
 		readonly LinkContext _context;
 		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations> ();
