@@ -4747,6 +4747,10 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     {
         assert(op2->IsIntegralConst(0));
 
+        //GetEmitter()->emitIns_R_I(INS_cmp, attr, reg, 0);
+
+        //inst_SETCC(GenCondition::FromRelop(tree), tree->TypeGet(), reg);
+
         instruction ins = (tree->gtFlags & GTF_JCMP_LT) ? INS_tbnz : INS_tbz;
         int         imm = (int)attr * 8 - 1;
 
