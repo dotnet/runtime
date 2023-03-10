@@ -70,7 +70,7 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 
 #if defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// CreateConstVector: a helper to create Vector128/256.Create(<cns>) node
+// CreateConstVector: a helper to create Vector128/256/512.Create(<cns>) node
 //
 // Arguments:
 //    comp     - Compiler object
@@ -78,19 +78,26 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 //    cns      - Constant data
 //
 // Return Value:
-//    GenTreeVecCon node representing Vector128/256.Create(<cns>)
+//    GenTreeVecCon node representing Vector128/256/512.Create(<cns>)
 //
 static GenTreeVecCon* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
 {
 #ifdef TARGET_XARCH
-    if (simdType >= TYP_SIMD32)
+    if (simdType == TYP_SIMD64)
     {
-        assert((simdType == TYP_SIMD32) || (simdType == TYP_SIMD64));
-        // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+        simd64_t       simd64Val = {};
+        GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
+
+        memcpy(&vecCon->gtSimdVal, cns, sizeof(simd64_t));
+        return vecCon;
+    }
+
+    if (simdType == TYP_SIMD32)
+    {
         simd32_t       simd32Val = {};
         GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
 
-        memcpy(&vecCon->gtSimd32Val, cns, sizeof(simd32_t));
+        memcpy(&vecCon->gtSimdVal, cns, sizeof(simd32_t));
         return vecCon;
     }
 #endif // TARGET_XARCH
@@ -100,7 +107,7 @@ static GenTreeVecCon* CreateConstVector(Compiler* comp, var_types simdType, WCHA
     simd16_t       simd16Val = {};
     GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
 
-    memcpy(&vecCon->gtSimd16Val, cns, sizeof(simd16_t));
+    memcpy(&vecCon->gtSimdVal, cns, sizeof(simd16_t));
     return vecCon;
 }
 

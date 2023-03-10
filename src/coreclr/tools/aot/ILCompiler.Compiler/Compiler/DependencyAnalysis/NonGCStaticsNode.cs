@@ -167,19 +167,24 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitZeros(classConstructorContextStorageSize - GetClassConstructorContextSize(_type.Context.Target));
 
                 // Emit the actual StaticClassConstructionContext
-                MethodDesc cctorMethod = _type.GetStaticConstructor();
-                builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
 
                 // If we're emitting the cctor context, but the type is actually preinitialized, emit the
                 // cctor context as already executed.
                 if (!HasLazyStaticConstructor)
                 {
+                    // Pointer to the cctor: we don't care - emit as zero
+                    builder.EmitZeroPointer();
+
                     // Constructor executed
                     // TODO-NICE: introduce a named constant and also use it in the runner in CoreLib
                     builder.EmitInt(1);
                 }
                 else
                 {
+                    // Emit pointer to the cctor
+                    MethodDesc cctorMethod = _type.GetStaticConstructor();
+                    builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
+
                     // Constructor didn't execute
                     builder.EmitInt(0);
                 }

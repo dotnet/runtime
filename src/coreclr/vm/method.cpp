@@ -384,31 +384,6 @@ VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
 #endif
 
 //*******************************************************************************
-BOOL MethodDesc::MightHaveName(ULONG nameHashValue)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We only have space for a name hash when we are using the packed slot layout
-    if (RequiresFullSlotNumber())
-    {
-        return TRUE;
-    }
-
-    WORD thisHashValue = m_wSlotNumber & enum_packedSlotLayout_NameHashMask;
-
-    // A zero value might mean no hash has ever been set
-    // (checking this way is better than dedicating a bit to tell us)
-    if (thisHashValue == 0)
-    {
-        return TRUE;
-    }
-
-    WORD testHashValue = (WORD) nameHashValue & enum_packedSlotLayout_NameHashMask;
-
-    return (thisHashValue == testHashValue);
-}
-
-//*******************************************************************************
 void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
 {
     CONTRACTL

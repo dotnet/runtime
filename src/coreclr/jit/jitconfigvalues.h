@@ -595,6 +595,11 @@ CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts")
 // 1: profile synthesis for root methods
 // 2: profile synthesis for root methods w/o pgo data
 CONFIG_INTEGER(JitSynthesizeCounts, W("JitSynthesizeCounts"), 0)
+// Check if synthesis left consistent counts
+CONFIG_INTEGER(JitCheckSynthesizedCounts, W("JitCheckSynthesizedCounts"), 0)
+// If instrumenting the method, run synthesis and save the synthesis results
+// as edge or block profile data. Do not actually instrument.
+CONFIG_INTEGER(JitPropagateSynthesizedCountsToProfileData, W("JitPropagateSynthesizedCountsToProfileData"), 0)
 #endif
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)

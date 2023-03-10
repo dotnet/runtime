@@ -5240,10 +5240,11 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         //
         if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
         {
-            const bool nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbNext);
-            const bool jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
+            const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
+            const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbNext, checks);
+            const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest, checks);
 
-            if ((JitConfig.JitProfileChecks() & 0x4) == 0x4)
+            if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
             {
                 assert(nextProfileOk);
                 assert(jumpProfileOk);
