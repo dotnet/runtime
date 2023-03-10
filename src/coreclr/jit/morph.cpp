@@ -14044,6 +14044,14 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
             // long<->double` there.
             bool canFold = (indSize == lclVarSize) && (lclVarSize <= REGSIZE_BYTES);
 #endif
+
+            // Avoid folding primitives to a struct-typed local for cases where we would maybe need to insert normalization on top.
+            // The backend does not correctly handle this for some promoted locals.
+            if (varTypeIsSmall(info.compRetType) && lclVar->TypeIs(TYP_STRUCT))
+            {
+                canFold = false;
+            }
+
             // TODO: support `genReturnBB != nullptr`, it requires #11413 to avoid `Incompatible types for
             // gtNewTempAssign`.
             if (canFold && (genReturnBB == nullptr))
