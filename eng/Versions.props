@@ -236,7 +236,7 @@
     <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>14.0.0-alpha.1.23158.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
-               like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100-preview_2
+               like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport
     -->
     <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-preview.3.23159.3</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
