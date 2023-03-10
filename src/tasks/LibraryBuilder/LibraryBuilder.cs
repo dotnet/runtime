@@ -138,6 +138,8 @@ public class LibraryBuilderTask : AppBuilderTask
             WriteAutoInitializationFromTemplate();
         }
 
+        GenerateAssembliesLoader();
+
         WriteCMakeFileFromTemplate(aotSources.ToString(), aotObjects.ToString(), extraSources.ToString(), linkerArgs.ToString());
         OutputPath = BuildLibrary();
 
@@ -193,8 +195,6 @@ public class LibraryBuilderTask : AppBuilderTask
             );
             WriteExportedSymbolsArg(MobileSymbolFileName, linkerArgs);
         }
-
-        WriteAssembliesToLoadList(exportedAssemblies);
 
         foreach (ITaskItem item in ExtraSources)
         {
@@ -255,28 +255,29 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private void WriteAutoInitializationFromTemplate()
     {
-        string assembliesLoader = GenerateAssembliesLoader();
         string assembliesLocation = GenerateAssembliesLocation();
         File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
             Utils.GetEmbeddedResource("autoinit.c")
-                .Replace("%ASSEMBLIES_LOADER%", assembliesLoader)
                 .Replace("%ASSEMBLIES_LOCATION%", assembliesLocation)
                 .Replace("%RUNTIME_IDENTIFIER%", RuntimeIdentifier));
-    }
-
-    private string GenerateAssembliesLoader()
-    {
-        var assembliesLoader = new StringBuilder();
-        foreach (string exportedAssembly in exportedAssemblies)
-        {
-            assembliesLoader.AppendLine($"    mono_assembly_open(\"{exportedAssembly}\", NULL);");
-        }
-        return assembliesLoader.ToString();
     }
 
     private string GenerateAssembliesLocation()
     {
         return AssembliesLocation ?? "DOTNET_ASSETS_PATH";
+    }
+
+    private void GenerateAssembliesLoader()
+    {
+        var assembliesLoader = new StringBuilder();
+        foreach (string exportedAssembly in exportedAssemblies)
+        {
+            assembliesLoader.Append($"    mono_assembly_open(\"{exportedAssembly}\", NULL);\n");
+        }
+
+        File.WriteAllText(Path.Combine(OutputDirectory, "load_assemblies.c"),
+            Utils.GetEmbeddedResource("load_assemblies.c")
+                .Replace("%ASSEMBLIES_LOADER%", assembliesLoader.ToString()));
     }
 
     private void WriteCMakeFileFromTemplate(string aotSources, string aotObjects, string extraSources, string linkerArgs)
@@ -292,33 +293,6 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%AotObjects%", aotObjects)
                 .Replace("%ExtraSources%", extraSources)
                 .Replace("%LIBRARY_LINKER_ARGS%", linkerArgs));
-    }
-
-    private void WriteAssembliesToLoadList(List<string> assemblies)
-    {
-        string content;
-
-        if (assemblies.Count == 0)
-        {
-            content = "    return NULL;";
-        }
-        else
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"    char** assembly_list = (char**)malloc({assemblies.Count.ToString()} * sizeof(char*));");
-
-            for (int i = 0; i < assemblies.Count; i++)
-            {
-                sb.AppendLine($"    assembly_list[{i.ToString()}] = \"{assemblies[i]}\";");
-            }
-
-            sb.AppendLine("    return assembly_list;");
-            content = sb.ToString();
-        }
-
-        File.WriteAllText(Path.Combine(OutputDirectory, "assembly_list.c"),
-            Utils.GetEmbeddedResource("assembly_list.c")
-                .Replace("%LOADABLE_ASSEMBLIES%", content));
     }
 
     private string BuildLibrary()

@@ -16,6 +16,7 @@
 static char *bundle_path;
 
 void register_aot_modules (void);
+void load_assemblies_with_exported_symbols (void);
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -137,7 +138,7 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
 void
 runtime_init_callback ()
 {
-    bundle_path = strdup(getenv(%ASSEMBLIES_LOCATION%));
+    bundle_path = strdup(getenv("%ASSEMBLIES_LOCATION%"));
 
     initialize_runtimeconfig ();
 
@@ -157,7 +158,8 @@ runtime_init_callback ()
 
     mono_jit_init ("mono.self.contained.library"); // Pass in via LibraryBuilder?
 
-%ASSEMBLIES_LOADER%
+    load_assemblies_with_exported_symbols ();
+
     free (bundle_path);
 }
 

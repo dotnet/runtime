@@ -12,7 +12,7 @@ set(DOTNET_AOT_OBJECTS
 )
 set(DOTNET_EXTRA_SOURCES
     %ExtraSources%
-    assembly_list.c
+    load_assemblies.c
     autoinit.c
 )
 
