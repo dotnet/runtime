@@ -159,15 +159,9 @@ runtime_init_callback ()
 %ASSEMBLIES_LOADER%
 }
 
-void
-init_mono_runtime ()
-{
-    bundle_path = monoeg_g_getenv("%ASSETS_PATH%");
-    mono_set_runtime_init_callback (&runtime_init_callback);
-}
-
 void __attribute__((constructor))
 autoinit ()
 {
-    init_mono_runtime ();
+    bundle_path = monoeg_g_getenv("%ASSETS_PATH%");
+    mono_set_runtime_init_callback (&runtime_init_callback);
 }
