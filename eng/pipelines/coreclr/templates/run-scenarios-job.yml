@@ -107,6 +107,7 @@ jobs:
         - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
         - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
 
+    - ExtraSetupArguments: ''
     - ${{ if ne(parameters.runtimeType, 'wasm') }}:
       - ExtraSetupArguments: --install-dir $(PayloadDirectory)/dotnet
     - ${{ if and(eq(parameters.runtimeType, 'wasm'), in(variables['Build.Reason'], 'PullRequest')) }}:

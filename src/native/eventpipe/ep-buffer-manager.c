@@ -971,7 +971,7 @@ ep_buffer_manager_write_event (
 		event_thread = thread;
 
 	current_stack_contents = ep_stack_contents_init (&stack_contents);
-	if (stack == NULL && ep_event_get_need_stack (ep_event) && !ep_session_get_rundown_enabled (session)) {
+	if (stack == NULL && ep_session_get_enable_stackwalk (session) && ep_event_get_need_stack (ep_event) && !ep_session_get_rundown_enabled (session)) {
 		ep_walk_managed_stack_for_current_thread (current_stack_contents);
 		stack = current_stack_contents;
 	}

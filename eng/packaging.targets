@@ -24,7 +24,10 @@
                                        '$(BuildAllConfigurations)' == 'true' and
                                        '$(DotNetBuildFromSource)' == 'true'">true</GeneratePackageOnBuild>
     <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
-    <LibIntellisenseDocumentationFilePath>$(XmlDocFileRoot)1033\$(AssemblyName).xml</LibIntellisenseDocumentationFilePath>
+    <IntellisenseNetFile>$([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'net', '1033', '$(AssemblyName).xml'))</IntellisenseNetFile>
+    <LibIntellisenseDocumentationFilePath Condition="Exists(IntellisenseNetFile)">$(IntellisenseNetFile)</LibIntellisenseDocumentationFilePath>
+    <IntellisenseDotNetPlatExtFile Condition="'$(LibIntellisenseDocumentationFilePath)' == ''">$([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisenseDotNetPlatExtFile>
+    <LibIntellisenseDocumentationFilePath Condition="'$(LibIntellisenseDocumentationFilePath)' == '' and Exists($(IntellisenseDotNetPlatExtFile))">$(IntellisenseDotNetPlatExtFile)</LibIntellisenseDocumentationFilePath>
     <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
   </PropertyGroup>
 

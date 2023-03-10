@@ -159,12 +159,36 @@ namespace HttpServer
                 if (path.EndsWith(".js") || path.EndsWith(".mjs") || path.EndsWith(".cjs"))
                     contentType = "text/javascript";
 
+                var stream = context.Response.OutputStream;
+
+                // test download re-try
+                if (url.Query.Contains("testError"))
+                {
+                    Console.WriteLine("Faking 500 " + url);
+                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    await stream.WriteAsync(buffer, 0, 0).ConfigureAwait(false);
+                    await stream.FlushAsync();
+                    context.Response.Close();
+                    return;
+                }
+
                 if (contentType != null)
                     context.Response.ContentType = contentType;
 
                 context.Response.ContentLength64 = buffer.Length;
                 context.Response.AppendHeader("cache-control", "public, max-age=31536000");
-                var stream = context.Response.OutputStream;
+
+                // test download re-try
+                if (url.Query.Contains("testAbort"))
+                {
+                    Console.WriteLine("Faking abort " + url);
+                    await stream.WriteAsync(buffer, 0, 10).ConfigureAwait(false);
+                    await stream.FlushAsync();
+                    await Task.Delay(100);
+                    context.Response.Abort();
+                    return;
+                }
+
                 try
                 {
                     await stream.WriteAsync(buffer).ConfigureAwait(false);
