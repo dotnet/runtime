@@ -3322,9 +3322,7 @@ is_type_float_macro (MonoTypeEnum type)
 static int
 get_vector_size_macro (MonoInst *ins)
 {
-	if (!ins->klass) 
-		g_assert_not_reached ();
-
+	g_assert (ins->klass);
 	int size = mono_class_value_size (ins->klass, NULL);
 	switch (size) {
 	case 16:
@@ -3403,8 +3401,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		sreg2 = ins->sreg2;
 		imm = ins->inst_imm;
 
-		char handler_kind = opcode_simd_status[ins->opcode - OP_START];
-		if (handler_kind == OPCODE_SIMD)
+		if (opcode_simd_status [ins->opcode - OP_START] == OPCODE_SIMD)
 		{
 			const int _t = get_type_size_macro (ins->inst_c1);
     	const gboolean _f = is_type_float_macro (ins->inst_c1);
@@ -3422,9 +3419,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert_not_reached();
 				break;
 			}
+
+			goto after_instruction_emit;
 		}
-		else
-		{
+		
 		switch (ins->opcode) {
 		case OP_ICONST:
 			code = emit_imm (code, dreg, ins->inst_c0);
@@ -3674,7 +3672,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
-			
+
 			/* ALU */
 		case OP_IADD:
 			arm_addw (code, dreg, sreg1, sreg2);
@@ -4910,8 +4908,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
-		}
-
+		
+	after_instruction_emit:
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
