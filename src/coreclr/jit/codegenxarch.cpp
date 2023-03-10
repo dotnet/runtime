@@ -3613,7 +3613,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     }
 
     unsigned loadSize = putArgNode->GetArgLoadSize();
-    assert(!src->GetLayout(compiler)->HasGCPtr() && (loadSize <= CPBLK_UNROLL_LIMIT));
+    assert(!src->GetLayout(compiler)->HasGCPtr() && (loadSize <= getUnrollThreshold(UnrollKind::Memcpy)));
 
     unsigned  offset     = 0;
     regNumber xmmTmpReg  = REG_NA;
