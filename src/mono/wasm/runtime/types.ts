@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { DotnetHostBuilder } from "./run-outer";
-import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
+import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr, EmscriptenModuleInternal } from "./types/emscripten";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -229,6 +229,9 @@ export type RuntimeHelpers = {
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
     loadedFiles: string[],
+    preferredIcuAsset: string | null,
+    timezone: string | null,
+    updateGlobalBufferAndViews: (buffer: ArrayBufferLike) => void
 }
 
 export type GlobalizationMode =
@@ -247,6 +250,7 @@ export type BrowserProfilerOptions = {
 
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
+export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & EmscriptenModuleInternal;
 
 export type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean,

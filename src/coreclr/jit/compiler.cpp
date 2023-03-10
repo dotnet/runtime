@@ -3342,14 +3342,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf("OPTIONS: compProcedureSplitting   = %s\n", dspBool(opts.compProcedureSplitting));
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
 
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
-            printf("OPTIONS: optimized using %s profile data\n", pgoSourceToString(fgPgoSource));
-        }
-
-        if (fgPgoFailReason != nullptr)
-        {
-            printf("OPTIONS: %s\n", fgPgoFailReason);
+            printf("OPTIONS: optimizer should use profile data\n");
         }
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
@@ -4269,13 +4264,17 @@ const char* Compiler::compGetPgoSourceName() const
         case ICorJitInfo::PgoSource::Dynamic:
             return "Dynamic PGO";
         case ICorJitInfo::PgoSource::Blend:
-            return "Blend PGO";
+            return "Blended PGO";
         case ICorJitInfo::PgoSource::Text:
             return "Textual PGO";
         case ICorJitInfo::PgoSource::Sampling:
             return "Sample-based PGO";
+        case ICorJitInfo::PgoSource::IBC:
+            return "Classic IBC";
+        case ICorJitInfo::PgoSource::Synthesis:
+            return "Synthesized PGO";
         default:
-            return "";
+            return "Unknown PGO";
     }
 }
 
@@ -10283,6 +10282,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_stressPoisonImplicitByrefs++;
                     break;
 
+                case AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY:
+                    m_externallyVisibleImplicitly++;
+                    break;
+
                 default:
                     unreached();
                     break;
@@ -10379,5 +10382,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_stressLclFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
     PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
+    PRINT_STATS(m_externallyVisibleImplicitly, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

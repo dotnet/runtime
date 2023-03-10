@@ -33,6 +33,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresFromNameOf ();
 			OnEventMethod.Test ();
 			RequiresOnGenerics.Test ();
+			AssemblyFilesOnly.Test ();
+			DynamicCodeOnly.Test ();
 		}
 
 		[ExpectedWarning ("IL2026", "Message for --RequiresWithMessageOnly--.")]
@@ -189,8 +191,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--GenericTypeWithStaticMethodWhichRequires--")]
-			[ExpectedWarning ("IL3002", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void GenericTypeWithStaticMethodViaLdftn ()
 			{
 				var _ = new Action (GenericWithStaticMethod<TestType>.GenericTypeWithStaticMethodWhichRequires);
@@ -205,6 +207,30 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				GenericTypeWithStaticMethodViaLdftn ();
 				MakeNew2<TestType> ();
+			}
+		}
+
+		class AssemblyFilesOnly
+		{
+			[RequiresAssemblyFiles("--Requires--")]
+			static void Requires () { }
+
+			[ExpectedWarning("IL3002", "--Requires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			public static void Test()
+			{
+				Requires ();
+			}
+		}
+
+		class DynamicCodeOnly
+		{
+			[RequiresDynamicCode ("--Requires--")]
+			static void Requires () { }
+
+			[ExpectedWarning ("IL3050", "--Requires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			public static void Test ()
+			{
+				Requires ();
 			}
 		}
 	}

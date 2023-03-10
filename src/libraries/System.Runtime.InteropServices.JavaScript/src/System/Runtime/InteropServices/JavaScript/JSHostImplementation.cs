@@ -42,13 +42,6 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReleaseInFlight(object obj)
-        {
-            JSObject? jsObj = obj as JSObject;
-            jsObj?.ReleaseInFlight();
-        }
-
         // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
         // The managed side maintains a strong reference to the object, while the JS side
         //  maintains a weak reference and notifies the managed side if the JS wrapper object

@@ -3192,7 +3192,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             simd8_t value = vnStore->ConstantValue<simd8_t>(vnCns);
 
             GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            vecCon->gtSimd8Val    = value;
+            memcpy(&vecCon->gtSimdVal, &value, sizeof(simd8_t));
 
             conValTree = vecCon;
             break;
@@ -3203,7 +3203,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             simd12_t value = vnStore->ConstantValue<simd12_t>(vnCns);
 
             GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            vecCon->gtSimd12Val   = value;
+            memcpy(&vecCon->gtSimdVal, &value, sizeof(simd12_t));
 
             conValTree = vecCon;
             break;
@@ -3214,7 +3214,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             simd16_t value = vnStore->ConstantValue<simd16_t>(vnCns);
 
             GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            vecCon->gtSimd16Val   = value;
+            memcpy(&vecCon->gtSimdVal, &value, sizeof(simd16_t));
 
             conValTree = vecCon;
             break;
@@ -3222,12 +3222,22 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
-        case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
         {
             simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
 
             GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            vecCon->gtSimd32Val   = value;
+            memcpy(&vecCon->gtSimdVal, &value, sizeof(simd32_t));
+
+            conValTree = vecCon;
+            break;
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t value = vnStore->ConstantValue<simd64_t>(vnCns);
+
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
+            memcpy(&vecCon->gtSimdVal, &value, sizeof(simd64_t));
 
             conValTree = vecCon;
             break;

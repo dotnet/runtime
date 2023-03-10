@@ -211,6 +211,8 @@ void MorphInitBlockHelper::PrepareDst()
         m_blockSize = genTypeSize(m_dst);
     }
 
+    assert(m_blockSize != 0);
+
 #if defined(DEBUG)
     if (m_comp->verbose)
     {
@@ -481,12 +483,6 @@ void MorphInitBlockHelper::TryInitFieldByField()
     LclVarDsc* destLclVar = m_dstVarDsc;
     unsigned   blockSize  = m_blockSize;
 
-    if (blockSize == 0)
-    {
-        JITDUMP(" size is zero.\n");
-        return;
-    }
-
     if (destLclVar->IsAddressExposed() && destLclVar->lvContainsHoles)
     {
         JITDUMP(" dest is address exposed and contains holes.\n");
@@ -647,11 +643,6 @@ void MorphInitBlockHelper::TryInitFieldByField()
 //
 void MorphInitBlockHelper::TryPrimitiveInit()
 {
-    if (m_blockSize == 0)
-    {
-        return;
-    }
-
     if (m_src->IsIntegralConst(0) && (m_dstVarDsc != nullptr) && (genTypeSize(m_dstVarDsc) == m_blockSize))
     {
         var_types lclVarType = m_dstVarDsc->TypeGet();
@@ -936,7 +927,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             // Both structs should be of the same type, or have the same number of fields of the same type.
             // If not we will use a copy block.
             bool misMatchedTypes = false;
-            if (m_dstVarDsc->GetStructHnd() != m_srcVarDsc->GetStructHnd())
+            if (m_dstVarDsc->GetLayout() != m_srcVarDsc->GetLayout())
             {
                 if (m_dstVarDsc->lvFieldCnt != m_srcVarDsc->lvFieldCnt)
                 {
@@ -1101,7 +1092,7 @@ void MorphCopyBlockHelper::MorphStructCases()
 //
 void MorphCopyBlockHelper::TryPrimitiveCopy()
 {
-    if (!m_dst->TypeIs(TYP_STRUCT) || (m_blockSize == 0))
+    if (!m_dst->TypeIs(TYP_STRUCT))
     {
         return;
     }

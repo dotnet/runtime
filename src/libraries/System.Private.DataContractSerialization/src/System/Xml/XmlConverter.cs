@@ -710,15 +710,13 @@ namespace System.Xml
         private static unsafe bool IsNegativeZero(float value)
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
-            float negativeZero = -0e0F;
-            return (*(int*)&value == *(int*)&negativeZero);
+            return BitConverter.SingleToUInt32Bits(value) == 0x8000_0000U;
         }
 
         private static unsafe bool IsNegativeZero(double value)
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
-            double negativeZero = -0e0;
-            return (*(long*)&value == *(long*)&negativeZero);
+            return BitConverter.DoubleToUInt64Bits(value) == 0x8000_0000_0000_0000UL;
         }
 
         private static int ToInfinity(bool isNegative, byte[] buffer, int offset)
