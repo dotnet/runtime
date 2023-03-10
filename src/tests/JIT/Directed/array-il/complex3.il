@@ -9,7 +9,7 @@
 .assembly extern xunit.core {}
 
 .assembly extern legacy library mscorlib {}
-.assembly complex3
+.assembly '_Arrayscomplex3'
 {
 }
 

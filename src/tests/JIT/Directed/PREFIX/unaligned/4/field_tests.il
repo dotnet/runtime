@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly field_tests{}
+.assembly 'field_tests_unaligned_4'{}
 
 .class field_tests {
 

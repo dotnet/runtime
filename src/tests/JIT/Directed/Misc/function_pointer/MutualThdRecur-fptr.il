@@ -6,7 +6,7 @@
 .assembly extern System.Threading.Thread { auto }
 .assembly extern legacy library mscorlib { auto }
 
-.assembly mutualthdrecurfptr
+.assembly 'MutualThdRecur-fptr'
 {
 }
 

@@ -10,7 +10,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern common {}
-.assembly test {}
+.assembly 'FilterToHandler' {}
 .module test.exe
 
 .method public static int32 MoveBetweenFilterAndHandler() {

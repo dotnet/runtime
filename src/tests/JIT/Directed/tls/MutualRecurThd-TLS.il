@@ -7,7 +7,7 @@
 .assembly extern legacy library mscorlib { auto }
 
 
-.assembly  mutualrecurthdtls
+.assembly  'mutualrecurthd-tls'
 {
 }
 .data tls FieldData = int32(32)

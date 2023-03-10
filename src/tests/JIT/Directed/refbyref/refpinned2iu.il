@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly ref2iu {}
+.assembly 'refpinned2iu' {}
 .method public static int32 Main()
 {
 	.entrypoint

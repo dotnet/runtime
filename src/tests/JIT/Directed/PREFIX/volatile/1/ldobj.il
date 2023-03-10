@@ -8,7 +8,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly 'ldobj' {
+.assembly 'ldobj_volatile' {
                         }
 
 

@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly subovfun1 { }
+.assembly 'subovfun1_Desktop' { }
 .method public static uint32 f(uint32 arg)
 {
 ldarg.0
