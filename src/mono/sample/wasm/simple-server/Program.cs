@@ -3,13 +3,22 @@
 
 using System.Net;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 
 namespace HttpServer
 {
+    public sealed class Session
+    {
+        public Task CurrentDelay { get; set; } = Task.CompletedTask;
+        public int Started { get; set; } = 0;
+        public int Finished { get; set; } = 0;
+    }
+
     public sealed class Program
     {
         private bool Verbose = false;
+        private ConcurrentDictionary<string, Session> Sessions = new ConcurrentDictionary<string, Session>();
 
         public static int Main()
         {
@@ -138,13 +147,75 @@ namespace HttpServer
             if (Verbose)
                 Console.WriteLine($"  serving: {path}");
 
-            if (path.StartsWith("/"))
+            Session? session = null;
+            var throttleMbps = 0.0;
+            var latencyMs = 0;
+            string? sessionId = null;
+            if (path.StartsWith("/unique/")) // like /unique/7a3da2c7-bf35-477e-a585-a207ea30730c/dotnet.js
+            {
+                sessionId = path.Substring(0, 45);
+                session = Sessions.GetOrAdd(sessionId, new Session());
+                path = path.Substring(45);
+                throttleMbps = 30.0;
+                latencyMs = 100;
+            }
+            else if (path.StartsWith("/"))
                 path = path.Substring(1);
 
             byte[]? buffer;
             try
             {
                 buffer = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
+                if (throttleMbps > 0) {
+                    double delaySeconds = (buffer.Length * 8) / (throttleMbps * 1024 * 1024);
+                    int delayMs = (int)(delaySeconds * 1000);
+                    if(session != null)
+                    {
+                        Task currentDelay;
+                        int myIndex;
+                        lock(session)
+                        {
+                            currentDelay = session.CurrentDelay;
+                            myIndex = session.Started;
+                            session.Started++;
+                        }
+
+                        while (true)
+                        {
+                            // wait for everybody else to finish in this while loop
+                            await currentDelay;
+
+                            lock(session)
+                            {
+                                // it's my turn to insert delay for others
+                                if(session.Finished == myIndex)
+                                {
+                                    session.CurrentDelay = Task.Delay(delayMs);
+                                    break;
+                                }
+                                else
+                                {
+                                    currentDelay = session.CurrentDelay;
+                                }
+                            }
+                        }
+                        // wait my own delay
+                        await Task.Delay(delayMs + latencyMs);
+
+                        lock(session)
+                        {
+                            session.Finished++;
+                            if(session.Finished == session.Started)
+                            {
+                                Sessions.TryRemove(sessionId!, out _);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        await Task.Delay(delayMs + latencyMs);
+                    }
+                }
             }
             catch (Exception)
             {

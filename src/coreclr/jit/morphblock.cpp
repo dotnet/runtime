@@ -211,6 +211,8 @@ void MorphInitBlockHelper::PrepareDst()
         m_blockSize = genTypeSize(m_dst);
     }
 
+    assert(m_blockSize != 0);
+
 #if defined(DEBUG)
     if (m_comp->verbose)
     {
@@ -481,12 +483,6 @@ void MorphInitBlockHelper::TryInitFieldByField()
     LclVarDsc* destLclVar = m_dstVarDsc;
     unsigned   blockSize  = m_blockSize;
 
-    if (blockSize == 0)
-    {
-        JITDUMP(" size is zero.\n");
-        return;
-    }
-
     if (destLclVar->IsAddressExposed() && destLclVar->lvContainsHoles)
     {
         JITDUMP(" dest is address exposed and contains holes.\n");
@@ -647,11 +643,6 @@ void MorphInitBlockHelper::TryInitFieldByField()
 //
 void MorphInitBlockHelper::TryPrimitiveInit()
 {
-    if (m_blockSize == 0)
-    {
-        return;
-    }
-
     if (m_src->IsIntegralConst(0) && (m_dstVarDsc != nullptr) && (genTypeSize(m_dstVarDsc) == m_blockSize))
     {
         var_types lclVarType = m_dstVarDsc->TypeGet();
@@ -1101,7 +1092,7 @@ void MorphCopyBlockHelper::MorphStructCases()
 //
 void MorphCopyBlockHelper::TryPrimitiveCopy()
 {
-    if (!m_dst->TypeIs(TYP_STRUCT) || (m_blockSize == 0))
+    if (!m_dst->TypeIs(TYP_STRUCT))
     {
         return;
     }

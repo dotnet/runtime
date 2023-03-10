@@ -209,9 +209,6 @@ async function preRunAsync(userPreRun: (() => void)[]) {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preRunAsync");
     const mark = startMeasure();
     try {
-        if (MonoWasmThreads) {
-            await instantiateWasmPThreadWorkerPool();
-        }
         // all user Module.preRun callbacks
         userPreRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.preRun);
@@ -234,12 +231,23 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
     beforeOnRuntimeInitialized.promise_control.resolve();
     try {
         await wait_for_all_assets();
-        // load runtime
+
+        // load runtime and apply environment settings (if necessary)
         await mono_wasm_before_user_runtime_initialized();
 
-        if (config.runtimeOptions) {
-            mono_wasm_set_runtime_options(config.runtimeOptions);
+        if (MonoWasmThreads) {
+            await instantiateWasmPThreadWorkerPool();
         }
+
+        bindings_init();
+        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
+        if (!runtimeHelpers.mono_wasm_symbols_are_ready) readSymbolMapFile("dotnet.js.symbols");
+
+        setTimeout(() => {
+            // when there are free CPU cycles
+            string_decoder.init_fields();
+        });
+
         // call user code
         try {
             userOnRuntimeInitialized();
@@ -266,6 +274,11 @@ async function postRunAsync(userpostRun: (() => void)[]) {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: postRunAsync");
     try {
         const mark = startMeasure();
+
+        // create /usr/share folder which is SpecialFolder.CommonApplicationData
+        Module["FS_createPath"]("/", "usr", true, true);
+        Module["FS_createPath"]("/", "usr/share", true, true);
+
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.postRun);
@@ -337,27 +350,6 @@ async function mono_wasm_pre_init_full(): Promise<void> {
     await mono_download_assets();
 
     Module.removeRunDependency("mono_wasm_pre_init_full");
-}
-
-async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
-    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_before_user_runtime_initialized");
-
-    try {
-        await _apply_configuration_from_args();
-        mono_wasm_globalization_init();
-
-        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
-        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
-        if (!runtimeHelpers.mono_wasm_symbols_are_ready) readSymbolMapFile("dotnet.js.symbols");
-
-        setTimeout(() => {
-            // when there are free CPU cycles
-            string_decoder.init_fields();
-        });
-    } catch (err: any) {
-        _print_error("MONO_WASM: Error in mono_wasm_before_user_runtime_initialized", err);
-        throw err;
-    }
 }
 
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
@@ -451,7 +443,6 @@ async function instantiate_wasm_module(
 ): Promise<void> {
     // this is called so early that even Module exports like addRunDependency don't exist yet
     try {
-        replace_linker_placeholders(imports, export_linker());
         await mono_wasm_load_config(Module.configSrc);
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
@@ -459,6 +450,8 @@ async function instantiate_wasm_module(
         await start_asset_download(assetToLoad);
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
+
+        replace_linker_placeholders(imports, export_linker());
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
@@ -474,10 +467,8 @@ async function instantiate_wasm_module(
     Module.removeRunDependency("instantiate_wasm_module");
 }
 
-async function _apply_configuration_from_args() {
-    // create /usr/share folder which is SpecialFolder.CommonApplicationData
-    Module["FS_createPath"]("/", "usr", true, true);
-    Module["FS_createPath"]("/", "usr/share", true, true);
+async function mono_wasm_before_user_runtime_initialized() {
+    mono_wasm_globalization_init();
 
     for (const k in config.environmentVariables) {
         const v = config.environmentVariables![k];
@@ -500,14 +491,13 @@ async function _apply_configuration_from_args() {
     if (MonoWasmThreads) {
         await mono_wasm_init_diagnostics();
     }
+
+    mono_wasm_load_runtime("unused", config.debugLevel);
+
 }
 
 export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_runtime");
-    if (runtimeHelpers.mono_wasm_load_runtime_done) {
-        return;
-    }
-    runtimeHelpers.mono_wasm_load_runtime_done = true;
     try {
         const mark = startMeasure();
         if (debugLevel == undefined) {
@@ -519,7 +509,6 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
         cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
-        if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
     } catch (err: any) {
         _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
 
