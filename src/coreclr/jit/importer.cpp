@@ -10641,56 +10641,47 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             }
 
             case CEE_INITBLK:
+            case CEE_CPBLK:
 
                 op3 = impPopStack().val; // Size
-                op2 = impPopStack().val; // Value
+                op2 = impPopStack().val; // Value / Src addr
                 op1 = impPopStack().val; // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
-                    size = (unsigned)op3->AsIntConCommon()->IconValue();
-                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
+                    if (op3->IsIntegralConst(0))
+                    {
+                        if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_ALL, impCurStmtDI);
+                        }
+
+                        if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            impAppendTree(gtUnusedValNode(op2), CHECK_SPILL_ALL, impCurStmtDI);
+                        }
+
+                        break;
+                    }
+
+                    size = static_cast<unsigned>(op3->AsIntConCommon()->IconValue());
+                    op1  = gtNewBlockVal(op1, size);
+                    op2  = opcode == CEE_INITBLK ? op2 : gtNewBlockVal(op2, size);
                     op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 }
                 else
                 {
-                    if (!op2->IsIntegralConst(0))
+                    if (opcode == CEE_INITBLK)
                     {
-                        op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                        if (!op2->IsIntegralConst(0))
+                        {
+                            op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                        }
                     }
-
-#ifdef TARGET_64BIT
-                    // STORE_DYN_BLK takes a native uint size as it turns into call to memset.
-                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_U_IMPL);
-#endif
-
-                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
-                    size = 0;
-
-                    if ((prefixFlags & PREFIX_VOLATILE) != 0)
+                    else
                     {
-                        op1->gtFlags |= GTF_BLK_VOLATILE;
+                        op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
                     }
-                }
-                goto SPILL_APPEND;
-
-            case CEE_CPBLK:
-
-                op3 = impPopStack().val; // Size
-                op2 = impPopStack().val; // Src addr
-                op1 = impPopStack().val; // Dst addr
-
-                if (op3->IsCnsIntOrI())
-                {
-                    size = static_cast<unsigned>(op3->AsIntConCommon()->IconValue());
-
-                    op1 = gtNewBlockVal(op1, size);
-                    op2 = gtNewBlockVal(op2, size);
-                    op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
-                }
-                else
-                {
-                    op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
 
 #ifdef TARGET_64BIT
                     // STORE_DYN_BLK takes a native uint size as it turns into call to memcpy.

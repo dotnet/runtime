@@ -9662,32 +9662,47 @@ DONE_MORPHING_CHILDREN:
 #ifdef TARGET_LOONGARCH64
         case GT_MOD:
 #endif
+        {
             if (!varTypeIsFloating(tree->gtType))
             {
-                // We do not need to throw if the second operand is a non-(negative one) constant.
-                if (!op2->IsIntegralConst() || op2->IsIntegralConst(-1))
+                ExceptionSetFlags exSetFlags = tree->OperExceptions(this);
+
+                if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
                 {
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
                 }
+                else
+                {
+                    tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+                }
 
-                // We do not need to throw if the second operand is a non-zero constant.
-                if (!op2->IsIntegralConst() || op2->IsIntegralConst(0))
+                if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
                 {
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
                 }
+                else
+                {
+                    tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+                }
             }
-            break;
+        }
+        break;
         case GT_UDIV:
 #ifdef TARGET_LOONGARCH64
         case GT_UMOD:
 #endif
-            // We do not need to throw if the second operand is a non-zero constant.
-            if (!op2->IsIntegralConst() || op2->IsIntegralConst(0))
+        {
+            ExceptionSetFlags exSetFlags = tree->OperExceptions(this);
+            if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
             {
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             }
-            break;
-
+            else
+            {
+                tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+            }
+        }
+        break;
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         case GT_ADD:

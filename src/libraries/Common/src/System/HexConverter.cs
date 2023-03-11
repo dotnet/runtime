@@ -99,13 +99,8 @@ namespace System
             Vector128<byte> lowNibbles = Vector128.UnpackLow(shiftedSrc, src);
             Vector128<byte> highNibbles = Vector128.UnpackHigh(shiftedSrc, src);
 
-            return (ShuffleUnsafe(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
-                ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
-
-            // TODO: remove once https://github.com/dotnet/runtime/pull/80963 is merged
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static Vector128<byte> ShuffleUnsafe(Vector128<byte> value, Vector128<byte> mask)
-                => Ssse3.IsSupported ? Ssse3.Shuffle(value, mask) : AdvSimd.Arm64.VectorTableLookup(value, mask);
+            return (Vector128.ShuffleUnsafe(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
+                Vector128.ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
         }
 
         private static void EncodeToUtf16_Vector128(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
