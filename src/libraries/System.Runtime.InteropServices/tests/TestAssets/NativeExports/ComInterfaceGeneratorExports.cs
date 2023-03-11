@@ -39,12 +39,13 @@ public static unsafe class ComInterfaceGeneratorExports
 
     class MyComWrapper : System.Runtime.InteropServices.ComWrappers
     {
-        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
+        static void* _s_comInterface1VTable = null;
+        static void* s_comInterface1VTable
         {
-            if (obj is IComInterface1)
+            get
             {
-                ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(MyObject), sizeof(ComInterfaceEntry));
-                comInterfaceEntry->IID = IComInterface1.IID;
+                if (MyComWrapper._s_comInterface1VTable != null)
+                    return _s_comInterface1VTable;
                 void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComInterfaceGeneratorExports), sizeof(void*) * 5);
                 GetIUnknownImpl(out var fpQueryInterface, out var fpAddReference, out var fpRelease);
                 vtable[0] = (void*)fpQueryInterface;
@@ -52,8 +53,18 @@ public static unsafe class ComInterfaceGeneratorExports
                 vtable[2] = (void*)fpRelease;
                 vtable[3] = (delegate* unmanaged<void*, int*, int>)&MyObject.ABI.GetData;
                 vtable[4] = (delegate* unmanaged<void*, int, int>)&MyObject.ABI.SetData;
-                comInterfaceEntry->Vtable = (nint)vtable;
-                count = 5;
+                _s_comInterface1VTable = vtable;
+                return _s_comInterface1VTable;
+            }
+        }
+        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
+        {
+            if (obj is MyObject)
+            {
+                ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(MyObject), sizeof(ComInterfaceEntry));
+                comInterfaceEntry->IID = IComInterface1.IID;
+                comInterfaceEntry->Vtable = (nint)s_comInterface1VTable;
+                count = 1;
                 return comInterfaceEntry;
             }
             count = 0;
@@ -129,7 +140,7 @@ public static unsafe class ComInterfaceGeneratorExports
             {
                 try
                 {
-                    *value =  ComInterfaceDispatch.GetInstance<IComInterface1>((ComInterfaceDispatch*)@this).GetData();
+                    *value = ComInterfaceDispatch.GetInstance<IComInterface1>((ComInterfaceDispatch*)@this).GetData();
                     return 0;
                 }
                 catch (Exception e)
