@@ -5671,44 +5671,44 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader,
 
         if (igInLoop->endsWithAlignInstr() || igInLoop->hadAlignInstr())
         {
-            // If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
-            // for next IG or some future IG.
-            //
-            // For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
-            //
-            // If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
-            // set for them and such loops are not aligned. For such cases, the loop size threshold will never
-            // be met and we would break as soon as loopSize > maxLoopSize.
-            //
-            // IG05:
-            //      ...
-            //      jmp IG18
-            // ...
-            // IG18:
-            //      ...
-            //      jne IG05
-            //
-            // If igInLoop is a legitimate loop, and igInLoop's end with another 'align' instruction for different IG
-            // representing a loop that needs alignment, then igInLoop should be the last IG of the current loop and
-            // should have backedge to current loop header.
-            //
-            // Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
-            //
-            // IG03:
-            //      ...
-            //      align
-            // IG04:
-            //      ...
-            //      ...
-            // IG05:
-            //      ...
-            //      jne IG04
-            //      align     ; <---
-            // IG06:
-            //      ...
-            //      jne IG06
-            //
-            //
+// If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
+// for next IG or some future IG.
+//
+// For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
+//
+// If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
+// set for them and such loops are not aligned. For such cases, the loop size threshold will never
+// be met and we would break as soon as loopSize > maxLoopSize.
+//
+// IG05:
+//      ...
+//      jmp IG18
+// ...
+// IG18:
+//      ...
+//      jne IG05
+//
+// If igInLoop is a legitimate loop, and igInLoop's end with another 'align' instruction for different IG
+// representing a loop that needs alignment, then igInLoop should be the last IG of the current loop and
+// should have backedge to current loop header.
+//
+// Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
+//
+// IG03:
+//      ...
+//      align
+// IG04:
+//      ...
+//      ...
+// IG05:
+//      ...
+//      jne IG04
+//      align     ; <---
+// IG06:
+//      ...
+//      jne IG06
+//
+//
 
 #ifdef DEBUG
             if ((igInLoop->igLoopBackEdge != nullptr) && (igInLoop->igLoopBackEdge != igLoopHeader))
@@ -5723,10 +5723,12 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader,
                     sprintf_s(buffer + written, 100, "igInLoop->backEdge: IG%02u\n", igInLoop->igLoopBackEdge->igNum);
                 if (igInLoop->endsWithAlignInstr())
                 {
+#if EMIT_BACKWARDS_NAVIGATION
                     instrDescAlign* alignInstr = (instrDescAlign*)igInLoop->igLastIns;
                     assert(alignInstr->idaIG == igInLoop);
                     written += sprintf_s(buffer + written, 100, "igInLoop has align instruction for : IG%02u\n",
                                          alignInstr->idaLoopHeadPredIG->igNext->igNum);
+#endif // EMIT_BACKWARDS_NAVIGATION
                 }
                 written += sprintf_s(buffer + written, 35, "Loop:\n");
                 for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
