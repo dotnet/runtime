@@ -165,9 +165,10 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 assert(runtimeLookup.testForNull);
 
                 // Split block right before the call tree
-                BasicBlock* prevBb  = block;
-                GenTree**   callUse = nullptr;
-                block               = fgSplitBlockBeforeTree(block, stmt, call, &callUse);
+                BasicBlock* prevBb      = block;
+                GenTree**   callUse      = nullptr;
+                Statement*  newFirstStmt = nullptr;
+                block               = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
                 assert(prevBb != nullptr && block != nullptr);
 
                 // Define a local for the result
@@ -304,7 +305,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 // Replace call with rtLookupLclNum local and update side effects
                 *callUse = gtClone(rtLookupLcl);
-                gtSetEvalOrder(call);
+                while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+                {
+                    fgMorphStmtBlockOps(block, newFirstStmt);
+                    newFirstStmt = newFirstStmt->GetNextStmt();
+                }
+                fgMorphStmtBlockOps(block, stmt);
                 gtUpdateStmtSideEffects(stmt);
                 gtSetStmtInfo(stmt);
                 fgSetStmtSeq(stmt);

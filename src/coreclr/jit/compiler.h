@@ -4814,7 +4814,7 @@ public:
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);
     BasicBlock* fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node); // for LIR
     BasicBlock* fgSplitEdge(BasicBlock* curr, BasicBlock* succ);
-    BasicBlock* fgSplitBlockBeforeTree(BasicBlock* block, Statement* stmt, GenTree* tree, GenTree*** treeUse);
+    BasicBlock* fgSplitBlockBeforeTree(BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse);
 
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di);
     Statement* fgNewStmtFromTree(GenTree* tree);

@@ -4622,10 +4622,12 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 // fgSplitBlockBeforeTree : Split the given block right before the given tree
 //
 // Arguments:
-//    block       - block that contains the tree (split point)
-//    stmt        - statement that contains the tree
-//    tree        - the tree we're going to use as a split point for given block
-//    treeUse     - pointer to the tree, useful when it's needed to replace it
+//    block        - The block containing the statement.
+//    stmt         - The statement containing the tree.
+//    splitPoint   - A tree inside the statement.
+//    firstNewStmt - [out] The first new statement that was introduced.
+//                   [firstNewStmt..stmt) are the statements added by this function.
+//    splitNodeUse - The use of the tree to split at.
 //
 // Returns:
 //    The last block after split
@@ -4633,10 +4635,10 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 // Notes:
 //    See comments in gtSplitTree
 //
-BasicBlock* Compiler::fgSplitBlockBeforeTree(BasicBlock* block, Statement* stmt, GenTree* tree, GenTree*** treeUse)
+BasicBlock* Compiler::fgSplitBlockBeforeTree(
+    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
 {
-    Statement* firstNewStmt;
-    gtSplitTree(block, stmt, tree, &firstNewStmt, treeUse);
+    gtSplitTree(block, stmt, splitPoint, firstNewStmt, splitNodeUse);
 
     BasicBlockFlags originalFlags = block->bbFlags;
     BasicBlock*     prevBb        = block;
