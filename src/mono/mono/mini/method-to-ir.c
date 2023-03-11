@@ -3662,7 +3662,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	if (!obj)
 		return NULL;
 
-	/* Inline the contents of mono_delegate_ctor */
+	/* Inline the contents of mini_init_delegate */
 
 	/* Set target field */
 	/* Optimize away setting of NULL target */
@@ -3684,20 +3684,11 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	info_ins = emit_get_rgctx_dele_tramp_info (cfg, target_method_context_used | invoke_context_used, klass, method, is_virtual, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
 
 	if (cfg->llvm_only) {
-		if (is_virtual) {
-			MonoInst *args [ ] = {
-				obj,
-				target,
-				emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD)
-			};
-			mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate_virtual, args);
-		} else {
-			MonoInst *args [] = {
-				obj,
-				info_ins
-			};
-			mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, args);
-		}
+		MonoInst *args [] = {
+			obj,
+			info_ins
+		};
+		mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, args);
 		return obj;
 	}
 
