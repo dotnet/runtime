@@ -977,10 +977,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	MonoMethod *invoke = tramp_info->invoke;
 	guint8 *impl_this = (guint8 *)tramp_info->impl_this;
 	guint8 *impl_nothis = (guint8 *)tramp_info->impl_nothis;
-	ERROR_DECL (err);
 	MonoMethodSignature *sig;
 	gpointer addr, compiled_method;
-	gboolean is_remote = FALSE;
 
 	UnlockedIncrement (&trampoline_calls);
 
@@ -998,29 +996,26 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		 * (ctor_with_method () does this, but it doesn't store the wrapper back into
 		 * delegate->method).
 		 */
-		if (!is_remote) {
-			sig = tramp_info->sig;
-			if (!(sig && method == tramp_info->method)) {
-				error_init (err);
-				sig = mono_method_signature_checked (method, err);
-				if (!sig) {
-					mono_error_set_pending_exception (err);
-					return NULL;
-				}
+		sig = tramp_info->sig;
+		if (!(sig && method == tramp_info->method)) {
+			sig = mono_method_signature_checked (method, error);
+			if (!sig) {
+				mono_error_set_pending_exception (error);
+				return NULL;
 			}
+		}
 
-			if (sig->hasthis && m_class_is_valuetype (method->klass)) {
-				gboolean need_unbox = TRUE;
+		if (sig->hasthis && m_class_is_valuetype (method->klass)) {
+			gboolean need_unbox = TRUE;
 
-				if (tramp_info->invoke_sig->param_count > sig->param_count && m_type_is_byref (tramp_info->invoke_sig->params [0]))
-					need_unbox = FALSE;
+			if (tramp_info->invoke_sig->param_count > sig->param_count && m_type_is_byref (tramp_info->invoke_sig->params [0]))
+				need_unbox = FALSE;
 
-				if (need_unbox) {
-					if (mono_aot_only)
-						need_unbox_tramp = TRUE;
-					else
-						method = mono_marshal_get_unbox_wrapper (method);
-				}
+			if (need_unbox) {
+				if (mono_aot_only)
+					need_unbox_tramp = TRUE;
+				else
+					method = mono_marshal_get_unbox_wrapper (method);
 			}
 		}
 	// If "delegate->method_ptr" is null mono_get_addr_from_ftnptr will fail if
@@ -1035,10 +1030,9 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	if (method) {
 		sig = tramp_info->sig;
 		if (!(sig && method == tramp_info->method)) {
-			error_init (err);
-			sig = mono_method_signature_checked (method, err);
+			sig = mono_method_signature_checked (method, error);
 			if (!sig) {
-				mono_error_set_pending_exception (err);
+				mono_error_set_pending_exception (error);
 				return NULL;
 			}
 		}
