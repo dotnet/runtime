@@ -38,13 +38,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         private static void Execute(KnownTypeData typeData, ImmutableArray<BinderInvocationOperation> inputCalls, SourceProductionContext context)
         {
 #if LAUNCH_DEBUGGER
-            #pragma warning disable IDE0055
             if (!System.Diagnostics.Debugger.IsAttached)
             {
                 System.Diagnostics.Debugger.Launch();
             }
-            try
-            {
 #endif
             if (inputCalls.IsDefaultOrEmpty)
             {
@@ -58,34 +55,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Emitter emitter = new(context, spec);
                 emitter.Emit();
             }
-#if LAUNCH_DEBUGGER
-            }
-            catch (System.Exception ex)
-            {
-                System.Diagnostics.Debugger.Break();
-                throw ex;
-            }
-            #pragma warning restore
-#endif
         }
 
-        private readonly record struct KnownTypeData
+        private sealed record KnownTypeData
         {
-            public readonly INamedTypeSymbol SymbolForGenericIList { get; }
-            public readonly INamedTypeSymbol SymbolForICollection { get; }
-            public readonly INamedTypeSymbol SymbolForIEnumerable { get; }
-            public readonly INamedTypeSymbol SymbolForString { get; }
+            public INamedTypeSymbol SymbolForGenericIList { get; }
+            public INamedTypeSymbol SymbolForICollection { get; }
+            public INamedTypeSymbol SymbolForIEnumerable { get; }
+            public INamedTypeSymbol SymbolForString { get; }
 
-            public readonly INamedTypeSymbol? SymbolForConfigurationKeyNameAttribute { get; }
-            public readonly INamedTypeSymbol? SymbolForDictionary { get; }
-            public readonly INamedTypeSymbol? SymbolForGenericIDictionary { get; }
-            public readonly INamedTypeSymbol? SymbolForHashSet { get; }
-            public readonly INamedTypeSymbol? SymbolForIConfiguration { get; }
-            public readonly INamedTypeSymbol? SymbolForIConfigurationSection { get; }
-            public readonly INamedTypeSymbol? SymbolForIDictionary { get; }
-            public readonly INamedTypeSymbol? SymbolForIServiceCollection { get; }
-            public readonly INamedTypeSymbol? SymbolForISet { get; }
-            public readonly INamedTypeSymbol? SymbolForList { get; }
+            public INamedTypeSymbol? SymbolForConfigurationKeyNameAttribute { get; }
+            public INamedTypeSymbol? SymbolForDictionary { get; }
+            public INamedTypeSymbol? SymbolForGenericIDictionary { get; }
+            public INamedTypeSymbol? SymbolForHashSet { get; }
+            public INamedTypeSymbol? SymbolForIConfiguration { get; }
+            public INamedTypeSymbol? SymbolForIConfigurationSection { get; }
+            public INamedTypeSymbol? SymbolForIDictionary { get; }
+            public INamedTypeSymbol? SymbolForIServiceCollection { get; }
+            public INamedTypeSymbol? SymbolForISet { get; }
+            public INamedTypeSymbol? SymbolForList { get; }
 
             public KnownTypeData(Compilation compilation)
             {

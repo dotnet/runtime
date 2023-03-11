@@ -17,8 +17,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             private static class Expression
             {
-                public const string sectionKey = "section?.Key";
-                public const string sectionValue = "section?.Value";
+                public const string nullableSectionValue = "section?.Value";
+                public const string sectionKey = "section.Key";
+                public const string sectionValue = "section.Value";
             }
 
             private static class GlobalName
@@ -100,10 +101,12 @@ using System.Linq;
                     _writer.WriteBlockEnd(");");
 
                     _writer.WriteBlockEnd();
+                    _writer.WriteBlankLine();
                 }
 
                 Emit_NotSupportedException_UnableToBindType(NotSupportedReason.TypeNotDetectedAsInput);
                 _writer.WriteBlockEnd();
+
                 _writer.WriteBlankLine();
             }
 
@@ -116,17 +119,15 @@ using System.Linq;
 
                 _writer.WriteBlockStart($"public static T? {Literal.Get}<T>(this {GlobalName.IConfiguration} {Literal.configuration})");
 
-                EmitCheckForNullArgument(Literal.configuration);
+                EmitCheckForNullArgument_WithBlankLine(Literal.configuration);
 
                 foreach (TypeSpec type in _generationSpec.TypesForGetMethodGen)
                 {
                     string typeDisplayString = type.DisplayString;
 
                     _writer.WriteBlockStart($"if (typeof(T) == typeof({typeDisplayString}))");
-
                     EmitBindLogicFromIConfiguration(type, Literal.obj, InitializationKind.Declaration);
                     _writer.WriteLine($"return (T)({GlobalName.Object}){Literal.obj};");
-
                     _writer.WriteBlockEnd();
                     _writer.WriteBlankLine();
                 }
@@ -172,7 +173,7 @@ using System.Linq;
                 _privateBindCoreMethodGen_QueuedTypes.Enqueue(type);
 
                 _writer.WriteLine(
-                    @$"internal static void {Literal.Bind}(this {GlobalName.IConfiguration} {Literal.configuration}, {type.DisplayString} {Literal.obj}) => " +
+                    @$"public static void {Literal.Bind}(this {GlobalName.IConfiguration} {Literal.configuration}, {type.DisplayString} {Literal.obj}) => " +
                         $"{Literal.BindCore}({Literal.configuration}, ref {Literal.obj});");
                 _writer.WriteBlankLine();
             }
@@ -238,7 +239,7 @@ using System.Linq;
                 EnumerableSpec concreteType = (type.ConcreteType as EnumerableSpec)!;
                 Debug.Assert(type.SpecKind == TypeSpecKind.Array && type.ConcreteType is not null);
 
-                EmitCheckForNullArgumentIfRequired(isValueType: false);
+                EmitCheckForNullArgument_WithBlankLine_IfRequired(isValueType: false);
 
                 string tempVarName = GetIncrementalVarName(Literal.temp);
 
@@ -253,7 +254,7 @@ using System.Linq;
 
             private void EmitBindCoreImplForDictionary(DictionarySpec type)
             {
-                EmitCheckForNullArgumentIfRequired(type.IsValueType);
+                EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
 
                 TypeSpec keyType = type.KeyType;
                 TypeSpec elementType = type.ElementType;
@@ -271,9 +272,6 @@ using System.Linq;
 
                 void Emit_BindAndAddLogic_ForElement()
                 {
-                    // Validate not null for ref types
-                    if (!keyType.IsValueType) { _writer.WriteBlockStart($"if ({Literal.key} is not {KeyWord.@null})"); }
-
                     // For simple types: do regular dictionary add
                     if (elementType.SpecKind == TypeSpecKind.StringBasedParse)
                     {
@@ -308,9 +306,6 @@ using System.Linq;
                             EmitAssignment($"{Literal.obj}[{Literal.key}]", Literal.element);
                         }
                     }
-
-                    // End block for key null check
-                    if (!keyType.IsValueType) { _writer.WriteBlockEnd(); }
                 }
 
                 // End foreach loop.
@@ -319,7 +314,7 @@ using System.Linq;
 
             private void EmitBindCoreImplForEnumerable(EnumerableSpec type)
             {
-                EmitCheckForNullArgumentIfRequired(type.IsValueType);
+                EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
 
                 TypeSpec elementType = type.ElementType;
 
@@ -350,23 +345,26 @@ using System.Linq;
 
             private void EmitBindCoreImplForObject(ObjectSpec type)
             {
-                EmitCheckForNullArgumentIfRequired(type.IsValueType);
+                EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
 
                 foreach (PropertySpec property in type.Properties)
                 {
                     TypeSpec propertyType = property.Type;
 
                     EmitBindCoreImplForProperty(property, propertyType, parentType: type);
+                    _writer.WriteBlankLine();
                 }
             }
 
             private void EmitBindCoreImplForProperty(PropertySpec property, TypeSpec propertyType, TypeSpec parentType)
             {
                 string configurationKeyName = property.ConfigurationKeyName;
+
                 string propertyParentReference = property.IsStatic ? parentType.DisplayString : Literal.obj;
                 string expressionForPropertyAccess = $"{propertyParentReference}.{property.Name}";
+
                 string expressionForConfigGetSection = $@"{Literal.configuration}.{Literal.GetSection}(""{configurationKeyName}"")";
-                string expressionForConfigSectionValue = $"{expressionForConfigGetSection}.{Literal.Value}";
+                string expressionForConfigValueIndexer = $@"{Literal.configuration}[""{configurationKeyName}""]";
 
                 bool canGet = property.CanGet;
                 bool canSet = property.CanSet;
@@ -375,7 +373,7 @@ using System.Linq;
                 {
                     case TypeSpecKind.System_Object:
                         {
-                            EmitAssignment(expressionForPropertyAccess, $"{expressionForConfigSectionValue}!");
+                            EmitAssignment(expressionForPropertyAccess, $"{expressionForConfigValueIndexer}!");
                         }
                         break;
                     case TypeSpecKind.StringBasedParse:
@@ -386,7 +384,7 @@ using System.Linq;
                                 EmitBindLogicFromString(
                                     propertyType,
                                     expressionForPropertyAccess,
-                                    expressionForConfigSectionValue);
+                                    expressionForConfigValueIndexer);
                             }
                         }
                         break;
@@ -438,10 +436,12 @@ using System.Linq;
                     if (initKind is InitializationKind.Declaration)
                     {
                         EmitAssignment($"{TypeFullName.IConfigurationSection}? {Literal.section}", $"{Literal.configuration} as {TypeFullName.IConfigurationSection}");
-                        _writer.WriteBlockStart($"if ({Expression.sectionValue} is null && !{Literal.configuration}.{Literal.GetChildren}().{Literal.Any}())");
+                        _writer.WriteBlockStart($"if ({Expression.nullableSectionValue} is null && !{Literal.configuration}.{Literal.GetChildren}().{Literal.Any}())");
                         _writer.WriteLine($"return {KeyWord.@default};");
                         _writer.WriteBlockEnd();
+                        _writer.WriteBlankLine();
                     }
+
                     EmitBindCoreCall(type, expressionForMemberAccess, Literal.configuration, initKind);
                 }
             }
@@ -585,17 +585,10 @@ using System.Linq;
                     return;
                 }
 
-                if (writeExtraOnSuccess is null)
-                {
-                    _writer.WriteLine($"if ({assignmentCondition}) {{ {expressionForMemberAccess} = {rhs}; }}");
-                }
-                else
-                {
-                    _writer.WriteBlockStart($"if ({assignmentCondition})");
-                    EmitAssignment(expressionForMemberAccess, rhs);
-                    writeExtraOnSuccess();
-                    _writer.WriteBlockEnd();
-                }
+                _writer.WriteBlockStart($"if ({assignmentCondition})");
+                EmitAssignment(expressionForMemberAccess, rhs);
+                writeExtraOnSuccess?.Invoke();
+                _writer.WriteBlockEnd();
             }
 
             private void EmitObjectInit(TypeSpec type, string expressionForMemberAccess, InitializationKind initKind)
@@ -653,19 +646,20 @@ using System.Linq;
             private void Emit_NotSupportedException_UnableToBindType(string reason, string typeDisplayString = "{typeof(T)}") =>
                 _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotSupported, typeDisplayString, reason)}"");");
 
-            private void EmitCheckForNullArgumentIfRequired(bool isValueType)
+            private void EmitCheckForNullArgument_WithBlankLine_IfRequired(bool isValueType)
             {
                 if (!isValueType)
                 {
-                    EmitCheckForNullArgument(Literal.obj);
+                    EmitCheckForNullArgument_WithBlankLine(Literal.obj);
                 }
             }
 
-            private void EmitCheckForNullArgument(string argName)
+            private void EmitCheckForNullArgument_WithBlankLine(string argName)
             {
                 _writer.WriteBlockStart($"if ({argName} is {KeyWord.@null})");
                 _writer.WriteLine($"throw new global::System.ArgumentNullException(nameof({argName}));");
                 _writer.WriteBlockEnd();
+                _writer.WriteBlankLine();
             }
 
             private string GetIncrementalVarName(string prefix) => $"{prefix}{_parseValueCount++}";

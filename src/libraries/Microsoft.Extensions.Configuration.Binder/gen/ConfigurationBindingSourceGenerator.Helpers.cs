@@ -77,7 +77,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string CollectionNotSupported = "The collection type is not supported";
             public const string DictionaryKeyNotSupported = "The dictionary key type is not supported";
             public const string ElementTypeNotSupported = "The collection element type is not supported";
-            public const string KeyTypeNotSupported = "The collection key type is not supported";
             public const string MultiDimArraysNotSupported = "Multidimensional arrays are not supported.";
             public const string NullableUnderlyingTypeNotSupported = "Nullable underlying type is not supported";
             public const string TypeNotDetectedAsInput = "Generator parser did not detect the type as input";
@@ -134,11 +133,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public void WriteLine(string source)
             {
-                string indentationSource = _indentationLevel == 0
-                    ? ""
-                    : string.Join("", Enumerable.Repeat(" ", 4 * _indentationLevel));
-
-                _sb.AppendLine($"{indentationSource}{source}");
+                _sb.Append(' ', 4 * _indentationLevel);
+                _sb.AppendLine(source);
             }
 
             public void WriteBlankLine() => _sb.AppendLine();

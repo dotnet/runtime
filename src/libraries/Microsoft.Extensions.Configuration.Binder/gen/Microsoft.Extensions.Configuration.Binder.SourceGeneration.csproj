@@ -1,19 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <AssemblyName>$(MSBuildThisFileName)</AssemblyName>
-    <RootNamespace>$(MSBuildThisFileName)</RootNamespace>
-    <StringResourcesClassName>SR</StringResourcesClassName>
-    <StringResourcesName>FxResources.$(RootNamespace).$(StringResourcesClassName)</StringResourcesName>
     <CLSCompliant>false</CLSCompliant>
-    <!-- Suppress warning: XML comment has cref attribute that could not be resolved -->
-    <NoWarn>CS1574</NoWarn>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
-    <AnalyzerRoslynVersion>4.4</AnalyzerRoslynVersion>
-    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
-    <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -21,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynApiVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

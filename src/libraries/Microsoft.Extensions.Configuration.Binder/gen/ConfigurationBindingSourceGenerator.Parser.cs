@@ -20,13 +20,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly HashSet<TypeSpec> _typesForBindMethodGen = new();
             private readonly HashSet<TypeSpec> _typesForGetMethodGen = new();
             private readonly HashSet<TypeSpec> _typesForConfigureMethodGen = new();
-
-#pragma warning disable RS1024
             private readonly HashSet<ITypeSymbol> _unsupportedTypes = new(SymbolEqualityComparer.Default);
             private readonly Dictionary<ITypeSymbol, TypeSpec?> _createdSpecs = new(SymbolEqualityComparer.Default);
-#pragma warning restore RS1024
 
-            public Parser(SourceProductionContext context, in KnownTypeData typeData)
+            public Parser(SourceProductionContext context, KnownTypeData typeData)
             {
                 _context = context;
                 _typeData = typeData;
@@ -171,10 +168,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return spec;
                 }
 
-                if (type.Name == "IDictionary" && type is INamedTypeSymbol { IsGenericType: false })
-                {
-                }
-
                 if (type.SpecialType == SpecialType.System_Object)
                 {
                     return CacheSpec(new TypeSpec(type) { Location = location, SpecKind = TypeSpecKind.System_Object });
@@ -287,7 +280,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private DictionarySpec CreateDictionarySpec(INamedTypeSymbol type, Location? location, ITypeSymbol keyType, ITypeSymbol elementType)
             {
-                if (!TryGetTypeSpec(keyType, NotSupportedReason.KeyTypeNotSupported, out TypeSpec keySpec) ||
+                if (!TryGetTypeSpec(keyType, NotSupportedReason.DictionaryKeyNotSupported, out TypeSpec keySpec) ||
                     !TryGetTypeSpec(elementType, NotSupportedReason.ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;

@@ -302,7 +302,7 @@ namespace SourceGenerators.Tests
                 if (!expectedLine.Equals(textLine.ToString(), StringComparison.Ordinal))
                 {
                     message = string.Format("Line {0} does not match.{1}Expected Line:{1}{2}{1}Actual Line:{1}{3}",
-                        textLine.LineNumber, Environment.NewLine, expectedLine, textLine);
+                        textLine.LineNumber + 1, Environment.NewLine, expectedLine, textLine);
                     return false;
                 }
                 index++;

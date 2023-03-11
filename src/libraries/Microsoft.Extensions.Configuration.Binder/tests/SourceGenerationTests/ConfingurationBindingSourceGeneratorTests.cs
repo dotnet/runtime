@@ -39,7 +39,10 @@ public class Program
 		public int MyInt { get; set; }
 		public List<int> MyList { get; set; }
 		public Dictionary<string, string> MyDictionary { get; set; }
+        public Dictionary<string, MyClass2> MyComplexDictionary { get; set; }
 	}
+
+    public class MyClass2 { }
 }";
 
             await VerifyAgainstBaselineUsingFile("TestBindCallGen.generated.txt", testSourceCode);

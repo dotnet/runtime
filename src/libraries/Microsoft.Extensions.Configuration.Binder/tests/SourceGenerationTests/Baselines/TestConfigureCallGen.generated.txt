@@ -14,6 +14,7 @@ internal static class GeneratedConfigurationBinder
                 BindCore(configuration, ref obj);
             });
         }
+
         throw new global::System.NotSupportedException($"Unable to bind to type '{typeof(T)}': 'Generator parser did not detect the type as input'");
     }
 
@@ -23,16 +24,27 @@ internal static class GeneratedConfigurationBinder
         {
             throw new global::System.ArgumentNullException(nameof(obj));
         }
-        if (configuration.GetSection("MyString").Value is string stringValue1) { obj.MyString = stringValue1; }
-        if (configuration.GetSection("MyInt").Value is string stringValue2) { obj.MyInt = int.Parse(stringValue2); }
+
+        if (configuration["MyString"] is string stringValue1)
+        {
+            obj.MyString = stringValue1;
+        }
+
+        if (configuration["MyInt"] is string stringValue2)
+        {
+            obj.MyInt = int.Parse(stringValue2);
+        }
+
         System.Collections.Generic.List<int> temp3 = obj.MyList;
         temp3 ??= new System.Collections.Generic.List<int>();
         BindCore(configuration.GetSection("MyList"), ref temp3);
         obj.MyList = temp3;
+
         System.Collections.Generic.Dictionary<string, string> temp4 = obj.MyDictionary;
         temp4 ??= new System.Collections.Generic.Dictionary<string, string>();
         BindCore(configuration.GetSection("MyDictionary"), ref temp4);
         obj.MyDictionary = temp4;
+
     }
 
     private static void BindCore(global::Microsoft.Extensions.Configuration.IConfiguration configuration, ref System.Collections.Generic.List<int> obj)
@@ -41,10 +53,11 @@ internal static class GeneratedConfigurationBinder
         {
             throw new global::System.ArgumentNullException(nameof(obj));
         }
+
         int element;
         foreach (Microsoft.Extensions.Configuration.IConfigurationSection section in configuration.GetChildren())
         {
-            if (section?.Value is string stringValue5)
+            if (section.Value is string stringValue5)
             {
                 element = int.Parse(stringValue5);
                 obj.Add(element);
@@ -58,20 +71,18 @@ internal static class GeneratedConfigurationBinder
         {
             throw new global::System.ArgumentNullException(nameof(obj));
         }
+
         string key;
         foreach (Microsoft.Extensions.Configuration.IConfigurationSection section in configuration.GetChildren())
         {
-            if (section?.Key is string stringValue6)
+            if (section.Key is string stringValue6)
             {
                 key = stringValue6;
-                if (key is not null)
+                string element;
+                if (section.Value is string stringValue7)
                 {
-                    string element;
-                    if (section?.Value is string stringValue7)
-                    {
-                        element = stringValue7;
-                        obj[key] = element;
-                    }
+                    element = stringValue7;
+                    obj[key] = element;
                 }
             }
         }
