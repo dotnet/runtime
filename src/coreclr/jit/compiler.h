@@ -8999,7 +8999,7 @@ public:
         // |-------------|--------|--------|
         // | x86 avx512  |   512  |   256  | (ignored for now)
         // | x86 avx     |   256  |   128  |
-        // | x86 sse     |   128  |    64  | 
+        // | x86 sse     |   128  |    64  |
         // | arm64       |   256  |   128  | ldp/stp (2x128bit)
         // | arm         |    32  |    16  | no SIMD support
         // | loongarch64 |    64  |    32  | no SIMD support
