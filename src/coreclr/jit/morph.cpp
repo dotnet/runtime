@@ -10877,7 +10877,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
     // Transforms:
     // 1.(~v1 & v2) to VectorXxx.AndNot(v1, v2)
-    // 2.(v1 & (~v2)) to VectorXxx.AndNot(v1, v2)
+    // 2.(v1 & (~v2)) to VectorXxx.AndNot(v2, v1)
     switch (node->HWOperGet())
     {
         case GT_AND:
