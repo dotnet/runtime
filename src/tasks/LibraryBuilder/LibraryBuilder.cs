@@ -267,7 +267,7 @@ public class LibraryBuilderTask : AppBuilderTask
         var assembliesLoader = new StringBuilder();
         foreach (string exportedAssembly in exportedAssemblies)
         {
-            assembliesLoader.Append($"    mono_assembly_open(\"{exportedAssembly}\", NULL);\n");
+            assembliesLoader.Append($"    mono_assembly_open_from_dir(dir, \"{exportedAssembly}\");\n");
         }
 
         File.WriteAllText(Path.Combine(OutputDirectory, "load_assemblies.c"),
