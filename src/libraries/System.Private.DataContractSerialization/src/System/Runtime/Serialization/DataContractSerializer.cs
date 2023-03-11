@@ -33,13 +33,27 @@ namespace System.Runtime.Serialization
         private static SerializationOption s_option = IsReflectionBackupAllowed() ? SerializationOption.ReflectionAsBackup : SerializationOption.CodeGenOnly;
         private static bool s_optionAlreadySet;
 
-        internal static UTF8Encoding UTF8NoBom { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
-        internal static UTF8Encoding ValidatingUTF8 { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        internal sealed class SealedUTF8Encoding : UTF8Encoding
+        {
+            public SealedUTF8Encoding(bool encoderShouldEmitUTF8Identifier, bool throwOnInvalidBytes)
+                : base(encoderShouldEmitUTF8Identifier, throwOnInvalidBytes)
+            { }
+        }
 
-        internal static UnicodeEncoding UTF16NoBom { get; } = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: false);
-        internal static UnicodeEncoding BEUTF16NoBom { get; } = new UnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: false);
-        internal static UnicodeEncoding ValidatingUTF16 { get; } = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
-        internal static UnicodeEncoding ValidatingBEUTF16 { get; } = new UnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: true);
+        internal sealed class SealedUnicodeEncoding : UnicodeEncoding
+        {
+            public SealedUnicodeEncoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes)
+                : base(bigEndian, byteOrderMark, throwOnInvalidBytes)
+            { }
+        }
+
+        internal static SealedUTF8Encoding UTF8NoBom { get; } = new SealedUTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
+        internal static SealedUTF8Encoding ValidatingUTF8 { get; } = new SealedUTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        internal static SealedUnicodeEncoding UTF16NoBom { get; } = new SealedUnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: false);
+        internal static SealedUnicodeEncoding BEUTF16NoBom { get; } = new SealedUnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: false);
+        internal static SealedUnicodeEncoding ValidatingUTF16 { get; } = new SealedUnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
+        internal static SealedUnicodeEncoding ValidatingBEUTF16 { get; } = new SealedUnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: true);
 
         internal static Base64Encoding Base64Encoding { get; } = new Base64Encoding();
         internal static BinHexEncoding BinHexEncoding { get; } = new BinHexEncoding();

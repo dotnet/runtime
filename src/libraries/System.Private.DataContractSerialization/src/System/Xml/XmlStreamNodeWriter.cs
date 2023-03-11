@@ -374,7 +374,7 @@ namespace System.Xml
                     char* charsMax = &chars[charCount];
 
                     // Fast path for small strings, skip and use Encoding.GetBytes for larger strings since it is faster
-                    if (charCount < 16)
+                    if (charCount < 32)
                     {
                         while (chars < charsMax)
                         {
