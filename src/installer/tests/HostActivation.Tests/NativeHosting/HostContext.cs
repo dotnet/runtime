@@ -661,9 +661,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Build();
                 DotNetRoot = dotNet.BinPath;
 
-                HostFxrPath = Path.Combine(
-                    dotNet.GreatestVersionHostFxrPath,
-                    RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
+                HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
 
                 string appDir = Path.Combine(BaseDirectory, "app");
                 Directory.CreateDirectory(appDir);

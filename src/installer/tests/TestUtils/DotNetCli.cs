@@ -14,16 +14,8 @@ namespace Microsoft.DotNet.Cli.Build
         public string SharedFxPath { get; }
         public string GreatestVersionSharedFxPath { get; }
         public string GreatestVersionHostFxrPath { get; }
-        public string GreatestVersionHostFxrFilePath { get => Path.Combine(
-            GreatestVersionHostFxrPath,
-            RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")); }
-        public string DotnetExecutablePath
-        {
-            get
-            {
-                return Path.Combine(BinPath, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet"));
-            }
-        }
+        public string GreatestVersionHostFxrFilePath => Path.Combine(GreatestVersionHostFxrPath, Binaries.HostFxr.FileName);
+        public string DotnetExecutablePath => Path.Combine(BinPath, Binaries.DotNet.FileName);
 
         public DotNetCli(string binPath)
         {

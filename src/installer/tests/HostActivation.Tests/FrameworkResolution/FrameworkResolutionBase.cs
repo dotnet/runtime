@@ -128,12 +128,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 TestApp testApp = new TestApp(testAppDir);
                 testApp.PopulateSelfContained(TestApp.MockedComponent.HostPolicy);
 
-                string appHostFileName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost");
-
                 // ./SelfContainedApp.exe
-                string selfContainedAppExePath = Path.Combine(testAppDir, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("SelfContainedApp"));
+                string selfContainedAppExePath = Path.Combine(testAppDir, Binaries.GetExeFileNameForCurrentPlatform("SelfContainedApp"));
                 File.Copy(
-                    Path.Combine(_repoDirectories.HostArtifacts, appHostFileName),
+                    Binaries.AppHost.FilePath,
                     selfContainedAppExePath);
                 AppHostExtensions.BindAppHost(selfContainedAppExePath);
 

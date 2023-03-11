@@ -57,7 +57,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 {
                     resolve_component_dependencies,
                     run_app_and_resolve,
-                    Path.Combine(hostFxrFolder, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
+                    Path.Combine(hostFxrFolder, Binaries.HostFxr.FileName),
                     hostApp.AppDll,
                     componentPath
                 };
@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 {
                     resolve_component_dependencies,
                     run_app_and_resolve_multithreaded,
-                    Path.Combine(hostFxrFolder, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
+                    Path.Combine(hostFxrFolder, Binaries.HostFxr.FileName),
                     hostApp.AppDll,
                     componentOnePath,
                     componentTwoPath

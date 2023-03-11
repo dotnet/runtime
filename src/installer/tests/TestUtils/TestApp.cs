@@ -96,8 +96,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                         {
                             var fileVersion = FileVersionInfo.GetVersionInfo(file).FileVersion;
                             var asmVersion = System.Reflection.AssemblyName.GetAssemblyName(file).Version!.ToString();
-                            g.WithAsset(
-                                Path.GetFileName(file),
+                            g.WithAsset(Path.GetFileName(file),
                                 f => f.WithVersion(asmVersion, fileVersion!).CopyFromFile(file));
                         }
                     });
@@ -109,8 +108,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
                         foreach (var file in nativeLibraries)
                         {
-                            g.WithAsset(
-                                Path.GetFileName(file),
+                            g.WithAsset(Path.GetFileName(file),
                                 f => f.CopyFromFile(file));
                         }
                     });
@@ -126,7 +124,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                             f => f.CopyFromFile(Binaries.HostPolicy.FilePath))
                         // ./coreclr - mocked component
                         .WithAsset(Binaries.CoreClr.FileName,
-                            f => f.CopyFromFile(Binaries.CoreClr.MockFilePath)));
+                            f => f.CopyFromFile(Binaries.CoreClr.MockPath)));
                 }
                 else if (mock == MockedComponent.HostPolicy)
                 {
@@ -136,7 +134,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                             f => f.CopyFromFile(Binaries.HostFxr.FilePath))
                         // ./hostpolicy - mocked component
                         .WithAsset(Binaries.HostPolicy.FileName,
-                            f => f.CopyFromFile(Binaries.HostPolicy.MockFilePath)));
+                            f => f.CopyFromFile(Binaries.HostPolicy.MockPath)));
                 }
             });
 
@@ -155,13 +153,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             Directory.CreateDirectory(Location);
             AppDll = Path.Combine(Location, $"{AssemblyName}.dll");
-            AppExe = Path.Combine(Location, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AssemblyName));
+            AppExe = Path.Combine(Location, Binaries.GetExeFileNameForCurrentPlatform(AssemblyName));
             DepsJson = Path.Combine(Location, $"{AssemblyName}.deps.json");
             RuntimeConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.json");
             RuntimeDevConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.dev.json");
-            HostPolicyDll = Path.Combine(Location, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy"));
-            HostFxrDll = Path.Combine(Location, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
-            CoreClrDll = Path.Combine(Location, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("coreclr"));
+            HostPolicyDll = Path.Combine(Location, Binaries.HostPolicy.FileName);
+            HostFxrDll = Path.Combine(Location, Binaries.HostFxr.FileName);
+            CoreClrDll = Path.Combine(Location, Binaries.CoreClr.FileName);
         }
 
         private static (IEnumerable<string> Assemblies, IEnumerable<string> NativeLibraries) GetRuntimeFiles()
@@ -169,7 +167,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             var runtimePackDir = new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet).GreatestVersionSharedFxPath;
             var assemblies = Directory.GetFiles(runtimePackDir, "*.dll").Where(f => IsAssembly(f));
 
-            (string prefix, string suffix) = RuntimeInformationExtensions.SharedLibraryPrefixSuffix();
+            (string prefix, string suffix) = Binaries.GetSharedLibraryPrefixSuffix();
             var nativeLibraries = Directory.GetFiles(runtimePackDir, $"{prefix}*{suffix}").Where(f => !IsAssembly(f));
 
             return (assemblies, nativeLibraries);

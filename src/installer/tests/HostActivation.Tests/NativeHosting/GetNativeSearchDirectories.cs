@@ -164,9 +164,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr(NetCoreAppVersion)
                     .Build();
 
-                HostFxrPath = Path.Combine(
-                    DotNet.GreatestVersionHostFxrPath,
-                    RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
+                HostFxrPath = DotNet.GreatestVersionHostFxrFilePath;
 
                 App = new TestApp(Path.Combine(BaseDirectory, "app"));
                 App.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, NetCoreAppVersion);
