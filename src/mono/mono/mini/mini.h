@@ -1164,6 +1164,7 @@ typedef struct
 	gpointer impl_this;
 	gpointer impl_nothis;
 	gboolean need_rgctx_tramp;
+	gboolean is_virtual;
 } MonoDelegateTrampInfo;
 
 /*
@@ -2263,8 +2264,7 @@ gpointer          mono_create_jump_trampoline (MonoMethod *method,
 gpointer mono_create_jit_trampoline (MonoMethod *method, MonoError *error);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 gpointer          mono_create_delegate_trampoline (MonoClass *klass);
-MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method);
-gpointer          mono_create_delegate_virtual_trampoline (MonoClass *klass, MonoMethod *method);
+MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboolean is_virtual);
 gpointer          mono_create_rgctx_lazy_fetch_trampoline (guint32 offset);
 gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr);
 gpointer          mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr);
