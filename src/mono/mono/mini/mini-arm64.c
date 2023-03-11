@@ -160,6 +160,49 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 	return MINI_ADDR_TO_FTNPTR (start);
 }
 
+#define MAX_VIRTUAL_DELEGATE_OFFSET 32
+
+static gpointer
+get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, int offset)
+{
+	guint8 *code, *start;
+	const int size = 20;
+	char *tramp_name;
+	GSList *unwind_ops;
+
+	if (offset / (int)sizeof (target_mgreg_t) > MAX_VIRTUAL_DELEGATE_OFFSET)
+		return NULL;
+
+	MINI_BEGIN_CODEGEN ();
+
+	start = code = mono_global_codeman_reserve (size);
+
+	unwind_ops = mono_arch_get_cie_program ();
+
+	/* Replace the this argument with the target */
+	arm_ldrx (code, ARMREG_R0, ARMREG_R0, MONO_STRUCT_OFFSET (MonoDelegate, target));
+
+	if (load_imt_reg)
+		// FIXME:
+		g_assert_not_reached ();
+
+	/* Load this->vtable [offset] */
+	arm_ldrx (code, ARMREG_IP0, ARMREG_R0, MONO_STRUCT_OFFSET (MonoObject, vtable));
+	arm_ldrx (code, ARMREG_IP0, ARMREG_IP0, offset);
+
+	code = mono_arm_emit_brx (code, ARMREG_IP0);
+
+	g_assert ((code - start) <= size);
+
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
+
+	tramp_name = mono_get_delegate_virtual_invoke_impl_name (load_imt_reg, offset);
+	*info = mono_tramp_info_create (tramp_name, start, GPTRDIFF_TO_UINT32 (code - start), NULL, unwind_ops);
+	g_free (tramp_name);
+
+	return start;
+}
+
 /*
  * mono_arch_get_delegate_invoke_impls:
  *
@@ -172,17 +215,24 @@ mono_arch_get_delegate_invoke_impls (void)
 	GSList *res = NULL;
 	guint8 *code;
 	guint32 code_len;
-	int i;
 	char *tramp_name;
+	MonoTrampInfo *info = NULL;
 
 	code = (guint8*)get_delegate_invoke_impl (TRUE, 0, &code_len);
 	res = g_slist_prepend (res, mono_tramp_info_create ("delegate_invoke_impl_has_target", code, code_len, NULL, NULL));
 
-	for (i = 0; i <= MAX_ARCH_DELEGATE_PARAMS; ++i) {
+	for (int i = 0; i <= MAX_ARCH_DELEGATE_PARAMS; ++i) {
 		code = (guint8*)get_delegate_invoke_impl (FALSE, i, &code_len);
 		tramp_name = g_strdup_printf ("delegate_invoke_impl_target_%d", i);
 		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
 		g_free (tramp_name);
+	}
+
+	for (int i = 0; i <= MAX_VIRTUAL_DELEGATE_OFFSET; ++i) {
+		get_delegate_virtual_invoke_impl (&info, FALSE, i * TARGET_SIZEOF_VOID_P);
+		res = g_slist_prepend (res, info);
+		//get_delegate_virtual_invoke_impl (&info, TRUE, i * TARGET_SIZEOF_VOID_P);
+		//res = g_slist_prepend (res, info);
 	}
 
 	return res;
@@ -243,7 +293,18 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 gpointer
 mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
 {
-	return NULL;
+	MonoTrampInfo *info;
+	gpointer code;
+
+	if (load_imt_reg)
+		// FIXME:
+		return FALSE;
+
+	code = get_delegate_virtual_invoke_impl (&info, load_imt_reg, offset);
+	if (code)
+		mono_tramp_info_register (info, NULL);
+
+	return code;
 }
 
 gpointer
@@ -299,17 +360,26 @@ mono_arch_finish_init (void)
 static guint8*
 emit_imm (guint8 *code, int dreg, int imm)
 {
-	// FIXME: Optimize this
 	if (imm < 0) {
-		gint64 limm = imm;
+		int limm = imm;
+		int himm = (limm >> 16) & 0xffff;
 		arm_movnx (code, dreg, (~limm) & 0xffff, 0);
-		arm_movkx (code, dreg, (limm >> 16) & 0xffff, 16);
-	} else {
-		arm_movzx (code, dreg, imm & 0xffff, 0);
-		if (imm >> 16)
-			arm_movkx (code, dreg, (imm >> 16) & 0xffff, 16);
-	}
+		if (himm != 0xffff)
+			arm_movkx (code, dreg, himm, 16);
 
+	} else {
+		int low = imm & 0xffff;
+		int hi = (imm >> 16) & 0xffff;
+
+		if (low == 0) {
+			arm_movzx (code, dreg, hi, 16);
+		} else if (hi == 0) {
+			arm_movzx (code, dreg, low, 0);
+		} else {
+			arm_movzx (code, dreg, low, 0);
+			arm_movkx (code, dreg, hi, 16);
+		}
+	}
 	return code;
 }
 
@@ -317,15 +387,24 @@ emit_imm (guint8 *code, int dreg, int imm)
 static guint8*
 emit_imm64 (guint8 *code, int dreg, guint64 imm)
 {
-	// FIXME: Optimize this
-	arm_movzx (code, dreg, imm & 0xffff, 0);
-	if ((imm >> 16) & 0xffff)
-		arm_movkx (code, dreg, (imm >> 16) & 0xffff, 16);
-	if ((imm >> 32) & 0xffff)
-		arm_movkx (code, dreg, (imm >> 32) & 0xffff, 32);
-	if ((imm >> 48) & 0xffff)
-		arm_movkx (code, dreg, (imm >> 48) & 0xffff, 48);
+	if (imm == 0) {
+		arm_movzx (code, dreg, 0, 0);
+	} else {
+		gboolean is_inited = FALSE;
 
+		for (int idx = 0; idx < 64; idx += 16) {
+			int w = (imm >> idx) & 0xffff;
+
+			if (w) {
+				if (is_inited) {
+					arm_movkx (code, dreg, w, idx);
+				} else {
+					arm_movzx (code, dreg, w, idx);
+					is_inited = TRUE;
+				}
+			}
+		}
+	}
 	return code;
 }
 
@@ -580,6 +659,20 @@ emit_strfpx (guint8 *code, int rt, int rn, int imm)
 }
 
 static WARN_UNUSED_RESULT guint8*
+emit_strfpq (guint8 *code, int rt, int rn, int imm)
+{
+	if (arm_is_pimm12_scaled (imm, 16)) {
+		arm_strfpq (code, rt, rn, imm);
+	} else {
+		g_assert (rn != ARMREG_IP0);
+		code = emit_imm (code, ARMREG_IP0, imm);
+		arm_addx (code, ARMREG_IP0, rn, ARMREG_IP0);
+		arm_strfpq (code, rt, ARMREG_IP0, 0);
+	}
+	return code;
+}
+
+static WARN_UNUSED_RESULT guint8*
 emit_strx (guint8 *code, int rt, int rn, int imm)
 {
 	if (arm_is_strx_imm (imm)) {
@@ -713,6 +806,20 @@ emit_ldrfpx (guint8 *code, int rt, int rn, int imm)
 		code = emit_imm (code, ARMREG_IP0, imm);
 		arm_addx (code, ARMREG_IP0, rn, ARMREG_IP0);
 		arm_ldrfpx (code, rt, ARMREG_IP0, 0);
+	}
+	return code;
+}
+
+static WARN_UNUSED_RESULT guint8*
+emit_ldrfpq (guint8 *code, int rt, int rn, int imm)
+{
+	if (arm_is_pimm12_scaled (imm, 16)) {
+		arm_ldrfpq (code, rt, rn, imm);
+	} else {
+		g_assert (rn != ARMREG_IP0);
+		code = emit_imm (code, ARMREG_IP0, imm);
+		arm_addx (code, ARMREG_IP0, rn, ARMREG_IP0);
+		arm_ldrfpq (code, rt, ARMREG_IP0, 0);
 	}
 	return code;
 }
@@ -2209,8 +2316,15 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->ret->dreg = cinfo->ret.reg;
 		break;
 	case ArgVtypeInIRegs:
-	case ArgHFA:
+	case ArgHFA: {
 		/* Allocate a local to hold the result, the epilog will copy it to the correct place */
+		MonoType *ret_type = mini_get_underlying_type (sig->ret);
+		MonoClass *klass = mono_class_from_mono_type_internal (ret_type);
+		if (MONO_CLASS_IS_SIMD (cfg, klass)) {
+			int align_simd = mono_type_size (m_class_get_byval_arg (klass), NULL);
+			offset = ALIGN_TO (offset, align_simd);
+		}
+
 		cfg->ret->opcode = OP_REGOFFSET;
 		cfg->ret->inst_basereg = cfg->frame_reg;
 		cfg->ret->inst_offset = offset;
@@ -2220,6 +2334,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		else
 			offset += 16;
 		break;
+	}
 	case ArgVtypeByRef:
 		/* This variable will be initialized in the prolog from R8 */
 		cfg->vret_addr->opcode = OP_REGOFFSET;
@@ -2377,7 +2492,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			ins->opcode = OP_REGOFFSET;
 			ins->inst_basereg = cfg->frame_reg;
 			ins->inst_offset = offset + offsets [i];
-			//printf ("allocated local %d to ", i); mono_print_tree_nl (ins);
+			//printf ("allocated local %d to ", i); mono_print_ins (ins);
 		}
 	}
 	offset += locals_stack_size;
@@ -3235,6 +3350,52 @@ emit_branch_island (MonoCompile *cfg, guint8 *code, int start_offset)
 	return code;
 }
 
+static int
+get_vector_size_macro (MonoInst *ins)
+{
+	int size = mono_class_value_size (ins->klass, NULL);
+	switch (size) {
+	case 16:
+		return VREG_FULL;
+	case 8:
+		return VREG_LOW;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static int
+get_type_size_macro (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return TYPE_I8;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return TYPE_I16;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return TYPE_I32;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return TYPE_I64;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return TYPE_I64;
+#else
+		return TYPE_I32;
+#endif
+	case MONO_TYPE_R4:
+		return TYPE_F32;
+	case MONO_TYPE_R8:
+		return TYPE_F64;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -3412,6 +3573,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_STOREX_MEMBASE:
+			code = emit_strfpq (code, sreg1, dreg, ins->inst_offset);
+			break;
+		case OP_LOADX_MEMBASE:
+			code = emit_ldrfpq (code, dreg, sreg1, ins->inst_offset);
+			break;
+		case OP_XZERO:
+			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			break;
+		case OP_XMOVE:
+			arm_neon_mov (code, dreg, sreg1);
+			break;
+		case OP_XCONST: {
+			if (cfg->compile_aot && cfg->code_exec_only) {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128_GOT, ins->inst_p0);
+				arm_ldrx_lit (code, ARMREG_IP0, 0);
+				arm_ldrfpq (code, ins->dreg, ARMREG_IP0, 0);
+			} else {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128, ins->inst_p0);
+				arm_neon_ldrq_lit (code, ins->dreg, 0);
+			}
+			break;
+		}
 
 			/* BRANCH */
 		case OP_BR:
@@ -3483,6 +3667,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ARM64_CBNZX:
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_ARM64_CBZ);
 			arm_cbnzx (code, sreg1, 0);
+			break;
+		case OP_XBINOP:
+			switch (ins->inst_c0) {
+			case OP_IADD:
+				arm_neon_add (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+				break;
+			case OP_FADD:
+				arm_neon_fadd (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 			break;
 			/* ALU */
 		case OP_IADD:
@@ -5265,6 +5461,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				size += 32;
 				exc_throw_found [i] = TRUE;
 			}
+		} else if (ji->type == MONO_PATCH_INFO_X128) {
+			size += 16 + 15; /* sizeof (Vector128<T>) + alignment */
 		}
 	}
 
@@ -5303,6 +5501,36 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		ji->relocation = MONO_R_ARM64_BL;
 		arm_bl (code, 0);
 		cfg->thunk_area += THUNK_SIZE;
+		set_code_cursor (cfg, code);
+	}
+
+	/* Handle relocations with RIP relative addressing */
+	for (ji = cfg->patch_info; ji; ji = ji->next) {
+		gboolean remove = FALSE;
+
+		if (ji->type == MONO_PATCH_INFO_X128) {
+			guint8 *pos;
+
+			code = (guint8*)ALIGN_TO (code, 16);
+			pos = cfg->native_code + ji->ip.i;
+			arm_neon_ldrq_lit_fixup (pos, code);
+			memcpy (code, ji->data.target, 16);
+			code += 16;
+
+			remove = TRUE;
+		}
+
+		if (remove) {
+			if (ji == cfg->patch_info)
+				cfg->patch_info = ji->next;
+			else {
+				MonoJumpInfo *tmp;
+
+				for (tmp = cfg->patch_info; tmp->next != ji; tmp = tmp->next)
+					;
+				tmp->next = ji->next;
+			}
+		}
 		set_code_cursor (cfg, code);
 	}
 

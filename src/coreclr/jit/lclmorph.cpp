@@ -988,7 +988,7 @@ private:
                 {
                     isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
 
-                    if (varDsc->TypeGet() == TYP_BLK)
+                    if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->IsBlockLayout())
                     {
                         // TODO-CQ: TYP_BLK used to always be exposed here. This is in principle not necessary, but
                         // not doing so would require VN changes. For now, exposing gets better CQ as otherwise the

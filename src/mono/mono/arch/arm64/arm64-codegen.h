@@ -456,11 +456,20 @@ arm_encode_imm7 (int imm, int size)
 #define arm_format_ldrfp_imm(p, size, opc, rt, rn, pimm, scale) arm_emit ((p), ((size) << 30) | (0xf << 26) | (0x1 << 24) | ((opc) << 22) | (arm_encode_pimm12 ((pimm), (scale)) << 10) | ((rn) << 5) | ((rt) << 0))
 
 /* Load double */
-#define arm_ldrfpx(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_X, 0x1, dt, xn, simm, 8)
+#define arm_ldrfpx(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_X, 0x1, (dt), (xn), (simm), 8)
 /* Load single */
-#define arm_ldrfpw(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_W, 0x1, dt, xn, simm, 4)
+#define arm_ldrfpw(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_W, 0x1, (dt), (xn), (simm), 4)
 /* Load 128 bit */
-#define arm_ldrfpq(p, qt, xn, simm) arm_format_ldrfp_imm ((p), 0, 0x3, qt, xn, simm, 16)
+#define arm_ldrfpq(p, qt, xn, simm) arm_format_ldrfp_imm ((p), 0x0, 0x3, (qt), (xn), (simm), 16)
+
+/* LDR (literal, SIMD&FP) PC-relative*/
+/* Load single */
+#define arm_neon_ldrs_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b00 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+/* Load double */
+#define arm_neon_ldrd_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b01 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+/* Load 128 bit */
+#define arm_neon_ldrq_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b10 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+#define arm_neon_ldrq_lit_fixup(p, target) *((guint32*)p) = (*((guint32*)p) & 0xff00001f) | (arm_get_disp19 ((p), (target)) << 5)
 
 /* Arithmetic (immediate) */
 static G_GNUC_UNUSED inline guint32
@@ -999,6 +1008,9 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define TYPE_I64 SIZE_8
 #define TYPE_F32 0
 #define TYPE_F64 1
+
+/* NEON :: move SIMD register*/
+#define arm_neon_mov(p, rd, rn) arm_neon_orr ((p), VREG_FULL, (rd), (rn), (rn))
 
 /* NEON :: AES */ 
 #define arm_neon_aes_opcode(p, size, opcode, rd, rn) arm_neon_opcode_2reg ((p), VREG_FULL, 0b00001110001010000000100000000000 | (size) << 22 | (opcode) << 12, (rd), (rn))

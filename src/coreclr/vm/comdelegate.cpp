@@ -1568,6 +1568,25 @@ FCIMPLEND
 extern "C" void * _ReturnAddress(void);
 #endif // _MSC_VER && !TARGET_UNIX
 
+uint32_t MethodDescToNumFixedArgs(MethodDesc *pMD)
+{
+    WRAPPER_NO_CONTRACT;
+
+    SigParser sig = pMD->GetSigParser();
+
+    uint32_t data;
+    IfFailThrow(sig.GetCallingConvInfo(&data));
+    if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        // Skip over generic argument count
+        IfFailThrow(sig.GetData(&data));
+    }
+
+    // Return argument count
+    IfFailThrow(sig.GetData(&data));
+    return data;
+}
+
 // This is the single constructor for all Delegates.  The compiler
 //  doesn't provide an implementation of the Delegate constructor.  We
 //  provide that implementation through an ECall call to this method.
@@ -1635,10 +1654,8 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
     DelegateEEClass *pDelCls = (DelegateEEClass*)pDelMT->GetClass();
     MethodDesc *pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(pDelMT);
 
-    MetaSig invokeSig(pDelegateInvoke);
-    MetaSig methodSig(pMeth);
-    UINT invokeArgCount = invokeSig.NumFixedArgs();
-    UINT methodArgCount = methodSig.NumFixedArgs();
+    UINT invokeArgCount = MethodDescToNumFixedArgs(pDelegateInvoke);
+    UINT methodArgCount = MethodDescToNumFixedArgs(pMeth);
     BOOL isStatic = pMeth->IsStatic();
     if (!isStatic)
     {

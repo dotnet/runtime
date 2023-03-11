@@ -94,7 +94,7 @@ namespace System.ComponentModel
         {
             if (value is string version)
             {
-                return Version.TryParse(version, out Version _);
+                return Version.TryParse(version, out _);
             }
             return value is Version;
         }

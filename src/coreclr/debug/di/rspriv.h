@@ -142,7 +142,7 @@ class CordbSafeHashTable;
 //
 // This is an encapsulation of the information necessary to connect to the debugger proxy on a remote machine.
 // It includes the IP address and the port number.  The IP address can be set via the env var
-// COMPlus_DbgTransportProxyAddress, and the port number is fixed when Mac debugging is configured.
+// DOTNET_DbgTransportProxyAddress, and the port number is fixed when Mac debugging is configured.
 //
 
 struct MachineInfo

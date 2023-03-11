@@ -101,6 +101,7 @@
   #define REGSIZE_BYTES            8       // number of bytes in one register
   #define XMM_REGSIZE_BYTES        16      // XMM register size in bytes
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
+  #define ZMM_REGSIZE_BYTES        64      // ZMM register size in bytes
 
   #define CODE_ALIGN               1       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement

@@ -2050,7 +2050,7 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
     // This lets us run a set of managed apps under a debugger.
     if (!CORDebuggerAttached())
     {
-        #define DBG_ATTACH_ON_STARTUP_ENV_VAR W("COMPlus_DbgAttachOnStartup")
+        #define DBG_ATTACH_ON_STARTUP_ENV_VAR W("DOTNET_DbgAttachOnStartup")
         PathString temp;
         // We explicitly just check the env because we don't want a switch this invasive to be global.
         DWORD fAttach = WszGetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, temp) > 0;

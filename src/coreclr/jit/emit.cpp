@@ -2609,20 +2609,15 @@ void emitter::emitSetFrameRangeArgs(int offsLo, int offsHi)
 
 /*****************************************************************************
  *
- *  A conversion table used to map an operand size value (in bytes) into its
- *  small encoding (0 through 3), and vice versa.
+ *  A conversion table used to map an operand size value (in bytes) into its emitAttr
  */
 
-const emitter::opSize emitter::emitSizeEncode[] = {
-    emitter::OPSZ1, emitter::OPSZ2,  OPSIZE_INVALID, emitter::OPSZ4,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    emitter::OPSZ8, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, emitter::OPSZ16, OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, emitter::OPSZ32,
+const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {
+    EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE, EA_16BYTE,
+#if defined(TARGET_XARCH)
+    EA_32BYTE, EA_64BYTE,
+#endif // TARGET_XARCH
 };
-
-const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {EA_1BYTE, EA_2BYTE,  EA_4BYTE,
-                                                               EA_8BYTE, EA_16BYTE, EA_32BYTE};
 
 /*****************************************************************************
  *
@@ -6118,7 +6113,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
     }
     else
     {
-        // For non-adaptive, just take whatever is supplied using COMPlus_ variables
+        // For non-adaptive, just take whatever is supplied using DOTNET_ variables
         maxLoopSize = emitComp->opts.compJitAlignLoopMaxCodeSize;
     }
 
@@ -6550,7 +6545,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     coldCodeBlock = nullptr;
 
-    // This restricts the data alignment to: 4, 8, 16, or 32 bytes
+    // This restricts the data alignment to: 4, 8, 16, 32 or 64 bytes
     // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
     uint32_t dataAlignment = emitConsDsc.alignment;
     assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
@@ -6630,6 +6625,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     else if (dataAlignment == 32)
     {
         allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN;
+    }
+    else if (dataAlignment == 64)
+    {
+        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN;
     }
 
     CorJitAllocMemFlag allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlagCodeAlign | allocMemFlagDataAlign);
@@ -7077,9 +7076,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
         {
 #ifdef DEBUG
-            size_t     curInstrAddr = (size_t)cp;
-            instrDesc* curInstrDesc = id;
-
             if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
                 (id->idCodeSize() > 0))
             {
@@ -7106,16 +7102,20 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     ++nextMapping;
                 }
             }
-
 #endif
-
             size_t insSize = emitIssue1Instr(ig, id, &cp);
             emitAdvanceInstrDesc(&id, insSize);
+        }
 
-#ifdef DEBUG
-            // Print the alignment boundary
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (emitComp->opts.disAddr || emitComp->opts.disAlignment))
+        // Print the alignment boundary
+        if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
+            (INDEBUG(emitComp->opts.disAddr ||) emitComp->opts.disAlignment))
+        {
+            for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
             {
+                size_t     curInstrAddr = (size_t)cp;
+                instrDesc* curInstrDesc = id;
+
                 size_t      afterInstrAddr   = (size_t)cp;
                 instruction curIns           = curInstrDesc->idIns();
                 bool        isJccAffectedIns = false;
@@ -7197,7 +7197,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     }
                 }
             }
-#endif // DEBUG
         }
 
 #ifdef DEBUG
@@ -7963,6 +7962,25 @@ CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
     }
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
+
+CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+    unsigned cnsSize  = 64;
+    unsigned cnsAlign = cnsSize;
+
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD64);
     return emitComp->eeFindJitDataOffs(cnum);
 }
 #endif // TARGET_XARCH

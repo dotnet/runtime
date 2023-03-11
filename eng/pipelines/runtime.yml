@@ -1141,6 +1141,7 @@ extends:
           runtimeFlavor: mono
           platforms:
             - osx_x64
+            - linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
               value: 60

@@ -505,125 +505,37 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     bool result = false;
 
     emitPeepholeIterateLastInstrs([&](instrDesc* id) {
-        switch ((ID_OPS)emitFmtToOps[id->idInsFmt()])
+        if (emitIsInstrWritingToReg(id, reg))
         {
-            // This is conservative.
-            case ID_OP_CALL:
-                return PEEPHOLE_ABORT;
-
-            default:
-                break;
-        }
-
-        // This is a special case for idiv, div, imul, and mul.
-        // They always write to RAX and RDX.
-        if (instrHasImplicitRegPairDest(id->idIns()))
-        {
-            if (reg == REG_RAX || reg == REG_RDX)
+            switch (id->idIns())
             {
-                result = (id->idOpSize() == EA_4BYTE);
-                return PEEPHOLE_ABORT;
-            }
-        }
-
-        switch (id->idInsFmt())
-        {
-            case IF_RWR:
-            case IF_RRW:
-
-            case IF_RWR_CNS:
-            case IF_RRW_CNS:
-            case IF_RRW_SHF:
-
-            case IF_RWR_RRD:
-            case IF_RRW_RRD:
-            case IF_RRW_RRW:
-            case IF_RRW_RRW_CNS:
-
-            case IF_RWR_RRD_RRD:
-            case IF_RWR_RRD_RRD_CNS:
-
-            case IF_RWR_RRD_RRD_RRD:
-
-            case IF_RWR_MRD:
-            case IF_RRW_MRD:
-            case IF_RRW_MRD_CNS:
-
-            case IF_RWR_RRD_MRD:
-            case IF_RWR_MRD_CNS:
-            case IF_RWR_RRD_MRD_CNS:
-            case IF_RWR_RRD_MRD_RRD:
-            case IF_RWR_MRD_OFF:
-
-            case IF_RWR_SRD:
-            case IF_RRW_SRD:
-            case IF_RRW_SRD_CNS:
-
-            case IF_RWR_RRD_SRD:
-            case IF_RWR_SRD_CNS:
-            case IF_RWR_RRD_SRD_CNS:
-            case IF_RWR_RRD_SRD_RRD:
-
-            case IF_RWR_ARD:
-            case IF_RRW_ARD:
-            case IF_RRW_ARD_CNS:
-
-            case IF_RWR_RRD_ARD:
-            case IF_RWR_ARD_CNS:
-            case IF_RWR_ARD_RRD:
-            case IF_RWR_RRD_ARD_CNS:
-            case IF_RWR_RRD_ARD_RRD:
-            {
-                if (id->idReg1() != reg)
-                {
-                    switch (id->idInsFmt())
-                    {
-                        // Handles instructions who write to two registers.
-                        case IF_RRW_RRW:
-                        case IF_RRW_RRW_CNS:
-                        {
-                            if (id->idReg2() == reg)
-                            {
-                                result = (id->idOpSize() == EA_4BYTE);
-                                return PEEPHOLE_ABORT;
-                            }
-                            break;
-                        }
-
-                        default:
-                            break;
-                    }
-
-                    return PEEPHOLE_CONTINUE;
-                }
-
-                // movsx always sign extends to 8 bytes.
-                if (id->idIns() == INS_movsx)
-                {
+                // Conservative.
+                case INS_call:
                     return PEEPHOLE_ABORT;
-                }
 
-                if (id->idIns() == INS_movsxd)
-                {
+                // These instructions sign-extend.
+                case INS_cwde:
+                case INS_cdq:
+                case INS_movsx:
+                case INS_movsxd:
                     return PEEPHOLE_ABORT;
-                }
 
                 // movzx always zeroes the upper 32 bits.
-                if (id->idIns() == INS_movzx)
-                {
+                case INS_movzx:
                     result = true;
                     return PEEPHOLE_ABORT;
-                }
 
-                // otherwise rely on operation size.
-                result = (id->idOpSize() == EA_4BYTE);
-                return PEEPHOLE_ABORT;
+                default:
+                    break;
             }
 
-            default:
-            {
-                return PEEPHOLE_CONTINUE;
-            }
+            // otherwise rely on operation size.
+            result = (id->idOpSize() == EA_4BYTE);
+            return PEEPHOLE_ABORT;
+        }
+        else
+        {
+            return PEEPHOLE_CONTINUE;
         }
     });
 
@@ -676,6 +588,205 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
     return false;
 }
 #endif // TARGET_64BIT
+
+//------------------------------------------------------------------------
+// emitIsInstrWritingToReg: checks if the given register is being written to
+//
+// Arguments:
+//    id - instruction of interest
+//    reg - register of interest
+//
+// Return Value:
+//    true if the instruction writes to the given register.
+//    false if it did not.
+//
+// Note: This only handles integer registers. Also, an INS_call will always return true.
+//
+bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
+{
+    // This only handles integer registers for now.
+    assert(genIsValidIntReg(reg));
+
+    instruction ins = id->idIns();
+
+    // These are special cases since they modify one or more register(s) implicitly.
+    switch (ins)
+    {
+        // This is conservative. We assume a call will write to all registers even if it does not.
+        case INS_call:
+            return true;
+
+        // These always write to RAX and RDX.
+        case INS_idiv:
+        case INS_div:
+        case INS_imulEAX:
+        case INS_mulEAX:
+            if ((reg == REG_RAX) || (reg == REG_RDX))
+            {
+                return true;
+            }
+            break;
+
+        // Always writes to RAX.
+        case INS_cmpxchg:
+            if (reg == REG_RAX)
+            {
+                return true;
+            }
+            break;
+
+        case INS_movsb:
+        case INS_movsd:
+#ifdef TARGET_AMD64
+        case INS_movsq:
+#endif // TARGET_AMD64
+            if ((reg == REG_RDI) || (reg == REG_RSI))
+            {
+                return true;
+            }
+            break;
+
+        case INS_stosb:
+        case INS_stosd:
+#ifdef TARGET_AMD64
+        case INS_stosq:
+#endif // TARGET_AMD64
+            if (reg == REG_RDI)
+            {
+                return true;
+            }
+            break;
+
+        case INS_r_movsb:
+        case INS_r_movsd:
+#ifdef TARGET_AMD64
+        case INS_r_movsq:
+#endif // TARGET_AMD64
+            if ((reg == REG_RDI) || (reg == REG_RSI) || (reg == REG_RCX))
+            {
+                return true;
+            }
+            break;
+
+        case INS_r_stosb:
+        case INS_r_stosd:
+#ifdef TARGET_AMD64
+        case INS_r_stosq:
+#endif // TARGET_AMD64
+            if ((reg == REG_RDI) || (reg == REG_RCX))
+            {
+                return true;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+#ifdef TARGET_64BIT
+    // This is a special case for cdq/cwde.
+    switch (ins)
+    {
+        case INS_cwde:
+            if (reg == REG_RAX)
+            {
+                return true;
+            }
+            break;
+
+        case INS_cdq:
+            if (reg == REG_RDX)
+            {
+                return true;
+            }
+            break;
+
+        default:
+            break;
+    }
+#endif // TARGET_64BIT
+
+    switch (id->idInsFmt())
+    {
+        case IF_RWR:
+        case IF_RRW:
+
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RRW_RRW:
+        case IF_RRW_RRW_CNS:
+
+        case IF_RWR_RRD_RRD:
+        case IF_RWR_RRD_RRD_CNS:
+
+        case IF_RWR_RRD_RRD_RRD:
+
+        case IF_RWR_MRD:
+        case IF_RRW_MRD:
+        case IF_RRW_MRD_CNS:
+
+        case IF_RWR_RRD_MRD:
+        case IF_RWR_MRD_CNS:
+        case IF_RWR_RRD_MRD_CNS:
+        case IF_RWR_RRD_MRD_RRD:
+        case IF_RWR_MRD_OFF:
+
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RRW_SRD_CNS:
+
+        case IF_RWR_RRD_SRD:
+        case IF_RWR_SRD_CNS:
+        case IF_RWR_RRD_SRD_CNS:
+        case IF_RWR_RRD_SRD_RRD:
+
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RRW_ARD_CNS:
+
+        case IF_RWR_RRD_ARD:
+        case IF_RWR_ARD_CNS:
+        case IF_RWR_ARD_RRD:
+        case IF_RWR_RRD_ARD_CNS:
+        case IF_RWR_RRD_ARD_RRD:
+        {
+            if (id->idReg1() != reg)
+            {
+                switch (id->idInsFmt())
+                {
+                    // Handles instructions who write to two registers.
+                    case IF_RRW_RRW:
+                    case IF_RRW_RRW_CNS:
+                    {
+                        if (id->idReg2() == reg)
+                        {
+                            return true;
+                        }
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+
+    return false;
+}
 
 //------------------------------------------------------------------------
 // AreFlagsSetToZeroCmp: Checks if the previous instruction set the SZ, and optionally OC, flags to
@@ -971,6 +1082,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 
 #define DEFAULT_BYTE_EVEX_PREFIX_MASK 0xFFFFFFFF00000000ULL
 #define LBIT_IN_BYTE_EVEX_PREFIX 0x0000002000000000ULL
+#define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
 
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX perfix with only LL' bits set.
@@ -996,11 +1108,15 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
 
     code |= DEFAULT_BYTE_EVEX_PREFIX;
 
-    // TODO-XArch-AVX512: Add EA_64BYTE once ZMM is supported
     if (attr == EA_32BYTE)
     {
         // Set L bit to 1 in case of instructions that operate on 256-bits.
         code |= LBIT_IN_BYTE_EVEX_PREFIX;
+    }
+    else if (attr == EA_64BYTE)
+    {
+        // Set L' bits to 11 in case of instructions that operate on 512-bits.
+        code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
     }
     return code;
 }
@@ -3729,8 +3845,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         // BT supports 16 bit operands and this code doesn't handle the necessary 66 prefix.
         assert(ins != INS_bt);
 
-        assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)    // Only for x64
-               || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) // only for x64
+        assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)                               // Only for x64
+               || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
                || (ins == INS_movzx) || (ins == INS_movsx)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins));
@@ -5727,7 +5843,13 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movaps:
         case INS_movd:
         case INS_movdqa:
+        case INS_movdqa32:
+        case INS_movdqa64:
         case INS_movdqu:
+        case INS_movdqu8:
+        case INS_movdqu16:
+        case INS_movdqu32:
+        case INS_movdqu64:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movsx:
@@ -5811,8 +5933,23 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         case INS_movupd:
         case INS_movups:
         {
-            // non EA_32BYTE moves clear the upper bits under VEX encoding
-            hasSideEffect = UseVEXEncoding() && (size != EA_32BYTE);
+            // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
+            // non EA_32BYTE and EA_64BYTE moves clear the upper bits under VEX and EVEX encoding respectively.
+            if (UseVEXEncoding())
+            {
+                if (UseEvexEncoding())
+                {
+                    hasSideEffect = (size != EA_64BYTE);
+                }
+                else
+                {
+                    hasSideEffect = (size != EA_32BYTE);
+                }
+            }
+            else
+            {
+                hasSideEffect = false;
+            }
             break;
         }
 
@@ -5844,6 +5981,20 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         {
             // Clears the upper bits
             hasSideEffect = true;
+            break;
+        }
+
+        case INS_movdqa32:
+        case INS_movdqa64:
+        case INS_movdqu8:
+        case INS_movdqu16:
+        case INS_movdqu32:
+        case INS_movdqu64:
+        {
+            // These EVEX instructions merges/masks based on k-register
+            // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
+            assert(UseEvexEncoding());
+            hasSideEffect = (size != EA_64BYTE);
             break;
         }
 
@@ -6036,7 +6187,13 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         case INS_movapd:
         case INS_movaps:
         case INS_movdqa:
+        case INS_movdqa32:
+        case INS_movdqa64:
         case INS_movdqu:
+        case INS_movdqu8:
+        case INS_movdqu16:
+        case INS_movdqu32:
+        case INS_movdqu64:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movupd:
@@ -6075,7 +6232,7 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
 
     emitAttr size = EA_SIZE(attr);
 
-    assert(size <= EA_32BYTE);
+    assert(size <= EA_64BYTE);
     noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));
 
     insFormat fmt = emitInsModeFormat(ins, IF_RRD_RRD);
@@ -6118,7 +6275,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
 
     emitAttr size = EA_SIZE(attr);
 
-    assert(size <= EA_32BYTE);
+    assert(size <= EA_64BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
 
     /* Special case: "XCHG" uses a different format */
@@ -6926,7 +7083,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
 
     emitAttr size = EA_SIZE(attr);
 
-    assert(size <= EA_32BYTE);
+    assert(size <= EA_64BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
     UNATIVE_OFFSET sz;
@@ -7665,7 +7822,7 @@ void emitter::emitIns_ARX_R(
         fmt = emitInsModeFormat(ins, IF_ARD_RRD);
 
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
-        assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_32BYTE));
+        assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE));
 
         id->idReg1(reg);
     }
@@ -9464,6 +9621,9 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
 
     switch (EA_SIZE(attr))
     {
+        case EA_64BYTE:
+            return emitZMMregName(reg);
+
         case EA_32BYTE:
             return emitYMMregName(reg);
 
@@ -9652,6 +9812,24 @@ const char* emitter::emitYMMregName(unsigned reg)
 {
     static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, sname) "y" sname,
+#include "register.h"
+    };
+
+    assert(reg < REG_COUNT);
+    assert(reg < ArrLen(regNames));
+
+    return regNames[reg];
+}
+
+/*****************************************************************************
+ *
+ *  Return a string that represents the given ZMM register.
+ */
+
+const char* emitter::emitZMMregName(unsigned reg)
+{
+    static const char* const regNames[] = {
+#define REGDEF(name, rnum, mask, sname) "z" sname,
 #include "register.h"
     };
 
@@ -10887,13 +11065,21 @@ void emitter::emitDispIns(
         }
 
         case IF_RWR_RRD_RRD_CNS:
-            assert(IsVexEncodedInstruction(ins));
+            assert(IsVexOrEvexEncodedInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins));
             printf("%s, ", emitRegName(id->idReg1(), attr));
             printf("%s, ", emitRegName(id->idReg2(), attr));
 
             switch (ins)
             {
+                case INS_vinsertf64x4:
+                case INS_vinsertf32x8:
+                case INS_vinserti64x4:
+                case INS_vinserti32x8:
+                {
+                    attr = EA_32BYTE;
+                    break;
+                }
                 case INS_vinsertf128:
                 case INS_vinserti128:
                 {
@@ -17205,7 +17391,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movdqa:
+        case INS_movdqa32:
+        case INS_movdqa64:
         case INS_movdqu:
+        case INS_movdqu8:
+        case INS_movdqu16:
+        case INS_movdqu32:
+        case INS_movdqu64:
         case INS_movaps:
         case INS_movups:
         case INS_movapd:
@@ -17609,6 +17801,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vextracti128:
         case INS_vinsertf128:
         case INS_vinserti128:
+        case INS_vinsertf64x4:
+        case INS_vinserti64x4:
+        case INS_vinsertf32x8:
+        case INS_vinserti32x8:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
             break;
