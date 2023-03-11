@@ -1,2 +1,0 @@
-# IDE0060: Remove unused parameter
-dotnet_diagnostic.IDE0060.severity = silent

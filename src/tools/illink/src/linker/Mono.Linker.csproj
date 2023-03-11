@@ -21,6 +21,7 @@
     <UseAppHost>false</UseAppHost>
     <NoWarn>$(NoWarn);NU5131</NoWarn>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
+    <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>
 
   <!-- The default pack logic will include the implementation assembly in lib.
