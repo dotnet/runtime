@@ -50,8 +50,10 @@
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
       - $(EmccInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 16777216 or size of the DLLs, whichever is larger.
-                                              Corresponds to `INITIAL_MEMORY` arg for emcc.
+                                              Corresponds to `-s INITIAL_MEMORY=...` emcc arg.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
+      - $(EmccStackSize)                    - Stack size. Default value: 5MB.
+                                              Corresponds to `-s STACK_SIZE=...` emcc arg.
 
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Build`.

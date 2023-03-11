@@ -1916,7 +1916,7 @@ namespace System
             nuint offset = 0;
             nuint lengthToExamine = (uint)sourceSpan.Length;
 
-            ref ushort source = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(sourceSpan));
+            ref char source = ref MemoryMarshal.GetReference(sourceSpan);
 
             Vector128<ushort> v1 = Vector128.Create((ushort)c);
             Vector128<ushort> v2 = Vector128.Create((ushort)c2);
@@ -1947,7 +1947,7 @@ namespace System
 
             while (offset < lengthToExamine)
             {
-                char curr = (char)Unsafe.Add(ref source, offset);
+                char curr = Unsafe.Add(ref source, offset);
                 if (curr == c || curr == c2 || curr == c3)
                 {
                     sepListBuilder.Append((int)offset);

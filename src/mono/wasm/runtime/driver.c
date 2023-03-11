@@ -1401,3 +1401,15 @@ EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_full_name (MonoMethod *me
 EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method) {
 	return mono_method_get_name(method);
 }
+
+EMSCRIPTEN_KEEPALIVE float mono_wasm_get_f32_unaligned (const float *src) {
+	return *src;
+}
+
+EMSCRIPTEN_KEEPALIVE double mono_wasm_get_f64_unaligned (const double *src) {
+	return *src;
+}
+
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_get_i32_unaligned (const int32_t *src) {
+	return *src;
+}

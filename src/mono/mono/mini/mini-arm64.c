@@ -360,17 +360,26 @@ mono_arch_finish_init (void)
 static guint8*
 emit_imm (guint8 *code, int dreg, int imm)
 {
-	// FIXME: Optimize this
 	if (imm < 0) {
-		gint64 limm = imm;
+		int limm = imm;
+		int himm = (limm >> 16) & 0xffff;
 		arm_movnx (code, dreg, (~limm) & 0xffff, 0);
-		arm_movkx (code, dreg, (limm >> 16) & 0xffff, 16);
-	} else {
-		arm_movzx (code, dreg, imm & 0xffff, 0);
-		if (imm >> 16)
-			arm_movkx (code, dreg, (imm >> 16) & 0xffff, 16);
-	}
+		if (himm != 0xffff)
+			arm_movkx (code, dreg, himm, 16);
 
+	} else {
+		int low = imm & 0xffff;
+		int hi = (imm >> 16) & 0xffff;
+
+		if (low == 0) {
+			arm_movzx (code, dreg, hi, 16);
+		} else if (hi == 0) {
+			arm_movzx (code, dreg, low, 0);
+		} else {
+			arm_movzx (code, dreg, low, 0);
+			arm_movkx (code, dreg, hi, 16);
+		}
+	}
 	return code;
 }
 
@@ -378,15 +387,24 @@ emit_imm (guint8 *code, int dreg, int imm)
 static guint8*
 emit_imm64 (guint8 *code, int dreg, guint64 imm)
 {
-	// FIXME: Optimize this
-	arm_movzx (code, dreg, imm & 0xffff, 0);
-	if ((imm >> 16) & 0xffff)
-		arm_movkx (code, dreg, (imm >> 16) & 0xffff, 16);
-	if ((imm >> 32) & 0xffff)
-		arm_movkx (code, dreg, (imm >> 32) & 0xffff, 32);
-	if ((imm >> 48) & 0xffff)
-		arm_movkx (code, dreg, (imm >> 48) & 0xffff, 48);
+	if (imm == 0) {
+		arm_movzx (code, dreg, 0, 0);
+	} else {
+		gboolean is_inited = FALSE;
 
+		for (int idx = 0; idx < 64; idx += 16) {
+			int w = (imm >> idx) & 0xffff;
+
+			if (w) {
+				if (is_inited) {
+					arm_movkx (code, dreg, w, idx);
+				} else {
+					arm_movzx (code, dreg, w, idx);
+					is_inited = TRUE;
+				}
+			}
+		}
+	}
 	return code;
 }
 
