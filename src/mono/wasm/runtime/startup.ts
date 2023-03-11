@@ -102,7 +102,7 @@ function instantiateWasm(
     // this is called so early that even Module exports like addRunDependency don't exist yet
 
     if (!Module.configSrc && !Module.config && !userInstantiateWasm) {
-        Module.print("MONO_WASM: configSrc nor config was specified");
+        Module.out("MONO_WASM: configSrc nor config was specified");
     }
     normalizeConfig();
 
@@ -420,10 +420,10 @@ function _print_error(message: string, err: any): void {
     if (err.silent) {
         return;
     }
-    Module.printErr(`${message}: ${JSON.stringify(err)}`);
+    Module.err(`${message}: ${JSON.stringify(err)}`);
     if (err.stack) {
-        Module.printErr("MONO_WASM: Stacktrace: \n");
-        Module.printErr(err.stack);
+        Module.err("MONO_WASM: Stacktrace: \n");
+        Module.err(err.stack);
     }
 }
 

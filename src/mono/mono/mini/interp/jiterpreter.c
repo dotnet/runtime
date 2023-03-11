@@ -1281,6 +1281,31 @@ mono_jiterp_get_member_offset (int member) {
 	}
 }
 
+#define JITERP_NUMBER_MODE_U32 0
+#define JITERP_NUMBER_MODE_I32 1
+#define JITERP_NUMBER_MODE_F32 2
+#define JITERP_NUMBER_MODE_F64 3
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
+	switch (mode) {
+		case JITERP_NUMBER_MODE_U32:
+			*((uint32_t *)dest) = (uint32_t)value;
+			return;
+		case JITERP_NUMBER_MODE_I32:
+			*((int32_t *)dest) = (int32_t)value;
+			return;
+		case JITERP_NUMBER_MODE_F32:
+			*((float *)dest) = (float)value;
+			return;
+		case JITERP_NUMBER_MODE_F64:
+			*((double *)dest) = value;
+			return;
+		default:
+			g_assert_not_reached();
+	}
+}
+
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
 #endif // HOST_BROWSER

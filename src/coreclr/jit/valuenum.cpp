@@ -9989,6 +9989,17 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 //
 static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq)
 {
+    VNFuncApp funcApp;
+    if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
+    {
+        FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
+        if (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic)
+        {
+            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[2]);
+            *pFseq      = fseq;
+            return true;
+        }
+    }
     ssize_t val = 0;
 
     // Special case for NativeAOT: ADD(ICON_STATIC, CNS_INT) where CNS_INT has field sequence corresponding to field's
@@ -10072,7 +10083,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   byteOffset = 0;
     FieldSeq* fieldSeq   = nullptr;
-    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
@@ -10149,6 +10160,20 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                     {
                         READ_VALUE(double);
                         tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(val));
+                        return true;
+                    }
+                    case TYP_REF:
+                    {
+                        READ_VALUE(ssize_t);
+                        if (val == 0)
+                        {
+                            tree->gtVNPair.SetBoth(vnStore->VNForNull());
+                        }
+                        else
+                        {
+                            tree->gtVNPair.SetBoth(vnStore->VNForHandle(val, GTF_ICON_OBJ_HDL));
+                            setMethodHasFrozenObjects();
+                        }
                         return true;
                     }
 #if defined(FEATURE_SIMD)
@@ -10544,6 +10569,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     tree->gtVNPair = vnStore->VNPairForLoad(lclVNPair, lclSize, tree->TypeGet(), offset, loadSize);
                 }
+                else if (tree->OperIs(GT_IND, GT_BLK, GT_OBJ) && fgValueNumberConstLoad(tree->AsIndir()))
+                {
+                    // VN is assigned inside fgValueNumberConstLoad
+                }
                 else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
                 {
                     fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
@@ -10551,10 +10580,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     // Note VNF_PtrToStatic statics are currently always "simple".
                     fgValueNumberFieldLoad(tree, /* baseAddr */ nullptr, fldSeq, offset);
-                }
-                else if (tree->OperIs(GT_IND, GT_BLK, GT_OBJ) && fgValueNumberConstLoad(tree->AsIndir()))
-                {
-                    // VN is assigned inside fgValueNumberConstLoad
                 }
                 else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToArrElem))
                 {
