@@ -105,6 +105,12 @@ public class TestSummary
     private readonly List<TestResult> _testResults = new();
     private DateTime _testRunStart = DateTime.Now;
 
+    // XUNITLOGCHECKER: Add a function here to write down the constant metrics
+    // to the temp log:
+    // - Assembly Name
+    // - Run Date
+    // - Run Time
+
     public void ReportPassedTest(string name,
                                  string containingTypeName,
                                  string methodName,

@@ -125,6 +125,9 @@ public class XUnitLogChecker
     //     if (args.Length > 2)
     //     {
     //         string dumpPath = args[2];
+    //         // XUNITLOGCHECKER: Use the given dumpPath to find all core dumps
+    //         // after this work item's start date/time. Then, iterate them and
+    //         // print the stack traces accordingly.
 
     //         if (File.Exists(dumpPath))
     //         {
@@ -221,6 +224,10 @@ public class XUnitLogChecker
                         inOutput = true;
                     else if (tagText.Equals("CDATA") && !inCData)
                         inCData = true;
+
+                    // XUNITLOGCHECKER: Add a special case for the initial tag,
+                    // containing the initial metrics. Then, save the start date/time
+                    // to be used later when searching for the core dumps.
 
                     tags.Push(tagText);
                     continue;

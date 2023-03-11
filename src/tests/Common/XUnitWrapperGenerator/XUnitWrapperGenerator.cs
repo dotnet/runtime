@@ -172,6 +172,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
         builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
         builder.AppendLine("statsCsvSw.WriteLine($\"{TestCount.Count},0,0,0\");");
+        // XUNITLOGCHECKER: Add the stats header to the tempLogSw here.
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
@@ -206,6 +207,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
 
             testExecutorBuilder.AppendLine("}");
+            // XUNITLOGCHECKER: Close the stats tag opened at the beginning of the temp log here.
         }
 
         // Closing the 'using' statements that stream the temporary files.
