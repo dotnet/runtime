@@ -8950,6 +8950,16 @@ public:
         Memcpy  // Copying memory from src to dst
     };
 
+    //------------------------------------------------------------------------
+    // getUnrollThreshold: Calculates the unrolling threshold for the given operation
+    //
+    // Arguments:
+    //    type       - kind of the operation (memset/memcpy)
+    //    canUseSimd - whether it is allowed to use SIMD or not
+    //
+    // Return Value:
+    //    The unrolling threshold for the given operation in bytes
+    //
     unsigned int getUnrollThreshold(UnrollKind type, bool canUseSimd = true)
     {
         unsigned threshold = TARGET_POINTER_SIZE;

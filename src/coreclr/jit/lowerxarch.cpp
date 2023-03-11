@@ -358,6 +358,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                         }
                         else if (size > comp->getUnrollThreshold(Compiler::UnrollKind::Memset, /*canUseSimd*/ false))
                         {
+                            // It turns out we can't use SIMD so the default threshold is too big
                             goto TOO_BIG_TO_UNROLL;
                         }
                     }
