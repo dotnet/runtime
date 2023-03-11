@@ -505,7 +505,7 @@ async function instantiate_wasm_module(
 
                 // .grow() takes a delta compared to the previous size
                 wasmMemory.grow((memorySize! - wasmMemory.buffer.byteLength + 65535) >>> 16);
-                runtimeHelpers.updateGlobalBufferAndViews(wasmMemory.buffer);
+                runtimeHelpers.updateMemoryViews();
             } catch (err) {
                 console.warn("MONO_WASM: failed to resize memory for the snapshot", err);
                 runtimeHelpers.loadedMemorySnapshot = false;
