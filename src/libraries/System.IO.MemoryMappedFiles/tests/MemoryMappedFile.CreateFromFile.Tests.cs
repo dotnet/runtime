@@ -737,6 +737,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83197", TestPlatforms.Browser)]
         public void LeaveOpenRespected_OutstandingViews(bool leaveOpen)
         {
             const int Capacity = 4096;

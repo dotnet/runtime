@@ -32,7 +32,7 @@ __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWo
 __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
 __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
 ` : ''}
-let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
+let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateMemoryViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = __requirePromise;
 }
@@ -40,7 +40,7 @@ let __dotnet_exportedAPI = __initializeImportsAndExports(
     { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_imports: IMPORTS },
     __dotnet_replacements, __callbackAPI);
-updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
+updateMemoryViews = __dotnet_replacements.updateMemoryViews;
 fetch = __dotnet_replacements.fetch;
 _scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
 if (ENVIRONMENT_IS_NODE) {
@@ -97,6 +97,8 @@ let linked_functions = [
     "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
+    
+    "icudt68_dat",
 ];
 
 if (monoWasmThreads) {

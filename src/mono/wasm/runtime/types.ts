@@ -230,7 +230,7 @@ export type RuntimeHelpers = {
     loadedFiles: string[],
     preferredIcuAsset: string | null,
     timezone: string | null,
-    updateGlobalBufferAndViews: (buffer: ArrayBufferLike) => void
+    updateMemoryViews: () => void
 }
 
 export type GlobalizationMode =
@@ -368,7 +368,7 @@ export type EarlyReplacements = {
     require: any,
     requirePromise: Promise<Function>,
     noExitRuntime: boolean,
-    updateGlobalBufferAndViews: Function,
+    updateMemoryViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
     scriptUrl: string
