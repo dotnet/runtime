@@ -273,18 +273,111 @@ namespace System
         /// </remarks>
         public void Shuffle<T>(Span<T> values)
         {
-            int n = values.Length;
-
-            for (int i = 0; i < n - 1; i++)
+            var chooser = new IncreasingUniform(this);
+            for (int i = 1; i < values.Length; i++)
             {
-                int j = Next(i, n);
+                int index = chooser.NextIndex();
+                (values[i], values[index]) = (values[index], values[i]);
+            }
+        }
 
-                if (j != i)
+        private ref struct IncreasingUniform
+        {
+            private readonly Random _random;
+            private int _n;
+            private int _chunk;
+            private int _chunkRemaining;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public IncreasingUniform(Random random)
+            {
+            _random = random;
+            _chunk = 0;
+            _n = 1;
+            _chunkRemaining = 0;
+            }
+
+            /// <summary>
+            /// Increase n by one and then return a random positive integer less than the new n
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int NextIndex()
+            {
+                int nextN = _n + 1;
+                if (_chunkRemaining == 0)
                 {
-                    T temp = values[i];
-                    values[i] = values[j];
-                    values[j] = temp;
+                    (int bound, int remaining) = CalculateBound(nextN);
+                    _chunkRemaining = remaining - 1;
+                    _chunk = _random.Next(bound);
                 }
+                else
+                {
+                    _chunkRemaining -= 1;
+                }
+
+                int result;
+                if (_chunkRemaining == 0)
+                {
+                    result = _chunk;
+                }
+                else
+                {
+                    result = (_chunk % nextN);
+                    _chunk /= nextN;
+                }
+
+
+                _n = nextN;
+                return result;
+            }
+
+            /// <summary>
+            /// Calculate the highest (x,k) such that x = n*n+1*..*n+k-1 where x is a 32 bit integer.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static (int, int) CalculateBound(int n)
+            {
+                int count;
+                switch (n)
+                {
+                    case 2:
+                        return (479001600, 11); //12 factorial
+                    case 13:
+                        return (253955520, 7); //19 factorial / 12 factorial
+                    case < 34:
+                        count = 6;
+                        break;
+                    case < 72:
+                        count = 5;
+                        break;
+                    case < 214:
+                        count = 4;
+                        break;
+                    case < 1290:
+                        count = 3;
+                        break;
+                    case < 46341:
+                        count = 2;
+                        break;
+                    default:
+                        return (n, 1);
+                }
+
+                int product = GetProduct(n, count - 1);
+                return (product, count);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static int GetProduct(int n, int multiplications)
+            {
+                int product = n;
+                while (multiplications > 0)
+                {
+                    product *= (n + multiplications);
+                    multiplications--;
+                }
+
+                return product;
             }
         }
 

@@ -713,9 +713,9 @@ namespace System.Tests
             Random random = new Random(0x70636A61);
             int[] items = new int[] { 1, 2, 3, 4 };
             random.Shuffle(items);
-            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 3, 4, 2 }, items);
             random.Shuffle(items);
-            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 3, 1, 2, 4 }, items);
 
             if (emptyShuffle)
             {
@@ -724,7 +724,7 @@ namespace System.Tests
             }
 
             random.Shuffle(items);
-            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 1, 4, 3 }, items);
         }
 
         [Fact]
@@ -742,9 +742,9 @@ namespace System.Tests
             Random random = new Random(0x70636A61);
             Span<int> items = new int[] { 1, 2, 3, 4 };
             random.Shuffle(items);
-            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 3, 4, 2 }, items);
             random.Shuffle(items);
-            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 3, 1, 2, 4 }, items);
 
             if (emptyShuffle)
             {
@@ -753,7 +753,41 @@ namespace System.Tests
             }
 
             random.Shuffle(items);
-            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 1, 4, 3 }, items);
+        }
+
+        [Fact]
+        public static void Shuffle_Array_Fairness()
+        {
+            // Test that repeatedly shuffling an array puts each value in each position a roughly equal number of times.
+            // This does not prove that the shuffle is fair but will at least fail if the shuffle is obviously unfair
+            const int runs = 10000;
+            const int len = 50;
+            int[,] counts = new int[len, len];
+            var rng = new Random(123);
+            for (int i = 0; i < runs; i++)
+            {
+                int[]? array = new int[len];
+                for (int index = 0; index < len; index++)
+                {
+                    // Fill the array with the numbers 0..len
+                    array[index] = index;
+                }
+
+                rng.Shuffle(array);
+
+                for (int j = 0; j < len; j++)
+                {
+                    int index = array[j];
+                    counts[j,index] += 1;
+                }
+            }
+    
+            const int expected = runs / len;
+            foreach (int count in counts)
+            {
+                Assert.InRange(count, expected / 10 * 7, expected * 13 / 10);
+            }
         }
 
         [Fact]
