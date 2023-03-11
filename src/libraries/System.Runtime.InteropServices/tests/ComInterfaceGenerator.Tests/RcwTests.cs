@@ -37,9 +37,7 @@ public static unsafe partial class Native
 
 public class RcwTests
 {
-#pragma warning disable xUnit1004 // Test methods should not be skipped
     [ActiveIssue("https://github.com/dotnet/runtime/issues/83289")]
-#pragma warning restore xUnit1004 // Test methods should not be skipped
     public unsafe void CallRcwFromGeneratedComInterface()
     {
         var ptr = Native.NewNativeObject(); // new_native_object
