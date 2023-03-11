@@ -3648,7 +3648,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	MonoInst *ptr;
 	int dreg;
 	MonoInst *obj, *info_ins;
-	guint8 **code_slot;
 
 	if (is_virtual && !cfg->llvm_only) {
 		MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
@@ -3704,12 +3703,12 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 
 	/* Set method field */
 	if (target_method_context_used || invoke_context_used) {
-		//We copy from the delegate trampoline info as it's faster than a rgctx fetch
+		// We copy from the delegate trampoline info as it's faster than a rgctx fetch
 		dreg = alloc_preg (cfg);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method));
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), dreg);
 	} else {
-		//This is emitted as a constant store for the non-shared case.
+		// This is emitted as a constant store for the non-shared case.
 		MonoInst *method_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
 	}
@@ -3722,23 +3721,10 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	if (!method->dynamic) {
 		MonoInst *code_slot_ins;
 
-		if (target_method_context_used) {
+		if (target_method_context_used)
 			code_slot_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD_DELEGATE_CODE);
-		} else {
-			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
-
-			jit_mm_lock (jit_mm);
-			if (!jit_mm->method_code_hash)
-				jit_mm->method_code_hash = g_hash_table_new (NULL, NULL);
-			code_slot = (guint8 **)g_hash_table_lookup (jit_mm->method_code_hash, method);
-			if (!code_slot) {
-				code_slot = (guint8 **)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (gpointer));
-				g_hash_table_insert (jit_mm->method_code_hash, method, code_slot);
-			}
-			jit_mm_unlock (jit_mm);
-
+		else
 			code_slot_ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_METHOD_CODE_SLOT, method);
-		}
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);
 	}
 
