@@ -8950,22 +8950,34 @@ public:
         Memcpy  // Copying memory from src to dst
     };
 
-    unsigned int getUnrollThreshold(UnrollKind type)
+    unsigned int getUnrollThreshold(UnrollKind type, bool canUseSimd = true)
     {
         unsigned threshold = TARGET_POINTER_SIZE;
 
 #if defined(FEATURE_SIMD)
-        threshold = maxSIMDStructBytes();
+        if (canUseSimd)
+        {
+            threshold = maxSIMDStructBytes();
 #if defined(TARGET_ARM64)
-        // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
-        //
-        //   ldp q0, q1, [x1]
-        //   stp q0, q1, [x0]
-        //
-        threshold *= 2;
+            // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
+            //
+            //   ldp q0, q1, [x1]
+            //   stp q0, q1, [x0]
+            //
+            threshold *= 2;
 #elif defined(TARGET_XARCH)
-        // Ignore AVX-512 for now
-        threshold = max(threshold, YMM_REGSIZE_BYTES);
+            // Ignore AVX-512 for now
+            threshold = max(threshold, YMM_REGSIZE_BYTES);
+#endif
+        }
+#if defined(TARGET_XARCH)
+        else
+        {
+            // Compatibility with previous logic: we used to allow memset:128/memcpy:64
+            // on AMD64 (and 64/32 on x86) for cases where we don't use SIMD
+            // see https://github.com/dotnet/runtime/issues/83297
+            threshold *= 2;
+        }
 #endif
 #endif
 
