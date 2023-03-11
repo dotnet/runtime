@@ -892,7 +892,7 @@ private:
                 defFlag = GTF_VAR_DEF;
 
                 if ((val.Offset() != 0) ||
-                    (varDsc->lvExactSize != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
+                    (varDsc->lvExactSize() != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }

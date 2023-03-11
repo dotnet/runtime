@@ -8366,7 +8366,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
                 // to turn the tree type into "CorInfoType".
                 if ((tree->TypeGet() == simdBaseType) && ((fieldOffset % baseTypeSize) == 0))
                 {
-                    *simdSizeOut        = varDsc->lvExactSize;
+                    *simdSizeOut        = varDsc->lvExactSize();
                     *simdBaseJitTypeOut = simdBaseJitType;
                     *indexOut           = fieldOffset / baseTypeSize;
 
