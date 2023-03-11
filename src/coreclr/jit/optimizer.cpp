@@ -23,10 +23,11 @@ void Compiler::optInit()
     loopAlignCandidates = 0;
 
     /* Initialize the # of tracked loops to 0 */
-    optLoopCount      = 0;
-    optLoopTable      = nullptr;
-    optLoopTableValid = false;
-    optCurLoopEpoch   = 0;
+    optLoopCount              = 0;
+    optLoopTable              = nullptr;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
+    optCurLoopEpoch           = 0;
 
 #ifdef DEBUG
     loopsAligned = 0;
@@ -2701,6 +2702,9 @@ NO_MORE_LOOPS:
         // The predecessors were maintained in fgCreateLoopPreHeader; don't rebuild them.
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
+
+    // Starting now, we require all loops to have pre-headers.
+    optLoopsRequirePreHeaders = true;
 
 #ifdef DEBUG
     if (verbose && (optLoopCount > 0))
@@ -5485,8 +5489,9 @@ void Compiler::optResetLoopInfo()
     // TODO: the loop table is always allocated as the same (maximum) size, so this is wasteful.
     // We could zero it out (possibly only in DEBUG) to be paranoid, but there's no reason to
     // force it to be re-allocated.
-    optLoopTable      = nullptr;
-    optLoopTableValid = false;
+    optLoopTable              = nullptr;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
 
     for (BasicBlock* const block : Blocks())
     {

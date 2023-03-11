@@ -1983,16 +1983,14 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // We cannot compact a block that participates in loop
-    // alignment.
+    // We cannot compact a block that participates in loop alignment.
     //
     if ((bNext->countOfInEdges() > 1) && bNext->isLoopAlign())
     {
         return false;
     }
 
-    // If we are trying to compact blocks from different loops
-    // that don't do it.
+    // Don't compact blocks from different loops.
     //
     if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (bNext->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
         (block->bbNatLoopNum != bNext->bbNatLoopNum))
@@ -2060,6 +2058,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
         // `block` can no longer be a loop pre-header (if it was before).
         //
+        assert(!optLoopsRequirePreHeaders || ((block->bbFlags & BBF_LOOP_PREHEADER) == 0));
         block->bbFlags &= ~BBF_LOOP_PREHEADER;
 
         // Retarget all the other edges incident on bNext. Do this
@@ -6027,8 +6026,9 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
-    fgDomsComputed    = false;
-    optLoopTableValid = false;
+    fgDomsComputed            = false;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
