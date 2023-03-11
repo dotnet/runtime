@@ -3704,11 +3704,11 @@ bool Compiler::optComputeLoopRep(int        constInit,
     // Initialize loopCount to zero.
     loopCount = 0;
 
-    // If dupCond is true then the loop head contains a test which skips
+    // If dupCond is true then the loop initialization block contains a test which skips
     // this loop, if the constInit does not pass the loop test.
     // Such a loop can execute zero times.
-    // If dupCond is false then we have a true do-while loop which we
-    // always execute the loop once before performing the loop test
+    // If dupCond is false then we have a true do-while loop where we
+    // always execute the loop once before performing the loop test.
     if (!dupCond)
     {
         loopCount += 1;
@@ -4528,14 +4528,19 @@ PhaseStatus Compiler::optUnrollLoops()
                     fgRemoveAllRefPreds(succ, block);
                 }
 
-                block->bbStmtList = nullptr;
-                block->bbJumpKind = BBJ_NONE;
-                block->bbFlags &= ~BBF_LOOP_HEAD;
+                block->bbStmtList   = nullptr;
+                block->bbJumpKind   = BBJ_NONE;
                 block->bbJumpDest   = nullptr;
                 block->bbNatLoopNum = newLoopNum;
+
+                // Remove a few unnecessary flags (this list is not comprehensive).
+                block->bbFlags &= ~(BBF_LOOP_HEAD | BBF_BACKWARD_JUMP_SOURCE | BBF_BACKWARD_JUMP_TARGET |
+                                    BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_HAS_NEWOBJ);
+
+                JITDUMP("Scrubbed old loop body block " FMT_BB "\n", block->bbNum);
             }
 
-            // The old loop blocks will form an emtpy linear chain.
+            // The old loop blocks will form an empty linear chain.
             // Add back a suitable pred list links.
             //
             BasicBlock* oldLoopPred = head;
@@ -4555,24 +4560,39 @@ PhaseStatus Compiler::optUnrollLoops()
 
             // Now fix up the exterior flow and pred list entries.
             //
-            // Control will fall through from HEAD to its successor, which is either
-            // the now empty TOP (if totalIter == 0) or the first cloned top.
+            // Control will fall through from the initBlock to its successor, which is either
+            // the pre-header HEAD (if it exists), or the now empty TOP (if totalIter == 0),
+            // or the first cloned top.
             //
-            // If the HEAD is a BBJ_COND drop the condition (and make HEAD a BBJ_NONE block).
+            // If the initBlock is a BBJ_COND drop the condition (and make initBlock a BBJ_NONE block).
             //
-            if (head->bbJumpKind == BBJ_COND)
+            // Also, make sure HEAD is a BBJ_NONE block.
+            //
+            if (initBlock->bbJumpKind == BBJ_COND)
             {
-                testStmt = head->lastStmt();
-                noway_assert(testStmt->GetRootNode()->gtOper == GT_JTRUE);
-                fgRemoveStmt(head, testStmt);
-                fgRemoveRefPred(head->bbJumpDest, head);
-                head->bbJumpKind = BBJ_NONE;
+                assert(dupCond);
+                Statement* initBlockBranchStmt = initBlock->lastStmt();
+                noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
+                fgRemoveStmt(initBlock, initBlockBranchStmt);
+                fgRemoveRefPred(initBlock->bbJumpDest, initBlock);
+                initBlock->bbJumpKind = BBJ_NONE;
             }
             else
             {
                 /* the loop must execute */
+                assert(!dupCond);
                 assert(totalIter > 0);
-                noway_assert(head->bbJumpKind == BBJ_NONE);
+                noway_assert(initBlock->bbJumpKind == BBJ_NONE);
+            }
+
+            // The loop will be removed, so no need to fix up the pre-header.
+            if (loop.lpFlags & LPFLG_HAS_PREHEAD)
+            {
+                assert(head->bbFlags & BBF_LOOP_PREHEADER);
+
+                // For unrolled loops, all the unrolling preconditions require the pre-header block to fall
+                // through into TOP.
+                assert(head->bbJumpKind == BBJ_NONE);
             }
 
             // If we actually unrolled, tail is now reached
