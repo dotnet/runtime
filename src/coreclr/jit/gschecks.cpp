@@ -435,7 +435,7 @@ void Compiler::gsParamsToShadows()
 
 #ifdef FEATURE_SIMD
         shadowVarDsc->lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
-        if (varDsc->lvIsSIMDType())
+        if (varTypeIsSIMD(varDsc))
         {
             CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
             shadowVarDsc->SetSimdBaseJitType(simdBaseJitType);
