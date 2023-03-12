@@ -65,6 +65,11 @@ namespace System.IO.Hashing.Tests
                     "The quick brown fox jumps over the lazy dog",
                     "The quick brown fox jumps over the lazy dog"u8.ToArray(),
                     "39A34F41"),
+                // This test case is  a large array with a length that is not a multiple of 16 bytes to ensure all paths are covered for x86/64 optimizations
+                new TestCase(
+                    "Lorem ipsum 1001",
+                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ac urna vitae nibh sagittis porttitor et vel ante. Ut molestie sit amet velit ac mattis. Sed ullamcorper nunc non neque imperdiet, vehicula bibendum sapien efficitur. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Suspendisse potenti. Duis sem dui, malesuada non pharetra at, feugiat id mi. Nulla facilisi. Fusce a scelerisque magna. Ut leo justo, auctor quis nisi et, sollicitudin pretium odio. Sed eu nibh mollis, pretium lectus nec, posuere nulla. Morbi ac euismod purus. Morbi rhoncus leo est, at volutpat nunc pretium in. Aliquam erat volutpat. Curabitur eu lacus mollis, varius lectus ut, tincidunt eros. Nullam a velit hendrerit, euismod magna id, fringilla sem. Phasellus scelerisque hendrerit est, vel imperdiet enim auctor a. Aenean vel ultricies nunc. Suspendisse ac tincidunt urna. Nulla tempor dolor ut ligula accumsan, tempus auctor massa gravida. Aenean non odio et augue pellena."u8.ToArray(),
+                    "0464ED5F"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new Crc32();

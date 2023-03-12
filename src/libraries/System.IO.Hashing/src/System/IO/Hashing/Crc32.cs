@@ -169,6 +169,16 @@ namespace System.IO.Hashing
 
         private static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
+#if NET7_0_OR_GREATER
+            if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated
+                && System.Runtime.Intrinsics.X86.Sse2.IsSupported
+                && System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported)
+            {
+                crc = UpdateX86(crc, ref source);
+            }
+#endif
+
+            // Process without intrinsics. If intrinsics were used, this processes any remaining bytes.
             ReadOnlySpan<uint> crcLookup = CrcLookup;
             for (int i = 0; i < source.Length; i++)
             {
