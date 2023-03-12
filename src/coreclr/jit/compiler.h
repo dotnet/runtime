@@ -1076,6 +1076,7 @@ public:
         lvStkOffs = offset;
     }
 
+    unsigned lvExactSize_;
     unsigned lvExactSize() const;
     unsigned lvSize() const;
 
