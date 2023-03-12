@@ -2291,14 +2291,17 @@ namespace Internal.JitInterface
 
                 if (isInlineArray)
                 {
-                    Debug.Assert(field.Offset.AsInt == 0);
-                    int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;
-                    int elementLayoutSize = fieldType.GetElementSize().AsInt / PointerSize;
-                    int gcPointersInElement = result;
-                    for (int offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                    if (result > 0)
                     {
-                        Buffer.MemoryCopy(gcPtrs, gcPtrs + offset, elementLayoutSize, elementLayoutSize);
-                        result += gcPointersInElement;
+                        Debug.Assert(field.Offset.AsInt == 0);
+                        int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;
+                        int elementLayoutSize = fieldType.GetElementSize().AsInt / PointerSize;
+                        int gcPointersInElement = result;
+                        for (int offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                        {
+                            Buffer.MemoryCopy(gcPtrs, gcPtrs + offset, elementLayoutSize, elementLayoutSize);
+                            result += gcPointersInElement;
+                        }
                     }
 
                     // inline array has only one element field

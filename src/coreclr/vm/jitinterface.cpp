@@ -2191,14 +2191,17 @@ static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
 
         if (isInlineArray)
         {
-            _ASSERTE(pFD->GetOffset() == 0);
-            DWORD totalLayoutSize = pMT->GetNumInstanceFieldBytes() / TARGET_POINTER_SIZE;
-            DWORD elementLayoutSize = pFD->GetSize() / TARGET_POINTER_SIZE;
-            DWORD gcPointersInElement = result;
-            for (DWORD offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+            if (result > 0)
             {
-                memcpy(gcPtrs + offset, gcPtrs, elementLayoutSize);
-                result += gcPointersInElement;
+                _ASSERTE(pFD->GetOffset() == 0);
+                DWORD totalLayoutSize = pMT->GetNumInstanceFieldBytes() / TARGET_POINTER_SIZE;
+                DWORD elementLayoutSize = pFD->GetSize() / TARGET_POINTER_SIZE;
+                DWORD gcPointersInElement = result;
+                for (DWORD offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                {
+                    memcpy(gcPtrs + offset, gcPtrs, elementLayoutSize);
+                    result += gcPointersInElement;
+                }
             }
 
             // inline array has only one element field
