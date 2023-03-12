@@ -312,8 +312,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
                 fgMorphStmtBlockOps(block, stmt);
                 gtUpdateStmtSideEffects(stmt);
-                gtSetStmtInfo(stmt);
-                fgSetStmtSeq(stmt);
 
                 //
                 // Update preds in all new blocks
