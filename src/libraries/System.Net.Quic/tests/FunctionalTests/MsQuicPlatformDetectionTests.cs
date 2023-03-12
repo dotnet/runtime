@@ -30,7 +30,6 @@ namespace System.Net.Quic.Tests
             Assert.True(QuicConnection.IsSupported);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine314), nameof(PlatformDetection.IsInContainer))]
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task SupportedLinuxPlatformsWithMsQuic_IsSupportedIsTrue()
@@ -54,8 +53,6 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine313), nameof(PlatformDetection.IsInContainer))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine314), nameof(PlatformDetection.IsInContainer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsMariner1), nameof(PlatformDetection.IsInContainer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsCentos7), nameof(PlatformDetection.IsInContainer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82055", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu1804), nameof(PlatformDetection.IsArmProcess), nameof(PlatformDetection.IsInContainer))]

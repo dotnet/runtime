@@ -769,6 +769,9 @@ namespace ILCompiler
             baseMethod = baseMethod.GetTypicalMethodDefinition();
             overridingMethod = overridingMethod.GetTypicalMethodDefinition();
 
+            if (baseMethod == overridingMethod)
+                return;
+
             bool baseMethodTypeIsInterface = baseMethod.OwningType.IsInterface;
             foreach (var requiresAttribute in _requiresAttributeMismatchNameAndId)
             {
@@ -796,8 +799,8 @@ namespace ILCompiler
         {
             bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequire(requiresAttributeName, out _);
             bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequire(requiresAttributeName, out _);
-            bool baseMethodFulfillsRequirement = baseMethod.IsOverrideInRequiresScope(requiresAttributeName);
-            bool overridingMethodFulfillsRequirement = overridingMethod.IsOverrideInRequiresScope(requiresAttributeName);
+            bool baseMethodFulfillsRequirement = baseMethod.IsInRequiresScope(requiresAttributeName);
+            bool overridingMethodFulfillsRequirement = overridingMethod.IsInRequiresScope(requiresAttributeName);
             return (baseMethodCreatesRequirement && !overridingMethodFulfillsRequirement) || (overridingMethodCreatesRequirement && !baseMethodFulfillsRequirement);
         }
 

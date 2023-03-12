@@ -70,7 +70,17 @@ inline bool varTypeIsSIMD(T vt)
 #else
     // Always return false if FEATURE_SIMD is not enabled
     return false;
-#endif // !FEATURE_SIMD
+#endif
+}
+
+template <class T>
+inline bool varTypeIsMask(T vt)
+{
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    return (TypeGet(vt) == TYP_MASK);
+#else // FEATURE_SIMD
+    return false;
+#endif
 }
 
 template <class T>

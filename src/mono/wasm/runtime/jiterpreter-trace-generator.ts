@@ -12,9 +12,10 @@ import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
-    append_memset_dest, append_memmove_dest_src,
-    try_append_memset_fast, try_append_memmove_fast,
-    counters, getMemberOffset, JiterpMember
+    append_memset_dest, append_bailout,
+    append_memmove_dest_src, try_append_memset_fast,
+    try_append_memmove_fast, counters,
+    getMemberOffset, JiterpMember, BailoutReason,
 } from "./jiterpreter-support";
 import {
     sizeOfDataItem,
@@ -28,8 +29,6 @@ import {
     nullCheckCaching, traceBackBranches,
 
     mostRecentOptions,
-
-    BailoutReason,
 
     record_abort,
 } from "./jiterpreter";
@@ -150,29 +149,11 @@ export function generate_wasm_body (
     ip += <any>(OpcodeInfo[MintOpcode.MINT_TIER_ENTER_JITERPRETER][1] * 2);
     let rip = ip;
 
-    // Initialize eip, so that we will never return a 0 displacement
-    // Otherwise we could return 0 in the scenario where none of our blocks executed
-    // (This shouldn't happen though!)
-    builder.ip_const(ip);
-    builder.local("eip", WasmOpcode.set_local);
-
-    // If a method contains backward branches we also need to wrap the whole trace in a loop
-    //  that we can jump to the top of in order to begin executing the trace again
-    // FIXME: It would be much more efficient to use br_table to dispatch to the appropriate
-    //  branch block somehow but the code generation is tough due to WASM's IR
-    if (backwardBranchTable) {
-        builder.block(WasmValtype.void, WasmOpcode.loop);
-    }
-
-    // We wrap all instructions in a 'branch block' that is used
-    //  when performing a branch and will be skipped over if the
-    //  current instruction pointer does not match. This means
-    //  that if ip points to a branch target we don't handle,
-    //  the trace will automatically bail out at the end after
-    //  skipping past all the branch targets
-    builder.block();
+    builder.cfg.entry(ip);
 
     while (ip) {
+        builder.cfg.ip = ip;
+
         if (ip >= endOfBody) {
             record_abort(traceIp, ip, traceName, "end-of-body");
             break;
@@ -181,8 +162,9 @@ export function generate_wasm_body (
         // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
         //  might generate a ton of code and we generate a bit of an epilogue after
         //  we finish
-        const maxModuleSize = 3850;
-        if (builder.size >= maxModuleSize - builder.bytesGeneratedSoFar) {
+        const maxModuleSize = 3850,
+            spaceLeft = maxModuleSize - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
+        if (builder.size >= spaceLeft) {
             // console.log(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
             record_abort(traceIp, ip, traceName, "trace-too-big");
             break;
@@ -203,11 +185,10 @@ export function generate_wasm_body (
         const isBackBranchTarget = builder.options.noExitBackwardBranches &&
             is_backward_branch_target(ip, startOfBody, backwardBranchTable),
             isForwardBranchTarget = builder.branchTargets.has(ip),
-            needsEipCheck = isBackBranchTarget || isForwardBranchTarget ||
+            startBranchBlock = isBackBranchTarget || isForwardBranchTarget ||
                 // If a method contains backward branches, we also need to check eip at the first insn
                 //  because a backward branch might target a point in the middle of the trace
-                (isFirstInstruction && backwardBranchTable),
-            needsFallthroughEipUpdate = needsEipCheck && !isFirstInstruction;
+                (isFirstInstruction && backwardBranchTable);
         let isLowValueOpcode = false,
             skipDregInvalidation = false;
 
@@ -219,7 +200,7 @@ export function generate_wasm_body (
             builder.backBranchOffsets.push(ip);
         }
 
-        if (needsEipCheck) {
+        if (startBranchBlock) {
             // If execution runs past the end of the current branch block, ensure
             //  that the instruction pointer is updated appropriately. This will
             //  also guarantee that the branch target block's comparison will
@@ -227,11 +208,7 @@ export function generate_wasm_body (
             // We make sure above that this isn't done for the start of the trace,
             //  otherwise loops will run forever and never terminate since after
             //  branching to the top of the loop we would blow away eip
-            if (needsFallthroughEipUpdate) {
-                builder.ip_const(rip);
-                builder.local("eip", WasmOpcode.set_local);
-            }
-            append_branch_target_block(builder, ip);
+            append_branch_target_block(builder, ip, isBackBranchTarget);
             inBranchBlock = true;
             firstOpcodeInBlock = true;
             eraseInferredState();
@@ -1218,24 +1195,14 @@ export function generate_wasm_body (
     if (emitPadding)
         builder.appendU8(WasmOpcode.nop);
 
-    // Ensure that if execution runs past the end of our last branch block, we
-    //  update eip appropriately so that we will return the right ip
-    builder.ip_const(rip);
-    builder.local("eip", WasmOpcode.set_local);
-
     // We need to close any open blocks before generating our closing ret,
     //  because wasm would allow branching past the ret otherwise
     while (builder.activeBlocks > 0)
         builder.endBlock();
 
-    // Now we generate a ret at the end of the function body so it's Valid(tm)
-    // When branching is enabled, we will have potentially updated eip due to a
-    //  branch and then executed forward without ever finding it, so we want to
-    //  return the branch target and ensure that the interpreter starts running
-    //  from there.
-    builder.local("eip");
-    builder.appendU8(WasmOpcode.return_);
-    builder.appendU8(WasmOpcode.end);
+    builder.cfg.exitIp = rip;
+
+    // console.log(`estimated size: ${builder.size + builder.cfg.overheadBytes + builder.bytesGeneratedSoFar}`);
 
     return result;
 }
@@ -1260,17 +1227,8 @@ function invalidate_local_range (start: number, bytes: number) {
         invalidate_local(start + i);
 }
 
-function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr) {
-    builder.endBlock();
-    // Create a new branch block that conditionally executes depending on the eip local
-    // FIXME: For methods containing backward branches, we will have one of these compares
-    //  at the top of the trace and pay the cost of it on every entry even though it will
-    //  always pass. If we never generate any backward branches during compilation, we should
-    //  patch it out
-    builder.local("eip");
-    builder.ip_const(ip);
-    builder.appendU8(WasmOpcode.i32_eq);
-    builder.block(WasmValtype.void, WasmOpcode.if_);
+function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr, isBackBranchTarget: boolean) {
+    builder.cfg.startBranchBlock(ip, isBackBranchTarget);
 }
 
 function append_ldloc (builder: WasmBuilder, offset: number, opcode: WasmOpcode) {
@@ -2378,10 +2336,7 @@ function emit_branch (
                     // append_safepoint(builder, ip);
                     if (traceBackBranches)
                         console.log(`performing backward branch to 0x${destination.toString(16)}`);
-                    builder.ip_const(destination);
-                    builder.local("eip", WasmOpcode.set_local);
-                    builder.appendU8(WasmOpcode.br);
-                    builder.appendULeb(1);
+                    builder.cfg.branch(destination, true, false);
                     counters.backBranchesEmitted++;
                     return true;
                 } else {
@@ -2397,10 +2352,7 @@ function emit_branch (
                 //  don't need to wrap things in a block here, we can just exit
                 //  the current branch block after updating eip
                 builder.branchTargets.add(destination);
-                builder.ip_const(destination);
-                builder.local("eip", WasmOpcode.set_local);
-                builder.appendU8(WasmOpcode.br);
-                builder.appendULeb(0);
+                builder.cfg.branch(destination, false, false);
                 return true;
             }
         }
@@ -2470,15 +2422,7 @@ function emit_branch (
             //  we update eip and branch out to the top of the loop block
             if (traceBackBranches)
                 console.log(`performing conditional backward branch to 0x${destination.toString(16)}`);
-            builder.ip_const(destination);
-            builder.local("eip", WasmOpcode.set_local);
-            builder.appendU8(WasmOpcode.br);
-            // break out 3 levels, because the current stack layout is
-            // loop {
-            //   branch target block {
-            //     branch dispatch block {
-            // and we want to target the loop in order to jump to the top of it
-            builder.appendULeb(2);
+            builder.cfg.branch(destination, true, true);
             counters.backBranchesEmitted++;
         } else {
             if (traceBackBranches)
@@ -2493,12 +2437,7 @@ function emit_branch (
             append_safepoint(builder, ip);
         // Branching is enabled, so set eip and exit the current branch block
         builder.branchTargets.add(destination);
-        builder.ip_const(destination);
-        builder.local("eip", WasmOpcode.set_local);
-        builder.appendU8(WasmOpcode.br);
-        // The branch block encloses this tiny branch dispatch block, so break
-        //  out two levels
-        builder.appendULeb(1);
+        builder.cfg.branch(destination, false, true);
     }
 
     builder.endBlock();
@@ -3050,15 +2989,6 @@ function emit_arrayop (builder: WasmBuilder, frame: NativePointer, ip: MintOpcod
         builder.appendMemarg(0, 0);
     }
     return true;
-}
-
-function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
-    builder.ip_const(ip);
-    if (builder.options.countBailouts) {
-        builder.i32_const(reason);
-        builder.callImport("bailout");
-    }
-    builder.appendU8(WasmOpcode.return_);
 }
 
 function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {

@@ -138,6 +138,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83197", TestPlatforms.Browser)]
         public void SetLastWriteTimeTicks()
         {
             string firstFile = GetTestFilePath();
@@ -184,6 +185,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83197", TestPlatforms.Browser)]
         public void SetLastAccessTimeTicks()
         {
             string firstFile = GetTestFilePath();

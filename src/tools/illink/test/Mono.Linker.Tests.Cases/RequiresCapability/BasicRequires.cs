@@ -212,13 +212,37 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class AssemblyFilesOnly
 		{
-			[RequiresAssemblyFiles("--Requires--")]
+			[RequiresAssemblyFiles ("--Requires--")]
 			static void Requires () { }
+
+			[RequiresAssemblyFiles ("--PropertyRequires--")]
+			static int PropertyRequires { get; set; }
+
+			[ExpectedWarning ("IL3002", "--PropertyRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--PropertyRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestProperty ()
+			{
+				var a = PropertyRequires;
+				PropertyRequires = 0;
+			}
+
+			[RequiresAssemblyFiles ("--EventRequires--")]
+			static event EventHandler EventRequires;
+
+			[ExpectedWarning ("IL3002", "--EventRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--EventRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestEvent ()
+			{
+				EventRequires += (object sender, EventArgs e) => throw new NotImplementedException ();
+				EventRequires -= (object sender, EventArgs e) => throw new NotImplementedException ();
+			}
 
 			[ExpectedWarning("IL3002", "--Requires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void Test()
 			{
 				Requires ();
+				TestProperty ();
+				TestEvent ();
 			}
 		}
 

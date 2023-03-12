@@ -91,6 +91,13 @@
   #define REG_FP_LAST              REG_XMM31
   #define FIRST_FP_ARGREG          REG_XMM0
 
+  #define REG_MASK_FIRST           REG_K0
+  #define REG_MASK_LAST            REG_K7
+
+  #define RBM_ALLMASK              RBM_K1
+
+  #define CNT_MASK_REGS            8
+
 #ifdef    UNIX_AMD64_ABI
   #define LAST_FP_ARGREG        REG_XMM7
 #else // !UNIX_AMD64_ABI

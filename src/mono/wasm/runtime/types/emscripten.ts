@@ -26,6 +26,7 @@ export declare interface EmscriptenModule {
     HEAP8: Int8Array,
     HEAP16: Int16Array;
     HEAP32: Int32Array;
+    HEAP64: BigInt64Array;
     HEAPU8: Uint8Array;
     HEAPU16: Uint16Array;
     HEAPU32: Uint32Array;
@@ -37,8 +38,8 @@ export declare interface EmscriptenModule {
     _free(ptr: VoidPtr): void;
 
     // this should match emcc -s EXPORTED_RUNTIME_METHODS
-    print(message: string): void;
-    printErr(message: string): void;
+    out(message: string): void;
+    err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
     cwrap<T extends Function>(ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     cwrap<T extends Function>(ident: string, ...args: any[]): T;
