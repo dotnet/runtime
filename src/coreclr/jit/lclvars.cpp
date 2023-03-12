@@ -3866,11 +3866,24 @@ var_types LclVarDsc::GetSimdBaseType() const
 }
 #endif // FEATURE_SIMD
 
+//------------------------------------------------------------------------
+// lvExactSize: Get the exact size of the type of this local.
+//
+// Return Value:
+//    Size in bytes. Always non-zero, but not necessarily a multiple of the
+//    stack slot size.
+//
 unsigned LclVarDsc::lvExactSize() const
 {
     return (lvType == TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(lvType);
 }
 
+//------------------------------------------------------------------------
+// lvSize: Get the size of a struct local on the stack frame.
+//
+// Return Value:
+//    Size in bytes.
+//
 unsigned LclVarDsc::lvSize() const // Size needed for storage representation. Only used for structs.
 {
     // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
