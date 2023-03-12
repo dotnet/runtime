@@ -165,10 +165,10 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 assert(runtimeLookup.testForNull);
 
                 // Split block right before the call tree
-                BasicBlock* prevBb      = block;
+                BasicBlock* prevBb       = block;
                 GenTree**   callUse      = nullptr;
                 Statement*  newFirstStmt = nullptr;
-                block               = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+                block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
                 assert(prevBb != nullptr && block != nullptr);
 
                 // Define a local for the result
