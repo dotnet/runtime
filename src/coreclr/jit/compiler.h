@@ -8976,7 +8976,7 @@ public:
             //
             threshold *= 2;
 #elif defined(TARGET_XARCH)
-            // Ignore AVX-512 for now
+            // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
             threshold = max(threshold, YMM_REGSIZE_BYTES);
 #endif
         }
@@ -9001,7 +9001,7 @@ public:
         //
         // | arch        | memset | memcpy |
         // |-------------|--------|--------|
-        // | x86 avx512  |   512  |   256  | (ignored for now)
+        // | x86 avx512  |   512  |   256  | (TODO-XARCH-AVX512: ignored for now)
         // | x86 avx     |   256  |   128  |
         // | x86 sse     |   128  |    64  |
         // | arm64       |   256  |   128  | ldp/stp (2x128bit)
