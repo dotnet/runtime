@@ -732,7 +732,6 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
 
     // Create a tree representing string's Length:
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
-    GenTree* lenOffset    = gtNewIconNode(strLenOffset, TYP_I_IMPL);
     GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset, compCurBB);
     varStrLcl             = gtClone(varStrLcl)->AsLclVar();
 
