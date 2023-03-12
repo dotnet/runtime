@@ -295,7 +295,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var args = parms["params"] as JObject;
             // Inspector doesn't use the Target domain or sessions
             // so we try to init immediately
-            if (id == SessionId.Null)
+            if (id == SessionId.Null && method != "Profiler.enable" && method != "Runtime.enable" && method != "Debugger.enable" && method != "Runtime.runIfWaitingForDebugger" && method != "Debugger.setAsyncCallStackDepth" && method != "Target.setAutoAttach")
                 await AttachToTarget(id, token);
 
             if (!contexts.TryGetValue(id, out ExecutionContext context) && !s_executionContextIndependentCDPCommandNames.Contains(method))
