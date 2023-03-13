@@ -2287,6 +2287,7 @@ void Compiler::compSetProcessor()
         instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW) &&
         instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ))
     {
+#if defined(DEBUG)
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
         // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
@@ -2295,8 +2296,14 @@ void Compiler::compSetProcessor()
         // We can't use !DoJitStressEvexEncoding() yet because opts.compSupportsISA hasn't
         // been set yet as that's what we're trying to set here
 
-        if (!JitConfig.JitForceEVEXEncoding() && !JitConfig.JitStressEvexEncoding() &&
-            !instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL))
+        bool disableAvx512 = !JitConfig.JitForceEVEXEncoding() && !JitConfig.JitStressEvexEncoding() &&
+                             !instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL);
+#else
+        // TODO-XARCH-AVX512: Allow AVX512 support by default
+        bool disableAvx512 = true;
+#endif // DEBUG
+
+        if (disableAvx512)
         {
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
