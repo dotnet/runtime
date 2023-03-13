@@ -9362,14 +9362,21 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
     {
         // Found a test condition. Does it contain a compare chain?
 
-        // Only test that the second operand of AND ends with a compare operation, as this will be
-        // the condition the new link in the chain will connect with.
-        // We are allowing for the first operand of the not be a valid chain, as this would require
-        // a full recursive search through the children.
-
-        if (condOp1->OperIs(GT_AND, GT_OR) && condOp1->gtGetOp2()->OperIsCmpCompare())
+        if (condOp1->OperIs(GT_AND, GT_OR) && varTypeIsIntegralOrI(condOp1->gtGetOp1())
+            && varTypeIsIntegralOrI(condOp1->gtGetOp2()))
         {
-            return true;
+            // Check that the second operand of AND ends with a compare operation, as this will be
+            // the condition the new link in the chain will connect with.
+            if (condOp1->gtGetOp2()->OperIsCmpCompare())
+            {
+                return true;
+            }
+            if (condOp1->gtGetOp2()->OperIsCmpCompare())
+            {
+                // Recursive check the inner condition.
+                bool innerTestCondition;
+                return FindCompareChain(condOp1->gtGetOp2(), &innerTestCondition);
+            }
         }
 
         *isTestCondition = true;
@@ -9501,16 +9508,10 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     bool op2IsTestCond;
     bool op1IsCondChain = FindCompareChain(cond1, &op1IsTestCond);
     bool op2IsCondChain = FindCompareChain(cond2, &op2IsTestCond);
-    // Don't support combining multiple chains. Allowing this would give minimal benefit, as
-    // costing checks would disallow most instances.
-    if (op1IsCondChain && op2IsCondChain)
-    {
-        return false;
-    }
 
     // Specifically for Arm64, avoid cases where optimizations in lowering will produce better
     // code than optimizing here. Specificially:
-    // * cmp(and(...), 0) will be turned into a TEST_ opcode.
+    // * CMP(AND(...), 0) will be turned into a TEST_ opcode.
     // * Compares against zero will be optimized with cbz.
     if (op1IsTestCond || op2IsTestCond)
     {
@@ -9582,7 +9583,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 #ifdef DEBUG
     if (m_comp->verbose)
     {
-        JITDUMP("\nCombined conditions " FMT_BB " and " FMT_BB " into AND chain :\n", m_b1->bbNum, m_b2->bbNum);
+        JITDUMP("\nCombined conditions " FMT_BB " and " FMT_BB " into %s chain :\n", m_b1->bbNum, m_b2->bbNum,
+                GenTree::OpName(chainedOper));
         m_comp->fgDumpBlock(m_b1);
         JITDUMP("\n");
     }
