@@ -61,7 +61,6 @@ namespace Microsoft.Interop
             // As a result, we generate another name for the native return value.
             if (info.IsManagedReturnPosition)
             {
-                Debug.Assert(info.NativeIndex == TypePositionInfo.UnsetIndex);
                 return (InvokeReturnIdentifier, InvokeReturnIdentifierNative);
             }
 

@@ -393,6 +393,46 @@ namespace Microsoft.Interop
             // Create the stub.
             var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, new InteropAttributeCompilationData(), generatedComAttribute), environment, typeof(VtableIndexStubGenerator).Assembly);
 
+            for (var i = 0; i < signatureContext.ElementTypeInformation.Length; ++i)
+            {
+                if (signatureContext.ElementTypeInformation[i].IsManagedReturnPosition)
+                {
+                    if (signatureContext.ElementTypeInformation[i].ManagedType == SpecialTypeInfo.Void)
+                    {
+                        signatureContext = signatureContext with
+                        {
+                            ElementTypeInformation = signatureContext.ElementTypeInformation.RemoveAt(i)
+                        };
+                    }
+                    else
+                    {
+                        var managedSignatureAsNativeOut = signatureContext.ElementTypeInformation[i] with
+                        {
+                            RefKind = RefKind.Out,
+                            RefKindSyntax = SyntaxKind.OutKeyword,
+                            ManagedIndex = TypePositionInfo.ReturnIndex,
+                            NativeIndex = symbol.Parameters.Length
+                        };
+                        signatureContext = signatureContext with
+                        {
+                            ElementTypeInformation = signatureContext
+                                .ElementTypeInformation
+                                .SetItem(i, managedSignatureAsNativeOut)
+                        };
+                    }
+                    break;
+                }
+            }
+
+            signatureContext = signatureContext with
+            {
+                ElementTypeInformation = signatureContext.ElementTypeInformation.Add(
+                    new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo())
+                    {
+                        NativeIndex = TypePositionInfo.ReturnIndex
+                    })
+            };
+
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 
             var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);

@@ -59,7 +59,7 @@ namespace Microsoft.Interop
             SignatureBehavior behavior = generator.GetNativeSignatureBehavior(info);
             if (behavior == SignatureBehavior.ManagedTypeAndAttributes)
             {
-                return GenerateForwardingParameter(info);
+                return GenerateForwardingParameter(info, context.GetIdentifiers(info).managed);
             }
             string identifierName;
             if (context.Direction == MarshalDirection.ManagedToUnmanaged)
@@ -99,9 +99,9 @@ namespace Microsoft.Interop
                 });
         }
 
-        private static ParameterSyntax GenerateForwardingParameter(TypePositionInfo info)
+        private static ParameterSyntax GenerateForwardingParameter(TypePositionInfo info, string identifier)
         {
-            ParameterSyntax param = Parameter(Identifier(info.InstanceIdentifier))
+            ParameterSyntax param = Parameter(Identifier(identifier))
                 .WithModifiers(TokenList(Token(info.RefKindSyntax)))
                 .WithType(info.ManagedType.Syntax);
 
