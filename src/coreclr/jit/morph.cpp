@@ -14545,8 +14545,8 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
     BasicBlockFlags propagateFlagsToRemainder = block->bbFlags & BBF_GC_SAFE_POINT;
-    // Conservatively mark all blocks as having IDX_LEN since we don't know where exactly it went
-    BasicBlockFlags propagateFlagsToAll = block->bbFlags & BBF_HAS_IDX_LEN;
+    // Conservatively propagate BBF_COPY_PROPAGATE flags to all blocks
+    BasicBlockFlags propagateFlagsToAll = block->bbFlags & BBF_COPY_PROPAGATE;
     BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
