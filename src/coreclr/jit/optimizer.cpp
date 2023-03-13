@@ -9362,8 +9362,8 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
     {
         // Found a test condition. Does it contain a compare chain?
 
-        if (condOp1->OperIs(GT_AND, GT_OR) && varTypeIsIntegralOrI(condOp1->gtGetOp1())
-            && varTypeIsIntegralOrI(condOp1->gtGetOp2()))
+        if (condOp1->OperIs(GT_AND, GT_OR) && varTypeIsIntegralOrI(condOp1->gtGetOp1()) &&
+            varTypeIsIntegralOrI(condOp1->gtGetOp2()))
         {
             // Check that the second operand of AND ends with a compare operation, as this will be
             // the condition the new link in the chain will connect with.
@@ -9550,8 +9550,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     }
 
     // Join the two conditions together
-    genTreeOps chainedOper = foundEndOfOrConditions? GT_AND : GT_OR;
-    GenTree* chainedConditions = m_comp->gtNewOperNode(chainedOper, TYP_INT, cond1, cond2);
+    genTreeOps chainedOper       = foundEndOfOrConditions ? GT_AND : GT_OR;
+    GenTree*   chainedConditions = m_comp->gtNewOperNode(chainedOper, TYP_INT, cond1, cond2);
     chainedConditions->AsOp()->gtFlags |= (cond1->gtFlags & GTF_ALL_EFFECT);
     chainedConditions->AsOp()->gtFlags |= (cond2->gtFlags & GTF_ALL_EFFECT);
     cond1->gtFlags &= ~GTF_RELOP_JMP_USED;
