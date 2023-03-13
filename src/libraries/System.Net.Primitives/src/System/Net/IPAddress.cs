@@ -69,14 +69,14 @@ namespace System.Net
             get { return _numbers != null; }
         }
 
-        private uint PrivateAddress
+        internal uint PrivateAddress
         {
             get
             {
                 Debug.Assert(IsIPv4);
                 return _addressOrScopeId;
             }
-            set
+            private set
             {
                 Debug.Assert(IsIPv4);
                 _toString = null;

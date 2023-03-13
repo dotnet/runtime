@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Net
 {
@@ -15,29 +18,20 @@ namespace System.Net
         public IPAddress BaseAddress { get; }
         public int PrefixLength { get; }
 
-        private const char AddressAndPrefixLengthSeparator = '/';
-        private const int BitsPerByte = 8;
-
-        private const string BaseAddressConstructorParamName = "baseAddress";
-        private const string PrefixLengthConstructorParamName = "prefixLength";
         public IPNetwork(IPAddress baseAddress, int prefixLength)
-            : this(baseAddress, prefixLength, validateAndThrow: true)
         {
+            ArgumentNullException.ThrowIfNull(baseAddress);
+            Validate(baseAddress, prefixLength, throwOnFailure: true);
+
+            BaseAddress = baseAddress;
+            PrefixLength = prefixLength;
         }
 
-        private IPNetwork(IPAddress baseAddress, int prefixLength, bool validateAndThrow)
+        // Non-validating ctor
+        private IPNetwork(IPAddress baseAddress, int prefixLength, bool _)
         {
             BaseAddress = baseAddress;
             PrefixLength = prefixLength;
-
-            if (validateAndThrow)
-            {
-                ValidationError? validationError = Validate();
-                if (validationError.HasValue)
-                {
-                    throw validationError.Value.ConstructorExceptionFactoryMethod();
-                }
-            }
         }
 
         public bool Contains(IPAddress address)
@@ -49,44 +43,38 @@ namespace System.Net
                 return false;
             }
 
-            // TODO: this can be made much easier and potentially more performant for IPv4 if IPAddress.PrivateAddress is made internal (currently private)
-            // to be discussed in the PR
-
-            var expectedBytesCount = GetAddressFamilyByteLength(BaseAddress.AddressFamily);
-            if (expectedBytesCount * BitsPerByte == PrefixLength)
+            if (PrefixLength == 0)
             {
-                return BaseAddress.Equals(address);
+                return true;
             }
 
-            Span<byte> baseAddressBytes = stackalloc byte[expectedBytesCount];
-            bool written = BaseAddress.TryWriteBytes(baseAddressBytes, out int bytesWritten);
-            Debug.Assert(written && bytesWritten == expectedBytesCount);
-
-            Span<byte> otherAddressBytes = stackalloc byte[expectedBytesCount];
-            written = address.TryWriteBytes(otherAddressBytes, out bytesWritten);
-            Debug.Assert(written && bytesWritten == expectedBytesCount);
-
-            for (int processedBitsCount = 0, i = 0; processedBitsCount < PrefixLength; processedBitsCount += BitsPerByte, i++)
+            if (address.AddressFamily == AddressFamily.InterNetwork)
             {
-                var baseAddressByte = baseAddressBytes[i];
-                var otherAddressByte = otherAddressBytes[i];
+                uint mask = uint.MaxValue << 32 - PrefixLength;
 
-                var rightShiftAmount = Math.Max(0, BitsPerByte - (PrefixLength - processedBitsCount));
-                if (rightShiftAmount != 0)
+                if (BitConverter.IsLittleEndian)
                 {
-                    baseAddressByte >>= rightShiftAmount;
-                    otherAddressByte >>= rightShiftAmount;
+                    mask = BinaryPrimitives.ReverseEndianness(mask);
                 }
 
-                if (baseAddressByte == otherAddressByte)
-                {
-                    continue;
-                }
-
-                return false;
+                return BaseAddress.PrivateAddress == (address.PrivateAddress & mask);
             }
+            else
+            {
+                Unsafe.SkipInit(out UInt128 baseAddressValue);
+                Unsafe.SkipInit(out UInt128 otherAddressValue);
 
-            return true;
+                BaseAddress.TryWriteBytes(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref baseAddressValue, 1)), out _);
+                address.TryWriteBytes(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref otherAddressValue, 1)), out _);
+
+                UInt128 mask = UInt128.MaxValue << 128 - PrefixLength;
+                if (BitConverter.IsLittleEndian)
+                {
+                    mask = BinaryPrimitives.ReverseEndianness(mask);
+                }
+
+                return baseAddressValue == (otherAddressValue & mask);
+            }
         }
 
         #region Parsing (public)
@@ -97,12 +85,19 @@ namespace System.Net
         }
         public static IPNetwork Parse(ReadOnlySpan<char> s)
         {
-            if (TryParseInternal(s, out var result, out var error))
+            if (!TryParseCore(s, out IPAddress? address, out int prefixLength))
             {
-                return result;
+                throw new FormatException(SR.net_bad_ip_network);
             }
 
-            throw new FormatException(error);
+            try
+            {
+                return new IPNetwork(address, prefixLength);
+            }
+            catch (Exception inner)
+            {
+                throw new FormatException(inner.Message, inner);
+            }
         }
 
         public static bool TryParse(string? s, out IPNetwork result)
@@ -113,167 +108,132 @@ namespace System.Net
                 return false;
             }
 
-            return TryParseInternal(s.AsSpan(), out result, out _);
+            return TryParse(s.AsSpan(), out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out IPNetwork result)
         {
-            return TryParseInternal(s, out result, out _);
+            if (TryParseCore(s, out IPAddress? address, out int prefixLength) && Validate(address, prefixLength, throwOnFailure: false))
+            {
+                result = new IPNetwork(address, prefixLength, false);
+                return true;
+            }
+
+            result = default;
+            return false;
         }
         #endregion
 
         #region Private methods
-        private static bool TryParseInternal(ReadOnlySpan<char> s, out IPNetwork result, [NotNullWhen(false)] out string? error)
+
+        private static bool TryParseCore(ReadOnlySpan<char> s, [NotNullWhen(true)] out IPAddress? address, out int prefixLength)
         {
             const int MaxCharsCountAfterIpAddress = 4;
             const int MinCharsRequired = 4;
 
             if (s.Length < MinCharsRequired)
             {
-                error = SR.dns_bad_ip_network;
-                result = default;
-                return false;
+                goto Failure;
             }
 
             int separatorExpectedStartingIndex = s.Length - MaxCharsCountAfterIpAddress;
             int separatorIndex = s
                 .Slice(separatorExpectedStartingIndex)
-                .IndexOf(AddressAndPrefixLengthSeparator);
+                .IndexOf('/');
+
             if (separatorIndex != -1)
             {
                 separatorIndex += separatorExpectedStartingIndex;
 
-                var ipAddressSpan = s.Slice(0, separatorIndex);
-                var prefixLengthSpan = s.Slice(separatorIndex + 1);
+                ReadOnlySpan<char> ipAddressSpan = s.Slice(0, separatorIndex);
+                ReadOnlySpan<char> prefixLengthSpan = s.Slice(separatorIndex + 1);
 
-                if (IPAddress.TryParse(ipAddressSpan, out var ipAddress) && int.TryParse(prefixLengthSpan, out var prefixLength))
-                {
-                    result = new IPNetwork(ipAddress, prefixLength, validateAndThrow: false);
-
-                    error = result.Validate()?.ParseExceptionMessage;
-                    return error == null;
-                }
-                else
-                {
-                    error = SR.dns_bad_ip_network;
-                    result = default;
-                    return false;
-                }
-            }
-            else
-            {
-                error = SR.dns_bad_ip_network;
-                result = default;
-                return false;
-            }
-        }
-
-        private readonly struct ValidationError
-        {
-            public ValidationError(Func<Exception> constructorExceptionFactoryMethod, string parseExceptionMessage)
-            {
-                ConstructorExceptionFactoryMethod = constructorExceptionFactoryMethod;
-                ParseExceptionMessage = parseExceptionMessage;
-            }
-
-            public readonly Func<Exception> ConstructorExceptionFactoryMethod;
-            public readonly string ParseExceptionMessage;
-        }
-
-        private static readonly ValidationError s_baseAddressIsNullError = new ValidationError(() => new ArgumentNullException(BaseAddressConstructorParamName), string.Empty);
-        private static readonly ValidationError s_baseAddressHasSetBitsInMaskError = new ValidationError(() => new ArgumentException(BaseAddressConstructorParamName), SR.dns_bad_ip_network);
-        private static readonly ValidationError s_prefixLengthLessThanZeroError = new ValidationError(() => new ArgumentOutOfRangeException(PrefixLengthConstructorParamName), SR.dns_bad_ip_network);
-        private static readonly ValidationError s_prefixLengthGreaterThanAllowedError = new ValidationError(() => new ArgumentOutOfRangeException(PrefixLengthConstructorParamName), SR.dns_bad_ip_network);
-
-        private ValidationError? Validate()
-        {
-            if (BaseAddress == null)
-            {
-                return s_baseAddressIsNullError;
-            }
-
-            if (PrefixLength < 0)
-            {
-                return s_prefixLengthLessThanZeroError;
-            }
-
-            if (PrefixLength > GetAddressFamilyByteLength(BaseAddress.AddressFamily) * BitsPerByte)
-            {
-                return s_prefixLengthGreaterThanAllowedError;
-            }
-
-            if (IsAnyMaskBitOnForBaseAddress())
-            {
-                return s_baseAddressHasSetBitsInMaskError;
-            }
-
-            return default;
-        }
-
-        /// <summary>
-        /// Method to determine whether any bit in <see cref="BaseAddress"/>'s variable/mask part is 1.
-        /// </summary>
-        private bool IsAnyMaskBitOnForBaseAddress()
-        {
-            Span<byte> addressBytes = stackalloc byte[GetAddressFamilyByteLength(BaseAddress.AddressFamily)];
-
-            bool written = BaseAddress.TryWriteBytes(addressBytes, out int bytesWritten);
-            Debug.Assert(written && bytesWritten == addressBytes.Length);
-
-            var addressBitsCount = addressBytes.Length * BitsPerByte;
-
-            for (int addressBytesIndex = addressBytes.Length - 1, numberOfEndingBitsToBeOff = addressBitsCount - PrefixLength;
-                addressBytesIndex >= 0 && numberOfEndingBitsToBeOff > 0;
-                addressBytesIndex--, numberOfEndingBitsToBeOff -= BitsPerByte)
-            {
-                byte maskForByte = unchecked((byte)(byte.MaxValue << Math.Min(numberOfEndingBitsToBeOff, BitsPerByte)));
-                var addressByte = addressBytes[addressBytesIndex];
-                if ((addressByte & maskForByte) != addressByte)
+                if (IPAddress.TryParse(ipAddressSpan, out address) && int.TryParse(prefixLengthSpan, out prefixLength))
                 {
                     return true;
                 }
             }
 
+        Failure:
+            address = default;
+            prefixLength = default;
             return false;
         }
 
-        private static int GetAddressFamilyByteLength(AddressFamily addressFamily)
-            => addressFamily switch
+        private static bool Validate(IPAddress baseAddress, int prefixLength, bool throwOnFailure)
+        {
+            int maxPrefixLength = baseAddress.AddressFamily == AddressFamily.InterNetwork ? 32 : 128;
+            if (prefixLength < 0 || prefixLength > maxPrefixLength)
             {
-                AddressFamily.InterNetwork => IPAddressParserStatics.IPv4AddressBytes,
-                AddressFamily.InterNetworkV6 => IPAddressParserStatics.IPv6AddressBytes,
-                _ => throw new UnreachableException("Unknown address family")
-            };
+                if (throwOnFailure)
+                {
+                    ThrowArgumentOutOfRangeException();
+                }
+
+                return false;
+            }
+
+            if (HasNonZeroBitsAfterNetworkPrefix(baseAddress, prefixLength))
+            {
+                if (throwOnFailure)
+                {
+                    ThrowInvalidBaseAddressException();
+                }
+
+                return false;
+            }
+
+            return true;
+
+            [DoesNotReturn]
+            static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException(nameof(prefixLength));
+
+            [DoesNotReturn]
+            static void ThrowInvalidBaseAddressException() => throw new ArgumentException(SR.net_bad_ip_network_invalid_baseaddress, nameof(baseAddress));
+        }
+
+        private static bool HasNonZeroBitsAfterNetworkPrefix(IPAddress baseAddress, int prefixLength)
+        {
+            if (baseAddress.AddressFamily == AddressFamily.InterNetwork)
+            {
+                uint mask = (uint)((long)uint.MaxValue << 32 - prefixLength);
+                if (BitConverter.IsLittleEndian)
+                {
+                    mask = BinaryPrimitives.ReverseEndianness(mask);
+                }
+
+                return (baseAddress.PrivateAddress & mask) != baseAddress.PrivateAddress;
+            }
+            else
+            {
+                Unsafe.SkipInit(out UInt128 value);
+                baseAddress.TryWriteBytes(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref value, 1)), out _);
+                if (prefixLength == 0)
+                {
+                    return value != UInt128.Zero;
+                }
+
+                UInt128 mask = UInt128.MaxValue << 128 - prefixLength;
+                if (BitConverter.IsLittleEndian)
+                {
+                    mask = BinaryPrimitives.ReverseEndianness(mask);
+                }
+
+                return (value & mask) != value;
+            }
+        }
+
         #endregion
 
         #region Formatting (public)
         public override string ToString()
         {
-            return $"{BaseAddress}{AddressAndPrefixLengthSeparator}{PrefixLength}";
+            return $"{BaseAddress}/{PrefixLength}";
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten)
         {
-            if (!BaseAddress.TryFormat(destination, out charsWritten))
-            {
-                charsWritten = 0;
-                return false;
-            }
-
-            if (destination.Length < charsWritten + 2)
-            {
-                return false;
-            }
-
-            destination[charsWritten++] = AddressAndPrefixLengthSeparator;
-
-            if (!PrefixLength.TryFormat(destination.Slice(charsWritten), out var prefixLengthCharsWritten))
-            {
-                return false;
-            }
-
-            charsWritten += prefixLengthCharsWritten;
-            return true;
+            return destination.TryWrite($"{BaseAddress}/{PrefixLength}", out charsWritten);
         }
         #endregion
 
