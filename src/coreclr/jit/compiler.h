@@ -496,6 +496,7 @@ public:
         , _lvOtherArgReg(REG_STK)
 #endif // FEATURE_MULTIREG_ARGS
         , lvClassHnd(NO_CLASS_HANDLE)
+        , lvRefBlks(BlockSetOps::UninitVal())
         , lvPerSsaData()
     {
     }
@@ -1096,6 +1097,9 @@ private:
     ClassLayout* m_layout; // layout info for structs
 
 public:
+    BlockSet   lvRefBlks;          // Set of blocks that contain refs
+    Statement* lvDefStmt;          // Pointer to the statement with the single definition
+
     var_types TypeGet() const
     {
         return (var_types)lvType;
