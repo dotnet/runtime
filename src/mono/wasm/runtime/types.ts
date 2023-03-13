@@ -237,7 +237,7 @@ export type RuntimeHelpers = {
     storeMemorySnapshotPending: boolean,
     subtle: SubtleCrypto | null,
     preferredIcuAsset: string | null,
-    timezone: string | null,
+    invariantMode: boolean,
     updateMemoryViews: () => void
 }
 

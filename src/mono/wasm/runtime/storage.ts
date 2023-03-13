@@ -147,7 +147,8 @@ export async function getInputsHash(): Promise<string | null> {
     delete inputs.assets;
     // some things are calculated at runtime, so we need to add them to the hash
     inputs.preferredIcuAsset = runtimeHelpers.preferredIcuAsset;
-    inputs.timezone = runtimeHelpers.timezone;
+    // timezone is part of env variables, so it is already in the hash
+
     // some things are not relevant for memory snapshot
     delete inputs.forwardConsoleLogsToWS;
     delete inputs.diagnosticTracing;

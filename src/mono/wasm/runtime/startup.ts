@@ -8,7 +8,6 @@ import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal, 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
-import { get_preferred_icu_asset, mono_wasm_globalization_init } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
 import { mono_on_abort, mono_exit } from "./run";
@@ -33,6 +32,7 @@ import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from ".
 import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { BINDING, MONO } from "./net6-legacy/imports";
+import { init_globalization } from "./icu";
 
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
@@ -108,6 +108,7 @@ function instantiateWasm(
 
     const mark = startMeasure();
     if (userInstantiateWasm) {
+        init_globalization();
         // user wasm instantiation doesn't support memory snapshots
         memorySnapshotSkippedOrDone.promise_control.resolve();
         const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => {
@@ -158,9 +159,10 @@ function preInit(userPreInit: (() => void)[]) {
     // It will block emscripten `userOnRuntimeInitialized` by pending addRunDependency("mono_pre_init")
     (async () => {
         try {
+            // - init the rest of the polyfills
+            // - download Module.config from configSrc
             await mono_wasm_pre_init_essential_async();
 
-            // - download Module.config from configSrc
             // - start download assets like DLLs
             await mono_wasm_pre_init_full();
 
@@ -476,7 +478,10 @@ async function instantiate_wasm_module(
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
         // FIXME: this would not apply re-try (on connection reset during download) for dotnet.wasm because we could not download the buffer before we pass it to instantiate_wasm_asset
-        await start_asset_download(assetToLoad);
+        const wasmDownloadPromise = start_asset_download(assetToLoad);
+
+        // this is right time as we have free CPU time to do this
+        init_globalization();
 
         if (config.startupMemoryCache && config.assetsHash) {
             memorySize = await getMemorySnapshotSize();
@@ -488,6 +493,7 @@ async function instantiate_wasm_module(
             memorySnapshotSkippedOrDone.promise_control.resolve();
         }
 
+        await wasmDownloadPromise;
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
 
@@ -552,8 +558,6 @@ async function mono_wasm_before_memory_snapshot() {
 
     if (config.browserProfilerOptions)
         mono_wasm_init_browser_profiler(config.browserProfilerOptions);
-
-    mono_wasm_globalization_init();
 
     mono_wasm_load_runtime("unused", config.debugLevel);
 
@@ -686,16 +690,7 @@ function normalizeConfig() {
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
         && typeof globalThis.performance.measure === "function";
-    runtimeHelpers.preferredIcuAsset = get_preferred_icu_asset();
 
-    if (runtimeHelpers.timezone === undefined && config.environmentVariables["TZ"] === undefined) {
-        try {
-            runtimeHelpers.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
-            if (runtimeHelpers.timezone) config.environmentVariables["TZ"] = runtimeHelpers.timezone;
-        } catch {
-            console.info("MONO_WASM: failed to detect timezone, will fallback to UTC");
-        }
-    }
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
 }
 
