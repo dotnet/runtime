@@ -504,6 +504,7 @@ namespace System.Security.Cryptography
         {
             // Logically this is doing the same thing as the base Stream, however CryptoStream clears arrays before
             // returning them to the pool, whereas the base Stream does not.
+            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
 
             try
