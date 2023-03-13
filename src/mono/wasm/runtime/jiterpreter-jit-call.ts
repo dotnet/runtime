@@ -256,6 +256,7 @@ function getIsWasmEhSupported () : boolean {
 export function mono_jiterp_do_jit_call_indirect (
     jit_call_cb: number, cb_data: VoidPtr, thrown: Int32Ptr
 ) : void {
+    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
     const table = getWasmFunctionTable();
     const jitCallCb = table.get(jit_call_cb);
 
@@ -269,9 +270,8 @@ export function mono_jiterp_do_jit_call_indirect (
         }
     };
 
-    let failed = false;
-    const enabled = !runtimeHelpers.storeMemorySnapshotPending && getIsWasmEhSupported();
-    if (enabled) {
+    let failed = !getIsWasmEhSupported();
+    if (!failed) {
         // Wasm EH is supported which means doJitCallModule was loaded and compiled.
         // Now that we have jit_call_cb, we can instantiate it.
         try {

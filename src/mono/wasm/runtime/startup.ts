@@ -26,7 +26,7 @@ import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
-import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./storage";
+import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
@@ -483,7 +483,7 @@ async function instantiate_wasm_module(
         // this is right time as we have free CPU time to do this
         init_globalization();
 
-        if (config.startupMemoryCache && config.assetsHash) {
+        if (config.startupMemoryCache) {
             memorySize = await getMemorySnapshotSize();
             runtimeHelpers.loadedMemorySnapshot = !!memorySize;
             runtimeHelpers.storeMemorySnapshotPending = !runtimeHelpers.loadedMemorySnapshot;
@@ -537,7 +537,6 @@ async function mono_wasm_before_memory_snapshot() {
         Module.HEAP8.set(new Int8Array(memoryBytes!), 0);
         if (runtimeHelpers.diagnosticTracing) console.info("MONO_WASM: Loaded WASM linear memory from browser cache");
 
-
         // all things below are loaded from the snapshot
         return;
     }
@@ -549,7 +548,10 @@ async function mono_wasm_before_memory_snapshot() {
         else
             throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
     }
-
+    if (config.startupMemoryCache) {
+        // disable the trampoline for now, we will re-enable it after we stored the snapshot
+        cwraps.mono_jiterp_update_jit_call_dispatcher(0);
+    }
     if (config.runtimeOptions)
         mono_wasm_set_runtime_options(config.runtimeOptions);
 
@@ -563,6 +565,8 @@ async function mono_wasm_before_memory_snapshot() {
 
     // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
     if (config.startupMemoryCache) {
+        // this would install the mono_jiterp_do_jit_call_indirect
+        cwraps.mono_jiterp_update_jit_call_dispatcher(-1);
         await storeMemorySnapshot(Module.HEAP8.buffer);
         runtimeHelpers.storeMemorySnapshotPending = false;
     }

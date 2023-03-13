@@ -1075,6 +1075,9 @@ mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher)
 	//  blocked the use of Module.addFunction
 	if (!dispatcher)
 		dispatcher = (WasmDoJitCall)mono_llvm_cpp_catch_exception;
+	else if (((int)(void*)dispatcher)==-1)
+		dispatcher = mono_jiterp_do_jit_call_indirect;
+
 	jiterpreter_do_jit_call = dispatcher;
 }
 

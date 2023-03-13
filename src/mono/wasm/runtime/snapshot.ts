@@ -139,8 +139,21 @@ async function getCacheKey(): Promise<string | null> {
     }
     const inputs = Object.assign({}, runtimeHelpers.config) as any;
     // above already has env variables, runtime options, etc
-    // above also already has config.assetsHash for this. It has all the asserts (DLLs, ICU, .wasms, etc). 
-    // So we could remove assets collectionfrom the hash.
+
+    if (!inputs.assetsHash) {
+        // this is fallback for blazor which does not have assetsHash yet
+        inputs.assetsHash = [];
+        for (const asset of inputs.assets) {
+            if (!asset.hash) {
+                // if we don't have hash, we can't use the cache
+                return null;
+            }
+            inputs.assetsHash.push(asset.hash);
+        }
+    }
+    // otherwise config.assetsHash already has hashes for all the assets (DLLs, ICU, .wasms, etc). 
+
+    // Now we remove assets collection from the hash.
     delete inputs.assets;
     // some things are calculated at runtime, so we need to add them to the hash
     inputs.preferredIcuAsset = runtimeHelpers.preferredIcuAsset;
