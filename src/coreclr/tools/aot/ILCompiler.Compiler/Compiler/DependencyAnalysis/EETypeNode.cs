@@ -74,6 +74,8 @@ namespace ILCompiler.DependencyAnalysis
         [Flags]
         protected enum VirtualMethodAnalysisFlags
         {
+            None = 0,
+
             NeedsGvmEntries = 0x0001,
             InterestingForDynamicDependencies = 0x0002,
 
@@ -108,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
         {
-            VirtualMethodAnalysisFlags result = default;
+            var result = VirtualMethodAnalysisFlags.None;
 
             // Interface EETypes not relevant to virtual method analysis at this time.
             if (type.IsInterface)
