@@ -115,7 +115,7 @@ namespace System
         private static unsafe int FastGetValueTypeHashCodeHelper(MethodTable* type, ref byte data)
         {
             // Sanity check - if there are GC references, we should not be hashing bytes
-            Debug.Assert(!type.ContainsGCPointers);
+            Debug.Assert(!type->ContainsGCPointers);
 
             int size = (int)type->ValueTypeSize;
             int hashCode = 0;
