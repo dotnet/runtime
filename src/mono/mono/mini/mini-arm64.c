@@ -3404,8 +3404,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		if (opcode_simd_status [ins->opcode - OP_START] == OPCODE_SIMD)
 		{
 			const int _t = get_type_size_macro (ins->inst_c1);
-    	const gboolean _f = is_type_float_macro (ins->inst_c1);
-    	const int _w = get_vector_size_macro (ins);
+			const gboolean _f = is_type_float_macro (ins->inst_c1);
+			const int _w = get_vector_size_macro (ins);
 
 			#undef SIMD_OP
 			#define SIMD_OP(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
@@ -3659,6 +3659,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 			/* SIMD that is not table-generated */
+			/* TODO: once https://github.com/dotnet/runtime/issues/83252 is done,
+			 * move these to the codegen table in simd-arm64.h
+			 */
 		case OP_ONES_COMPLEMENT:
 			arm_neon_not (code, get_vector_size_macro (ins), dreg, sreg1);
 			break;
