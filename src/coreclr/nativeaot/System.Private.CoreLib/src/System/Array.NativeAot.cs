@@ -202,7 +202,7 @@ namespace System
             {
                 if (RuntimeImports.AreTypesEquivalent(sourceElementEEType, destinationElementEEType))
                 {
-                    if (sourceElementEEType.HasPointers)
+                    if (sourceElementEEType.ContainsGCPointers)
                     {
                         CopyImplValueTypeArrayWithInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
                     }
@@ -462,9 +462,9 @@ namespace System
         //
         private static unsafe void CopyImplValueTypeArrayNoInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-            Debug.Assert((sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.HasPointers) ||
+            Debug.Assert((sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.ContainsGCPointers) ||
                 sourceArray.ElementEEType.IsPointer);
-            Debug.Assert((destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.HasPointers) ||
+            Debug.Assert((destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.ContainsGCPointers) ||
                 destinationArray.ElementEEType.IsPointer);
 
             // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
@@ -763,7 +763,7 @@ namespace System
             nuint totalByteLength = eeType.ComponentSize * array.NativeLength;
             ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
 
-            if (!eeType.HasPointers)
+            if (!eeType.ContainsGCPointers)
             {
                 SpanHelpers.ClearWithoutReferences(ref pStart, totalByteLength);
             }
@@ -800,7 +800,7 @@ namespace System
             ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * elementSize);
             nuint byteLength = (uint)length * elementSize;
 
-            if (eeType.HasPointers)
+            if (eeType.ContainsGCPointers)
             {
                 Debug.Assert(byteLength % (nuint)sizeof(IntPtr) == 0);
                 SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));

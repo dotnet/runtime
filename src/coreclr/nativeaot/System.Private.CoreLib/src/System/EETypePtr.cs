@@ -356,8 +356,8 @@ namespace System
             }
         }
 
-        // Has internal gc pointers.
-        internal bool HasPointers
+        // Instance contains pointers to managed objects.
+        internal bool ContainsGCPointers
         {
             get
             {
