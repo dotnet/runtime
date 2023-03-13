@@ -1887,6 +1887,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		switch (id) {
 		case SN_get_One:
 		case SN_get_Zero:
+		case SN_op_OnesComplement:
+		case SN_op_UnaryNegation:
 		case SN_op_Addition:
 		case SN_op_Subtraction:
 		case SN_op_BitwiseAnd:
