@@ -16386,7 +16386,7 @@ bool Compiler::gtSplitTree(
                     // directly instead of the comma so that we get the proper
                     // location treatment. The edge will then be the User ---
                     // op2 edge.
-                    *use = (*use)->gtGetOp2();
+                    *use        = (*use)->gtGetOp2();
                     MadeChanges = true;
 
                     UseInfo use2{use, user};
