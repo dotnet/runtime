@@ -298,6 +298,7 @@ namespace DebuggerTests
             }
             else if (fail)
             {
+                Console.WriteLine($"HEY THAYS - {method} - {args.ToString()}");
                 args["__forMethod"] = method;
                 FailAllWaiters(new ArgumentException(args.ToString()));
             }
