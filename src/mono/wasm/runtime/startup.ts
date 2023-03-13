@@ -180,6 +180,7 @@ async function preInitWorkerAsync() {
         mono_wasm_pre_init_essential(true);
         await init_polyfills_async();
         afterPreInit.promise_control.resolve();
+        console.debug("MONO_WASM: worker preInitWorkerAsync done");
         endMeasure(mark, MeasuredBlock.preInitWorker);
     } catch (err) {
         _print_error("MONO_WASM: user preInitWorker() failed", err);
@@ -311,7 +312,7 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     if (!isWorker)
         Module.addRunDependency("mono_wasm_pre_init_essential");
 
-    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential");
+    if (runtimeHelpers.diagnosticTracing || isWorker) console.debug("MONO_WASM: mono_wasm_pre_init_essential");
 
     // init_polyfills() is already called from export.ts
     init_c_exports();
@@ -327,6 +328,8 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     // sending postMessage twice will break instantiateWasmPThreadWorkerPool on the main thread.
     if (!isWorker)
         Module.removeRunDependency("mono_wasm_pre_init_essential");
+    else
+        console.debug("MONO_WASM: worker finished pre_init_essential");
 }
 
 async function mono_wasm_pre_init_essential_async(): Promise<void> {
@@ -682,6 +685,8 @@ export async function mono_wasm_pthread_worker_init(module: DotnetModule, export
     module.preInit = [() => preInitWorkerAsync()];
     module.instantiateWasm = instantiateWasmWorker;
 
+    console.debug("MONO_WASM: worker awaiting afterPreInit");
     await afterPreInit.promise;
+    console.debug("MONO_WASM: worker afterPreInit done - mono_wasm_pthread_worker_init returning");
     return exportedAPI.Module;
 }
