@@ -9,7 +9,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using Xunit;
 
-namespace IntelHardwareIntrinsicTest.Avx512F
+namespace IntelHardwareIntrinsicTest._Avx512F
 {
     public partial class Program
     {
@@ -122,7 +122,7 @@ namespace IntelHardwareIntrinsicTest.Avx512F
                     }
                 }
 
-                using (TestTable<short> intTable = new TestTable<short>(new short[32] { 1, -5, 100, 0, 1, 2, 3, 4, 1, -5, 100, 0, 1, 2, 3, 4. 1, -5, 100, 0, 1, 2, 3, 4, 1, -5, 100, 0, 1, 2, 3, 4 }, new short[32]))
+                using (TestTable<short> intTable = new TestTable<short>(new short[32] { 1, -5, 100, 0, 1, 2, 3, 4, 1, -5, 100, 0, 1, 2, 3, 4, 1, -5, 100, 0, 1, 2, 3, 4, 1, -5, 100, 0, 1, 2, 3, 4 }, new short[32]))
                 {
                     var vf = Unsafe.Read<Vector512<short>>(intTable.inArrayPtr);
                     Avx512F.Store((short*)(intTable.outArrayPtr), vf);

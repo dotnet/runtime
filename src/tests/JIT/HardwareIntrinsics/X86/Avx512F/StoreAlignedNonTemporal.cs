@@ -9,7 +9,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using Xunit;
 
-namespace IntelHardwareIntrinsicTest.Avx512F
+namespace IntelHardwareIntrinsicTest._Avx512F
 {
     public partial class Program
     {
