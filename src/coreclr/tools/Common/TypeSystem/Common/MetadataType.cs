@@ -95,7 +95,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets a value indicating whether this is an inline array type
         /// </summary>
-        public virtual bool IsInlineArray
+        public bool IsInlineArray
         {
             get
             {

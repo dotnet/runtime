@@ -91,13 +91,6 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override bool IsInlineArray => Length > 0;
-
-        public override int GetInlineArrayLength()
-        {
-            return (int)Length;
-        }
-
         public override bool IsBeforeFieldInit
         {
             get
@@ -180,7 +173,10 @@ namespace Internal.TypeSystem.Interop
 
         public override ClassLayoutMetadata GetClassLayout()
         {
-            return default(ClassLayoutMetadata);
+            ClassLayoutMetadata result = default(ClassLayoutMetadata);
+            result.PackingSize = 0;
+            result.Size = checked((int)Length * ElementType.GetElementSize().AsInt);
+            return result;
         }
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
@@ -250,6 +246,12 @@ namespace Internal.TypeSystem.Interop
             flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;
+        }
+
+        public override int GetInlineArrayLength()
+        {
+            Debug.Fail("when this is backed by an actual inline array, implement GetInlineArrayLength");
+            throw new InvalidOperationException();
         }
 
         private void InitializeMethods()
