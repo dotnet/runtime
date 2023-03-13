@@ -283,6 +283,9 @@ CorUnix::InternalCreateMutex(
     }
     else
     {
+        printf("Creating named mutex: %s\n", lpName);
+        fflush(stdout);
+
         SharedMemoryProcessDataHeader *processDataHeader;
         try
         {

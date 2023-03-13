@@ -18,9 +18,12 @@ if [[ -n "$PREPEND_PATH" ]]; then
     export PATH=$PREPEND_PATH:$PATH
 fi
 
+export SHOW_BUILD_OUTPUT=1
+
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo XHARNESS_OUT=$XHARNESS_OUT
 echo XHARNESS_CLI_PATH=$XHARNESS_CLI_PATH
+echo SHOW_BUILD_OUTPUT=$SHOW_BUILD_OUTPUT
 
 echo "User:" && whoami
 echo "Session ID:" && cat /proc/self/sessionid && echo ""
