@@ -33,11 +33,6 @@
     <Compile Include="System\Diagnostics\PerformanceCounterPermissionAttribute.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterPermissionEntry.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterPermissionEntryCollection.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermission.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAccess.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAttribute.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntry.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntryCollection.cs" />
     <Compile Include="System\Drawing\Printing\PrintingPermission.cs" />
     <Compile Include="System\Drawing\Printing\PrintingPermissionAttribute.cs" />
     <Compile Include="System\Drawing\Printing\PrintingPermissionLevel.cs" />
@@ -189,6 +184,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermission.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAccess.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAttribute.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntry.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntryCollection.cs" />
     <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />
   </ItemGroup>
 
