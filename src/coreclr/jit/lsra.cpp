@@ -636,16 +636,20 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+#if defined(TARGET_XARCH)
+    availableRegCount = ACTUAL_REG_COUNT;
+
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-    availableRegCount = ACTUAL_REG_COUNT;
+#endif
 
     if (!compiler->DoJitStressEvexEncoding())
     {
         availableRegCount -= CNT_HIGHFLOAT;
+        availableRegCount -= CNT_MASK_REGS;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 
     regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
@@ -698,6 +702,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
+#if defined(TARGET_XARCH)
+    availableMaskRegs = RBM_ALLMASK;
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
@@ -737,6 +744,12 @@ LinearScan::LinearScan(Compiler* theCompiler)
         {
             availableRegs[i] = &availableDoubleRegs;
         }
+#ifdef TARGET_XARCH
+        else if (thisType == TYP_MASK)
+        {
+            availableRegs[i] = &availableMaskRegs;
+        }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
         else
         {

@@ -434,9 +434,8 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvType = type;
 
 #ifdef FEATURE_SIMD
-        shadowVarDsc->lvSIMDType            = varDsc->lvSIMDType;
         shadowVarDsc->lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
-        if (varDsc->lvSIMDType)
+        if (varTypeIsSIMD(varDsc))
         {
             CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
             shadowVarDsc->SetSimdBaseJitType(simdBaseJitType);
@@ -564,7 +563,7 @@ void Compiler::gsParamsToShadows()
         if (type == TYP_STRUCT)
         {
             assert(shadowVarDsc->GetLayout() != nullptr);
-            assert(shadowVarDsc->lvExactSize != 0);
+            assert(shadowVarDsc->lvExactSize() != 0);
             opAssign = gtNewBlkOpNode(dst, src);
         }
         else

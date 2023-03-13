@@ -101,7 +101,8 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
+    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins) &&
+        !GetEmitter()->IsKInstruction(ins))
     {
         sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
         retbuf = buf[curBuf];

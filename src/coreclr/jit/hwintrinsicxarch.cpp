@@ -1248,6 +1248,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector512_ExtractMostSignificantBits:
+        {
+            if (IsBaselineVector512IsaSupported())
+            {
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
+                op1 = impSIMDPopStack(simdType);
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AVX512F_MoveMaskSpecial, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ false);
+            }
+            break;
+        }
+
         case NI_Vector128_ExtractMostSignificantBits:
         case NI_Vector256_ExtractMostSignificantBits:
         {

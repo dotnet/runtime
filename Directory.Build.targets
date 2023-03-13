@@ -40,6 +40,7 @@
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->
     <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' == ''">$(ProductVersion)</InformationalVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(InformationalVersion)' == '' and '$(VersionSuffix)' != ''">$(ProductVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
 
