@@ -187,7 +187,7 @@ namespace Microsoft.Workload.Build.Tasks
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Log,
                                                     Path.Combine(req.TargetPath, "dotnet"),
-                                                    $"workload install --skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {req.WorkloadId}",
+                                                    $"workload install --skip-sign-check --skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {req.WorkloadId}",
                                                     workingDir: Path.GetTempPath(),
                                                     silent: false,
                                                     logStdErrAsMessage: req.IgnoreErrors,
