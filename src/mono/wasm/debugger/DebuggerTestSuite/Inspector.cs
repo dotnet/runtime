@@ -383,7 +383,7 @@ namespace DebuggerTests
                     {
                         _logger.LogDebug($"HEY THAYS 5 - {cmd_name}");
                         _logger.LogDebug($"HEY THAYS 6 - {_isFailingWithException.ToString()}");
-                        throw;
+                        throw _isFailingWithException;
                     }
 
                     if (completedTask.IsCanceled)
