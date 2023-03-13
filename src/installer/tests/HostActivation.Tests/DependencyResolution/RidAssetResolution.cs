@@ -377,7 +377,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             public ComponentSharedTestState()
             {
-                HostApp = CreateSelfContainedAppWithMockCoreClr("ComponentHostSelfContainedApp", "1.0.0");
+                HostApp = CreateSelfContainedAppWithMockCoreClr("ComponentHostSelfContainedApp");
             }
         }
     }
@@ -432,12 +432,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             {
                 HostApp = CreateSelfContainedAppWithMockCoreClr(
                     "ComponentHostSelfContainedApp",
-                    "1.0.0",
                     b => b.WithStandardRuntimeFallbacks());
 
                 HostApp_RuntimeFallbacks = CreateSelfContainedAppWithMockCoreClr(
                     "ComponentHostSelfContainedApp_RuntimeFallbacks",
-                    "1.0.0",
                     UseFallbacksFromBuiltDotNet);
             }
         }
