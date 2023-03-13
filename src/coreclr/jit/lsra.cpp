@@ -437,7 +437,7 @@ regMaskTP LinearScan::getConstrainedRegMask(regMaskTP regMaskActual, regMaskTP r
 //    mask      - The current mask of register candidates for a node
 //
 // Return Value:
-//    A possibly-modified mask, based on the value of COMPlus_JitStressRegs.
+//    A possibly-modified mask, based on the value of DOTNET_JitStressRegs.
 //
 // Notes:
 //    This is the method used to implement the stress options that limit
@@ -636,16 +636,20 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+#if defined(TARGET_XARCH)
+    availableRegCount = ACTUAL_REG_COUNT;
+
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-    availableRegCount = ACTUAL_REG_COUNT;
+#endif
 
     if (!compiler->DoJitStressEvexEncoding())
     {
         availableRegCount -= CNT_HIGHFLOAT;
+        availableRegCount -= CNT_MASK_REGS;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 
     regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
@@ -698,6 +702,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
+#if defined(TARGET_XARCH)
+    availableMaskRegs = RBM_ALLMASK;
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
@@ -733,16 +740,17 @@ LinearScan::LinearScan(Compiler* theCompiler)
             availableRegs[i] = &availableDoubleRegs;
         }
 #ifdef FEATURE_SIMD
-#if defined(TARGET_XARCH)
-        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD32))
-#else
-        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD16))
-#endif // TARGET_XARCH
-
+        else if (varTypeIsSIMD(thisType))
         {
             availableRegs[i] = &availableDoubleRegs;
         }
-#endif
+#ifdef TARGET_XARCH
+        else if (thisType == TYP_MASK)
+        {
+            availableRegs[i] = &availableMaskRegs;
+        }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
         else
         {
             availableRegs[i] = &availableIntRegs;
@@ -1602,6 +1610,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         case TYP_SIMD16:
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
+        case TYP_SIMD64:
 #endif // TARGET_XARCH
         {
             return !varDsc->lvPromoted;
@@ -2205,7 +2214,7 @@ VarToRegMap LinearScan::setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarT
 //    same tree. However, now that last uses are computed as RefPositions are created,
 //    that is no longer necessary, and this method is simply retained as a check.
 //    The exception to the check-only behavior is when LSRA_EXTEND_LIFETIMES if set via
-//    COMPlus_JitStressRegs. In that case, this method is required, because even though
+//    DOTNET_JitStressRegs. In that case, this method is required, because even though
 //    the RefPositions will not be marked lastUse in that case, we still need to correctly
 //    mark the last uses on the tree nodes, which is done by this method.
 //
@@ -5085,6 +5094,13 @@ void LinearScan::allocateRegisters()
                 {
                     allocate = false;
                 }
+#if defined(TARGET_XARCH)
+                else if (lclVarInterval->registerType == TYP_SIMD64)
+                {
+                    allocate                           = false;
+                    lclVarInterval->isPartiallySpilled = true;
+                }
+#endif // TARGET_XARCH
                 else
                 {
                     lclVarInterval->isPartiallySpilled = true;
@@ -7750,6 +7766,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         }
     }
 
+    LclVarDsc* terminatorNodeLclVarDsc = nullptr;
     // Next, if this blocks ends with a switch table, or for Arm64, ends with JCMP instruction,
     // make sure to not copy into the registers that are consumed at the end of this block.
     //
@@ -7782,10 +7799,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             consumedRegs |= genRegMask(srcOp1->GetRegNum());
         }
     }
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    // Next, if this blocks ends with a JCMP, we have to make sure:
-    // 1. Not to copy into the register that JCMP uses
+    // Next, if this blocks ends with a JCMP/JTRUE, we have to make sure:
+    // 1. Not to copy into the register that JCMP/JTRUE uses
     //    e.g. JCMP w21, BRANCH
     // 2. Not to copy into the source of JCMP's operand before it is consumed
     //    e.g. Should not use w0 since it will contain wrong value after resolution
@@ -7794,34 +7809,37 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     //          mov w21, w0
     //          JCMP w21, BRANCH
     // 3. Not to modify the local variable it must consume
-
     // Note: GT_COPY has special handling in codegen and its generation is merged with the
     // node that consumes its result. So both, the input and output regs of GT_COPY must be
     // excluded from the set available for resolution.
-    LclVarDsc* jcmpLocalVarDsc = nullptr;
-    if (block->bbJumpKind == BBJ_COND)
+    else if (block->bbJumpKind == BBJ_COND)
     {
         GenTree* lastNode = LIR::AsRange(block).LastNode();
 
-        if (lastNode->OperIs(GT_JCMP))
+        if (lastNode->OperIs(GT_JTRUE, GT_JCMP))
         {
-            GenTree* op1 = lastNode->gtGetOp1();
-            consumedRegs |= genRegMask(op1->GetRegNum());
+            GenTree* op = lastNode->gtGetOp1();
+            consumedRegs |= genRegMask(op->GetRegNum());
 
-            if (op1->OperIs(GT_COPY))
+            if (op->OperIs(GT_COPY))
             {
-                GenTree* srcOp1 = op1->gtGetOp1();
-                consumedRegs |= genRegMask(srcOp1->GetRegNum());
+                GenTree* srcOp = op->gtGetOp1();
+                consumedRegs |= genRegMask(srcOp->GetRegNum());
             }
 
-            if (op1->IsLocal())
+            if (op->IsLocal())
             {
-                GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
-                jcmpLocalVarDsc          = &compiler->lvaTable[lcl->GetLclNum()];
+                GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
+                terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
             }
+
+#ifndef TARGET_LOONGARCH64
+            // TODO-LOONGARCH64: Take into account that on LA64, the second
+            // operand of a JCMP can be in a register too.
+            assert(!lastNode->OperIs(GT_JCMP) || lastNode->gtGetOp2()->isContained());
+#endif
         }
     }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     VarToRegMap sameVarToRegMap = sharedCriticalVarToRegMap;
     regMaskTP   sameWriteRegs   = RBM_NONE;
@@ -7898,7 +7916,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             }
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-            if (jcmpLocalVarDsc && (jcmpLocalVarDsc->lvVarIndex == outResolutionSetVarIndex))
+            if ((terminatorNodeLclVarDsc != nullptr) &&
+                (terminatorNodeLclVarDsc->lvVarIndex == outResolutionSetVarIndex))
             {
                 sameToReg = REG_NA;
             }
@@ -8644,7 +8663,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     {
                         // Spill "targetReg" to the stack and add its eventual target (otherTargetReg)
                         // to "targetRegsFromStack", which will be handled below.
-                        // NOTE: This condition is very rare.  Setting COMPlus_JitStressRegs=0x203
+                        // NOTE: This condition is very rare.  Setting DOTNET_JitStressRegs=0x203
                         // has been known to trigger it in JIT SH.
 
                         // First, spill "otherInterval" from targetReg to the stack.

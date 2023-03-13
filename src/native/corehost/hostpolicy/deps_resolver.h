@@ -173,6 +173,15 @@ public:
         }
     }
 
+public: // static
+    static pal::string_t get_fx_deps(const pal::string_t& fx_dir, const pal::string_t& fx_name)
+    {
+        pal::string_t fx_deps = fx_dir;
+        pal::string_t fx_deps_name = fx_name + _X(".deps.json");
+        append_path(&fx_deps, fx_deps_name.c_str());
+        return fx_deps;
+    }
+
 private:
     void setup_shared_store_probes(
         const std::vector<pal::string_t>& shared_stores);
@@ -194,14 +203,7 @@ private:
         return *m_fx_deps[0];
     }
 
-    static pal::string_t get_fx_deps(const pal::string_t& fx_dir, const pal::string_t& fx_name)
-    {
-        pal::string_t fx_deps = fx_dir;
-        pal::string_t fx_deps_name = fx_name + _X(".deps.json");
-        append_path(&fx_deps, fx_deps_name.c_str());
-        return fx_deps;
-    }
-
+private:
     // Resolve order for TPA lookup.
     bool resolve_tpa_list(
         pal::string_t* output,

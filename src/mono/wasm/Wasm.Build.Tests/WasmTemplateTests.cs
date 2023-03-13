@@ -148,7 +148,8 @@ namespace Wasm.Build.Tests
                         HasV8Script: false,
                         MainJS: "main.mjs",
                         Publish: false,
-                        TargetFramework: BuildTestBase.DefaultTargetFramework
+                        TargetFramework: BuildTestBase.DefaultTargetFramework,
+                        IsBrowserProject: false
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
@@ -174,7 +175,8 @@ namespace Wasm.Build.Tests
                             MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false));
+                            UseCache: false,
+                            IsBrowserProject: false));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
         }
@@ -216,7 +218,8 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: false,
-                            TargetFramework: expectedTFM
+                            TargetFramework: expectedTFM,
+                            IsBrowserProject: false
                             ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config, expectedTFM), "AppBundle"), fromRuntimePack: !relinking, targetFramework: expectedTFM);
@@ -388,7 +391,8 @@ namespace Wasm.Build.Tests
                             MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false));
+                            UseCache: false,
+                            IsBrowserProject: false));
 
             if (!aot)
             {
@@ -412,21 +416,6 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[0] = x", res.Output);
             Assert.Contains("args[1] = y", res.Output);
             Assert.Contains("args[2] = z", res.Output);
-        }
-
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        public async Task BlazorRunTest()
-        {
-            string config = "Debug";
-            string id = $"blazor_{config}_{Path.GetRandomFileName()}";
-            string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-
-            new DotNetCommand(s_buildEnv, _testOutput)
-                    .WithWorkingDirectory(_projectDir!)
-                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
-                    .EnsureSuccessful();
-
-            await BlazorRun(config);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]

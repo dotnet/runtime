@@ -1548,7 +1548,8 @@ class SuperPMIReplayAsmDiffs:
             "DOTNET_JitDisasm": "*",
             "DOTNET_JitUnwindDump": "*",
             "DOTNET_JitEHDump": "*",
-            "DOTNET_JitDiffableDasm": "1",
+            "DOTNET_JitDiffableDasm": "1", # to be removed
+            "DOTNET_JitDisasmDiffable": "1",
             "DOTNET_JitDisasmWithGC": "1"
         }
 

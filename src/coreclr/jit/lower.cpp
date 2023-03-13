@@ -235,6 +235,76 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree*
 }
 
 //------------------------------------------------------------------------
+// IsRangeInvariantInRange: Check if a range of nodes are invariant in the
+// specified range.
+//
+// Arguments:
+//    rangeStart   - The first node.
+//    rangeEnd     - The last node.
+//    endExclusive - The exclusive end of the range to check invariance for.
+//    ignoreNode   - A node to ignore interference checks with, for example
+//                   because it will retain its relative order with 'node'.
+//
+// Returns:
+//    True if the range can be evaluated at any point between its current location
+//    and 'endExclusive' without giving a different result; otherwise false.
+//
+// Remarks:
+//    Note that the range is treated as a unit and no pairwise interference
+//    checks between nodes in the range are performed.
+//
+bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart,
+                                       GenTree* rangeEnd,
+                                       GenTree* endExclusive,
+                                       GenTree* ignoreNode) const
+{
+    assert((rangeStart != nullptr) && (rangeEnd != nullptr));
+
+    if ((rangeEnd->gtNext == endExclusive) ||
+        ((ignoreNode != nullptr) && (rangeEnd->gtNext == ignoreNode) && (rangeEnd->gtNext->gtNext == endExclusive)))
+    {
+        return true;
+    }
+
+    if (rangeStart->OperConsumesFlags())
+    {
+        return false;
+    }
+
+    m_scratchSideEffects.Clear();
+    GenTree* cur = rangeStart;
+    while (true)
+    {
+        m_scratchSideEffects.AddNode(comp, cur);
+
+        if (cur == rangeEnd)
+        {
+            break;
+        }
+
+        cur = cur->gtNext;
+        assert((cur != nullptr) && "Expected rangeStart to precede rangeEnd");
+    }
+
+    for (GenTree* cur = rangeEnd->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+        if (cur == ignoreNode)
+        {
+            continue;
+        }
+
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // IsSafeToContainMem: Checks for conflicts between childNode and parentNode,
 // and returns 'true' iff memory operand childNode can be contained in parentNode.
 //
@@ -2289,7 +2359,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 
             if (tmpTyp == TYP_STRUCT)
             {
-                comp->lvaSetStruct(tmpLclNum, comp->lvaGetStruct(lclNum), false);
+                comp->lvaSetStruct(tmpLclNum, comp->lvaGetDesc(lclNum)->GetLayout(), false);
             }
             GenTreeLclVar* storeLclVar = comp->gtNewStoreLclVar(tmpLclNum, value);
             BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeLclVar));
@@ -2989,19 +3059,11 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 {
     assert(cmp->gtGetOp2()->IsIntegralConst());
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    GenTree*       op1      = cmp->gtGetOp1();
-    GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
-    ssize_t        op2Value = op2->IconValue();
+    GenTree*       op1 = cmp->gtGetOp1();
+    GenTreeIntCon* op2 = cmp->gtGetOp2()->AsIntCon();
 
-#ifdef TARGET_ARM64
-    // Do not optimise further if op1 has a contained chain.
-    if (op1->OperIs(GT_AND) &&
-        (op1->isContainedCompareChainSegment(op1->gtGetOp1()) || op1->isContainedCompareChainSegment(op1->gtGetOp2())))
-    {
-        return cmp;
-    }
-#endif
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    ssize_t op2Value = op2->IconValue();
 
 #ifdef TARGET_XARCH
     var_types op1Type = op1->TypeGet();
@@ -3204,6 +3266,30 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #endif // TARGET_XARCH
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
+    // Optimize EQ/NE(relop/SETCC, 0) into (maybe reversed) cond.
+    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))
+    {
+        LIR::Use use;
+        if (BlockRange().TryGetUse(cmp, &use))
+        {
+            if (cmp->OperIs(GT_EQ))
+            {
+                GenTree* reversed = comp->gtReverseCond(op1);
+                assert(reversed == op1);
+            }
+
+            // Relops and SETCC can be either TYP_INT or TYP_LONG typed, so we
+            // may need to retype it.
+            op1->gtType = cmp->TypeGet();
+
+            GenTree* next = cmp->gtNext;
+            use.ReplaceWith(op1);
+            BlockRange().Remove(cmp->gtGetOp2());
+            BlockRange().Remove(cmp);
+            return next;
+        }
+    }
+
     return cmp;
 }
 
@@ -3257,6 +3343,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     return cmp->gtNext;
 }
 
+#ifndef TARGET_LOONGARCH64
 //------------------------------------------------------------------------
 // Lowering::LowerJTrue: Lowers a JTRUE node.
 //
@@ -3272,98 +3359,64 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    assert(jtrue->gtGetOp1()->OperIsCompare());
-    assert(jtrue->gtGetOp1()->gtNext == jtrue);
-    GenTreeOp* relop = jtrue->gtGetOp1()->AsOp();
+    GenTree* cond = jtrue->gtGetOp1();
 
-    GenTree* relopOp1 = relop->gtGetOp1();
-    GenTree* relopOp2 = relop->gtGetOp2();
+    JITDUMP("Lowering JTRUE:\n");
+    DISPTREERANGE(BlockRange(), jtrue);
+    JITDUMP("\n");
 
 #if defined(TARGET_ARM64)
-    if (relopOp2->IsCnsIntOrI())
+    if (cond->OperIsCompare() && cond->gtGetOp2()->IsCnsIntOrI())
     {
-        bool         useJCMP = false;
-        GenTreeFlags flags   = GTF_EMPTY;
+        GenTree*     relopOp1 = cond->gtGetOp1();
+        GenTree*     relopOp2 = cond->gtGetOp2();
+        bool         useJCMP  = false;
+        GenTreeFlags flags    = GTF_EMPTY;
 
-        if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
+        if (cond->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
+            flags   = cond->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
             useJCMP = true;
         }
-        else if (relop->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
+        else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {
             // Codegen will use tbz or tbnz in codegen which do not affect the flag register
-            flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
+            flags   = GTF_JCMP_TST | (cond->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
             useJCMP = true;
         }
 
         if (useJCMP)
         {
-            relop->SetOper(GT_JCMP);
-            relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
-            relop->gtFlags |= flags;
-            relop->gtType = TYP_VOID;
+            jtrue->SetOper(GT_JCMP);
+            jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
+            jtrue->gtOp1 = relopOp1;
+            jtrue->gtOp2 = relopOp2;
+            jtrue->gtFlags |= flags;
 
             relopOp2->SetContained();
 
-            BlockRange().Remove(jtrue);
-
-            assert(relop->gtNext == nullptr);
+            BlockRange().Remove(cond);
+            JITDUMP("Lowered to JCMP\n");
             return nullptr;
         }
     }
 #endif // TARGET_ARM64
 
-    assert(relop->OperIsCompare());
-    assert(relop->gtNext == jtrue);
-    assert(jtrue->gtNext == nullptr);
-
-#if defined(TARGET_LOONGARCH64)
-    GenCondition cond = GenCondition::FromRelop(relop);
-    // for LA64's integer compare and condition-branch instructions,
-    // it's very similar to the IL instructions.
-    if (!varTypeIsFloating(relopOp1->TypeGet()))
+    GenCondition condCode;
+    if (TryLowerConditionToFlagsNode(jtrue, cond, &condCode))
     {
-        relop->SetOper(GT_JCMP);
-        relop->gtType = TYP_VOID;
-
-        relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
-        relop->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
-
-        if ((cond.GetCode() == GenCondition::EQ) || (cond.GetCode() == GenCondition::NE))
-        {
-            relop->gtFlags &= ~GTF_UNSIGNED;
-        }
-
-        if (relopOp2->IsCnsIntOrI())
-        {
-            relopOp2->SetContained();
-        }
-
-        BlockRange().Remove(jtrue);
-
-        assert(relop->gtNext == nullptr);
-        return nullptr;
+        jtrue->SetOper(GT_JCC);
+        jtrue->AsCC()->gtCondition = condCode;
     }
-    else
-    {
-        // But the LA64's float compare and condition-branch instructions,
-        // it has the condition flags indicating the comparing results.
-        relop->gtType = TYP_VOID;
-        relop->gtFlags |= GTF_SET_FLAGS;
-        assert(relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
-    }
-#else
-    GenCondition cond;
-    bool         lowered = TryLowerConditionToFlagsNode(jtrue, relop, &cond);
-    assert(lowered); // Should succeed since relop is right before jtrue
-#endif // TARGET_LOONGARCH64
 
-    jtrue->SetOperRaw(GT_JCC);
-    jtrue->AsCC()->gtCondition = cond;
+    JITDUMP("Result:\n");
+    DISPTREERANGE(BlockRange(), jtrue);
+    JITDUMP("\n");
+
     return nullptr;
 }
+#endif
 
 //----------------------------------------------------------------------------------------------
 // LowerSelect: Lower a GT_SELECT node.
@@ -3408,7 +3461,10 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         }
     }
 
-#ifdef TARGET_XARCH
+    JITDUMP("Lowering select:\n");
+    DISPTREERANGE(BlockRange(), select);
+    JITDUMP("\n");
+
     // Do not transform GT_SELECT with GTF_SET_FLAGS into GT_SELECTCC; this
     // node is used by decomposition on x86.
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
@@ -3417,27 +3473,29 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     GenCondition selectCond;
     if (((select->gtFlags & GTF_SET_FLAGS) == 0) && TryLowerConditionToFlagsNode(select, cond, &selectCond))
     {
-        select->SetOperRaw(GT_SELECTCC);
+        select->SetOper(GT_SELECTCC);
         GenTreeOpCC* newSelect = select->AsOpCC();
         newSelect->gtCondition = selectCond;
         ContainCheckSelect(newSelect);
+        JITDUMP("Converted to SELECTCC:\n");
+        DISPTREERANGE(BlockRange(), newSelect);
+        JITDUMP("\n");
         return newSelect->gtNext;
     }
-#endif
 
     ContainCheckSelect(select);
     return select->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
-// TryLowerCompareToFlagsNode: Given a node 'parent' that is able to consume
+// TryLowerConditionToFlagsNode: Given a node 'parent' that is able to consume
 // conditions from CPU flags, try to transform 'condition' into a node that
 // produces CPU flags, and reorder it to happen right before 'parent'.
 //
 // Arguments:
-//     parent - The parent node that can consume from CPU flags.
-//     relop  - The relop that can be transformed into something that produces CPU flags.
-//     cond   - The condition that makes the compare true.
+//     parent    - The parent node that can consume from CPU flags.
+//     condition - The condition that to try to transform into something that produces CPU flags.
+//     code      - [out] The condition code that makes the condition true.
 //
 // Return Value:
 //     True if relop was transformed and is now right before 'parent'; otherwise false.
@@ -3519,21 +3577,30 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         return true;
     }
 
-    // TODO-Cleanup: Avoid creating these SETCC nodes in the first place.
     if (condition->OperIs(GT_SETCC))
     {
         assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
-        GenTree* flagsProducer = condition->gtPrev;
-        if (!IsInvariantInRange(flagsProducer, parent, condition))
+        GenTree* flagsDef = condition->gtPrev;
+#ifdef TARGET_ARM64
+        // CCMP is a flag producing node that also consumes flags, so find the
+        // "root" of the flags producers and move the entire range.
+        // We limit this to 10 nodes look back to avoid quadratic behavior.
+        for (int i = 0; i < 10 && flagsDef->OperIs(GT_CCMP); i++)
+        {
+            assert((flagsDef->gtPrev != nullptr) && ((flagsDef->gtPrev->gtFlags & GTF_SET_FLAGS) != 0));
+            flagsDef = flagsDef->gtPrev;
+        }
+#endif
+        if (!IsRangeInvariantInRange(flagsDef, condition->gtPrev, parent, condition))
         {
             return false;
         }
 
         *cond = condition->AsCC()->gtCondition;
 
+        LIR::Range range = BlockRange().Remove(flagsDef, condition->gtPrev);
+        BlockRange().InsertBefore(parent, std::move(range));
         BlockRange().Remove(condition);
-        BlockRange().Remove(flagsProducer);
-        BlockRange().InsertBefore(parent, flagsProducer);
         return true;
     }
 

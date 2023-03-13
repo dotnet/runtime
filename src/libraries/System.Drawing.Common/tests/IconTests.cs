@@ -113,6 +113,23 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fix in core")]
+        public void Ctor_Stream_Trickled()
+        {
+            var stream = new TrickleStream(File.ReadAllBytes(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")));
+            var icon = new Icon(stream);
+            Assert.Equal(32, icon.Width);
+            Assert.Equal(32, icon.Height);
+            Assert.Equal(new Size(32, 32), icon.Size);
+        }
+
+        private sealed class TrickleStream : MemoryStream
+        {
+            public TrickleStream(byte[] bytes) : base(bytes) { }
+            public override int Read(byte[] buffer, int offset, int count) => base.Read(buffer, offset, Math.Min(count, 1));
+        }
+
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Stream_Width_Height(string fileName, Size size, Size expectedSize)

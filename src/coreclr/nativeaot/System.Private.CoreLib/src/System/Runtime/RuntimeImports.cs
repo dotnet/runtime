@@ -344,7 +344,7 @@ namespace System.Runtime
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBoxAny")]
-        private static extern unsafe object RhBoxAny(ref byte pData, MethodTable* pEEType);
+        internal static extern unsafe object RhBoxAny(ref byte pData, MethodTable* pEEType);
 
         internal static unsafe object RhBoxAny(ref byte pData, EETypePtr pEEType)
             => RhBoxAny(ref pData, pEEType.ToPointer());
@@ -372,7 +372,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBox")]
-        private static extern unsafe object RhBox(MethodTable* pEEType, ref byte data);
+        internal static extern unsafe object RhBox(MethodTable* pEEType, ref byte data);
 
         internal static unsafe object RhBox(EETypePtr pEEType, ref byte data)
             => RhBox(pEEType.ToPointer(), ref data);

@@ -1431,15 +1431,15 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
-    ++fgBBNumMax;
 
     if (compIsForInlining())
     {
         block->bbNum = ++impInlineInfo->InlinerCompiler->fgBBNumMax;
+        fgBBNumMax   = block->bbNum;
     }
     else
     {
-        block->bbNum = fgBBNumMax;
+        block->bbNum = ++fgBBNumMax;
     }
 
     if (compRationalIRForm)
@@ -1507,6 +1507,9 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     static_assert_no_msg(BasicBlock::MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
 
     block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
+
+    block->bbPreorderNum  = 0;
+    block->bbPostorderNum = 0;
 
     return block;
 }

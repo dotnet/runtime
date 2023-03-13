@@ -40,6 +40,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayResetGetElementOnByRefArray ();
 			TestArrayResetAfterCall ();
 			TestArrayResetAfterAssignment ();
+
+			TestArrayRecursion ();
+
 			TestMultiDimensionalArray.Test ();
 
 			WriteCapturedArrayElement.Test ();
@@ -271,6 +274,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_externalArray = arr;
 
 			arr[0].RequiresPublicFields (); // Should warn
+		}
+
+		static void TestArrayRecursion ()
+		{
+			typeof (TestType).RequiresAll (); // Force data flow on this method
+
+			object[] arr = new object[3];
+			arr[0] = arr; // Recursive reference
+
+			ConsumeArray (arr);
+
+			static void ConsumeArray (object[] a) { }
 		}
 
 		static Type[] _externalArray;

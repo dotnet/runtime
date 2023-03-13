@@ -745,16 +745,23 @@ bool Compiler::fgRemoveDeadBlocks()
 }
 
 //-------------------------------------------------------------
-// fgDfsInvPostOrder: Helper function for computing dominance information.
+// fgDfsReversePostorder: Depth first search to establish block
+//   preorder and reverse postorder numbers, plus a reverse postorder for blocks.
 //
-// In order to be able to compute dominance, we need to first get a DFS reverse post order sort on the basic flow
-// graph for the dominance algorithm to operate correctly. The reason why we need the DFS sort is because we will
-// build the dominance sets using the partial order induced by the DFS sorting.  With this precondition not
-// holding true, the algorithm doesn't work properly.
+// Notes:
+//   Assumes caller has computed the fgEnterBlkSet.
 //
-void Compiler::fgDfsInvPostOrder()
+//   Assumes caller has allocated the fgBBReversePostorder array.
+//   It will be filled in with blocks in reverse post order.
+//
+//   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
+//
+void Compiler::fgDfsReversePostorder()
 {
-    // NOTE: This algorithm only pays attention to the actual blocks. It ignores the imaginary entry block.
+    // Make sure fgEnterBlks are still there in startNodes, even if they participate in a loop (i.e., there is
+    // an incoming edge into the block).
+    assert(fgEnterBlksSetValid);
+    assert(fgBBReversePostorder != nullptr);
 
     // visited   :  Once we run the DFS post order sort recursive algorithm, we mark the nodes we visited to avoid
     //              backtracking.
@@ -765,15 +772,12 @@ void Compiler::fgDfsInvPostOrder()
     // mark in this step.
     BlockSet_ValRet_T startNodes = fgDomFindStartNodes();
 
-    // Make sure fgEnterBlks are still there in startNodes, even if they participate in a loop (i.e., there is
-    // an incoming edge into the block).
-    assert(fgEnterBlksSetValid);
-
     BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
     assert(BlockSetOps::IsMember(this, startNodes, fgFirstBB->bbNum));
 
     // Call the flowgraph DFS traversal helper.
-    unsigned postIndex = 1;
+    unsigned preorderIndex  = 1;
+    unsigned postorderIndex = 1;
     for (BasicBlock* const block : Blocks())
     {
         // If the block has no predecessors, and we haven't already visited it (because it's in fgEnterBlks but also
@@ -781,12 +785,27 @@ void Compiler::fgDfsInvPostOrder()
         if (BlockSetOps::IsMember(this, startNodes, block->bbNum) &&
             !BlockSetOps::IsMember(this, visited, block->bbNum))
         {
-            fgDfsInvPostOrderHelper(block, visited, &postIndex);
+            fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
+        }
+    }
+
+    // If there are still unvisited blocks (say isolated cycles), visit them too.
+    //
+    if (preorderIndex != fgBBcount + 1)
+    {
+        JITDUMP("DFS: flow graph has some isolated cycles, doing extra traversals\n");
+        for (BasicBlock* const block : Blocks())
+        {
+            if (!BlockSetOps::IsMember(this, visited, block->bbNum))
+            {
+                fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
+            }
         }
     }
 
     // After the DFS reverse postorder is completed, we must have visited all the basic blocks.
-    noway_assert(postIndex == fgBBcount + 1);
+    noway_assert(preorderIndex == fgBBcount + 1);
+    noway_assert(postorderIndex == fgBBcount + 1);
     noway_assert(fgBBNumMax == fgBBcount);
 
 #ifdef DEBUG
@@ -795,7 +814,7 @@ void Compiler::fgDfsInvPostOrder()
         printf("\nAfter doing a post order traversal of the BB graph, this is the ordering:\n");
         for (unsigned i = 1; i <= fgBBNumMax; ++i)
         {
-            printf("%02u -> " FMT_BB "\n", i, fgBBInvPostOrder[i]->bbNum);
+            printf("%02u -> " FMT_BB "\n", i, fgBBReversePostorder[i]->bbNum);
         }
         printf("\n");
     }
@@ -841,75 +860,99 @@ BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
 }
 
 //------------------------------------------------------------------------
-// fgDfsInvPostOrderHelper: Helper to assign post-order numbers to blocks.
+// fgDfsReversePostorderHelper: Helper to assign post-order numbers to blocks.
 //
 // Arguments:
 //    block   - The starting entry block
 //    visited - The set of visited blocks
-//    count   - Pointer to the Dfs counter
+//    preorderIndex - preorder visit counter
+//    postorderIndex - postorder visit counter
 //
 // Notes:
 //    Compute a non-recursive DFS traversal of the flow graph using an
-//    evaluation stack to assign post-order numbers.
+//    evaluation stack to assign pre and post-order numbers.
 //
-void Compiler::fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, unsigned* count)
+void Compiler::fgDfsReversePostorderHelper(BasicBlock* block,
+                                           BlockSet&   visited,
+                                           unsigned&   preorderIndex,
+                                           unsigned&   postorderIndex)
 {
     // Assume we haven't visited this node yet (callers ensure this).
     assert(!BlockSetOps::IsMember(this, visited, block->bbNum));
+
+    struct DfsBlockEntry
+    {
+    public:
+        DfsBlockEntry(Compiler* comp, BasicBlock* block) : m_block(block), m_nSucc(block->NumSucc(comp)), m_iter(0)
+        {
+        }
+
+        BasicBlock* getBlock()
+        {
+            return m_block;
+        }
+
+        BasicBlock* getNextSucc(Compiler* comp)
+        {
+            if (m_iter >= m_nSucc)
+            {
+                return nullptr;
+            }
+            return m_block->GetSucc(m_iter++, comp);
+        }
+
+    private:
+        BasicBlock* m_block;
+        unsigned    m_nSucc;
+        unsigned    m_iter;
+    };
 
     // Allocate a local stack to hold the DFS traversal actions necessary
     // to compute pre/post-ordering of the control flowgraph.
     ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack));
 
-    // Push the first block on the stack to seed the traversal.
-    stack.Push(DfsBlockEntry(DSS_Pre, block));
-
-    // Flag the node we just visited to avoid backtracking.
+    // Push the first block on the stack to seed the traversal, mark it visited to avoid backtracking,
+    // and give it a preorder number.
+    stack.Emplace(this, block);
     BlockSetOps::AddElemD(this, visited, block->bbNum);
+    block->bbPreorderNum = preorderIndex++;
 
     // The search is terminated once all the actions have been processed.
     while (!stack.Empty())
     {
-        DfsBlockEntry current      = stack.Pop();
-        BasicBlock*   currentBlock = current.dfsBlock;
+        DfsBlockEntry&    current = stack.TopRef();
+        BasicBlock* const succ    = current.getNextSucc(this);
 
-        if (current.dfsStackState == DSS_Pre)
+        if (succ == nullptr)
         {
-            // This is a pre-visit that corresponds to the first time the
-            // node is encountered in the spanning tree and receives pre-order
-            // numberings. By pushing the post-action on the stack here we
-            // are guaranteed to only process it after all of its successors
-            // pre and post actions are processed.
-            stack.Push(DfsBlockEntry(DSS_Post, currentBlock));
+            BasicBlock* const block = current.getBlock();
 
-            for (BasicBlock* const succ : currentBlock->Succs(this))
-            {
-                // If this is a node we haven't seen before, go ahead and process
-                if (!BlockSetOps::IsMember(this, visited, succ->bbNum))
-                {
-                    // Push a pre-visit action for this successor onto the stack and
-                    // mark it as visited in case this block has multiple successors
-                    // to the same node (multi-graph).
-                    stack.Push(DfsBlockEntry(DSS_Pre, succ));
-                    BlockSetOps::AddElemD(this, visited, succ->bbNum);
-                }
-            }
+            // Final visit to this node
+            //
+            block->bbPostorderNum = postorderIndex;
+
+            // Compute the index of block in the reverse postorder and
+            // update the reverse postorder accordingly.
+            //
+            assert(postorderIndex <= fgBBcount);
+            unsigned reversePostorderIndex              = fgBBcount - postorderIndex + 1;
+            fgBBReversePostorder[reversePostorderIndex] = block;
+            postorderIndex++;
+
+            stack.Pop();
+            continue;
         }
-        else
+
+        if (BlockSetOps::IsMember(this, visited, succ->bbNum))
         {
-            // This is a post-visit that corresponds to the last time the
-            // node is visited in the spanning tree and only happens after
-            // all descendents in the spanning tree have had pre and post
-            // actions applied.
-
-            assert(current.dfsStackState == DSS_Post);
-
-            unsigned invCount = fgBBcount - *count + 1;
-            assert(1 <= invCount && invCount <= fgBBNumMax);
-            fgBBInvPostOrder[invCount]   = currentBlock;
-            currentBlock->bbPostOrderNum = invCount;
-            ++(*count);
+            // Already visited this succ
+            //
+            continue;
         }
+
+        stack.Emplace(this, succ);
+        BlockSetOps::AddElemD(this, visited, succ->bbNum);
+        succ->bbPreorderNum = preorderIndex++;
     }
 }
 
@@ -945,10 +988,10 @@ void Compiler::fgComputeDoms()
 
     BlockSet processedBlks(BlockSetOps::MakeEmpty(this));
 
-    fgBBInvPostOrder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
+    fgBBReversePostorder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
 
-    fgDfsInvPostOrder();
-    noway_assert(fgBBInvPostOrder[0] == nullptr);
+    fgDfsReversePostorder();
+    noway_assert(fgBBReversePostorder[0] == nullptr);
 
     // flRoot and bbRoot represent an imaginary unique entry point in the flow graph.
     // All the orphaned EH blocks and fgFirstBB will temporarily have its predecessors list
@@ -961,12 +1004,12 @@ void Compiler::fgComputeDoms()
     bbRoot.bbPreds        = nullptr;
     bbRoot.bbNum          = 0;
     bbRoot.bbIDom         = &bbRoot;
-    bbRoot.bbPostOrderNum = 0;
+    bbRoot.bbPostorderNum = fgBBNumMax + 1;
     bbRoot.bbFlags        = BBF_EMPTY;
 
     FlowEdge flRoot(&bbRoot, nullptr);
 
-    fgBBInvPostOrder[0] = &bbRoot;
+    fgBBReversePostorder[0] = &bbRoot;
 
     // Mark both bbRoot and fgFirstBB processed
     BlockSetOps::AddElemD(this, processedBlks, 0); // bbRoot    == block #0
@@ -1020,7 +1063,7 @@ void Compiler::fgComputeDoms()
         {
             FlowEdge*   first   = nullptr;
             BasicBlock* newidom = nullptr;
-            block               = fgBBInvPostOrder[i];
+            block               = fgBBReversePostorder[i];
 
             // If we have a block that has bbRoot as its bbIDom
             // it means we flag it as processed and as an entry block so
@@ -1279,11 +1322,11 @@ BasicBlock* Compiler::fgIntersectDom(BasicBlock* a, BasicBlock* b)
     BasicBlock* finger2 = b;
     while (finger1 != finger2)
     {
-        while (finger1->bbPostOrderNum > finger2->bbPostOrderNum)
+        while (finger1->bbPostorderNum < finger2->bbPostorderNum)
         {
             finger1 = finger1->bbIDom;
         }
-        while (finger2->bbPostOrderNum > finger1->bbPostOrderNum)
+        while (finger2->bbPostorderNum < finger1->bbPostorderNum)
         {
             finger2 = finger2->bbIDom;
         }
@@ -6596,7 +6639,7 @@ void Compiler::fgCompDominatedByExceptionalEntryBlocks()
     {
         for (unsigned i = 1; i <= fgBBNumMax; ++i)
         {
-            BasicBlock* block = fgBBInvPostOrder[i];
+            BasicBlock* block = fgBBReversePostorder[i];
             if (BlockSetOps::IsMember(this, fgEnterBlks, block->bbNum))
             {
                 if (fgFirstBB != block) // skip the normal entry.
