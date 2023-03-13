@@ -185,6 +185,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InvalidChainedResolver()
+        {
+            throw new InvalidOperationException(SR.SerializerOptions_InvalidChainedResolver);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializerPropertyNameConflict(Type type, string propertyName)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameConflict, type, propertyName));

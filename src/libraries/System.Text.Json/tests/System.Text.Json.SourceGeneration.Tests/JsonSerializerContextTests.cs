@@ -212,6 +212,20 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public static void ChainedContexts_ResolveJsonTypeInfo()
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolverChain = { NestedContext.Default, PersonJsonContext.Default } };
+
+            JsonTypeInfo messageInfo = options.GetTypeInfo(typeof(JsonMessage));
+            Assert.IsAssignableFrom<JsonTypeInfo<JsonMessage>>(messageInfo);
+            Assert.Same(options, messageInfo.Options);
+
+            JsonTypeInfo personInfo = options.GetTypeInfo(typeof(Person));
+            Assert.IsAssignableFrom<JsonTypeInfo<Person>>(personInfo);
+            Assert.Same(options, personInfo.Options);
+        }
+
+        [Fact]
         public static void CombiningContexts_ResolveJsonTypeInfo_DifferentCasing()
         {
             IJsonTypeInfoResolver combined = JsonTypeInfoResolver.Combine(NestedContext.Default, PersonJsonContext.Default);
@@ -489,6 +503,24 @@ namespace System.Text.Json.SourceGeneration.Tests
             var options = new JsonSerializerOptions { TypeInfoResolver = combined };
 
             JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)combined.GetTypeInfo(typeof(T), options)!;
+
+            string json = JsonSerializer.Serialize(value, typeInfo);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            JsonSerializer.Deserialize<T>(json, typeInfo);
+            JsonSerializer.Deserialize<T>(json, options);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetCombiningContextsData))]
+        public static void ChainedContexts_Serialization<T>(T value, string expectedJson)
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolverChain = { NestedContext.Default, PersonJsonContext.Default } };
+
+            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T))!;
 
             string json = JsonSerializer.Serialize(value, typeInfo);
             JsonTestHelper.AssertJsonEqual(expectedJson, json);

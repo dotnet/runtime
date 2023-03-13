@@ -3,24 +3,26 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// A list of configuration items that can be locked for modification
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal abstract class ConfigurationList<TItem> : IList<TItem>
     {
         protected readonly List<TItem> _list;
 
-        public ConfigurationList(IList<TItem>? source = null)
+        public ConfigurationList(IEnumerable<TItem>? source = null)
         {
             _list = source is null ? new List<TItem>() : new List<TItem>(source);
         }
 
-        protected abstract bool IsImmutable { get; }
-        protected abstract void VerifyMutable();
-        protected virtual void OnAddingElement(TItem item) { }
+        public abstract bool IsReadOnly { get; }
+        protected abstract void OnCollectionModifying();
+        protected virtual void ValidateAddedValue(TItem item) { }
 
         public TItem this[int index]
         {
@@ -30,20 +32,18 @@ namespace System.Text.Json.Serialization
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
-                    throw new ArgumentNullException(nameof(value));
+                    ThrowHelper.ThrowArgumentNullException(nameof(value));
                 }
 
-                VerifyMutable();
-                OnAddingElement(value);
+                ValidateAddedValue(value);
+                OnCollectionModifying();
                 _list[index] = value;
             }
         }
 
         public int Count => _list.Count;
-
-        public bool IsReadOnly => IsImmutable;
 
         public void Add(TItem item)
         {
@@ -52,14 +52,14 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentNullException(nameof(item));
             }
 
-            VerifyMutable();
-            OnAddingElement(item);
+            ValidateAddedValue(item);
+            OnCollectionModifying();
             _list.Add(item);
         }
 
         public void Clear()
         {
-            VerifyMutable();
+            OnCollectionModifying();
             _list.Clear();
         }
 
@@ -90,20 +90,20 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentNullException(nameof(item));
             }
 
-            VerifyMutable();
-            OnAddingElement(item);
+            ValidateAddedValue(item);
+            OnCollectionModifying();
             _list.Insert(index, item);
         }
 
         public bool Remove(TItem item)
         {
-            VerifyMutable();
+            OnCollectionModifying();
             return _list.Remove(item);
         }
 
         public void RemoveAt(int index)
         {
-            VerifyMutable();
+            OnCollectionModifying();
             _list.RemoveAt(index);
         }
 
@@ -115,6 +115,23 @@ namespace System.Text.Json.Serialization
         IEnumerator IEnumerable.GetEnumerator()
         {
             return _list.GetEnumerator();
+        }
+
+        internal string DebuggerDisplay
+        {
+            get
+            {
+                var sb = new StringBuilder("[");
+                foreach (TItem item in _list)
+                {
+                    sb.Append(item);
+                    sb.Append(", ");
+                }
+
+                sb.Length -= 2;
+                sb.Append(']');
+                return sb.ToString();
+            }
         }
     }
 }

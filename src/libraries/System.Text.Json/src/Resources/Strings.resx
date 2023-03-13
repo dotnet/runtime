@@ -339,6 +339,9 @@
   <data name="SerializerOptionsReadOnly" xml:space="preserve">
     <value>This JsonSerializerOptions instance is read-only or has already been used in serialization or deserialization.</value>
   </data>
+  <data name="SerializerOptions_InvalidChainedResolver" xml:space="preserve">
+    <value>Cannot insert the values of 'TypeInfoResolver' or 'TypeInfoResolverChain' to 'TypeInfoResolverChain'.</value>
+  </data>
   <data name="StreamNotWritable" xml:space="preserve">
     <value>Stream is not writable.</value>
   </data>
