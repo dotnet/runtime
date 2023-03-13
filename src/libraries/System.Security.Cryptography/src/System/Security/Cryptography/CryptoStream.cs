@@ -499,6 +499,28 @@ namespace System.Security.Cryptography
             WriteAsyncCore(buffer.AsMemory(offset, count), default, useAsync: false).AsTask().GetAwaiter().GetResult();
         }
 
+        /// <inheritdoc/>
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            // Logically this is doing the same thing as the base Stream, however CryptoStream clears arrays before
+            // returning them to the pool, whereas the base Stream does not.
+            byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+
+            try
+            {
+                buffer.CopyTo(sharedBuffer);
+
+                // We want to keep calling the virtual Write(byte[]...) so that derived CryptoStream types continue
+                // to get the array overload called from the span one.
+                Write(sharedBuffer, 0, buffer.Length);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(sharedBuffer.AsSpan(0, buffer.Length));
+                ArrayPool<byte>.Shared.Return(sharedBuffer);
+            }
+        }
+
         private void CheckWriteArguments(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -691,28 +713,6 @@ namespace System.Security.Cryptography
         {
             CheckCopyToArguments(destination, bufferSize);
             return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
-        }
-
-        /// <inheritdoc/>
-        public override void Write(ReadOnlySpan<byte> buffer)
-        {
-            if (!CanWrite)
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-
-            // Logically this is doing the same thing as the base Stream, however CryptoStream clears arrays before
-            // returning them to the pool, whereas the base Stream does not.
-            byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
-
-            try
-            {
-                buffer.CopyTo(sharedBuffer);
-                WriteAsyncCore(sharedBuffer.AsMemory(0, buffer.Length), default, useAsync: false).AsTask().GetAwaiter().GetResult();
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(sharedBuffer.AsSpan(0, buffer.Length));
-                ArrayPool<byte>.Shared.Return(sharedBuffer);
-            }
         }
 
         private async Task CopyToAsyncInternal(Stream destination, int bufferSize, CancellationToken cancellationToken)
