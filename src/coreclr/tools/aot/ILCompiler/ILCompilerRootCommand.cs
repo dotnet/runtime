@@ -160,6 +160,8 @@ namespace ILCompiler
             new(new[] { "--singlemethodgenericarg" }, "Single method compilation: generic arguments to the method");
         public Option<string> MakeReproPath { get; } =
             new(new[] { "--make-repro-path" }, "Path where to place a repro package");
+        public Option<string[]> RootedAssembliesExports { get; } =
+            new(new[] { "--rootedassembliesexports" }, Array.Empty<string>, "Root exported methods from assemblies");
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -232,6 +234,7 @@ namespace ILCompiler
             AddOption(SingleMethodName);
             AddOption(SingleMethodGenericArgs);
             AddOption(MakeReproPath);
+            AddOption(RootedAssembliesExports);
 
             this.SetHandler(context =>
             {

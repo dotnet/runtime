@@ -238,6 +238,15 @@ namespace ILCompiler
                     }
                 }
 
+                if (nativeLib || SplitExeInitialization)
+                {
+                    foreach (var rootedAssemblyExports in Get(_command.RootedAssembliesExports))
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleForSimpleName(rootedAssemblyExports);
+                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    }
+                }
+
                 foreach (var rdXmlFilePath in Get(_command.RdXmlFilePaths))
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
