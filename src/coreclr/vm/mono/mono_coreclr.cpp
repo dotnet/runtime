@@ -236,7 +236,9 @@ MonoString* InvokeFindPluginCallback(MonoString* path)
 {
     if (unity_find_plugin_callback)
     {
-        const char* result = unity_find_plugin_callback(mono_string_to_utf8(path));
+        SString sstr;
+        ((StringObject*)path)->GetSString(sstr);
+        const char* result = unity_find_plugin_callback(sstr.GetUTF8());
         if (result != NULL)
         {
             MonoString* result_mono = mono_string_new_wrapper(result);
@@ -2948,12 +2950,8 @@ extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_new_wrapper(const char* 
     return mono_string_new_len(mono_domain_get(), text, (guint32)strlen(text));
 }
 
-extern "C" EXPORT_API gunichar2* EXPORT_CC mono_string_to_utf16(MonoString *string_obj)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return NULL;
-}
-
+// This API is not GC safe and is not used by the Unity runtime.
+// Once the embedding layer tests have been transitioned away from using this API it can be removed.
 extern "C" EXPORT_API char* EXPORT_CC mono_string_to_utf8(MonoString *string_obj)
 {
     SString sstr;
