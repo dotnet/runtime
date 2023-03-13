@@ -1853,7 +1853,7 @@ interp_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **out_info, MonoE
 		if (imethod->del_info && imethod->del_info->klass == del->object.vtable->klass) {
 			*out_info = imethod->del_info;
 		} else if (!imethod->del_info) {
-			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method);
+			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method, FALSE);
 			*out_info = imethod->del_info;
 		}
 	}

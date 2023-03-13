@@ -7039,7 +7039,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_ADJUSTED_IID:
 		encode_klass_ref (acfg, patch_info->data.klass, p, &p);
 		break;
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_DELEGATE_INFO:
 		encode_klass_ref (acfg, patch_info->data.del_tramp->klass, p, &p);
 		if (patch_info->data.del_tramp->method) {
 			encode_value (1, p, &p);
@@ -7142,7 +7142,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 				break;
 			case MONO_PATCH_INFO_FIELD:
 			case MONO_PATCH_INFO_METHOD:
-			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
@@ -8952,7 +8952,7 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			return FALSE;
 		}
 		break;
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
+	case MONO_PATCH_INFO_DELEGATE_INFO: {
 		if (!can_encode_class (acfg, patch_info->data.del_tramp->klass)) {
 			//printf ("Skip: %s\n", mono_type_full_name (m_class_get_byval_arg (patch_info->data.klass)));
 			return FALSE;
@@ -9188,7 +9188,7 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 				break;
 			case MONO_PATCH_INFO_FIELD:
 			case MONO_PATCH_INFO_METHOD:
-			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL:
