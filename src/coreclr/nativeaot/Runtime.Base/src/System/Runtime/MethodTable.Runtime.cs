@@ -98,6 +98,7 @@ namespace Internal.Runtime
             return ((pThis->_uFlags | pOther->_uFlags) & (uint)EETypeFlags.ComplexCastingMask) == 0;
         }
 
+        // fast equivalence check that may not consider complex casses of type equivalence
         internal static bool FastEquals(MethodTable* mt1, MethodTable* mt2)
         {
             if (mt1 == mt2)
