@@ -113,10 +113,15 @@ export async function mono_download_assets(): Promise<void> {
         // continue after we know if memory snapshot is available or not
         await memorySnapshotSkippedOrDone.promise;
 
-        // start fetching and assets in parallel, only if memory snapshot is not available
-        if (!runtimeHelpers.loadedMemorySnapshot) {
-            for (const asset of containedInSnapshotAssets) {
+        // start fetching and assets in parallel, only if memory snapshot is not available.
+        for (const asset of containedInSnapshotAssets) {
+            if (!runtimeHelpers.loadedMemorySnapshot) {
                 countAndStartDownload(asset);
+            } else {
+                // Otherwise cleanup in case we were given pending download. It would be even better if we could abort the download.
+                asset.pendingDownloadInternal = null as any; // GC
+                asset.pendingDownload = null as any; // GC
+                asset.buffer = null as any; // GC
             }
         }
 
