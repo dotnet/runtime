@@ -36,6 +36,22 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX_X64;
         case InstructionSet_AVX2:
             return InstructionSet_AVX2_X64;
+        case InstructionSet_AVX512BW:
+            return InstructionSet_AVX512BW_X64;
+        case InstructionSet_AVX512BW_VL:
+            return InstructionSet_AVX512BW_VL_X64;
+        case InstructionSet_AVX512CD:
+            return InstructionSet_AVX512CD_X64;
+        case InstructionSet_AVX512CD_VL:
+            return InstructionSet_AVX512CD_VL_X64;
+        case InstructionSet_AVX512DQ:
+            return InstructionSet_AVX512DQ_X64;
+        case InstructionSet_AVX512DQ_VL:
+            return InstructionSet_AVX512DQ_VL_X64;
+        case InstructionSet_AVX512F:
+            return InstructionSet_AVX512F_X64;
+        case InstructionSet_AVX512F_VL:
+            return InstructionSet_AVX512F_VL_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
         case InstructionSet_AES:
@@ -54,6 +70,31 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_POPCNT_X64;
         case InstructionSet_X86Serialize:
             return InstructionSet_X86Serialize_X64;
+        default:
+            return InstructionSet_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// VLVersionOfIsa: Gets the corresponding AVX512VL only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The AVX512VL only InstructionSet associated with isa
+static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_AVX512BW:
+            return InstructionSet_AVX512BW_VL;
+        case InstructionSet_AVX512CD:
+            return InstructionSet_AVX512CD_VL;
+        case InstructionSet_AVX512DQ:
+            return InstructionSet_AVX512DQ_VL;
+        case InstructionSet_AVX512F:
+            return InstructionSet_AVX512F_VL;
         default:
             return InstructionSet_NONE;
     }
@@ -83,6 +124,22 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "Avx2") == 0)
         {
             return InstructionSet_AVX2;
+        }
+        if (strcmp(className, "Avx512BW") == 0)
+        {
+            return InstructionSet_AVX512BW;
+        }
+        if (strcmp(className, "Avx512CD") == 0)
+        {
+            return InstructionSet_AVX512CD;
+        }
+        if (strcmp(className, "Avx512DQ") == 0)
+        {
+            return InstructionSet_AVX512DQ;
+        }
+        if (strcmp(className, "Avx512F") == 0)
+        {
+            return InstructionSet_AVX512F;
         }
         if (strcmp(className, "AvxVnni") == 0)
         {
@@ -152,6 +209,11 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             return InstructionSet_Vector512;
         }
+        else if (strcmp(className, "VL") == 0)
+        {
+            assert(!"VL.X64 support doesn't exist in the managed libraries and so is not yet implemented");
+            return InstructionSet_ILLEGAL;
+        }
     }
     else if (strcmp(className, "Fma") == 0)
     {
@@ -190,6 +252,11 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
     {
         assert(enclosingClassName != nullptr);
         return X64VersionOfIsa(lookupInstructionSet(enclosingClassName));
+    }
+    else if (strcmp(className, "VL") == 0)
+    {
+        assert(enclosingClassName != nullptr);
+        return VLVersionOfIsa(lookupInstructionSet(enclosingClassName));
     }
     else
     {
