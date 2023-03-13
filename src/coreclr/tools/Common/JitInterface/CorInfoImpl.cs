@@ -2012,7 +2012,7 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
 
                 if (metadataType.IsInlineArray)
-                    result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
+                    result |= CorInfoFlag.CORINFO_FLG_INDEXABLE_FIELDS;
             }
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))

@@ -3573,7 +3573,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
 
         if (pClass->IsInlineArray())
-            ret |= CORINFO_FLG_DONT_DIG_FIELDS;
+            ret |= CORINFO_FLG_INDEXABLE_FIELDS;
 
         if (VMClsHnd.IsCanonicalSubtype())
             ret |= CORINFO_FLG_SHAREDINST;
