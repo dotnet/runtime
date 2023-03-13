@@ -36,6 +36,13 @@ echo ******************************
 echo.
 call dotnet build unity\managed.sln -c %configuration% || goto :error
 
+echo.
+echo *****************************************************
+echo Unity: Running managed embedding API tests
+echo *****************************************************
+echo.
+call dotnet test unity/managed.sln -c %configuration% || goto :error
+
 if "%architecture%"=="x86" goto :skip_embedding_tests_x86
 echo.
 echo *****************************************************

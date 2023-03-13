@@ -70,16 +70,56 @@ static unsafe partial class CoreCLRHost
 
         foreach (var methodSymbol in callbackMethods)
         {
-            sb.AppendLine($"       functionStruct->{methodSymbol.Name} = &{methodSymbol.Name};");
+            sb.AppendLine($"       functionStruct->{methodSymbol.Name} = &{methodSymbol.Name}_native;");
         }
 
-        string sourceEnd = @"    }
-}";
+        sb.AppendLine("    }");
+        sb.AppendLine();
 
-        sb.Append(sourceEnd);
+        foreach (var methodSymbol in callbackMethods)
+        {
+            sb.AppendLine("    [System.Runtime.InteropServices.UnmanagedCallersOnly]");
+            string signature = FormatMethodParametersForMethodSignature(methodSymbol);
+            sb.AppendLine($"    static {methodSymbol.ReturnType} {methodSymbol.Name}_native({signature}) => {methodSymbol.Name}({FormatMethodParametersNames(methodSymbol)});");
+            sb.AppendLine();
+        }
+
+        sb.Append("}");
         context.AddSource($"GeneratedCoreCLRHost.gen.cs",
             SourceText.From(sb.ToString(), Encoding.UTF8));
     }
+    static string FormatMethodParametersForMethodSignature(IMethodSymbol methodSymbol)
+    {
+        var sb = new StringBuilder();
+        for (int index = 0; index < methodSymbol.Parameters.Length; index++)
+        {
+            IParameterSymbol? param = methodSymbol.Parameters[index];
+            sb.Append(param.Type);
+            sb.Append(' ');
+            sb.Append(param.Name);
+
+            if (index < methodSymbol.Parameters.Length -1)
+                sb.Append(", ");
+        }
+
+        return sb.ToString();
+    }
+
+    static string FormatMethodParametersNames(IMethodSymbol methodSymbol)
+    {
+        var sb = new StringBuilder();
+        for (int index = 0; index < methodSymbol.Parameters.Length; index++)
+        {
+            IParameterSymbol? param = methodSymbol.Parameters[index];
+            sb.Append(param.Name);
+
+            if (index < methodSymbol.Parameters.Length -1)
+                sb.Append(", ");
+        }
+
+        return sb.ToString();
+    }
+
 
     static string FormatMethodParameters(IMethodSymbol methodSymbol)
     {
@@ -126,14 +166,11 @@ static unsafe partial class CoreCLRHost
             yield return method;
     }
 
-    static bool HasUnmanagedCallersOnly(IMethodSymbol methodSymbol)
-        => methodSymbol.GetAttributes().Any(attr => attr.AttributeClass!.Name == "UnmanagedCallersOnlyAttribute");
-
     static IEnumerable<IMethodSymbol> GetCallbackMethods(INamedTypeSymbol typeSymbol)
     {
         foreach (var member in typeSymbol.GetMembers())
         {
-            if (member is IMethodSymbol methodSymbol && HasUnmanagedCallersOnly(methodSymbol))
+            if (member is IMethodSymbol methodSymbol && methodSymbol.DeclaredAccessibility == Accessibility.Public)
             {
                 yield return methodSymbol;
             }
