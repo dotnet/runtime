@@ -4734,6 +4734,8 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
 
     if (tree->gtFlags & GTF_JCMP_TST)
     {
+        assert(!(tree->gtFlags & (GTF_JCMP_LT | GTF_JCMP_GE)));
+
         ssize_t compareImm = op2->AsIntCon()->IconValue();
 
         assert(isPow2(compareImm));
@@ -4746,6 +4748,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     else if (tree->gtFlags & (GTF_JCMP_LT | GTF_JCMP_GE))
     {
         assert(op2->IsIntegralConst(0));
+        assert(!(tree->gtFlags & GTF_JCMP_EQ));
 
         instruction ins = (tree->gtFlags & GTF_JCMP_LT) ? INS_tbnz : INS_tbz;
         int         imm = (int)attr * 8 - 1;

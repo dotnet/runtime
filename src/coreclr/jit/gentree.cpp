@@ -3480,9 +3480,28 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
     }
     else if (tree->OperIs(GT_JCMP))
     {
-        // Flip the GTF_JCMP_EQ
+#ifdef TARGET_ARM64
+        // Flip the GTF_JCMP_LT, GTF_JCMP_GE
         //
         // This causes switching
+        //     tbz <=> tbnz
+
+        if (tree->gtFlags & GTF_JCMP_LT)
+        {
+            tree->gtFlags ^= GTF_JCMP_LT;
+            tree->gtFlags |= GTF_JCMP_GE;
+            return tree;
+        }
+        if (tree->gtFlags & GTF_JCMP_GE)
+        {
+            tree->gtFlags ^= GTF_JCMP_GE;
+            tree->gtFlags |= GTF_JCMP_LT;
+            return tree;
+        }
+#endif // TARGET_ARM64
+
+        // Flip the GTF_JCMP_EQ
+        // On ARM64, this causes switching
         //     cbz <=> cbnz
         //     tbz <=> tbnz
         tree->gtFlags ^= GTF_JCMP_EQ;
