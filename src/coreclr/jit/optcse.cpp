@@ -2770,13 +2770,6 @@ public:
         {
             m_pCompiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_pCompiler), false);
         }
-        else if (varTypeIsSIMD(cseLclVarTyp))
-        {
-            lclDsc->lvExactSize = genTypeSize(cseLclVarTyp);
-#ifdef FEATURE_SIMD
-            lclDsc->lvSIMDType = 1;
-#endif
-        }
         lclDsc->lvType  = cseLclVarTyp;
         lclDsc->lvIsCSE = true;
 
