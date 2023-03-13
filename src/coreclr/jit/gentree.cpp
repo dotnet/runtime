@@ -16387,6 +16387,8 @@ bool Compiler::gtSplitTree(
                     // location treatment. The edge will then be the User ---
                     // op2 edge.
                     *use = (*use)->gtGetOp2();
+                    MadeChanges = true;
+
                     UseInfo use2{use, user};
 
                     // Locations are never returned.
