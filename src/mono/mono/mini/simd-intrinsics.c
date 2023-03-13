@@ -1207,8 +1207,19 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		if (id != SN_Add)
+		switch (id) {
+		case SN_Add:
+		case SN_Equals:
+		case SN_GreaterThan:
+		case SN_GreaterThanOrEqual:
+		case SN_LessThan:
+		case SN_LessThanOrEqual:
+		case SN_Negate:
+		case SN_OnesComplement:
+			break;
+		default: 
 			return NULL;
+		}
 		MonoClass *arg0_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int class_size = mono_class_value_size (arg0_class, NULL);
 		if (class_size != 16)
