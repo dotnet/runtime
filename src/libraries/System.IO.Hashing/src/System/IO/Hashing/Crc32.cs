@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.IO.MemoryMappedFiles;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Hashing
 {
@@ -174,11 +177,16 @@ namespace System.IO.Hashing
                 && System.Runtime.Intrinsics.X86.Sse2.IsSupported
                 && System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported)
             {
-                crc = UpdateX86(crc, ref source);
+                return UpdateX86(crc, source);
             }
 #endif
 
-            // Process without intrinsics. If intrinsics were used, this processes any remaining bytes.
+            return UpdateSlowPath(crc, source);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint UpdateSlowPath(uint crc, ReadOnlySpan<byte> source)
+        {
             ReadOnlySpan<uint> crcLookup = CrcLookup;
             for (int i = 0; i < source.Length; i++)
             {
