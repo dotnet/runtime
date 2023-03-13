@@ -491,9 +491,11 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 		MonoMethod *m = klass_methods [i];
 		MonoMethodSignature *msig;
 
-		/* We must cope with failing to load some of the types. */
-		if (!m)
-			continue;
+		/* When do we ever see NULL here? */
+		g_assertf(m != NULL, "Found null method %d when looking for '%s' in '%s.%s' on behalf of '%s.%s'",
+			  i, fqname ? fqname : qname ? qname : name,
+			  m_class_get_name_space (klass), m_class_get_name (klass),
+			  m_class_get_name_space (from_class), m_class_get_name (from_class));
 
 		if (!((fqname && !strcmp (m->name, fqname)) ||
 		      (qname && !strcmp (m->name, qname)) ||
