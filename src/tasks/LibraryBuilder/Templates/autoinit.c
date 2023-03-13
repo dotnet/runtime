@@ -1,24 +1,36 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-#include <assert.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/system_properties.h>
 #include <unistd.h>
 
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 #include <mono/metadata/assembly.h>
-#include <mono/metadata/mono-debug.h>
 
-static char *bundle_path;
+#ifdef HOST_ANDROID
+#include <android/log.h>
+
+#define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_INFO, "MONO_SELF_CONTAINED_LIBRARY", fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "MONO_SELF_CONTAINED_LIBRARY", fmt, ##__VA_ARGS__)
+#else
+#include <os/log.h>
+
+#define LOG_INFO(fmt, ...) os_log_info (OS_LOG_DEFAULT, fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) os_log_error (OS_LOG_DEFAULT, fmt, ##__VA_ARGS__)
+#endif
+
+static const char *bundle_path;
 
 void register_aot_modules (void);
 void load_assemblies_with_exported_symbols (const char *dir);
+typedef void (*MonoRuntimeInitCallback) (void);
+void mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -31,12 +43,20 @@ static void
 initialize_runtimeconfig ()
 {
     char *file_name = "runtimeconfig.bin";
-    int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the \"/\"
-    char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
-    int num_char = snprintf (file_path, (str_len + 1), "%s/%s", bundle_path, file_name);
+    size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
+    char *file_path = (char *)malloc (str_len);
+    if (!file_path) {
+        LOG_ERROR ("Could not allocate %zu bytes to format '%s' and '%s' together to initialize the runtime configuration.\n", str_len, bundle_path, file_name);
+        abort ();
+    }
+
+    int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
     struct stat buffer;
 
-    assert (num_char > 0 && num_char == str_len);
+    if (num_char <= 0 || num_char != (str_len - 1)) {
+        LOG_ERROR ("Could not format '%s' and '%s' together into \"%%s/%%s\" to initialize the runtime configuration.\n", bundle_path, file_name);
+        abort ();
+    }
 
     if (stat (file_path, &buffer) == 0) {
         MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
@@ -44,6 +64,7 @@ initialize_runtimeconfig ()
         arg->runtimeconfig.name.path = file_path;
         monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
     } else {
+        LOG_INFO ("Could not stat file '%s'. Runtime configuration properties not initialized.\n", file_path);
         free (file_path);
     }
 }
@@ -82,14 +103,26 @@ mono_load_assembly (const char *name, const char *culture)
         res = snprintf (path, sizeof (path) - 1, "%s/%s/%s", bundle_path, culture, filename);
     else
         res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle_path, filename);
-    assert (res > 0);
+
+    if (res <= 0 && culture) {
+        LOG_ERROR ("Could not format '%s', '%s', and '%s' together into \"%%s/%%s/%%s\" for assembly preloading.\n", bundle_path, culture, filename);
+        abort ();
+    }
+    if (res <= 0) {
+        LOG_ERROR ("Could not format '%s' and '%s' together into \"%%s/%%s\" for assembly preloading.\n", bundle_path, filename);
+        abort ();
+    }
 
     struct stat buffer;
     if (stat (path, &buffer) == 0) {
         MonoAssembly *assembly = mono_assembly_open (path, NULL);
-        assert (assembly);
+        if (!assembly) {
+            LOG_ERROR ("Could not open assembly '%s'.\n", path);
+            abort ();
+        }
         return assembly;
     }
+    LOG_INFO ("Could not stat file '%s'. Did not successfully preload assembly.\n", path);
     return NULL;
 }
 
@@ -113,15 +146,20 @@ load_aot_data (MonoAssembly *assembly, int size, void *user_data, void **out_han
     const char *aname = mono_assembly_name_get_name (assembly_name);
 
     res = snprintf (path, sizeof (path) - 1, "%s/%s.aotdata", bundle_path, aname);
-    assert (res > 0);
+    if (res <= 0) {
+        LOG_ERROR ("Could not format '%s' and '%s' together into \"%%s/%%s.aotdata\" for assembly preloading.\n", bundle_path, aname);
+        abort ();
+    }
 
     int fd = open (path, O_RDONLY);
     if (fd < 0) {
+        LOG_INFO ("Could not open file '%s' while trying to load aot data.\n", path);
         return NULL;
     }
 
     void *ptr = mmap (NULL, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
     if (ptr == MAP_FAILED) {
+        LOG_INFO ("Could not mmap file '%s'.\n", path);
         close (fd);
         return NULL;
     }
@@ -141,7 +179,11 @@ void
 runtime_init_callback ()
 {
     const char *assemblies_path = strdup(getenv("%ASSEMBLIES_LOCATION%"));
-    bundle_path = (assemblies_path && assemblies_path[0] != '\0') ? assemblies_path : "./";
+    if (!assemblies_path) {
+        LOG_ERROR ("Could not duplicate value of environment variable %ASSEMBLIES_LOCATION% due to insufficient memory.\n");
+        abort ();
+    }
+    bundle_path = (assemblies_path[0] != '\0') ? assemblies_path : "./";
 
     initialize_runtimeconfig ();
 
@@ -159,7 +201,11 @@ runtime_init_callback ()
 
     mono_set_signal_chaining (true);
 
-    mono_jit_init ("mono.self.contained.library");
+    MonoDomain *domain = mono_jit_init ("mono.self.contained.library");
+    if (!domain) {
+        LOG_ERROR ("Could not auto initialize runtime.\n");
+        abort ();
+    }
 
     load_assemblies_with_exported_symbols (bundle_path);
 

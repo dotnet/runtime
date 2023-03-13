@@ -18,7 +18,7 @@ include_directories("%MonoInclude%")
 
 add_library(
     aot_library STATIC
-    ${DOTNET_AOT_SOURCES}   
+    ${DOTNET_AOT_SOURCES}
 )
 target_link_libraries(
     aot_library
@@ -34,8 +34,9 @@ add_library(
 if(TARGETS_ANDROID)
     set(MOBILE_SYSTEM_LIBS
         libz.so
-        log    
+        log
     )
+    add_definitions(-DHOST_ANDROID=1)
 else()
     set(MOBILE_SYSTEM_LIBS
         "-framework Foundation"
