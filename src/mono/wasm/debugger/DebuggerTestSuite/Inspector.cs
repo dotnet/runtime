@@ -382,7 +382,7 @@ namespace DebuggerTests
                     if (_isFailingWithException is not null)
                     {
                         _logger.LogDebug($"HEY THAYS 5 - {cmd_name}");
-                        _logger.LogDebug($"HEY THAYS 6 - {_isFailingWithException.ToString()});
+                        _logger.LogDebug($"HEY THAYS 6 - {_isFailingWithException.ToString()}");
                         throw;
                     }
 
