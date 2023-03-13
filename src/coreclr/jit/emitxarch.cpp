@@ -287,8 +287,8 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
             // Since we are not using k registers yet, this will have no impact on correctness but will affect things
             // once
             // k registers are used (as that is the point of the "break out operand type" of these instructions)
-            // case INS_movdqa:         // INS_movdqa32, INS_movdqa64.
-            // case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_movdqu32, INS_movdqu64.
+            // case INS_movdqa:         // INS_vmovdqa32, INS_vmovdqa64.
+            // case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_vmovdqu32, INS_vmovdqu64.
             // case INS_pand:           // INS_vpandd, INS_vpandq.
             // case INS_pandn:          // INS_vpandnd, INS_vpandnq.
             // case INS_por:            // INS_vpord, INS_vporq.
@@ -5934,13 +5934,13 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movaps:
         case INS_movd:
         case INS_movdqa:
-        case INS_movdqa32:
-        case INS_movdqa64:
+        case INS_vmovdqa32:
+        case INS_vmovdqa64:
         case INS_movdqu:
         case INS_movdqu8:
         case INS_movdqu16:
-        case INS_movdqu32:
-        case INS_movdqu64:
+        case INS_vmovdqu32:
+        case INS_vmovdqu64:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movsx:
@@ -6083,12 +6083,12 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-        case INS_movdqa32:
-        case INS_movdqa64:
+        case INS_vmovdqa32:
+        case INS_vmovdqa64:
         case INS_movdqu8:
         case INS_movdqu16:
-        case INS_movdqu32:
-        case INS_movdqu64:
+        case INS_vmovdqu32:
+        case INS_vmovdqu64:
         {
             // These EVEX instructions merges/masks based on k-register
             // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
@@ -6299,13 +6299,13 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         case INS_movapd:
         case INS_movaps:
         case INS_movdqa:
-        case INS_movdqa32:
-        case INS_movdqa64:
+        case INS_vmovdqa32:
+        case INS_vmovdqa64:
         case INS_movdqu:
         case INS_movdqu8:
         case INS_movdqu16:
-        case INS_movdqu32:
-        case INS_movdqu64:
+        case INS_vmovdqu32:
+        case INS_vmovdqu64:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movupd:
@@ -17538,13 +17538,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movdqa:
-        case INS_movdqa32:
-        case INS_movdqa64:
+        case INS_vmovdqa32:
+        case INS_vmovdqa64:
         case INS_movdqu:
         case INS_movdqu8:
         case INS_movdqu16:
-        case INS_movdqu32:
-        case INS_movdqu64:
+        case INS_vmovdqu32:
+        case INS_vmovdqu64:
         case INS_movaps:
         case INS_movups:
         case INS_movapd:
