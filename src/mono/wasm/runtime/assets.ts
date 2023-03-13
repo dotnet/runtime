@@ -122,6 +122,13 @@ export async function mono_download_assets(): Promise<void> {
                 asset.pendingDownloadInternal = null as any; // GC
                 asset.pendingDownload = null as any; // GC
                 asset.buffer = null as any; // GC
+                if (asset.behavior == "resource" || asset.behavior == "assembly" || asset.behavior == "pdb") {
+                    const url = resolve_path(asset, "");
+                    const virtualName: string = typeof (asset.virtualPath) === "string"
+                        ? asset.virtualPath
+                        : asset.name;
+                    loaded_files.push({ url: url, file: virtualName });
+                }
             }
         }
 
