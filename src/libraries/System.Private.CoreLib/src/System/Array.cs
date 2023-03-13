@@ -244,7 +244,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
 
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
-            if (MethodTable.FastEquals(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
+            if (MethodTable.AreSameType(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
                 !pMT->IsMultiDimensionalArray &&
                 (uint)length <= sourceArray.NativeLength &&
                 (uint)length <= destinationArray.NativeLength)
@@ -273,7 +273,7 @@ namespace System
             if (sourceArray != null && destinationArray != null)
             {
                 MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
-                if (MethodTable.FastEquals(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
+                if (MethodTable.AreSameType(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
                     !pMT->IsMultiDimensionalArray &&
                     length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
                     (uint)(sourceIndex + length) <= sourceArray.NativeLength &&
