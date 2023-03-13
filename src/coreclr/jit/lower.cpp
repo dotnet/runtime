@@ -3381,7 +3381,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         }
         else if (cond->OperIs(GT_LT, GT_GE) && relopOp2->IsIntegralConst(0))
         {
-            // Codegen will use tbz or tbnz in codegen which do not affect the flag register
+            // Codegen will use tbnz or tbz in codegen which do not affect the flag register
             flags   = cond->OperIs(GT_LT) ? GTF_JCMP_LT : GTF_JCMP_GE;
             useJCMP = true;
         }
