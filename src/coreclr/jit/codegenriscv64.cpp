@@ -2109,6 +2109,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 //     (AnyVal /  0) => DivideByZeroException
                 //     (MinInt / -1) => ArithmeticException
                 //
+
                 bool checkDividend = true;
 
                 // Do we have an immediate for the 'divisorOp'?
@@ -3327,7 +3328,75 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     if (varTypeIsFloating(op1Type))
     {
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
-        NYI_RISCV64("genCodeForCompare-----unimplemented on RISCV64 yet----");
+        bool IsUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
+        regNumber regOp1     = op1->GetRegNum();
+        regNumber regOp2     = op2->GetRegNum();
+        if (IsUnordered)
+        {
+            if (tree->OperIs(GT_LT))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2,
+                                    regOp1);
+            }
+            else if (tree->OperIs(GT_LE))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2,
+                                    regOp1);
+            }
+            else if (tree->OperIs(GT_EQ))
+            {
+                NYI_RISCV64("not yet implemented GT_EQ unordered!");
+            }
+            else if (tree->OperIs(GT_NE))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1,
+                                    regOp2);
+            }
+            else if (tree->OperIs(GT_GT))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp1,
+                                    regOp2);
+            }
+            else if (tree->OperIs(GT_GE))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp1,
+                                    regOp2);
+            }
+            emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
+            emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
+        }
+        else
+        {
+            if (tree->OperIs(GT_LT))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s: INS_flt_d, cmpSize, targetReg, regOp1,
+                                    regOp2);
+            }
+            else if (tree->OperIs(GT_LE))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp1,
+                                    regOp2);
+            }
+            else if (tree->OperIs(GT_EQ))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1,
+                                    regOp2);
+            }
+            else if (tree->OperIs(GT_NE))
+            {
+                NYI_RISCV64("not yet implemented GT_NE ordered!");
+            }
+            else if (tree->OperIs(GT_GT))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2,
+                                    regOp1);
+            }
+            else if (tree->OperIs(GT_GE))
+            {
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2,
+                                    regOp1);
+            }
+        }
     }
     else
     {
@@ -4167,7 +4236,21 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
 void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp)
 {
-    NYI_RISCV64("genStackPointerAdjustment-----unimplemented/unused on RISCV64 yet----");
+    assert(spDelta < 0);
+
+    // We assert that the SP change is less than one page. If it's greater, you should have called a
+    // function that does a probe, which will in turn call this function.
+    assert((target_size_t)(-spDelta) <= compiler->eeGetPageSize());
+
+    if (emitter::isValidSimm12(spDelta))
+    {
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta);
+    }
+    else
+    {
+        GetEmitter()->emitIns_I_la(EA_PTRSIZE, regTmp, spDelta);
+        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4185,7 +4268,8 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
 //
 void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp)
 {
-    NYI_RISCV64("genStackPointerConstantAdjustmentWithProbe-----unimplemented/unused on RISCV64 yet----");
+    GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, regTmp, REG_SP, 0);
+    genStackPointerConstantAdjustment(spDelta, regTmp);
 }
 
 //------------------------------------------------------------------------
@@ -4202,8 +4286,35 @@ void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNum
 //
 target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp)
 {
-    NYI_RISCV64("genStackPointerConstantAdjustmentLoopWithProbe-----unimplemented/unused on RISCV64 yet----");
-    return 0;
+    assert(spDelta < 0);
+
+    const target_size_t pageSize = compiler->eeGetPageSize();
+
+    ssize_t spRemainingDelta = spDelta;
+    do
+    {
+        ssize_t spOneDelta = -(ssize_t)min((target_size_t)-spRemainingDelta, pageSize);
+        genStackPointerConstantAdjustmentWithProbe(spOneDelta, regTmp);
+        spRemainingDelta -= spOneDelta;
+    } while (spRemainingDelta < 0);
+
+    // What offset from the final SP was the last probe? This depends on the fact that
+    // genStackPointerConstantAdjustmentWithProbe() probes first, then does "SUB SP".
+    target_size_t lastTouchDelta = (target_size_t)(-spDelta) % pageSize;
+    if ((lastTouchDelta == 0) || (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize))
+    {
+        // We haven't probed almost a complete page. If lastTouchDelta==0, then spDelta was an exact
+        // multiple of pageSize, which means we last probed exactly one page back. Otherwise, we probed
+        // the page, but very far from the end. If the next action on the stack might subtract from SP
+        // first, before touching the current SP, then we do one more probe at the very bottom. This can
+        // happen on x86, for example, when we copy an argument to the stack using a "SUB ESP; REP MOV"
+        // strategy.
+
+        GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, regTmp, REG_SP, 0);
+        lastTouchDelta = 0;
+    }
+
+    return lastTouchDelta;
 }
 
 //------------------------------------------------------------------------
