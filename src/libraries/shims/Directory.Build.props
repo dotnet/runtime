@@ -54,6 +54,8 @@
     <PackageDownload Include="System.Data.SqlClient"
                      Version="[$(SystemDataSqlClientVersion)]" />
     <Reference Include="$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'system.data.sqlclient', '$(SystemDataSqlClientVersion)', 'ref', 'netcoreapp2.1', 'System.Data.SqlClient.dll'))" Private="false" />
+
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
   </ItemGroup>
 
 </Project>
