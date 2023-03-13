@@ -106,7 +106,7 @@ namespace System.Runtime
 
             // Copy the unboxed value type data into the new object.
             // Perform any write barriers necessary for embedded reference fields.
-            if (pEEType->HasGCPointers)
+            if (pEEType->ContainsGCPointers)
             {
                 InternalCalls.RhBulkMoveWithWriteBarrier(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
             }
@@ -263,7 +263,7 @@ namespace System.Runtime
 
             ref byte fields = ref obj.GetRawData();
 
-            if (pEEType->HasGCPointers)
+            if (pEEType->ContainsGCPointers)
             {
                 // Copy the boxed fields into the new location in a GC safe manner
                 InternalCalls.RhBulkMoveWithWriteBarrier(ref data, ref fields, pEEType->ValueTypeSize);

@@ -361,7 +361,7 @@ namespace System
         {
             get
             {
-                return _value->HasGCPointers;
+                return _value->ContainsGCPointers;
             }
         }
 
