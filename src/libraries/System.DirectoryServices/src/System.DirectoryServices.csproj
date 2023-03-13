@@ -3,7 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
-    <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822;CP0001</NoWarn>
+    <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822</NoWarn>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
