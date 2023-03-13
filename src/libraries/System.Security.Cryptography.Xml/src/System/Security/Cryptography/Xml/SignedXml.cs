@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Xml
         private XmlDocument? _containingDocument;
         private IEnumerator? _keyInfoEnum;
         private X509Certificate2Collection? _x509Collection;
-        private IEnumerator? _x509Enum;
+        private X509Certificate2Enumerator? _x509Enum;
 
         private bool[]? _refProcessed;
         private int[]? _refLevelCache;

@@ -87,7 +87,7 @@ namespace System.Collections.Tests
             Assert.Equal(stack.ToArray(), items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void DebuggerAttribute_NullStack_ThrowsArgumentNullException()
         {
             bool threwNull = false;

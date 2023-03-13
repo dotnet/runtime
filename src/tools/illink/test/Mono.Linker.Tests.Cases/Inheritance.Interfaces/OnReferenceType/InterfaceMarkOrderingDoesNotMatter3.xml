@@ -1,0 +1,7 @@
+<linker>
+    <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.InterfaceMarkOrderingDoesNotMatter3/MMarked">
+            <method name=".ctor"/>
+        </type>
+    </assembly>
+</linker>

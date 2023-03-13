@@ -529,6 +529,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     }
 
     [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/77241")]
     public void ImplicitDistributedTransactions_cannot_be_changed_after_being_read_as_true()
     {
         // Temporarily skip on 32-bit where we have an issue.

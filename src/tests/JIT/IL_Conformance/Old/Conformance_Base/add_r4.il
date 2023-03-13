@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace add_r4
+{
 .class public _add {
 .method public static	int32 _add(float32,float32,float32) {
 .maxstack		20
@@ -11,13 +14,13 @@
 	ldarg	1
 	add
 	dup
-	call	int32 _add::checkfinite(float32)
+	call	int32 add_r4._add::checkfinite(float32)
 	ldc.i4		0x0
 	ceq
 	brtrue		COMPARE
-	call	int32 _add::checkfinite(float32)
+	call	int32 add_r4._add::checkfinite(float32)
 	ldarg	2
-	call	int32 _add::checkfinite(float32)
+	call	int32 add_r4._add::checkfinite(float32)
 	ceq
 	br			FINISH
 COMPARE:
@@ -72,421 +75,424 @@ FINISH:
 }
 
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		20
 
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0xFF7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0xFF7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0xFF7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0xFF7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x00000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xFF7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0xC0000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0xBF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0xBF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x00000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xFF7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0xBF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x80000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x00000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x3F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xFF7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0xBF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x80000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x00000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x3F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xFF7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x00000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x3F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x3F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x40000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x00000000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _add::_add(float32,float32,float32)
+	call	int32 add_r4._add::_add(float32,float32,float32)
 	brfalse	FAIL
 
 
@@ -499,3 +505,4 @@ FAIL:
 }
 }
 .assembly add_r4{}
+}

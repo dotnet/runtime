@@ -245,7 +245,7 @@ namespace System.Globalization
             {
                 ulong temp = Unsafe.ReadUnaligned<ulong>(ref refToValue);
                 temp = BinaryPrimitives.ReverseEndianness(temp);
-                return Unsafe.As<ulong, double>(ref temp);
+                return BitConverter.UInt64BitsToDouble(temp);
             }
         }
 

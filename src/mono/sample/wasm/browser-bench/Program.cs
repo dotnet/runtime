@@ -24,6 +24,7 @@ namespace Sample
             new ExceptionsTask(),
             new JsonTask(),
             new SpanTask(),
+            new StringTask(),
             new VectorTask(),
             new JSInteropTask(),
             new WebSocketTask(),

@@ -12,7 +12,7 @@ namespace System.Net
 {
     public sealed unsafe partial class HttpListenerContext
     {
-        private HttpConnection _connection;
+        private readonly HttpConnection _connection;
 
         internal HttpListenerContext(HttpConnection connection)
         {

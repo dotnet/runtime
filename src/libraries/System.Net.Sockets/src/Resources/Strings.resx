@@ -249,9 +249,6 @@
   <data name="net_io_invalidendcall" xml:space="preserve">
     <value>{0} can only be called once for each asynchronous operation.</value>
   </data>
-  <data name="net_value_cannot_be_negative" xml:space="preserve">
-    <value>The specified value cannot be negative.</value>
-  </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper_Named" xml:space="preserve">
     <value>Argument '{2}' must be between {0} and {1}.</value>
   </data>
@@ -276,12 +273,6 @@
   <data name="NotSupported_UnwritableStream" xml:space="preserve">
     <value>Stream does not support writing.</value>
   </data>
-  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Cannot access a closed stream.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
-    <value>Positive number required.</value>
-  </data>
   <data name="ArgumentOutOfRange_PathLengthInvalid" xml:space="preserve">
     <value>The path '{0}' is of an invalid length for use with domain sockets on this platform.  The length must be between 1 and {1} characters, inclusive.</value>
   </data>
@@ -302,9 +293,6 @@
   </data>
   <data name="InvalidOperation_IncorrectToken" xml:space="preserve">
     <value>The result of the operation was already consumed and may not be used again.</value>
-  </data>
-  <data name="InvalidOperation_MultipleContinuations" xml:space="preserve">
-    <value>Another continuation was already registered.</value>
   </data>
   <data name="net_sockets_sendpackelement_FileStreamMustBeAsync" xml:space="preserve">
     <value>The FileStream must have been opened for asynchronous reading and writing.</value>

@@ -7,8 +7,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly a { }
-.method public static int32 main(string[] args) il managed
+.assembly 'b81938' { }
+.class public auto ansi Test_b81938 extends [mscorlib] System.Object {
+.method public static int32 main() il managed
 {
 	.entrypoint
 	.maxstack  8
@@ -27,4 +28,5 @@ IL_TRY:
 	throw
 IL_END_TRY:
 	.try IL_TRY to IL_END_TRY filter IL_FILTER handler IL_HANDLER to IL_END
+}
 }

@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class WeirdObject
+    public class WeirdObject
     {
         public int Member;
         public static int[] Static = new int[7];

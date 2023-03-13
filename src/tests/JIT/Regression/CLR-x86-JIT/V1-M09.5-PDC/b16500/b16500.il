@@ -8,10 +8,10 @@
   .ver 4:0:0:0
 }
 .assembly b16500 { }
-.class ILGEN_622380794 {
+.class public ILGEN_622380794 {
 .field static	int8 field_0x12
 .field static	int8 field_0x26
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	14
 

@@ -1,15 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.RemoteExecutor;
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
     {
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -51,7 +51,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -96,7 +96,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -138,6 +138,171 @@ namespace System.Formats.Tar.Tests
                 }
 
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void CreateEntryFromFileOwnedByNonExistentGroup(TarEntryFormat f)
+        {
+            RemoteExecutor.Invoke((string strFormat) =>
+            {
+                using TempDirectory root = new TempDirectory();
+
+                string fileName = "file.txt";
+                string filePath = Path.Join(root.Path, fileName);
+                File.Create(filePath).Dispose();
+
+                string groupName = Path.GetRandomFileName()[0..6];
+                int groupId = CreateGroup(groupName);
+
+                try
+                {
+                    SetGroupAsOwnerOfFile(groupName, filePath);
+                }
+                finally
+                {
+                    DeleteGroup(groupName);
+                }
+
+                using MemoryStream archive = new MemoryStream();
+                using (TarWriter writer = new TarWriter(archive, Enum.Parse<TarEntryFormat>(strFormat), leaveOpen: true))
+                {
+                    writer.WriteEntry(filePath, fileName); // Should not throw
+                }
+                archive.Seek(0, SeekOrigin.Begin);
+
+                using (TarReader reader = new TarReader(archive, leaveOpen: false))
+                {
+                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
+                    Assert.NotNull(entry);
+
+                    Assert.Equal(string.Empty, entry.GroupName);
+                    Assert.Equal(groupId, entry.Gid);
+
+                    string extractedPath = Path.Join(root.Path, "extracted.txt");
+                    entry.ExtractToFile(extractedPath, overwrite: false);
+                    Assert.True(File.Exists(extractedPath));
+
+                    Assert.Null(reader.GetNextEntry());
+                }
+            }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void CreateEntryFromFileOwnedByNonExistentUser(TarEntryFormat f)
+        {
+            RemoteExecutor.Invoke((string strFormat) =>
+            {
+                using TempDirectory root = new TempDirectory();
+
+                string fileName = "file.txt";
+                string filePath = Path.Join(root.Path, fileName);
+                File.Create(filePath).Dispose();
+
+                string userName = Path.GetRandomFileName()[0..6];
+                int userId = CreateUser(userName);
+
+                try
+                {
+                    SetUserAsOwnerOfFile(userName, filePath);
+                }
+                finally
+                {
+                    DeleteUser(userName);
+                }
+
+                using MemoryStream archive = new MemoryStream();
+                using (TarWriter writer = new TarWriter(archive, Enum.Parse<TarEntryFormat>(strFormat), leaveOpen: true))
+                {
+                    writer.WriteEntry(filePath, fileName); // Should not throw
+                }
+                archive.Seek(0, SeekOrigin.Begin);
+
+                using (TarReader reader = new TarReader(archive, leaveOpen: false))
+                {
+                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
+                    Assert.NotNull(entry);
+
+                    Assert.Equal(string.Empty, entry.UserName);
+                    Assert.Equal(userId, entry.Uid);
+
+                    string extractedPath = Path.Join(root.Path, "extracted.txt");
+                    entry.ExtractToFile(extractedPath, overwrite: false);
+                    Assert.True(File.Exists(extractedPath));
+
+                    Assert.Null(reader.GetNextEntry());
+                }
+            }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void CreateEntryFromFileOwnedByNonExistentGroupAndUser(TarEntryFormat f)
+        {
+            RemoteExecutor.Invoke((string strFormat) =>
+            {
+                using TempDirectory root = new TempDirectory();
+
+                string fileName = "file.txt";
+                string filePath = Path.Join(root.Path, fileName);
+                File.Create(filePath).Dispose();
+
+                string groupName = Path.GetRandomFileName()[0..6];
+                int groupId = CreateGroup(groupName);
+
+                string userName = Path.GetRandomFileName()[0..6];
+                int userId = CreateUser(userName);
+
+                try
+                {
+                    SetGroupAsOwnerOfFile(groupName, filePath);
+                }
+                finally
+                {
+                    DeleteGroup(groupName);
+                }
+
+                try
+                {
+                    SetUserAsOwnerOfFile(userName, filePath);
+                }
+                finally
+                {
+                    DeleteUser(userName);
+                }
+
+                using MemoryStream archive = new MemoryStream();
+                using (TarWriter writer = new TarWriter(archive, Enum.Parse<TarEntryFormat>(strFormat), leaveOpen: true))
+                {
+                    writer.WriteEntry(filePath, fileName); // Should not throw
+                }
+                archive.Seek(0, SeekOrigin.Begin);
+
+                using (TarReader reader = new TarReader(archive, leaveOpen: false))
+                {
+                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
+                    Assert.NotNull(entry);
+
+                    Assert.Equal(string.Empty, entry.GroupName);
+                    Assert.Equal(groupId, entry.Gid);
+
+                    Assert.Equal(string.Empty, entry.UserName);
+                    Assert.Equal(userId, entry.Uid);
+
+                    string extractedPath = Path.Join(root.Path, "extracted.txt");
+                    entry.ExtractToFile(extractedPath, overwrite: false);
+                    Assert.True(File.Exists(extractedPath));
+
+                    Assert.Null(reader.GetNextEntry());
+                }
+            }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
     }
 }

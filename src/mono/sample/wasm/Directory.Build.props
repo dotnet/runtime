@@ -15,7 +15,7 @@
   <PropertyGroup>
     <OutputPath>bin</OutputPath>
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
-    <WasmXHarnessArgs Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
+    <WasmXHarnessArgs Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeStrip>false</WasmNativeStrip>

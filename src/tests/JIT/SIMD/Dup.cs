@@ -9,7 +9,7 @@ namespace VectorMathTests
     class Program
     {
         static Point a;
-        static int Main(string[] args)
+        static int Main()
         {
             Point p = new Point(1, 2, 3, 4);
             Point c = p;

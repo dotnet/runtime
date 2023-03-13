@@ -543,7 +543,7 @@ namespace System.Runtime.Loader
         /// <param name="activating">Set CurrentContextualReflectionContext to the AssemblyLoadContext which loaded activating.</param>
         /// <returns>A disposable ContextualReflectionScope for use in a using block</returns>
         /// <remarks>
-        /// Sets CurrentContextualReflectionContext to to the AssemblyLoadContext which loaded activating.
+        /// Sets CurrentContextualReflectionContext to the AssemblyLoadContext which loaded activating.
         /// <see cref="System.Runtime.Loader.AssemblyLoadContext.CurrentContextualReflectionContext"/>
         ///
         /// Returns a disposable ContextualReflectionScope for use in a using block. When the using calls the

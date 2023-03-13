@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 // local and index local are appropriately ref counted and Value
 // number is updated post-global-morph and jit compilation 
 // won't run into any asserts.
-class DevDiv_142976
+public class DevDiv_142976
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static String Foo()

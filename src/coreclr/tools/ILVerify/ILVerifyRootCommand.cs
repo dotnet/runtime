@@ -21,19 +21,19 @@ namespace ILVerify
         public Option<string[]> Include { get; } =
             new(new[] { "--include", "-i" }, "Use only methods/types/namespaces, which match the given regular expression(s)");
         public Option<FileInfo> IncludeFile { get; } =
-            new Option<FileInfo>(new[] { "--include-file" }, "Same as --include, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly();
+            new Option<FileInfo>(new[] { "--include-file" }, "Same as --include, but the regular expression(s) are declared line by line in the specified file.").AcceptExistingOnly();
         public Option<string[]> Exclude { get; } =
             new(new[] { "--exclude", "-e" }, "Skip methods/types/namespaces, which match the given regular expression(s)");
         public Option<FileInfo> ExcludeFile { get; } =
-            new Option<FileInfo>(new[] { "--exclude-file" }, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly();
+            new Option<FileInfo>(new[] { "--exclude-file" }, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.").AcceptExistingOnly();
         public Option<string[]> IgnoreError { get; } =
             new(new[] { "--ignore-error", "-g" }, "Ignore errors, which match the given regular expression(s)");
         public Option<FileInfo> IgnoreErrorFile { get; } =
-            new Option<FileInfo>(new[] { "--ignore-error-file" }, "Same as --ignore-error, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly();
+            new Option<FileInfo>(new[] { "--ignore-error-file" }, "Same as --ignore-error, but the regular expression(s) are declared line by line in the specified file.").AcceptExistingOnly();
         public Option<bool> Statistics { get; } =
             new(new[] { "--statistics" }, "Print verification statistics");
         public Option<bool> Verbose { get; } =
-            new(new[] { "--verbose", "-v" }, "Verbose output");
+            new(new[] { "--verbose" }, "Verbose output");
         public Option<bool> Tokens { get; } =
             new(new[] { "--tokens", "-t" }, "Include metadata tokens in error messages");
 

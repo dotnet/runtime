@@ -121,6 +121,21 @@ namespace System.Reflection
             }
         }
 
+        internal virtual Type[] GetParameterTypes()
+        {
+            ParameterInfo[] paramInfo = GetParametersNoCopy();
+            if (paramInfo.Length == 0)
+            {
+                return Type.EmptyTypes;
+            }
+
+            Type[] parameterTypes = new Type[paramInfo.Length];
+            for (int i = 0; i < paramInfo.Length; i++)
+                parameterTypes[i] = paramInfo[i].ParameterType;
+
+            return parameterTypes;
+        }
+
 #if !NATIVEAOT
         private protected void ValidateInvokeTarget(object? target)
         {
@@ -239,14 +254,12 @@ namespace System.Reflection
 #pragma warning disable 8500
                 if (isValueType)
                 {
-#if !MONO // Temporary until Mono is updated.
                     Debug.Assert(arg != null);
                     Debug.Assert(
                         arg.GetType() == sigType ||
                         (sigType.IsPointer && (arg.GetType() == typeof(IntPtr) || arg.GetType() == typeof(UIntPtr))) ||
                         (sigType.IsByRef && arg.GetType() == RuntimeTypeHandle.GetElementType(sigType)) ||
                         ((sigType.IsEnum || arg.GetType().IsEnum) && RuntimeType.GetUnderlyingType((RuntimeType)arg.GetType()) == RuntimeType.GetUnderlyingType(sigType)));
-#endif
                     ByReference valueTypeRef = ByReference.Create(ref copyOfParameters[i]!.GetRawData());
                     *(ByReference*)(byrefParameters + i) = valueTypeRef;
                 }
@@ -270,17 +283,17 @@ namespace System.Reflection
         private protected ref struct StackAllocedArguments
         {
             internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
+#pragma warning disable CA1823, CS0169, IDE0051, IDE0044 // accessed via 'CheckArguments' ref arithmetic
             private object? _arg1;
             private object? _arg2;
             private object? _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
+#pragma warning restore CA1823, CS0169, IDE0051, IDE0044
             internal ParameterCopyBackAction _copyBack0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
+#pragma warning disable CA1823, CS0169, IDE0051, IDE0044 // accessed via 'CheckArguments' ref arithmetic
             private ParameterCopyBackAction _copyBack1;
             private ParameterCopyBackAction _copyBack2;
             private ParameterCopyBackAction _copyBack3;
-#pragma warning restore CA1823, CS0169, IDE0051
+#pragma warning restore CA1823, CS0169, IDE0051, IDE0044
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.

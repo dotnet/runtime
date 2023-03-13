@@ -2,13 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
 
 
 .assembly extern ConvDLL{}
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.class public auto ansi bge_r4 {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack 2
 .locals	(class [ConvDLL]ConvDLL)
@@ -595,5 +600,6 @@ FAIL:
 	ldc.i4		0x0
 	ret
 
+}
 }
 .assembly bge_r4{}

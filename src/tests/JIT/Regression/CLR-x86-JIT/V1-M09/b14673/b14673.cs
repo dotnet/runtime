@@ -18,7 +18,7 @@ namespace DefaultNamespace
             else
                 Console.WriteLine("Test FAiLED");
         }
-        public static int Main(String[] args)
+        public static int Main()
         {
             Bug oCbTest = new Bug();
             oCbTest.runTest((3));

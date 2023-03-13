@@ -19,14 +19,14 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task NoSpecifiedCallConvForwardsDefault()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -46,14 +46,14 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task SuppressGCTransitionAttributeForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [SuppressGCTransitionAttribute]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -74,14 +74,14 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task EmptyUnmanagedCallConvAttributeForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
+                using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [UnmanagedCallConv]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -102,14 +102,14 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task SimpleUnmanagedCallConvAttributeForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -130,14 +130,14 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task ComplexUnmanagedCallConvAttributeForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -164,14 +164,14 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task ComplexUnmanagedCallConvAttributeWithSuppressGCTransitionForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [SuppressGCTransition]
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
                     [VirtualMethodIndex(0)]
@@ -204,7 +204,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             INamedTypeSymbol generatedInterfaceImplementation = Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
 
-            IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"{userDefinedInterfaceName}.{methodName}").OfType<IMethodSymbol>());
+            IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"global::{userDefinedInterfaceName}.{methodName}").OfType<IMethodSymbol>());
 
             SyntaxNode emittedImplementationSyntax = await methodImplementation.DeclaringSyntaxReferences[0].GetSyntaxAsync();
 

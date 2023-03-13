@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly div_i4{}
+.assembly 'b92713'{}
 
 .class public _div {
 //
@@ -56,7 +56,7 @@ END:
 }
 //
 // -- Begin Main --------------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack		20
 //

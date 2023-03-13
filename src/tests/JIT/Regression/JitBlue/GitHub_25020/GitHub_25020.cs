@@ -7,9 +7,9 @@ using System.Reflection.Emit;
 
 namespace GitHub_25020
 {
-    class Program
+    public class Program
     {    
-        static int Main(string[] args)
+        public static int Main()
         {
             DynamicMethod dm = new DynamicMethod("MyMethod", typeof(string), new Type[] { typeof(string), typeof(string) });
             

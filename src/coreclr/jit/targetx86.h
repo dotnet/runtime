@@ -74,6 +74,11 @@
 
   #define REG_FP_FIRST             REG_XMM0
   #define REG_FP_LAST              REG_XMM7
+
+  #define REG_MASK_FIRST           REG_K0
+  #define REG_MASK_LAST            REG_K7
+  #define CNT_MASK_REGS            8
+
   #define FIRST_FP_ARGREG          REG_XMM0
   #define LAST_FP_ARGREG           REG_XMM3
   #define REG_FLTARG_0             REG_XMM0
@@ -91,6 +96,10 @@
   #define RBM_ALLFLOAT            (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7)
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
 
+  #define RBM_ALLMASK              REG_K1
+
+  #define CNT_HIGHFLOAT           0
+
   // TODO-CQ: Currently we are following the x86 ABI for SSE2 registers.
   // This should be reconsidered.
   #define RBM_FLT_CALLEE_SAVED     RBM_NONE
@@ -102,6 +111,7 @@
 
   #define XMM_REGSIZE_BYTES        16      // XMM register size in bytes
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
+  #define ZMM_REGSIZE_BYTES        64      // ZMM register size in bytes
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
 

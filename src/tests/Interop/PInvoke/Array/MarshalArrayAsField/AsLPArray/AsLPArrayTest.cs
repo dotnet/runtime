@@ -421,7 +421,7 @@ class Test
         Assert.Throws<TypeLoadException>(() => TakeStructArrayExpClassByVal(c14, ARRAY_SIZE));
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         try
         {

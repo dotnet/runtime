@@ -17,7 +17,7 @@ class MyClass
 
 public class TypeGetType2
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         TypeGetType2 getType2 = new TypeGetType2();
         TestLibrary.TestFramework.BeginScenario("Testing System.Type.GetType(System.String)...");

@@ -7,6 +7,8 @@
     <UseMonoRuntime>{UseMonoRuntime}</UseMonoRuntime>
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
     <PublishAot>{PublishAot}</PublishAot>
+    <AppHostSourcePath>{AppHostSourcePath}</AppHostSourcePath>
+    <SingleFileHostSourcePath>{SingleFileHostSourcePath}</SingleFileHostSourcePath>
 
     <!-- wasm specific -->
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>

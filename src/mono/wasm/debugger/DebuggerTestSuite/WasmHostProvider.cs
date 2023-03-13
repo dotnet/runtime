@@ -88,6 +88,8 @@ internal abstract class WasmHostProvider : IDisposable
         }
 
         // FIXME: use custom exception types
+        // Note: this message string is used in eng/test-configuration.json for triggering
+        //       test retries
         throw new IOException($"{messagePrefix} Timed out after {hostReadyTimeoutMs/1000}s waiting for the browser to be ready: {psi.FileName}");
 
         void ProcessOutput(string prefix, string? msg)

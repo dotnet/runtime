@@ -113,10 +113,7 @@ namespace System.Net
 
         public CookieContainer(int capacity)
         {
-            if (capacity <= 0)
-            {
-                throw new ArgumentException(SR.net_toosmall, nameof(capacity));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
             m_maxCookies = capacity;
         }
 
@@ -127,10 +124,7 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(perDomainCapacity), SR.Format(SR.net_cookie_capacity_range, "PerDomainCapacity", 0, capacity));
             }
             m_maxCookiesPerDomain = perDomainCapacity;
-            if (maxCookieSize <= 0)
-            {
-                throw new ArgumentException(SR.net_toosmall, nameof(maxCookieSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCookieSize);
             m_maxCookieSize = maxCookieSize;
         }
 
@@ -183,10 +177,7 @@ namespace System.Net
             }
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 m_maxCookieSize = value;
             }
         }
@@ -202,10 +193,12 @@ namespace System.Net
             }
             set
             {
-                if (value <= 0 || (value > m_maxCookies && value != int.MaxValue))
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+                if (value != int.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, m_maxCookies);
                 }
+
                 if (value < m_maxCookiesPerDomain)
                 {
                     m_maxCookiesPerDomain = value;
@@ -614,13 +607,15 @@ namespace System.Net
             }
 
             // Test for "127.###.###.###" without using regex.
-            string[] ipParts = host.Split('.');
-            if (ipParts != null && ipParts.Length == 4 && ipParts[0] == "127")
+            ReadOnlySpan<char> hostSpan = host;
+            Span<Range> ipParts = stackalloc Range[5];
+            ipParts = ipParts.Slice(0, hostSpan.Split(ipParts, '.'));
+            if (ipParts.Length == 4 && hostSpan[ipParts[0]] is "127")
             {
                 int i;
                 for (i = 1; i < ipParts.Length; i++)
                 {
-                    string part = ipParts[i];
+                    ReadOnlySpan<char> part = hostSpan[ipParts[i]];
                     switch (part.Length)
                     {
                         case 3:

@@ -8,13 +8,14 @@ namespace Internal.Runtime
     //
     // Please keep the data structures in this file in sync with the native version at
     //  src/coreclr/inc/readytorun.h
+    //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
     //
 
     internal struct ReadyToRunHeaderConstants
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 8;
+        public const ushort CurrentMajorVersion = 9;
         public const ushort CurrentMinorVersion = 0;
     }
 #if READYTORUN
@@ -81,7 +82,7 @@ namespace Internal.Runtime
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,
-        // 207 is unused - it was used by GCStaticDesc
+        DehydratedData = 207,
         ThreadStaticOffsetRegion = 208,
         // 209 is unused - it was used by ThreadStaticGCDescRegion
         // 210 is unused - it was used by ThreadStaticIndex

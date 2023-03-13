@@ -226,7 +226,7 @@ namespace System.Net.Http.Headers
                     }
                     break;
                 case 5:
-                    if (span.SequenceEqual("clear"))
+                    if (span is "clear")
                     {
                         result = "clear";
                         return true;
@@ -406,12 +406,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            if (HttpRuleParser.IsTokenChar(value[startIndex]))
+            int tokenLength = HttpRuleParser.GetTokenLength(value, startIndex);
+            if (tokenLength > 0)
             {
                 // No reason for integers to be quoted, so this should be the hot path.
-
-                int tokenLength = HttpRuleParser.GetTokenLength(value, startIndex);
-
                 readLength = tokenLength;
                 return HeaderUtilities.TryParseInt32(value, startIndex, tokenLength, out result);
             }
@@ -471,9 +469,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            if (HttpRuleParser.IsTokenChar(value[startIndex]))
+            int tokenLength = HttpRuleParser.GetTokenLength(value, startIndex);
+            if (tokenLength > 0)
             {
-                readLength = HttpRuleParser.GetTokenLength(value, startIndex);
+                readLength = tokenLength;
                 return true;
             }
 

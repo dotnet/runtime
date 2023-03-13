@@ -51,7 +51,7 @@ namespace Runtime_40607
             return retVal;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             PoisonStackWith(0xdeadbeef);
 

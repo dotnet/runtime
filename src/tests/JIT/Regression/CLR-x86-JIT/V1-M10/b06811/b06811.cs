@@ -5,9 +5,9 @@ using System;
 using System.Collections;
 
 
-internal class test
+public class test
 {
-    public static int Main(String[] args)
+    public static int Main()
     {
         ArrayList objList = new ArrayList();
         objList.Add("hey");

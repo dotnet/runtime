@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="Mono.Linker.Tests.Cases.Expectations">
+    <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/>
+  </assembly>
+  <assembly fullname="System.Runtime">
+    <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute"/>
+  </assembly>
+</linker>

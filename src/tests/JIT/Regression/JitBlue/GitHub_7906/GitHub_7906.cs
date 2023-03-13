@@ -9,7 +9,7 @@ namespace N
 {
     public static class C
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             int x = 0;
 

@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics;
 namespace SetIPTest
 {
-    internal class SetIP
+    public class SetIP
     {
         public SetIP()
         {
@@ -53,7 +53,7 @@ namespace SetIPTest
         }
 
 
-        public static int Main(String[] argv)
+        public static int Main()
         {
             Console.WriteLine("Entering Main of SetIP");
 

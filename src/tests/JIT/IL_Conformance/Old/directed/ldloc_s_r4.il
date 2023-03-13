@@ -3,8 +3,9 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly ldloc_s_r4 {}
-.class ldloc_s_r4 {
+.class public ldloc_s_r4 {
 
 .method public static int32 test_float32()
 {
@@ -1339,7 +1340,10 @@ FAIL:
         ret         
 }
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack       2
         call            int32 ldloc_s_r4::test_float32()

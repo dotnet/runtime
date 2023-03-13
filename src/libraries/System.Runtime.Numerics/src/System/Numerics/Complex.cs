@@ -399,10 +399,8 @@ namespace System.Numerics
 
         public string ToString(IFormatProvider? provider) => ToString(null, provider);
 
-        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
-        {
-            return string.Format(provider, "<{0}; {1}>", m_real.ToString(format, provider), m_imaginary.ToString(format, provider));
-        }
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) =>
+            $"<{m_real.ToString(format, provider)}; {m_imaginary.ToString(format, provider)}>";
 
         public static Complex Sin(Complex value)
         {

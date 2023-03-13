@@ -3038,25 +3038,8 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			if (MONO_TYPE_IS_REFERENCE (t)) {
 				p->regs [slot] = (host_mgreg_t)(gsize)*arg;
 				break;
-			} else {
-				if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-					MonoClass *klass = mono_class_from_mono_type_internal (t);
-					guint8 *nullable_buf;
-					int size;
-
-					size = mono_class_value_size (klass, NULL);
-					nullable_buf = g_alloca (size);
-					g_assert (nullable_buf);
-
-					/* The argument pointed to by arg is either a boxed vtype or null */
-					mono_nullable_init (nullable_buf, (MonoObject*)arg, klass);
-
-					arg = (gpointer*)nullable_buf;
-					/* Fall though */
-				} else {
-					/* Fall though */
-				}
 			}
+			/* Fall though */
 		case MONO_TYPE_VALUETYPE:
 			g_assert (ainfo->storage == RegTypeStructByVal);
 

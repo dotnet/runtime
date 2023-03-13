@@ -40,7 +40,7 @@ namespace System.Net.Sockets.Tests
             new object[] { SocketType.Unknown, ProtocolType.Udp },
         };
 
-        private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
+        private static bool SupportsRawSockets => Environment.IsPrivilegedProcess;
         private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
         [OuterLoop]
@@ -480,7 +480,7 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
-            }).WaitAsync(TestSettings.PassingTestTimeout); 
+            }).WaitAsync(TestSettings.PassingTestTimeout);
         }
 
         [DllImport("libc")]

@@ -35,7 +35,14 @@ namespace System.Threading.Channels
             }
             else if (error != null && error != s_doneWritingSentinel)
             {
-                tcs.TrySetException(error);
+                if (tcs.TrySetException(error))
+                {
+                    // Suppress unobserved exceptions from Completion tasks, as the exceptions will generally
+                    // have been surfaced elsewhere (which may end up making a consumer not consume the completion
+                    // task), and even if they weren't, they're created by a producer who will have "seen" them (in
+                    // contrast to them being created by some method call failing as part of user code).
+                    _ = tcs.Task.Exception;
+                }
             }
             else
             {

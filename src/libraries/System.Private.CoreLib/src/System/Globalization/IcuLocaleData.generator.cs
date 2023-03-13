@@ -24,10 +24,10 @@ namespace System.Globalization
         internal const int DoubleCommaSep = 4 << 4;
 
         private const int CulturesCount = 864;
-        // s_nameIndexToNumericData is mapping from index in s_localeNamesIndices to locale data.
+        // NameIndexToNumericData is mapping from index in s_localeNamesIndices to locale data.
         // each row in the table will have the following data:
         //      Lcid, Ansi codepage, Oem codepage, MAC codepage, EBCDIC codepage, Geo Id, Digit Substitution | ListSeparator, specific locale index, Console locale index
-        private static readonly int[] s_nameIndexToNumericData = new int[CulturesCount * NUMERIC_LOCALE_DATA_COUNT_PER_ROW]
+        private static ReadOnlySpan<int> NameIndexToNumericData => new int[CulturesCount * NUMERIC_LOCALE_DATA_COUNT_PER_ROW]
         {
             // Lcid,  Ansi CP, Oem CP, MAC CP, EBCDIC CP, Geo Id, digit substitution | ListSeparator, Specific culture index, Console locale index  // index - locale name
             0x1000 , 0x0   , 0x1   , 0x2   , 0x1f4 , 0x49  , 1 | SemicolonSep      , 3   , 240 , // 0    - aa
@@ -1327,20 +1327,20 @@ namespace System.Globalization
             Console.WriteLine("private static ReadOnlySpan<byte> LcidToCultureNameIndices => new byte[CulturesCount * NumericLocaleDataBytesPerRow]");
             Console.WriteLine("{");
 
-            for (int i = 0; i < s_nameIndexToNumericData.Length; i += NUMERIC_LOCALE_DATA_COUNT_PER_ROW)
+            for (int i = 0; i < NameIndexToNumericData.Length; i += NUMERIC_LOCALE_DATA_COUNT_PER_ROW)
             {
-                uint Lcid = (uint)s_nameIndexToNumericData[i];
-                uint AnsiCP = (uint)s_nameIndexToNumericData[i + 1];
-                uint OemCP = (uint)s_nameIndexToNumericData[i + 2];
-                uint MacCP = (uint)s_nameIndexToNumericData[i + 3];
-                uint EBCDIC = (uint)s_nameIndexToNumericData[i + 4];
-                uint GeoId = (uint)s_nameIndexToNumericData[i + 5];
-                uint DigitList = (uint)s_nameIndexToNumericData[i + 6];
+                uint Lcid = (uint)NameIndexToNumericData[i];
+                uint AnsiCP = (uint)NameIndexToNumericData[i + 1];
+                uint OemCP = (uint)NameIndexToNumericData[i + 2];
+                uint MacCP = (uint)NameIndexToNumericData[i + 3];
+                uint EBCDIC = (uint)NameIndexToNumericData[i + 4];
+                uint GeoId = (uint)NameIndexToNumericData[i + 5];
+                uint DigitList = (uint)NameIndexToNumericData[i + 6];
 
-                int index = s_nameIndexToNumericData[i + 7];
+                int index = NameIndexToNumericData[i + 7];
                 Debug.Assert(index == -1 || index < 0xfff);
                 uint SpecificCultureIndex = index == -1 ? 0xfff: (uint)index;
-                index = s_nameIndexToNumericData[i + 8];
+                index = NameIndexToNumericData[i + 8];
                 Debug.Assert(index == -1 || index < 0xfff);
                 uint ConsoleLocaleIndex = index == -1 ? 0xfff : (uint)index;
 

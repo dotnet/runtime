@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This test causes a lot of ephemeral and background GCs to happen
@@ -22,7 +22,7 @@ internal class Program
         }
     }
 
-    static void Main(string[] args)
+    static void Main()
     {
         int startTick = System.Environment.TickCount;
         const int threadCount = 4;

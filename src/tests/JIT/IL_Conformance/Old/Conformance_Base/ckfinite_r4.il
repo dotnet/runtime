@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace ckfinite_r4
+{
 .class public		_ckfinite {
 
 
@@ -46,51 +49,54 @@ FAIL:
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 	ldc.r4		float32(0xFF800000)
-	call	int32 _ckfinite::r4(float32)
+	call	int32 ckfinite_r4._ckfinite::r4(float32)
 	ldc.i4		0xEEEEEEEE
 	ceq
 	brfalse		FAIL
 	ldc.r4		float32(0xFF7FFFFF)
-	call	int32 _ckfinite::r4(float32)
+	call	int32 ckfinite_r4._ckfinite::r4(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	ldc.r4		float32(0xBF800000)
-	call	int32 _ckfinite::r4(float32)
+	call	int32 ckfinite_r4._ckfinite::r4(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	ldc.r4		float32(0x80000000)
-	call	int32 _ckfinite::r4(float32)
+	call	int32 ckfinite_r4._ckfinite::r4(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	ldc.r4		float32(0x00000000)
-	call	int32 _ckfinite::r4(float32)
+	call	int32 ckfinite_r4._ckfinite::r4(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	ldc.r4		float32(0x3F800000)
-	call	int32 _ckfinite::r4(float32)
+	call	int32 ckfinite_r4._ckfinite::r4(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	ldc.r4		float32(0x7F7FFFFF)
-	call	int32 _ckfinite::r4(float32)
+	call	int32 ckfinite_r4._ckfinite::r4(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	ldc.r4		float32(0x7F800000)
-	call	int32 _ckfinite::r4(float32)
+	call	int32 ckfinite_r4._ckfinite::r4(float32)
 	ldc.i4		0xEEEEEEEE
 	ceq
 	brfalse		FAIL
 	ldc.r4		float32(0x7FC00000)
-	call	int32 _ckfinite::r4(float32)
+	call	int32 ckfinite_r4._ckfinite::r4(float32)
 	ldc.i4		0xEEEEEEEE
 	ceq
 	brfalse		FAIL
@@ -109,3 +115,4 @@ END:
 }
 
 .assembly ckfinite_r4{}
+}

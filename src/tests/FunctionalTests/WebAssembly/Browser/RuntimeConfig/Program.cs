@@ -9,7 +9,7 @@ namespace Sample
 {
     public partial class Test
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
             Console.WriteLine ("Hello, World!");
         }

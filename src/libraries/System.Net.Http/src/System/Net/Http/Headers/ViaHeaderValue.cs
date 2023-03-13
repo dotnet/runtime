@@ -134,7 +134,7 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static ViaHeaderValue Parse(string? input)
+        public static ViaHeaderValue Parse(string input)
         {
             int index = 0;
             return (ViaHeaderValue)GenericHeaderParser.SingleValueViaParser.ParseValue(input, null, ref index);

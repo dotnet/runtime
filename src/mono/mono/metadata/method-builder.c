@@ -56,92 +56,6 @@ static MonoDisHelper marshal_dh = {
 static MonoMethodBuilderCallbacks mb_cb;
 static gboolean cb_inited = FALSE;
 
-#ifndef ENABLE_ILGEN
-static MonoMethodBuilder *
-new_base_noilgen (MonoClass *klass, MonoWrapperType type)
-{
-	MonoMethodBuilder *mb;
-	MonoMethod *m;
-
-	g_assert (klass != NULL);
-
-	mb = g_new0 (MonoMethodBuilder, 1);
-
-	mb->method = m = (MonoMethod *)g_new0 (MonoMethodWrapper, 1);
-
-	m->klass = klass;
-	m->inline_info = 1;
-	m->wrapper_type = type;
-
-	/* placeholder for the wrapper always at index 1 */
-	mono_mb_add_data (mb, NULL);
-
-	return mb;
-}
-
-static void
-free_noilgen (MonoMethodBuilder *mb)
-{
-	g_free (mb->method);
-	if (!mb->no_dup_name)
-		g_free (mb->name);
-	g_free (mb);
-}
-
-static MonoMethod *
-create_method_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
-{
-	MonoMethodWrapper *mw;
-	MonoImage *image;
-	MonoMethod *method;
-	GList *l;
-	int i;
-
-	g_assert (mb != NULL);
-
-	image = m_class_get_image (mb->method->klass);
-
-	{
-		/* Realloc the method info into a mempool */
-
-		method = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodWrapper));
-		memcpy (method, mb->method, sizeof (MonoMethodWrapper));
-		mw = (MonoMethodWrapper*) method;
-
-		if (mb->no_dup_name)
-			method->name = mb->name;
-		else
-			method->name = mono_image_strdup (image, mb->name);
-	}
-
-	method->signature = signature;
-	if (!signature->hasthis)
-		method->flags |= METHOD_ATTRIBUTE_STATIC;
-
-	i = g_list_length ((GList *)mw->method_data);
-	if (i) {
-		GList *tmp;
-		void **data;
-		l = g_list_reverse ((GList *)mw->method_data);
-		if (method_is_dynamic (method))
-			data = (void **)g_malloc (sizeof (gpointer) * (i + 1));
-		else
-			data = (void **)mono_image_alloc (image, sizeof (gpointer) * (i + 1));
-		/* store the size in the first element */
-		data [0] = GUINT_TO_POINTER (i);
-		i = 1;
-		for (tmp = l; tmp; tmp = tmp->next) {
-			data [i++] = tmp->data;
-		}
-		g_list_free (l);
-
-		mw->method_data = data;
-	}
-
-	return method;
-}
-#endif
-
 void
 mono_install_method_builder_callbacks (MonoMethodBuilderCallbacks *cb)
 {
@@ -151,28 +65,11 @@ mono_install_method_builder_callbacks (MonoMethodBuilderCallbacks *cb)
 	cb_inited = TRUE;
 }
 
-#ifndef ENABLE_ILGEN
-static void
-install_noilgen (void)
-{
-	MonoMethodBuilderCallbacks cb;
-	cb.version = MONO_METHOD_BUILDER_CALLBACKS_VERSION;
-	cb.new_base = new_base_noilgen;
-	cb.free = free_noilgen;
-	cb.create_method = create_method_noilgen;
-	mono_install_method_builder_callbacks (&cb);
-}
-#endif
-
 static MonoMethodBuilderCallbacks *
 get_mb_cb (void)
 {
 	if (G_UNLIKELY (!cb_inited)) {
-#ifdef ENABLE_ILGEN
 		mono_method_builder_ilgen_init ();
-#else
-		install_noilgen ();
-#endif
 	}
 	return &mb_cb;
 }

@@ -42,9 +42,16 @@ namespace SVR
 extern void PopulateHandleTableDacVars(GcDacVars* dacVars);
 
 GC_EXPORT
-void
-GC_VersionInfo(/* Out */ VersionInfo* info)
+void LOCALGC_CALLCONV
+GC_VersionInfo(/* InOut */ VersionInfo* info)
 {
+#ifdef BUILD_AS_STANDALONE
+    // On entry, the info argument contains the interface version that the runtime supports.
+    // It is later used to enable backwards compatibility between the GC and the runtime.
+    // For example, GC would only call functions on g_theGCToCLR interface that the runtime
+    // supports.
+    g_runtimeSupportedVersion = *info;
+#endif
     info->MajorVersion = GC_INTERFACE_MAJOR_VERSION;
     info->MinorVersion = GC_INTERFACE_MINOR_VERSION;
     info->BuildVersion = 0;
@@ -52,7 +59,7 @@ GC_VersionInfo(/* Out */ VersionInfo* info)
 }
 
 GC_EXPORT
-HRESULT
+HRESULT LOCALGC_CALLCONV
 GC_Initialize(
     /* In  */ IGCToCLR* clrToGC,
     /* Out */ IGCHeap** gcHeap,
@@ -81,6 +88,7 @@ GC_Initialize(
 
     if (!GCToOSInterface::Initialize())
     {
+        GCToEEInterface::LogErrorToHost("Failed to initialize GCToOSInterface");
         return E_FAIL;
     }
 #endif

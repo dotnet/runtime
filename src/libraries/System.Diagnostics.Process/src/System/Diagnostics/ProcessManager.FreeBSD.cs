@@ -23,10 +23,7 @@ namespace System.Diagnostics
         internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
         {
             // Negative PIDs aren't valid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             // Try to get the task info. This can fail if the user permissions don't permit
             // this user context to query the specified process

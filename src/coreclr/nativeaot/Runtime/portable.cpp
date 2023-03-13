@@ -14,7 +14,6 @@
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "RWLock.h"
 #include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"

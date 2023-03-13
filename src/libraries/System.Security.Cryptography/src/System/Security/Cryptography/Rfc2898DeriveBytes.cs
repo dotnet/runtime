@@ -76,10 +76,8 @@ namespace System.Security.Cryptography
 
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations, HashAlgorithmName hashAlgorithm)
         {
-            if (saltSize < 0)
-                throw new ArgumentOutOfRangeException(nameof(saltSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(saltSize);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             _salt = new byte[saltSize + sizeof(uint)];
             RandomNumberGenerator.Fill(_salt.AsSpan(0, saltSize));
@@ -109,8 +107,7 @@ namespace System.Security.Cryptography
 
         internal Rfc2898DeriveBytes(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, int iterations, HashAlgorithmName hashAlgorithm)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             _salt = new byte[salt.Length + sizeof(uint)];
             salt.CopyTo(_salt);
@@ -131,8 +128,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedPosNum);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 _iterations = (uint)value;
                 Initialize();
             }
@@ -174,8 +170,7 @@ namespace System.Security.Cryptography
 
         public override byte[] GetBytes(int cb)
         {
-            if (cb <= 0)
-                throw new ArgumentOutOfRangeException(nameof(cb), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cb);
 
             byte[] ret = new byte[cb];
             GetBytes(ret);

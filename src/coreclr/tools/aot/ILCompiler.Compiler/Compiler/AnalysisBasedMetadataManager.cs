@@ -23,6 +23,7 @@ namespace ILCompiler
     {
         private readonly List<ModuleDesc> _modulesWithMetadata;
         private readonly List<MetadataType> _typesWithRootedCctorContext;
+        private readonly List<TypeDesc> _forcedTypes;
 
         private readonly Dictionary<TypeDesc, MetadataCategory> _reflectableTypes = new Dictionary<TypeDesc, MetadataCategory>();
         private readonly Dictionary<MethodDesc, MetadataCategory> _reflectableMethods = new Dictionary<MethodDesc, MetadataCategory>();
@@ -32,10 +33,10 @@ namespace ILCompiler
         public AnalysisBasedMetadataManager(CompilerTypeSystemContext typeSystemContext)
             : this(typeSystemContext, new FullyBlockedMetadataBlockingPolicy(),
                 new FullyBlockedManifestResourceBlockingPolicy(), null, new NoStackTraceEmissionPolicy(),
-                new NoDynamicInvokeThunkGenerationPolicy(), Array.Empty<ModuleDesc>(),
+                new NoDynamicInvokeThunkGenerationPolicy(), Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
-                Array.Empty<MetadataType>())
+                Array.Empty<MetadataType>(), default)
         {
         }
 
@@ -47,15 +48,18 @@ namespace ILCompiler
             StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy,
             IEnumerable<ModuleDesc> modulesWithMetadata,
+            IEnumerable<TypeDesc> forcedTypes,
             IEnumerable<ReflectableEntity<TypeDesc>> reflectableTypes,
             IEnumerable<ReflectableEntity<MethodDesc>> reflectableMethods,
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
-            IEnumerable<MetadataType> rootedCctorContexts)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
+            IEnumerable<MetadataType> rootedCctorContexts,
+            MetadataManagerOptions options)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             _typesWithRootedCctorContext = new List<MetadataType>(rootedCctorContexts);
+            _forcedTypes = new List<TypeDesc>(forcedTypes);
 
             foreach (var refType in reflectableTypes)
             {
@@ -179,10 +183,9 @@ namespace ILCompiler
 
             const string reason = "Reflection";
 
-            foreach (var pair in _reflectableTypes)
+            foreach (var type in _forcedTypes)
             {
-                if ((pair.Value & MetadataCategory.RuntimeMapping) != 0)
-                    rootProvider.AddCompilationRoot(pair.Key, reason);
+                rootProvider.AddReflectionRoot(type, reason);
             }
 
             foreach (var pair in _reflectableMethods)

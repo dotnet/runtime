@@ -22,8 +22,6 @@ namespace Internal.IL.Stubs
             {
                 case "AsPointer":
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.conv_u, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-                case "SizeOf":
-                    return EmitSizeOf(method);
                 case "As":
                 case "AsRef":
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
@@ -96,19 +94,6 @@ namespace Internal.IL.Stubs
             }
 
             return null;
-        }
-
-        private static MethodIL EmitSizeOf(MethodDesc method)
-        {
-            Debug.Assert(method.Signature.IsStatic && method.Signature.Length == 0);
-
-            TypeSystemContext context = method.Context;
-
-            ILEmitter emit = new ILEmitter();
-            ILCodeStream codeStream = emit.NewCodeStream();
-            codeStream.Emit(ILOpcode.sizeof_, emit.NewToken(context.GetSignatureVariable(0, method: true)));
-            codeStream.Emit(ILOpcode.ret);
-            return emit.Link(method);
         }
 
         private static MethodIL EmitAdd(MethodDesc method)

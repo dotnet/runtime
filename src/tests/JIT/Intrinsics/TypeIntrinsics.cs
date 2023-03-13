@@ -12,7 +12,7 @@ public partial class Program
 {
     private static int _errors = 0;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         IsTrue (typeof(byte).IsValueType);
         IsTrue (typeof(int).IsValueType);
@@ -206,6 +206,18 @@ public partial class Program
 public class GenericEnumClass<T> where T : Enum
 {
     public T field;
+}
+
+public interface IGenericInterface<T>
+{
+}
+
+public struct ImplementingStruct1 : IGenericInterface<ImplementingStruct1>
+{
+}
+
+public struct ImplementingStruct2 : IGenericInterface<ImplementingStruct2>
+{
 }
 
 public struct GenericStruct<T>

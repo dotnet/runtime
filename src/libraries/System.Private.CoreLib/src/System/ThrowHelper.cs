@@ -438,15 +438,21 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentException_Argument_InvalidArrayType()
+        internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
-            throw new ArgumentException(SR.Argument_InvalidArrayType);
+            throw new ArgumentException(SR.Argument_IncompatibleArrayType);
         }
 
         [DoesNotReturn]
         internal static void ThrowArgumentException_InvalidHandle(string? paramName)
         {
             throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowUnexpectedStateForKnownCallback(object? state)
+        {
+            throw new ArgumentOutOfRangeException(nameof(state), state, SR.Argument_UnexpectedStateForKnownCallback);
         }
 
         [DoesNotReturn]
@@ -561,6 +567,12 @@ namespace System
         internal static void ThrowFormatInvalidString()
         {
             throw new FormatException(SR.Format_InvalidString);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowFormatIndexOutOfRange()
+        {
+            throw new FormatException(SR.Format_IndexOutOfRange);
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
@@ -687,12 +699,25 @@ namespace System
             }
         }
 
+        // Throws if 'T' is disallowed in Vector512<T> in the Intrinsics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedIntrinsicsVector512BaseType<T>()
+            where T : struct
+        {
+            if (!Vector512<T>.IsSupported)
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+        }
+
 #if false // Reflection-based implementation does not work for NativeAOT
         // This function will convert an ExceptionArgument enum value to the argument name string.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetArgumentName(ExceptionArgument argument)
         {
-            Debug.Assert(Enum.IsDefined(typeof(ExceptionArgument), argument),
+            Debug.Assert(Enum.IsDefined(argument),
                 "The enum value is not defined, please check the ExceptionArgument Enum.");
 
             return argument.ToString();
@@ -783,8 +808,6 @@ namespace System
                     return "comparable";
                 case ExceptionArgument.source:
                     return "source";
-                case ExceptionArgument.state:
-                    return "state";
                 case ExceptionArgument.length:
                     return "length";
                 case ExceptionArgument.comparisonType:
@@ -801,6 +824,8 @@ namespace System
                     return "function";
                 case ExceptionArgument.scheduler:
                     return "scheduler";
+                case ExceptionArgument.continuation:
+                    return "continuation";
                 case ExceptionArgument.continuationAction:
                     return "continuationAction";
                 case ExceptionArgument.continuationFunction:
@@ -912,7 +937,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetResourceString(ExceptionResource resource)
         {
-            Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
+            Debug.Assert(Enum.IsDefined(resource),
                 "The enum value is not defined, please check the ExceptionResource Enum.");
 
             return SR.GetResourceString(resource.ToString());
@@ -937,6 +962,8 @@ namespace System
                     return SR.ArgumentOutOfRange_Year;
                 case ExceptionResource.Arg_ArrayPlusOffTooSmall:
                     return SR.Arg_ArrayPlusOffTooSmall;
+                case ExceptionResource.Arg_ByteArrayTooSmallForValue:
+                    return SR.Arg_ByteArrayTooSmallForValue;
                 case ExceptionResource.NotSupported_ReadOnlyCollection:
                     return SR.NotSupported_ReadOnlyCollection;
                 case ExceptionResource.Arg_RankMultiDimNotSupported:
@@ -1117,7 +1144,6 @@ namespace System
         comparer,
         comparable,
         source,
-        state,
         length,
         comparisonType,
         manager,
@@ -1126,6 +1152,7 @@ namespace System
         creationOptions,
         function,
         scheduler,
+        continuation,
         continuationAction,
         continuationFunction,
         tasks,
@@ -1190,6 +1217,7 @@ namespace System
         ArgumentOutOfRange_Count,
         ArgumentOutOfRange_Year,
         Arg_ArrayPlusOffTooSmall,
+        Arg_ByteArrayTooSmallForValue,
         NotSupported_ReadOnlyCollection,
         Arg_RankMultiDimNotSupported,
         Arg_NonZeroLowerBound,

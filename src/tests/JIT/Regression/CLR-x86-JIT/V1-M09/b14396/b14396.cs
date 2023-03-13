@@ -10,7 +10,7 @@ namespace DefaultNamespace
 
     public class Bug
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
 
             byte x = 0xFF;		//	ANDREIS: Added cast operator due compiler error SC0031

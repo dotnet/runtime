@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This is conformance test for conv described in ECMA-335 Table III.8: Conversion Operations.
@@ -12,10 +12,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Reflection;
 using System.Reflection.Emit;
+using Xunit;
 
 namespace TestCasts
 {
-    class Program
+    public class Program
     {
         static int failedCount = 0;
 
@@ -1165,7 +1166,8 @@ namespace TestCasts
             GenerateTest<double, ulong>(Single.NaN, sourceOp, convOvfUn, ExpectException, 0);
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestConvertFromInt4();
             TestConvertFromInt8();

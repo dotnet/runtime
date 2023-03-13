@@ -6,13 +6,18 @@
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <MainLibraryFileName>iOS.Device.Aot-Llvm.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <EnableAggressiveTrimming Condition="'$(EnableAggressiveTrimming)' == ''">true</EnableAggressiveTrimming>
     <MonoEnableLLVM>true</MonoEnableLLVM>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Preserves the UnmanagedCallersOnly method -->
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs" />

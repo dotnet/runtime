@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 public class Program
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         new Program().TestFunction();
         return 100;

@@ -113,6 +113,7 @@ set( JIT_SOURCES
   fginline.cpp
   fgopt.cpp
   fgprofile.cpp
+  fgprofilesynthesis.cpp
   fgstmt.cpp
   flowgraph.cpp
   forwardsub.cpp
@@ -124,6 +125,7 @@ set( JIT_SOURCES
   hashbv.cpp
   hwintrinsic.cpp
   hostallocator.cpp
+  ifconversion.cpp
   indirectcalltransformer.cpp
   importercalls.cpp
   importer.cpp
@@ -294,7 +296,9 @@ set( JIT_HEADERS
   emitjmps.h
   emitpub.h
   error.h
+  fgprofilesynthesis.h
   gentree.h
+  gentreeopsdef.h
   gtlist.h
   gtstructs.h
   hashbv.h
@@ -339,7 +343,6 @@ set( JIT_HEADERS
   sideeffects.h
   simd.h
   simdashwintrinsic.h
-  simdintrinsiclist.h
   sm.h
   smallhash.h
   smcommon.h
@@ -564,6 +567,7 @@ function(add_jit jitName)
     set_property(TARGET ${jitName} APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPORTS_FILE})
 
     target_link_libraries(${jitName}
+        PRIVATE
         ${JIT_LINK_LIBRARIES}
         ${JIT_ARCH_LINK_LIBRARIES}
     )

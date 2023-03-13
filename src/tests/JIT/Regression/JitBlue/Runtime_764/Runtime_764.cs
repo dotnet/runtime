@@ -24,9 +24,9 @@ public struct Ptr<T> where T: class
     }
 }
 
-class Runtime_764
+public class Runtime_764
 {
-    private static int Main(string[] args)
+    public static int Main()
     {
         Ptr<string> ptr = new Ptr<string>("Hello, world");
         

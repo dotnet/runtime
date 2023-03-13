@@ -11,6 +11,10 @@
 #include "metricssummary.h"
 #include "fileio.h"
 
+// Forward declare the conversion method. Including spmiutil.h pulls in other headers
+// that cause build breaks.
+std::string ConvertToUtf8(const WCHAR* str);
+
 #define MAX_LOG_LINE_SIZE 0x1000 // 4 KB
 
 bool closeRequested = false; // global variable to communicate CTRL+C between threads.
@@ -395,6 +399,10 @@ static void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int wo
     // Write the merged MCL array back to disk
     if (!WriteArrayToMCL(mclFilename, mergedMCL, totalCount))
         LogError("Unable to write to MCL file %s.", mclFilename);
+
+    delete[] MCL;
+    delete[] MCLCount;
+    delete[] mergedMCL;
 }
 
 static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::* csvPath)
@@ -450,10 +458,10 @@ void addJitOptionArgument(LightWeightMap<DWORD, DWORD>* jitOptions,
     {
         for (unsigned i = 0; i < jitOptions->GetCount(); i++)
         {
-            WCHAR* key   = (WCHAR*)jitOptions->GetBuffer(jitOptions->GetKey(i));
-            WCHAR* value = (WCHAR*)jitOptions->GetBuffer(jitOptions->GetItem(i));
-            bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -%s %S=%S",
-                                      optionName, key, value);
+            std::string key   = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetKey(i)));
+            std::string value = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetItem(i)));
+            bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -%s %s=%s",
+                                      optionName, key.c_str(), value.c_str());
         }
     }
 }

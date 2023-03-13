@@ -23,9 +23,9 @@ namespace Test
     }
 
 
-    internal static class App
+    public static class App
     {
-        private static int Main()
+        public static int Main()
         {
             var container1 = new Container<string>();
             var container2 = new Container<object>();

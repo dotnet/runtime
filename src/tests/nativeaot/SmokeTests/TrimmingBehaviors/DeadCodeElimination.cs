@@ -20,6 +20,7 @@ class DeadCodeElimination
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
+        TestBranchesInGenericCodeRemoval.Run();
 
         return 100;
     }
@@ -34,7 +35,7 @@ class DeadCodeElimination
         {
             typeof(PresentType).ToString();
 
-            if (!IsTypePresent(typeof(SanityTest), nameof(PresentType)))
+            if (GetTypeSecretly(typeof(SanityTest), nameof(PresentType)) == null)
                 throw new Exception();
 
             ThrowIfPresent(typeof(SanityTest), nameof(NotPresentType));
@@ -115,9 +116,7 @@ class DeadCodeElimination
                 s_d.TrySomething();
             }
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
         }
     }
 
@@ -146,9 +145,7 @@ class DeadCodeElimination
             // and uses a virtual method implementation from Base.
             DoIt(null);
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
         }
     }
 
@@ -184,9 +181,7 @@ class DeadCodeElimination
 
             new Derived2().DoSomething();
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
         }
     }
 
@@ -330,21 +325,80 @@ class DeadCodeElimination
         }
     }
 
+    class TestBranchesInGenericCodeRemoval
+    {
+        struct Unused { public byte Val; }
+        struct Used { public byte Val; }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static T Cast<T>(byte o)
+        {
+            if (typeof(T) == typeof(Unused))
+            {
+                Unused result = new Unused { Val = o };
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(Used))
+            {
+                Used result = new Used { Val = o };
+                return (T)(object)result;
+            }
+            return default;
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing dead branches guarded by typeof in generic code removal");
+
+            Cast<Used>(12);
+
+            // We only expect to be able to get rid of it when optimizing
+#if !DEBUG
+            ThrowIfPresentWithTypeHandle(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
+#endif
+            ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
+        }
+    }
+
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
-    private static bool IsTypePresent(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public) != null;
+    private static Type GetTypeSecretly(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public);
 
     private static void ThrowIfPresent(Type testType, string typeName)
     {
-        if (IsTypePresent(testType, typeName))
+        if (GetTypeSecretly(testType, typeName) != null)
         {
             throw new Exception(typeName);
         }
     }
 
+    private static void ThrowIfPresentWithTypeHandle(Type testType, string typeName)
+    {
+        Type t = GetTypeSecretly(testType, typeName);
+        if (t == null)
+        {
+            throw new Exception("Not found " + typeName);
+        }
+
+        bool thrown = false;
+        try
+        {
+            _ = t.TypeHandle;
+        }
+        catch (NotSupportedException)
+        {
+            thrown = true;
+        }
+
+        if (!thrown)
+        {
+            throw new Exception(typeName + " has type handle");
+        }
+    }
+
     private static void ThrowIfNotPresent(Type testType, string typeName)
     {
-        if (!IsTypePresent(testType, typeName))
+        if (GetTypeSecretly(testType, typeName) == null)
         {
             throw new Exception(typeName);
         }

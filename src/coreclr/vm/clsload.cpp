@@ -375,7 +375,7 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
                 StackSString codeBase;
                 GetAssembly()->GetCodeBase(codeBase);
 
-                LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find class \"%s\" in the manifest for assembly \"%ws\"\n", szName, (LPCWSTR)codeBase));
+                LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find class \"%s\" in the manifest for assembly \"%s\"\n", szName, codeBase.GetUTF8()));
             }
 #endif
 
@@ -958,7 +958,6 @@ void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
 
 #endif
 
-
 TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
                                                     LoadTypesFlag fLoadTypes /*= LoadTypes*/,
                                                     ClassLoadLevel level /*=CLASS_LOADED*/,
@@ -1302,7 +1301,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
         LPCUTF8 szName = pName->GetName();
         if (szName == NULL)
             szName = "<UNKNOWN>";
-        LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find type \"%s\", assembly \"%ws\" in hash table. Incomplete = %d\n",
+        LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find type \"%s\", assembly \"%s\" in hash table. Incomplete = %d\n",
             szName, GetAssembly()->GetDebugName(), incomplete));
 #endif
         return FALSE;
@@ -2010,10 +2009,10 @@ VOID ClassLoader::Init(AllocMemTracker *pamTracker)
     // type in one of the modules governed by the loader.
     // The process of creating these types may be reentrant.  The ordering has
     // not yet been sorted out, and when we sort it out we should also modify the
-    // ordering for m_AvailableTypesLock in BaseDomain.
+    // ordering for m_AvailableTypesLock below.
     m_AvailableClassLock.Init(
                              CrstAvailableClass,
-                             CRST_REENTRANCY);
+                             CrstFlags(CRST_REENTRANCY | CRST_DEBUGGER_THREAD));
 
     // This lock is taken within the classloader whenever we have to insert a new param. type into the table.
     m_AvailableTypesLock.Init(
@@ -2866,7 +2865,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
     {
         SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: About to do incremental load of type %S (%p) from level %s\n", name.GetUnicode(), typeHnd.AsPtr(), classLoadLevelName[currentLevel]));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: About to do incremental load of type %s (%p) from level %s\n", name.GetUTF8(), typeHnd.AsPtr(), classLoadLevelName[currentLevel]));
     }
 #endif
 
@@ -2966,9 +2965,9 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
+        PREFIX_ASSUME(pLoaderModule != NULL);
         pLoaderModule->GetLoaderAllocator()->EnsureInstantiation(NULL, Instantiation(pKey->GetRetAndArgTypes(), pKey->GetNumArgs() + 1));
 
-        PREFIX_ASSUME(pLoaderModule!=NULL);
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 
@@ -3261,7 +3260,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
     {
         SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: LoadTypeHandleForTypeKey for type %S to level %s\n", name.GetUnicode(), classLoadLevelName[targetLevel]));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: LoadTypeHandleForTypeKey for type %s to level %s\n", name.GetUTF8(), classLoadLevelName[targetLevel]));
         CrstHolder unresolvedClassLockHolder(&m_UnresolvedClassLock);
         m_pUnresolvedClassHash->Dump();
     }

@@ -117,12 +117,28 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsPublic
+        {
+            get
+            {
+                return _methodDef.IsPublic;
+            }
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _methodDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
         public override bool IsDefaultConstructor
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public override bool IsStaticConstructor
         {
             get
             {

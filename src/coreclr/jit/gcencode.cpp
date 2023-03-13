@@ -3567,7 +3567,12 @@ size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* 
 {
     GCDump gcDump(GCINFO_VERSION);
 
+#ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
+#else
+    gcDump.gcPrintf       = printf;
+#endif
+
     printf("Method info block:\n");
 
     return gcDump.DumpInfoHdr(table, header, methodSize, verifyGCTables);
@@ -3580,7 +3585,12 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
     printf("Pointer table:\n");
 
     GCDump gcDump(GCINFO_VERSION);
+
+#ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
+#else
+    gcDump.gcPrintf       = printf;
+#endif
 
     return gcDump.DumpGCTable(table, header, methodSize, verifyGCTables);
 }
@@ -3593,7 +3603,12 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
 void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, unsigned offs)
 {
     GCDump gcDump(GCINFO_VERSION);
+
+#ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
+#else
+    gcDump.gcPrintf       = printf;
+#endif
 
     gcDump.DumpPtrsInFrame((PTR_CBYTE)infoBlock, (const BYTE*)codeBlock, offs, verifyGCTables);
 }
@@ -4168,7 +4183,8 @@ void GCInfo::gcMakeRegPtrTable(
 
         // If this is a TYP_STRUCT, handle its GC pointers.
         // Note that the enregisterable struct types cannot have GC pointers in them.
-        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame && (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
+        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr() && varDsc->lvOnFrame &&
+            (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
         {
             ClassLayout* layout = varDsc->GetLayout();
             unsigned     slots  = layout->GetSlotCount();

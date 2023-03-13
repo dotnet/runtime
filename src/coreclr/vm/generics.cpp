@@ -185,7 +185,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     {
         StackSString debugTypeKeyName;
         TypeString::AppendTypeKeyDebug(debugTypeKeyName, pTypeKey);
-        LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %S\n", debugTypeKeyName.GetUnicode()));
+        LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %s\n", debugTypeKeyName.GetUTF8()));
 
         if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8()))
             CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8()));

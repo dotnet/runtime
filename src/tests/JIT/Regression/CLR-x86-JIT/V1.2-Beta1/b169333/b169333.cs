@@ -9,7 +9,7 @@ interface IFoo<T>
     void Foo(T t);
 }
 
-class C : IFoo<A>, IFoo<B>
+public class C : IFoo<A>, IFoo<B>
 {
     void IFoo<A>.Foo(A a)
     {
@@ -21,7 +21,7 @@ class C : IFoo<A>, IFoo<B>
         System.Console.WriteLine("B");
     }
 
-    static int Main()
+    public static int Main()
     {
         C c = new C();
         IFoo<A> i = c;

@@ -134,7 +134,7 @@ namespace HelloFrozenSegment
 
     internal static class Program
     {
-        private static unsafe int Main(string[] args)
+        private static unsafe int Main()
         {
             IntPtr methodTable = typeof(Node).TypeHandle.Value;
 

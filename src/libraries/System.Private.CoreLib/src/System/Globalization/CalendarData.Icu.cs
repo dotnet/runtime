@@ -427,13 +427,15 @@ namespace System.Globalization
             try
             {
                 ReadOnlySpan<char> calendarStringSpan = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(calendarStringPtr);
-                ref IcuEnumCalendarsData callbackContext = ref Unsafe.As<byte, IcuEnumCalendarsData>(ref *(byte*)context);
+#pragma warning disable 8500
+                IcuEnumCalendarsData* callbackContext = (IcuEnumCalendarsData*)context;
+#pragma warning restore 8500
 
-                if (callbackContext.DisallowDuplicates)
+                if (callbackContext->DisallowDuplicates)
                 {
-                    foreach (string existingResult in callbackContext.Results)
+                    foreach (string existingResult in callbackContext->Results)
                     {
-                        if (string.CompareOrdinal(calendarStringSpan, existingResult) == 0)
+                        if (calendarStringSpan.SequenceEqual(existingResult))
                         {
                             // the value is already in the results, so don't add it again
                             return;
@@ -441,7 +443,7 @@ namespace System.Globalization
                     }
                 }
 
-                callbackContext.Results.Add(calendarStringSpan.ToString());
+                callbackContext->Results.Add(calendarStringSpan.ToString());
             }
             catch (Exception e)
             {

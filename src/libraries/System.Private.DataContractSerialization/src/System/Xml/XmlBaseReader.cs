@@ -34,7 +34,7 @@ namespace System.Xml
         private int _attributeCount;
         private int _attributeStart;    // Starting index for searching
         private readonly XmlDictionaryReaderQuotas _quotas;
-        private XmlNameTable? _nameTable;
+        private QuotaNameTable? _nameTable;
         private XmlDeclarationNode? _declarationNode;
         private XmlComplexTextNode? _complexTextNode;
         private XmlWhitespaceTextNode? _whitespaceTextNode;
@@ -1514,20 +1514,14 @@ namespace System.Xml
                 catch (FormatException exception)
                 {
                     // Something was wrong with the format, see if we can strip the spaces
-                    int i = 0;
-                    int j = 0;
-                    while (true)
+                    int newCount = XmlConverter.StripWhitespace(chars.AsSpan(0, charCount));
+                    if (newCount == charCount)
                     {
-                        while (j < charCount && XmlConverter.IsWhitespace(chars[j]))
-                            j++;
-                        if (j == charCount)
-                            break;
-                        chars[i++] = chars[j++];
-                    }
-                    // No spaces, so don't try again
-                    if (i == charCount)
+                        // No spaces, so don't try again
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(exception.Message, exception.InnerException));
-                    charCount = i;
+                    }
+
+                    charCount = newCount;
                 }
             }
         }
@@ -3126,7 +3120,7 @@ namespace System.Xml
         private sealed class QuotaNameTable : XmlNameTable
         {
             private readonly XmlDictionaryReader _reader;
-            private readonly XmlNameTable _nameTable;
+            private readonly NameTable _nameTable;
             private readonly int _maxCharCount;
             private int _charCount;
 

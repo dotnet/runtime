@@ -1,0 +1,34 @@
+<linker>
+  <!-- Check that the feature attribute can be used on the assembly element. -->
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" feature="AssemblyCondition" featurevalue="false">
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsNested">
+      <method signature="System.Boolean AssemblyConditionMethod()" body="stub" value="false" />
+    </type>
+    <!-- Or on the type element. -->
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsNested" feature="TypeCondition" featurevalue="true">
+      <method signature="System.Boolean TypeConditionMethod()" body="stub" value="true" />
+      <!-- Or on the method element. -->
+      <method signature="System.Boolean MethodConditionMethod()" body="stub" value="false" feature="MethodCondition" featurevalue="false" />
+      <!-- Else case -->
+      <method signature="System.Boolean MethodConditionMethod()" body="stub" value="true" feature="MethodCondition" featurevalue="true" />
+      <!-- Or on the field element. -->
+      <field name="FieldConditionField" value="true" initialize="true" feature="FieldCondition" featurevalue="true" />
+      <!-- Else case -->
+      <field name="FieldConditionField" value="false" initialize="true" feature="FieldCondition" featurevalue="false" />
+    </type>
+    <!-- Else case for the type feature attribute -->
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsNested" feature="TypeCondition" featurevalue="false">
+      <method signature="System.Boolean TypeConditionMethod()" body="stub" value="false" />
+    </type>
+    <!-- Or on the resource element. -->
+    <resource name="ResourceFileRemoveWhenTrue.txt" action="remove" feature="ResourceCondition" featurevalue="true" />
+    <!-- Else case -->
+    <resource name="ResourceFileRemoveWhenFalse.txt" action="remove" feature="ResourceCondition" featurevalue="false" />
+  </assembly>
+  <!-- Else case for the assembly feature attribute -->
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" feature="AssemblyCondition" featurevalue="true">
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsNested">
+      <method signature="System.Boolean AssemblyConditionMethod()" body="stub" value="true" />
+    </type>
+  </assembly>
+</linker>

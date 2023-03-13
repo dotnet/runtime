@@ -19,7 +19,7 @@ public static class Program
         counter = 42;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         unsafe {
             delegate* unmanaged<void> unmanagedPtr = &Callback;

@@ -6,10 +6,10 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static ulong m_ul;
-        static int Main()
+        public static int Main()
         {
             try
             {

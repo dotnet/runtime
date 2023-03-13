@@ -37,7 +37,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         protected sealed override IEnumerable<CustomAttributeData> GetTrueCustomAttributes() => Parameter.GetCustomAttributes().ToTrueCustomAttributes(GetEcmaModule());
 
-        public sealed override bool HasDefaultValue => TryGetRawDefaultValue(out object _);
+        public sealed override bool HasDefaultValue => TryGetRawDefaultValue(out _);
 
         public sealed override object? RawDefaultValue
         {

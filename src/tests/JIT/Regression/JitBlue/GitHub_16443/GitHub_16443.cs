@@ -4,7 +4,7 @@
 using System;
 using System.Numerics;
 
-class Program
+public class Program
 {
     struct vec2
     {
@@ -12,7 +12,7 @@ class Program
         public vec2(float x, float y) => value = new Vector2(x, y);
     }
 
-    static int Main()
+    public static int Main()
     {
         var a = new vec2(0.42f, 0.24f);
         var b = new vec2(0.42f, 0.24f);

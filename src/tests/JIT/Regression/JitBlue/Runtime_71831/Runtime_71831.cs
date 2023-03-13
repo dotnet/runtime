@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-unsafe class Runtime_71831
+public unsafe class Runtime_71831
 {
-    private static int Main()
+    public static int Main()
     {
         return Problem(100) ? 101 : 100;
     }

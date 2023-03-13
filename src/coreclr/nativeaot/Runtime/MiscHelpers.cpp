@@ -16,7 +16,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "rhbinder.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "regdisplay.h"
 #include "gcrhinterface.h"
@@ -51,11 +50,11 @@ EXTERN_C NATIVEAOT_API void __cdecl RhSpinWait(int32_t iterations)
     ASSERT(iterations > 0);
 
     // limit the spin count in coop mode.
-    ASSERT_MSG(iterations <= 10000 || !ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
+    ASSERT_MSG(iterations <= 1024 || !ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
         "This is too long wait for coop mode. You must p/invoke with GC transition.");
 
     YieldProcessorNormalizationInfo normalizationInfo;
-    YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, iterations);
+    YieldProcessorNormalized(normalizationInfo, iterations);
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
@@ -98,8 +97,6 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
     HANDLE * pResultElements = pResultArray ? (HANDLE*)(pResultArray + 1) : NULL;
 
     uint32_t cModules = 0;
-
-    ReaderWriterLock::ReadHolder read(&GetRuntimeInstance()->GetTypeManagerLock());
 
     RuntimeInstance::OsModuleList *osModules = GetRuntimeInstance()->GetOsModuleList();
 
@@ -388,9 +385,9 @@ EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseThunkPoolLock()
     g_ThunkPoolLock.Leave();
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhpGetTickCount64()
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpGetTickCount64()
 {
-    PalGetTickCount64();
+    return PalGetTickCount64();
 }
 
 EXTERN_C int32_t __cdecl RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);

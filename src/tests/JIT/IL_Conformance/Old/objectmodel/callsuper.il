@@ -3,9 +3,12 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly callsuper{}
 
 
+.namespace callsuper
+{
 .class public Super {
 
 .method public void .ctor(){
@@ -27,13 +30,13 @@
 
 
 }
-.class public callsuper extends Super {
+.class public callsuper extends callsuper.Super {
 
 .method public void .ctor(){
 
 .maxstack	10
 	ldarg.0
-	call instance void Super::.ctor()
+	call instance void callsuper.Super::.ctor()
 	ret
 }
 .method public	int32 SuperMethod(int32) {
@@ -45,21 +48,24 @@
 	ret
 
 }
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 
-	newobj		instance void callsuper::.ctor()
+	newobj		instance void callsuper.callsuper::.ctor()
 	ldc.i4		0x5
-	call		instance int32 Super::SuperMethod(int32)
+	call		instance int32 callsuper.Super::SuperMethod(int32)
 
 	ldc.i4		0xA
 	ceq
 	brfalse		FAIL
 
-	newobj	instance		void callsuper::.ctor()
+	newobj	instance		void callsuper.callsuper::.ctor()
 	ldc.i4		0x5
-	callvirt	instance	int32 callsuper::SuperMethod(int32)
+	callvirt	instance	int32 callsuper.callsuper::SuperMethod(int32)
 
 	ldc.i4	0xF
 	ceq
@@ -73,5 +79,6 @@ FAIL:
 	ldc.i4	0x0
 	ret
 
+}
 }
 }

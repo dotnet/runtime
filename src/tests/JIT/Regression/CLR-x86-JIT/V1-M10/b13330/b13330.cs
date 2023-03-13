@@ -8,14 +8,14 @@ namespace D
     //@ENDRENAME; Verify this renames
     using System;
 
-    class X
+    public class X
     {
         internal static char f(int x)
         {
             return (char)(x >> 8);
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             f(123);
             return 100;

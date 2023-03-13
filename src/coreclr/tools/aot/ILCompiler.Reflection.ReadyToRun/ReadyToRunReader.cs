@@ -334,6 +334,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         }
 
+        public bool ValidateDebugInfo;
+
         internal Dictionary<int, int> RuntimeFunctionToDebugInfo
         {
             get
@@ -1180,12 +1182,19 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 hashPersonalityRoutines.Add(x64UnwindInfo.PersonalityRoutineRVA);
             }
+            if (ValidateDebugInfo)
+            {
+                CheckNonEmptyDebugInfo(firstRuntimeFunction);
+            }
 
             for (int i = 1; i < runtimeFunctions.Count; i++)
             {
                 Debug.Assert(runtimeFunctions[i - 1].StartAddress.CompareTo(runtimeFunctions[i].StartAddress) < 0, "RuntimeFunctions are not sorted");
                 Debug.Assert(runtimeFunctions[i - 1].EndAddress <= runtimeFunctions[i].StartAddress, "RuntimeFunctions intervals overlap");
-
+                if (ValidateDebugInfo)
+                {
+                    CheckNonEmptyDebugInfo(runtimeFunctions[i - 1]);
+                }
                 if (x64UnwindInfo != null && ((x64UnwindInfo.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_CHAININFO) == 0))
                 {
                     Amd64.UnwindInfo x64UnwindInfoCurr = (Amd64.UnwindInfo)runtimeFunctions[i].UnwindInfo;
@@ -1196,6 +1205,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                         hashPersonalityRoutines.Add(currPersonalityRoutineRVA);
                         Debug.Assert(hashPersonalityRoutines.Count < 3, "There are more than two different runtimefunctions PersonalityRVAs");
                     }
+                }
+            }
+        }
+
+        public void CheckNonEmptyDebugInfo(RuntimeFunction function)
+        {
+            if (function.DebugInfo != null)
+            {
+                foreach (NativeVarInfo varInfo in function.DebugInfo.VariablesList)
+                {
+                    Debug.Assert(varInfo.StartOffset < varInfo.EndOffset, "Empty debug info for Variable " + varInfo.VariableNumber + " in " + function.Method.Signature);
                 }
             }
         }

@@ -14,10 +14,10 @@ namespace GitHub_20269
     // 3) The tail call is rejected late in morph.
     // 
 
-    class Program
+    public class Program
     {
         static int i;
-        static int Main(string[] args)
+        public static int Main()
         {
             i = 1;
             return (int)new Program().GetVector()[0] + 99;

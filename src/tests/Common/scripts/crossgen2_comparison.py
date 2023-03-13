@@ -22,15 +22,15 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_corelib
-#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/crossgen
-#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
-#  --result_dir Linux.arm_arm.Checked
+#  --crossgen artifacts/bin/coreclr/linux.arm.Checked/crossgen
+#  --il_corelib artifacts/bin/coreclr/linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --result_dir linux.arm_arm.Checked
 #
 # runs Hostarm/arm crossgen on System.Private.CoreLib.dll and puts all the
-# information in files Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+# information in files linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
 # and System.Private.CoreLib-DebuggingFile.json
 #
-#  ~/git/coreclr$ cat Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+#  ~/git/coreclr$ cat linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
 #  {
 #    "AssemblyName": "System.Private.CoreLib",
 #    "ReturnCode": 0,
@@ -43,7 +43,7 @@
 #    "OutputFileSizeInBytes": 9564160
 #  }
 #
-#  ~/git/coreclr$ cat Linux.x64_arm.Checked/System.Private.CoreLib-DebuggingFile.json
+#  ~/git/coreclr$ cat linux.x64_arm.Checked/System.Private.CoreLib-DebuggingFile.json
 #  {
 #    "ReturnCode": 0,
 #    "StdOut": [
@@ -59,16 +59,16 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_dotnet_sdk
-#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/x64/crossgen
-#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --crossgen artifacts/bin/coreclr/linux.arm.Checked/x64/crossgen
+#  --il_corelib artifacts/bin/coreclr/linux.arm.Checked/IL/System.Private.CoreLib.dll
 #  --dotnet_sdk dotnet-sdk-latest-linux-arm.tar.gz
-#  --result_dir Linux.x64_arm.Checked
+#  --result_dir linux.x64_arm.Checked
 #
 #  runs Hostx64/arm crossgen on System.Private.CoreLib.dll in artifacts/Product and on
 #  all the assemblies inside dotnet-sdk-latest-linux-arm.tar.gz and stores the
-#  collected information in directory Linux.x64_arm.Checked
+#  collected information in directory linux.x64_arm.Checked
 #
-#  ~/git/coreclr$ ls Linux.x64_arm.Checked | head
+#  ~/git/coreclr$ ls linux.x64_arm.Checked | head
 #   Microsoft.AI.DependencyCollector.dll.json
 #   Microsoft.ApplicationInsights.AspNetCore.dll.json
 #   Microsoft.ApplicationInsights.dll.json
@@ -83,8 +83,8 @@
 # The following command
 #
 #  ~/git/coreclr$ python -u tests/scripts/crossgen_comparison.py compare
-#  --base_dir Linux.x64_arm.Checked
-#  --diff_dir Linux.x86_arm.Checked
+#  --base_dir linux.x64_arm.Checked
+#  --diff_dir linux.x86_arm.Checked
 #
 # compares the results of Hostx64/arm crossgen and Hostx86/arm crossgen.
 ################################################################################

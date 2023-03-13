@@ -71,10 +71,7 @@ namespace System.Reflection.Runtime.Assemblies
         [RequiresUnreferencedCode("Types might be removed")]
         public sealed override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException();
-            if (name.Length == 0)
-                throw new ArgumentException();
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             TypeName typeName = TypeParser.ParseAssemblyQualifiedTypeName(name, throwOnError: throwOnError);
             if (typeName == null)

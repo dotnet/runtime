@@ -2372,10 +2372,10 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         void* sectionBaseAligned = ALIGN_DOWN(sectionBase, GetVirtualPageSize());
 
         // Validate the section header
-        if (   (sectionBase < loadedHeader)                                                           // Did computing the section base overflow?
-            || ((char*)sectionBase + currentHeader.SizeOfRawData < (char*)sectionBase)              // Does the section overflow?
-            || ((char*)sectionBase + currentHeader.SizeOfRawData > (char*)loadedHeader + virtualSize) // Does the section extend past the end of the image as the header stated?
-            || (prevSectionEndAligned > sectionBase)                                                       // Does this section overlap the previous one?
+        if (   (sectionBase < loadedHeader)                                                             // Did computing the section base overflow?
+            || (currentHeader.SizeOfRawData > virtualSize)                                              // Does the section overflow?
+            || ((char*)sectionBase + currentHeader.SizeOfRawData > (char*)loadedHeader + virtualSize)   // Does the section extend past the end of the image as the header stated?
+            || (prevSectionEndAligned > sectionBase)                                                    // Does this section overlap the previous one?
             )
         {
             ERROR_(LOADER)( "section %d is corrupt\n", i );
@@ -2496,6 +2496,7 @@ done:
     }
     else
     {
+        SetLastError(palError);
         retval = NULL;
         LOGEXIT("MAPMapPEFile error: %d\n", palError);
 

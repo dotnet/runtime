@@ -446,6 +446,10 @@ public:
 
     virtual
     void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved) = 0;
+
+    // The following method is available only with EE_INTERFACE_MAJOR_VERSION >= 1
+    virtual
+    void LogErrorToHost(const char *message) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

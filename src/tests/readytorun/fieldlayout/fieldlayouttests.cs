@@ -12,7 +12,9 @@ class Test
         SequentialTest.Test();
         AutoTest.Test();
         EnumAlignmentTest.Test();
-        AutoTestWithVector.Test();
+        AutoTestWithVector128.Test();
+        AutoTestWithVector256.Test();
+        AutoTestWithVector512.Test();
         return 100;
     }
 }
@@ -160,7 +162,7 @@ class AutoTest
     }
 }
 
-class AutoTestWithVector
+class AutoTestWithVector128
 {
     static Auto.int8x16x2 _fld1 = new Auto.int8x16x2();
     static Auto.Wrapper_int8x16x2 _fld2 = new Auto.Wrapper_int8x16x2();
@@ -170,6 +172,42 @@ class AutoTestWithVector
     {
         _fld1._0 = new Vector128<byte>();
         _fld1._1 = new Vector128<byte>();
+
+        _fld2.fld = _fld1;
+
+        _fld3.fld1 = true;
+        _fld3.fld2 = _fld1;
+    }
+}
+
+class AutoTestWithVector256
+{
+    static Auto.int8x32x2 _fld1 = new Auto.int8x32x2();
+    static Auto.Wrapper_int8x32x2 _fld2 = new Auto.Wrapper_int8x32x2();
+    static Auto.Wrapper_int8x32x2_2 _fld3 = new Auto.Wrapper_int8x32x2_2();
+
+    public static void Test()
+    {
+        _fld1._0 = new Vector256<byte>();
+        _fld1._1 = new Vector256<byte>();
+
+        _fld2.fld = _fld1;
+
+        _fld3.fld1 = true;
+        _fld3.fld2 = _fld1;
+    }
+}
+
+class AutoTestWithVector512
+{
+    static Auto.int8x64x2 _fld1 = new Auto.int8x64x2();
+    static Auto.Wrapper_int8x64x2 _fld2 = new Auto.Wrapper_int8x64x2();
+    static Auto.Wrapper_int8x64x2_2 _fld3 = new Auto.Wrapper_int8x64x2_2();
+
+    public static void Test()
+    {
+        _fld1._0 = new Vector512<byte>();
+        _fld1._1 = new Vector512<byte>();
 
         _fld2.fld = _fld1;
 

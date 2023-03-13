@@ -12,7 +12,7 @@
   
 }
 .assembly extern xunit.core {}
-.class M
+.class public M
 {
   .method public static int32 Main()
   {

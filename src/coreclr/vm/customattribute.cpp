@@ -1118,9 +1118,7 @@ BOOL COMCustomAttribute::CopyArrayVAL(BASEARRAYREF pArray, int nElements, BYTE *
     int sizeData;   // = size * 2; with integer overflow check
     if (!ClrSafeInt<int>::multiply(nElements, sizeof(T), sizeData))
         return FALSE;
-    if (*pBlob + sizeData < *pBlob)     // integer overflow check
-        return FALSE;
-    if (*pBlob + sizeData > endBlob)
+    if (sizeData > endBlob - *pBlob)     // integer overflow check
         return FALSE;
 #if BIGENDIAN
     T *ptDest = reinterpret_cast<T *>(pArray->GetDataPtr());
@@ -1333,9 +1331,7 @@ ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
         int size = GetStringSize(pBlob, endBlob);
         *bObjectCreated = TRUE;
         if (size > 0) {
-            if (*pBlob + size < *pBlob)     // integer overflow check
-                goto badBlob;
-            if (*pBlob + size > endBlob)
+            if (size > endBlob - *pBlob)     // integer overflow check
                 goto badBlob;
             retValue = ObjToArgSlot(StringObject::NewString((LPCUTF8)*pBlob, size));
             *pBlob += size;

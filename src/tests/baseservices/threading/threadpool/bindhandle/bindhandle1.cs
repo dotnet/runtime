@@ -12,7 +12,7 @@ using Microsoft.Win32.SafeHandles;
 /// </summary>
 class BindHandle1
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         return (new BindHandle1().RunTest());
     }

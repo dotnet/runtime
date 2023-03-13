@@ -378,3 +378,49 @@ void PutArm64MovkConstant(UINT32* p, unsigned con)
 {
     *p = (*p & ~(0xffff << 5)) | ((con & 0xffff) << 5);
 }
+
+template<typename TPrint>
+static std::string getFromPrinter(TPrint print)
+{
+    char buffer[256];
+
+    size_t requiredBufferSize;
+    print(buffer, sizeof(buffer), &requiredBufferSize);
+
+    if (requiredBufferSize <= sizeof(buffer))
+    {
+        return std::string(buffer);
+    }
+    else
+    {
+        std::vector<char> vec(requiredBufferSize);
+        size_t printed = print(vec.data(), requiredBufferSize, nullptr);
+        assert(printed == requiredBufferSize - 1);
+        return std::string(vec.data());
+    }
+}
+
+std::string getMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE methHnd)
+{
+    return getFromPrinter([&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
+        return mc->repPrintMethodName(methHnd, buffer, bufferSize, requiredBufferSize);
+        });
+}
+
+std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
+{
+    return getFromPrinter([&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
+        return mc->repPrintClassName(clsHnd, buffer, bufferSize, requiredBufferSize);
+        });
+}
+
+std::string ConvertToUtf8(const WCHAR* str)
+{
+    unsigned len = WszWideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    if (len == 0)
+        return{};
+
+    std::vector<char> buf(len + 1);
+    WszWideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
+    return std::string{ buf.data() };
+}

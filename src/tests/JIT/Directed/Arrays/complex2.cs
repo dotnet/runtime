@@ -22,7 +22,7 @@ internal class Complex2_Array_Test
     {
         Console.Write(Odd_Variable.Length);
     }
-    public static int Main(String[] args)
+    public static int Main()
     {
         Console.WriteLine("Starting...");
         int SIZE = 2;

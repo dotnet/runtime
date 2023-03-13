@@ -174,6 +174,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void ClassWithDictionariesWithNullableValues()
         {
             string json =

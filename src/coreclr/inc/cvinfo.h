@@ -3052,7 +3052,7 @@ typedef struct CV_LVARFLAGS {
     unsigned short fIsParam          :1; // variable is a parameter
     unsigned short fAddrTaken        :1; // address is taken
     unsigned short fCompGenx         :1; // variable is compiler generated
-    unsigned short fIsAggregate      :1; // the symbol is splitted in temporaries,
+    unsigned short fIsAggregate      :1; // the symbol is split in temporaries,
                                          // which are treated by compiler as
                                          // independent entities
     unsigned short fIsAggregated     :1; // Counterpart of fIsAggregate - tells

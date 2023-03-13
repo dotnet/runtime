@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-unsafe class Runtime_61510
+public unsafe class Runtime_61510
 {
     [FixedAddressValueType]
     private static byte s_field;

@@ -8,7 +8,7 @@ namespace DefaultNamespace
 
     public class Bug4
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             Decimal cy1;
             Decimal cy2;

@@ -6676,10 +6676,7 @@ namespace System.Data
             MemoryStream stream = new MemoryStream();
 
             XmlWriter writer = new XmlTextWriter(stream, null);
-            if (writer != null)
-            {
-                (new XmlTreeGen(SchemaFormat.WebService)).Save(this, writer);
-            }
+            new XmlTreeGen(SchemaFormat.WebService).Save(this, writer);
             stream.Position = 0;
             return XmlSchema.Read(new XmlTextReader(stream), null);
         }

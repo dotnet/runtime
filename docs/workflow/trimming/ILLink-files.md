@@ -2,7 +2,7 @@
 
 There are a few `ILLink.*.xml` files under `src` folders in `dotnet/runtime`. These files are used by the trimming tool for various reasons.
 
-See https://github.com/mono/linker/blob/main/docs/data-formats.md for full documentation on these files.
+See https://github.com/dotnet/runtime/blob/main/docs/tools/illink/data-formats.md for full documentation on these files.
 
 ## ILLink.Descriptors.xml
 

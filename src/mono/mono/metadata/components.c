@@ -43,12 +43,17 @@ typedef struct _MonoComponentEntry {
 #define DEBUGGER_LIBRARY_NAME "debugger"
 #define DEBUGGER_COMPONENT_NAME DEBUGGER_LIBRARY_NAME
 
+#define MARSHAL_ILGEN_LIBRARY_NAME "marshal-ilgen"
+#define MARSHAL_ILGEN_COMPONENT_NAME "marshal_ilgen"
+
 MonoComponentHotReload *mono_component_hot_reload_private_ptr = NULL;
 
 MonoComponentDebugger *mono_component_debugger_private_ptr = NULL;
 
 MonoComponentEventPipe *mono_component_event_pipe_private_ptr = NULL;
 MonoComponentDiagnosticsServer *mono_component_diagnostics_server_private_ptr = NULL;
+
+MonoComponentMarshalILgen* mono_component_marshal_ilgen_private_ptr = NULL;
 
 // DiagnosticsServer/EventPipe components currently hosted by diagnostics_tracing library.
 #define DIAGNOSTICS_TRACING_LIBRARY_NAME "diagnostics_tracing"
@@ -61,6 +66,7 @@ MonoComponentEntry components[] = {
 	{ HOT_RELOAD_LIBRARY_NAME, HOT_RELOAD_COMPONENT_NAME, COMPONENT_INIT_FUNC (hot_reload), (MonoComponent**)&mono_component_hot_reload_private_ptr, NULL },
 	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, EVENT_PIPE_COMPONENT_NAME, COMPONENT_INIT_FUNC (event_pipe), (MonoComponent**)&mono_component_event_pipe_private_ptr, NULL },
 	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, DIAGNOSTICS_SERVER_COMPONENT_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&mono_component_diagnostics_server_private_ptr, NULL },
+	{ MARSHAL_ILGEN_LIBRARY_NAME, MARSHAL_ILGEN_COMPONENT_NAME, COMPONENT_INIT_FUNC (marshal_ilgen), (MonoComponent**)&mono_component_marshal_ilgen_private_ptr, NULL }
 };
 
 #ifndef STATIC_COMPONENTS

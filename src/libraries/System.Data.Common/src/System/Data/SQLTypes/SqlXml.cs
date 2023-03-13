@@ -174,7 +174,7 @@ namespace System.Data.SqlTypes
             _firstCreateReader = true;
         }
 
-        private static Stream CreateMemoryStreamFromXmlReader(XmlReader reader)
+        private static MemoryStream CreateMemoryStreamFromXmlReader(XmlReader reader)
         {
             XmlWriterSettings writerSettings = new XmlWriterSettings();
             writerSettings.CloseOutput = false;     // don't close the memory stream
@@ -326,7 +326,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                ThrowIfStreamClosed("get_Length");
+                ThrowIfStreamClosed();
                 ThrowIfStreamCannotSeek("get_Length");
                 return _stream.Length;
             }
@@ -336,18 +336,17 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                ThrowIfStreamClosed("get_Position");
+                ThrowIfStreamClosed();
                 ThrowIfStreamCannotSeek("get_Position");
                 return _lPosition;
             }
             set
             {
-                ThrowIfStreamClosed("set_Position");
+                ThrowIfStreamClosed();
                 ThrowIfStreamCannotSeek("set_Position");
-                if (value < 0 || value > _stream.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                else
-                    _lPosition = value;
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _stream.Length);
+                _lPosition = value;
             }
         }
 
@@ -359,27 +358,27 @@ namespace System.Data.SqlTypes
         {
             long lPosition = 0;
 
-            ThrowIfStreamClosed(nameof(Seek));
+            ThrowIfStreamClosed();
             ThrowIfStreamCannotSeek(nameof(Seek));
             switch (origin)
             {
                 case SeekOrigin.Begin:
-                    if (offset < 0 || offset > _stream.Length)
-                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfNegative(offset);
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, _stream.Length);
                     _lPosition = offset;
                     break;
 
                 case SeekOrigin.Current:
                     lPosition = _lPosition + offset;
-                    if (lPosition < 0 || lPosition > _stream.Length)
-                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfNegative(lPosition, nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(lPosition, _stream.Length, nameof(offset));
                     _lPosition = lPosition;
                     break;
 
                 case SeekOrigin.End:
                     lPosition = _stream.Length + offset;
-                    if (lPosition < 0 || lPosition > _stream.Length)
-                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfNegative(lPosition, nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(lPosition, _stream.Length, nameof(offset));
                     _lPosition = lPosition;
                     break;
 
@@ -392,15 +391,14 @@ namespace System.Data.SqlTypes
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ThrowIfStreamClosed(nameof(Read));
+            ThrowIfStreamClosed();
             ThrowIfStreamCannotRead(nameof(Read));
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offset);
 
             if (_stream.CanSeek && _stream.Position != _lPosition)
                 _stream.Seek(_lPosition, SeekOrigin.Begin);
@@ -415,7 +413,7 @@ namespace System.Data.SqlTypes
         // in case the backing _stream doesn't override Read(Span).
         public override int Read(Span<byte> buffer)
         {
-            ThrowIfStreamClosed(nameof(Read));
+            ThrowIfStreamClosed();
             ThrowIfStreamCannotRead(nameof(Read));
 
             if (_stream.CanSeek && _stream.Position != _lPosition)
@@ -429,15 +427,14 @@ namespace System.Data.SqlTypes
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            ThrowIfStreamClosed(nameof(Write));
+            ThrowIfStreamClosed();
             ThrowIfStreamCannotWrite(nameof(Write));
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offset);
 
             if (_stream.CanSeek && _stream.Position != _lPosition)
                 _stream.Seek(_lPosition, SeekOrigin.Begin);
@@ -448,7 +445,7 @@ namespace System.Data.SqlTypes
 
         public override int ReadByte()
         {
-            ThrowIfStreamClosed(nameof(ReadByte));
+            ThrowIfStreamClosed();
             ThrowIfStreamCannotRead(nameof(ReadByte));
             // If at the end of stream, return -1, rather than call ReadByte,
             // which will throw exception. This is the behavior for Stream.
@@ -466,7 +463,7 @@ namespace System.Data.SqlTypes
 
         public override void WriteByte(byte value)
         {
-            ThrowIfStreamClosed(nameof(WriteByte));
+            ThrowIfStreamClosed();
             ThrowIfStreamCannotWrite(nameof(WriteByte));
             if (_stream.CanSeek && _stream.Position != _lPosition)
                 _stream.Seek(_lPosition, SeekOrigin.Begin);
@@ -476,7 +473,7 @@ namespace System.Data.SqlTypes
 
         public override void SetLength(long value)
         {
-            ThrowIfStreamClosed(nameof(SetLength));
+            ThrowIfStreamClosed();
             ThrowIfStreamCannotSeek(nameof(SetLength));
 
             _stream.SetLength(value);
@@ -520,10 +517,9 @@ namespace System.Data.SqlTypes
                 throw new NotSupportedException(SQLResource.InvalidOpStreamNonWritable(method));
         }
 
-        private void ThrowIfStreamClosed(string method)
+        private void ThrowIfStreamClosed()
         {
-            if (IsStreamClosed())
-                throw new ObjectDisposedException(SQLResource.InvalidOpStreamClosed(method));
+            ObjectDisposedException.ThrowIf(IsStreamClosed(), this);
         }
 
         private bool IsStreamClosed()

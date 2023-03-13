@@ -10,7 +10,7 @@ internal class List
     public SmallGC dat;
     public List next;
 
-    public static void Main(string[] p_args)
+    public static void Main()
     {
         long iterations = 200;
 

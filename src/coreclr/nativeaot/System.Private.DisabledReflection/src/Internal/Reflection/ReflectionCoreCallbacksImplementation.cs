@@ -12,14 +12,12 @@ namespace Internal.Reflection
 {
     internal class ReflectionCoreCallbacksImplementation : ReflectionCoreCallbacks
     {
-        public override EnumInfo GetEnumInfo(Type type)
-        {
-            return new EnumInfo(
+        public override EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create) =>
+            create(
                 RuntimeAugments.GetEnumUnderlyingType(type.TypeHandle),
-                rawValues: Array.Empty<object>(),
-                names: Array.Empty<string>(),
-                isFlags: false);
-        }
+                Array.Empty<string>(),
+                Array.Empty<object>(),
+                false);
 
         public override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
             => throw new NotSupportedException(SR.Reflection_Disabled);

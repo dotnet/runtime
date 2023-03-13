@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -48,8 +50,9 @@ namespace System.Collections.Tests
         protected override bool Contains(IEnumerable<T> enumerable, T value) => ((Queue<T>)enumerable).Contains(value);
         protected override void CopyTo(IEnumerable<T> enumerable, T[] array, int index) => ((Queue<T>)enumerable).CopyTo(array, index);
         protected override bool Remove(IEnumerable<T> enumerable) => ((Queue<T>)enumerable).TryDequeue(out _);
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
-
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
         protected override Type IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
         #endregion
@@ -287,6 +290,54 @@ namespace System.Collections.Tests
                 Assert.True(queue.TryDequeue(out result));
                 Assert.Equal(element, result);
             }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public void Queue_Generic_IterateLastIndexOfMaxSizedQueue_DoesNotOverflow()
+        {
+            Queue<byte> queue;
+            try
+            {
+                queue = new Queue<byte>(Array.MaxLength);
+            }
+            catch (OutOfMemoryException)
+            {
+                // just skip when ctor throws OOM
+                throw new SkipTestException("Unable to allocate 2GB of memory");
+            }
+
+            // once the internal index is moved (via enqueue/dequeue operations), enumerating
+            // the queue of size up to this value is safe from hitting the corner case.
+            int safeValue = int.MaxValue - Array.MaxLength + 1; // 56 + 1
+
+            // corner case value is any number higher than the safe value.
+            int expectedValue = safeValue + 1; // 58
+
+            // enqueue and dequeue to advance internal head and index
+            // to reach the sweet spot; one less than the max length.
+            for (int i = 0; i < Array.MaxLength - 1; i++)
+            {
+                queue.Enqueue(0);
+                queue.Dequeue();
+            }
+
+            // fill queue up to expected (unsafe) range
+            for (byte i = 0; i <= expectedValue; i++)
+            {
+                queue.Enqueue(i);
+            }
+
+            int lastValue = 0;
+
+            // enumerate queue: MoveNext() wraps around the internal index
+            // which was overflowing in the corner case.
+            foreach (byte i in queue)
+            {
+                lastValue = i;
+            }
+
+            Assert.Equal(expectedValue, lastValue);
         }
 
         [Fact]

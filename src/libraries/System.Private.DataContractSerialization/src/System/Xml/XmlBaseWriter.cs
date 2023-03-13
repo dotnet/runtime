@@ -750,27 +750,20 @@ namespace System.Xml
 
         private static void VerifyWhitespace(char ch)
         {
-            if (!IsWhitespace(ch))
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
+            if (!XmlConverter.IsWhitespace(ch))
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
         private static void VerifyWhitespace(string s)
         {
-            for (int i = 0; i < s.Length; i++)
-                if (!IsWhitespace(s[i]))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
+            if (!XmlConverter.IsWhitespace(s))
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
         private static void VerifyWhitespace(char[] chars, int offset, int count)
         {
-            for (int i = 0; i < count; i++)
-                if (!IsWhitespace(chars[offset + i]))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
-        }
-
-        private static bool IsWhitespace(char ch)
-        {
-            return (ch == ' ' || ch == '\n' || ch == '\r' || ch == 't');
+            if (!XmlConverter.IsWhitespace(chars.AsSpan(offset, count)))
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
         protected static void EndContent()

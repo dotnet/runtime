@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -24,14 +25,31 @@ namespace ILCompiler
         {
             get
             {
-                foreach (var type in _module.GetAllTypes())
+                MetadataReader reader = _module.MetadataReader;
+                MetadataStringComparer comparer = reader.StringComparer;
+                foreach (CustomAttributeHandle caHandle in reader.CustomAttributes)
                 {
-                    foreach (var method in type.GetMethods())
+                    CustomAttribute ca = reader.GetCustomAttribute(caHandle);
+                    if (ca.Parent.Kind != HandleKind.MethodDefinition)
+                        continue;
+
+                    if (!reader.GetAttributeNamespaceAndName(caHandle, out StringHandle nsHandle, out StringHandle nameHandle))
+                        continue;
+
+                    if (comparer.Equals(nameHandle, "RuntimeExportAttribute")
+                        && comparer.Equals(nsHandle, "System.Runtime"))
                     {
-                        EcmaMethod ecmaMethod = (EcmaMethod)method;
-                        if ((ecmaMethod.IsRuntimeExport && ecmaMethod.GetRuntimeExportName() != null) ||
-                            (ecmaMethod.IsUnmanagedCallersOnly && ecmaMethod.GetUnmanagedCallersOnlyExportName() != null))
-                            yield return ecmaMethod;
+                        var method = (EcmaMethod)_module.GetMethod(ca.Parent);
+                        if (method.GetRuntimeExportName() != null)
+                            yield return method;
+                    }
+
+                    if (comparer.Equals(nameHandle, "UnmanagedCallersOnlyAttribute")
+                        && comparer.Equals(nsHandle, "System.Runtime.InteropServices"))
+                    {
+                        var method = (EcmaMethod)_module.GetMethod(ca.Parent);
+                        if (method.GetUnmanagedCallersOnlyExportName() != null)
+                            yield return method;
                     }
                 }
             }
@@ -41,15 +59,15 @@ namespace ILCompiler
         {
             foreach (var ecmaMethod in ExportedMethods)
             {
-                if (ecmaMethod.IsRuntimeExport)
-                {
-                    string runtimeExportName = ecmaMethod.GetRuntimeExportName();
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName);
-                }
-                else if (ecmaMethod.IsUnmanagedCallersOnly)
+                if (ecmaMethod.IsUnmanagedCallersOnly)
                 {
                     string unmanagedCallersOnlyExportName = ecmaMethod.GetUnmanagedCallersOnlyExportName();
                     rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName);
+                }
+                else
+                {
+                    string runtimeExportName = ecmaMethod.GetRuntimeExportName();
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName);
                 }
             }
         }

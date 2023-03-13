@@ -4,7 +4,7 @@
     <WasmBuildNative>true</WasmBuildNative>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
     <WasmEnablePerfTracing>true</WasmEnablePerfTracing>
-    <FeatureWasmThreads Condition="false">true</FeatureWasmThreads>
+    <!-- <FeatureWasmThreads>true</FeatureWasmThreads> -->
     <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->
   </PropertyGroup>
 
@@ -32,11 +32,6 @@
   "CI_TEST": "$(ArchiveTests)"
 }' />
   </ItemGroup>
-
-  <PropertyGroup>
-    <_SampleProject>Wasm.Browser.EventPipe.Sample.csproj</_SampleProject>
-  </PropertyGroup>
-
 
   <PropertyGroup>
     <RunAnalyzers>true</RunAnalyzers>

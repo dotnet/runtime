@@ -81,8 +81,8 @@ namespace System.Threading.Tasks
             get { return _maxDegreeOfParallelism; }
             set
             {
-                if ((value == 0) || (value < -1))
-                    throw new ArgumentOutOfRangeException(nameof(MaxDegreeOfParallelism));
+                ArgumentOutOfRangeException.ThrowIfZero(value, nameof(MaxDegreeOfParallelism));
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1, nameof(MaxDegreeOfParallelism));
                 _maxDegreeOfParallelism = value;
             }
         }

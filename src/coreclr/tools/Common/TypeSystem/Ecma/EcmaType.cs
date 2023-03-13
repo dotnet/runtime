@@ -54,7 +54,7 @@ namespace Internal.TypeSystem.Ecma
 
         private int InitializeHashCode()
         {
-            TypeDesc containingType = ContainingType;
+            DefType containingType = ContainingType;
             if (containingType == null)
             {
                 string ns = Namespace;
@@ -305,7 +305,7 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var handle in _typeDefinition.GetMethods())
             {
-                yield return (EcmaMethod)_module.GetObject(handle);
+                yield return _module.GetMethod(handle, this);
             }
         }
 
@@ -316,7 +316,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 MethodDefinition methodDef = reader.GetMethodDefinition(handle);
                 if ((methodDef.Attributes & MethodAttributes.Virtual) != 0)
-                    yield return (EcmaMethod)_module.GetObject(handle);
+                    yield return _module.GetMethod(handle, this);
             }
         }
 
@@ -329,7 +329,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
                 {
-                    var method = (EcmaMethod)_module.GetObject(handle);
+                    var method = _module.GetMethod(handle, this);
                     if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
                 }
@@ -349,7 +349,7 @@ namespace Internal.TypeSystem.Ecma
                 if (methodDefinition.Attributes.IsRuntimeSpecialName() &&
                     stringComparer.Equals(methodDefinition.Name, ".cctor"))
                 {
-                    var method = (EcmaMethod)_module.GetObject(handle);
+                    var method = _module.GetMethod(handle, this);
                     return method;
                 }
             }
@@ -372,7 +372,7 @@ namespace Internal.TypeSystem.Ecma
                 if (attributes.IsRuntimeSpecialName() && attributes.IsPublic()
                     && stringComparer.Equals(methodDefinition.Name, ".ctor"))
                 {
-                    var method = (EcmaMethod)_module.GetObject(handle);
+                    var method = _module.GetMethod(handle, this);
                     MethodSignature sig = method.Signature;
 
                     if (sig.Length != 0)
@@ -424,7 +424,7 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var handle in _typeDefinition.GetFields())
             {
-                var field = (EcmaField)_module.GetObject(handle);
+                var field = _module.GetField(handle, this);
                 yield return field;
             }
         }
@@ -438,7 +438,7 @@ namespace Internal.TypeSystem.Ecma
 
                 foreach (var handle in _typeDefinition.GetFields())
                 {
-                    var field = (EcmaField)_module.GetObject(handle);
+                    var field = _module.GetField(handle, this);
                     if (!field.IsStatic)
                         return field.FieldType;
                 }
@@ -456,7 +456,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 if (stringComparer.Equals(metadataReader.GetFieldDefinition(handle).Name, name))
                 {
-                    var field = (EcmaField)_module.GetObject(handle);
+                    var field = _module.GetField(handle, this);
                     return field;
                 }
             }
@@ -560,7 +560,7 @@ namespace Internal.TypeSystem.Ecma
                     // Note: GetOffset() returns -1 when offset was not set in the metadata
                     int specifiedOffset = fieldDefinition.GetOffset();
                     result.Offsets[index] =
-                        new FieldAndOffset((EcmaField)_module.GetObject(handle), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
+                        new FieldAndOffset(_module.GetField(handle, this), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
 
                     index++;
                 }

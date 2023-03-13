@@ -450,13 +450,13 @@ namespace ILVerify
             return null;
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
-        private T Get<T>(Argument<T> argument) => _command.Result.GetValueForArgument(argument);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
 
         private static int Main(string[] args) =>
             new CommandLineBuilder(new ILVerifyRootCommand())
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption()
+                .UseVersionOption("--version", "-v")
                 .UseHelp()
                 .UseParseErrorReporting()
                 .Build()

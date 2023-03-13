@@ -30,7 +30,7 @@ namespace System.Globalization
         private const int DatePartDay = 3;
         private const int MonthsPerYear = 12;
 
-        private static readonly int[] s_daysToMonth = { 0, 31, 62, 93, 124, 155, 186, 216, 246, 276, 306, 336, 366 };
+        private static ReadOnlySpan<int> DaysToMonth => new int[] { 0, 31, 62, 93, 124, 155, 186, 216, 246, 276, 306, 336, 366 };
 
         private const int MaxCalendarYear = 9378;
         private const int MaxCalendarMonth = 10;
@@ -125,7 +125,7 @@ namespace System.Globalization
         {
             Debug.Assert(ordinalDay <= 366);
             int index = 0;
-            while (ordinalDay > s_daysToMonth[index])
+            while (ordinalDay > DaysToMonth[index])
             {
                 index++;
             }
@@ -138,7 +138,7 @@ namespace System.Globalization
             Debug.Assert(1 <= month && month <= 12);
             // months are one based but for calculations use 0 based
             --month;
-            return s_daysToMonth[month];
+            return DaysToMonth[month];
         }
 
         internal int GetDatePart(long ticks, int part)
@@ -276,7 +276,7 @@ namespace System.Globalization
                 return MaxCalendarDay;
             }
 
-            int daysInMonth = s_daysToMonth[month] - s_daysToMonth[month - 1];
+            int daysInMonth = DaysToMonth[month] - DaysToMonth[month - 1];
             if ((month == MonthsPerYear) && !IsLeapYear(year))
             {
                 Debug.Assert(daysInMonth == 30);
@@ -291,7 +291,7 @@ namespace System.Globalization
             CheckYearRange(year, era);
             if (year == MaxCalendarYear)
             {
-                return s_daysToMonth[MaxCalendarMonth - 1] + MaxCalendarDay;
+                return DaysToMonth[MaxCalendarMonth - 1] + MaxCalendarDay;
             }
 
             return IsLeapYear(year, CurrentEra) ? 366 : 365;
@@ -417,10 +417,7 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
             if (year < 100)
             {
                 return base.ToFourDigitYear(year);

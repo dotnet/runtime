@@ -88,7 +88,7 @@ class Program
         AssertEquals(expected, actual);
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         long[] values = 
             {
@@ -189,7 +189,7 @@ class Program
             }
         }
 
-        string[] strings = { "", "0", "00", "1", "11", "111", "привет", "Hello" };
+        string[] strings = { "", "0", "00", "1", "11", "111", "\u043F\u0440\u0438\u0432\u0435\u0442", "Hello" };
         foreach (var str1 in strings)
         {
             foreach (var str2 in strings)

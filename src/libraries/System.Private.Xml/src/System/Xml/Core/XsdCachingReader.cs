@@ -279,10 +279,8 @@ namespace System.Xml
         // Gets the value of the attribute with the specified index.
         public override string GetAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
 
             return _attributeEvents[i].RawValue;
         }
@@ -354,10 +352,8 @@ namespace System.Xml
         // Moves to the attribute with the specified index.
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
             _currentAttrIndex = i;
             _cachedNode = _attributeEvents[i];
         }

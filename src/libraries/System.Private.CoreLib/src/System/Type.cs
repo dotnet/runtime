@@ -53,6 +53,9 @@ namespace System
 
         public virtual bool IsByRefLike { [Intrinsic] get => throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
 
+        public virtual bool IsFunctionPointer => false;
+        public virtual bool IsUnmanagedFunctionPointer => false;
+
         public bool HasElementType => HasElementTypeImpl();
         protected abstract bool HasElementTypeImpl();
         public abstract Type? GetElementType();
@@ -60,8 +63,11 @@ namespace System
         public virtual int GetArrayRank() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         public virtual Type GetGenericTypeDefinition() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : Type.EmptyTypes;
+        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : EmptyTypes;
         public virtual Type[] GetGenericArguments() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
+        public virtual Type[] GetOptionalCustomModifiers() => EmptyTypes;
+        public virtual Type[] GetRequiredCustomModifiers() => EmptyTypes;
 
         public virtual int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public virtual GenericParameterAttributes GenericParameterAttributes => throw new NotSupportedException();
@@ -126,7 +132,7 @@ namespace System
         public ConstructorInfo? TypeInitializer
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            get => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, Type.EmptyTypes, null);
+            get => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, EmptyTypes, null);
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -200,6 +206,10 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public abstract FieldInfo[] GetFields(BindingFlags bindingAttr);
+
+        public virtual Type[] GetFunctionPointerCallingConventions() => throw new NotSupportedException();
+        public virtual Type GetFunctionPointerReturnType() => throw new NotSupportedException();
+        public virtual Type[] GetFunctionPointerParameterTypes() => throw new NotSupportedException();
 
         [DynamicallyAccessedMembers(
             DynamicallyAccessedMemberTypes.PublicFields |
@@ -327,9 +337,7 @@ namespace System
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             ArgumentNullException.ThrowIfNull(name);
-
-            if (genericParameterCount < 0)
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(genericParameterCount));
+            ArgumentOutOfRangeException.ThrowIfNegative(genericParameterCount);
             ArgumentNullException.ThrowIfNull(types);
             for (int i = 0; i < types.Length; i++)
             {
@@ -602,8 +610,7 @@ namespace System
 
         public static Type MakeGenericMethodParameter(int position)
         {
-            if (position < 0)
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(position));
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             return new SignatureGenericMethodParameterType(position);
         }
 

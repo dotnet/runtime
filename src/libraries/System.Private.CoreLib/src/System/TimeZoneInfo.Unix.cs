@@ -187,9 +187,9 @@ namespace System
                     // AdjustmentRule cannot express such rule using the DaylightTransitionStart and DaylightTransitionEnd because
                     // the DaylightTransitionStart and DaylightTransitionEnd express the transition for every year.
                     // We split the rule into more rules. The first rule will start from the start year of the original rule and ends at the end of the same year.
-                    // The second splitted rule would cover the middle range of the original rule and ranging from the year start+1 to
+                    // The second split rule would cover the middle range of the original rule and ranging from the year start+1 to
                     // year end-1. The transition time in this rule would start from Jan 1st to end of December.
-                    // The last splitted rule would start from the Jan 1st of the end year of the original rule and ends at the end transition time of the original rule.
+                    // The last split rule would start from the Jan 1st of the end year of the original rule and ends at the end transition time of the original rule.
 
                     // Add the first rule.
                     DateTime endForFirstRule = new DateTime(start.Year + 1, 1, 1).AddMilliseconds(-1); // At the end of the first year
@@ -912,7 +912,7 @@ namespace System
                 index++;
             } while ((uint)index < (uint)date.Length && char.IsAsciiDigit(date[index]));
 
-            int[] days = GregorianCalendarHelper.DaysToMonth365;
+            ReadOnlySpan<int> days = GregorianCalendar.DaysToMonth365;
 
             if (julianDay == 0 || julianDay > days[days.Length - 1])
             {
@@ -1260,7 +1260,7 @@ namespace System
             }
         }
 
-        private struct TZifType
+        private readonly struct TZifType
         {
             public const int Length = 6;
 
@@ -1280,7 +1280,7 @@ namespace System
             }
         }
 
-        private struct TZifHead
+        private readonly struct TZifHead
         {
             public const int Length = 44;
 

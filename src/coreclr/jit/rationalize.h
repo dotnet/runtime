@@ -56,7 +56,6 @@ private:
 
     // Other transformations
     void RewriteAssignment(LIR::Use& use);
-    void RewriteAddress(LIR::Use& use);
 
 #ifdef TARGET_ARM64
     void RewriteSubLshDiv(GenTree** use);
@@ -68,9 +67,6 @@ private:
 
 inline Rationalizer::Rationalizer(Compiler* _comp) : Phase(_comp, PHASE_RATIONALIZE)
 {
-#ifdef DEBUG
-    comp->compNumStatementLinksTraversed = 0;
-#endif
 }
 
 #endif

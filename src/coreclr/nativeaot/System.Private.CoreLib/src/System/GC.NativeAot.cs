@@ -65,10 +65,7 @@ namespace System
     {
         public static int GetGeneration(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             return RuntimeImports.RhGetGeneration(obj);
         }
@@ -122,10 +119,7 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
-            if (generation < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(generation);
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
             {
@@ -224,12 +218,7 @@ namespace System
         /// <returns>The status of a registered full GC notification</returns>
         public static GCNotificationStatus WaitForFullGCApproach(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(millisecondsTimeout),
-                    SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return (GCNotificationStatus)RuntimeImports.RhWaitForFullGCApproach(millisecondsTimeout);
         }
@@ -252,12 +241,7 @@ namespace System
         /// <returns></returns>
         public static GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(millisecondsTimeout),
-                    SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return (GCNotificationStatus)RuntimeImports.RhWaitForFullGCComplete(millisecondsTimeout);
         }
@@ -341,22 +325,10 @@ namespace System
 
         private static bool StartNoGCRegionWorker(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC)
         {
-            if (totalSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(totalSize),
-                    SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(totalSize)));
-            }
-
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalSize);
             if (hasLohSize)
             {
-                if (lohSize <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(lohSize),
-                        SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(lohSize)));
-                }
-
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(lohSize);
                 if (lohSize > totalSize)
                 {
                     throw new ArgumentOutOfRangeException(nameof(lohSize), SR.ArgumentOutOfRange_NoGCLohSizeGreaterTotalSize);
@@ -414,18 +386,14 @@ namespace System
 
         public static void SuppressFinalize(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             RuntimeImports.RhSuppressFinalize(obj);
         }
 
         public static void ReRegisterForFinalize(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             RuntimeImports.RhReRegisterForFinalize(obj);
         }
@@ -445,8 +413,7 @@ namespace System
 
         public static int CollectionCount(int generation)
         {
-            if (generation < 0)
-                throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfNegative(generation);
 
             return RuntimeImports.RhGetGcCollectionCount(generation, false);
         }
@@ -527,18 +494,9 @@ namespace System
         /// <param name="bytesAllocated"></param>
         public static void AddMemoryPressure(long bytesAllocated)
         {
-            if (bytesAllocated <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
-                        SR.ArgumentOutOfRange_NeedPosNum);
-            }
-
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
 #if !TARGET_64BIT
-            if (bytesAllocated > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
-                        SR.ArgumentOutOfRange_MustBeNonNegInt32);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
 #endif
 
             CheckCollectionCount();
@@ -654,18 +612,9 @@ namespace System
 
         public static void RemoveMemoryPressure(long bytesAllocated)
         {
-            if (bytesAllocated <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
-                        SR.ArgumentOutOfRange_NeedPosNum);
-            }
-
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bytesAllocated);
 #if !TARGET_64BIT
-            if (bytesAllocated > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
-                        SR.ArgumentOutOfRange_MustBeNonNegInt32);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
 #endif
 
             CheckCollectionCount();
@@ -773,7 +722,9 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-                if (length < 2048 / Unsafe.SizeOf<T>())
+#pragma warning disable 8500 // sizeof of managed types
+                if (length < 2048 / sizeof(T))
+#pragma warning restore 8500
                 {
                     return new T[length];
                 }

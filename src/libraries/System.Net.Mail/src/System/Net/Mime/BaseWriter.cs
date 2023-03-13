@@ -99,7 +99,7 @@ namespace System.Net.Mime
 
         internal Stream GetContentStream() => GetContentStream(null);
 
-        private Stream GetContentStream(MultiAsyncResult? multiResult)
+        private ClosableStream GetContentStream(MultiAsyncResult? multiResult)
         {
             if (_isInContent)
             {

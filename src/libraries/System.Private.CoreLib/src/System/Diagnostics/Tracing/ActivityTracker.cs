@@ -254,17 +254,17 @@ namespace System.Diagnostics.Tracing
         {
             // We use provider name to distinguish between activities from different providers.
 
-            if (activityName.EndsWith(EventSource.s_ActivityStartSuffix, StringComparison.Ordinal))
+            if (activityName.EndsWith(EventSource.ActivityStartSuffix, StringComparison.Ordinal))
             {
-                return string.Concat(providerName, activityName.AsSpan(0, activityName.Length - EventSource.s_ActivityStartSuffix.Length));
+                return string.Concat(providerName, activityName.AsSpan()[..^EventSource.ActivityStartSuffix.Length]);
             }
-            else if (activityName.EndsWith(EventSource.s_ActivityStopSuffix, StringComparison.Ordinal))
+            else if (activityName.EndsWith(EventSource.ActivityStopSuffix, StringComparison.Ordinal))
             {
-                return string.Concat(providerName, activityName.AsSpan(0, activityName.Length - EventSource.s_ActivityStopSuffix.Length));
+                return string.Concat(providerName, activityName.AsSpan()[..^EventSource.ActivityStopSuffix.Length]);
             }
             else if (task != 0)
             {
-                return providerName + "task" + task.ToString();
+                return $"{providerName}task{task}";
             }
             else
             {

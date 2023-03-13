@@ -48,7 +48,7 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        public unsafe CERT_CONTEXT* CertContext
+        public unsafe CERT_CONTEXT* DangerousCertContext
         {
             get { return (CERT_CONTEXT*)handle; }
         }

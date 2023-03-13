@@ -130,7 +130,7 @@ namespace DefaultNamespace
 
     public class EAObject
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             int successes = 0;
             int result;

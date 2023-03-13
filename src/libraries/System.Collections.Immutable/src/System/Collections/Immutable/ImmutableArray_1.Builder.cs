@@ -214,6 +214,30 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Returns the current contents as an <see cref="ImmutableArray{T}"/> and sets the collection to a zero length array.
+            /// </summary>
+            /// <remarks>
+            /// If <see cref="Capacity"/> equals <see cref="Count"/>, the internal array will be extracted
+            /// as an <see cref="ImmutableArray{T}"/> without copying the contents. Otherwise, the contents
+            /// will be copied into a new array. The collection will then be set to a zero length array.
+            /// </remarks>
+            /// <returns>An immutable array.</returns>
+            public ImmutableArray<T> DrainToImmutable()
+            {
+                T[] result = _elements;
+
+                if (result.Length != _count)
+                {
+                    result = ToArray();
+                }
+
+                _elements = ImmutableArray<T>.Empty.array!;
+                _count = 0;
+
+                return new ImmutableArray<T>(result);
+            }
+
+            /// <summary>
             /// Removes all items from the <see cref="ICollection{T}"/>.
             /// </summary>
             public void Clear()
@@ -260,7 +284,7 @@ namespace System.Collections.Immutable
 
                 if (!items.TryCopyTo(_elements, index))
                 {
-                    foreach (var item in items)
+                    foreach (T item in items)
                     {
                         _elements[index++] = item;
                     }
@@ -327,7 +351,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                foreach (var item in items)
+                foreach (T item in items)
                 {
                     this.Add(item);
                 }
@@ -341,7 +365,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(items, nameof(items));
 
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += items.Length;
 
                 Array.Copy(items, 0, _elements, offset, items.Length);
@@ -356,7 +380,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(items, nameof(items));
 
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += items.Length;
 
                 Array.Copy(items, 0, _elements, offset, items.Length);
@@ -372,7 +396,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(items, nameof(items));
                 Requires.Range(length >= 0 && length <= items.Length, nameof(length));
 
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += length;
 
                 Array.Copy(items, 0, _elements, offset, length);
@@ -599,7 +623,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(items, nameof(items));
 
                 var indicesToRemove = new SortedSet<int>();
-                foreach (var item in items)
+                foreach (T item in items)
                 {
                     int index = this.IndexOf(item, 0, _count, equalityComparer);
                     while (index >= 0 && !indicesToRemove.Add(index) && index + 1 < _count)
@@ -895,10 +919,11 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Reverse()
             {
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+                Array.Reverse<T>(_elements, 0, _count);
+#else
                 // The non-generic Array.Reverse is not used because it does not perform
                 // well for non-primitive value types.
-                // If/when a generic Array.Reverse<T> becomes available, the below code
-                // can be deleted and replaced with a call to Array.Reverse<T>.
                 int i = 0;
                 int j = _count - 1;
                 T[] array = _elements;
@@ -910,6 +935,7 @@ namespace System.Collections.Immutable
                     i++;
                     j--;
                 }
+#endif
             }
 
             /// <summary>
@@ -1032,10 +1058,10 @@ namespace System.Collections.Immutable
             {
                 this.EnsureCapacity(this.Count + length);
 
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += length;
 
-                var nodes = _elements;
+                T[] nodes = _elements;
                 for (int i = 0; i < length; i++)
                 {
                     nodes[offset + i] = items[i];
@@ -1054,7 +1080,7 @@ namespace System.Collections.Immutable
                 int copied = 0;
                 int removed = 0;
                 int lastIndexRemoved = -1;
-                foreach (var indexToRemove in indicesToRemove)
+                foreach (int indexToRemove in indicesToRemove)
                 {
                     Debug.Assert(lastIndexRemoved < indexToRemove);
                     int copyLength = lastIndexRemoved == -1 ? indexToRemove : (indexToRemove - lastIndexRemoved - 1);

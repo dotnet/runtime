@@ -12,7 +12,7 @@ class GCHandleTest
     private const int m_numGCHs = 50;
     private long m_numIters;
     
-    static void Main(string[] real_args)
+    static void Main()
     {
         long iterations    = 200;
     

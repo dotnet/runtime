@@ -6,10 +6,10 @@ namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         static void Method1() { }
-        static int Main()
+        public static int Main()
         {
             bool local1 = false;
             for (; local1; Method1()) { }

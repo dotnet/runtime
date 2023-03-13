@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -48,16 +47,23 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ServerClosesPipe_ClientReceivesEof()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ServerClosesPipe_ClientReceivesEof(bool callDisposeLocalCopyOfClientHandle)
         {
             using (var pipe = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable))
             using (var remote = RemoteExecutor.Invoke(new Action<string>(ChildFunc), pipe.GetClientHandleAsString()))
             {
-                pipe.DisposeLocalCopyOfClientHandle();
+                if (callDisposeLocalCopyOfClientHandle)
+                {
+                    pipe.DisposeLocalCopyOfClientHandle();
+                }
+
                 pipe.Write(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
 
                 pipe.Dispose();
+                Assert.True(pipe.ClientSafePipeHandle.IsClosed);
 
                 Assert.True(remote.Process.WaitForExit(30_000));
             }

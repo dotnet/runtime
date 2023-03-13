@@ -10,7 +10,7 @@ namespace CSEWithDoubleNegation
     {
         private static int _static = 0;
 
-        static int Main(string[] args)
+        static int Main()
         {
             if (DoubleNeg() != 22)
             {

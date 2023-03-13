@@ -793,12 +793,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Report a bad operator types error to the user.
         private static RuntimeBinderException BadOperatorTypesError(Expr pOperand1, Expr pOperand2)
         {
+            Debug.Assert(pOperand1 != null);
+            Debug.Assert(pOperand1.Type != null);
+
             // This is a hack, but we need to store the operation somewhere... the first argument's as
             // good a place as any.
             string strOp = pOperand1.ErrorString;
-
-            Debug.Assert(pOperand1 != null);
-            Debug.Assert(pOperand1.Type != null);
 
             if (pOperand2 != null)
             {

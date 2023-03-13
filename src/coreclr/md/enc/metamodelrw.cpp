@@ -2056,7 +2056,7 @@ CMiniMdRW::GetFullSaveSize(
     cbTotal += cbAlign;
     m_cbSaveSize = cbTotal;
 
-    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total size = %d\n", cbTotal));
+    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total size = %u\n", cbTotal));
 
     *pcbSaveSize = cbTotal;
 
@@ -2984,7 +2984,7 @@ CMiniMdRW::PreSaveEnc()
                 // If we found the token, don't keep the record.
                 if (pul != 0)
                 {
-                    LOG((LOGMD, "PreSave ENCLog skipping duplicate token %d", pFrom->GetToken()));
+                    LOG((LOGMD, "PreSave ENCLog skipping duplicate token 0x%x", pFrom->GetToken()));
                     continue;
                 }
                 // First time token was seen, so keep track of it.

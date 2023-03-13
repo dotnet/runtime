@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace ComWrappersTests
 {
     using System;
@@ -132,26 +134,30 @@ namespace ComWrappersTests
                 Assert.Equal(sourceWrappers.Registration, target.Registration);
         }
 
-        private static (WeakReference<WeakReferenceableWrapper>, IntPtr) GetWeakReference(TestComWrappers cw)
-        {
-            IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
-            var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
-            var wr = new WeakReference<WeakReferenceableWrapper>(obj);
-            ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
-            return (wr, objRaw);
-        }
-
-        private static IntPtr SetWeakReferenceTarget(WeakReference<WeakReferenceableWrapper> wr, TestComWrappers cw)
-        {
-            IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
-            var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
-            wr.SetTarget(obj);
-            ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
-            return objRaw;
-        }
-
         private static void ValidateNativeWeakReference(TestComWrappers cw)
         {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (WeakReference<WeakReferenceableWrapper>, IntPtr) GetWeakReference(TestComWrappers cw)
+            {
+                IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
+                var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
+                var wr = new WeakReference<WeakReferenceableWrapper>(obj);
+                ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
+                GC.KeepAlive(obj);
+                return (wr, objRaw);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IntPtr SetWeakReferenceTarget(WeakReference<WeakReferenceableWrapper> wr, TestComWrappers cw)
+            {
+                IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
+                var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
+                wr.SetTarget(obj);
+                ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
+                GC.KeepAlive(obj);
+                return objRaw;
+            }
+
             Console.WriteLine($"  -- Validate weak reference creation");
             var (weakRef, nativeRef) = GetWeakReference(cw);
 
@@ -218,20 +224,20 @@ namespace ComWrappersTests
 
         static void ValidateNonComWrappers()
         {
-            Console.WriteLine($"Running {nameof(ValidateNonComWrappers)}...");
-
-            (WeakReference, IntPtr) GetWeakReference()
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (WeakReference, IntPtr) GetWeakReference()
             {
                 IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
                 var obj = Marshal.GetObjectForIUnknown(objRaw);
                 return (new WeakReference(obj), objRaw);
             }
 
-            bool HasTarget(WeakReference wr)
+            static bool HasTarget(WeakReference wr)
             {
                 return wr.Target != null;
             }
 
+            Console.WriteLine($"Running {nameof(ValidateNonComWrappers)}...");
             var (weakRef, nativeRef) = GetWeakReference();
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -252,6 +258,15 @@ namespace ComWrappersTests
 
         static void ValidateAggregatedWeakReference()
         {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (GCHandle handle, WeakReference<DerivedObject>) GetWeakReference()
+            {
+                DerivedObject obj = new DerivedObject(TestComWrappers.TrackerSupportInstance);
+                // We use an explicit weak GC handle here to enable us to validate that we are using "weak" GCHandle
+                // semantics with the weak reference.
+                return (GCHandle.Alloc(obj, GCHandleType.Weak), new WeakReference<DerivedObject>(obj));
+            }
+
             Console.WriteLine("Validate weak reference with aggregation.");
             var (handle, weakRef) = GetWeakReference();
 
@@ -260,17 +275,9 @@ namespace ComWrappersTests
 
             Assert.Null(handle.Target);
             Assert.False(weakRef.TryGetTarget(out _));
-
-            static (GCHandle handle, WeakReference<DerivedObject>) GetWeakReference()
-            {
-                DerivedObject obj = new DerivedObject(TestComWrappers.TrackerSupportInstance);
-                // We use an explicit weak GC handle here to enable us to validate that we are using "weak" GCHandle
-                // semantics with the weak reference.
-                return (GCHandle.Alloc(obj, GCHandleType.Weak), new WeakReference<DerivedObject>(obj));
-            }
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {

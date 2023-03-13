@@ -81,6 +81,11 @@ namespace System.Reflection.PortableExecutable
         DynamicBase = 0x0040,
 
         /// <summary>
+        /// Code integrity checks are enforced.
+        /// </summary>
+        ForceIntegrity = 0x0080,
+
+        /// <summary>
         /// Image is NX compatible.
         /// </summary>
         NxCompatible = 0x0100,
@@ -110,6 +115,14 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         WdmDriver = 0x2000,
 
+        /// <summary>
+        /// The image supports Control Flow Guard.
+        /// </summary>
+        ControlFlowGuard = 0x4000,
+
+        /// <summary>
+        /// The image is Terminal Server aware.
+        /// </summary>
         TerminalServerAware = 0x8000,
     }
 

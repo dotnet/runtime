@@ -13,6 +13,13 @@
          This ensures that the TargetPlatformIdentifier property is empty for non .NETCoreApp tfms. -->
     <_EnableDefaultWindowsPlatform>false</_EnableDefaultWindowsPlatform>
     <_targetPlatformIdentifier Condition="$(TargetFramework.Contains('-'))">$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</_targetPlatformIdentifier>
+
+    <!--
+      Define this here (not just in Versions.props) because the SDK resets it
+      unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
+      Also define this early enough so that IsNetCoreAppTargetingLatestTFM is correctly set.
+    -->
+    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(_targetPlatformIdentifier)' != '' and '$(_targetPlatformIdentifier)' != 'windows'">

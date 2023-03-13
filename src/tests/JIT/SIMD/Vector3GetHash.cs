@@ -60,7 +60,7 @@ internal partial class VectorTest
             Assert.NotEqual(v7.GetHashCode(), v9.GetHashCode());
         }
 
-        public static int Main( string[] args )
+        public static int Main()
         {
             int returnVal = Pass;
 

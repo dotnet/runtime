@@ -5,9 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Playwright;
 
 #nullable enable
 
@@ -30,11 +32,11 @@ public class BuildPublishTests : BuildTestBase
         CreateBlazorWasmTemplateProject(id);
 
         // Build
-        BuildInternal(id, config, publish: false);
+        BlazorBuildInternal(id, config, publish: false);
         AssertBlazorBootJson(config, isPublish: false);
 
         // Publish
-        BuildInternal(id, config, publish: true);
+        BlazorBuildInternal(id, config, publish: true);
         AssertBlazorBootJson(config, isPublish: true);
     }
 
@@ -50,11 +52,11 @@ public class BuildPublishTests : BuildTestBase
         if (config == "Release")
         {
             // relinking in publish for Release config
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
         }
         else
         {
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
         }
     }
 
@@ -80,12 +82,24 @@ public class BuildPublishTests : BuildTestBase
     //}
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void WithDllImportInMainAssembly(string config)
+    [InlineData("Debug", /*build*/true, /*publish*/false)]
+    [InlineData("Debug", /*build*/false, /*publish*/true)]
+    [InlineData("Debug", /*build*/true, /*publish*/true)]
+    [InlineData("Release", /*build*/true, /*publish*/false)]
+    [InlineData("Release", /*build*/false, /*publish*/true)]
+    [InlineData("Release", /*build*/true, /*publish*/true)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
+    public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
-        string id = $"blz_dllimp_{config}";
+        string id = $"blz_dllimp_{config}_";
+        if (build && publish)
+            id += "build_then_publish";
+        else if (build)
+            id += "build";
+        else
+            id += "publish";
+
         string projectFile = CreateProjectWithNativeReference(id);
         string nativeSource = @"
             #include <stdio.h>
@@ -111,18 +125,40 @@ public class BuildPublishTests : BuildTestBase
         File.WriteAllText(Path.Combine(_projectDir!, "Pages", "MyDllImport.cs"), myDllImportCs);
 
         AddItemsPropertiesToProject(projectFile, extraItems: @"<NativeFileReference Include=""mylib.cpp"" />");
+        BlazorAddRazorButton("cpp_add", """
+            var result = MyDllImports.cpp_add(10, 12);
+            outputText = $"{result}";
+        """);
 
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-        CheckNativeFileLinked(forPublish: false);
+        if (build)
+        {
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+            CheckNativeFileLinked(forPublish: false);
+        }
 
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-        CheckNativeFileLinked(forPublish: true);
+        if (publish)
+        {
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
+            CheckNativeFileLinked(forPublish: true);
+        }
+
+        if (publish)
+            await BlazorRunForPublishWithWebServer(config, TestDllImport);
+        else
+            await BlazorRunForBuildWithDotnetRun(config, TestDllImport);
+
+        async Task TestDllImport(IPage page)
+        {
+            await page.Locator("text=\"cpp_add\"").ClickAsync();
+            var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
+            Assert.Equal("Output: 22", txt);
+        }
 
         void CheckNativeFileLinked(bool forPublish)
         {
             // very crude way to check that the native file was linked in
             // needed because we don't run the blazor app yet
-            string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm", forPublish ? "for-publish" : "for-build");
+            string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", forPublish ? "for-publish" : "for-build");
             string pinvokeTableHPath = Path.Combine(objBuildDir, "pinvoke-table.h");
             Assert.True(File.Exists(pinvokeTableHPath), $"Could not find {pinvokeTableHPath}");
 
@@ -168,7 +204,7 @@ public class BuildPublishTests : BuildTestBase
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
 
         // will relink
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
 
         // publish/wwwroot/_framework/blazor.boot.json
         string frameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true);
@@ -184,4 +220,34 @@ public class BuildPublishTests : BuildTestBase
 
         Assert.Contains("RazorClassLibrary.dll", lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public async Task BlazorBuildRunTest(string config)
+    {
+        string id = $"blazor_{config}_{Path.GetRandomFileName()}";
+        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        await BlazorRunForBuildWithDotnetRun(config);
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82481")]
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    [InlineData("Debug", false)]
+    [InlineData("Debug", true)]
+    [InlineData("Release", false)]
+    [InlineData("Release", true)]
+    public async Task BlazorPublishRunTest(string config, bool aot)
+    {
+        string id = $"blazor_{config}_{Path.GetRandomFileName()}";
+        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+        if (aot)
+            AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
+
+        BlazorPublish(new BlazorBuildOptions(id, config, aot ? NativeFilesType.AOT : NativeFilesType.Relinked));
+        await BlazorRunForPublishWithWebServer(config);
+    }
+
 }

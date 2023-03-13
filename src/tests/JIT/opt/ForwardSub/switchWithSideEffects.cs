@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Found by Antigen
@@ -87,7 +87,7 @@ public class SwitchWithSideEffects
             return;
         }
     }
-    public static int Main(string[] args)
+    public static int Main()
     {
         new SwitchWithSideEffects().Method0();
         return 100;

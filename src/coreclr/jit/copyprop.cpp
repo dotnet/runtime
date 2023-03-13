@@ -75,11 +75,11 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
 void Compiler::optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName)
 {
     JITDUMP("{ ");
-    for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
+    for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
-        unsigned             defLclNum  = iter.Get();
-        GenTreeLclVarCommon* lclDefNode = iter.GetValue()->Top().GetDefNode()->AsLclVarCommon();
-        LclSsaVarDsc*        ssaDef     = iter.GetValue()->Top().GetSsaDef();
+        unsigned             defLclNum  = iter->GetKey();
+        GenTreeLclVarCommon* lclDefNode = iter->GetValue()->Top().GetDefNode()->AsLclVarCommon();
+        LclSsaVarDsc*        ssaDef     = iter->GetValue()->Top().GetSsaDef();
 
         if (ssaDef != nullptr)
         {
@@ -165,9 +165,9 @@ bool Compiler::optCopyProp(
     ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
-    for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
+    for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
-        unsigned newLclNum = iter.Get();
+        unsigned newLclNum = iter->GetKey();
 
         // Nothing to do if same.
         if (lclNum == newLclNum)
@@ -175,7 +175,7 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        CopyPropSsaDef      newLclDef    = iter.GetValue()->Top();
+        CopyPropSsaDef      newLclDef    = iter->GetValue()->Top();
         LclSsaVarDsc* const newLclSsaDef = newLclDef.GetSsaDef();
 
         // Likewise, nothing to do if the most recent def is not available.
@@ -494,12 +494,12 @@ PhaseStatus Compiler::optVnCopyProp()
 
 #ifdef DEBUG
             // Verify the definitions remaining are only those we pushed for parameters.
-            for (LclNumToLiveDefsMap::KeyIterator iter = m_curSsaName.Begin(); !iter.Equal(m_curSsaName.End()); ++iter)
+            for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(&m_curSsaName))
             {
-                unsigned lclNum = iter.Get();
+                unsigned lclNum = iter->GetKey();
                 assert(m_compiler->lvaGetDesc(lclNum)->lvIsParam || (lclNum == m_compiler->info.compThisArg));
 
-                CopyPropSsaDefStack* defStack = iter.GetValue();
+                CopyPropSsaDefStack* defStack = iter->GetValue();
                 assert(defStack->Height() == 1);
             }
 #endif // DEBUG

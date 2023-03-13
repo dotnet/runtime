@@ -88,8 +88,8 @@ namespace System.Globalization
             Vector128<ushort> vec2;
             do
             {
-                vec1 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
-                vec2 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+                vec1 = Vector128.LoadUnsafe(ref charA, i);
+                vec2 = Vector128.LoadUnsafe(ref charB, i);
 
                 if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2))
                 {
@@ -339,7 +339,9 @@ namespace System.Globalization
             {
                 // Do a quick search for the first element of "value".
                 int relativeIndex = isLetter ?
-                    SpanHelpers.IndexOfAnyChar(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
+                    PackedSpanHelpers.PackedIndexOfIsSupported
+                        ? PackedSpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength)
+                        : SpanHelpers.IndexOfAnyChar(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
                     SpanHelpers.IndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
                 if (relativeIndex < 0)
                 {

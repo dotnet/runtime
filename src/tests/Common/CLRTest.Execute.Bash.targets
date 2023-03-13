@@ -115,6 +115,14 @@ then
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(SynthesizedPgoIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$CrossGen2SynthesizePgo" ]
+then
+  echo SKIPPING EXECUTION BECAUSE CrossGen2SynthesizePgo IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[
@@ -179,11 +187,17 @@ fi
         <Command><![CDATA[        export __DotEnv="${i#*=}"
         if [ ! -f "$__DotEnv" ]
         then
-            echo "The Debugger FullPath %5C%22${__DotEnv}%5C%22 does not exist"
+            echo "The dotenv file FullPath %5C%22${__DotEnv}%5C%22 does not exist"
             usage
         fi
         export __DotEnvArg=-e ${__DotEnv}]]></Command>
         <Description>A dotenv file to pass to corerun to set environment variables for the test run.</Description>
+      </BashCLRTestExecutionScriptArgument>
+
+      <BashCLRTestExecutionScriptArgument Include="usewatcher">
+        <HasParam>false</HasParam>
+        <Command><![CDATA[        _RunWithWatcher=1]]></Command>
+        <Description>Run the tests using the test watcher.</Description>
       </BashCLRTestExecutionScriptArgument>
     </ItemGroup>
 
@@ -242,10 +256,11 @@ then
     exit 1
   fi
 
-  # Copy CORECLR native binaries to $LinkBin,
+  # Copy CORECLR native binaries and the test watcher to $LinkBin,
   # so that we can run the test based on that directory
   cp $CORE_ROOT/*.so $LinkBin/
   cp $CORE_ROOT/corerun $LinkBin/
+  cp $CORE_ROOT/watchdog $LinkBin/
 
   # Copy some files that may be arguments
   for f in *.txt;
@@ -275,6 +290,7 @@ fi
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+      <WatcherRunFile>"$CORE_ROOT/watchdog" 300</WatcherRunFile>
 
       <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
@@ -294,7 +310,7 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
    ]]>
       </CLRTestBashPreCommands>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetArchitecture)' != 'arm64'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetArchitecture)' != 'arm64'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -310,6 +326,9 @@ fi
 if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
+elif [ "$_RunWithWatcher" == 1 ];
+then
+    LAUNCHER="$(WatcherRunFile) $(CLRTestRunFile)"
 else
     LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
@@ -331,15 +350,18 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetArchitecture)' == 'arm64'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetArchitecture)' == 'arm64'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
 if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
+elif [ "$_RunWithWatcher" == 1 ];
+then
+    LAUNCHER="$(WatcherRunFile) $(CLRTestRunFile)"
 else
-    LAUNCHER="$_DebuggerFullPath $(CLRTestRunFile)"
+    LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
 
 $(BashIlrtTestLaunchCmds)
@@ -359,14 +381,14 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
       <![CDATA[
 cd WasmApp
 ./run-v8.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'android'">
       <![CDATA[
 # run Android app
 __Command=""
@@ -391,7 +413,7 @@ CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'iOSSimulator' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'iossimulator'">
       <![CDATA[
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -476,7 +498,7 @@ usage()
 for i in "$@"
     do
         case $i in
-        -?|-h|--help)
+          -?|-h|--help|/?|/h|/help)
         usage
         %3B%3B
 @(BashCLRTestExecutionScriptArgument -> '        -%(Identity)%(ParamText)|/%(Identity)%(ParamText))
@@ -490,12 +512,12 @@ done
 $(BashCLRTestArgPrep)
       ]]></BashCLRTestArgPrep>
 
-      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) == 'Android' ">
+      <CLRTestExecutionScriptHeader Condition="'$(TargetOS)' == 'android'">
         <![CDATA[
 %23%21/usr/bin/env bash
 set -e
       ]]></CLRTestExecutionScriptHeader>
-      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) != 'Android' ">
+      <CLRTestExecutionScriptHeader Condition="'$(TargetOS)' != 'android'">
         <![CDATA[
 %23%21/usr/bin/env bash
       ]]></CLRTestExecutionScriptHeader>
@@ -526,6 +548,7 @@ ReleaseLock()
 }
 cd "$%28dirname "${BASH_SOURCE[0]}")"
 LockFile="lock"
+_RunWithWatcher=0
 
 
 # The __TestEnv variable may be used to specify a script to source before the test.

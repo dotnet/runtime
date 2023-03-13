@@ -15,7 +15,7 @@ internal class Sample3
         o.GetType();
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         try
         {

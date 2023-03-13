@@ -140,7 +140,7 @@ namespace VectorMathTests
             return true;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             Random random = new Random(Seed);
             int count = Point.Count;

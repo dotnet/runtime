@@ -5,7 +5,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Globalization;
 
-namespace System.DirectoryServices.Interop
+namespace System.DirectoryServices
 {
     [StructLayout(LayoutKind.Sequential)]
     internal struct SystemTime

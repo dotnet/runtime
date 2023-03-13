@@ -8,7 +8,7 @@
 // This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an assignment flag, when
 // its children was optimized in the assertion propagation.
 
-.class ILGEN_CLASS
+.class public ILGEN_CLASS
 {
     .method public hidebysig static int64  DoubleToInt64(float64 val) cil managed
     {

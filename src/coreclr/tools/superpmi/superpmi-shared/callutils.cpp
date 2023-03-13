@@ -215,28 +215,6 @@ CallType CallUtils::GetDirectCallSiteInfo(MethodContext*            mc,
 // SuperPMI's method context replaying instead of directly making calls into the JIT/EE interface.
 //-------------------------------------------------------------------------------------------------
 
-// Originally from src/jit/ee_il_dll.cpp
-const char* CallUtils::GetMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE method, const char** classNamePtr)
-{
-    if (GetHelperNum(method))
-    {
-        if (classNamePtr != nullptr)
-            *classNamePtr = "HELPER";
-
-        // The JIT version uses the getHelperName JIT/EE interface call, but this is easier for us
-        return kHelperName[GetHelperNum(method)];
-    }
-
-    if (IsNativeMethod(method))
-    {
-        if (classNamePtr != nullptr)
-            *classNamePtr = "NATIVE";
-        method            = GetMethodHandleForNative(method);
-    }
-
-    return (mc->repGetMethodName(method, classNamePtr));
-}
-
 // Originally from src/jit/eeinterface.cpp
 // If `ignoreMethodName` is `true`, we construct the function signature with a dummy method name that will be the
 // same for all methods.
@@ -244,14 +222,22 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
 {
     const char* returnType = NULL;
 
-    const char* className = ignoreMethodName ? "CLASS" : nullptr;
-    const char* methodName = ignoreMethodName ? "METHOD" : GetMethodName(mc, hnd, &className);
-    if ((GetHelperNum(hnd) != CORINFO_HELP_UNDEF) || IsNativeMethod(hnd))
+    if ((GetHelperNum(hnd) != CORINFO_HELP_UNDEF))
     {
-        return methodName;
+        return kHelperName[GetHelperNum(hnd)];
     }
 
-    size_t   length = 0;
+    std::string className = "CLASS";
+    std::string methodName = "METHOD";
+
+    if (!ignoreMethodName)
+    {
+        className = getClassName(mc, mc->repGetMethodClass(hnd));
+        methodName = getMethodName(mc, hnd);
+    }
+
+    // Class name and colon
+    size_t   length = className.size() + 1;
     unsigned i;
 
     /* Generating the full signature is a two-pass process. First we have to walk
@@ -263,17 +249,8 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
 
     /* initialize length with length of className and '.' */
 
-    if (className != nullptr)
-        length = strlen(className) + 1;
-    else
-    {
-        // Tweaked to avoid using CRT assertions
-        Assert(strlen("<NULL>.") == 7);
-        length = 7;
-    }
-
     /* add length of methodName and opening bracket */
-    length += strlen(methodName) + 1;
+    length += methodName.size() + 1;
 
     CORINFO_ARG_LIST_HANDLE argList = sig.args;
 
@@ -317,17 +294,10 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
 
     /* Now generate the full signature string in the allocated buffer */
 
-    if (className)
-    {
-        strcpy_s(retName, length, className);
-        strcat_s(retName, length, ":");
-    }
-    else
-    {
-        strcpy_s(retName, length, "<NULL>.");
-    }
+    strcpy_s(retName, length, className.c_str());
+    strcat_s(retName, length, ":");
 
-    strcat_s(retName, length, methodName);
+    strcat_s(retName, length, methodName.c_str());
 
     // append the signature
     strcat_s(retName, length, "(");
@@ -375,18 +345,4 @@ inline CorInfoHelpFunc CallUtils::GetHelperNum(CORINFO_METHOD_HANDLE method)
     if (!(((size_t)method) & 1))
         return (CORINFO_HELP_UNDEF);
     return ((CorInfoHelpFunc)(((size_t)method) >> 2));
-}
-
-// Originally from jit/compiler.hpp
-inline bool CallUtils::IsNativeMethod(CORINFO_METHOD_HANDLE method)
-{
-    return ((((size_t)method) & 0x2) == 0x2);
-}
-
-// Originally from jit/compiler.hpp
-inline CORINFO_METHOD_HANDLE CallUtils::GetMethodHandleForNative(CORINFO_METHOD_HANDLE method)
-{
-    // Tweaked to avoid using CRT assertions
-    Assert((((size_t)method) & 0x3) == 0x2);
-    return (CORINFO_METHOD_HANDLE)(((size_t)method) & ~0x3);
 }

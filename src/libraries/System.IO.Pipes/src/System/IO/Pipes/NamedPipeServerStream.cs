@@ -107,14 +107,8 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_OptionsInvalid);
             }
-            if (inBufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(inBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (outBufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(outBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(inBufferSize);
+            ArgumentOutOfRangeException.ThrowIfNegative(outBufferSize);
             if ((maxNumberOfServerInstances < 1 || maxNumberOfServerInstances > 254) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
             {
                 // win32 allows fixed values of 1-254 or 255 to mean max allowed by system. We expose 255 as -1 (unlimited)
@@ -168,10 +162,10 @@ namespace System.IO.Pipes
         }
 
         public System.IAsyncResult BeginWaitForConnection(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WaitForConnectionAsync(), callback, state);
+            TaskToAsyncResult.Begin(WaitForConnectionAsync(), callback, state);
 
         public void EndWaitForConnection(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         // Server can only connect from Disconnected state
         private void CheckConnectOperationsServer()

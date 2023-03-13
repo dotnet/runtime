@@ -5,7 +5,7 @@ namespace System.Diagnostics
 {
     public partial class DebugProvider
     {
-        private static readonly bool s_shouldWriteToStdErr = Environment.GetEnvironmentVariable("COMPlus_DebugWriteToStdErr") == "1";
+        private static readonly bool s_shouldWriteToStdErr = Environment.GetEnvironmentVariable("DOTNET_DebugWriteToStdErr") == "1";
 
         public static void FailCore(string stackTrace, string? message, string? detailMessage, string errorSource)
         {

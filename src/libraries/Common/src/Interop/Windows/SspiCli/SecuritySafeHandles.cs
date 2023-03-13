@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
@@ -310,10 +310,15 @@ namespace System.Net.Security
 
     internal sealed class SafeFreeCredential_SECURITY : SafeFreeCredentials
     {
+#pragma warning disable 0649
+        // This is used only by SslStream but it is included elsewhere
+        public X509Certificate? LocalCertificate;
+#pragma warning restore 0649
         public SafeFreeCredential_SECURITY() : base() { }
 
         protected override bool ReleaseHandle()
         {
+            LocalCertificate?.Dispose();
             return Interop.SspiCli.FreeCredentialsHandle(ref _handle) == 0;
         }
     }
@@ -328,9 +333,6 @@ namespace System.Net.Security
     internal abstract partial class SafeDeleteContext : SafeHandle
     {
 #endif
-        private const string dummyStr = " ";
-        private static readonly IdnMapping s_idnMapping = new IdnMapping();
-
         protected SafeFreeCredentials? _EffectiveCredential;
 
         //-------------------------------------------------------------------
@@ -447,18 +449,12 @@ namespace System.Net.Security
                             }
                         }
 
-                        if (targetName == null || targetName.Length == 0)
-                        {
-                            targetName = dummyStr;
-                        }
-
-                        string punyCode = s_idnMapping.GetAscii(targetName);
-                        fixed (char* namePtr = punyCode)
+                        fixed (char* namePtr = targetName)
                         {
                             errorCode = MustRunInitializeSecurityContext(
                                             ref inCredentials,
                                             isContextAbsent,
-                                            (byte*)(((object)targetName == (object)dummyStr) ? null : namePtr),
+                                            (byte*)namePtr,
                                             inFlags,
                                             endianness,
                                             &inSecurityBufferDescriptor,
@@ -508,7 +504,7 @@ namespace System.Net.Security
                                 errorCode = MustRunInitializeSecurityContext(
                                              ref inCredentials,
                                              isContextAbsent,
-                                             (byte*)(((object)targetName == (object)dummyStr) ? null : namePtr),
+                                             (byte*)namePtr,
                                              inFlags,
                                              endianness,
                                              &inSecurityBufferDescriptor,

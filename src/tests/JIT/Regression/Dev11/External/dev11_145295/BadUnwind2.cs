@@ -56,7 +56,7 @@ namespace Test
     }
 
 
-    internal static class App
+    public static class App
     {
         private static int s_numberOfFailures = 0;
 
@@ -106,7 +106,7 @@ namespace Test
         }
 
 
-        private static int Main()
+        public static int Main()
         {
             App.DispatchCalloutSequence("TopLevel", ILPart.CallThroughFrameWithMultipleEndfinallyOps_TopLevel);
             App.DispatchCalloutSequence("Nested", ILPart.CallThroughFrameWithMultipleEndfinallyOps_Nested);

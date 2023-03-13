@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -16,6 +16,7 @@
     <Compile Include="BigInteger\cast_to.cs" />
     <Compile Include="BigInteger\Comparison.cs" />
     <Compile Include="BigInteger\ctor.cs" />
+    <Compile Include="BigInteger\DebuggerDisplayTests.cs" />
     <Compile Include="BigInteger\divide.cs" />
     <Compile Include="BigInteger\divrem.cs" />
     <Compile Include="BigInteger\Driver.cs" />
@@ -56,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="BigIntegerTests.GenericMath.cs" />
     <Compile Include="ComplexTests.GenericMath.cs" />
   </ItemGroup>

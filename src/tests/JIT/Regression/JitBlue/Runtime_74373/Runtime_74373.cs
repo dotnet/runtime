@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 public class _74373
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         Problem(10);
         return 100;

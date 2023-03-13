@@ -485,10 +485,6 @@ private:
     IAllocator*                 m_pAllocator;
     NoMemoryFunction            m_pNoMem;
 
-#ifdef _DEBUG
-    const char *m_MethodName, *m_ModuleName;
-#endif
-
     BitStreamWriter     m_Info1;    // Used for everything except for chunk encodings
     BitStreamWriter     m_Info2;    // Used for chunk encodings
 

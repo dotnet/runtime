@@ -45,8 +45,8 @@ declare interface EmscriptenModule {
     HEAPF64: Float64Array;
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
-    print(message: string): void;
-    printErr(message: string): void;
+    out(message: string): void;
+    err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
     cwrap<T extends Function>(ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     cwrap<T extends Function>(ident: string, ...args: any[]): T;
@@ -58,12 +58,10 @@ declare interface EmscriptenModule {
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     FS_readFile(filename: string, opts: any): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
+    addFunction(fn: Function, signature: string): number;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
-    ready: Promise<unknown>;
     instantiateWasm?: InstantiateWasmCallBack;
     preInit?: (() => any)[] | (() => any);
     preRun?: (() => any)[] | (() => any);
@@ -73,11 +71,11 @@ declare interface EmscriptenModule {
         (error: any): void;
     };
 }
-declare type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module) => void;
-declare type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
+type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
+type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
-declare type MonoConfig = {
+type MonoConfig = {
     /**
      * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
      */
@@ -98,6 +96,10 @@ declare type MonoConfig = {
      * We are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome. The default value is 16.
      */
     maxParallelDownloads?: number;
+    /**
+     * We are making up to 2 more delayed attempts to download same asset. Default true.
+     */
+    enableDownloadRetry?: boolean;
     /**
      * Name of the assembly with main entrypoint
      */
@@ -126,6 +128,10 @@ declare type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number;
+    /**
+     * hash of assets
+     */
+    assetsHash?: string;
 };
 interface ResourceRequest {
     name: string;
@@ -166,11 +172,11 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-declare type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads";
-declare type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
+type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads";
+type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
 "auto";
-declare type DotnetModuleConfig = {
+type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;
     configSrc?: string;
@@ -180,7 +186,7 @@ declare type DotnetModuleConfig = {
     exports?: string[];
     downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
 } & Partial<EmscriptenModule>;
-declare type APIType = {
+type APIType = {
     runMain: (mainAssemblyName: string, args: string[]) => Promise<number>;
     runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<number>;
     setEnvironmentVariable: (name: string, value: string) => void;
@@ -212,7 +218,7 @@ declare type APIType = {
     getHeapF32: (offset: NativePointer) => number;
     getHeapF64: (offset: NativePointer) => number;
 };
-declare type RuntimeAPI = {
+type RuntimeAPI = {
     /**
      * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
      */
@@ -230,12 +236,12 @@ declare type RuntimeAPI = {
         buildConfiguration: string;
     };
 } & APIType;
-declare type ModuleAPI = {
+type ModuleAPI = {
     dotnet: DotnetHostBuilder;
     exit: (code: number, reason?: any) => void;
 };
 declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
-declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
+type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 
 interface IDisposable {
     dispose(): void;
@@ -268,4 +274,4 @@ declare global {
 declare const dotnet: ModuleAPI["dotnet"];
 declare const exit: ModuleAPI["exit"];
 
-export { CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

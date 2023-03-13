@@ -37,7 +37,7 @@ namespace System.Net.Http.Headers
             _value = value;
         }
 
-        public static TransferCodingHeaderValue Parse(string? input)
+        public static TransferCodingHeaderValue Parse(string input)
         {
             int index = 0;
             return (TransferCodingHeaderValue)TransferCodingHeaderParser.SingleValueParser.ParseValue(

@@ -1,0 +1,45 @@
+[*.cs]
+indent_style = tab
+indent_size = 4
+csharp_new_line_before_open_brace = types,methods
+csharp_new_line_before_else = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_finally = false
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_name_and_open_parenthesis = true
+csharp_space_between_method_call_name_and_opening_parenthesis = true
+csharp_space_before_open_square_brackets = false
+csharp_space_after_cast = true
+
+csharp_indent_switch_labels = false
+
+# Sort using and Import directives with System.* appearing first
+dotnet_sort_system_directives_first = true
+
+# Prefer property-like constructs to have an expression-body
+csharp_style_expression_bodied_properties = true:none
+csharp_style_expression_bodied_indexers = true:none
+csharp_style_expression_bodied_accessors = true:none
+
+# Suggest more modern language features when available
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_inlined_variable_declaration = true:suggestion
+csharp_style_throw_expression = true:suggestion
+csharp_style_conditional_delegate_call = true:suggestion
+
+# Avoid redundant accessibility modifiers when they're default
+dotnet_style_require_accessibility_modifiers = omit_if_default:suggestion
+
+file_header_template = Copyright (c) .NET Foundation and contributors. All rights reserved.\nLicensed under the MIT license. See LICENSE file in the project root for full license information.
+
+### Code Style Analyzers
+
+# Access modifier must be declared
+dotnet_diagnostic.SA1400.severity = none
+
+dotnet_diagnostic.IDE0073.severity = none

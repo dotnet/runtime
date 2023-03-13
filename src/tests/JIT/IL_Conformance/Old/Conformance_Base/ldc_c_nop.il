@@ -3,13 +3,16 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 //---- CLASS ----------------
-.class          _nop {
+.namespace ldc_c_nop
+{
+.class public          _nop {
 
 //---- GLOBAL DATA ----------
 
@@ -35,12 +38,15 @@
 }
 
 //---- MAIN -----------------
-.method public static  int32 main(class [mscorlib]System.String[]) {
+.method public static  int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack               5
 
         ldc.i4  0xFF
-        call    int32 _nop::return_0(int32)
+        call    int32 ldc_c_nop._nop::return_0(int32)
         nop
         nop
         nop
@@ -69,7 +75,7 @@
         nop
         nop
         ldc.i4  0xFF
-        call    int32 _nop::return_1(int32)
+        call    int32 ldc_c_nop._nop::return_1(int32)
         ceq
         brfalse FAIL
 
@@ -94,3 +100,4 @@ END:
 .assembly ldc_c_nop {}
 
 
+}

@@ -76,6 +76,7 @@ namespace System.Numerics.Tests
         [InlineData(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f)]
         [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
         [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80876", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Matrix4x4IndexerSetTest(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44)
         {
             var matrix = new Matrix4x4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -1690,29 +1691,13 @@ namespace System.Numerics.Tests
         {
             Matrix4x4 target = GenerateIncrementalMatrixNumber();
 
-            HashCode hash = default;
+            int expected = HashCode.Combine(
+                new Vector4(target.M11, target.M12, target.M13, target.M14),
+                new Vector4(target.M21, target.M22, target.M23, target.M24),
+                new Vector4(target.M31, target.M32, target.M33, target.M34),
+                new Vector4(target.M41, target.M42, target.M43, target.M44)
+            );
 
-            hash.Add(target.M11);
-            hash.Add(target.M12);
-            hash.Add(target.M13);
-            hash.Add(target.M14);
-
-            hash.Add(target.M21);
-            hash.Add(target.M22);
-            hash.Add(target.M23);
-            hash.Add(target.M24);
-
-            hash.Add(target.M31);
-            hash.Add(target.M32);
-            hash.Add(target.M33);
-            hash.Add(target.M34);
-
-            hash.Add(target.M41);
-            hash.Add(target.M42);
-            hash.Add(target.M43);
-            hash.Add(target.M44);
-
-            int expected = hash.ToHashCode();
             int actual = target.GetHashCode();
 
             Assert.Equal(expected, actual);

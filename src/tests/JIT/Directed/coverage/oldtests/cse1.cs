@@ -104,7 +104,7 @@ public class CSE1
         return result;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int result;
         s_sa = 0;

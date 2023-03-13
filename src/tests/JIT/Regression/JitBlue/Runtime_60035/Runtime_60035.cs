@@ -7,9 +7,9 @@ using System.Text.Encodings.Web;
 
 namespace Runtime_60035
 {
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        public static int Main()
         {
             byte[] inputBytes = Encoding.UTF8.GetBytes("https://github.com/dotnet/runtime");
             Console.WriteLine(UrlEncoder.Default.FindFirstCharacterToEncodeUtf8(inputBytes));

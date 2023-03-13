@@ -1737,3 +1737,8 @@ void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint
 {
     ProfilerAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
 }
+
+void GCToEEInterface::LogErrorToHost(const char *message)
+{
+    ::LogErrorToHost("GC: %s", message);
+}

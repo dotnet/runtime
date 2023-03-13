@@ -10,9 +10,9 @@
 .assembly b05784
 {
 }
-.class _simple {
+.class public _simple {
 
-.method static int32 main(class System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	100
 

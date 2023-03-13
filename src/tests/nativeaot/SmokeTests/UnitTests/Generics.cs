@@ -27,6 +27,7 @@ class Generics
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestGvmLookups.Run();
+        TestGvmOnInterface.Run();
         TestSharedAndUnsharedGvmAnalysisRegression.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
@@ -49,13 +50,12 @@ class Generics
         TestGvmLookupDependency.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
-#if !CODEGEN_CPP
         TestNullableCasting.Run();
         TestVariantCasting.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
-#endif
+
         return 100;
     }
 
@@ -1663,6 +1663,56 @@ class Generics
         {
             TestInContext<object>();
             TestInContext<int>();
+        }
+    }
+
+    class TestGvmOnInterface
+    {
+        interface IGvmMethods
+        {
+            static abstract int StaticAbstractGvm<T>();
+            int InstanceGvm<T>();
+            int InstanceDefaultGvm<T>() { return 0; }
+            static void StaticGeneric<T>() { }
+        }
+
+        class BaseWithInterface : IGvmMethods
+        {
+            public static int StaticAbstractGvm<T>() { return 1; }
+            public int InstanceGvm<T>() { return 1; }
+            int IGvmMethods.InstanceDefaultGvm<T>() { return 1; }
+        }
+
+        static void TestInContext<T>()
+        {
+            BaseWithInterface b = new BaseWithInterface();
+            IGvmMethods i = new BaseWithInterface();
+
+            if (BaseWithInterface.StaticAbstractGvm<T>() != 1)
+                throw new Exception();
+
+            if (b.InstanceGvm<T>() != 1)
+                throw new Exception();
+
+            if (i.InstanceGvm<T>() != 1)
+                throw new Exception();
+
+            if (i.InstanceDefaultGvm<T>() != 1)
+                throw new Exception();
+        }
+
+        static void TestStaticAbstractGvm<T, TMethods>() where TMethods : IGvmMethods
+        {
+            if (TMethods.StaticAbstractGvm<T>() != 1)
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            TestInContext<object>();
+            TestInContext<int>();
+            TestStaticAbstractGvm<object, BaseWithInterface>();
+            TestStaticAbstractGvm<int, BaseWithInterface>();
         }
     }
 

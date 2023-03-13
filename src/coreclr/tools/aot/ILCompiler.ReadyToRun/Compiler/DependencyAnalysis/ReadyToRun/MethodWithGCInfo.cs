@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Internal.JitInterface;
+using Internal.Pgo;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -29,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
+        private DependencyList _nonRelocationDependencies;
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
@@ -272,6 +274,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
             }
 
+            if (_nonRelocationDependencies != null)
+            {
+                dependencyList.AddRange(_nonRelocationDependencies);
+            }
+
             return dependencyList;
         }
 
@@ -380,6 +387,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _inlinedMethods = inlinedMethods;
             if (this.Marked)
                 RegisterInlineeModuleIndices(factory);
+        }
+
+        public void InitializeNonRelocationDependencies(DependencyList dependencies)
+        {
+            _nonRelocationDependencies = dependencies;
         }
 
         public int Offset => 0;

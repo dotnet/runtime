@@ -10,7 +10,7 @@ using System.Globalization;
 
 class RuntimeHelperTest 
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         AssemblyLoadContext resolver0 = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
         Assembly asm0 = resolver0.LoadFromAssemblyName(new AssemblyName("moduleCctor"));

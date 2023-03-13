@@ -6,7 +6,7 @@ namespace Bug
 {
     using System;
 
-    class DD
+    public class DD
     {
         public double[] m_field1;
         public static DD[] m_static3 = new DD[2];

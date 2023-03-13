@@ -47,7 +47,7 @@ public class AppendTest
     }
     
 
-    public static void Main(string [] real_args)
+    public static void Main()
     {    
         CreateTable();
         

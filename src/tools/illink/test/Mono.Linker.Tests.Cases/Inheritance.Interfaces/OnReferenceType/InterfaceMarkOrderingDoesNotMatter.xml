@@ -1,0 +1,11 @@
+<linker>
+    <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.InterfaceMarkOrderingDoesNotMatter/C">
+            <method name="CMethod"/>
+        </type>
+        <type fullname="Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.InterfaceMarkOrderingDoesNotMatter/D">
+            <method name="DMethod"/>
+        </type>
+        <type fullname="Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.InterfaceMarkOrderingDoesNotMatter/E" preserve="methods"/>
+    </assembly>
+</linker>

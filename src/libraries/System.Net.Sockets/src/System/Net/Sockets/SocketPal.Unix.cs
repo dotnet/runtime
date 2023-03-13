@@ -30,7 +30,7 @@ namespace System.Net.Sockets
             return SocketErrorPal.GetSocketErrorForNativeError(errorCode);
         }
 
-        public static void CheckDualModeReceiveSupport(Socket socket)
+        public static void CheckDualModePacketInfoSupport(Socket socket)
         {
             if (!SupportsDualModeIPv4PacketInfo && socket.AddressFamily == AddressFamily.InterNetworkV6 && socket.DualMode)
             {
@@ -1840,11 +1840,8 @@ namespace System.Net.Sockets
             int listCount = socketList.Count;
             for (int i = 0; i < listCount; i++)
             {
-                if (arrOffset >= arrLength)
-                {
-                    Debug.Fail("IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
-                    throw new ArgumentOutOfRangeException(nameof(socketList));
-                }
+                Debug.Assert(arrOffset < arrLength, "IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(arrOffset, arrLength, nameof(socketList));
 
                 Socket? socket = socketList[i] as Socket;
                 if (socket == null)
@@ -1878,11 +1875,8 @@ namespace System.Net.Sockets
 
             for (int i = socketList.Count - 1; i >= 0; --i, --arrEndOffset)
             {
-                if (arrEndOffset < 0)
-                {
-                    Debug.Fail("IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
-                    throw new ArgumentOutOfRangeException(nameof(arrEndOffset));
-                }
+                Debug.Assert(arrEndOffset >= 0, "IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
+                ArgumentOutOfRangeException.ThrowIfNegative(arrEndOffset);
 
                 if ((arr[arrEndOffset].TriggeredEvents & desiredEvents) == 0)
                 {

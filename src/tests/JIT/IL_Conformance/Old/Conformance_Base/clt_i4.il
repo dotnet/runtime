@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
+.namespace clt_i4
+{
 .class public _clt {
 
 .field public static	int32 min
@@ -16,272 +19,275 @@
 .method public static void initialize() {
 .maxstack		10
 	ldc.i4		0x80000000
-	stsfld	int32 _clt::min
+	stsfld	int32 clt_i4._clt::min
 	ldc.i4		0xFFFFFFFF
-	stsfld	int32 _clt::_one
+	stsfld	int32 clt_i4._clt::_one
 	ldc.i4		0x00000000
-	stsfld	int32 _clt::zero
+	stsfld	int32 clt_i4._clt::zero
 	ldc.i4		0x00000001
-	stsfld	int32 _clt::one
+	stsfld	int32 clt_i4._clt::one
 	ldc.i4		0x7FFFFFFF
-	stsfld	int32 _clt::max
+	stsfld	int32 clt_i4._clt::max
 	ldc.i4		0x55555555
-	stsfld	int32 _clt::odd
+	stsfld	int32 clt_i4._clt::odd
 	ldc.i4		0xAAAAAAAA
-	stsfld	int32 _clt::even
+	stsfld	int32 clt_i4._clt::even
 	ret
 }
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
 
-	call void _clt::initialize()
+	call void clt_i4._clt::initialize()
 
-	ldsfld	int32 _clt::min
-	ldsfld	int32 _clt::min
+	ldsfld	int32 clt_i4._clt::min
+	ldsfld	int32 clt_i4._clt::min
 	clt
 	brtrue		FAIL
 
-	ldsfld	int32 _clt::min
-	ldsfld	int32 _clt::_one
+	ldsfld	int32 clt_i4._clt::min
+	ldsfld	int32 clt_i4._clt::_one
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::min
-	ldsfld	int32 _clt::zero
+	ldsfld	int32 clt_i4._clt::min
+	ldsfld	int32 clt_i4._clt::zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::min
-	ldsfld	int32 _clt::one
+	ldsfld	int32 clt_i4._clt::min
+	ldsfld	int32 clt_i4._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::min
-	ldsfld	int32 _clt::max
+	ldsfld	int32 clt_i4._clt::min
+	ldsfld	int32 clt_i4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::min
-	ldsfld	int32 _clt::odd
+	ldsfld	int32 clt_i4._clt::min
+	ldsfld	int32 clt_i4._clt::odd
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::min
-	ldsfld	int32 _clt::even
+	ldsfld	int32 clt_i4._clt::min
+	ldsfld	int32 clt_i4._clt::even
 	clt
 	brfalse		FAIL
-	ldsfld	int32 _clt::_one
-	ldsfld	int32 _clt::min
+	ldsfld	int32 clt_i4._clt::_one
+	ldsfld	int32 clt_i4._clt::min
 	clt
 	brtrue		FAIL
 
-	ldsfld	int32 _clt::_one
-	ldsfld	int32 _clt::_one
+	ldsfld	int32 clt_i4._clt::_one
+	ldsfld	int32 clt_i4._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	int32 _clt::_one
-	ldsfld	int32 _clt::zero
-	clt
-	brfalse		FAIL
-
-	ldsfld	int32 _clt::_one
-	ldsfld	int32 _clt::one
+	ldsfld	int32 clt_i4._clt::_one
+	ldsfld	int32 clt_i4._clt::zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::_one
-	ldsfld	int32 _clt::max
+	ldsfld	int32 clt_i4._clt::_one
+	ldsfld	int32 clt_i4._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::_one
-	ldsfld	int32 _clt::odd
+	ldsfld	int32 clt_i4._clt::_one
+	ldsfld	int32 clt_i4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::_one
-	ldsfld	int32 _clt::even
-	clt
-	brtrue		FAIL
-
-
-	ldsfld	int32 _clt::zero
-	ldsfld	int32 _clt::min
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::zero
-	ldsfld	int32 _clt::_one
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::zero
-	ldsfld	int32 _clt::zero
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::zero
-	ldsfld	int32 _clt::one
+	ldsfld	int32 clt_i4._clt::_one
+	ldsfld	int32 clt_i4._clt::odd
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::zero
-	ldsfld	int32 _clt::max
+	ldsfld	int32 clt_i4._clt::_one
+	ldsfld	int32 clt_i4._clt::even
+	clt
+	brtrue		FAIL
+
+
+	ldsfld	int32 clt_i4._clt::zero
+	ldsfld	int32 clt_i4._clt::min
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::zero
+	ldsfld	int32 clt_i4._clt::_one
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::zero
+	ldsfld	int32 clt_i4._clt::zero
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::zero
+	ldsfld	int32 clt_i4._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::zero
-	ldsfld	int32 _clt::odd
+	ldsfld	int32 clt_i4._clt::zero
+	ldsfld	int32 clt_i4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::zero
-	ldsfld	int32 _clt::even
-	clt
-	brtrue		FAIL
-
-
-	ldsfld	int32 _clt::one
-	ldsfld	int32 _clt::min
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::one
-	ldsfld	int32 _clt::_one
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::one
-	ldsfld	int32 _clt::zero
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::one
-	ldsfld	int32 _clt::one
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::one
-	ldsfld	int32 _clt::max
+	ldsfld	int32 clt_i4._clt::zero
+	ldsfld	int32 clt_i4._clt::odd
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::one
-	ldsfld	int32 _clt::odd
+	ldsfld	int32 clt_i4._clt::zero
+	ldsfld	int32 clt_i4._clt::even
+	clt
+	brtrue		FAIL
+
+
+	ldsfld	int32 clt_i4._clt::one
+	ldsfld	int32 clt_i4._clt::min
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::one
+	ldsfld	int32 clt_i4._clt::_one
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::one
+	ldsfld	int32 clt_i4._clt::zero
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::one
+	ldsfld	int32 clt_i4._clt::one
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::one
+	ldsfld	int32 clt_i4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::one
-	ldsfld	int32 _clt::even
-	clt
-	brtrue		FAIL
-
-
-	ldsfld	int32 _clt::max
-	ldsfld	int32 _clt::min
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::max
-	ldsfld	int32 _clt::_one
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::max
-	ldsfld	int32 _clt::zero
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::max
-	ldsfld	int32 _clt::one
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::max
-	ldsfld	int32 _clt::max
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::max
-	ldsfld	int32 _clt::odd
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::max
-	ldsfld	int32 _clt::even
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::odd
-	ldsfld	int32 _clt::min
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::odd
-	ldsfld	int32 _clt::_one
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::odd
-	ldsfld	int32 _clt::zero
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::odd
-	ldsfld	int32 _clt::one
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::odd
-	ldsfld	int32 _clt::max
+	ldsfld	int32 clt_i4._clt::one
+	ldsfld	int32 clt_i4._clt::odd
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::odd
-	ldsfld	int32 _clt::odd
-	clt
-	brtrue		FAIL
-
-	ldsfld	int32 _clt::odd
-	ldsfld	int32 _clt::even
+	ldsfld	int32 clt_i4._clt::one
+	ldsfld	int32 clt_i4._clt::even
 	clt
 	brtrue		FAIL
 
 
-	ldsfld	int32 _clt::even
-	ldsfld	int32 _clt::min
+	ldsfld	int32 clt_i4._clt::max
+	ldsfld	int32 clt_i4._clt::min
 	clt
 	brtrue		FAIL
 
-	ldsfld	int32 _clt::even
-	ldsfld	int32 _clt::_one
+	ldsfld	int32 clt_i4._clt::max
+	ldsfld	int32 clt_i4._clt::_one
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::max
+	ldsfld	int32 clt_i4._clt::zero
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::max
+	ldsfld	int32 clt_i4._clt::one
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::max
+	ldsfld	int32 clt_i4._clt::max
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::max
+	ldsfld	int32 clt_i4._clt::odd
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::max
+	ldsfld	int32 clt_i4._clt::even
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::odd
+	ldsfld	int32 clt_i4._clt::min
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::odd
+	ldsfld	int32 clt_i4._clt::_one
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::odd
+	ldsfld	int32 clt_i4._clt::zero
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::odd
+	ldsfld	int32 clt_i4._clt::one
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::odd
+	ldsfld	int32 clt_i4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::even
-	ldsfld	int32 _clt::zero
+	ldsfld	int32 clt_i4._clt::odd
+	ldsfld	int32 clt_i4._clt::odd
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::odd
+	ldsfld	int32 clt_i4._clt::even
+	clt
+	brtrue		FAIL
+
+
+	ldsfld	int32 clt_i4._clt::even
+	ldsfld	int32 clt_i4._clt::min
+	clt
+	brtrue		FAIL
+
+	ldsfld	int32 clt_i4._clt::even
+	ldsfld	int32 clt_i4._clt::_one
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::even
-	ldsfld	int32 _clt::one
+	ldsfld	int32 clt_i4._clt::even
+	ldsfld	int32 clt_i4._clt::zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::even
-	ldsfld	int32 _clt::max
+	ldsfld	int32 clt_i4._clt::even
+	ldsfld	int32 clt_i4._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::even
-	ldsfld	int32 _clt::odd
+	ldsfld	int32 clt_i4._clt::even
+	ldsfld	int32 clt_i4._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	int32 _clt::even
-	ldsfld	int32 _clt::even
+	ldsfld	int32 clt_i4._clt::even
+	ldsfld	int32 clt_i4._clt::odd
+	clt
+	brfalse		FAIL
+
+	ldsfld	int32 clt_i4._clt::even
+	ldsfld	int32 clt_i4._clt::even
 	clt
 	brtrue		FAIL
 
@@ -296,3 +302,4 @@ FAIL:
 }
 }
 .assembly clt_i4{}
+}

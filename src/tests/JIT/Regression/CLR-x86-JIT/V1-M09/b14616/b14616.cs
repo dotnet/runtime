@@ -28,7 +28,7 @@ namespace DefaultNamespace
             return true;
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             MultiDim_ArgCheck_Fail();
             return 100;

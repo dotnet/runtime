@@ -5,8 +5,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -1555,6 +1559,64 @@ namespace System.Text.RegularExpressions.Tests
                 RegexHelpers.GetRegexesAsync(RegexEngine.SourceGenerated,
                     chunk.Select(r => (r.Pattern, (CultureInfo?)null, (RegexOptions?)r.Options, (TimeSpan?)null)).ToArray()).GetAwaiter().GetResult();
             });
+        }
+
+        [ActiveIssue("Manual execution only for now until stability is improved")]
+        [OuterLoop("Super slow")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
+        public async Task PatternsDataSet_GenerateInputsWithNonBacktracking_MatchWithAllEngines()
+        {
+            MethodInfo? sampleMatchesMI = typeof(Regex).GetMethod("SampleMatches", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (sampleMatchesMI is null)
+            {
+                throw new SkipTestException("Could not find Regex.SampleMatches");
+            }
+            Func<Regex, int, int, IEnumerable<string>> sampleMatches = sampleMatchesMI.CreateDelegate<Func<Regex, int, int, IEnumerable<string>>>();
+
+            DataSetExpression[] entries = s_patternsDataSet.Value;
+            for (int i = 0; i < entries.Length; i++)
+            {
+                DataSetExpression entry = entries[i];
+
+                Regex generator;
+                try
+                {
+                    generator = new Regex(entry.Pattern, RegexHelpers.RegexOptionNonBacktracking | entry.Options);
+                }
+                catch (Exception e) when (e is NotSupportedException or ArgumentOutOfRangeException)
+                {
+                    continue;
+                }
+
+                const int NumInputs = 3;
+                const int Seed = 42;
+                IEnumerable<string> expectedMatchInputs = null;
+                try
+                {
+#pragma warning disable SYSLIB0046 // temporary until some use of SampleMatches no longer hangs
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                    ControlledExecution.Run(() => expectedMatchInputs = sampleMatches(generator, NumInputs, Seed), cts.Token);
+#pragma warning restore SYSLIB0046
+                }
+                catch (OperationCanceledException)
+                {
+                    Console.Error.WriteLine($"*** SampleMatches hung on entry {i} ***");
+                    continue;
+                }
+
+                foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+                {
+                    Regex r = engine == RegexEngine.NonBacktracking ?
+                        generator :
+                        await RegexHelpers.GetRegexAsync(engine, entry.Pattern, entry.Options);
+
+                    foreach (string input in expectedMatchInputs)
+                    {
+                        Console.WriteLine($"[{i}-{engine}] {r} <= {input}");
+                        Assert.True(r.IsMatch(input));
+                    }
+                }
+            }
         }
 #endif
     }

@@ -15,8 +15,11 @@
     </type>
     <type fullname="Internal.Runtime.InteropServices.ComActivator">
       <!-- Used by hostpolicy.cpp -->
+      <method name="GetClassFactoryForTypeInContext" />
       <method name="GetClassFactoryForTypeInternal" />
+      <method name="RegisterClassForTypeInContext" />
       <method name="RegisterClassForTypeInternal" />
+      <method name="UnregisterClassForTypeInContext" />
       <method name="UnregisterClassForTypeInternal" />
     </type>
     <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
@@ -27,6 +30,7 @@
     </type>
     <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
       <!-- Used by hostpolicy.cpp -->
+      <method name="LoadAssembly" />
       <method name="LoadAssemblyAndGetFunctionPointer" />
       <method name="GetFunctionPointer" />
     </type>

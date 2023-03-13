@@ -23,8 +23,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
     platforms:
-      - MacCatalyst_x64
-      - MacCatalyst_arm64
+      - maccatalyst_x64
+      - maccatalyst_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -56,8 +56,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
     platforms:
-    - MacCatalyst_x64
-    - MacCatalyst_arm64
+    - maccatalyst_x64
+    - maccatalyst_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

@@ -1001,7 +1001,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     // On Debug builds, we'll ASSERT by default whenever the target appears to be corrupt or
     // otherwise inconsistent (both in DAC and DBI).  But we also need the ability to
     // explicitly test corrupt targets.
-    // Tests should set COMPlus_DbgIgnoreInconsistentTarget=1 to suppress these asserts
+    // Tests should set DOTNET_DbgIgnoreInconsistentTarget=1 to suppress these asserts
     // Note that this controls two things:
     //     1) DAC behavior - see code:IDacDbiInterface::DacSetTargetConsistencyChecks
     //     2) RS-only consistency asserts - see code:CordbProcess::TargetConsistencyCheck
@@ -5802,7 +5802,7 @@ void CordbProcess::RawDispatchEvent(
             FramePointer fp = pEvent->ExceptionCallback2.framePointer;
             if (fp != LEAF_MOST_FRAME)
             {
-                // The interface forces us to to pass a FramePointer via an ICorDebugFrame.
+                // The interface forces us to pass a FramePointer via an ICorDebugFrame.
                 // However, we can't get a real ICDFrame without a stackwalk, and we don't
                 // want to do a stackwalk now. so pass a netuered proxy frame. The shim
                 // can map this to a real frame.
@@ -12296,7 +12296,7 @@ Reaction CordbProcess::Triage1stChanceNonSpecial(CordbUnmanagedThread * pUnmanag
                       (addrType == IDacDbiInterface::kAddressRuntimeManagedCode) ||
                       (addrType == IDacDbiInterface::kAddressRuntimeUnmanagedCode));
 
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%I64p)=%d\n", address, fIsCorCode);
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%p)=%d\n", address, fIsCorCode);
 
 
     if (fIsCorCode)

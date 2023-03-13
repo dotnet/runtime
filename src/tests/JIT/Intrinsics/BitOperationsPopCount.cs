@@ -12,7 +12,7 @@ namespace BitOperationsPopCountTest
     {
         private static int _errorCode = 100;
 
-        static int Main(string[] args)
+        static int Main()
         {
             // PopCount calls with a constant argument are folded
 

@@ -1026,7 +1026,6 @@ public:
     BOOL  m_fGeneratePDB;
     char m_szSourceFileName[MAX_FILENAME_LENGTH*3+1];
     WCHAR m_wzOutputFileName[MAX_FILENAME_LENGTH];
-    WCHAR m_wzSourceFileName[MAX_FILENAME_LENGTH];
 	GUID	m_guidLang;
 	GUID	m_guidLangVendor;
 	GUID	m_guidDoc;

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public class TarReader_Tests : TarTestsBase
+    public partial class TarReader_Tests : TarTestsBase
     {
         [Fact]
         public void TarReader_NullArchiveStream() => Assert.Throws<ArgumentNullException>(() => new TarReader(archiveStream: null));
@@ -38,6 +38,8 @@ namespace System.Formats.Tar.Tests
                 }
             }
 
+            Assert.Throws<ObjectDisposedException>(() => ms.ReadByte());
+
             Assert.True(dataStreams.Any());
             foreach (Stream ds in dataStreams)
             {
@@ -61,6 +63,8 @@ namespace System.Formats.Tar.Tests
                     }
                 }
             }
+
+            ms.ReadByte(); // Should not throw
 
             Assert.True(dataStreams.Any());
             foreach (Stream ds in dataStreams)
@@ -92,6 +96,26 @@ namespace System.Formats.Tar.Tests
             {
                 ds.ReadByte(); // Should not throw, copied streams, user should dispose
                 ds.Dispose();
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPaxExtendedAttributesRoundtripTestData))]
+        public void PaxExtendedAttribute_Roundtrips(string key, string value)
+        {
+            var stream = new MemoryStream();
+            using (var writer = new TarWriter(stream, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "entryName", new Dictionary<string, string>() { { key, value } }));
+            }
+
+            stream.Position = 0;
+            using (var reader = new TarReader(stream))
+            {
+                PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+                Assert.Equal(5, entry.ExtendedAttributes.Count);
+                Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
+                Assert.Null(reader.GetNextEntry());
             }
         }
     }

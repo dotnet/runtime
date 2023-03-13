@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-unsafe class Runtime_77773
+public unsafe class Runtime_77773
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         var s1 = new StructWithField { Field = 1 };
         var s2 = new StructWithField { Field = 2 };

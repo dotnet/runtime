@@ -18,7 +18,7 @@
 
 using System;
 
-class MyClass
+public class MyClass
 {
 
     public static int Main()

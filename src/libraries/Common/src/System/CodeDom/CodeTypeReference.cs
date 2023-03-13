@@ -42,10 +42,14 @@ namespace System.Runtime.Serialization
 
         public CodeTypeReference(Type type)
         {
+#if NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(type);
+#else
             if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
+#endif
 
             if (type.IsArray)
             {

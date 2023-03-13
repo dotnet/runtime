@@ -77,14 +77,14 @@ namespace System.Linq.Tests
         [Fact]
         public void Single1()
         {
-            var val = (new int[] { 2 }).AsQueryable().Single();
+            var val = new[] { 2 }.AsQueryable().Single();
             Assert.Equal(2, val);
         }
 
         [Fact]
         public void Single2()
         {
-            var val = (new int[] { 2 }).AsQueryable().Single(n => n > 1);
+            var val = new[] { 2 }.AsQueryable().Single(n => n > 1);
             Assert.Equal(2, val);
         }
     }

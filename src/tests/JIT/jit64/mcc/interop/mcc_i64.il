@@ -20,7 +20,7 @@
                                     float64, valuetype MCCTest.VType6, float32, valuetype MCCTest.VType6, int16, valuetype MCCTest.VType6) cil managed preservesig {
     }
 
-    .method private static int32 Main(string[] args)
+    .method private static int32 Main()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

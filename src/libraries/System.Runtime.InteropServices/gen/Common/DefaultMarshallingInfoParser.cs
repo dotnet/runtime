@@ -8,7 +8,7 @@ namespace Microsoft.Interop
 {
     internal static class DefaultMarshallingInfoParser
     {
-        public static MarshallingInfoParser Create(StubEnvironment env, IGeneratorDiagnostics diagnostics, IMethodSymbol method, InteropAttributeData interopAttributeData, AttributeData unparsedAttributeData)
+        public static MarshallingInfoParser Create(StubEnvironment env, IGeneratorDiagnostics diagnostics, IMethodSymbol method, InteropAttributeCompilationData interopAttributeData, AttributeData unparsedAttributeData)
         {
 
             // Compute the current default string encoding value.

@@ -1,10 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <TrimmingTestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'trimmingTests'))</TrimmingTestDir>
-    <TrimmingTestProjectsDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestDir)', 'projects'))</TrimmingTestProjectsDir>
-    <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
-  </PropertyGroup>
-
   <ItemGroup>
     <TestConsoleAppSourceFiles Condition="'@(TestConsoleAppSourceFiles)' == ''" Include="$(MSBuildProjectDirectory)\*.cs" />
 
@@ -113,13 +107,13 @@
                                                  .Replace('{NetCoreAppCurrentVersion}', '$(NetCoreAppCurrentVersion)')
                                                  .Replace('{MicrosoftNetCoreAppFrameworkName}', '$(MicrosoftNetCoreAppFrameworkName)')
                                                  .Replace('{MicrosoftNetCoreAppRefPackDir}', '$(MicrosoftNetCoreAppRefPackDir)')
-                                                 .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)'))"
+                                                 .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)')
+                                                 .Replace('{AppHostSourcePath}', '$(AppHostSourcePath)')
+                                                 .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)'))"
                       Overwrite="true" />
-    <Copy SourceFiles="$(_projectSourceFile)"
+    <Copy SourceFiles="$(_projectSourceFile);
+                       @(_additionalProjectSourceFiles)"
           DestinationFolder="$(_projectDir)" />
-    <Copy SourceFiles="@(_additionalProjectSourceFiles)"
-          DestinationFolder="$(_projectDir)"
-          Condition="'@(_additionalProjectSourceFiles)' != ''" />
     <Message Text="Generated $(_projectFile)" />
   </Target>
 

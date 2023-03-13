@@ -134,6 +134,7 @@ namespace System.Diagnostics
 
         internal bool IsLastFrameFromForeignExceptionStackTrace => _isLastFrameFromForeignExceptionStackTrace;
 
+#if !NATIVEAOT
         /// <summary>
         /// Returns the method the frame is executing
         /// </summary>
@@ -142,6 +143,7 @@ namespace System.Diagnostics
         {
             return _method;
         }
+#endif
 
         /// <summary>
         /// Returns the offset from the start of the native (jitted) code for the

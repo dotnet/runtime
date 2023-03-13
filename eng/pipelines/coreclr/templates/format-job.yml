@@ -7,7 +7,6 @@ parameters:
   crossBuild: false
   dependOnEvaluatePaths: false
   timeoutInMinutes: ''
-  stagedBuild: false
   variables: {}
   pool: ''
   condition: true
@@ -23,7 +22,6 @@ jobs:
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
@@ -32,11 +30,7 @@ jobs:
     variables:
 
     - ${{ each variable in parameters.variables }}:
-      - ${{ if ne(variable.name, '') }}:
-        - name: ${{ variable.name }}
-          value: ${{ variable.value }}
-      - ${{ if ne(variable.group, '') }}:
-        - group: ${{ variable.group }}
+      - ${{insert}}: ${{ variable }}
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript

@@ -146,10 +146,7 @@ namespace System.Security.Cryptography
                 // if a failed attempt to generate a key happened, or we're in a pristine state.
                 //
                 // So this type uses an explicit field, rather than inferred state.
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(DSA));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
             }
 
             internal SecKeyPair GetKeys()

@@ -16,8 +16,6 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public sealed class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable
     {
-        internal const string RequiresDynamicCodeMessage = "Using Microsoft.Extensions.DependencyInjection requires generating code dynamically at runtime. For example, when using enumerable and generic ValueType services.";
-
         private readonly CallSiteValidator? _callSiteValidator;
 
         private readonly Func<Type, Func<ServiceProviderEngineScope, object?>> _createServiceAccessor;
@@ -27,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private bool _disposed;
 
-        private ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object?>> _realizedServices;
+        private readonly ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object?>> _realizedServices;
 
         internal CallSiteFactory CallSiteFactory { get; }
 
@@ -36,7 +34,13 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static bool VerifyOpenGenericServiceTrimmability { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
 
-        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
+        internal static bool VerifyAotCompatibility =>
+#if NETFRAMEWORK || NETSTANDARD2_0
+            false;
+#else
+            !RuntimeFeature.IsDynamicCodeSupported;
+#endif
+
         internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
         {
             // note that Root needs to be set before calling GetEngine(), because the engine may need to access Root
@@ -157,7 +161,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         private Func<ServiceProviderEngineScope, object?> CreateServiceAccessor(Type serviceType)
         {
             ServiceCallSite? callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
@@ -194,17 +197,16 @@ namespace Microsoft.Extensions.DependencyInjection
             return new ServiceProviderEngineScope(this, isRootScope: false);
         }
 
-        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         private ServiceProviderEngine GetEngine()
         {
             ServiceProviderEngine engine;
 
 #if NETFRAMEWORK || NETSTANDARD2_0
-            engine = new DynamicServiceProviderEngine(this);
+            engine = CreateDynamicEngine();
 #else
             if (RuntimeFeature.IsDynamicCodeCompiled)
             {
-                engine = new DynamicServiceProviderEngine(this);
+                engine = CreateDynamicEngine();
             }
             else
             {
@@ -213,6 +215,10 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 #endif
             return engine;
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "CreateDynamicEngine won't be called when using NativeAOT.")] // see also https://github.com/dotnet/linker/issues/2715
+            ServiceProviderEngine CreateDynamicEngine() => new DynamicServiceProviderEngine(this);
         }
     }
 }

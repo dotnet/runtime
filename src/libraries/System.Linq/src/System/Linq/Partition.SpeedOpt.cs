@@ -254,7 +254,7 @@ namespace System.Linq
                 }
 
                 TSource[] array = new TSource[count];
-                for (int i = 0, curIdx = _minIndexInclusive; i != array.Length; ++i, ++curIdx)
+                for (int i = 0, curIdx = _minIndexInclusive; i < array.Length; ++i, ++curIdx)
                 {
                     array[i] = _source[curIdx];
                 }

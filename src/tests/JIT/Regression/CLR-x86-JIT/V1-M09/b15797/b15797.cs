@@ -4,10 +4,10 @@
 
 // Compute distance light travels using long variables.
 using System;
-class Light
+public class Light
 {
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         int lightspeed;
         long days;

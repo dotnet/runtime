@@ -8,7 +8,7 @@ namespace X
     //@ENDRENAME; Verify this renames
     using System;
 
-    class Y
+    public class Y
     {
 
         //extern("msvcrt.dll:printf") int printf(const char *fmt, ...);
@@ -34,7 +34,7 @@ namespace X
             p[0] = (char)0;
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             UInt32 ec, ec1;
 

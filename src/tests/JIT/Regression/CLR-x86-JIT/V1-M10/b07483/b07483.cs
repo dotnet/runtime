@@ -3,7 +3,7 @@
 
 using System;
 
-internal class Test_b07483
+public class Test_b07483
 {
     private int _t = 0;
     private int _f = 0;

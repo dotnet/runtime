@@ -125,6 +125,76 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
+// Lowering::LowerJTrue: Lowers a JTRUE node.
+//
+// Arguments:
+//    jtrue - the JTRUE node
+//
+// Return Value:
+//    The next node to lower (usually nullptr).
+//
+GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
+{
+    GenTree*     op = jtrue->gtGetOp1();
+    GenCondition cond;
+    GenTree*     cmpOp1;
+    GenTree*     cmpOp2;
+
+    if (op->OperIsCompare())
+    {
+        // We do not expect any other relops on LA64
+        assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+
+        cond = GenCondition::FromRelop(op);
+
+        cmpOp1 = op->gtGetOp1();
+        cmpOp2 = op->gtGetOp2();
+
+        // LA64's float compare and condition-branch instructions, have
+        // condition flags indicating the comparing results.
+        if (varTypeIsFloating(cmpOp1))
+        {
+            op->gtType = TYP_VOID;
+            op->gtFlags |= GTF_SET_FLAGS;
+            assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+            jtrue->SetOper(GT_JCC);
+            jtrue->AsCC()->gtCondition = cond;
+            return nullptr;
+        }
+
+        // We will fall through and turn this into a JCMP(op1, op2, kind), but need to remove the relop here.
+        BlockRange().Remove(op);
+    }
+    else
+    {
+        cond = GenCondition(GenCondition::NE);
+
+        cmpOp1 = op;
+        cmpOp2 = comp->gtNewZeroConNode(cmpOp1->TypeGet());
+
+        BlockRange().InsertBefore(jtrue, cmpOp2);
+
+        // Fall through and turn this into a JCMP(op1, 0, NE).
+    }
+
+    // for LA64's integer compare and condition-branch instructions,
+    // it's very similar to the IL instructions.
+    jtrue->SetOper(GT_JCMP);
+    jtrue->gtOp1 = cmpOp1;
+    jtrue->gtOp2 = cmpOp2;
+
+    jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
+    jtrue->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+
+    if (cmpOp2->IsCnsIntOrI())
+    {
+        cmpOp2->SetContained();
+    }
+
+    return jtrue->gtNext;
+}
+
+//------------------------------------------------------------------------
 // LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
 // Arguments:
@@ -252,7 +322,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
             src->AsIntCon()->SetIconValue(fill);
 
-            ContainBlockStoreAddress(blkNode, size, dstAddr);
+            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
         }
         else
         {
@@ -307,10 +377,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             if (src->OperIs(GT_IND))
             {
-                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr());
+                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr(), src->AsIndir());
             }
 
-            ContainBlockStoreAddress(blkNode, size, dstAddr);
+            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
         }
         else
         {
@@ -328,8 +398,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 //    blkNode - the block store node
 //    size - the block size
 //    addr - the address node to try to contain
+//    addrParent - the parent of addr, in case this is checking containment of the source address.
 //
-void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr)
+void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent)
+
 {
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
@@ -354,7 +426,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 
-    if (!IsSafeToContainMem(blkNode, addr))
+    if (!IsInvariantInRange(addr, blkNode, addrParent))
     {
         return;
     }
@@ -406,9 +478,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
             src->ChangeOper(GT_OBJ);
             src->AsObj()->SetAddr(lclAddr);
-            src->AsObj()->SetLayout(layout);
-            src->AsObj()->gtBlkOpKind     = GenTreeBlk::BlkOpKindInvalid;
-            src->AsObj()->gtBlkOpGcUnsafe = false;
+            src->AsObj()->Initialize(layout);
 
             BlockRange().InsertBefore(src, lclAddr);
         }
@@ -502,19 +572,6 @@ void Lowering::LowerRotate(GenTree* tree)
     }
     ContainCheckShiftRotate(tree->AsOp());
 }
-
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
-{
-    NYI_LOONGARCH64("LowerSIMD");
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 //----------------------------------------------------------------------------------------------
@@ -642,7 +699,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 #endif // FEATURE_SIMD
 
     GenTree* addr = indirNode->Addr();
-    if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
+    if ((addr->OperGet() == GT_LEA) && IsInvariantInRange(addr, indirNode))
     {
         MakeSrcContained(indirNode, addr);
     }
@@ -788,6 +845,17 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 }
 
 //------------------------------------------------------------------------
+// ContainCheckSelect : determine whether the source of a select should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckSelect(GenTreeOp* node)
+{
+    noway_assert(!"GT_SELECT nodes are not supported on loongarch64");
+}
+
+//------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.
 //
 // Arguments:
@@ -801,19 +869,6 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
         CheckImmedAndMakeContained(node, node->GetArrayLength());
     }
 }
-
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
-{
-    NYI_LOONGARCH64("ContainCheckSIMD");
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 //----------------------------------------------------------------------------------------------

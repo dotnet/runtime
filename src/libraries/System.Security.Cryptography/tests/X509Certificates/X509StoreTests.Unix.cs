@@ -50,6 +50,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        public static bool NotRunningAsRootAndRemoteExecutorSupported => Interop.Sys.GetEUid() != 0 && RemoteExecutor.IsSupported;
+        public static bool NotRunningAsRootAndRemoteExecutorSupported => !Environment.IsPrivilegedProcess && RemoteExecutor.IsSupported;
     }
 }

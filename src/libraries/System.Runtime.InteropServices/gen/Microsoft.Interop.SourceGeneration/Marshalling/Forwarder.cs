@@ -15,9 +15,9 @@ namespace Microsoft.Interop
     {
         public bool IsSupported(TargetFramework target, Version version) => true;
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            return info.ManagedType.Syntax;
+            return info.ManagedType;
         }
 
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)

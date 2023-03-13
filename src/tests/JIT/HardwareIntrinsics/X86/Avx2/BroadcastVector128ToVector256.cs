@@ -7,21 +7,20 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Avx2
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void BroadcastVector128ToVector256()
         {
             int testResult = Pass;
 
             if (Avx2.IsSupported)
             {
-                using (TestTable<int> intTable = new TestTable<int>(new int[8] { 1, -5, 100, 0, 1, 2, 3, 4 }, new int[8]))
+                using (TestTable_Broadcast<int> intTable = new TestTable_Broadcast<int>(new int[8] { 1, -5, 100, 0, 1, 2, 3, 4 }, new int[8]))
                 {
                     var vf = Avx2.BroadcastVector128ToVector256((int*)(intTable.inArrayPtr));
                     Unsafe.Write(intTable.outArrayPtr, vf);
@@ -38,7 +37,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<uint> uintTable = new TestTable<uint>(new uint[8] { 1, 5, 100, 0, 1, 2, 3, 4 }, new uint[8]))
+                using (TestTable_Broadcast<uint> uintTable = new TestTable_Broadcast<uint>(new uint[8] { 1, 5, 100, 0, 1, 2, 3, 4 }, new uint[8]))
                 {
                     var vf = Avx2.BroadcastVector128ToVector256((uint*)(uintTable.inArrayPtr));
                     Unsafe.Write(uintTable.outArrayPtr, vf);
@@ -55,7 +54,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<long> longTable = new TestTable<long>(new long[4] { 1, -5, 100, 0}, new long[4]))
+                using (TestTable_Broadcast<long> longTable = new TestTable_Broadcast<long>(new long[4] { 1, -5, 100, 0}, new long[4]))
                 {
                     var vf = Avx2.BroadcastVector128ToVector256((long*)(longTable.inArrayPtr));
                     Unsafe.Write(longTable.outArrayPtr, vf);
@@ -72,7 +71,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<ulong> ulongTable = new TestTable<ulong>(new ulong[4] { 1, 5, 100, 0}, new ulong[4]))
+                using (TestTable_Broadcast<ulong> ulongTable = new TestTable_Broadcast<ulong>(new ulong[4] { 1, 5, 100, 0}, new ulong[4]))
                 {
                     var vf = Avx2.BroadcastVector128ToVector256((ulong*)(ulongTable.inArrayPtr));
                     Unsafe.Write(ulongTable.outArrayPtr, vf);
@@ -89,10 +88,10 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
             }
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
 
-        public unsafe struct TestTable<T> : IDisposable where T : struct
+        public unsafe struct TestTable_Broadcast<T> : IDisposable where T : struct
         {
             public T[] inArray;
             public T[] outArray;
@@ -102,7 +101,7 @@ namespace IntelHardwareIntrinsicTest
 
             GCHandle inHandle;
             GCHandle outHandle;
-            public TestTable(T[] a, T[] b)
+            public TestTable_Broadcast(T[] a, T[] b)
             {
                 this.inArray = a;
                 this.outArray = b;
