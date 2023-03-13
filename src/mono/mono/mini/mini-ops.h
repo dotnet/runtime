@@ -493,6 +493,11 @@ MINI_OP(OP_RBGT_UN, "r4_bgt_un", NONE, NONE, NONE)
 MINI_OP(OP_RBLE_UN, "r4_ble_un", NONE, NONE, NONE)
 MINI_OP(OP_RBLT_UN, "r4_blt_un", NONE, NONE, NONE)
 
+MINI_OP(XBINOP_FORCEINT_AND,    "bitwise_and", IREG, IREG, IREG)
+MINI_OP(XBINOP_FORCEINT_OR,     "bitwise_or", IREG, IREG, IREG)
+MINI_OP(XBINOP_FORCEINT_ORNOT,  "bitwise_ornot", IREG, IREG, IREG)
+MINI_OP(XBINOP_FORCEINT_XOR,    "bitwise_xor", IREG, IREG, IREG)
+
 /* float opcodes: must be in the same order as the matching CEE_ opcodes: binops_op_map */
 MINI_OP(OP_FADD,   "float_add", FREG, FREG, FREG)
 MINI_OP(OP_FSUB,   "float_sub", FREG, FREG, FREG)

@@ -49,5 +49,10 @@ SIMD_OP  (128, OP_XCOMPARE_FP, CMP_GE,               WTDSS,              _UNDEF,
 SIMD_OP  (128, OP_XCOMPARE_FP, CMP_LT,               WTDSS_REV,          _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fcmgt,   arm_neon_fcmgt)
 SIMD_OP  (128, OP_XCOMPARE_FP, CMP_LE,               WTDSS_REV,          _UNDEF,           _UNDEF,           _UNDEF,           _UNDEF,           arm_neon_fcmge,   arm_neon_fcmge)
 
-SIMD_OP  (128, OP_XBINOP,      OP_IADD,              WTDSS,              arm_neon_add,     arm_neon_add,     arm_neon_add,    arm_neon_add,      _UNDEF,           _UNDEF)  
+SIMD_OP  (128, OP_XBINOP,      OP_IADD,              WTDSS,              arm_neon_add,     arm_neon_add,     arm_neon_add,    arm_neon_add,      _UNDEF,           _UNDEF)
 SIMD_OP  (128, OP_XBINOP,      OP_FADD,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fadd,    arm_neon_fadd)
+SIMD_OP  (128, OP_XBINOP,      OP_ISUB,              WTDSS,              arm_neon_sub,     arm_neon_sub,     arm_neon_sub,    arm_neon_sub,      _UNDEF,           _UNDEF)
+SIMD_OP  (128, OP_XBINOP,      OP_FSUB,              WTDSS,              _UNDEF,           _UNDEF,           _UNDEF,          _UNDEF,            arm_neon_fsub,    arm_neon_fsub)
+SIMD_OP  (128, OP_XBINOP_FORCEINT,    XBINOP_FORCEINT_AND,    WDSS,      arm_neon_and,     arm_neon_and,     arm_neon_and,    arm_neon_and,      arm_neon_and,     arm_neon_and)
+SIMD_OP  (128, OP_XBINOP_FORCEINT,    XBINOP_FORCEINT_OR,     WDSS,      arm_neon_orr,     arm_neon_orr,     arm_neon_orr,    arm_neon_orr,      arm_neon_orr,     arm_neon_orr)
+SIMD_OP  (128, OP_XBINOP_FORCEINT,    XBINOP_FORCEINT_XOR,    WDSS,      arm_neon_eor,     arm_neon_eor,     arm_neon_eor,    arm_neon_eor,      arm_neon_eor,     arm_neon_eor)
