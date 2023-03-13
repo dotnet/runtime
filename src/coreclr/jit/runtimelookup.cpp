@@ -253,7 +253,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 GenTree* fastPathValue = gtNewOperNode(GT_IND, TYP_I_IMPL, gtCloneExpr(slotPtrTree));
                 fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
                 // Save dictionary slot to a local (to be used by fast path)
-                GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
+                GenTree* fastPathValueClone =
+                    opts.OptimizationEnabled() ? fgMakeMultiUse(&fastPathValue) : gtCloneExpr(fastPathValue);
                 GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* nullcheckBb =
