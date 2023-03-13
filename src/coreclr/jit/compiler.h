@@ -622,9 +622,6 @@ public:
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
 
 #ifdef FEATURE_SIMD
-    // Note that both SIMD vector args and locals are marked as lvSIMDType = true, but the
-    // type of an arg node is TYP_BYREF and a local node is TYP_SIMD*.
-    unsigned char lvSIMDType : 1;            // This is a SIMD struct
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
     unsigned char lvSimdBaseJitType : 5;     // Note: this only packs because CorInfoType has less than 32 entries
 
@@ -760,7 +757,7 @@ public:
         assert(varTypeIsStruct(lvType));
         unsigned slots = 0;
 #ifdef TARGET_ARM
-        slots = lvExactSize / sizeof(float);
+        slots = lvExactSize() / sizeof(float);
         assert(slots <= 8);
 #elif defined(TARGET_ARM64)
         switch (GetLvHfaElemKind())
@@ -769,17 +766,17 @@ public:
                 assert(!"lvHfaSlots called for non-HFA");
                 break;
             case CORINFO_HFA_ELEM_FLOAT:
-                assert((lvExactSize % 4) == 0);
-                slots = lvExactSize >> 2;
+                assert((lvExactSize() % 4) == 0);
+                slots = lvExactSize() >> 2;
                 break;
             case CORINFO_HFA_ELEM_DOUBLE:
             case CORINFO_HFA_ELEM_VECTOR64:
-                assert((lvExactSize % 8) == 0);
-                slots = lvExactSize >> 3;
+                assert((lvExactSize() % 8) == 0);
+                slots = lvExactSize() >> 3;
                 break;
             case CORINFO_HFA_ELEM_VECTOR128:
-                assert((lvExactSize % 16) == 0);
-                slots = lvExactSize >> 4;
+                assert((lvExactSize() % 16) == 0);
+                slots = lvExactSize() >> 4;
                 break;
             default:
                 unreached();
@@ -943,12 +940,6 @@ public:
 #endif // FEATURE_MULTIREG_ARGS
 
 #ifdef FEATURE_SIMD
-    // Is this is a SIMD struct?
-    bool lvIsSIMDType() const
-    {
-        return lvSIMDType;
-    }
-
     // Is this is a SIMD struct which is used for SIMD intrinsic?
     bool lvIsUsedInSIMDIntrinsic() const
     {
@@ -1085,9 +1076,7 @@ public:
         lvStkOffs = offset;
     }
 
-    // TODO-Cleanup: Remove this in favor of GetLayout()->Size/genTypeSize(lvType).
-    unsigned lvExactSize; // (exact) size of a STRUCT/SIMD/BLK local in bytes.
-
+    unsigned lvExactSize() const;
     unsigned lvSize() const;
 
     size_t lvArgStackSize() const;
@@ -1185,8 +1174,7 @@ public:
         assert(varTypeIsStruct(lvType));
         assert((m_layout == nullptr) || (m_layout->IsBlockLayout() && (m_layout->GetSize() <= layout->GetSize())));
         assert(layout->IsBlockLayout());
-        m_layout    = layout;
-        lvExactSize = layout->GetSize();
+        m_layout = layout;
     }
 
     SsaDefArray<LclSsaVarDsc> lvPerSsaData;
@@ -3620,7 +3608,6 @@ public:
     bool lvaMapSimd12ToSimd16(const LclVarDsc* varDsc)
     {
         assert(varDsc->lvType == TYP_SIMD12);
-        assert(varDsc->lvExactSize == 12);
 
 #if defined(TARGET_64BIT)
         assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
@@ -8717,7 +8704,7 @@ private:
     // Returns true if the lclVar is an opaque SIMD type.
     bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
     {
-        if (!varDsc->lvSIMDType)
+        if (!varTypeIsSIMD(varDsc))
         {
             return false;
         }
@@ -9070,16 +9057,6 @@ public:
 #endif // FEATURE_HW_INTRINSICS
 
 private:
-    // These routines need not be enclosed under FEATURE_SIMD since lvIsSIMDType()
-    // is defined for both FEATURE_SIMD and !FEATURE_SIMD appropriately. The use
-    // of this routines also avoids the need of #ifdef FEATURE_SIMD specific code.
-
-    // Is this var is of type simd struct?
-    bool lclVarIsSIMDType(unsigned varNum)
-    {
-        return lvaGetDesc(varNum)->lvIsSIMDType();
-    }
-
     // Returns true if the TYP_SIMD locals on stack are aligned at their
     // preferred byte boundary specified by getSIMDTypeAlignment().
     //
@@ -9100,10 +9077,11 @@ private:
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
 #if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
-        if (lclVarIsSIMDType(varNum) && lvaTable[varNum].lvType != TYP_BYREF)
+        LclVarDsc* lcl = lvaGetDesc(varNum);
+        if (varTypeIsSIMD(lcl))
         {
             // TODO-Cleanup: Can't this use the lvExactSize on the varDsc?
-            int alignment = getSIMDTypeAlignment(lvaTable[varNum].lvType);
+            int alignment = getSIMDTypeAlignment(lcl->TypeGet());
             if (alignment <= STACK_ALIGN)
             {
                 bool rbpBased;
