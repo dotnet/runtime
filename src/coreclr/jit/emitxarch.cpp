@@ -289,10 +289,10 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
             // k registers are used (as that is the point of the "break out operand type" of these instructions)
             // case INS_movdqa:         // INS_movdqa32, INS_movdqa64.
             // case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_movdqu32, INS_movdqu64.
-            // case INS_pand:           // INS_pandd, INS_pandq.
-            // case INS_pandn:          // INS_pandnd, INS_pandnq.
-            // case INS_por:            // INS_pord, INS_porq.
-            // case INS_pxor:           // INS_pxord, INS_pxorq
+            // case INS_pand:           // INS_vpandd, INS_vpandq.
+            // case INS_pandn:          // INS_vpandnd, INS_vpandnq.
+            // case INS_por:            // INS_vpord, INS_vporq.
+            // case INS_pxor:           // INS_vpxord, INS_vpxorq
             // case INS_vextractf128:   // INS_vextractf32x4, INS_vextractf64x2.
             // case INS_vextracti128:   // INS_vextracti32x4, INS_vextracti64x2.
             // case INS_vinsertf128:    // INS_vinsertf32x4, INS_vinsertf64x2.
@@ -490,6 +490,72 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// IsRexW0Instruction: check if the instruction always encodes REX.W as 0
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    true if the instruction always encodes REX.W as 0; othwerwise, false
+//
+bool emitter::IsRexW0Instruction(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+
+    if ((flags & REX_W0) != 0)
+    {
+        assert((flags & (REX_W1 | REX_WX)) == 0);
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsRexW1Instruction: check if the instruction always encodes REX.W as 1
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    true if the instruction always encodes REX.W as 1; othwerwise, false
+//
+bool emitter::IsRexW1Instruction(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+
+    if ((flags & REX_W1) != 0)
+    {
+        assert((flags & (REX_W0 | REX_WX)) == 0);
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsRexWXInstruction: check if the instruction requires special REX.W encoding
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    true if the instruction requires special REX.W encoding; othwerwise, false
+//
+bool emitter::IsRexWXInstruction(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+
+    if ((flags & REX_WX) != 0)
+    {
+        assert((flags & (REX_W0 | REX_W1)) == 0);
+        return true;
+    }
+
+    return false;
 }
 
 #ifdef TARGET_64BIT

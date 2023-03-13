@@ -553,6 +553,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_AndNot:
         case NI_Vector256_AndNot:
+        case NI_Vector512_AndNot:
         {
             assert(sig->numArgs == 2);
 
@@ -780,8 +781,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_BitwiseAnd:
         case NI_Vector256_BitwiseAnd:
+        case NI_Vector512_BitwiseAnd:
         case NI_Vector128_op_BitwiseAnd:
         case NI_Vector256_op_BitwiseAnd:
+        case NI_Vector512_op_BitwiseAnd:
         {
             assert(sig->numArgs == 2);
 
@@ -795,8 +798,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_BitwiseOr:
         case NI_Vector256_BitwiseOr:
+        case NI_Vector512_BitwiseOr:
         case NI_Vector128_op_BitwiseOr:
         case NI_Vector256_op_BitwiseOr:
+        case NI_Vector512_op_BitwiseOr:
         {
             assert(sig->numArgs == 2);
 
@@ -1860,8 +1865,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_OnesComplement:
         case NI_Vector256_OnesComplement:
+        case NI_Vector512_OnesComplement:
         case NI_Vector128_op_OnesComplement:
         case NI_Vector256_op_OnesComplement:
+        case NI_Vector512_op_OnesComplement:
         {
             assert(sig->numArgs == 1);
             op1 = impSIMDPopStack(retType);
@@ -2368,8 +2375,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Xor:
         case NI_Vector256_Xor:
+        case NI_Vector512_Xor:
         case NI_Vector128_op_ExclusiveOr:
         case NI_Vector256_op_ExclusiveOr:
+        case NI_Vector512_op_ExclusiveOr:
         {
             assert(sig->numArgs == 2);
 
