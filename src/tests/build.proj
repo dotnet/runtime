@@ -399,11 +399,31 @@
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+      <_DedupAssembly>$(BuildDir)\aot-instances.dll</_DedupAssembly>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(RunAOTCompilation)' == 'true'" File="$(_MobileIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
+    <Csc Condition="'$(RunAOTCompilation)' == 'true'"
+      Sources="$(_MobileIntermediateOutputPath)\aot-instances.cs"
+      OutputAssembly="$(_DedupAssembly)"
+      TargetType="library"
+      Deterministic="true"
+      References="@(ReferencePath)"
+      ToolExe="$(CscToolExe)"
+      ToolPath="$(CscToolPath)" />
+    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+      <_AotInputAssemblies Include="$(_DedupAssembly)">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </_AotInputAssemblies>
+    </ItemGroup>
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="$(_AOTMode)"
         OutputType="AsmOnly"
+        DedupAssembly="$(_DedupAssembly)"
         Assemblies="@(_AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.m"
         AotModulesTableLanguage="ObjC"
