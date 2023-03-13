@@ -9367,7 +9367,7 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
         // We are allowing for the first operand of the not be a valid chain, as this would require
         // a full recursive search through the children.
 
-        if (condOp1->OperIs(GT_AND) && condOp1->gtGetOp2()->OperIsCmpCompare())
+        if (condOp1->OperIs(GT_AND, GT_OR) && condOp1->gtGetOp2()->OperIsCmpCompare())
         {
             return true;
         }
@@ -9468,7 +9468,17 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
     m_t3 = nullptr;
 
-    if (!(m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbNext && m_b1->bbJumpDest->bbNext == m_b2->bbJumpDest))
+    bool foundStartOfIfConditions = false;
+    bool foundEndOfIfConditions = false;
+    if (m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbJumpDest)
+    {
+        foundStartOfIfConditions = true;
+    }
+    else if (m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbNext && m_b1->bbJumpDest->bbNext == m_b2->bbJumpDest)
+    {
+        foundEndOfIfConditions = true;
+    }
+    else
     {
         return false;
     }
@@ -9545,40 +9555,28 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     GenTree* testcondition = nullptr;
 
-    // If a previous optimize bools happened for op2, then reuse the test condition.
-    // Cannot reuse for op1, as the condition needs reversing.
-    if (op2IsCondChain)
-    {
-        testcondition = cond2;
-        cond2         = cond2->gtGetOp1();
-    }
-
     // Remove the first JTRUE statement.
     constexpr bool isUnlink = true;
     m_comp->fgRemoveStmt(m_b1, s1 DEBUGARG(isUnlink));
 
-    // Invert the first condition.
-    GenTree* revCond = m_comp->gtReverseCond(cond1);
-    assert(cond1 == revCond); // Ensure `gtReverseCond` did not create a new node.
+    // Invert the condition.
+    if (foundEndOfIfConditions)
+    {
+        GenTree* revCond = m_comp->gtReverseCond(cond1);
+        assert(cond1 == revCond); // Ensure `gtReverseCond` did not create a new node.
+    }
 
-    // AND the two conditions together
-    GenTree* andconds = m_comp->gtNewOperNode(GT_AND, TYP_INT, cond1, cond2);
-    andconds->AsOp()->gtFlags |= (cond1->gtFlags & GTF_ALL_EFFECT);
-    andconds->AsOp()->gtFlags |= (cond2->gtFlags & GTF_ALL_EFFECT);
+    // Join the two conditions together
+    genTreeOps chainedOper = foundStartOfIfConditions? GT_OR : GT_AND;
+    GenTree* chainedConditions = m_comp->gtNewOperNode(chainedOper, TYP_INT, cond1, cond2);
+    chainedConditions->AsOp()->gtFlags |= (cond1->gtFlags & GTF_ALL_EFFECT);
+    chainedConditions->AsOp()->gtFlags |= (cond2->gtFlags & GTF_ALL_EFFECT);
     cond1->gtFlags &= ~GTF_RELOP_JMP_USED;
     cond2->gtFlags &= ~GTF_RELOP_JMP_USED;
-    andconds->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+    chainedConditions->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
-    // Add a test condition onto the front of the AND (or resuse an exisiting one).
-    if (op2IsCondChain)
-    {
-        testcondition->AsOp()->gtOp1 = andconds;
-        testcondition->AsOp()->gtFlags |= (andconds->gtFlags & GTF_ALL_EFFECT);
-    }
-    else
-    {
-        testcondition = m_comp->gtNewOperNode(GT_NE, TYP_INT, andconds, m_comp->gtNewZeroConNode(TYP_INT));
-    }
+    // Add a test condition onto the front of the chain
+    testcondition = m_comp->gtNewOperNode(GT_NE, TYP_INT, chainedConditions, m_comp->gtNewZeroConNode(TYP_INT));
 
     // Wire the chain into the second block
     m_testInfo2.testTree->AsOp()->gtOp1 = testcondition;
@@ -9602,9 +9600,9 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 #ifdef DEBUG
     if (m_comp->verbose)
     {
-        printf("\nCombined conditions " FMT_BB " and " FMT_BB " into AND chain :\n", m_b1->bbNum, m_b2->bbNum);
+        JITDUMP("\nCombined conditions " FMT_BB " and " FMT_BB " into AND chain :\n", m_b1->bbNum, m_b2->bbNum);
         m_comp->fgDumpBlock(m_b1);
-        printf("\n");
+        JITDUMP("\n");
     }
 #endif
 
@@ -10362,8 +10360,7 @@ PhaseStatus Compiler::optOptimizeBools()
         numPasses++;
         change = false;
 
-        // Reverse iterate through the blocks.
-        for (BasicBlock* b1 = fgLastBB; b1 != nullptr; b1 = b1->bbPrev)
+        for (BasicBlock* const b1 : Blocks())
         {
             // We're only interested in conditional jumps here
 
