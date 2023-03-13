@@ -68,25 +68,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
-    if (!doesMethodHaveExpRuntimeLookup())
-    {
-#ifdef DEBUG
-        // To make sure doesMethodHaveExpRuntimeLookup() is not lying to us:
-        for (BasicBlock* block : Blocks())
-        {
-            for (Statement* stmt : block->Statements())
-            {
-                for (GenTree* tree : stmt->TreeList())
-                {
-                    assert(!tree->IsCall() || (tree->IsCall() && !tree->AsCall()->IsExpRuntimeLookup()));
-                }
-            }
-        }
-#endif
-        JITDUMP("Current method doesn't have runtime lookups - bail out.")
-        return result;
-    }
-
     INDEBUG(bool irIsPrinted = false);
 
     // Find all calls with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag
@@ -171,10 +152,39 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
                 assert(prevBb != nullptr && block != nullptr);
 
-                // Define a local for the result
-                const unsigned rtLookupLclNum   = lvaGrabTemp(true DEBUGARG("runtime lookup"));
-                lvaTable[rtLookupLclNum].lvType = TYP_I_IMPL;
-                GenTreeLclVar* rtLookupLcl      = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
+                GenTreeLclVar* rtLookupLcl = nullptr;
+
+                // Mostly for Tier0: if the current statement is ASG(LCL, RuntimeLookup)
+                // we can drop it and use that LCL as the destination
+                if (stmt->GetRootNode()->OperIs(GT_ASG))
+                {
+                    GenTree* lhs = stmt->GetRootNode()->gtGetOp1();
+                    GenTree* rhs = stmt->GetRootNode()->gtGetOp2();
+                    if (lhs->OperIs(GT_LCL_VAR) && rhs == *callUse)
+                    {
+                        rtLookupLcl = gtClone(lhs)->AsLclVar();
+                        fgRemoveStmt(block, stmt);
+                    }
+                }
+
+                // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
+                if (rtLookupLcl == nullptr)
+                {
+                    // Define a local for the result
+                    unsigned rtLookupLclNum         = lvaGrabTemp(true DEBUGARG("runtime lookup"));
+                    lvaTable[rtLookupLclNum].lvType = TYP_I_IMPL;
+                    rtLookupLcl                     = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
+
+                    // Replace call with rtLookupLclNum local and update side effects
+                    *callUse = gtClone(rtLookupLcl);
+                    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+                    {
+                        fgMorphStmtBlockOps(block, newFirstStmt);
+                        newFirstStmt = newFirstStmt->GetNextStmt();
+                    }
+                    fgMorphStmtBlockOps(block, stmt);
+                    gtUpdateStmtSideEffects(stmt);
+                }
 
                 GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
                 GenTree* sigNode = call->gtArgs.GetArgByIndex(1)->GetNode();
@@ -302,16 +312,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     GenTree* jtrue = gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
                     sizeCheckBb    = CreateBlockFromTree(this, prevBb, BBJ_COND, jtrue, debugInfo);
                 }
-
-                // Replace call with rtLookupLclNum local and update side effects
-                *callUse = gtClone(rtLookupLcl);
-                while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
-                {
-                    fgMorphStmtBlockOps(block, newFirstStmt);
-                    newFirstStmt = newFirstStmt->GetNextStmt();
-                }
-                fgMorphStmtBlockOps(block, stmt);
-                gtUpdateStmtSideEffects(stmt);
 
                 //
                 // Update preds in all new blocks
