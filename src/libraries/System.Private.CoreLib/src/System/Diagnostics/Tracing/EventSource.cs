@@ -3201,7 +3201,7 @@ namespace System.Diagnostics.Tracing
                                 {
                                     if (eventName.EndsWith(ActivityStartSuffix, StringComparison.Ordinal))
                                     {
-                                        string taskName = eventName.Substring(0, eventName.Length - ActivityStartSuffix.Length); // Remove the Start suffix to get the task name
+                                        string taskName = eventName[..^ActivityStartSuffix.Length]; // Remove the Start suffix to get the task name
 
                                         // Add a task that is just the task name for the start event.   This suppress the auto-task generation
                                         // That would otherwise happen (and create 'TaskName'Start as task name rather than just 'TaskName'
