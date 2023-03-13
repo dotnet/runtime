@@ -380,7 +380,11 @@ namespace DebuggerTests
                     string cmd_name = init_cmds[cmdIdx].Item1;
 
                     if (_isFailingWithException is not null)
-                        throw _isFailingWithException;
+                    {
+                        _logger.LogDebug($"HEY THAYS 5 - {cmd_name}");
+                        _logger.LogDebug($"HEY THAYS 6 - {_isFailingWithException.ToString()});
+                        throw;
+                    }
 
                     if (completedTask.IsCanceled)
                     {
