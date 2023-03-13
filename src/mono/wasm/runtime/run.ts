@@ -120,7 +120,7 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
         }
         else if (!reason) {
             reason = new runtimeHelpers.ExitStatus(exit_code);
-        } else {
+        } else if (typeof reason.status === "number") {
             exit_code = reason.status;
         }
     }

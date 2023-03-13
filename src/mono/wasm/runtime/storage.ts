@@ -46,11 +46,10 @@ async function openCache(): Promise<Cache | null> {
 
 export async function getMemorySnapshotSize(): Promise<number | undefined> {
     try {
-        const inputsHash = await getInputsHash();
-        if (!inputsHash) {
+        const cacheKey = await getCacheKey();
+        if (!cacheKey) {
             return undefined;
         }
-        const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${inputsHash}`;
         const cache = await openCache();
         if (!cache) {
             return undefined;
@@ -66,11 +65,10 @@ export async function getMemorySnapshotSize(): Promise<number | undefined> {
 
 export async function getMemorySnapshot(): Promise<ArrayBuffer | undefined> {
     try {
-        const inputsHash = await getInputsHash();
-        if (!inputsHash) {
+        const cacheKey = await getCacheKey();
+        if (!cacheKey) {
             return undefined;
         }
-        const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${inputsHash}`;
         const cache = await openCache();
         if (!cache) {
             return undefined;
@@ -88,11 +86,10 @@ export async function getMemorySnapshot(): Promise<ArrayBuffer | undefined> {
 
 export async function storeMemorySnapshot(memory: ArrayBuffer) {
     try {
-        const inputsHash = await getInputsHash();
-        if (!inputsHash) {
+        const cacheKey = await getCacheKey();
+        if (!cacheKey) {
             return;
         }
-        const cacheKey = `${memoryPrefix}-${ProductVersion}-${GitHash}-${inputsHash}`;
         const cache = await openCache();
         if (!cache) {
             return;
@@ -136,7 +133,7 @@ export async function cleanupMemorySnapshots(protectKey: string) {
 }
 
 // calculate hash of things which affect the memory snapshot
-export async function getInputsHash(): Promise<string | null> {
+async function getCacheKey(): Promise<string | null> {
     if (!runtimeHelpers.subtle) {
         return null;
     }
@@ -163,9 +160,13 @@ export async function getInputsHash(): Promise<string | null> {
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
 
+    inputs.GitHash = GitHash;
+    inputs.ProductVersion = ProductVersion;
+
     const inputsJson = JSON.stringify(inputs);
     const sha256Buffer = await runtimeHelpers.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));
     const uint8ViewOfHash = new Uint8Array(sha256Buffer);
     const hashAsString = Array.from(uint8ViewOfHash).map((b) => b.toString(16).padStart(2, "0")).join("");
-    return hashAsString;
+
+    return `${memoryPrefix}-${hashAsString}`;
 }

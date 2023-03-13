@@ -329,7 +329,7 @@ export function abort_startup(reason: any, should_exit: boolean): void {
     beforeOnRuntimeInitialized.promise_control.reject(reason);
     afterOnRuntimeInitialized.promise_control.reject(reason);
     afterPostRun.promise_control.reject(reason);
-    if (should_exit && reason.silent !== true) {
+    if (should_exit && (typeof reason !== "object" || reason.silent !== true)) {
         mono_exit(1, reason);
     }
 }
@@ -678,7 +678,7 @@ function normalizeConfig() {
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
     config.globalizationMode = config.globalizationMode || "auto";
-    config.startupMemoryCache = config.startupMemoryCache == undefined ? true : !!config.startupMemoryCache;
+
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
     }
@@ -686,12 +686,17 @@ function normalizeConfig() {
         config.diagnosticTracing = true;
     }
     runtimeHelpers.diagnosticTracing = !!config.diagnosticTracing;
+    runtimeHelpers.waitForDebugger = config.waitForDebugger;
+    config.startupMemoryCache = config.startupMemoryCache == undefined ? true : !!config.startupMemoryCache;
+    if (config.startupMemoryCache && runtimeHelpers.waitForDebugger) {
+        if (runtimeHelpers.diagnosticTracing) console.info("MONO_WASM: Disabling startupMemoryCache because waitForDebugger is set");
+        config.startupMemoryCache = false;
+    }
 
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
         && typeof globalThis.performance.measure === "function";
 
-    runtimeHelpers.waitForDebugger = config.waitForDebugger;
 }
 
 export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: number, assembly_len: number, pdb_ptr: number, pdb_len: number): void {

@@ -295,6 +295,8 @@ async function dry_run(runArgs) {
             appendElementOnExit: false,
             logExitCode: false,
             pthreadPoolSize: 0,
+            // this just means to not continue startup after the snapshot is taken. 
+            // If there was previously a matching snapshot, it will be used.
             exitAfterSnapshot: true
         }).create();
     } catch (err) {

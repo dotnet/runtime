@@ -38,7 +38,7 @@ const skipBufferByAssetTypes: {
     "dotnetwasm": true,
 };
 
-const skipInSnapshotByAssetTypes: {
+const containedInSnapshotByAssetTypes: {
     [k: string]: boolean
 } = {
     "resource": true,
@@ -76,8 +76,8 @@ export async function mono_download_assets(): Promise<void> {
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     runtimeHelpers.enableDownloadRetry = runtimeHelpers.config.enableDownloadRetry || runtimeHelpers.enableDownloadRetry;
     try {
-        const beforeSnapshotAssets: AssetEntryInternal[] = [];
-        const afterSnapshotAssets: AssetEntryInternal[] = [];
+        const alwaysLoadedAssets: AssetEntryInternal[] = [];
+        const containedInSnapshotAssets: AssetEntryInternal[] = [];
         const promises_of_assets: Promise<AssetEntryInternal>[] = [];
 
         for (const a of runtimeHelpers.config.assets!) {
@@ -88,10 +88,10 @@ export async function mono_download_assets(): Promise<void> {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (skipInSnapshotByAssetTypes[asset.behavior]) {
-                afterSnapshotAssets.push(asset);
+            if (containedInSnapshotByAssetTypes[asset.behavior]) {
+                containedInSnapshotAssets.push(asset);
             } else {
-                beforeSnapshotAssets.push(asset);
+                alwaysLoadedAssets.push(asset);
             }
         }
 
@@ -106,7 +106,7 @@ export async function mono_download_assets(): Promise<void> {
         };
 
         // start fetching and assets in parallel, only assets which are not part of memory snapshot
-        for (const asset of beforeSnapshotAssets) {
+        for (const asset of alwaysLoadedAssets) {
             countAndStartDownload(asset);
         }
 
@@ -115,7 +115,7 @@ export async function mono_download_assets(): Promise<void> {
 
         // start fetching and assets in parallel, only if memory snapshot is not available
         if (!runtimeHelpers.loadedMemorySnapshot) {
-            for (const asset of afterSnapshotAssets) {
+            for (const asset of containedInSnapshotAssets) {
                 countAndStartDownload(asset);
             }
         }
