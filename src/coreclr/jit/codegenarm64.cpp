@@ -3124,7 +3124,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         if (compiler->info.compInitMem)
         {
-            if (amount <= LCLHEAP_UNROLL_LIMIT)
+            if (amount <= compiler->getUnrollThreshold(Compiler::UnrollKind::Memset))
             {
                 // The following zeroes the last 16 bytes and probes the page containing [sp, #16] address.
                 // stp xzr, xzr, [sp, #-16]!
