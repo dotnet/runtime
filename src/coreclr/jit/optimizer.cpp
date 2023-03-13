@@ -9379,7 +9379,7 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
 }
 
 //-----------------------------------------------------------------------------
-//  optOptimizeCompareChainCondBlock:  Create AND chain when when both m_b1 and m_b2 are BBJ_COND.
+//  optOptimizeCompareChainCondBlock:  Create a chain when when both m_b1 and m_b2 are BBJ_COND.
 //
 //  Returns:
 //      true if chain optimization is done and m_b1 and m_b2 are folded into m_b1, else false.
@@ -9390,47 +9390,39 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
 //  Notes:
 //
 //      This aims to reduced the number of conditional jumps by joining cases when multiple
-//      conditions gate the execution of a block. For example:
+//      conditions gate the execution of a block.
+//
+//      Example 1:
 //          If ( a > b || c == d) { x = y; }
-//      Will become the following. Note that the second condition is inverted.
+//
+//      Will be represented in IR as:
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB02,BB03}
-//      *  JTRUE
-//      \--*  GT a,b
+//      *  JTRUE (GT a,b)
 //
 //      ------------ BB02 -> BB04 (cond), preds={BB01} succs={BB03,BB04}
-//      *  JTRUE
-//      \--*  NE c,d
+//      *  JTRUE (NE c,d)
 //
 //      ------------ BB03, preds={BB01, BB02} succs={BB04}
-//      *  ASG x,y
+//      *  ASG (x,y)
 //
 //      These operands will be combined into a single AND in the first block (with the first
-//      condition inverted), wrapped by the test condition (NE(...,0)).
+//      condition inverted), wrapped by the test condition (NE(...,0)). Giving:
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
-//      *  JTRUE
-//      \--* NE
-//         +--*  AND
-//         |  +--*  LE a,b
-//         |  \--*  NE c,d
-//         \--* CNS_INT 0
+//      *  JTRUE (NE (AND (LE a,b), (NE c,d)), 0)
 //
 //      ------------ BB03, preds={BB01} succs={BB04}
 //      *  ASG x,y
 //
 //
-//      This will also work for statements with else cases:
-//          If ( a > b || c == d) { x = y; } else { x = z; }
-//      Here BB04 will contain the else ASG. Both BB04 and BB05 will unconditionally jump to BB05.
+//      Example 2:
+//          If ( a > b && c == d) { x = y; } else { x = z; }
+//
+//      Here the && conditions are connected via an OR. After the pass:
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
-//      *  JTRUE
-//      \--* NE
-//         +--*  AND
-//         |  +--*  LE a,b
-//         |  \--*  NE c,d
-//         \--* CNS_INT 0
+//      *  JTRUE (NE (OR (LE a,b), (NE c,d)), 0)
 //
 //      ------------ BB03, preds={BB01} succs={BB05}
 //      *  ASG x,y
@@ -9439,46 +9431,36 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
 //      *  ASG x,z
 //
 //
-//      Multiple conditions can be chained together. This is due to the optimization reverse
-//      iterating through the blocks. For example:
+//      Example 3:
 //          If ( a > b || c == d || e < f ) { x = y; }
-//      The first pass will combine "c == d" and "e < f" into a chain. The second pass will then
-//      combine the "a > b" with the earlier chain. Where possible, the new condition is placed
-//      within the test condition (NE(...,0)).
+//      The first pass of the optimization will combine two of the conditions. The
+//      second pass will then combine remaining condition the earlier chain.
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
-//      *  JTRUE
-//      \--* NE
-//         +--*  AND
-//         |   +--*  AND
-//         |   |  +--*  NE c,d
-//         |   |  \--*  GE e,f
-//         |   \--*  LT a,b
-//         \--* CNS_INT 0
+//      *  JTRUE (NE (OR ((NE (OR (NE c,d), (GE e,f)), 0), (LE a,b))), 0)
 //
 //      ------------ BB03, preds={BB01} succs={BB04}
 //      *  ASG x,y
 //
 //
-//      Conditions connected by && are not yet checked for. For example:
-//          If ( a > b && c == d ) { x = y; }
+//     This optimization means that every condition within the IF statement is always evaluated,
+//     as opposed to stopping at the first positive match.
+//     Theoretically there is no maximum limit on the size of the generated chain. Therefore cost
+//     checking is used to limit the maximum number of conditions that can be chained together.
 //
 bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 {
     assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
     m_t3 = nullptr;
 
-    bool foundStartOfIfConditions = false;
-    bool foundEndOfIfConditions = false;
-    if (m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbJumpDest)
+    bool foundEndOfOrConditions = false;
+    if (m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbNext && m_b1->bbJumpDest->bbNext == m_b2->bbJumpDest)
     {
-        foundStartOfIfConditions = true;
+        // Found the end of two (or more) conditions being ORed together.
+        // The final condition has been inverted.
+        foundEndOfOrConditions = true;
     }
-    else if (m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbNext && m_b1->bbJumpDest->bbNext == m_b2->bbJumpDest)
-    {
-        foundEndOfIfConditions = true;
-    }
-    else
+    else if (!(m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbJumpDest))
     {
         return false;
     }
@@ -9560,14 +9542,14 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgRemoveStmt(m_b1, s1 DEBUGARG(isUnlink));
 
     // Invert the condition.
-    if (foundEndOfIfConditions)
+    if (foundEndOfOrConditions)
     {
         GenTree* revCond = m_comp->gtReverseCond(cond1);
         assert(cond1 == revCond); // Ensure `gtReverseCond` did not create a new node.
     }
 
     // Join the two conditions together
-    genTreeOps chainedOper = foundStartOfIfConditions? GT_OR : GT_AND;
+    genTreeOps chainedOper = foundEndOfOrConditions? GT_AND : GT_OR;
     GenTree* chainedConditions = m_comp->gtNewOperNode(chainedOper, TYP_INT, cond1, cond2);
     chainedConditions->AsOp()->gtFlags |= (cond1->gtFlags & GTF_ALL_EFFECT);
     chainedConditions->AsOp()->gtFlags |= (cond2->gtFlags & GTF_ALL_EFFECT);
