@@ -134,6 +134,9 @@ export async function cleanupMemorySnapshots(protectKey: string) {
 
 // calculate hash of things which affect the memory snapshot
 async function getCacheKey(): Promise<string | null> {
+    if (runtimeHelpers.memorySnapshotCacheKey) {
+        return runtimeHelpers.memorySnapshotCacheKey;
+    }
     if (!runtimeHelpers.subtle) {
         return null;
     }
@@ -180,6 +183,6 @@ async function getCacheKey(): Promise<string | null> {
     const sha256Buffer = await runtimeHelpers.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));
     const uint8ViewOfHash = new Uint8Array(sha256Buffer);
     const hashAsString = Array.from(uint8ViewOfHash).map((b) => b.toString(16).padStart(2, "0")).join("");
-
-    return `${memoryPrefix}-${hashAsString}`;
+    runtimeHelpers.memorySnapshotCacheKey = `${memoryPrefix}-${hashAsString}`;
+    return runtimeHelpers.memorySnapshotCacheKey;
 }

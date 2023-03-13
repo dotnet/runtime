@@ -235,6 +235,7 @@ export type RuntimeHelpers = {
     loadedFiles: string[],
     loadedMemorySnapshot: boolean,
     storeMemorySnapshotPending: boolean,
+    memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
     preferredIcuAsset: string | null,
     invariantMode: boolean,
