@@ -419,11 +419,11 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
 
 
 function _print_error(message: string, err: any): void {
-    if (err.silent) {
+    if (typeof err === "object" && err.silent) {
         return;
     }
     Module.err(`${message}: ${JSON.stringify(err)}`);
-    if (err.stack) {
+    if (typeof err === "object" && err.stack) {
         Module.err("MONO_WASM: Stacktrace: \n");
         Module.err(err.stack);
     }
