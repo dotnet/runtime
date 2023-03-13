@@ -11417,7 +11417,26 @@ emit_class_info (MonoAotCompile *acfg)
 typedef struct ClassNameTableEntry {
 	guint32 token, index;
 	struct ClassNameTableEntry *next;
+#ifdef DEBUG_AOT_NAME_TABLE
+	char *full_name;
+	uint32_t hash;
+#endif
 } ClassNameTableEntry;
+
+static char*
+get_class_full_name_for_hash (MonoClass *klass)
+{
+	return mono_type_get_name_full (m_class_get_byval_arg (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
+}
+
+static uint32_t
+hash_for_class (MonoClass *klass)
+{
+	char *full_name = get_class_full_name_for_hash (klass);
+	uint32_t hash = mono_metadata_str_hash (full_name);
+	g_free (full_name);
+	return hash;
+}
 
 static void
 emit_class_name_table (MonoAotCompile *acfg)
@@ -11426,9 +11445,12 @@ emit_class_name_table (MonoAotCompile *acfg)
 	guint32 token, hash;
 	MonoClass *klass;
 	GPtrArray *table;
-	char *full_name;
 	guint8 *buf, *p;
 	ClassNameTableEntry *entry, *new_entry;
+#ifdef DEBUG_AOT_NAME_TABLE
+	int name_buf_size = 0;
+	guint8 *name_buf, *name_p;
+#endif
 
 	/*
 	 * Construct a chained hash table for mapping class names to typedef tokens.
@@ -11446,13 +11468,17 @@ emit_class_name_table (MonoAotCompile *acfg)
 			mono_error_cleanup (error);
 			continue;
 		}
-		full_name = mono_type_get_name_full (m_class_get_byval_arg (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
-		hash = mono_metadata_str_hash (full_name) % table_size;
-		g_free (full_name);
+		hash = hash_for_class (klass) % table_size;
 
 		/* FIXME: Allocate from the mempool */
 		new_entry = g_new0 (ClassNameTableEntry, 1);
 		new_entry->token = token;
+#ifdef DEBUG_AOT_NAME_TABLE
+		new_entry->full_name = get_class_full_name_for_hash (klass);
+		new_entry->hash = hash;
+		/* '%s'=%08x\n */
+		name_buf_size += strlen (new_entry->full_name) + strlen("''=\n") + 8;
+#endif
 
 		entry = (ClassNameTableEntry *)g_ptr_array_index (table, hash);
 		if (entry == NULL) {
@@ -11471,6 +11497,10 @@ emit_class_name_table (MonoAotCompile *acfg)
 	/* Emit the table */
 	buf_size = table->len * 4 + 4;
 	p = buf = (guint8 *)g_malloc0 (buf_size);
+#ifdef DEBUG_AOT_NAME_TABLE
+	name_buf_size ++;  /* one extra trailing nul */
+	name_p = name_buf = (guint8 *)g_malloc0 (name_buf_size);
+#endif
 
 	/* FIXME: Optimize memory usage */
 	g_assert (table_size < 65000);
@@ -11488,14 +11518,28 @@ emit_class_name_table (MonoAotCompile *acfg)
 			else
 				encode_int16 (0, p, &p);
 		}
+#ifdef DEBUG_AOT_NAME_TABLE
+		if (entry != NULL) {
+			name_p += sprintf ((char*)name_p, "'%s'=%08x\n", entry->full_name, entry->hash);
+			g_free (entry->full_name);
+		}
+#endif
 		g_free (entry);
 	}
+#ifdef DEBUG_AOT_NAME_TABLE
+	g_assert (name_p - name_buf <= name_buf_size);
+#endif
 	g_assert (p - buf <= buf_size);
 	g_ptr_array_free (table, TRUE);
 
 	emit_aot_data (acfg, MONO_AOT_TABLE_CLASS_NAME, "class_name_table", buf, GPTRDIFF_TO_INT (p - buf));
 
 	g_free (buf);
+
+#ifdef DEBUG_AOT_NAME_TABLE
+	emit_aot_data (acfg, MONO_AOT_TABLE_CLASS_NAME_DEBUG, "class_name_table_debug", name_buf, GPTRDIFF_TO_INT (name_p - name_buf));
+	g_free (name_buf);
+#endif
 }
 
 static void
