@@ -538,7 +538,7 @@ namespace System.Buffers.Text
             {
                 int bufferIdx = 0;
 
-                while (sourceIndex < length
+                while ((uint)sourceIndex < (uint)length
                        && bufferIdx < BlockSize)
                 {
                     if (!IsWhitespace(utf8[sourceIndex]))
