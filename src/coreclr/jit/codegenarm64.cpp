@@ -4736,19 +4736,10 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     {
         ssize_t compareImm = op2->AsIntCon()->IconValue();
 
-        assert(isPow2(compareImm) || (compareImm == 0));
+        assert(isPow2(compareImm));
 
         instruction ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_tbz : INS_tbnz;
-
-        int imm;
-        if (compareImm == 0)
-        {
-            imm = (int)attr * 8 - 1;
-        }
-        else
-        {
-            imm = genLog2((size_t)compareImm);
-        }
+        int         imm = genLog2((size_t)compareImm);
 
         GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->bbJumpDest, reg, imm);
     }
