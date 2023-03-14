@@ -672,26 +672,13 @@ namespace System
                 }
                 else
                 {
-                    int index = segment.ArgIndex;
-                    switch (index)
+                    handler.AppendFormatted(segment.ArgIndex switch
                     {
-                        case 0:
-                            handler.AppendFormatted(arg0, segment.Alignment, segment.Format);
-                            break;
-
-                        case 1:
-                            handler.AppendFormatted(arg1, segment.Alignment, segment.Format);
-                            break;
-
-                        case 2:
-                            handler.AppendFormatted(arg2, segment.Alignment, segment.Format);
-                            break;
-
-                        default:
-                            Debug.Assert(index > 2);
-                            handler.AppendFormatted(args[index], segment.Alignment, segment.Format);
-                            break;
-                    }
+                        0 => arg0,
+                        1 => arg1,
+                        2 => arg2,
+                        _ => args[segment.ArgIndex],
+                    }, segment.Alignment, segment.Format);
                 }
             }
 

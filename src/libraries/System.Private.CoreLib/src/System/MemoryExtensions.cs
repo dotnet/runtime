@@ -3851,43 +3851,24 @@ namespace System
         private static bool TryWrite<TArg0, TArg1, TArg2>(Span<char> destination, IFormatProvider? provider, CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2, ReadOnlySpan<object?> args)
         {
             // Create the interpolated string handler.
-            var handler = new TryWriteInterpolatedStringHandler(format._literalLength, format._formattedCount, destination, provider, out bool shouldAppend);
+            var handler = new TryWriteInterpolatedStringHandler(format._literalLength, format._formattedCount, destination, provider, out bool continueAppending);
 
-            if (shouldAppend)
+            if (continueAppending)
             {
                 // Write each segment.
                 foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in format._segments)
                 {
-                    bool appended;
-                    if (segment.Literal is string literal)
-                    {
-                        appended = handler.AppendLiteral(literal);
-                    }
-                    else
-                    {
-                        int index = segment.ArgIndex;
-                        switch (index)
+                    continueAppending = segment.Literal is string literal ?
+                        handler.AppendLiteral(literal) :
+                        handler.AppendFormatted(segment.ArgIndex switch
                         {
-                            case 0:
-                                appended = handler.AppendFormatted(arg0, segment.Alignment, segment.Format);
-                                break;
+                            0 => arg0,
+                            1 => arg1,
+                            2 => arg2,
+                            _ => args[segment.ArgIndex],
+                        }, segment.Alignment, segment.Format);
 
-                            case 1:
-                                appended = handler.AppendFormatted(arg1, segment.Alignment, segment.Format);
-                                break;
-
-                            case 2:
-                                appended = handler.AppendFormatted(arg2, segment.Alignment, segment.Format);
-                                break;
-
-                            default:
-                                Debug.Assert(index > 2);
-                                appended = handler.AppendFormatted(args[index], segment.Alignment, segment.Format);
-                                break;
-                        }
-                    }
-
-                    if (!appended)
+                    if (!continueAppending)
                     {
                         break;
                     }
