@@ -17,25 +17,11 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) =>
-            new PreAllocatedOverlapped(callback, state, pinData, flowExecutionContext: false);
+        public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) => UnsafeCreateCore(callback, state, pinData);
 
-        private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
-        {
-            ArgumentNullException.ThrowIfNull(callback);
+        internal bool AddRef() => AddRefCore();
 
-            _overlapped = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
-        }
-
-        internal bool AddRef()
-        {
-            return _lifetime.AddRef();
-        }
-
-        internal void Release()
-        {
-            _lifetime.Release(this);
-        }
+        internal void Release() => ReleaseCore();
 
         public void Dispose()
         {
@@ -59,6 +45,6 @@ namespace System.Threading
             }
         }
 
-        internal unsafe bool IsUserObject(byte[]? buffer) => _overlapped->IsUserObject(buffer);
+        internal unsafe bool IsUserObject(byte[]? buffer) => IsUserObjectCore(buffer);
     }
 }
