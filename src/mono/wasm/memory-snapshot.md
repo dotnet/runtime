@@ -1,4 +1,4 @@
-# Memory snapshot of the Mono runtime #
+# Memory snapshot of the Mono runtime
 
 We take snapshot of WASM memory after first cold start at run time​.
 We store it on the client side in the browser cache.
