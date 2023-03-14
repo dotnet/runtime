@@ -253,7 +253,7 @@ namespace System.Security.Cryptography.X509Certificates
                         break;
                     }
 
-                    X509Certificate2? downloaded = DownloadCertificate(
+                    X509Certificate2Collection? downloaded = DownloadCertificate(
                         authorityInformationAccess,
                         _downloadTimeout);
 
@@ -267,8 +267,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                     downloadedCerts ??= new List<X509Certificate2>();
 
-                    AddToStackAndUpRef(downloaded.Handle, _untrustedLookup);
-                    downloadedCerts.Add(downloaded);
+                    foreach (X509Certificate2 certificate in downloaded)
+                    {
+                        AddToStackAndUpRef(certificate.Handle, _untrustedLookup);
+                        downloadedCerts.Add(certificate);
+                    }
 
                     Interop.Crypto.X509StoreCtxRebuildChain(storeCtx);
                     statusCode = Interop.Crypto.X509StoreCtxGetError(storeCtx);
@@ -1198,7 +1201,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static X509Certificate2? DownloadCertificate(
+        private static X509Certificate2Collection? DownloadCertificate(
             ReadOnlyMemory<byte> authorityInformationAccess,
             TimeSpan downloadTimeout)
         {

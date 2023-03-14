@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal static class OpenSslCertificateAssetDownloader
     {
-        internal static X509Certificate2? DownloadCertificate(string uri, TimeSpan downloadTimeout)
+        internal static X509Certificate2Collection? DownloadCertificate(string uri, TimeSpan downloadTimeout)
         {
             byte[]? data = DownloadAsset(uri, downloadTimeout);
 
@@ -24,9 +24,15 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                X509Certificate2 certificate = new X509Certificate2(data);
-                certificate.ThrowIfInvalid();
-                return certificate;
+                X509Certificate2Collection certificates = new X509Certificate2Collection();
+                certificates.Import(data);
+
+                foreach (X509Certificate2 certificate in certificates)
+                {
+                    certificate.ThrowIfInvalid();
+                }
+
+                return certificates;
             }
             catch (CryptographicException)
             {

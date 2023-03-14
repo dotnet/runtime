@@ -55,6 +55,42 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
+        public static void AiaDownloadIsAPkcs7Bundle()
+        {
+             CertificateAuthority.BuildPrivatePki(
+                PkiOptions.AllRevocation,
+                out RevocationResponder responder,
+                out CertificateAuthority root,
+                out CertificateAuthority intermediate,
+                out X509Certificate2 endEntity,
+                pkiOptionsInSubject: false,
+                testName: nameof(DisableAiaOptionWorks));
+
+            using (responder)
+            using (root)
+            using (intermediate)
+            using (endEntity)
+            using (X509Certificate2 rootCert = root.CloneIssuerCert())
+            using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
+            {
+                responder.AiaUsePkcs7Response = true;
+
+                RetryHelper.Execute(() => {
+                    using (ChainHolder holder = new ChainHolder())
+                    {
+                        X509Chain chain = holder.Chain;
+                        chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                        chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
+
+                        Assert.True(chain.Build(endEntity), nameof(chain.Build));
+                    }
+                });
+            }
+        }
+
+        [Fact]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "CA store is not available")]
         public static void DisableAiaOptionWorks()
         {

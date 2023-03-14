@@ -32,6 +32,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
         public TimeSpan ResponseDelay { get; set; }
         public DelayedActionsFlag DelayedActions { get; set; }
+        public bool AiaUsePkcs7Response { get; set; }
 
         private RevocationResponder(HttpListener listener, string uriPrefix)
         {
@@ -183,11 +184,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
                 byte[] certData = RespondEmpty ? Array.Empty<byte>() : authority.GetCertData();
 
-                responded = true;
-                context.Response.StatusCode = 200;
-                context.Response.ContentType = "application/pkix-cert";
-                context.Response.Close(certData, willBlock: true);
-                Trace($"Responded with {certData.Length}-byte certificate from {authority.SubjectName}.");
+                if (AiaUsePkcs7Response)
+                {
+                    X509Certificate2Collection collection = new X509Certificate2Collection();
+                    collection.Import(certData);
+                    byte[] pkcs7 = collection.Export(X509ContentType.Pkcs7);
+                    responded = true;
+                    context.Response.StatusCode = 200;
+                    context.Response.ContentType = "application/pkcs7-mime";
+                    context.Response.Close(pkcs7, willBlock: true);
+                    Trace($"Responded with {certData.Length}-byte certificate bundle from {authority.SubjectName}.");
+                }
+                else
+                {
+                    responded = true;
+                    context.Response.StatusCode = 200;
+                    context.Response.ContentType = "application/pkix-cert";
+                    context.Response.Close(certData, willBlock: true);
+                    Trace($"Responded with {certData.Length}-byte certificate from {authority.SubjectName}.");
+                }
                 return;
             }
 
