@@ -31,53 +31,64 @@ public static unsafe partial class CoreCLRHost
 
     static partial void InitHostStruct(HostStruct* functionStruct);
 
-    public static IntPtr /*Assembly*/ CallLoadFromAssemblyData(byte* data, long size)
+    [NoNativeWrapper]
+    public static IntPtr /*Assembly*/ load_assembly_from_data(byte* data, long size)
     {
         var assembly = alcWrapper.CallLoadFromAssemblyData(data, size);
         return (IntPtr)assemblyHandleField.GetValue(assembly);
     }
 
-    public static IntPtr /*Assembly*/ CallLoadFromAssemblyPath(byte* path, int length)
+    [NoNativeWrapper]
+    public static IntPtr /*Assembly*/ load_assembly_from_path(byte* path, int length)
     {
         var assembly = alcWrapper.CallLoadFromAssemblyPath(Encoding.UTF8.GetString(path, length));
         return (IntPtr)assemblyHandleField.GetValue(assembly);
 
     }
 
-    public static StringPtr string_from_utf16(ushort* text)
+    [return: NativeWrapperType("MonoString*")]
+    [return: NativeCallbackType("ManagedStringPtr_t")]
+    public static StringPtr string_from_utf16([NativeCallbackType("const gunichar2*")] ushort* text)
     {
         var s = new string((char*)text);
         return StringToPtr(s);
 
     }
 
-    public static StringPtr string_new_len(void* domain /* unused */, sbyte* text, uint length)
+    [return: NativeWrapperType("MonoString*")]
+    [return: NativeCallbackType("ManagedStringPtr_t")]
+    public static StringPtr string_new_len([NativeCallbackType("MonoDomain*")] void* domain /* unused */, [NativeCallbackType("const char*")] sbyte* text, uint length)
     {
         var s = new string(text, 0, (int)length, Encoding.UTF8);
         return StringToPtr(s);
 
     }
 
-    public static StringPtr string_new_utf16(void* domain /* unused */, ushort* text, uint length)
+    [return: NativeWrapperType("MonoString*")]
+    [return: NativeCallbackType("ManagedStringPtr_t")]
+    public static StringPtr string_new_utf16([NativeCallbackType("MonoDomain*")] void* domain /* unused */, ushort* text, [NativeCallbackType("gint32")] int length)
     {
-        var s = new string((char*)text, 0, (int)length);
+        var s = new string((char*)text, 0, length);
         return StringToPtr(s);
 
     }
 
-    public static IntPtr gchandle_new_v2(IntPtr obj, bool pinned)
+    [return: NativeCallbackType("uintptr_t")]
+    public static IntPtr gchandle_new_v2([NativeCallbackType("MonoObject*")] IntPtr obj, bool pinned)
     {
         GCHandle handle = GCHandle.Alloc(Unsafe.As<IntPtr, Object>(ref obj), pinned ? GCHandleType.Pinned : GCHandleType.Normal);
         return GCHandle.ToIntPtr(handle);
     }
 
-    public static IntPtr gchandle_new_weakref_v2(IntPtr obj, bool track_resurrection)
+    [return: NativeCallbackType("uintptr_t")]
+    public static IntPtr gchandle_new_weakref_v2([NativeCallbackType("MonoObject*")] IntPtr obj, bool track_resurrection)
     {
         GCHandle handle = GCHandle.Alloc(Unsafe.As<IntPtr, Object>(ref obj), track_resurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
         return GCHandle.ToIntPtr(handle);
     }
 
-    public static IntPtr gchandle_get_target_v2(IntPtr handleIn)
+    [return: NativeWrapperType("MonoObject*")]
+    public static IntPtr gchandle_get_target_v2([NativeWrapperType("uintptr_t")] IntPtr handleIn)
     {
         GCHandle handle = GCHandle.FromIntPtr(handleIn);
         object obj = handle.Target;
