@@ -960,9 +960,21 @@ namespace ILCompiler.DependencyAnalysis
                     || implType.IsCanonicalSubtype(CanonicalFormKind.Universal)
                     || factory.LazyGenericsPolicy.UsesLazyGenerics(declType)
                     || isInterfaceWithAnEmptySlot)
+                {
                     objData.EmitZeroPointer();
+                }
                 else
-                    objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
+                {
+                    TypeGenericDictionaryNode dictionaryNode = factory.TypeGenericDictionary(declType);
+                    DictionaryLayoutNode layoutNode = dictionaryNode.GetDictionaryLayout(factory);
+
+                    // Don't bother emitting a reloc to an empty dictionary. We'll only know whether the dictionary is
+                    // empty at final object emission time, so don't ask if we're not emitting yet.
+                    if (!relocsOnly && layoutNode.IsEmpty)
+                        objData.EmitZeroPointer();
+                    else
+                        objData.EmitPointerReloc(dictionaryNode);
+                }
             }
 
             VTableSliceNode declVTable = factory.VTable(declType);
