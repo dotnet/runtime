@@ -497,13 +497,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     case EA_16BYTE:
                     {
                         emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
-                        break;
+                        return;
                     }
 #if defined(FEATURE_SIMD)
                     case EA_32BYTE:
                     {
                         if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                        {
                             emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+                            return;
+                        }
                         break;
                     }
 
@@ -512,7 +515,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         assert(compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
                         emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                                    static_cast<int8_t>(0xFF));
-                        break;
+                        return;
                     }
 #endif // FEATURE_SIMD
 
