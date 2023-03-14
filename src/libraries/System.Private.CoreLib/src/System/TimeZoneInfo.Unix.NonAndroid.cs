@@ -24,17 +24,83 @@ namespace System
             return GetLocalTimeZoneFromTzFile();
         }
 
+        internal static byte[] ReadAllBytesFromSeekableNonZeroSizeFile(string path, int maxFileSize)
+        {
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
+            {
+                if (!fs.CanSeek)
+                {
+                    throw new IOException(SR.IO_UnseekableFile);
+                }
+
+                long fileLength = fs.Length;
+                if (fileLength > maxFileSize)
+                {
+                    throw new IOException(SR.IO_FileTooLong);
+                }
+
+                if (fileLength == 0)
+                {
+                    throw new IOException(SR.IO_InvalidReadLength);
+                }
+
+                int index = 0;
+                int count = (int)fileLength;
+                byte[] bytes = new byte[count];
+                while (count > 0)
+                {
+                    int n = fs.Read(bytes, index, count);
+                    if (n == 0)
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+                    index += n;
+                    count -= n;
+                }
+                return bytes;
+            }
+        }
+
+        // Bitmap covering the ASCII range. The bits is set for the characters [a-z], [A-Z], [0-9], '/', '-', and '_'.
+        private static byte[] asciiBitmap = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0xA8, 0xFF, 0x03, 0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07 };
+
+        private static bool IdContainsAnyDisallowedChars(string zoneId)
+        {
+            for (int i = 0; i < zoneId.Length; i++)
+            {
+                int c = zoneId[i];
+                if (c > 0x7F)
+                {
+                    return true;
+                }
+
+                int value = c >> 3;
+                if ((asciiBitmap[value] & (ulong)(1UL << (c - (value << 3)))) == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
             value = null;
             e = null;
+
+            if (Path.IsPathRooted(id) || IdContainsAnyDisallowedChars(id))
+            {
+                e = new TimeZoneNotFoundException(SR.Format(SR.InvalidTimeZone_InvalidId, id));
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
+            }
 
             string timeZoneDirectory = GetTimeZoneDirectory();
             string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
             byte[] rawData;
             try
             {
-                rawData = File.ReadAllBytes(timeZoneFilePath);
+                rawData = ReadAllBytesFromSeekableNonZeroSizeFile(timeZoneFilePath, maxFileSize: 20 * 1024 * 1024 /* 20 MB */); // timezone files usually less than 1 MB.
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -51,7 +117,7 @@ namespace System
                 e = ex;
                 return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is IOException || ex is OutOfMemoryException)
             {
                 e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath), ex);
                 return TimeZoneInfoResult.InvalidTimeZoneException;
