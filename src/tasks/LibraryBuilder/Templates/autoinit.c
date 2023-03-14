@@ -46,17 +46,12 @@ initialize_runtimeconfig ()
     size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
     char *file_path = (char *)malloc (str_len);
     if (!file_path) {
-        LOG_ERROR ("Could not allocate %zu bytes to format '%s' and '%s' together to initialize the runtime configuration.\n", str_len, bundle_path, file_name);
+        LOG_ERROR ("Out of memory.\n");
         abort ();
     }
 
     int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
     struct stat buffer;
-
-    if (num_char <= 0 || num_char != (str_len - 1)) {
-        LOG_ERROR ("Could not format '%s' and '%s' together into \"%%s/%%s\" to initialize the runtime configuration.\n", bundle_path, file_name);
-        abort ();
-    }
 
     if (stat (file_path, &buffer) == 0) {
         MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
@@ -83,83 +78,32 @@ initialize_appctx_env_variables ()
     monovm_initialize(2, appctx_keys, appctx_values);
 }
 
-static MonoAssembly*
-mono_load_assembly (const char *name, const char *culture)
-{
-    char filename [1024];
-    char path [1024];
-    int res;
-
-    int len = strlen (name);
-    int has_extension = len > 3 && name [len - 4] == '.' && (!strcmp ("exe", name + (len - 3)) || !strcmp ("dll", name + (len - 3)));
-
-    // add extensions if required.
-    strlcpy (filename, name, sizeof (filename));
-    if (!has_extension) {
-        strlcat (filename, ".dll", sizeof (filename));
-    }
-
-    if (culture && strcmp (culture, ""))
-        res = snprintf (path, sizeof (path) - 1, "%s/%s/%s", bundle_path, culture, filename);
-    else
-        res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle_path, filename);
-
-    if (res <= 0 && culture) {
-        LOG_ERROR ("Could not format '%s', '%s', and '%s' together into \"%%s/%%s/%%s\" for assembly preloading.\n", bundle_path, culture, filename);
-        abort ();
-    }
-    if (res <= 0) {
-        LOG_ERROR ("Could not format '%s' and '%s' together into \"%%s/%%s\" for assembly preloading.\n", bundle_path, filename);
-        abort ();
-    }
-
-    struct stat buffer;
-    if (stat (path, &buffer) == 0) {
-        MonoAssembly *assembly = mono_assembly_open (path, NULL);
-        if (!assembly) {
-            LOG_ERROR ("Could not open assembly '%s'.\n", path);
-            abort ();
-        }
-        return assembly;
-    }
-    LOG_INFO ("Could not stat file '%s'. Did not successfully preload assembly.\n", path);
-    return NULL;
-}
-
-static MonoAssembly*
-mono_assembly_preload_hook (MonoAssemblyName *aname, char **assemblies_path, void* user_data)
-{
-    const char *name = mono_assembly_name_get_name (aname);
-    const char *culture = mono_assembly_name_get_culture (aname);
-    return mono_load_assembly (name, culture);
-}
-
 static unsigned char *
 load_aot_data (MonoAssembly *assembly, int size, void *user_data, void **out_handle)
 {
     *out_handle = NULL;
 
-    char path [1024];
-    int res;
-
     MonoAssemblyName *assembly_name = mono_assembly_get_name (assembly);
     const char *aname = mono_assembly_name_get_name (assembly_name);
 
-    res = snprintf (path, sizeof (path) - 1, "%s/%s.aotdata", bundle_path, aname);
-    if (res <= 0) {
-        LOG_ERROR ("Could not format '%s' and '%s' together into \"%%s/%%s.aotdata\" for assembly preloading.\n", bundle_path, aname);
+    size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (aname) + 10); // +1 "/", +8 ".aotdata", +1 null-terminating char
+    char *file_path = (char *)malloc (str_len);
+    if (!file_path) {
+        LOG_ERROR ("Out of memory.\n");
         abort ();
     }
 
-    int fd = open (path, O_RDONLY);
+    int res = snprintf (file_path, str_len, "%s/%s.aotdata", bundle_path, aname);
+
+    int fd = open (file_path, O_RDONLY);
     if (fd < 0) {
-        LOG_INFO ("Could not open file '%s' while trying to load aot data.\n", path);
+        LOG_INFO ("Could not open file '%s' while trying to load aot data.\n", file_path);
         return NULL;
     }
 
     void *ptr = mmap (NULL, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
     if (ptr == MAP_FAILED) {
-        LOG_INFO ("Could not mmap file '%s'.\n", path);
+        LOG_INFO ("Could not mmap file '%s'.\n", file_path);
         close (fd);
         return NULL;
     }
@@ -180,7 +124,7 @@ runtime_init_callback ()
 {
     const char *assemblies_path = strdup(getenv("%ASSEMBLIES_LOCATION%"));
     if (!assemblies_path) {
-        LOG_ERROR ("Could not duplicate value of environment variable %ASSEMBLIES_LOCATION% due to insufficient memory.\n");
+        LOG_ERROR ("Out of memory.\n");
         abort ();
     }
     bundle_path = (assemblies_path[0] != '\0') ? assemblies_path : "./";
@@ -194,8 +138,6 @@ runtime_init_callback ()
     mono_set_assemblies_path (bundle_path);
 
     mono_jit_set_aot_only (true);
-
-    mono_install_assembly_preload_hook (mono_assembly_preload_hook, NULL);
 
     mono_install_load_aot_data_hook (load_aot_data, free_aot_data, NULL);
 
