@@ -122,6 +122,7 @@ export async function mono_download_assets(): Promise<void> {
                 asset.pendingDownloadInternal = null as any; // GC
                 asset.pendingDownload = null as any; // GC
                 asset.buffer = null as any; // GC
+                // tell the debugger it is loaded
                 if (asset.behavior == "resource" || asset.behavior == "assembly" || asset.behavior == "pdb") {
                     const url = resolve_path(asset, "");
                     const virtualName: string = typeof (asset.virtualPath) === "string"
