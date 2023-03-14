@@ -70,7 +70,7 @@ namespace DebuggerTests
             _logger = s_loggerFactory.Value
                             .CreateLogger($"{nameof(Inspector)}-{Id}");
             if (DebuggerTestBase.RunningOnChrome)
-                Client = new InspectorClient(_logger);
+                Client = new InspectorClient(_logger, Id);
             else
                 Client = new FirefoxInspectorClient(_logger);
         }
