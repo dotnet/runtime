@@ -169,6 +169,10 @@ public class LibraryBuilderTask : AppBuilderTask
                 }
             }
         }
+        if (exportedAssemblies.Count == 0)
+        {
+            throw new LogAsErrorException($"None of the compiled assemblies contain exported symbols. Resulting shared library would be unusable.");
+        }
 
         // for android, all symbols to keep go in one linker script
         //
