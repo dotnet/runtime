@@ -933,7 +933,10 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     TypeGenericDictionaryNode dictionaryNode = factory.TypeGenericDictionary(declType);
                     DictionaryLayoutNode layoutNode = dictionaryNode.GetDictionaryLayout(factory);
-                    if (layoutNode.HasFixedSlots && layoutNode.IsEmpty)
+
+                    // Don't bother emitting a reloc to an empty dictionary. We'll only know whether the dictionary is
+                    // empty at final object emission time, so don't ask if we're not emitting yet.
+                    if (!relocsOnly && layoutNode.IsEmpty)
                         objData.EmitZeroPointer();
                     else
                         objData.EmitPointerReloc(dictionaryNode);
