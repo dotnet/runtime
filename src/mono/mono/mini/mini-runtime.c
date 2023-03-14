@@ -3631,9 +3631,9 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 
 MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
 {
-	term_signaled = TRUE;
-
 	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
+
+	term_signaled = TRUE;
 
 	mono_gc_finalize_notify ();			
 
