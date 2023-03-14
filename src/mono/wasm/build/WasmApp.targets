@@ -50,8 +50,10 @@
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
       - $(EmccInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 16777216 or size of the DLLs, whichever is larger.
-                                              Corresponds to `INITIAL_MEMORY` arg for emcc.
+                                              Corresponds to `-s INITIAL_MEMORY=...` emcc arg.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
+      - $(EmccStackSize)                    - Stack size. Default value: 5MB.
+                                              Corresponds to `-s STACK_SIZE=...` emcc arg.
 
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Build`.
@@ -135,6 +137,10 @@
 
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Remove="@(SupportedPlatform)" />
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Include="browser" />
+
+    <TrimmerRootDescriptor
+      Condition="'$(WasmEnableLegacyJsInterop)' == 'true'"
+      Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.LegacyJsInterop.xml" />
   </ItemGroup>
 
   <PropertyGroup Label="Identify app bundle directory to run from">
@@ -358,7 +364,7 @@
     <PropertyGroup>
       <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</_WasmAppIncludeThreadsWorker>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.js -->
-      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == '' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">-1</_WasmPThreadPoolSize>
+      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == ''">-1</_WasmPThreadPoolSize>
     </PropertyGroup>
 
     <ItemGroup>

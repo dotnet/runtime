@@ -125,11 +125,11 @@ namespace LibraryImportGenerator.UnitTests
             // [In, Out] attributes
             // By value non-blittable array
             yield return new[] { ID(), CodeSnippets.ByValueParameterWithModifier("S[]", "Out")
-                + CustomStructMarshallingCodeSnippets<CodeSnippets>.NonBlittableUserDefinedType()
-                + CustomStructMarshallingCodeSnippets<CodeSnippets>.StatelessSnippets.Default };
+                + CustomStructMarshallingCodeSnippets.NonBlittableUserDefinedType()
+                + CustomStructMarshallingCodeSnippets.StatelessSnippets.Default };
             yield return new[] { ID(), CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out")
-                + CustomStructMarshallingCodeSnippets<CodeSnippets>.NonBlittableUserDefinedType()
-                + CustomStructMarshallingCodeSnippets<CodeSnippets>.StatelessSnippets.Default };
+                + CustomStructMarshallingCodeSnippets.NonBlittableUserDefinedType()
+                + CustomStructMarshallingCodeSnippets.StatelessSnippets.Default };
 
             // Enums
             yield return new[] { ID(), CodeSnippets.EnumParameters };
@@ -177,7 +177,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: true) };
 
             // Custom type marshalling
-            CustomStructMarshallingCodeSnippets<CodeSnippets> customStructMarshallingCodeSnippets = new(new CodeSnippets());
+            CustomStructMarshallingCodeSnippets customStructMarshallingCodeSnippets = new(new CodeSnippets());
             yield return new[] { ID(), customStructMarshallingCodeSnippets.StructMarshallerEntryPoint };
             yield return new[] { ID(), customStructMarshallingCodeSnippets.Stateless.ParametersAndModifiers };
             yield return new[] { ID(), customStructMarshallingCodeSnippets.Stateless.MarshalUsingParametersAndModifiers };
@@ -235,7 +235,7 @@ namespace LibraryImportGenerator.UnitTests
         public static IEnumerable<object[]> CustomCollections()
         {
             // Custom collection marshalling
-            CustomCollectionMarshallingCodeSnippets<CodeSnippets> customCollectionMarshallingCodeSnippets = new(new CodeSnippets());
+            CustomCollectionMarshallingCodeSnippets customCollectionMarshallingCodeSnippets = new(new CodeSnippets());
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.ByValue<byte>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.ByValue<sbyte>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.ByValue<short>() };

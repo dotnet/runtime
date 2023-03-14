@@ -200,3 +200,4 @@ jobs:
                 - fullpgo_random_gdv_edge
                 - jitosr_stress
                 - jitosr_stress_random
+                - syntheticpgo

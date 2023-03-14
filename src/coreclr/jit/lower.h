@@ -85,7 +85,7 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
 #ifdef TARGET_ARM64
-    GenTree* TryLowerAndToCCMP(GenTreeOp* tree);
+    GenTree* TryLowerAndOrToCCMP(GenTreeOp* tree);
     insCflags TruthifyingFlags(GenCondition cond);
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);

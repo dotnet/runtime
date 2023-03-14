@@ -892,7 +892,7 @@ private:
                 defFlag = GTF_VAR_DEF;
 
                 if ((val.Offset() != 0) ||
-                    (varDsc->lvExactSize != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
+                    (varDsc->lvExactSize() != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }
@@ -988,7 +988,7 @@ private:
                 {
                     isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
 
-                    if (varDsc->TypeGet() == TYP_BLK)
+                    if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->IsBlockLayout())
                     {
                         // TODO-CQ: TYP_BLK used to always be exposed here. This is in principle not necessary, but
                         // not doing so would require VN changes. For now, exposing gets better CQ as otherwise the

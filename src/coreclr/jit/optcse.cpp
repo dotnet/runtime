@@ -1805,7 +1805,7 @@ public:
             bool onStack = (regAvailEstimate == 0); // true when it is likely that this LclVar will have a stack home
 
             // Some LclVars always have stack homes
-            if ((varDsc->lvDoNotEnregister) || (varDsc->lvType == TYP_LCLBLK))
+            if (varDsc->lvDoNotEnregister)
             {
                 onStack = true;
             }
@@ -1918,7 +1918,7 @@ public:
             }
 
             // Some LclVars always have stack homes
-            if ((varDsc->lvDoNotEnregister) || (varDsc->lvType == TYP_LCLBLK))
+            if (varDsc->lvDoNotEnregister)
             {
                 continue;
             }
@@ -2656,7 +2656,7 @@ public:
                 int spillSimdRegInProlog = 1;
 
 #if defined(TARGET_XARCH)
-                // If we have a SIMD32 that is live across a call we have even higher spill costs
+                // If we have a SIMD32/64 that is live across a call we have even higher spill costs
                 //
                 if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
                 {

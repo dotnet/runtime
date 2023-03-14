@@ -1207,8 +1207,19 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		if (id != SN_Add)
+		switch (id) {
+		case SN_Add:
+		case SN_Equals:
+		case SN_GreaterThan:
+		case SN_GreaterThanOrEqual:
+		case SN_LessThan:
+		case SN_LessThanOrEqual:
+		case SN_Negate:
+		case SN_OnesComplement:
+			break;
+		default: 
 			return NULL;
+		}
 		MonoClass *arg0_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int class_size = mono_class_value_size (arg0_class, NULL);
 		if (class_size != 16)
@@ -4613,6 +4624,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Bitmask},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
+	{SN_ConvertNarrowingSignedSaturate},
+	{SN_ConvertNarrowingUnsignedSaturate},
 	{SN_Dot},
 	{SN_ExtractLane},
 	{SN_Multiply},
@@ -4708,6 +4721,36 @@ emit_wasm_supported_intrinsics (
 				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_EQ, arg0_type, fsig, args);
 			case SN_CompareNotEqual:
 				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
+			case SN_ConvertNarrowingSignedSaturate: {
+				int intrins = -1;
+				switch (arg0_type) {
+				case MONO_TYPE_I2:
+						intrins = INTRINS_WASM_NARROW_SIGNED_V16;
+						break;
+				case MONO_TYPE_I4:
+						intrins = INTRINS_WASM_NARROW_SIGNED_V8;
+						break;
+				}
+				if (intrins != -1)
+						return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
+
+				return NULL;
+			}
+			case SN_ConvertNarrowingUnsignedSaturate: {
+				int intrins = -1;
+				switch (arg0_type) {
+				case MONO_TYPE_I2:
+						intrins = INTRINS_WASM_NARROW_UNSIGNED_V16;
+						break;
+				case MONO_TYPE_I4:
+						intrins = INTRINS_WASM_NARROW_UNSIGNED_V8;
+						break;
+				}
+				if (intrins != -1)
+						return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
+
+				return NULL;
+			}
 			case SN_ExtractLane: {
 				int extract_op = type_to_xextract_op (arg0_type);
 				return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
