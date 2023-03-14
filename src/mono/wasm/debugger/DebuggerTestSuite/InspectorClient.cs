@@ -107,7 +107,7 @@ namespace DebuggerTests
             var str = o.ToString();
 
             var bytes = Encoding.UTF8.GetBytes(str);
-            Console.WriteLine($"InspectorClient - {testId} - $"HEY THAYS SENDCOMMAND - {id} - {str}");
+            Console.WriteLine($"InspectorClient - {testId} - HEY THAYS SENDCOMMAND - {id} - {str}");
             Send(bytes, token);
             return tcs.Task;
         }
