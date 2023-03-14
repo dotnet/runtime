@@ -93,9 +93,13 @@ namespace System.Buffers.Text
                     if (paddingCount == 0)
                     {
                         ReadOnlySpan<T> slicedSpan = base64Text.Slice(indexOfPaddingInvalidOrWhitespace + 1);
-                        indexOfPaddingInvalidOrWhitespace =
-                            TBase64Validatable.IndexOfAnyExcept(slicedSpan)
-                            + indexOfPaddingInvalidOrWhitespace + 1; // Add current index offset.
+                        int nextIndexOfPaddingInvalidOrWhitespace = TBase64Validatable.IndexOfAnyExcept(slicedSpan);
+                        if (nextIndexOfPaddingInvalidOrWhitespace == -1)
+                        {
+                            // No more invalid chars found.
+                            break;
+                        }
+                        indexOfPaddingInvalidOrWhitespace = nextIndexOfPaddingInvalidOrWhitespace + indexOfPaddingInvalidOrWhitespace + 1; // Add current index offset.
                     }
                     // If padding is already found, simply increment, as the common case might have 2 sequential padding chars.
                     else

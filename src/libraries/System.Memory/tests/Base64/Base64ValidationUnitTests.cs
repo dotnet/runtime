@@ -314,6 +314,19 @@ namespace System.Buffers.Text.Tests
         [InlineData("aYQ= =a")]
         [InlineData("aYQ== a")]
         [InlineData("aYQ==a ")]
+        [InlineData("a")]
+        [InlineData(" a")]
+        [InlineData("  a")]
+        [InlineData("   a")]
+        [InlineData("    a")]
+        [InlineData("a ")]
+        [InlineData("a  ")]
+        [InlineData("a   ")]
+        [InlineData("a    ")]
+        [InlineData(" a ")]
+        [InlineData("  a  ")]
+        [InlineData("   a   ")]
+        [InlineData("    a    ")]
         public void InvalidBase64Chars(string utf8WithByteToBeIgnored)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
