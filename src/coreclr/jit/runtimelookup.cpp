@@ -69,7 +69,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
     }
 
     // Find all calls with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag
-    for (BasicBlock* block : Blocks())
+    // We don't use Blocks() iterator here as we modify `block` variable
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
     SCAN_BLOCK_AGAIN:
         for (Statement* const stmt : block->Statements())
