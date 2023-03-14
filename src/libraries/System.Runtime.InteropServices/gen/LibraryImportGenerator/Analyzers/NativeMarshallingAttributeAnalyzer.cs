@@ -86,14 +86,15 @@ namespace Microsoft.Interop.Analyzers
                 if (attr.Operation is IObjectCreationOperation attrCreation
                     && attrCreation.Type.ToDisplayString() == TypeNames.NativeMarshallingAttribute)
                 {
-                    if (attrCreation.Arguments[0] is IArgumentOperation { Value: { ConstantValue: { HasValue: true, Value: null } } nullValue })
+                    IArgumentOperation marshallerEntryPointTypeArgument = attrCreation.GetArgumentByOrdinal(0);
+                    if (marshallerEntryPointTypeArgument.Value.IsNullLiteralOperation())
                     {
-                        DiagnosticReporter diagnosticFactory = DiagnosticReporter.CreateForLocation(nullValue.Syntax.GetLocation(), context.ReportDiagnostic);
+                        DiagnosticReporter diagnosticFactory = DiagnosticReporter.CreateForLocation(marshallerEntryPointTypeArgument.Value.Syntax.GetLocation(), context.ReportDiagnostic);
                         diagnosticFactory.CreateAndReportDiagnostic(
                             MarshallerEntryPointTypeMustBeNonNullRule,
                             GetSymbolType(context.ContainingSymbol!).ToDisplayString());
                     }
-                    if (attrCreation.Arguments[0] is IArgumentOperation { Value: ITypeOfOperation typeOfOp })
+                    if (marshallerEntryPointTypeArgument.Value is ITypeOfOperation typeOfOp)
                     {
                         AnalyzeManagedTypeMarshallingInfo(
                             GetSymbolType(context.ContainingSymbol!),
