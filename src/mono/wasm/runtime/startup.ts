@@ -240,7 +240,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         bindings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
-        if (!runtimeHelpers.mono_wasm_symbols_are_ready) readSymbolMapFile("dotnet.js.symbols");
 
         setTimeout(() => {
             // when there are free CPU cycles

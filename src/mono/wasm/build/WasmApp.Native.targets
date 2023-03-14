@@ -170,7 +170,6 @@
 
       <_WasmDevel Condition="'$(_WasmDevel)' == '' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">true</_WasmDevel>
 
-      <_EmccAssertionLevelDefault Condition="'$(_EmccAssertionLevelDefault)' == ''">0</_EmccAssertionLevelDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">-O1</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Oz</_EmccOptimizationFlagDefault>
@@ -209,7 +208,6 @@
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
-      <_EmccCFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
 
       <_EmccCFlags Include="-DDISABLE_PERFTRACING_LISTEN_PORTS=1" />
@@ -227,7 +225,6 @@
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
-      <_EmccLDFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
 
       <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
@@ -426,7 +423,7 @@
       <_EmccLDSFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccLDSFlags Include="-s WASM_BIGINT=1" />
       <_EmccLDSFlags Condition="'$(EmccEnvironment)' != ''" Include="-s ENVIRONMENT=&quot;$(EmccEnvironment)&quot;" />
-      <_EmccLDSFlags Condition="'$(EmccAssertions)' == 'true'" Include="-s ASSERTIONS=1" />
+      <_EmccLDSFlags Condition="'$(EmccEnableAssertions)' == 'true'" Include="-s ASSERTIONS=1" />
 
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
