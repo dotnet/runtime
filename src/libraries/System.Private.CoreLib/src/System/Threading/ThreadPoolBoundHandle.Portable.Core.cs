@@ -17,7 +17,7 @@ namespace System.Threading
     public sealed partial class ThreadPoolBoundHandle : IDisposable
     {
        
-        private static ThreadPoolBoundHandle BindHandleCore(SafeHandle handle)
+        private static ThreadPoolBoundHandle BindHandlePortableCore(SafeHandle handle)
         {
             ArgumentNullException.ThrowIfNull(handle);
 
@@ -27,12 +27,10 @@ namespace System.Threading
             return BindHandleCore(handle);
         }
 
-        [CLSCompliant(false)]
         private unsafe NativeOverlapped* AllocateNativeOverlappedCore(IOCompletionCallback callback, object? state, object? pinData) =>
             AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: true);
 
         
-        [CLSCompliant(false)]
         private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedCore(IOCompletionCallback callback, object? state, object? pinData) =>
             AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: false);
 
@@ -46,7 +44,6 @@ namespace System.Threading
             return overlapped._nativeOverlapped;
         }
         
-        [CLSCompliant(false)]
         private unsafe NativeOverlapped* AllocateNativeOverlappedCore(PreAllocatedOverlapped preAllocated)
         {
             ArgumentNullException.ThrowIfNull(preAllocated);
@@ -71,7 +68,6 @@ namespace System.Threading
             }
         }
 
-        [CLSCompliant(false)]
         private unsafe void FreeNativeOverlappedCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
@@ -89,7 +85,6 @@ namespace System.Threading
                 Overlapped.Free(overlapped);
         }
 
-        [CLSCompliant(false)]
         private static unsafe object? GetNativeOverlappedStateCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
@@ -112,15 +107,6 @@ namespace System.Threading
             }
 
             return wrapper;
-        }
-
-        public void Dispose()
-        {
-            // .NET Native's version of ThreadPoolBoundHandle that wraps the Win32 ThreadPool holds onto
-            // native resources so it needs to be disposable. To match the contract, we are also disposable.
-            // We also implement a disposable state to mimic behavior between this implementation and
-            // .NET Native's version (code written against us, will also work against .NET Native's version).
-            _isDisposed = true;
         }
     }
 }

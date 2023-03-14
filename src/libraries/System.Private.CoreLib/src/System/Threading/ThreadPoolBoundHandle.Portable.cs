@@ -71,7 +71,7 @@ namespace System.Threading
         ///     <see cref="ThreadPoolBoundHandle"/> does not take ownership of <paramref name="handle"/>,
         ///     it remains the responsibility of the caller to call <see cref="SafeHandle.Dispose()"/>.
         /// </remarks>
-        public static ThreadPoolBoundHandle BindHandle(SafeHandle handle) => BindHandleCore(handle);
+        public static ThreadPoolBoundHandle BindHandle(SafeHandle handle) => BindHandlePortableCore(handle);
 
         /// <summary>
         ///     Returns an unmanaged pointer to a <see cref="NativeOverlapped"/> structure, specifying
