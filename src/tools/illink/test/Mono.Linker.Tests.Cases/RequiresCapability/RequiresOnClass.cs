@@ -454,7 +454,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			DerivedWithRequires2.NestedClass.NestedStaticMethod ();
 		}
 
-		// TODO: Parameter signature differs between trimming tools and analyzer
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])")]
 		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		static void TestSuppressionsOnClass ()
@@ -1062,7 +1061,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 		}
 
-		// TODO
+		// https://github.com/dotnet/runtime/issues/82447
 		[AttributeWithRequires (PropertyOnAttribute = 42)]
 		[ExpectedWarning ("IL2026", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 		[ExpectedWarning ("IL3050", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = Tool.Analyzer)]
@@ -1167,7 +1166,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					}
 				}
 
-				// TODO
+				// https://github.com/dotnet/runtime/issues/82447
 				// NOTE: The enclosing RUC does not apply to nested types.
 				[ExpectedWarning ("IL2026", "--RequiresOnCtorAttribute--", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 				[RequiresOnCtor]
