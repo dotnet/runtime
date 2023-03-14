@@ -175,7 +175,7 @@ public class LibraryBuilderTask : AppBuilderTask
 
                 if (symbolsAdded > 0)
                 {
-                    exportedAssemblies.Add(Path.GetFileName(compiledAssembly.Path));
+                    exportedAssemblies.Add(Path.GetFileNameWithoutExtension(compiledAssembly.Path));
                 }
             }
         }
@@ -267,7 +267,7 @@ public class LibraryBuilderTask : AppBuilderTask
         var assembliesLoader = new StringBuilder();
         foreach (string exportedAssembly in exportedAssemblies)
         {
-            assembliesLoader.Append($"    mono_assembly_open_from_dir(dir, \"{exportedAssembly}\");\n");
+            assembliesLoader.Append($"    mono_assembly_load_with_partial_name_check(\"{exportedAssembly}\");\n");
         }
 
         File.WriteAllText(Path.Combine(OutputDirectory, "load_assemblies.c"),

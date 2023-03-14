@@ -28,7 +28,7 @@
 static const char *bundle_path;
 
 void register_aot_modules (void);
-void load_assemblies_with_exported_symbols (const char *dir);
+void load_assemblies_with_exported_symbols ();
 typedef void (*MonoRuntimeInitCallback) (void);
 void mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);
 
@@ -207,7 +207,7 @@ runtime_init_callback ()
         abort ();
     }
 
-    load_assemblies_with_exported_symbols (bundle_path);
+    load_assemblies_with_exported_symbols ();
 
     free ((void *)assemblies_path);
 }
