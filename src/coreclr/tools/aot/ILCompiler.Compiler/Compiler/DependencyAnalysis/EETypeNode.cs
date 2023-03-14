@@ -926,9 +926,18 @@ namespace ILCompiler.DependencyAnalysis
                     || implType.IsCanonicalSubtype(CanonicalFormKind.Universal)
                     || factory.LazyGenericsPolicy.UsesLazyGenerics(declType)
                     || isInterfaceWithAnEmptySlot)
+                {
                     objData.EmitZeroPointer();
+                }
                 else
-                    objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
+                {
+                    TypeGenericDictionaryNode dictionaryNode = factory.TypeGenericDictionary(declType);
+                    DictionaryLayoutNode layoutNode = dictionaryNode.GetDictionaryLayout(factory);
+                    if (layoutNode.HasFixedSlots && layoutNode.IsEmpty)
+                        objData.EmitZeroPointer();
+                    else
+                        objData.EmitPointerReloc(dictionaryNode);
+                }
             }
 
             VTableSliceNode declVTable = factory.VTable(declType);
