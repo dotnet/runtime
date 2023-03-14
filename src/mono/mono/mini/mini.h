@@ -2000,7 +2000,7 @@ enum {
 	XBINOP_FORCEINT_OR,
 	XBINOP_FORCEINT_ORNOT,
 	XBINOP_FORCEINT_XOR,
-} BitwiseOp;
+};
 
 typedef enum {
 	CMP_TYPE_L,
