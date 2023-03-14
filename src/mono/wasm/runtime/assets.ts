@@ -4,7 +4,7 @@
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
-import { wasm_func_map } from "./logging";
+import { parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
@@ -122,9 +122,7 @@ export async function mono_download_assets(): Promise<void> {
                 countAndStartDownload(asset);
             } else {
                 // Otherwise cleanup in case we were given pending download. It would be even better if we could abort the download.
-                asset.pendingDownloadInternal = null as any; // GC
-                asset.pendingDownload = null as any; // GC
-                asset.buffer = null as any; // GC
+                cleanupAsset(asset);
                 // tell the debugger it is loaded
                 if (asset.behavior == "resource" || asset.behavior == "assembly" || asset.behavior == "pdb") {
                     const url = resolve_path(asset, "");
@@ -147,9 +145,7 @@ export async function mono_download_assets(): Promise<void> {
                         const url = asset.pendingDownloadInternal!.url;
                         mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
                         const data = new Uint8Array(asset.buffer!);
-                        asset.pendingDownloadInternal = null as any; // GC
-                        asset.pendingDownload = null as any; // GC
-                        asset.buffer = null as any; // GC
+                        cleanupAsset(asset);
 
                         // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
                         await memorySnapshotSkippedOrDone.promise;
@@ -158,9 +154,7 @@ export async function mono_download_assets(): Promise<void> {
                     }
                     if (asset.behavior === "symbols") {
                         await instantiate_symbols_asset(asset);
-                        asset.pendingDownloadInternal = null as any; // GC
-                        asset.pendingDownload = null as any; // GC
-                        asset.buffer = null as any; // GC
+                        cleanupAsset(asset);
                     }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
@@ -531,17 +525,8 @@ export async function instantiate_symbols_asset(
 ): Promise<void> {
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
-        const data = await response.text();
-        data.split(/[\r\n]/).forEach((line: string) => {
-            const parts: string[] = line.split(/:/);
-            if (parts.length < 2)
-                return;
-
-            parts[1] = parts.splice(1).join(":");
-            wasm_func_map.set(Number(parts[0]), parts[1]);
-        });
-        if (runtimeHelpers.diagnosticTracing) console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
-
+        const text = await response.text();
+        parseSymbolMapFile(text);
     } catch (error: any) {
         console.log(`MONO_WASM: Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }
@@ -610,4 +595,11 @@ export async function wait_for_all_assets() {
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
     return runtimeHelpers.loadedFiles;
+}
+
+export function cleanupAsset(asset: AssetEntryInternal) {
+    // give GC change to collect resources
+    asset.pendingDownloadInternal = null as any; // GC
+    asset.pendingDownload = null as any; // GC
+    asset.buffer = null as any; // GC
 }

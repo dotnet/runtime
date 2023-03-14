@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module } from "./imports";
+import { INTERNAL, Module, runtimeHelpers } from "./imports";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
 export const wasm_func_map = new Map<number, string>();
@@ -180,4 +180,17 @@ export function setup_proxy_console(id: string, console: Console, origin: string
 
     for (const m of ["log", ...methods])
         anyConsole[m] = proxyConsoleMethod(`console.${m}`, send, true);
+}
+
+export function parseSymbolMapFile(text: string) {
+    text.split(/[\r\n]/).forEach((line: string) => {
+        const parts: string[] = line.split(/:/);
+        if (parts.length < 2)
+            return;
+
+        parts[1] = parts.splice(1).join(":");
+        wasm_func_map.set(Number(parts[0]), parts[1]);
+    });
+
+    if (runtimeHelpers.diagnosticTracing) console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
 }
