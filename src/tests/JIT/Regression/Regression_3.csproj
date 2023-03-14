@@ -3,12 +3,16 @@
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="CLR-X86-JIT/V1-M11-Beta1/**/*.??proj" />
-    <MergedWrapperProjectReference Include="CLR-X86-JIT/V1-M12-Beta2/**/*.??proj" />
+    <MergedWrapperProjectReference Include="JitBlue/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="JitBlue/Runtime_*/**/*.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_d.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_do.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_r.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_ro.??proj" />
+
+    <MergedWrapperProjectReference Update="**"
+      Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;))))" />
+
     <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>
 </Project>

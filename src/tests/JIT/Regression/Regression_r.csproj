@@ -3,6 +3,11 @@
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="*/**/*_r.??proj" />
+    <MergedWrapperProjectReference Include="*/**/*_r.??proj" />
+
+    <MergedWrapperProjectReference Update="**"
+      Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;))))" />
+
+    <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>
 </Project>
