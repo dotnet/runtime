@@ -76,16 +76,18 @@ namespace ILCompiler
                 return false;
 
             // Heuristic: async state machines don't need equality/hashcode.
-            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices", "IAsyncStateMachine");
-            if (valueType.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
-                && valueType.ContainingType != null
-                && Array.IndexOf(valueType.RuntimeInterfaces, _iAsyncStateMachineType) >= 0)
-            {
+            if (IsAsyncStateMachineType(valueType))
                 return false;
-            }
-
 
             return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
+        }
+
+        public bool IsAsyncStateMachineType(MetadataType type)
+        {
+            Debug.Assert(type.IsValueType);
+            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices", "IAsyncStateMachine", throwIfNotFound: false);
+            return type.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
+                && Array.IndexOf(type.RuntimeInterfaces, _iAsyncStateMachineType) >= 0;
         }
 
         private sealed class TypeState
