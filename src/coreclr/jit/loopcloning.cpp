@@ -191,7 +191,15 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
     GenTree* op1Tree = op1.ToGenTree(comp, bb);
     GenTree* op2Tree = op2.ToGenTree(comp, bb);
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
-    return comp->gtNewOperNode(invert ? GenTree::ReverseRelop(oper) : oper, TYP_INT, op1Tree, op2Tree);
+
+    GenTree* result = comp->gtNewOperNode(invert ? GenTree::ReverseRelop(oper) : oper, TYP_INT, op1Tree, op2Tree);
+
+    if (compareUnsigned)
+    {
+        result->gtFlags |= GTF_UNSIGNED;
+    }
+
+    return result;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -941,12 +949,14 @@ void LC_ArrayDeref::DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStac
     }
     else
     {
-        // Adjust for level0 having just 1 condition and push condition (i < a.len).
+        // Adjust for level0 having just 1 condition and push conditions (i >= 0) && (i < a.len).
+        // We fold the two compares into one using unsigned compare, since we know a.len is non-negative.
+        //
         LC_Array arrLen = array;
         arrLen.oper     = LC_Array::ArrLen;
         arrLen.dim      = level - 1;
-        (*conds)[level * 2 - 1]->Push(
-            LC_Condition(GT_LT, LC_Expr(LC_Ident(Lcl(), LC_Ident::Var)), LC_Expr(LC_Ident(arrLen))));
+        (*conds)[level * 2 - 1]->Push(LC_Condition(GT_LT, LC_Expr(LC_Ident(Lcl(), LC_Ident::Var)),
+                                                   LC_Expr(LC_Ident(arrLen)), /* unsigned */ true));
 
         // Push condition (a[i] != null)
         LC_Array arrTmp = array;
@@ -1481,7 +1491,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
         assert(maxRank != -1);
 
         // First level will always yield the null-check, since it is made of the array base variables.
-        // All other levels (dimensions) will yield two conditions ex: (i < a.length && a[i] != null)
+        // All other levels (dimensions) will yield two conditions ex: ((unsigned) i < a.length && a[i] != null)
         // So add 1 after rank * 2.
         const unsigned condBlocks = (unsigned)maxRank * 2 + 1;
 
