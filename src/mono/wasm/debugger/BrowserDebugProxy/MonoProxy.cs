@@ -639,8 +639,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "DotnetDebugger.runTests":
                     {
                         SendResponse(id, Result.OkFromObject(new { }), token);
-                        if (await IsRuntimeAlreadyReadyAlready(id, token))
-                            await RuntimeReady(id, token);
+                        while (!await IsRuntimeAlreadyReadyAlready(id, token))
+                            await Task.Delay(1000, token);
+                        await RuntimeReady(id, token);
                         return true;
                     }
             }
