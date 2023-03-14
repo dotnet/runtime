@@ -2504,6 +2504,24 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		// and always return false for IsDynamicCodeCompiled
 		if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
 			*op = MINT_LDC_I4_0;
+#if defined(TARGET_WASM)
+	} else if (in_corlib &&
+			!strncmp ("System.Runtime.Intrinsics.Wasm", klass_name_space, 30) &&
+			!strcmp (klass_name, "WasmBase")) {
+		if (!strcmp (tm, "get_IsSupported")) {
+			*op = MINT_LDC_I4_1;
+		} else if (!strcmp (tm, "LeadingZeroCount")) {
+			if (csignature->params [0]->type == MONO_TYPE_U4 || csignature->params [0]->type == MONO_TYPE_I4)
+				*op = MINT_CLZ_I4;
+			else if (csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8)
+				*op = MINT_CLZ_I8;
+		} else if (!strcmp (tm, "TrailingZeroCount")) {
+			if (csignature->params [0]->type == MONO_TYPE_U4 || csignature->params [0]->type == MONO_TYPE_I4)
+				*op = MINT_CTZ_I4;
+			else if (csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8)
+				*op = MINT_CTZ_I8;
+		}
+#endif
 	} else if (in_corlib &&
 			(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
 			!strncmp ("System.Runtime.Intrinsics.PackedSimd", klass_name_space, 36) ||
@@ -2515,11 +2533,58 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
 		!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29))) {
 		interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_platform_not_supported);
-	} else if (in_corlib &&
-			   (!strncmp ("System.Numerics", klass_name_space, 15) &&
-				!strcmp ("Vector", klass_name) &&
-				!strcmp (tm, "get_IsHardwareAccelerated"))) {
-		*op = MINT_LDC_I4_0;
+	} else if (in_corlib && !strncmp ("System.Numerics", klass_name_space, 15)) {
+		if (!strcmp ("Vector", klass_name) &&
+				!strcmp (tm, "get_IsHardwareAccelerated")) {
+			*op = MINT_LDC_I4_0;
+		} else if (!strcmp ("BitOperations", klass_name)) {
+			int arg_type = (csignature->param_count > 0) ? csignature->params [0]->type : MONO_TYPE_VOID;
+			if ((!strcmp (tm, "RotateLeft") || !strcmp (tm, "RotateRight")) && MINT_IS_LDC_I4 (td->last_ins->opcode)) {
+				gboolean left = !strcmp (tm, "RotateLeft");
+				int ct = interp_get_const_from_ldc_i4 (td->last_ins);
+				int opcode = -1;
+				gboolean is_i4 = (arg_type == MONO_TYPE_U4) || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 4);
+				gboolean is_i8 = (arg_type == MONO_TYPE_U8) || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 8);
+				if (!is_i4 && !is_i8)
+					return FALSE;
+				if (is_i4)
+					opcode = left ? MINT_ROL_I4_IMM : MINT_ROR_I4_IMM;
+				else
+					opcode = left ? MINT_ROL_I8_IMM : MINT_ROR_I8_IMM;
+
+				interp_add_ins (td, opcode);
+				td->last_ins->data [0] = ct & (is_i4 ? 31 : 63);
+				td->sp -= 2;
+				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+				push_simple_type (td, is_i4 ? STACK_TYPE_I4 : STACK_TYPE_I8);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+
+				td->ip += 5;
+				return TRUE;
+			} else if (!strcmp (tm, "LeadingZeroCount")) {
+				if (arg_type == MONO_TYPE_U4 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 4))
+					*op = MINT_CLZ_I4;
+				else if (arg_type == MONO_TYPE_U8 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 8))
+					*op = MINT_CLZ_I8;
+			} else if (!strcmp (tm, "TrailingZeroCount")) {
+				if (arg_type == MONO_TYPE_U4 || arg_type == MONO_TYPE_I4 ||
+						((arg_type == MONO_TYPE_U || arg_type == MONO_TYPE_I) && SIZEOF_VOID_P == 4))
+					*op = MINT_CTZ_I4;
+				else if (arg_type == MONO_TYPE_U8 || arg_type == MONO_TYPE_I8 ||
+						((arg_type == MONO_TYPE_U || arg_type == MONO_TYPE_I) && SIZEOF_VOID_P == 8))
+					*op = MINT_CTZ_I8;
+			} else if (!strcmp (tm, "PopCount")) {
+				if (arg_type == MONO_TYPE_U4 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 4))
+					*op = MINT_POPCNT_I4;
+				else if (arg_type == MONO_TYPE_U8 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 8))
+					*op = MINT_POPCNT_I8;
+			} else if (!strcmp (tm, "Log2")) {
+				if (arg_type == MONO_TYPE_U4 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 4))
+					*op = MINT_LOG2_I4;
+				else if (arg_type == MONO_TYPE_U8 || (arg_type == MONO_TYPE_U && SIZEOF_VOID_P == 8))
+					*op = MINT_LOG2_I8;
+			}
+		}
 	} else if (in_corlib &&
 			   (!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
 				!strncmp ("Vector", klass_name, 6) &&
