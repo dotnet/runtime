@@ -36,7 +36,11 @@ namespace DebuggerTests
             var res = JObject.Parse(msg);
 
             if (res["id"] == null)
+            {
+                logger.LogDebug($"HEY THAYS HANDLEMESSAGE - NULL - {msg}");
                 return onEvent(res["sessionId"]?.Value<string>(), res["method"].Value<string>(), res["params"] as JObject, token);
+            }
+            logger.LogDebug($"HEY THAYS HANDLEMESSAGE - {res["id"]} - {msg}");
 
             var id = res.ToObject<MessageId>();
             if (!pending_cmds.Remove(id, out var item))
@@ -81,7 +85,7 @@ namespace DebuggerTests
 
         public virtual Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
-            int id = ++next_cmd_id;
+            int id = Interlocked.Increment(ref next_cmd_id);
             if (args == null)
                 args = new JObject();
 
@@ -100,6 +104,7 @@ namespace DebuggerTests
             var str = o.ToString();
 
             var bytes = Encoding.UTF8.GetBytes(str);
+            logger.LogDebug($"HEY THAYS SENDCOMMAND - {id} - {str}");
             Send(bytes, token);
             return tcs.Task;
         }
