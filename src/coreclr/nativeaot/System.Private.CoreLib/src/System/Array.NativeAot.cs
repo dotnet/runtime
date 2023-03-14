@@ -148,65 +148,6 @@ namespace System
             CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
 
-        public static void Copy(Array sourceArray, Array destinationArray, int length)
-        {
-            if (sourceArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
-            if (destinationArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
-
-            EETypePtr eeType = sourceArray.GetEETypePtr();
-            if (eeType.FastEquals(destinationArray.GetEETypePtr()) &&
-                eeType.IsSzArray &&
-                (uint)length <= sourceArray.NativeLength &&
-                (uint)length <= destinationArray.NativeLength)
-            {
-                nuint byteCount = (uint)length * (nuint)eeType.ComponentSize;
-                ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
-                ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
-
-                if (eeType.HasPointers)
-                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
-                else
-                    Buffer.Memmove(ref dst, ref src, byteCount);
-
-                // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
-                return;
-            }
-
-            // Less common
-            CopyImpl(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length, reliable: false);
-        }
-
-        public static unsafe void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            if (sourceArray != null && destinationArray != null)
-            {
-                EETypePtr eeType = sourceArray.GetEETypePtr();
-                if (eeType.FastEquals(destinationArray.GetEETypePtr()) &&
-                    eeType.IsSzArray &&
-                    length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
-                    (uint)(sourceIndex + length) <= sourceArray.NativeLength &&
-                    (uint)(destinationIndex + length) <= destinationArray.NativeLength)
-                {
-                    nuint elementSize = (nuint)eeType.ComponentSize;
-                    nuint byteCount = (uint)length * elementSize;
-                    ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(sourceArray).Data, (uint)sourceIndex * elementSize);
-                    ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
-
-                    if (eeType.HasPointers)
-                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
-                    else
-                        Buffer.Memmove(ref dst, ref src, byteCount);
-
-                    // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
-                    return;
-                }
-            }
-
-            // Less common
-            CopyImpl(sourceArray!, sourceIndex, destinationArray!, destinationIndex, length, reliable: false);
-        }
 
         //
         // Funnel for all the Array.Copy() overloads. The "reliable" parameter indicates whether the caller for ConstrainedCopy()
@@ -261,7 +202,7 @@ namespace System
             {
                 if (RuntimeImports.AreTypesEquivalent(sourceElementEEType, destinationElementEEType))
                 {
-                    if (sourceElementEEType.HasPointers)
+                    if (sourceElementEEType.ContainsGCPointers)
                     {
                         CopyImplValueTypeArrayWithInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
                     }
@@ -521,9 +462,9 @@ namespace System
         //
         private static unsafe void CopyImplValueTypeArrayNoInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-            Debug.Assert((sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.HasPointers) ||
+            Debug.Assert((sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.ContainsGCPointers) ||
                 sourceArray.ElementEEType.IsPointer);
-            Debug.Assert((destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.HasPointers) ||
+            Debug.Assert((destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.ContainsGCPointers) ||
                 destinationArray.ElementEEType.IsPointer);
 
             // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
@@ -822,7 +763,7 @@ namespace System
             nuint totalByteLength = eeType.ComponentSize * array.NativeLength;
             ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
 
-            if (!eeType.HasPointers)
+            if (!eeType.ContainsGCPointers)
             {
                 SpanHelpers.ClearWithoutReferences(ref pStart, totalByteLength);
             }
@@ -859,7 +800,7 @@ namespace System
             ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * elementSize);
             nuint byteLength = (uint)length * elementSize;
 
-            if (eeType.HasPointers)
+            if (eeType.ContainsGCPointers)
             {
                 Debug.Assert(byteLength % (nuint)sizeof(IntPtr) == 0);
                 SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
