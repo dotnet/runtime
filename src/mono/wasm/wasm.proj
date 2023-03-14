@@ -198,7 +198,6 @@
       <EmccExportedRuntimeMethod Include="removeRunDependency" />
       <EmccExportedRuntimeMethod Include="addRunDependency" />
       <EmccExportedRuntimeMethod Include="addFunction" />
-      <EmccExportedRuntimeMethod Include="getWasmTableEntry" />
 
       <EmccExportedFunction Include="_malloc" />
       <EmccExportedFunction Include="_memalign" />
@@ -271,6 +270,7 @@
       <EmccExportedFunction Include="_free" />
     </ItemGroup>
     <PropertyGroup>
+      <_EmccExportedLibraryFunction>&quot;[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
       <EmccInitialHeapSize>16777216</EmccInitialHeapSize>
@@ -289,6 +289,7 @@
       <_EmccLinkFlags Include="-s ALLOW_TABLE_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
+      <_EmccLinkFlags Condition="'$(_EmccExportedLibraryFunction)' != ''" Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
       <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
       <_EmccLinkFlags Include="--source-map-base http://example.com" />
