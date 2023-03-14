@@ -7,7 +7,6 @@ namespace UnityEmbedHost.Generator;
 
 static class MethodCollection
 {
-
     private static INamedTypeSymbol FindTypeByName(INamespaceSymbol nsSymbol, string name)
     {
         foreach (var member in nsSymbol.GetMembers())
@@ -16,42 +15,24 @@ static class MethodCollection
                 continue;
 
             if (member.IsNamespace)
-            {
                 return FindTypeByName((INamespaceSymbol)member, name);
-            }
-            else
-            {
-                var typeSymbol = (INamedTypeSymbol)member;
-                if (typeSymbol.Name == name)
-                {
-                    return typeSymbol;
-                }
-            }
+
+            var typeSymbol = (INamedTypeSymbol)member;
+            if (typeSymbol.Name == name)
+                return typeSymbol;
         }
 
         throw new ArgumentException($"Could not locate a type named {name}");
     }
 
     private static IEnumerable<IMethodSymbol> FindUnmanagedCallerMethods(INamespaceSymbol nsSymbol)
-    {
-        var typeSymbol = FindTypeByName(nsSymbol, "CoreCLRHost");
-        foreach (var method in GetCallbackMethods(typeSymbol))
-            yield return method;
-    }
+        => GetCallbackMethods(FindTypeByName(nsSymbol, "CoreCLRHost"));
 
-    static IEnumerable<IMethodSymbol> GetCallbackMethods(INamedTypeSymbol typeSymbol)
-    {
-        foreach (var member in typeSymbol.GetMembers())
-        {
-            if (member is IMethodSymbol methodSymbol && methodSymbol.DeclaredAccessibility == Accessibility.Public)
-            {
-                yield return methodSymbol;
-            }
-        }
-    }
+    static IEnumerable<IMethodSymbol> GetCallbackMethods(INamedTypeSymbol typeSymbol) =>
+        typeSymbol.GetMembers()
+            .Where(member => member is IMethodSymbol methodSymbol && methodSymbol.DeclaredAccessibility == Accessibility.Public)
+            .Cast<IMethodSymbol>();
 
     public static IEnumerable<IMethodSymbol> FindUnmanagedCallerMethods(GeneratorExecutionContext context)
-    {
-        return FindUnmanagedCallerMethods(context.Compilation.GlobalNamespace);
-    }
+        => FindUnmanagedCallerMethods(context.Compilation.GlobalNamespace);
 }
