@@ -885,12 +885,8 @@ finalizer_thread (gpointer unused)
 
 		/* Just in case we've received a SIGTERM */
 		if (term_signaled) {
-			int ec = mono_environment_exitcode_get();
 			mono_runtime_try_shutdown();
-			if (ec == 0)
-				exit(128+SIGTERM);
-			else
-				exit(ec);
+			exit(mono_environment_exitcode_get());
 		}
 
 		/* Wait to be notified that there's at least one
