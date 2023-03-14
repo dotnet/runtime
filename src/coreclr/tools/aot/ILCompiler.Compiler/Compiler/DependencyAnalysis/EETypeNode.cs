@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -991,6 +992,9 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsInterface)
                 return;
 
+            bool isAsyncStateMachineValueType = implType.IsValueType
+                && factory.TypeSystemContext.IsAsyncStateMachineType((MetadataType)implType);
+
             // Actual vtable slots follow
             IReadOnlyList<MethodDesc> virtualSlots = declVTable.Slots;
 
@@ -1013,7 +1017,21 @@ namespace ILCompiler.DependencyAnalysis
                 if (declMethod.CanMethodBeInSealedVTable() && !declType.IsArrayTypeWithoutGenericInterfaces())
                     continue;
 
-                if (!implMethod.IsAbstract)
+                bool shouldEmitImpl = !implMethod.IsAbstract;
+
+                // We do a size optimization that removes support for built-in ValueType Equals/GetHashCode
+                // Null out the vtable slot associated with built-in support to catch if it ever becomes illegal.
+                // We also null out Equals/GetHashCode - that's just a marginal size/startup optimization.
+                if (isAsyncStateMachineValueType)
+                {
+                    if ((declType.IsObject && declMethod.Name is "Equals" or "GetHashCode" && implMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
+                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.Name == ValueTypeGetFieldHelperMethodOverride.MetadataName))
+                    {
+                        shouldEmitImpl = false;
+                    }
+                }
+
+                if (shouldEmitImpl)
                 {
                     MethodDesc canonImplMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
