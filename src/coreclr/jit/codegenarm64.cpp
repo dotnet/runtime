@@ -4736,7 +4736,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     {
         ssize_t compareImm = op2->AsIntCon()->IconValue();
 
-        assert(isPow2(compareImm));
+        assert(isPow2(((size_t)compareImm)));
 
         instruction ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_tbz : INS_tbnz;
         int         imm = genLog2((size_t)compareImm);
