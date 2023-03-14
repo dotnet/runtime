@@ -479,13 +479,14 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # BUILD ONLY - Wasm Threading Legs
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+      # Build and Smoke Tests only - Wasm Threading Legs
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - browser_wasm
-          nameSuffix: _Threading
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread
+          nameSuffix: _Threading_Smoke
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
+          shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
 
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -495,6 +496,8 @@ extends:
           nameSuffix: _Threading_PerfTracing
           extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
           alwaysRun: ${{ variables.isRollingBuild }}
+          scenarios:
+            - normal
 
       # WASI/WASM
 
