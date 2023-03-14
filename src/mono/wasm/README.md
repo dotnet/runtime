@@ -41,7 +41,7 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 * To build everything
 
-`build.cmd -os Browser -subset mono+libs` in the repo top level directory.
+`build.cmd -os browser -subset mono+libs` in the repo top level directory.
 
 # Running tests
 
@@ -104,8 +104,8 @@ Library tests on windows can be run as described in [testing-libraries](https://
 
 Examples of running tests for individual libraries:
 
-`.\dotnet.cmd build /t:Test /p:TargetOS=Browser src\libraries\System.Collections.Concurrent\tests`
-`.\dotnet.cmd build /t:Test /p:TargetOS=Browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
+`.\dotnet.cmd build /t:Test /p:TargetOS=browser src\libraries\System.Collections.Concurrent\tests`
+`.\dotnet.cmd build /t:Test /p:TargetOS=browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
 
 ### Browser tests on macOS
 
@@ -194,10 +194,17 @@ Example use of the `wasmconsole` template:
 > dotnet publish
 > cd bin/Debug/net7.0/browser-wasm/AppBundle
 > node main.mjs
-mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
 Hello World!
 Args:
 ```
+
+## Analyzing binary wasm files
+
+We have few tools to analyze binary wasm files. The [wa-info](https://github.com/radekdoulik/wa-info#wa-info) and [wa-diff](https://github.com/radekdoulik/wa-info#wa-info) to analyze `dotnet.wasm` in the `AppBundle` directory, once you build your app. These can be easily [installed](https://github.com/radekdoulik/wa-info#installation) as dotnet tools.
+
+They are handy to quickly disassemble functions and inspect webassembly module sections. The wa-diff is able to compare 2 wasm files, so you can for example check the effect of changes in your source code. You can see changes in the functions code as well as changes in sizes of sections and of code.
+
+There is also the [wa-edit](https://github.com/radekdoulik/wa-info#wa-edit) tool, which is now used to prototype improved warm startup.
 
 ## Upgrading Emscripten
 
@@ -209,7 +216,7 @@ Bumping Emscripten version involves these steps:
 * bump docker images in https://github.com/dotnet/icu, update emscripten files in eng/patches/
 * update version number in docs
 * update `Microsoft.NET.Runtime.Emscripten.<emscripten version>.Node.win-x64` package name, version and sha hash in https://github.com/dotnet/runtime/blob/main/eng/Version.Details.xml and in https://github.com/dotnet/runtime/blob/main/eng/Versions.props. the sha is the commit hash in https://github.com/dotnet/emsdk and the package version can be found at https://dev.azure.com/dnceng/public/_packaging?_a=feed&feed=dotnet6
-* update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.json.in
+* update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest/WorkloadManifest.json.in
 
 ## Upgrading NPM packages
 
@@ -305,6 +312,8 @@ npm update --lockfile-version=1
 
 * `runtime-extra-platforms` does not run any wasm jobs on PRs
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
+
+* `runtime-wasm-dbgtests` runs all the debugger test jobs
 
 ## Rolling build (twice a day):
 

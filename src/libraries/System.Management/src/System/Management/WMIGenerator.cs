@@ -64,7 +64,7 @@ namespace System.Management
 
         private ManagementClass classobj;
         private CodeDomProvider cp;
-        private TextWriter tw;
+        private StreamWriter tw;
         private readonly string genFileName = string.Empty;
         private CodeTypeDeclaration cc;
         private CodeTypeDeclaration ccc;
@@ -926,7 +926,7 @@ namespace System.Management
         /// <param name="isLiteral"></param>
         /// <param name="isBrowsable"></param>
         /// <param name="Comment"></param>
-        private void GeneratePublicReadOnlyProperty(string propName, string propType, object propValue, bool isLiteral, bool isBrowsable, string Comment)
+        private void GeneratePublicReadOnlyProperty(string propName, string propType, string propValue, bool isLiteral, bool isBrowsable, string Comment)
         {
             cmp = new CodeMemberProperty();
             cmp.Name = propName;
@@ -950,7 +950,7 @@ namespace System.Management
 
             if (isLiteral)
             {
-                cmp.GetStatements.Add(new CodeMethodReturnStatement(new CodeSnippetExpression(propValue.ToString())));
+                cmp.GetStatements.Add(new CodeMethodReturnStatement(new CodeSnippetExpression(propValue)));
             }
             else
             {

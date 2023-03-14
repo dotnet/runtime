@@ -125,7 +125,7 @@ jobs:
           value: 'priority1'
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: priorityArg
-          value: '-priority=1'
+          value: '-priority 1'
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''
@@ -142,8 +142,8 @@ jobs:
     - name: osArg
       value: ''
 
-    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+    - ${{ if eq(parameters.osGroup, 'freebsd') }}:
       - name: osArg
-        value: -os FreeBSD
+        value: -os freebsd
 
     steps: ${{ parameters.steps }}

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -118,6 +119,20 @@ namespace ILCompiler.DependencyAnalysis
             return target.PointerSize;
         }
 
+        public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            // If we have a type loader template for this type, we need to keep track of the generated
+            // bases in the type info hashtable. The type symbol node does such accounting.
+            return new CombinedDependencyListEntry[]
+            {
+                new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
+                    factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                    "Keeping track of template-constructable type static bases"),
+            };
+        }
+
         public override bool StaticDependenciesAreComputed => true;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -130,8 +145,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, _type.Module);
-
-            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
 
             return dependencyList;
         }
@@ -154,19 +167,24 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitZeros(classConstructorContextStorageSize - GetClassConstructorContextSize(_type.Context.Target));
 
                 // Emit the actual StaticClassConstructionContext
-                MethodDesc cctorMethod = _type.GetStaticConstructor();
-                builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
 
                 // If we're emitting the cctor context, but the type is actually preinitialized, emit the
                 // cctor context as already executed.
                 if (!HasLazyStaticConstructor)
                 {
+                    // Pointer to the cctor: we don't care - emit as zero
+                    builder.EmitZeroPointer();
+
                     // Constructor executed
                     // TODO-NICE: introduce a named constant and also use it in the runner in CoreLib
                     builder.EmitInt(1);
                 }
                 else
                 {
+                    // Emit pointer to the cctor
+                    MethodDesc cctorMethod = _type.GetStaticConstructor();
+                    builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
+
                     // Constructor didn't execute
                     builder.EmitInt(0);
                 }

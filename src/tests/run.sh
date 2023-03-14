@@ -12,7 +12,8 @@ function print_usage {
     echo '  -h|--help                        : Show usage information.'
     echo '  -v, --verbose                    : Show output from each test.'
     echo '  <arch>                           : One of x64, x86, arm, arm64, loongarch64, riscv64, wasm. Defaults to current architecture.'
-    echo '  Android                          : Set build OS to Android.'
+    echo '  <build configuration>            : One of debug, checked, release. Defaults to debug.'
+    echo '  android                          : Set build OS to Android.'
     echo '  --test-env=<path>                : Script to set environment variables for tests'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
     echo '  --enableEventLogging             : Enable event logging through LTTNG.'
@@ -32,7 +33,7 @@ function print_usage {
     echo '  --long-gc                        : Runs the long GC tests'
     echo '  --useServerGC                    : Enable server GC for this test run'
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
-    echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
+    echo '  --link=<ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --printLastResultsOnly           : Print the results of the last run'
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
@@ -58,10 +59,6 @@ testEnv=
 gcsimulator=
 longgc=
 limitedCoreDumps=
-((disableEventLogging = 0))
-((serverGC = 0))
-
-# Handle arguments
 verbose=0
 ilasmroundtrip=
 printLastResultsOnly=
@@ -95,11 +92,14 @@ do
         loongarch64)
             buildArch="loongarch64"
             ;;
+        riscv64)
+            buildArch="riscv64"
+            ;;
         wasm)
             buildArch="wasm"
             ;;
-        Android)
-            buildOS="Android"
+        android)
+            buildOS="android"
             ;;
         debug|Debug)
             buildConfiguration="Debug"
@@ -136,7 +136,7 @@ do
             testRootDir=${i#*=}
             ;;
         --enableEventLogging)
-            ((eventLogging = 1))
+            export DOTNET_EnableEventLog=1
             ;;
         --runcrossgen2tests)
             export RunCrossGen2=1
@@ -148,7 +148,7 @@ do
             runSequential=1
             ;;
         --useServerGC)
-            ((serverGC = 1))
+            export DOTNET_gcServer=1
             ;;
         --long-gc)
             ((longgc = 1))
@@ -186,19 +186,6 @@ do
 done
 
 ################################################################################
-# Set environment variables affecting tests.
-# (These should be run.py arguments.)
-################################################################################
-
-if ((eventLogging == 1)); then
-    export DOTNET_EnableEventLog=1
-fi
-
-if ((serverGC != 0)); then
-    export DOTNET_gcServer="$serverGC"
-fi
-
-################################################################################
 # Call run.py to run tests.
 ################################################################################
 
@@ -208,11 +195,11 @@ echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
 if [ "$buildArch" = "wasm" ]; then
-    runtestPyArguments+=("-os" "Browser")
+    runtestPyArguments+=("-os" "browser")
 fi
 
-if [ "$buildOS" = "Android" ]; then
-    runtestPyArguments+=("-os" "Android")
+if [ "$buildOS" = "android" ]; then
+    runtestPyArguments+=("-os" "android")
 fi
 
 if [[ -n "$testRootDir" ]]; then
@@ -274,17 +261,17 @@ fi
 
 if [[ "$tieringtest" -ne 0 ]]; then
     echo "Running to encourage tier1 rejitting"
-   runtestPyArguments+=("--tieringtest")
+    runtestPyArguments+=("--tieringtest")
 fi
 
 if [[ "$nativeaottest" -ne 0 ]]; then
     echo "Running NativeAOT compiled tests"
-   runtestPyArguments+=("--run_nativeaot_tests")
+    runtestPyArguments+=("--run_nativeaot_tests")
 fi
 
 # Default to python3 if it is installed
 __Python=python
- if command -v python3 &>/dev/null; then
+if command -v python3 &>/dev/null; then
     __Python=python3
 fi
 

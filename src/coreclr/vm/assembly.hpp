@@ -77,9 +77,6 @@ public:
     // PrepareModule call.
     void PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTracker);
 
-    // This is the final step of publishing a Module into an Assembly. This step cannot fail.
-    void PublishModuleIntoAssembly(Module *module);
-
 #ifndef DACCESS_COMPILE
     void SetIsTenured()
     {
@@ -258,14 +255,6 @@ public:
         return GetPEAssembly()->HashIdentity();
     }
 
-    //****************************************************************************************
-    //
-    // Uses the given token to load a module or another assembly. Returns the module in
-    // which the implementation resides.
-
-    mdFile GetManifestFileToken(IMDInternalImport *pImport, mdFile kFile);
-    mdFile GetManifestFileToken(LPCSTR name);
-
     // On failure:
     //      if loadFlag == Loader::Load => throw
     //      if loadFlag != Loader::Load => return NULL
@@ -278,8 +267,6 @@ public:
                                         mdTypeRef        typeRef,
                                         Loader::LoadFlag loadFlag,
                                         BOOL *           pfNoResolutionScope);
-
-    Module *FindModuleByName(LPCSTR moduleName);
 
     //****************************************************************************************
     //

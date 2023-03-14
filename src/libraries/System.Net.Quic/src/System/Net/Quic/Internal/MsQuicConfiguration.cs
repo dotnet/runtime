@@ -218,7 +218,7 @@ internal static class MsQuicConfiguration
     private static QUIC_ALLOWED_CIPHER_SUITE_FLAGS CipherSuitePolicyToFlags(CipherSuitesPolicy cipherSuitesPolicy)
     {
         QUIC_ALLOWED_CIPHER_SUITE_FLAGS flags = QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE;
-
+#pragma warning disable CA1416  // not supported on all platforms
         foreach (TlsCipherSuite cipher in cipherSuitesPolicy.AllowedCipherSuites)
         {
             switch (cipher)
@@ -237,6 +237,7 @@ internal static class MsQuicConfiguration
                     // ignore
                     break;
             }
+#pragma warning restore
         }
 
         if (flags == QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE)

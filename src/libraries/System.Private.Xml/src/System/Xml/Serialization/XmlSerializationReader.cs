@@ -1548,7 +1548,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetArrayElementType")]
-        private object? ReadArray(string? typeName, string? typeNs)
+        private Array? ReadArray(string? typeName, string? typeNs)
         {
             SoapArrayInfo arrayInfo;
             Type? fallbackElementType = null;

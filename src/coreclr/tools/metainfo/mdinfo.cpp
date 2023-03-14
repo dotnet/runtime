@@ -443,21 +443,23 @@ void MDInfo::Error(const char* szError, HRESULT hr)
     {
         printf("Failed return code: 0x%08x\n", hr);
 
+#ifdef FEATURE_COMINTEROP
         IErrorInfo  *pIErr = NULL;          // Error interface.
         BSTR        bstrDesc = NULL;        // Description text.
-#ifdef FEATURE_COMINTEROP
+
         // Try to get an error info object and display the message.
         if (GetErrorInfo(0, &pIErr) == S_OK &&
             pIErr->GetDescription(&bstrDesc) == S_OK)
         {
-            printf("%ls ", bstrDesc);
+            MAKE_UTF8PTR_FROMWIDE(bstrDescUtf8, bstrDesc);
+            printf("%s ", bstrDescUtf8);
             SysFreeString(bstrDesc);
         }
-#endif
+
         // Free the error interface.
         if (pIErr)
             pIErr->Release();
-
+#endif
     }
     exit(hr);
 } // void MDInfo::Error()

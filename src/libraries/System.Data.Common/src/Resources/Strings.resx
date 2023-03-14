@@ -500,7 +500,6 @@
   <data name="SqlMisc_NotFilledMessage" xml:space="preserve"><value>SQL Type has not been loaded with data.</value></data>
   <data name="SqlMisc_AlreadyFilledMessage" xml:space="preserve"><value>SQL Type has already been loaded with data.</value></data>
   <data name="SqlMisc_ClosedXmlReaderMessage" xml:space="preserve"><value>Invalid attempt to access a closed XmlReader.</value></data>
-  <data name="SqlMisc_InvalidOpStreamClosed" xml:space="preserve"><value>Invalid attempt to call {0} when the stream is closed.</value></data>
   <data name="SqlMisc_InvalidOpStreamNonWritable" xml:space="preserve"><value>Invalid attempt to call {0} when the stream non-writable.</value></data>
   <data name="SqlMisc_InvalidOpStreamNonReadable" xml:space="preserve"><value>Invalid attempt to call {0} when the stream non-readable.</value></data>
   <data name="SqlMisc_InvalidOpStreamNonSeekable" xml:space="preserve"><value>Invalid attempt to call {0} when the stream is non-seekable.</value></data>

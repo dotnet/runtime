@@ -26,23 +26,25 @@ namespace System.Text.Unicode
             Debug.Assert(pOutputBuffer != null || outputCharsRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
             // First, try vectorized conversion.
-            OperationStatus status = Ascii.ToUtf16(new ReadOnlySpan<byte>(pInputBuffer, inputLength), new Span<char>(pOutputBuffer, outputCharsRemaining), out int bytesConsumed);
-
-            pInputBuffer += bytesConsumed;
-            pOutputBuffer += bytesConsumed;
-
-            // Quick check - did we just end up consuming the entire input buffer?
-            // If so, short-circuit the remainder of the method.
-
-            if (status == OperationStatus.Done)
             {
-                pInputBufferRemaining = pInputBuffer;
-                pOutputBufferRemaining = pOutputBuffer;
-                return OperationStatus.Done;
-            }
+                nuint numElementsConverted = Ascii.WidenAsciiToUtf16(pInputBuffer, pOutputBuffer, (uint)Math.Min(inputLength, outputCharsRemaining));
 
-            inputLength -= bytesConsumed;
-            outputCharsRemaining -= bytesConsumed;
+                pInputBuffer += numElementsConverted;
+                pOutputBuffer += numElementsConverted;
+
+                // Quick check - did we just end up consuming the entire input buffer?
+                // If so, short-circuit the remainder of the method.
+
+                if ((int)numElementsConverted == inputLength)
+                {
+                    pInputBufferRemaining = pInputBuffer;
+                    pOutputBufferRemaining = pOutputBuffer;
+                    return OperationStatus.Done;
+                }
+
+                inputLength -= (int)numElementsConverted;
+                outputCharsRemaining -= (int)numElementsConverted;
+            }
 
             if (inputLength < sizeof(uint))
             {
@@ -846,23 +848,23 @@ namespace System.Text.Unicode
             // First, try vectorized conversion.
 
             {
-                OperationStatus status = Ascii.FromUtf16(new ReadOnlySpan<char>(pInputBuffer, inputLength), new Span<byte>(pOutputBuffer, outputBytesRemaining), out int charsConsumed);
+                nuint numElementsConverted = Ascii.NarrowUtf16ToAscii(pInputBuffer, pOutputBuffer, (uint)Math.Min(inputLength, outputBytesRemaining));
 
-                pInputBuffer += charsConsumed;
-                pOutputBuffer += charsConsumed;
+                pInputBuffer += numElementsConverted;
+                pOutputBuffer += numElementsConverted;
 
                 // Quick check - did we just end up consuming the entire input buffer?
                 // If so, short-circuit the remainder of the method.
 
-                if (status == OperationStatus.Done)
+                if ((int)numElementsConverted == inputLength)
                 {
                     pInputBufferRemaining = pInputBuffer;
                     pOutputBufferRemaining = pOutputBuffer;
                     return OperationStatus.Done;
                 }
 
-                inputLength -= charsConsumed;
-                outputBytesRemaining -= charsConsumed;
+                inputLength -= (int)numElementsConverted;
+                outputBytesRemaining -= (int)numElementsConverted;
             }
 
             if (inputLength < CharsPerDWord)
@@ -945,7 +947,7 @@ namespace System.Text.Unicode
                         Vector128<short> utf16Data;
                         for (i = 0; (uint)i < maxIters; i++)
                         {
-                            // The linker won't trim out nonAsciiUtf16DataMask unless this is in the loop.
+                            // The trimmer won't trim out nonAsciiUtf16DataMask unless this is in the loop.
                             // Luckily, this is a nop and will be elided by the JIT
                             Unsafe.SkipInit(out nonAsciiUtf16DataMask);
 

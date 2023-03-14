@@ -198,6 +198,7 @@ namespace System.SpanTests
 
         [Theory]
         [MemberData(nameof(Values_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80875", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void IndexOfAnyValues_GetValues(string needle, byte[] byteNeedle)
         {
             char[] charValuesActual = s_getValuesCharMethod(IndexOfAnyValues.Create(needle));
@@ -394,7 +395,7 @@ namespace System.SpanTests
         private static class IndexOfAnyValuesTestHelper
         {
             private const int MaxNeedleLength = 10;
-            private const int MaxHaystackLength = 40;
+            private const int MaxHaystackLength = 100;
 
             private static readonly char[] s_randomAsciiChars;
             private static readonly char[] s_randomLatin1Chars;
@@ -495,8 +496,8 @@ namespace System.SpanTests
             private static void AssertionFailed<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> needle, int expected, int actual, string approach)
                 where T : INumber<T>
             {
-                string readableHaystack = string.Join(", ", haystack.ToString().Select(c => int.CreateChecked(c)));
-                string readableNeedle = string.Join(", ", needle.ToString().Select(c => int.CreateChecked(c)));
+                string readableHaystack = string.Join(", ", haystack.ToArray().Select(c => int.CreateChecked(c)));
+                string readableNeedle = string.Join(", ", needle.ToArray().Select(c => int.CreateChecked(c)));
 
                 Assert.True(false, $"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
             }

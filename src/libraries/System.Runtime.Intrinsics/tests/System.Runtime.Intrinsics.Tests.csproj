@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="Vectors\Vector128Tests.cs" />
     <Compile Include="Vectors\Vector256Tests.cs" />
+    <Compile Include="Vectors\Vector512Tests.cs" />
     <Compile Include="Vectors\Vector64Tests.cs" />
   </ItemGroup>
   <ItemGroup>

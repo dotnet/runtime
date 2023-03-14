@@ -220,4 +220,4 @@ namespace System.Runtime.InteropServices
 [il_stub_link]: https://mattwarren.org/2019/09/26/Stubs-in-the-.NET-Runtime/
 [source_gen_link]: https://github.com/dotnet/roslyn/blob/features/source-generators/docs/features/source-generators.md
 [blittable_link]: https://docs.microsoft.com/dotnet/framework/interop/blittable-and-non-blittable-types
-[ilinker_link]: https://github.com/mono/linker
+[il_linker_link]: https://github.com/dotnet/runtime/tree/main/src/tools/illink

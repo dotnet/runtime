@@ -12,7 +12,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial record ArrayValue
+	internal partial record ArrayValue
 	{
 		public static MultiValue Create (MultiValue size, TypeReference elementType)
 		{
@@ -79,6 +79,15 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			var newValue = new ArrayValue (Size.DeepCopy (), ElementType);
 			foreach (var kvp in IndexValues) {
+#if DEBUG
+				// Since it's possible to store a reference to array as one of its own elements
+				// simple deep copy could lead to endless recursion.
+				// So instead we simply disallow arrays as element values completely - and treat that case as "too complex to analyze".
+				foreach (SingleValue v in kvp.Value.Value) {
+					System.Diagnostics.Debug.Assert (v is not ArrayValue);
+				}
+#endif
+
 				newValue.IndexValues.Add (kvp.Key, new ValueBasicBlockPair (kvp.Value.Value.Clone (), kvp.Value.BasicBlockIndex));
 			}
 
@@ -95,17 +104,17 @@ namespace ILLink.Shared.TrimAnalysis
 			bool first = true;
 			foreach (var element in IndexValues) {
 				if (!first) {
-					result.Append (",");
+					result.Append (',');
 					first = false;
 				}
 
-				result.Append ("(");
+				result.Append ('(');
 				result.Append (element.Key);
 				result.Append (",(");
 				bool firstValue = true;
 				foreach (var v in element.Value.Value) {
 					if (firstValue) {
-						result.Append (",");
+						result.Append (',');
 						firstValue = false;
 					}
 

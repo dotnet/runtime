@@ -32,7 +32,6 @@ namespace System.Text.Json.Serialization.Metadata
                 // this avoids creating a WriteStack and calling into the converter infrastructure.
 
                 Debug.Assert(SerializeHandler != null);
-                Debug.Assert(Options.SerializerContext?.CanUseSerializationLogic == true);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
                 SerializeHandler(writer, rootValue!);
@@ -77,7 +76,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Short-circuit calls into SerializeHandler, if the `CanUseSerializeHandlerInStreaming` heuristic allows it.
 
                 Debug.Assert(SerializeHandler != null);
-                Debug.Assert(Options.SerializerContext?.CanUseSerializationLogic == true);
+                Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
@@ -208,7 +207,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Short-circuit calls into SerializeHandler, if the `CanUseSerializeHandlerInStreaming` heuristic allows it.
 
                 Debug.Assert(SerializeHandler != null);
-                Debug.Assert(Options.SerializerContext?.CanUseSerializationLogic == true);
+                Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
                 Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(Options, out PooledByteBufferWriter bufferWriter);
@@ -277,32 +276,13 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         internal sealed override void SerializeAsObject(Utf8JsonWriter writer, object? rootValue, bool isInvokedByPolymorphicConverter = false)
-            => Serialize(writer, UnboxValue(rootValue), rootValue, isInvokedByPolymorphicConverter);
+            => Serialize(writer, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue, isInvokedByPolymorphicConverter);
 
         internal sealed override Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken, bool isInvokedByPolymorphicConverter = false)
-            => SerializeAsync(utf8Json, UnboxValue(rootValue), cancellationToken, rootValue, isInvokedByPolymorphicConverter);
+            => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue, isInvokedByPolymorphicConverter);
 
         internal sealed override void SerializeAsObject(Stream utf8Json, object? rootValue, bool isInvokedByPolymorphicConverter = false)
-            => Serialize(utf8Json, UnboxValue(rootValue), rootValue, isInvokedByPolymorphicConverter);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private T? UnboxValue(object? value)
-        {
-            if (
-#if NETCOREAPP
-                // Treated as a constant by recent versions of the JIT.
-                typeof(T).IsValueType &&
-#else
-                Type.IsValueType &&
-#endif
-                default(T) is not null && value is null)
-            {
-                // Casting null values to a non-nullable struct throws NullReferenceException, replace with JsonException
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
-            }
-
-            return (T?)value;
-        }
+            => Serialize(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue, isInvokedByPolymorphicConverter);
 
         // Fast-path serialization in source gen has not been designed with streaming in mind.
         // Even though it's not used in streaming by default, we can sometimes try to turn it on

@@ -272,7 +272,7 @@ namespace System.Net
                     string srchString = contentType.ToLowerInvariant();
 
                     //media subtypes of text type has a default as specified by rfc 2616
-                    if (srchString.Trim().StartsWith("text/", StringComparison.Ordinal))
+                    if (srchString.AsSpan().Trim().StartsWith("text/", StringComparison.Ordinal))
                     {
                         _characterSet = "ISO-8859-1";
                     }

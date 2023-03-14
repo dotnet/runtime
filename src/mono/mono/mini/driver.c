@@ -69,7 +69,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#if TARGET_OSX
+#ifdef HAVE_SYS_RESOURCE_H
 #   include <sys/resource.h>
 #endif
 
@@ -1389,14 +1389,17 @@ typedef struct
 	char *aot_options;
 } MainThreadArgs;
 
-static void main_thread_handler (gpointer user_data)
+static void
+main_thread_handler (gpointer user_data)
 {
 	MainThreadArgs *main_args = (MainThreadArgs *)user_data;
 	MonoAssembly *assembly;
 
 	if (mono_compile_aot) {
 		int i, res;
-		gpointer *aot_state = NULL;
+		MonoAssembly **assemblies;
+
+		assemblies = g_new0 (MonoAssembly*, main_args->argc);
 
 		/* Treat the other arguments as assemblies to compile too */
 		for (i = 0; i < main_args->argc; ++i) {
@@ -1416,35 +1419,29 @@ static void main_thread_handler (gpointer user_data)
 					exit (1);
 				}
 			}
-			res = mono_compile_assembly (assembly, main_args->opts, main_args->aot_options, &aot_state);
-			if (res != 0) {
-				fprintf (stderr, "AOT of image %s failed.\n", main_args->argv [i]);
-				exit (1);
-			}
+			assemblies [i] = assembly;
 		}
-		if (aot_state) {
-			res = mono_compile_deferred_assemblies (main_args->opts, main_args->aot_options, &aot_state);
-			if (res != 0) {
-				fprintf (stderr, "AOT of mode-specific deferred assemblies failed.\n");
-				exit (1);
-			}
-		}
-	} else {
-		assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->file);
-		if (!assembly){
-			fprintf (stderr, "Can not open image %s\n", main_args->file);
+
+		res = mono_aot_assemblies (assemblies, main_args->argc, main_args->opts, main_args->aot_options);
+		if (res)
 			exit (1);
-		}
-
-		/*
-		 * This must be done in a thread managed by mono since it can invoke
-		 * managed code.
-		 */
-		if (main_args->opts & MONO_OPT_PRECOMP)
-			mono_precompile_assemblies ();
-
-		mono_jit_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
+		return;
 	}
+
+	assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->file);
+	if (!assembly){
+		fprintf (stderr, "Can not open image %s\n", main_args->file);
+		exit (1);
+	}
+
+	/*
+	 * This must be done in a thread managed by mono since it can invoke
+	 * managed code.
+	 */
+	if (main_args->opts & MONO_OPT_PRECOMP)
+		mono_precompile_assemblies ();
+
+	mono_jit_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
 }
 
 static int
@@ -1912,23 +1909,28 @@ switch_gc (char* argv[], const char* target_gc)
 #endif
 }
 
-#ifdef TARGET_OSX
-
-/*
- * tries to increase the minimum number of files, if the number is below 1024
- */
 static void
-darwin_change_default_file_handles ()
+increase_descriptor_limit (void)
 {
+#if defined(HAVE_GETRLIMIT) && !defined(DONT_SET_RLIMIT_NOFILE)
 	struct rlimit limit;
 
-	if (getrlimit (RLIMIT_NOFILE, &limit) == 0){
-		if (limit.rlim_cur < 1024){
-			limit.rlim_cur = MAX(1024,limit.rlim_cur);
-			setrlimit (RLIMIT_NOFILE, &limit);
-		}
+	if (getrlimit (RLIMIT_NOFILE, &limit) == 0) {
+		// Set our soft limit for file descriptors to be the same
+		// as the max limit.
+		limit.rlim_cur = limit.rlim_max;
+#ifdef __APPLE__
+		// Based on compatibility note in setrlimit(2) manpage for OSX,
+		// trim the limit to OPEN_MAX.
+		if (limit.rlim_cur > OPEN_MAX)
+			limit.rlim_cur = OPEN_MAX;
+#endif
+		setrlimit (RLIMIT_NOFILE, &limit);
 	}
+#endif
 }
+
+#ifdef TARGET_OSX
 
 static void
 switch_arch (char* argv[], const char* target_arch)
@@ -2087,9 +2089,7 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
-#if TARGET_OSX
-	darwin_change_default_file_handles ();
-#endif
+	increase_descriptor_limit ();
 
 	if (g_hasenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);

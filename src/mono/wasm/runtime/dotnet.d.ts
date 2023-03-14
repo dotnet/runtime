@@ -18,6 +18,7 @@ interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder;
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
     withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>;
     run(): Promise<number>;
 }
@@ -38,6 +39,7 @@ declare interface EmscriptenModule {
     HEAP8: Int8Array;
     HEAP16: Int16Array;
     HEAP32: Int32Array;
+    HEAP64: BigInt64Array;
     HEAPU8: Uint8Array;
     HEAPU16: Uint16Array;
     HEAPU32: Uint32Array;
@@ -45,8 +47,8 @@ declare interface EmscriptenModule {
     HEAPF64: Float64Array;
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
-    print(message: string): void;
-    printErr(message: string): void;
+    out(message: string): void;
+    err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
     cwrap<T extends Function>(ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     cwrap<T extends Function>(ident: string, ...args: any[]): T;
@@ -58,14 +60,10 @@ declare interface EmscriptenModule {
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     FS_readFile(filename: string, opts: any): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
     addFunction(fn: Function, signature: string): number;
-    getWasmTableEntry(index: number): any;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
-    ready: Promise<unknown>;
     instantiateWasm?: InstantiateWasmCallBack;
     preInit?: (() => any)[] | (() => any);
     preRun?: (() => any)[] | (() => any);
@@ -75,7 +73,7 @@ declare interface EmscriptenModule {
         (error: any): void;
     };
 }
-type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module) => void;
+type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
 type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
@@ -100,6 +98,10 @@ type MonoConfig = {
      * We are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome. The default value is 16.
      */
     maxParallelDownloads?: number;
+    /**
+     * We are making up to 2 more delayed attempts to download same asset. Default true.
+     */
+    enableDownloadRetry?: boolean;
     /**
      * Name of the assembly with main entrypoint
      */
@@ -128,6 +130,14 @@ type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number;
+    /**
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
+     */
+    startupMemoryCache?: boolean;
+    /**
+     * hash of assets
+     */
+    assetsHash?: string;
 };
 interface ResourceRequest {
     name: string;
@@ -270,4 +280,4 @@ declare global {
 declare const dotnet: ModuleAPI["dotnet"];
 declare const exit: ModuleAPI["exit"];
 
-export { CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

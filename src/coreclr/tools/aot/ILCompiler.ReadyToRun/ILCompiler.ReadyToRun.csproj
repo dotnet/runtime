@@ -45,7 +45,6 @@
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ComparerIntrinsics.cs" Link="IL\Stubs\ComparerIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\InterlockedIntrinsics.cs" Link="IL\Stubs\InterlockedIntrinsics.cs" />
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\MemoryMarshalIntrinsics.cs" Link="IL\Stubs\MemoryMarshalIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs" Link="IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs" Link="IL\Stubs\VolatileIntrinsics.cs" />
@@ -129,16 +128,16 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs" Link="Interop\UnmanagedCallingConventions.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
-    <Compile Include="..\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
-    <Compile Include="..\ILLink.Shared\ParameterIndex.cs" Link="ILLink.Shared\ParameterIndex.cs" />
-    <Compile Include="..\ILLink.Shared\TrimAnalysis\ReferenceKind.cs" Link="ILLink.Shared\TrimAnalysis\ReferenceKind.cs" />
-    <Compile Include="..\ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" />
-    <Compile Include="..\ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" Link="ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" />
-    <Compile Include="..\ILLink.Shared\TypeSystemProxy\MethodProxy.cs" Link="ILLink.Shared\TypeSystemProxy\MethodProxy.cs" />
-    <Compile Include="..\ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" />
-    <Compile Include="..\ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" />
-    <Compile Include="..\ILLink.Shared\TypeSystemProxy\TypeProxy.cs" Link="ILLink.Shared\TypeSystemProxy\TypeProxy.cs" />
-    <Compile Include="..\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ParameterIndex.cs" Link="ILLink.Shared\ParameterIndex.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TrimAnalysis\ReferenceKind.cs" Link="ILLink.Shared\TrimAnalysis\ReferenceKind.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\GenericParameterProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" Link="ILLink.Shared\TypeSystemProxy\IMemberProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\MethodProxy.cs" Link="ILLink.Shared\TypeSystemProxy\MethodProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterCollection.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\TypeProxy.cs" Link="ILLink.Shared\TypeSystemProxy\TypeProxy.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ILBodyFixupSignature.cs" />

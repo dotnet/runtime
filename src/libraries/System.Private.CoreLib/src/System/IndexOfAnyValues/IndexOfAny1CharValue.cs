@@ -22,7 +22,7 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
-            TShouldUsePacked.Value
+            (PackedSpanHelpers.PackedIndexOfIsSupported && TShouldUsePacked.Value)
                 ? PackedSpanHelpers.IndexOf(ref MemoryMarshal.GetReference(span), _e0, span.Length)
                 : SpanHelpers.NonPackedIndexOfValueType<short, SpanHelpers.DontNegate<short>>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
@@ -31,7 +31,7 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            TShouldUsePacked.Value
+            (PackedSpanHelpers.PackedIndexOfIsSupported && TShouldUsePacked.Value)
                 ? PackedSpanHelpers.IndexOfAnyExcept(ref MemoryMarshal.GetReference(span), _e0, span.Length)
                 : SpanHelpers.NonPackedIndexOfValueType<short, SpanHelpers.Negate<short>>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),

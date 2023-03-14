@@ -47,7 +47,15 @@ namespace System
             Debug.Assert(enumType is RuntimeType);
             Debug.Assert(enumType.IsEnum);
 
-            return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo<TUnderlyingValue>(enumType);
+            return (EnumInfo<TUnderlyingValue>)ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType,
+                static (underlyingType, names, valuesAsObject, isFlags) =>
+                {
+                    // Only after we've sorted, create the underlying array.
+                    var values = new TUnderlyingValue[valuesAsObject.Length];
+                    for (int i = 0; i < valuesAsObject.Length; i++)
+                        values[i] = (TUnderlyingValue)valuesAsObject[i];
+                    return new EnumInfo<TUnderlyingValue>(underlyingType, values, names, isFlags);
+            });
         }
 #pragma warning restore
 
@@ -91,10 +99,6 @@ namespace System
 
             switch (elementType)
             {
-                case EETypeElementType.Boolean:
-                    result = Unsafe.As<byte, bool>(ref pValue) ? 1UL : 0UL;
-                    return true;
-
                 case EETypeElementType.Char:
                     result = (ulong)(long)Unsafe.As<byte, char>(ref pValue);
                     return true;

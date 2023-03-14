@@ -31,7 +31,7 @@ static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
         {
             return nullptr;
         }
-        while (finger1 != nullptr && finger1->bbPostOrderNum < finger2->bbPostOrderNum)
+        while (finger1 != nullptr && finger1->bbPostorderNum < finger2->bbPostorderNum)
         {
             finger1 = finger1->bbIDom;
         }
@@ -39,7 +39,7 @@ static inline BasicBlock* IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
         {
             return nullptr;
         }
-        while (finger2 != nullptr && finger2->bbPostOrderNum < finger1->bbPostOrderNum)
+        while (finger2 != nullptr && finger2->bbPostorderNum < finger1->bbPostorderNum)
         {
             finger2 = finger2->bbIDom;
         }
@@ -209,7 +209,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
 
             DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] postOrder[%d] = " FMT_BB "\n", postIndex, block->bbNum);
             postOrder[postIndex]  = block;
-            block->bbPostOrderNum = postIndex;
+            block->bbPostorderNum = postIndex;
             postIndex += 1;
         }
     }
@@ -252,11 +252,11 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
 
             // Find the first processed predecessor block.
             BasicBlock* predBlock = nullptr;
-            for (flowList* pred = m_pCompiler->BlockPredsWithEH(block); pred; pred = pred->flNext)
+            for (FlowEdge* pred = m_pCompiler->BlockPredsWithEH(block); pred; pred = pred->getNextPredEdge())
             {
-                if (BitVecOps::IsMember(&m_visitedTraits, m_visited, pred->getBlock()->bbNum))
+                if (BitVecOps::IsMember(&m_visitedTraits, m_visited, pred->getSourceBlock()->bbNum))
                 {
-                    predBlock = pred->getBlock();
+                    predBlock = pred->getSourceBlock();
                     break;
                 }
             }
@@ -269,11 +269,11 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
 
             // Intersect DOM, if computed, for all predecessors.
             BasicBlock* bbIDom = predBlock;
-            for (flowList* pred = m_pCompiler->BlockPredsWithEH(block); pred; pred = pred->flNext)
+            for (FlowEdge* pred = m_pCompiler->BlockPredsWithEH(block); pred; pred = pred->getNextPredEdge())
             {
-                if (predBlock != pred->getBlock())
+                if (predBlock != pred->getSourceBlock())
                 {
-                    BasicBlock* domAncestor = IntersectDom(pred->getBlock(), bbIDom);
+                    BasicBlock* domAncestor = IntersectDom(pred->getSourceBlock(), bbIDom);
                     // The result may be NULL if "block" and "pred->getBlock()" are part of a
                     // cycle -- neither is guaranteed ordered wrt the other in reverse postorder,
                     // so we may be computing the IDom of "block" before the IDom of "pred->getBlock()" has
@@ -341,10 +341,10 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
         // of its immediate predecessors.  If there are zero or one preds, then there
         // is no pred, or else the single pred dominates "block", so no B2 exists.
 
-        flowList* blockPreds = m_pCompiler->BlockPredsWithEH(block);
+        FlowEdge* blockPreds = m_pCompiler->BlockPredsWithEH(block);
 
         // If block has 0/1 predecessor, skip.
-        if ((blockPreds == nullptr) || (blockPreds->flNext == nullptr))
+        if ((blockPreds == nullptr) || (blockPreds->getNextPredEdge() == nullptr))
         {
             DBG_SSA_JITDUMP("   Has %d preds; skipping.\n", blockPreds == nullptr ? 0 : 1);
             continue;
@@ -353,9 +353,9 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
         // Otherwise, there are > 1 preds.  Each is a candidate B2 in the definition --
         // *unless* it dominates "block"/B3.
 
-        for (flowList* pred = blockPreds; pred != nullptr; pred = pred->flNext)
+        for (FlowEdge* pred = blockPreds; pred != nullptr; pred = pred->getNextPredEdge())
         {
-            DBG_SSA_JITDUMP("   Considering predecessor " FMT_BB ".\n", pred->getBlock()->bbNum);
+            DBG_SSA_JITDUMP("   Considering predecessor " FMT_BB ".\n", pred->getSourceBlock()->bbNum);
 
             // If we've found a B2, then consider the possible B1's.  We start with
             // B2, since a block dominates itself, then traverse upwards in the dominator
@@ -365,7 +365,7 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
             // Along this way, make "block"/B3 part of the dom frontier of the B1.
             // When we reach this immediate dominator, the definition no longer applies, since this
             // potential B1 *does* dominate "block"/B3, so we stop.
-            for (BasicBlock* b1 = pred->getBlock(); (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
+            for (BasicBlock* b1 = pred->getSourceBlock(); (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
                  b1             = b1->bbIDom)
             {
                 DBG_SSA_JITDUMP("      Adding " FMT_BB " to dom frontier of pred dom " FMT_BB ".\n", block->bbNum,
@@ -1560,7 +1560,7 @@ void SsaBuilder::Build()
     for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         block->bbIDom         = nullptr;
-        block->bbPostOrderNum = 0;
+        block->bbPostorderNum = 0;
     }
 
     // Topologically sort the graph.
@@ -1599,6 +1599,8 @@ void SsaBuilder::Build()
 
 void SsaBuilder::SetupBBRoot()
 {
+    assert(m_pCompiler->fgPredsComputed);
+
     // Allocate a bbroot, if necessary.
     // We need a unique block to be the root of the dominator tree.
     // This can be violated if the first block is in a try, or if it is the first block of
@@ -1635,10 +1637,7 @@ void SsaBuilder::SetupBBRoot()
     m_pCompiler->fgInsertBBbefore(m_pCompiler->fgFirstBB, bbRoot);
 
     assert(m_pCompiler->fgFirstBB == bbRoot);
-    if (m_pCompiler->fgComputePredsDone)
-    {
-        m_pCompiler->fgAddRefPred(oldFirst, bbRoot);
-    }
+    m_pCompiler->fgAddRefPred(oldFirst, bbRoot);
 }
 
 #ifdef DEBUG
@@ -1662,7 +1661,7 @@ void Compiler::DumpSsaSummary()
 
         if (numDefs == 0)
         {
-            printf("V%02u: in SSA but no defs\n");
+            printf("V%02u: in SSA but no defs\n", lclNum);
         }
         else
         {
@@ -1723,10 +1722,9 @@ void Compiler::JitTestCheckSSA()
     {
         printf("\nJit Testing: SSA names.\n");
     }
-    for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+    for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
     {
         TestLabelAndNum tlAndN;
-        GenTree*        node       = ki.Get();
         bool            nodeExists = testData->Lookup(node, &tlAndN);
         assert(nodeExists);
         if (tlAndN.m_tl == TL_SsaName)

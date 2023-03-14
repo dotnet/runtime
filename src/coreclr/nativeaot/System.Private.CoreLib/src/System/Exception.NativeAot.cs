@@ -26,7 +26,7 @@ namespace System
             }
         }
 
-        private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
+        private static ListDictionaryInternal CreateDataContainer() => new ListDictionaryInternal();
 
         private static string? SerializationWatsonBuckets => null;
 

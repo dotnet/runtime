@@ -65,10 +65,7 @@ namespace System
     {
         public static int GetGeneration(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             return RuntimeImports.RhGetGeneration(obj);
         }
@@ -389,18 +386,14 @@ namespace System
 
         public static void SuppressFinalize(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             RuntimeImports.RhSuppressFinalize(obj);
         }
 
         public static void ReRegisterForFinalize(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             RuntimeImports.RhReRegisterForFinalize(obj);
         }

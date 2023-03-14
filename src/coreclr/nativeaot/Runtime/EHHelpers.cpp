@@ -9,7 +9,6 @@
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "RWLock.h"
 #include "TypeManager.h"
 #include "varint.h"
 #include "PalRedhawkCommon.h"
@@ -91,9 +90,19 @@ COOP_PINVOKE_HELPER(int32_t, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ co
 
 COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t cbOSContext, PAL_LIMITED_CONTEXT * pPalContext))
 {
-    UNREFERENCED_PARAMETER(cbOSContext);
     ASSERT((size_t)cbOSContext >= sizeof(CONTEXT));
     CONTEXT* pContext = (CONTEXT *)pOSContext;
+
+#ifndef HOST_WASM
+
+    memset(pOSContext, 0, cbOSContext);
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Fill in CONTEXT_CONTROL registers that were not captured in PAL_LIMITED_CONTEXT.
+    PopulateControlSegmentRegisters(pContext);
+
+#endif // !HOST_WASM
+
 #if defined(UNIX_AMD64_ABI)
     pContext->Rip = pPalContext->IP;
     pContext->Rsp = pPalContext->Rsp;

@@ -1,11 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -21,6 +20,8 @@ namespace Microsoft.Interop
             public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
+            public const string MethodNotDeclaredInAttributedInterface = Prefix + "1091";
+            public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1092";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -40,6 +41,16 @@ namespace Microsoft.Interop
             Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidVirtualMethodIndexAttributeUsage)),
             GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
+
+        public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute =
+            new DiagnosticDescriptor(
+            Ids.InvalidLibraryImportAttributeUsage,
+            GetResourceString(nameof(SR.InvalidVirtualMethodIndexAttributeUsage)),
+            GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
@@ -155,9 +166,30 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
+        public static readonly DiagnosticDescriptor MethodNotDeclaredInAttributedInterface =
+            new DiagnosticDescriptor(
+                Ids.MethodNotDeclaredInAttributedInterface,
+                GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceTitle)),
+                GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceDescription)));
+
+        public static readonly DiagnosticDescriptor InvalidAttributedInterfaceMissingGuidAttribute =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
+
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
+
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.

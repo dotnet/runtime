@@ -5,7 +5,7 @@
     <RunAOTCompilation>false</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetOS Condition="'$(TargetOS)' == ''">iOSSimulator</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <MainLibraryFileName>iOS.Simulator.Interpreter.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>

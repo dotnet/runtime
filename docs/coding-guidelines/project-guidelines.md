@@ -19,15 +19,15 @@ Below is a list of all the various options we pivot the project builds on:
 
 - **Target Frameworks:** .NETFramework, .NETStandard, .NETCoreApp
 - **Platform Runtimes:** .NETFramework (aka CLR/Desktop), CoreCLR, Mono
-- **OS:** windows, Linux, OSX, FreeBSD, AnyOS
+- **OS:** windows, linux, osx, freebsd, AnyOS
 - **Flavor:** Debug, Release
 
 ## Individual build properties
 The following are the properties associated with each build pivot
 
 - `$(BuildTargetFramework) -> Any .NETCoreApp or .NETFramework TFM, e.g. net8.0`
-- `$(TargetOS) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
-- `$(Configuration) -> Release | [defaults to Debug when empty]`
+- `$(TargetOS) -> windows | linux | osx | freebsd | ... | [defaults to running OS when empty]`
+- `$(Configuration) -> Debug | Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
 - `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/main/src/libraries/Microsoft.NETCore.Platforms) for more info.
 

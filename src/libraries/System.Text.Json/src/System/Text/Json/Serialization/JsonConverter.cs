@@ -90,25 +90,19 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal virtual JsonTypeInfo CreateReflectionJsonTypeInfo(JsonSerializerOptions options)
+        internal virtual JsonTypeInfo CreateJsonTypeInfo(JsonSerializerOptions options)
         {
             Debug.Fail("Should not be reachable.");
 
             throw new InvalidOperationException();
         }
-
-        internal virtual JsonTypeInfo CreateCustomJsonTypeInfo(JsonSerializerOptions options)
-        {
-            Debug.Fail("Should not be reachable.");
-
-            throw new InvalidOperationException();
-        }
-
-        internal abstract JsonParameterInfo CreateJsonParameterInfo();
 
         internal abstract JsonConverter<TTarget> CreateCastingConverter<TTarget>();
+
+        /// <summary>
+        /// Set if this converter is itself a casting converter.
+        /// </summary>
+        internal virtual JsonConverter? SourceConverterForCastingConverter => null;
 
         internal abstract Type? ElementType { get; }
 
@@ -138,15 +132,20 @@ namespace System.Text.Json.Serialization
         // This is used internally to quickly determine the type being converted for JsonConverter<T>.
         internal abstract Type TypeToConvert { get; }
 
-        internal abstract bool OnTryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, scoped ref ReadStack state, out object? value);
-        internal abstract bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, scoped ref ReadStack state, out object? value);
+        internal abstract object? ReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
+        internal abstract bool OnTryReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out object? value);
+        internal abstract bool TryReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out object? value);
+        internal abstract object? ReadAsPropertyNameAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
+        internal abstract object? ReadAsPropertyNameCoreAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
+        internal abstract object? ReadNumberWithCustomHandlingAsObject(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options);
 
+        internal abstract void WriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options);
+        internal abstract bool OnTryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
         internal abstract bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
+        internal abstract void WriteAsPropertyNameAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options);
+        internal abstract void WriteAsPropertyNameCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, bool isWritingExtensionDataProperty);
+        internal abstract void WriteNumberWithCustomHandlingAsObject(Utf8JsonWriter writer, object? value, JsonNumberHandling handling);
 
-        /// <summary>
-        /// Loosely-typed WriteToPropertyName() that forwards to strongly-typed WriteToPropertyName().
-        /// </summary>
-        internal abstract void WriteAsPropertyNameCoreAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, bool isWritingExtensionDataProperty);
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }

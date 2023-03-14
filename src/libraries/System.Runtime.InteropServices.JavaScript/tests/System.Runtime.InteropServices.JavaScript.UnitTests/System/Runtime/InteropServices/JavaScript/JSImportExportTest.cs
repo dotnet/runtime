@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Threading;
 using Xunit;
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
 
@@ -32,6 +33,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public async Task CancelableImportAsync()
+        {
+            var cts = new CancellationTokenSource();
+            var exTask = Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", cts.Token));
+            cts.Cancel();
+            var actualEx2 = await exTask;
+            Assert.Equal("OperationCanceledException", actualEx2.Message);
+
+            var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", new CancellationToken(true)));
+            Assert.Equal("OperationCanceledException", actualEx.Message);
+        }
+
+        [Fact]
         public unsafe void GlobalThis()
         {
             Assert.Null(JSHost.GlobalThis.GetPropertyAsString("dummy"));
@@ -44,8 +58,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void DotnetInstance()
         {
+#if ENABLE_LEGACY_JS_INTEROP
             Assert.True(JSHost.DotnetInstance.HasProperty("MONO"));
             Assert.Equal("object", JSHost.DotnetInstance.GetTypeOfProperty("MONO"));
+#endif
 
             JSHost.DotnetInstance.SetProperty("testBool", true);
             Assert.Equal("boolean", JSHost.DotnetInstance.GetTypeOfProperty("testBool"));

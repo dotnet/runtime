@@ -95,6 +95,8 @@
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.dex" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.jar" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
@@ -219,13 +221,13 @@
     <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasm-bundled-timezones.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet-legacy.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.timezones.blat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_CJK.dat" IsNative="true" />
@@ -250,6 +252,12 @@
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Descriptors.LegacyJsInterop.xml" IsNative="true" />
+    <!-- wasi specific -->
+    <PlatformManifestFileEntry Include="main.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="driver.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="stubs.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="synthetic-pthread.c" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
@@ -290,6 +298,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))WorkloadBuildTasks.dll</WorkloadTasksAssemblyPath>
+    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'WorkloadBuildTasks.dll'))</WorkloadTasksAssemblyPath>
   </PropertyGroup>
 </Project>

@@ -140,7 +140,7 @@ internal static partial class Interop
                     out int keySize,
                     flags);
 
-                if (error != ErrorCode.ERROR_SUCCESS && error != ErrorCode.NTE_BUFFER_TOO_SMALL)
+                if (error != ErrorCode.ERROR_SUCCESS && !error.IsBufferTooSmall())
                 {
                     throw error.ToCryptographicException();
                 }
@@ -240,6 +240,26 @@ internal static partial class Interop
                     buffers,
                     flags);
             }
+        }
+
+        internal static unsafe byte[] DeriveKeyMaterialTruncate(
+            SafeNCryptSecretHandle secretAgreement,
+            SecretAgreementFlags flags)
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(10))
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            byte[] result = DeriveKeyMaterial(
+                secretAgreement,
+                BCryptNative.KeyDerivationFunction.Raw,
+                ReadOnlySpan<NCryptBuffer>.Empty,
+                flags);
+
+            // Win32 returns the result as little endian. So we need to flip it to big endian.
+            Array.Reverse(result);
+            return result;
         }
     }
 }

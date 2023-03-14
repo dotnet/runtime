@@ -15,4 +15,8 @@
         <method signature="System.Void .ctor()" />
     </type>
   </assembly>
+
+  <assembly fullname="System.Private.Corelib">
+    <type fullname="System.Collections.Generic.ISet`1" preserve="methods" />
+   </assembly>
 </linker>

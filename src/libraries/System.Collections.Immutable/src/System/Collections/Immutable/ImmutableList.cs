@@ -56,8 +56,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable list.</returns>
         public static ImmutableList<TSource> ToImmutableList<TSource>(this IEnumerable<TSource> source)
         {
-            var existingList = source as ImmutableList<TSource>;
-            if (existingList != null)
+            if (source is ImmutableList<TSource> existingList)
             {
                 return existingList;
             }

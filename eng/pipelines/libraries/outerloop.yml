@@ -30,14 +30,14 @@ extends:
                 - windows_x64
             - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
               - ${{ if eq(variables['isRollingBuild'], true) }}:
-                - Linux_x64
-                - Linux_arm
-                - Linux_arm64
-                - Linux_musl_x64
-                - Linux_musl_arm64
+                - linux_x64
+                - linux_arm
+                - linux_arm64
+                - linux_musl_x64
+                - linux_musl_arm64
             - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isRollingBuild'], true)) }}:
-              - OSX_arm64
-              - OSX_x64
+              - osx_arm64
+              - osx_x64
             jobParameters:
               testScope: outerloop
               nameSuffix: CoreCLR_Release
@@ -61,11 +61,11 @@ extends:
               - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
                 - windows_x64
               - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
-                - Linux_x64
-                - Linux_musl_x64
+                - linux_x64
+                - linux_musl_x64
               - ${{ if eq(variables['includeOsxOuterloop'], true) }}:
-                - OSX_arm64
-                - OSX_x64
+                - osx_arm64
+                - osx_x64
               jobParameters:
                 testScope: outerloop
                 nameSuffix: CoreCLR_Release

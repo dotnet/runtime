@@ -459,8 +459,7 @@ namespace System.Runtime.InteropServices
                 return;
 
             // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
-            if (managedArray == null)
-                throw new ArgumentNullException(nameof(managedArray));
+            ArgumentNullException.ThrowIfNull(managedArray);
 
             // COMPAT: Use the managed array length as the maximum length of native buffer
             // This obviously doesn't make sense but desktop CLR does that

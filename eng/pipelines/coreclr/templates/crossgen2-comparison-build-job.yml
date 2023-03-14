@@ -64,10 +64,10 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: target_crossgen2_os
         value: windows
-    - ${{ if eq(parameters.osGroup, 'Linux') }}:
+    - ${{ if eq(parameters.osGroup, 'linux') }}:
       - name: target_crossgen2_os
         value: linux
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if eq(parameters.osGroup, 'osx') }}:
       - name: target_crossgen2_os
         value: osx
     - name: crossgen2location

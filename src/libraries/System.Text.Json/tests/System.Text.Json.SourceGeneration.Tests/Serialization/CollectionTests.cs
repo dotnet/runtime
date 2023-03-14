@@ -18,7 +18,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class CollectionTests_Metadata_String : CollectionTests_Metadata
     {
         public CollectionTests_Metadata_String()
-            : base(new StringSerializerWrapper(CollectionTestsContext_Metadata.Default, (options) => new CollectionTestsContext_Metadata(options)))
+            : base(new StringSerializerWrapper(CollectionTestsContext_Metadata.Default))
         {
         }
     }
@@ -26,7 +26,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class CollectionTests_Metadata_AsyncStream : CollectionTests_Metadata
     {
         public CollectionTests_Metadata_AsyncStream()
-            : base(new AsyncStreamSerializerWrapper(CollectionTestsContext_Metadata.Default, (options) => new CollectionTestsContext_Metadata(options)))
+            : base(new AsyncStreamSerializerWrapper(CollectionTestsContext_Metadata.Default))
         {
         }
     }
@@ -110,6 +110,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIgnoredIDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoreAttributeDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoredImmutableDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionaryButIgnored))]
         [JsonSerializable(typeof(Dictionary<string, AllSingleUpperProperties_Child>))]
         [JsonSerializable(typeof(AllSingleUpperPropertiesParent))]
         [JsonSerializable(typeof(ClassWithDictionaryOfString_ChildWithDictionaryOfString))]
@@ -440,7 +442,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class CollectionTests_Default : CollectionTests
     {
         public CollectionTests_Default()
-            : base(new StringSerializerWrapper(CollectionTestsContext_Default.Default, (options) => new CollectionTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(CollectionTestsContext_Default.Default))
         {
         }
 
@@ -506,6 +508,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIgnoredIDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoreAttributeDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoredImmutableDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionaryButIgnored))]
         [JsonSerializable(typeof(Dictionary<string, AllSingleUpperProperties_Child>))]
         [JsonSerializable(typeof(AllSingleUpperPropertiesParent))]
         [JsonSerializable(typeof(ClassWithDictionaryOfString_ChildWithDictionaryOfString))]

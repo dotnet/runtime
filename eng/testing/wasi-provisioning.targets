@@ -1,0 +1,35 @@
+<Project>
+  <PropertyGroup>
+    <_WasmtimeVersionFile>$(MonoProjectRoot)wasi/wasmtime-version.txt</_WasmtimeVersionFile>
+    <_WasmtimeStampPath>$(WasmtimeDir)\.stamp-wasmtime-version.txt</_WasmtimeStampPath>
+    <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
+  </PropertyGroup>
+
+  <!-- FIXMEWASI: prevent multiple downloads -->
+  <Target Name="ProvisionWasmtime"
+          AfterTargets="Build"
+          Condition="'$(InstallWasmtimeForTests)' == 'true' and !Exists($(WasmtimeDir))"
+          Inputs="$(_WasmtimeVersionFile)"
+          Outputs="$(_WasmtimeStampPath)">
+
+    <ReadLinesFromFile File="$(_WasmtimeVersionFile)">
+      <Output TaskParameter="Lines" ItemName="_VersionLines" />
+    </ReadLinesFromFile>
+
+    <PropertyGroup>
+      <WasmtimeVersion>%(_VersionLines.Identity)</WasmtimeVersion>
+      <WasmtimeURL>https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-linux.tar.xz</WasmtimeURL>
+      <WasmtimeURL Condition="'$(HostOS)' == 'osx'" >https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-macos.tar.xz</WasmtimeURL>
+      <WasmtimeURL Condition="'$(HostOS)' == 'windows'" >https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-windows.zip</WasmtimeURL>
+    </PropertyGroup>
+
+    <DownloadFile SourceUrl="$(WasmtimeURL)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+
+    <MakeDir Directories="$(WasmtimeDir)" />
+    <Exec Command="powershell -command &quot;Expand-Archive $(_DownloadedFile) . ; Move-Item wasmtime-v$(WasmtimeVersion)-x86_64-windows/*.* . &quot;" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' == 'windows'"/>
+    <Exec Command="tar -Jx --strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' != 'windows'"/>
+    <Copy SourceFiles="$(MonoProjectRoot)wasi/wasmtime-version.txt" DestinationFiles="$(_WasmtimeStampPath)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

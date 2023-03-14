@@ -7,7 +7,7 @@ using System.Runtime.Serialization; // Just for SR
 
 namespace System.Text
 {
-    internal struct SurrogateChar
+    internal readonly struct SurrogateChar
     {
         private readonly char _lowChar;
         private readonly char _highChar;

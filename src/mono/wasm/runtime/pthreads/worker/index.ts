@@ -4,10 +4,10 @@
 /// <reference lib="webworker" />
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers } from "../../imports";
-import { isMonoThreadMessageApplyMonoConfig, makeChannelCreatedMonoMessage } from "../shared";
+import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers, ENVIRONMENT_IS_WEB } from "../../imports";
+import { makeChannelCreatedMonoMessage, makePreloadMonoMessage } from "../shared";
 import type { pthread_ptr } from "../shared/types";
-import { mono_assert, is_nullish, MonoConfig } from "../../types";
+import { mono_assert, is_nullish, MonoConfig, MonoConfigInternal } from "../../types";
 import type { MonoThreadMessage } from "../shared";
 import {
     PThreadSelf,
@@ -60,13 +60,21 @@ export const currentWorkerThreadEvents: WorkerThreadEventTarget =
 // this is the message handler for the worker that receives messages from the main thread
 // extend this with new cases as needed
 function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>): void {
-    if (isMonoThreadMessageApplyMonoConfig(event.data)) {
-        const config = JSON.parse(event.data.config) as MonoConfig;
-        console.debug("MONO_WASM: applying mono config from main", event.data.config);
-        onMonoConfigReceived(config);
-        return;
-    }
     console.debug("MONO_WASM: got message from main on the dedicated channel", event.data);
+}
+
+export function setupPreloadChannelToMainThread() {
+    const channel = new MessageChannel();
+    const workerPort = channel.port1;
+    const mainPort = channel.port2;
+    workerPort.addEventListener("message", (event) => {
+        const config = JSON.parse(event.data.config) as MonoConfig;
+        onMonoConfigReceived(config);
+        workerPort.close();
+        mainPort.close();
+    }, { once: true });
+    workerPort.start();
+    self.postMessage(makePreloadMonoMessage(mainPort), [mainPort]);
 }
 
 function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
@@ -84,7 +92,7 @@ function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
 let workerMonoConfigReceived = false;
 
 // called when the main thread sends us the mono config
-function onMonoConfigReceived(config: MonoConfig): void {
+function onMonoConfigReceived(config: MonoConfigInternal): void {
     if (workerMonoConfigReceived) {
         console.debug("MONO_WASM: mono config already received");
         return;
@@ -96,7 +104,7 @@ function onMonoConfigReceived(config: MonoConfig): void {
 
     afterConfigLoaded.promise_control.resolve(config);
 
-    if (config.diagnosticTracing) {
+    if (ENVIRONMENT_IS_WEB && config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
         setup_proxy_console("pthread-worker", console, self.location.href);
     }
 }

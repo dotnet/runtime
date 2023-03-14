@@ -70,10 +70,11 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
-          - OSX_x64
-          - Linux_x64
+          - osx_x64
+          - linux_x64
           jobParameters:
             testGroup: innerloop
+            testResultsFormat: 'vstest'
             timeoutInMinutes: 120
             nameSuffix: ILLink_Runtime_Testing
             condition:
@@ -91,8 +92,8 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
-          - OSX_x64
-          - Linux_x64
+          - osx_x64
+          - linux_x64
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
@@ -112,7 +113,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
-          - Browser_wasm
+          - browser_wasm
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
@@ -121,8 +122,9 @@ extends:
             condition:
               or(
                 eq(variables['isRollingBuild'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
             extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
             extraStepsParameters:

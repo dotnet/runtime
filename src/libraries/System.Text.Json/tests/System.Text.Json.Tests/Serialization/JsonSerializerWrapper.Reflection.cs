@@ -26,6 +26,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class SpanSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true; // a 'null' value is supported via implicit operator.
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
@@ -86,6 +87,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class StringSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true;
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
@@ -144,6 +146,7 @@ namespace System.Text.Json.Serialization.Tests
             private readonly bool _forceSmallBufferInOptions;
             private readonly bool _forceBomInsertions;
 
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool IsAsyncSerializer => true;
             public override bool ForceSmallBufferInOptions => _forceSmallBufferInOptions;
 
@@ -215,6 +218,7 @@ namespace System.Text.Json.Serialization.Tests
             private readonly bool _forceSmallBufferInOptions;
             private readonly bool _forceBomInsertions;
 
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool IsAsyncSerializer => false;
             public override bool ForceSmallBufferInOptions => _forceSmallBufferInOptions;
 
@@ -293,6 +297,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ReaderWriterSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 using MemoryStream stream = new MemoryStream();
@@ -381,6 +386,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class DocumentSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 JsonDocument document = JsonSerializer.SerializeToDocument(value, inputType, options);
@@ -491,6 +497,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ElementSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 JsonElement element = JsonSerializer.SerializeToElement(value, inputType, options);
@@ -564,6 +571,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class NodeSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true;
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)

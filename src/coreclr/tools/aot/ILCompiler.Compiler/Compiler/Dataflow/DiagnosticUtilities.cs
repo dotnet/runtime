@@ -24,9 +24,9 @@ namespace ILCompiler.Dataflow
             return method.GetDisplayName();
         }
 
-        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameterOrigin origin)
+        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameterDesc genericParameter)
         {
-            var param = (EcmaGenericParameter)origin.GenericParameter;
+            var param = (EcmaGenericParameter)genericParameter;
             var parent = param.Module.GetObject(param.MetadataReader.GetGenericParameter(param.Handle).Parent);
             if (parent is MethodDesc m)
                 return m.GetDisplayName();
@@ -69,34 +69,6 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
-        {
-            var ecmaType = prop.OwningType as EcmaType;
-            var metadataReader = ecmaType.MetadataReader;
-
-            var attributeHandle = metadataReader.GetCustomAttributeHandle(prop.GetCustomAttributes,
-                attributeNamespace, attributeName);
-
-            if (attributeHandle.IsNil)
-                return null;
-
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
-        }
-
-        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EventPseudoDesc @event, string attributeNamespace, string attributeName)
-        {
-            var ecmaType = @event.OwningType as EcmaType;
-            var metadataReader = ecmaType.MetadataReader;
-
-            var attributeHandle = metadataReader.GetCustomAttributeHandle(@event.GetCustomAttributes,
-                attributeNamespace, attributeName);
-
-            if (attributeHandle.IsNil)
-                return null;
-
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
-        }
-
         internal static string GetRequiresAttributeMessage(CustomAttributeValue<TypeDesc> attribute)
         {
             if (attribute.FixedArguments.Length != 0)
@@ -123,16 +95,6 @@ namespace ILCompiler.Dataflow
         internal static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute) =>
             method.IsInRequiresScope(requiresAttribute, true);
 
-        /// <summary>
-        /// True if member of a call is considered to be annotated with the Requires... attribute.
-        /// Doesn't check the associated symbol for overrides and virtual methods because we should warn on mismatched between the property AND the accessors
-        /// </summary>
-        /// <param name="method">
-        /// MethodDesc that is either an overriding member or an overridden/virtual member
-        /// </param>
-        internal static bool IsOverrideInRequiresScope(this MethodDesc method, string requiresAttribute) =>
-            method.IsInRequiresScope(requiresAttribute, false);
-
         private static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute, bool checkAssociatedSymbol)
         {
             if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttribute) && !method.IsStaticConstructor)
@@ -142,6 +104,9 @@ namespace ILCompiler.Dataflow
                 return true;
 
             if (checkAssociatedSymbol && method.GetPropertyForAccessor() is PropertyPseudoDesc property && TryGetRequiresAttribute(property, requiresAttribute, out _))
+                return true;
+
+            if (checkAssociatedSymbol && method.GetEventForAccessor() is EventPseudoDesc @event && TryGetRequiresAttribute(@event, requiresAttribute, out _))
                 return true;
 
             return false;
@@ -158,6 +123,14 @@ namespace ILCompiler.Dataflow
 
             if ((method.Signature.IsStatic || method.IsConstructor) && method.OwningType is TypeDesc owningType &&
                 !owningType.IsArray && TryGetRequiresAttribute(owningType, requiresAttribute, out attribute))
+                return true;
+
+            if (method.GetPropertyForAccessor() is PropertyPseudoDesc @property
+                && TryGetRequiresAttribute(@property, requiresAttribute, out attribute))
+                return true;
+
+            if (method.GetEventForAccessor() is EventPseudoDesc @event
+                && TryGetRequiresAttribute(@event, requiresAttribute, out attribute))
                 return true;
 
             return false;

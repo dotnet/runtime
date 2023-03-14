@@ -947,14 +947,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string CreateTrustPassword()
         {
-#if NETCOREAPP3_0_OR_GREATER
-            return string.Create<object?>(PASSWORD_LENGTH, null, static (destination, _) =>
-            {
-                for (int i = 0; i < destination.Length; i++)
-                {
-                    destination[i] = PasswordCharacterSet[RandomNumberGenerator.GetInt32(PasswordCharacterSet.Length)];
-                }
-            });
+#if NET8_0_OR_GREATER
+            return RandomNumberGenerator.GetString(PasswordCharacterSet, PASSWORD_LENGTH);
 #else
             char[] cBuf = new char[PASSWORD_LENGTH];
             byte[] randomBuffer = new byte[1];

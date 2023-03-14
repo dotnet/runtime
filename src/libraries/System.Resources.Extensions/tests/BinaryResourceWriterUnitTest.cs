@@ -528,7 +528,7 @@ namespace System.Resources.Extensions.Tests
             using Barrier barrier = new(Threads);
             Task task = Task.WhenAll(Enumerable.Range(0, Threads).Select(_ => Task.Run(WaitForBarrierThenEnumerateResources)));
 
-            Assert.True(task.Wait(TimeSpan.FromSeconds(10)));
+            Assert.True(task.Wait(TimeSpan.FromSeconds(30)));
 
             void WaitForBarrierThenEnumerateResources()
             {

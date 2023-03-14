@@ -37,8 +37,8 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgPredsComputed);
 
     if (compHndBBtabCount == 0)
     {
@@ -167,13 +167,13 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
                 // Ref count updates.
                 fgAddRefPred(postTryFinallyBlock, currentBlock);
-                // fgRemoveRefPred(firstBlock, currentBlock);
+                fgRemoveRefPred(firstBlock, currentBlock);
 
                 // Delete the leave block, which should be marked as
-                // keep always.
+                // keep always and have the sole finally block as a pred.
                 assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
                 nextBlock = leaveBlock->bbNext;
-
+                fgRemoveRefPred(leaveBlock, firstBlock);
                 leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
                 fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
@@ -292,8 +292,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgPredsComputed);
 
     bool enableRemoveEmptyTry = true;
 
@@ -545,6 +545,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     block->bbJumpKind = BBJ_ALWAYS;
                     block->bbJumpDest = continuation;
                     fgAddRefPred(continuation, block);
+                    fgRemoveRefPred(leave, block);
                 }
             }
 
@@ -569,6 +570,13 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // EH table so XTnum now points at the next entry and will update
         // the EH region indices of any nested EH in the (former) handler.
         fgRemoveEHTableEntry(XTnum);
+
+        // (7) The handler entry has an artificial extra ref count. Remove it.
+        // There also should be one normal ref, from the try, and the handler
+        // may contain internal branches back to its start. So the ref count
+        // should currently be at least 2.
+        assert(firstHandlerBlock->bbRefs >= 2);
+        firstHandlerBlock->bbRefs -= 1;
 
         // Another one bites the dust...
         emptyCount++;
@@ -621,8 +629,8 @@ PhaseStatus Compiler::fgCloneFinally()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgPredsComputed);
 
     bool enableCloning = true;
 
@@ -1134,7 +1142,7 @@ PhaseStatus Compiler::fgCloneFinally()
             else
             {
                 optCopyBlkDest(block, newBlock);
-                optRedirectBlock(newBlock, &blockMap);
+                optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
             }
         }
 
@@ -1173,13 +1181,22 @@ PhaseStatus Compiler::fgCloneFinally()
 
                         // Ref count updates.
                         fgAddRefPred(firstCloneBlock, currentBlock);
-                        // fgRemoveRefPred(firstBlock, currentBlock);
+                        fgRemoveRefPred(firstBlock, currentBlock);
 
                         // Delete the leave block, which should be marked as
                         // keep always.
                         assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
                         nextBlock = leaveBlock->bbNext;
 
+                        // All preds should be BBJ_EHFINALLYRETs from the finally.
+                        for (BasicBlock* const leavePred : leaveBlock->PredBlocks())
+                        {
+                            assert(leavePred->bbJumpKind == BBJ_EHFINALLYRET);
+                            assert(leavePred->getHndIndex() == XTnum);
+                        }
+
+                        leaveBlock->bbRefs  = 0;
+                        leaveBlock->bbPreds = nullptr;
                         leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
                         fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
@@ -1603,6 +1620,32 @@ void Compiler::fgAddFinallyTargetFlags()
     }
 }
 
+//------------------------------------------------------------------------
+// fgFixFinallyTargetFlags: Update BBF_FINALLY_TARGET bits after redirecting flow
+//
+// Arguments:
+//   pred - source of flow
+//   succ - original target of flow from pred
+//   newSucc - new target of flow from pred
+//
+void Compiler::fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, BasicBlock* newSucc)
+{
+    if (pred->isBBCallAlwaysPairTail())
+    {
+        assert(succ->bbFlags & BBF_FINALLY_TARGET);
+        newSucc->bbFlags |= BBF_FINALLY_TARGET;
+        succ->bbFlags &= ~BBF_FINALLY_TARGET;
+
+        for (BasicBlock* const pred : succ->PredBlocks())
+        {
+            if (pred->isBBCallAlwaysPairTail())
+            {
+                succ->bbFlags |= BBF_FINALLY_TARGET;
+                break;
+            }
+        }
+    }
+}
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 //------------------------------------------------------------------------
@@ -1625,8 +1668,8 @@ PhaseStatus Compiler::fgMergeFinallyChains()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgPredsComputed);
 
     if (compHndBBtabCount == 0)
     {
@@ -1990,7 +2033,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
     // This transformation requires block pred lists to be built
     // so that flow can be safely updated.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     struct ThrowHelper
     {
@@ -2121,23 +2164,21 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // Second pass.
     //
     // We walk the map rather than the block list, to save a bit of time.
-    BlockToBlockMap::KeyIterator iter(blockMap.Begin());
-    BlockToBlockMap::KeyIterator end(blockMap.End());
-    unsigned                     updateCount = 0;
+    unsigned updateCount = 0;
 
-    for (; !iter.Equal(end); iter++)
+    for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&blockMap))
     {
-        BasicBlock* const nonCanonicalBlock = iter.Get();
-        BasicBlock* const canonicalBlock    = iter.GetValue();
-        flowList*         nextPredEdge      = nullptr;
+        BasicBlock* const nonCanonicalBlock = iter->GetKey();
+        BasicBlock* const canonicalBlock    = iter->GetValue();
+        FlowEdge*         nextPredEdge      = nullptr;
         bool              updated           = false;
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
-        for (flowList* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
+        for (FlowEdge* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
         {
-            BasicBlock* const predBlock = predEdge->getBlock();
-            nextPredEdge                = predEdge->flNext;
+            BasicBlock* const predBlock = predEdge->getSourceBlock();
+            nextPredEdge                = predEdge->getNextPredEdge();
 
             switch (predBlock->bbJumpKind)
             {
@@ -2232,7 +2273,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                                   BasicBlock* nonCanonicalBlock,
                                                   BasicBlock* canonicalBlock,
-                                                  flowList*   predEdge)
+                                                  FlowEdge*   predEdge)
 {
     assert(predBlock->bbNext == nonCanonicalBlock);
 
@@ -2275,7 +2316,7 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
 void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
                                              BasicBlock* nonCanonicalBlock,
                                              BasicBlock* canonicalBlock,
-                                             flowList*   predEdge)
+                                             FlowEdge*   predEdge)
 {
     assert(predBlock->bbJumpDest == nonCanonicalBlock);
 

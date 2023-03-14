@@ -2,23 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
-#include <clrconfignocache.h>
 
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
 
-CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal) :
+CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_ref(1),
-    m_pid(pid),
+    m_pid(options.Pid),
     m_ppid(-1),
     m_hdac(nullptr),
     m_pClrDataEnumRegions(nullptr),
     m_pClrDataProcess(nullptr),
-    m_gatherFrames(gatherFrames),
-    m_crashThread(crashThread),
-    m_signal(signal),
+    m_gatherFrames(options.CrashReport),
+    m_crashThread(options.CrashThread),
+    m_signal(options.Signal),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -31,6 +30,11 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
 #else
     m_auxvValues.fill(0);
     m_fdMem = -1;
+    memset(&m_siginfo, 0, sizeof(m_siginfo));
+    m_siginfo.si_signo = options.Signal;
+    m_siginfo.si_code = options.SignalCode;
+    m_siginfo.si_errno = options.SignalErrno;
+    m_siginfo.si_addr = options.SignalAddress;
 #endif
 }
 
@@ -329,13 +333,10 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
     {
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
 
-        // Since on MacOS all the RW regions will be added for heap dumps by createdump, the
-        // only thing differentiating a MiniDumpNormal and a MiniDumpWithPrivateReadWriteMemory
-        // is that the later uses the EnumMemoryRegions APIs. This is kind of expensive on larger
-        // applications (4 minutes, or even more), and this should already be in RW pages. Change
-        // the dump type to the faster normal one. This one already ensures necessary DAC globals,
-        // etc. without the costly assembly, module, class, type runtime data structures enumeration.
-        CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_DEFAULT;
+        // CLRDATA_ENUM_MEM_HEAP2 skips the expensive (in both time and memory usage) enumeration of the
+        // low level data structures and adds all the loader allocator heaps instead. The older 'DbgEnableFastHeapDumps'
+        // env var didn't generate a complete enough heap dump on Linux and this new path does.
+        CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_HEAP2;
         if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
         {
             // This is the old fast heap env var for backwards compatibility for VS4Mac.
@@ -343,16 +344,20 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
             DWORD val = 0;
             if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
             {
+                // Since on MacOS all the RW regions will be added for heap dumps by createdump, the
+                // only thing differentiating a MiniDumpNormal and a MiniDumpWithPrivateReadWriteMemory
+                // is that the later uses the EnumMemoryRegions APIs. This is kind of expensive on larger
+                // applications (4 minutes, or even more), and this should already be in RW pages. Change
+                // the dump type to the faster normal one. This one already ensures necessary DAC globals,
+                // etc. without the costly assembly, module, class, type runtime data structures enumeration.
                 minidumpType = MiniDumpNormal;
+                flags = CLRDATA_ENUM_MEM_DEFAULT;
             }
-            // This the new variable that also skips the expensive (in both time and memory usage)
-            // enumeration of the low level data structures and adds all the loader allocator heaps
-            // instead. The above original env var didn't generate a complete enough heap dump on
-            // Linux and this new one does.
+            // This env var allows the CLRDATA_ENUM_MEM_HEAP2 fast path to be opt-ed out
             fastHeapDumps = CLRConfigNoCache::Get("EnableFastHeapDumps", /*noprefix*/ false, &getenv);
-            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
+            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 0)
             {
-                flags = CLRDATA_ENUM_MEM_HEAP2;
+                flags = CLRDATA_ENUM_MEM_DEFAULT;
             }
         }
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
@@ -414,7 +419,7 @@ CrashInfo::EnumerateManagedModules()
                     ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
                     if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
                     {
-                        std::string moduleName = FormatString("%S", wszUnicodeName.GetPtr());
+                        std::string moduleName = ConvertString(wszUnicodeName.GetPtr());
 
                         // Change the module mapping name
                         AddOrReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
@@ -928,6 +933,24 @@ FormatString(const char* format, ...)
     int result = vsprintf_s(buffer, MAX_LONGPATH, format, args);
     va_end(args);
     return result > 0 ? std::string(buffer) : std::string();
+}
+
+//
+// Converts a WCHAR into a std:string containing a UTF-8 encoded string.
+//
+std::string
+ConvertString(const WCHAR* str)
+{
+    if (str == nullptr)
+        return{};
+
+    int len = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    if (len == 0)
+        return{};
+
+    ArrayHolder<char> buffer = new char[len + 1];
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer, len + 1, nullptr, nullptr);
+    return std::string{ buffer };
 }
 
 //

@@ -976,7 +976,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
         pParam->hFile = WszCreateFile(pParam->szResFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
         if (pParam->hFile == INVALID_HANDLE_VALUE)
         {
-            //dbprintf("Resource file %S not found\n", szResFileName);
             pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
             goto lDone;
         }
@@ -1005,7 +1004,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
 
         if (pParam->hMap == NULL)
         {
-            //dbprintf("Invalid .res file: %S\n", szResFileName);
             pParam->hr = HRESULT_FROM_GetLastError();
             goto lDone;
         }
@@ -1015,7 +1013,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
         // test failure conditions
         if (pbStartOfMappedMem == NULL)
         {
-            //dbprintf("Invalid .res file: %S:Can't get header\n", szResFileName);
             pParam->hr = HRESULT_FROM_GetLastError();
             goto lDone;
         }
@@ -1031,7 +1028,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
 
         if (VAL16(pParam->hMod->SizeOfOptionalHeader) != 0)
         {
-            //dbprintf("Invalid .res file: %S:Illegal optional header\n", szResFileName);
             pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND); // GetLastError() = 0 since API worked.
             goto lDone;
         }
@@ -1074,7 +1070,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
         // If we don't have both resources, fail.
         if (!rsrc[0] || !rsrc[1])
         {
-            //dbprintf("Invalid .res file: %S: Missing sections .rsrc$01 or .rsrc$02\n", szResFileName);
             pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
             goto lDone;
         }
@@ -1189,7 +1184,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
                 (VAL16(pSymbolEntry->Type) != IMAGE_SYM_TYPE_NULL) ||
                 (VAL16(pSymbolEntry->SectionNumber) != 3)) // 3rd section is .rsrc$02
             {
-                //dbprintf("Invalid .res file: %S:Illegal symbol entry\n", szResFileName);
                 pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
@@ -1197,7 +1191,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
             // Ensure that RVA is valid address (inside rsrc[1])
             if (VAL32(pSymbolEntry->Value) >= VAL32(rsrc[1]->SizeOfRawData))
             {
-                //dbprintf("Invalid .res file: %S:Illegal rva into .rsrc$02\n", szResFileName);
                 pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
@@ -1218,7 +1211,6 @@ lDone: ;
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        //dbprintf("Exception occurred manipulating .res file %S\n", szResFileName);
         param.hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
     }
     PAL_ENDTRY

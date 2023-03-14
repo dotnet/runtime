@@ -70,6 +70,16 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        public static bool IsStaticMethodSignature(MethodNameAndSignature signature)
+        {
+            Debug.Assert(signature.Signature.IsNativeLayoutSignature);
+            NativeReader reader = GetNativeLayoutInfoReader(signature.Signature);
+            NativeParser parser = new NativeParser(reader, signature.Signature.NativeLayoutOffset);
+
+            MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
+            return (callingConvention & MethodCallingConvention.Static) != 0;
+        }
+
         public uint GetGenericArgumentCountFromMethodNameAndSignature(MethodNameAndSignature signature)
         {
             if (signature.Signature.IsNativeLayoutSignature)

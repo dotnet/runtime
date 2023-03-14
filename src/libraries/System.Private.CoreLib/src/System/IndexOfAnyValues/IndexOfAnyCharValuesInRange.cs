@@ -9,7 +9,8 @@ namespace System.Buffers
     internal sealed class IndexOfAnyCharValuesInRange<TShouldUsePacked> : IndexOfAnyValues<char>
         where TShouldUsePacked : struct, IndexOfAnyValues.IRuntimeConst
     {
-        private char _lowInclusive, _rangeInclusive, _highInclusive;
+        private readonly char _rangeInclusive;
+        private char _lowInclusive, _highInclusive;
         private readonly uint _lowUint, _highMinusLow;
 
         public IndexOfAnyCharValuesInRange(char lowInclusive, char highInclusive)
@@ -38,7 +39,7 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
-            TShouldUsePacked.Value
+            (PackedSpanHelpers.PackedIndexOfIsSupported && TShouldUsePacked.Value)
                 ? PackedSpanHelpers.IndexOfAnyInRange(ref MemoryMarshal.GetReference(span), _lowInclusive, _rangeInclusive, span.Length)
                 : SpanHelpers.NonPackedIndexOfAnyInRangeUnsignedNumber<ushort, SpanHelpers.DontNegate<ushort>>(
                     ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span)),
@@ -48,7 +49,7 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            TShouldUsePacked.Value
+            (PackedSpanHelpers.PackedIndexOfIsSupported && TShouldUsePacked.Value)
                 ? PackedSpanHelpers.IndexOfAnyExceptInRange(ref MemoryMarshal.GetReference(span), _lowInclusive, _rangeInclusive, span.Length)
                 : SpanHelpers.NonPackedIndexOfAnyInRangeUnsignedNumber<ushort, SpanHelpers.Negate<ushort>>(
                     ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span)),

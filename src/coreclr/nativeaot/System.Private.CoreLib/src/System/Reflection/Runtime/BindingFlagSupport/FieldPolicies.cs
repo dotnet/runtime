@@ -13,11 +13,15 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class FieldPolicies : MemberPolicies<FieldInfo>
     {
+        public static readonly FieldPolicies Instance = new FieldPolicies();
+
+        public FieldPolicies() : base(MemberTypeIndex.Field) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
-        public sealed override IEnumerable<FieldInfo> GetDeclaredMembers(TypeInfo typeInfo)
+        public sealed override IEnumerable<FieldInfo> GetDeclaredMembers(Type type)
         {
-            return typeInfo.DeclaredFields;
+            return type.GetFields(DeclaredOnlyLookup);
         }
 
         public sealed override IEnumerable<FieldInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)

@@ -14,7 +14,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class PropertyVisibilityTests_Metadata : PropertyVisibilityTests
     {
         public PropertyVisibilityTests_Metadata()
-            : this(new StringSerializerWrapper(PropertyVisibilityTestsContext_Metadata.Default, (options) => new PropertyVisibilityTestsContext_Metadata(options)))
+            : this(new StringSerializerWrapper(PropertyVisibilityTestsContext_Metadata.Default))
         {
         }
 
@@ -61,27 +61,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Theory]
-        [InlineData(typeof(ClassWithInitOnlyProperty))]
-        [InlineData(typeof(StructWithInitOnlyProperty))]
-        public override async Task InitOnlyProperties(Type type)
-        {
-            PropertyInfo property = type.GetProperty("MyInt");
-
-            // Init-only properties can be serialized.
-            object obj = Activator.CreateInstance(type);
-            property.SetValue(obj, 1);
-            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj, type));
-
-            // Deserializing init-only properties is not supported.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
-        }
-
-        [Theory]
         [InlineData(typeof(Class_PropertyWith_PrivateInitOnlySetter_WithAttribute))]
         [InlineData(typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute))]
         [InlineData(typeof(Class_PropertyWith_ProtectedInitOnlySetter_WithAttribute))]
         public override async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
         {
+            bool isDeserializationSupported = type == typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute);
+
             PropertyInfo property = type.GetProperty("MyInt");
 
             // Init-only properties can be serialized.
@@ -89,8 +75,16 @@ namespace System.Text.Json.SourceGeneration.Tests
             property.SetValue(obj, 1);
             Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj, type));
 
-            // Deserializing init-only properties is not supported.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
+            // Deserializing JsonInclude is only supported for internal properties
+            if (isDeserializationSupported)
+            {
+                obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+                Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
+            }
+            else
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
+            }
         }
 
         [Fact]
@@ -168,6 +162,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
+        [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
+        [JsonSerializable(typeof(StructWithCustomNamedInitOnlyProperty))]
         [JsonSerializable(typeof(MyClassWithValueTypeInterfaceProperty))]
         [JsonSerializable(typeof(ClassWithNonPublicProperties))]
         [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways))]
@@ -294,7 +290,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class PropertyVisibilityTests_Default : PropertyVisibilityTests_Metadata
     {
         public PropertyVisibilityTests_Default()
-            : base(new StringSerializerWrapper(PropertyVisibilityTestsContext_Default.Default, (options) => new PropertyVisibilityTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(PropertyVisibilityTestsContext_Default.Default))
         {
         }
 
@@ -410,6 +406,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
+        [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
+        [JsonSerializable(typeof(StructWithCustomNamedInitOnlyProperty))]
         [JsonSerializable(typeof(MyClassWithValueTypeInterfaceProperty))]
         [JsonSerializable(typeof(ClassWithNonPublicProperties))]
         [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways))]

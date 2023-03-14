@@ -262,10 +262,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);
             }
 
-            if (capacity <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
             if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {
@@ -322,10 +319,7 @@ namespace System.IO.MemoryMappedFiles
         {
             ArgumentException.ThrowIfNullOrEmpty(mapName);
 
-            if (capacity <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
             if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {

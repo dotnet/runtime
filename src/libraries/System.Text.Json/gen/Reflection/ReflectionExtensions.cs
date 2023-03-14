@@ -21,6 +21,9 @@ namespace System.Text.Json.Reflection
             return index < customAttributeData.ConstructorArguments.Count ? (TValue)customAttributeData.ConstructorArguments[index].Value! : default!;
         }
 
+        public static bool ContainsAttribute(this MemberInfo memberInfo, string attributeFullName)
+            => CustomAttributeData.GetCustomAttributes(memberInfo).Any(attr => attr.AttributeType.FullName == attributeFullName);
+
         public static bool IsInitOnly(this MethodInfo method)
         {
             if (method is null)
@@ -30,6 +33,36 @@ namespace System.Text.Json.Reflection
 
             MethodInfoWrapper methodInfoWrapper = (MethodInfoWrapper)method;
             return methodInfoWrapper.IsInitOnly;
+        }
+
+        public static bool IsRequired(this PropertyInfo propertyInfo)
+        {
+#if ROSLYN4_4_OR_GREATER
+            if (propertyInfo is null)
+            {
+                throw new ArgumentNullException(nameof(propertyInfo));
+            }
+
+            PropertyInfoWrapper methodInfoWrapper = (PropertyInfoWrapper)propertyInfo;
+            return methodInfoWrapper.Symbol.IsRequired;
+#else
+            return false;
+#endif
+        }
+
+        public static bool IsRequired(this FieldInfo propertyInfo)
+        {
+#if ROSLYN4_4_OR_GREATER
+            if (propertyInfo is null)
+            {
+                throw new ArgumentNullException(nameof(propertyInfo));
+            }
+
+            FieldInfoWrapper fieldInfoWrapper = (FieldInfoWrapper)propertyInfo;
+            return fieldInfoWrapper.Symbol.IsRequired;
+#else
+            return false;
+#endif
         }
 
         private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)

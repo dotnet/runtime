@@ -47,10 +47,7 @@ namespace Mono.Linker.Tests.Extensions
 
 		public NPath (string path)
 		{
-			if (path == null)
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-				throw new ArgumentNullException ();
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
+			ArgumentNullException.ThrowIfNull (path);
 
 			path = ParseDriveLetter (path, out _driveLetter);
 

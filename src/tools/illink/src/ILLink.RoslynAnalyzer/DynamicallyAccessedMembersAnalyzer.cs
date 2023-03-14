@@ -164,7 +164,7 @@ namespace ILLink.RoslynAnalyzer
 			}
 		}
 
-		static IEnumerable<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (SingleValue sourceValue, SingleValue targetValue, Location location)
+		static List<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (SingleValue sourceValue, SingleValue targetValue, Location location)
 		{
 			// The target should always be an annotated value, but the visitor design currently prevents
 			// declaring this in the type system.
@@ -172,7 +172,7 @@ namespace ILLink.RoslynAnalyzer
 				throw new NotImplementedException ();
 
 			var diagnosticContext = new DiagnosticContext (location);
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, new ReflectionAccessAnalyzer ());
+			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, default (ReflectionAccessAnalyzer));
 			requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
 
 			return diagnosticContext.Diagnostics;

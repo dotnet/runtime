@@ -23,8 +23,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      - iOS_arm64
-      - tvOS_arm64
+      - ios_arm64
+      - tvos_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

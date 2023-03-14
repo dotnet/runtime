@@ -49,31 +49,31 @@ PATH=/Users/<your_user>/.geckodriver:$PATH
 
 Now we're ready to build everything for WebAssembly (for more details, please read [this document](../../building/libraries/webassembly-instructions.md#building-everything)):
 ```bash
-./build.sh -os Browser -c Release
+./build.sh -os browser -c Release
 ```
 and even run tests one by one for each library:
 ```
-./build.sh libs.tests -test -os Browser -c Release
+./build.sh libs.tests -test -os browser -c Release
 ```
 
 ### Running individual test suites using JavaScript engine
 The following shows how to run tests for a specific library
 ```
-./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release
 ```
 
 ### Running outer loop tests using JavaScript engine
 
 To run all tests, including "outer loop" tests (which are typically slower and in some test suites less reliable, but which are more comprehensive):
 ```
-./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:Outerloop=true
+./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:Outerloop=true
 ```
 
 ### Running tests using different JavaScript engines
 It's possible to set a JavaScript engine explicitly by adding `/p:JSEngine` property:
 
 ```
-./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:JSEngine=SpiderMonkey
+./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:JSEngine=SpiderMonkey
 ```
 
 At the moment supported values are:
@@ -89,7 +89,7 @@ The following shows how to run tests for a specific library
 
 - CLI
     ```
-    XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+    XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release
     ```
 - Makefile target `run-browser-tests-<test>`
     ```
@@ -114,7 +114,7 @@ To run all tests, including "outer loop" tests (which are typically slower and i
 
 - CLI
     ```
-    XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:Outerloop=true
+    XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:Outerloop=true
     ```
 
 - Makefile target `run-browser-tests-<test>`
@@ -128,7 +128,7 @@ It's possible to set a Browser explicitly by adding `--browser=` command line ar
 
 - CLI
     ```
-    XHARNESS_COMMAND="test-browser --browser=safari" ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+    XHARNESS_COMMAND="test-browser --browser=safari" ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release
     ```
 
 - Makefile target `run-browser-tests-<test>`
@@ -154,7 +154,7 @@ that includes the expensive AOT step.
 inputs.
 
 - To recreate a similar build+test run locally, add `/p:BuildAOTTestsOnHelix=true` to the usual command line.
-- For example, with `./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release`
+- For example, with `./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release`
 
     - AOT:  add `/p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true /p:BuildAOTTestsOnHelix=true`
     - Only trimming (helpful to isolate issues caused by trimming):

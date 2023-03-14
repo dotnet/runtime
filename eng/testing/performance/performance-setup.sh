@@ -23,7 +23,7 @@ monoaot=false
 monoaot_path=
 run_categories="Libraries Runtime"
 csproj="src\benchmarks\micro\MicroBenchmarks.csproj"
-configurations="CompliationMode=$compilation_mode RunKind=$kind"
+configurations="CompilationMode=$compilation_mode RunKind=$kind"
 perf_fork=""
 perf_fork_branch="main"
 run_from_perf_repo=false
@@ -345,6 +345,8 @@ else
     fi
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
+
+    (cd $performance_directory; git show -s HEAD)
 
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory

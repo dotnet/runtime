@@ -7,6 +7,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <CLSCompliant>false</CLSCompliant>
     <IsTrimmable>false</IsTrimmable>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <NoWarn>$(NoWarn);CA1852</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>

@@ -1064,10 +1064,8 @@ namespace System.Xml
         // Returns value of an attribute at the specified index (position)
         public override string GetAttribute(int i)
         {
-            if (i < 0 || i >= _attrCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attrCount);
 
             return _nodes[_index + i + 1].StringValue;
         }
@@ -1128,10 +1126,8 @@ namespace System.Xml
         // Moves to an attribute at the specified index (position)
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= _attrCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attrCount);
 
             if (InAttributeValueIterator)
             {
@@ -2074,10 +2070,7 @@ namespace System.Xml
             {
                 Debug.Assert(_v1Compat, "XmlTextReaderImpl.DtdProcessing property cannot be changed on reader created via XmlReader.Create.");
 
-                if ((uint)value > (uint)DtdProcessing.Parse)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)value, (uint)DtdProcessing.Parse, nameof(value));
 
                 _dtdProcessing = value;
             }

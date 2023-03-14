@@ -201,4 +201,31 @@
   <data name="InvalidExceptionMarshallingValue" xml:space="preserve">
     <value>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</value>
   </data>
-</root>
+  <data name="InterfaceTypeNotSupportedTitle" xml:space="preserve">
+    <value>'GeneratedComInterfaceType' does not support the 'ComInterfaceType' value supplied to 'InterfaceTypeAttribute' on the same type.</value>
+  </data>
+  <data name="InterfaceTypeNotSupportedMessage" xml:space="preserve">
+    <value>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</value>
+  </data>
+  <data name="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage" xml:space="preserve">
+    <value>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceDescription" xml:space="preserve">
+    <value>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceMessage" xml:space="preserve">
+    <value>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceTitle" xml:space="preserve">
+    <value>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageDescription" xml:space="preserve">
+    <value>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute" xml:space="preserve">
+    <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'GeneratedComInterfaceAttribute' usage.</value>
+  </data>
+</root>

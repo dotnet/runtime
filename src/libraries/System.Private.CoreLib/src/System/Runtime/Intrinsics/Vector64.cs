@@ -1100,10 +1100,25 @@ namespace System.Runtime.Intrinsics
         {
             T result = default;
 
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            // Doing this as pairs is important for floating-point determinism
+            // This is because the underlying dpps instruction on x86/x64 will do this equivalently
+            // and otherwise the software vs accelerated implementations may differ in returned result.
+
+            if (Vector64<T>.Count != 1)
             {
-                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result = Scalar<T>.Add(result, value);
+                for (int index = 0; index < Vector64<T>.Count; index += 2)
+                {
+                    T value = Scalar<T>.Add(
+                        Scalar<T>.Multiply(left.GetElementUnsafe(index + 0), right.GetElementUnsafe(index + 0)),
+                        Scalar<T>.Multiply(left.GetElementUnsafe(index + 1), right.GetElementUnsafe(index + 1))
+                    );
+
+                    result = Scalar<T>.Add(result, value);
+                }
+            }
+            else
+            {
+                result = Scalar<T>.Multiply(left.GetElementUnsafe(0), right.GetElementUnsafe(0));
             }
 
             return result;

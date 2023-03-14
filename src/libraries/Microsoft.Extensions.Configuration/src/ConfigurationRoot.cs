@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     public class ConfigurationRoot : IConfigurationRoot, IDisposable
     {
         private readonly IList<IConfigurationProvider> _providers;
-        private readonly IList<IDisposable> _changeTokenRegistrations;
+        private readonly List<IDisposable> _changeTokenRegistrations;
         private ConfigurationReloadToken _changeToken = new ConfigurationReloadToken();
 
         /// <summary>
