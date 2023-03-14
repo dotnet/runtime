@@ -105,7 +105,7 @@ export async function mono_download_assets(): Promise<void> {
             }
         };
 
-        // start fetching and assets in parallel, only assets which are not part of memory snapshot
+        // start fetching assets in parallel, only assets which are not part of memory snapshot
         for (const asset of alwaysLoadedAssets) {
             countAndStartDownload(asset);
         }
