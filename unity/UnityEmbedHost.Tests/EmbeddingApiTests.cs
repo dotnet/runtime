@@ -36,7 +36,7 @@ public class EmbeddingApiTests
     // }
 
     [Test]
-    public void Second()
+    public void GCHandleNewAndGetTarget()
     {
         var obj = new object();
         var handle1 = CoreCLRHost.gchandle_new_v2(Unsafe.As<object, IntPtr>(ref obj), false);
