@@ -7,7 +7,7 @@ namespace System.IO.IsolatedStorage
     {
         private string GetIsolatedStorageRoot()
         {
-            return Helper.GetRootDirectory(Scope);
+           return Helper.GetDataDirectory(Scope);
         }
     }
 }
