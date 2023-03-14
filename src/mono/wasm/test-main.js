@@ -261,7 +261,7 @@ function configureRuntime(dotnet, runArgs, INTERNAL) {
         if (modulesToLoad) {
             dotnet.withModuleConfig({
                 onConfigLoaded: (config) => {
-                    loadNodeModules(config, INTERNAL.require, modulesToLoad)
+                    loadNodeModules(config, App.runtime.INTERNAL.require, modulesToLoad)
                 }
             })
         }

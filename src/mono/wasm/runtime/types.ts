@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { DotnetHostBuilder } from "./run-outer";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr, EmscriptenModuleInternal } from "./types/emscripten";
 
 export type GCHandle = {
@@ -355,7 +354,6 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
 }
 
 export type EarlyImports = {
-    isGlobal: boolean,
     isNode: boolean,
     isWorker: boolean,
     isShell: boolean,
@@ -370,7 +368,9 @@ export type EarlyExports = {
     binding: any,
     internal: any,
     module: any,
-    marshaled_imports: any,
+    helpers: any,
+    api: any,
+    mono_exit: (code: number, reason: any) => void,
 };
 export type EarlyReplacements = {
     fetch: any,
@@ -520,31 +520,4 @@ export type APIType = {
     getHeapF64: (offset: NativePointer) => number,
 }
 
-// this represents visibility in the javascript
-// like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
-export type RuntimeAPI = {
-    /**
-     * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
-     */
-    MONO: any,
-    /**
-     * @deprecated Please use API object instead. See also BINDINGType in dotnet-legacy.d.ts
-     */
-    BINDING: any,
-    INTERNAL: any,
-    Module: EmscriptenModule,
-    runtimeId: number,
-    runtimeBuildInfo: {
-        productVersion: string,
-        gitHash: string,
-        buildConfiguration: string,
-    }
-} & APIType
 
-export type ModuleAPI = {
-    dotnet: DotnetHostBuilder;
-    exit: (code: number, reason?: any) => void
-}
-
-export declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
-export type CreateDotnetRuntimeType = typeof createDotnetRuntime;

@@ -5,24 +5,6 @@
 
 //! This is not considered public API with backward compatibility guarantees. 
 
-interface DotnetHostBuilder {
-    withConfig(config: MonoConfig): DotnetHostBuilder;
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
-    withApplicationArguments(...args: string[]): DotnetHostBuilder;
-    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder;
-    withEnvironmentVariables(variables: {
-        [i: string]: string;
-    }): DotnetHostBuilder;
-    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
-    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
-    withDebugging(level: number): DotnetHostBuilder;
-    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
-    withApplicationArgumentsFromQuery(): DotnetHostBuilder;
-    withStartupMemoryCache(value: boolean): DotnetHostBuilder;
-    create(): Promise<RuntimeAPI>;
-    run(): Promise<number>;
-}
-
 declare interface NativePointer {
     __brandNativePointer: "NativePointer";
 }
@@ -224,6 +206,23 @@ type APIType = {
     getHeapF32: (offset: NativePointer) => number;
     getHeapF64: (offset: NativePointer) => number;
 };
+
+interface DotnetHostBuilder {
+    withConfig(config: MonoConfig): DotnetHostBuilder;
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
+    withApplicationArguments(...args: string[]): DotnetHostBuilder;
+    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder;
+    withEnvironmentVariables(variables: {
+        [i: string]: string;
+    }): DotnetHostBuilder;
+    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
+    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
+    withDebugging(level: number): DotnetHostBuilder;
+    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
+    withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    create(): Promise<RuntimeAPI>;
+    run(): Promise<number>;
+}
 type RuntimeAPI = {
     /**
      * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
@@ -242,12 +241,6 @@ type RuntimeAPI = {
         buildConfiguration: string;
     };
 } & APIType;
-type ModuleAPI = {
-    dotnet: DotnetHostBuilder;
-    exit: (code: number, reason?: any) => void;
-};
-declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
-type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 
 interface IDisposable {
     dispose(): void;
@@ -273,11 +266,13 @@ interface IMemoryView extends IDisposable {
     get byteLength(): number;
 }
 
+declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
+declare const dotnet: DotnetHostBuilder;
+declare let exit: (code: number, reason: any) => void;
+type CreateDotnetRuntimeType = typeof createDotnetRuntime;
+
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
 
-declare const dotnet: ModuleAPI["dotnet"];
-declare const exit: ModuleAPI["exit"];
-
-export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

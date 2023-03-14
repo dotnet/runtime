@@ -4,7 +4,10 @@
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal, DotnetModuleInternal, mono_assert } from "./types";
+import type { RuntimeAPI } from "./loader/types";
+import { DotnetModule, MonoConfig, MonoConfigInternal, DotnetModuleInternal, mono_assert } from "./types";
+
+import { CharPtrNull } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -13,7 +16,6 @@ import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./
 import { mono_on_abort, mono_exit } from "./run";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
-import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController } from "./promise-controller";
 import { string_decoder } from "./strings";
@@ -184,7 +186,6 @@ async function preInitWorkerAsync() {
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preInitWorker");
         beforePreInit.promise_control.resolve();
         mono_wasm_pre_init_essential(true);
-        await init_polyfills_async();
         afterPreInit.promise_control.resolve();
         endMeasure(mark, MeasuredBlock.preInitWorker);
     } catch (err) {
@@ -360,7 +361,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential_async");
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
-    await init_polyfills_async();
     await mono_wasm_load_config(Module.configSrc);
 
     if (MonoWasmThreads) {

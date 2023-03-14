@@ -7,54 +7,64 @@
 // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
 #if USE_PTHREADS
 const monoWasmThreads = true;
-const isPThread = `ENVIRONMENT_IS_PTHREAD`;
 #else
 const monoWasmThreads = false;
-const isPThread = "false";
 #endif
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
 const WasmEnableLegacyJsInterop = process.env.WasmEnableLegacyJsInterop !== "false";
 
+function setup() {
+    const initializeImportsAndExports = Module['initializeImportsAndExports'];
+    const pthreadReplacements = {};
+    const dotnet_replacements = {
+        scriptUrl: import.meta.url,
+        fetch: globalThis.fetch,
+        require,
+        updateMemoryViews,
+        pthreadReplacements,
+        scriptDirectory
+    };
+    #if USE_PTHREADS
+    dotnet_replacements.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
+    dotnet_replacements.threadInitTLS = PThread.threadInitTLS;
+    dotnet_replacements.allocateUnusedWorker = PThread.allocateUnusedWorker;
+    #else
+    const ENVIRONMENT_IS_PTHREAD = false;
+    #endif
+    if (ENVIRONMENT_IS_NODE) {
+        dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => mod.createRequire(import.meta.url));
+        __dotnet_replacements.requirePromise.then(someRequire => {
+            require = someRequire;
+        });
+    }
+    Module['noExitRuntime'] = ENVIRONMENT_IS_WEB;
+    if (!Module['locateFile']) Module['locateFile'] = Module['__locateFile'] = (path) => dotnet_replacements.scriptDirectory + path;
+
+    // call runtime
+    initializeImportsAndExports(
+        {
+            isNode: ENVIRONMENT_IS_NODE, isWorker: ENVIRONMENT_IS_WORKER, isShell: ENVIRONMENT_IS_SHELL, isWeb: ENVIRONMENT_IS_WEB, isPThread: ENVIRONMENT_IS_PTHREAD,
+            quit_, ExitStatus
+        }, dotnet_replacements);
+
+    updateMemoryViews = dotnet_replacements.updateMemoryViews;
+    fetch = dotnet_replacements.fetch;
+    _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
+    #if USE_PTHREADS
+    PThread.loadWasmModuleToWorker = dotnet_replacements.loadWasmModuleToWorker;
+    PThread.threadInitTLS = dotnet_replacements.threadInitTLS;
+    PThread.allocateUnusedWorker = dotnet_replacements.allocateUnusedWorker;
+    #endif
+}
+
+const postset = `
+    DOTNET.setup();
+`;
+
 const DotnetSupportLib = {
-    $DOTNET: {},
-    // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IIFE
-    // Emscripten uses require function for nodeJS even in ES6 module. We need https://nodejs.org/api/module.html#modulecreaterequirefilename
-    // We use dynamic import because there is no "module" module in the browser.
-    // This is async init of it, note it would become available only after first tick.
-    // Also fix of scriptDirectory would be delayed
-    // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
-    // We also replace implementation of fetch
-    $DOTNET__postset: `
-let __dotnet_replacement_PThread = ${monoWasmThreads} ? {} : undefined;
-${monoWasmThreads ? `
-__dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWorker;
-__dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
-__dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
-` : ''}
-let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateMemoryViews, pthreadReplacements: __dotnet_replacement_PThread};
-if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise = __requirePromise;
-}
-let __dotnet_exportedAPI = __initializeImportsAndExports(
-    { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
-    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_imports: IMPORTS },
-    __dotnet_replacements, __callbackAPI);
-updateMemoryViews = __dotnet_replacements.updateMemoryViews;
-fetch = __dotnet_replacements.fetch;
-_scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
-if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise.then(someRequire => {
-        require = someRequire;
-    });
-}
-var noExitRuntime = __dotnet_replacements.noExitRuntime;
-${monoWasmThreads ? `
-PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
-PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTLS;
-PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocateUnusedWorker;
-` : ''}
-`,
+    $DOTNET: { setup },
+    $DOTNET__postset: postset
 };
 
 // the methods would be visible to EMCC linker
@@ -97,7 +107,7 @@ let linked_functions = [
     "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
-    
+
     "icudt68_dat",
 ];
 

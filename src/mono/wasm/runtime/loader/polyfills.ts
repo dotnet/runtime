@@ -3,15 +3,14 @@
 
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
+import type { DotnetModuleConfigImports, EarlyReplacements } from "../types";
+import type { TypedArray } from "../types/emscripten";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
-import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
-import { DotnetModuleConfigImports, EarlyReplacements } from "./types";
-import { TypedArray } from "./types/emscripten";
 
 let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
 
-export function init_polyfills(replacements: EarlyReplacements): void {
+export async function init_polyfills_async(): Promise<void> {
 
     // performance.now() is used by emscripten and doesn't work in JSC
     if (typeof globalThis.performance === "undefined") {
@@ -119,68 +118,6 @@ export function init_polyfills(replacements: EarlyReplacements): void {
             }
         };
     }
-
-    // require replacement
-    const imports = Module.imports = (Module.imports || {}) as DotnetModuleConfigImports;
-    const requireWrapper = (wrappedRequire: Function) => (name: string) => {
-        const resolved = (<any>Module.imports)[name];
-        if (resolved) {
-            return resolved;
-        }
-        return wrappedRequire(name);
-    };
-    if (imports.require) {
-        runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper(imports.require));
-    }
-    else if (replacements.require) {
-        runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper(replacements.require));
-    } else if (replacements.requirePromise) {
-        runtimeHelpers.requirePromise = replacements.requirePromise.then(require => requireWrapper(require));
-    } else {
-        runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper((name: string) => {
-            throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
-        }));
-    }
-
-    // script location
-    runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
-    Module.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
-    if (BuildConfiguration === "Debug") {
-        console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
-        console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
-    }
-    if (Module.__locateFile === Module.locateFile) {
-        // above it's our early version from dotnet.es6.pre.js, we could replace it with better
-        Module.locateFile = runtimeHelpers.locateFile = (path) => {
-            if (isPathAbsolute(path)) return path;
-            return runtimeHelpers.scriptDirectory + path;
-        };
-    } else {
-        // we use what was given to us
-        runtimeHelpers.locateFile = Module.locateFile!;
-    }
-
-    // prefer fetch_like over global fetch for assets
-    replacements.fetch = runtimeHelpers.fetch_like = imports.fetch || fetch_like;
-
-    // misc
-    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
-
-    // threads
-    if (MonoWasmThreads) {
-        if (replacements.pthreadReplacements) {
-            replaceEmscriptenPThreadLibrary(replacements.pthreadReplacements);
-        }
-    }
-
-    // memory
-    const originalUpdateMemoryViews = replacements.updateMemoryViews;
-    runtimeHelpers.updateMemoryViews = replacements.updateMemoryViews = () => {
-        originalUpdateMemoryViews();
-    };
-}
-
-export async function init_polyfills_async(): Promise<void> {
     if (ENVIRONMENT_IS_NODE) {
         // wait for locateFile setup on NodeJs
         INTERNAL.require = await runtimeHelpers.requirePromise;
@@ -188,7 +125,6 @@ export async function init_polyfills_async(): Promise<void> {
             const { performance } = INTERNAL.require("perf_hooks");
             globalThis.performance = performance;
         }
-
         if (!globalThis.crypto) {
             globalThis.crypto = <any>{};
         }
@@ -303,6 +239,68 @@ export function detectScriptDirectory(replacements: EarlyReplacements): string {
     }
     replacements.scriptUrl = normalizeFileUrl(replacements.scriptUrl);
     return normalizeDirectoryUrl(replacements.scriptUrl);
+}
+
+export function init_replacements(replacements: EarlyReplacements): void {
+
+    // require replacement
+    const imports = Module.imports = (Module.imports || {}) as DotnetModuleConfigImports;
+    const requireWrapper = (wrappedRequire: Function) => (name: string) => {
+        const resolved = (<any>Module.imports)[name];
+        if (resolved) {
+            return resolved;
+        }
+        return wrappedRequire(name);
+    };
+    if (imports.require) {
+        runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper(imports.require));
+    }
+    else if (replacements.require) {
+        runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper(replacements.require));
+    } else if (replacements.requirePromise) {
+        runtimeHelpers.requirePromise = replacements.requirePromise.then(require => requireWrapper(require));
+    } else {
+        runtimeHelpers.requirePromise = replacements.requirePromise = Promise.resolve(requireWrapper((name: string) => {
+            throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
+        }));
+    }
+
+    // script location
+    runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
+    Module.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
+    if (BuildConfiguration === "Debug") {
+        console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
+        console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
+    }
+    if (Module.__locateFile === Module.locateFile) {
+        // above it's our early version from dotnet.es6.pre.js, we could replace it with better
+        Module.locateFile = runtimeHelpers.locateFile = (path) => {
+            if (isPathAbsolute(path)) return path;
+            return runtimeHelpers.scriptDirectory + path;
+        };
+    } else {
+        // we use what was given to us
+        runtimeHelpers.locateFile = Module.locateFile!;
+    }
+
+    // prefer fetch_like over global fetch for assets
+    replacements.fetch = runtimeHelpers.fetch_like = imports.fetch || fetch_like;
+
+    // misc
+    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
+
+    /* TODO threads
+    if (MonoWasmThreads) {
+        if (replacements.pthreadReplacements) {
+            replaceEmscriptenPThreadLibrary(replacements.pthreadReplacements);
+        }
+    }*/
+
+    // memory
+    const originalUpdateMemoryViews = replacements.updateMemoryViews;
+    runtimeHelpers.updateMemoryViews = replacements.updateMemoryViews = () => {
+        originalUpdateMemoryViews();
+    };
 }
 
 const protocolRx = /^[a-zA-Z][a-zA-Z\d+\-.]*?:\/\//;

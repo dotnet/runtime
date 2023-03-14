@@ -2,26 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // WARNING: code in this file is executed before any of the emscripten code, so there is very little initialized already
-import { emscriptenEntrypoint, runtimeHelpers } from "./imports";
-import { setup_proxy_console } from "./logging";
-import { mono_exit } from "./run";
-import { DotnetModuleConfig, MonoConfig, MonoConfigInternal, mono_assert, RuntimeAPI } from "./types";
 
-export interface DotnetHostBuilder {
-    withConfig(config: MonoConfig): DotnetHostBuilder
-    withConfigSrc(configSrc: string): DotnetHostBuilder
-    withApplicationArguments(...args: string[]): DotnetHostBuilder
-    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder
-    withEnvironmentVariables(variables: { [i: string]: string; }): DotnetHostBuilder
-    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder
-    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder
-    withDebugging(level: number): DotnetHostBuilder
-    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
-    withApplicationArgumentsFromQuery(): DotnetHostBuilder
-    withStartupMemoryCache(value: boolean): DotnetHostBuilder
-    create(): Promise<RuntimeAPI>
-    run(): Promise<number>
-}
+import type { DotnetHostBuilder, RuntimeAPI, RuntimeModuleAPI } from "./types";
+import type { DotnetModuleConfig, MonoConfig, MonoConfigInternal, RuntimeHelpers, AssetEntry, ResourceRequest, EarlyExports, EarlyImports, EarlyReplacements } from "../types";
+import type { IMemoryView } from "../marshal";
+import type { EmscriptenModule } from "../types/emscripten";
+
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, runtimeHelpers, setImports } from "./imports";
+import { init_polyfills_async, init_replacements } from "./polyfills";
 
 class HostBuilder implements DotnetHostBuilder {
     private instance?: RuntimeAPI;
@@ -296,7 +284,7 @@ class HostBuilder implements DotnetHostBuilder {
                 }
                 mono_assert(this.moduleConfig, "Null moduleConfig");
                 mono_assert(this.moduleConfig.config, "Null moduleConfig.config");
-                this.instance = await emscriptenEntrypoint(this.moduleConfig);
+                this.instance = await createDotnetRuntime(this.moduleConfig);
             }
             if (this.virtualWorkingDirectory) {
                 const FS = (this.instance!.Module as any).FS;
@@ -336,4 +324,149 @@ class HostBuilder implements DotnetHostBuilder {
     }
 }
 
-export const dotnet: DotnetHostBuilder = new HostBuilder();
+let mono_exit = (code: number, reason: any) => {
+    console.log(`dotnet failed early ${code} ${reason}`);
+};
+
+let consoleWebSocket: WebSocket;
+
+function setup_proxy_console(id: string, console: Console, origin: string): void {
+    // this need to be copy, in order to keep reference to original methods
+    const originalConsole = {
+        log: console.log,
+        error: console.error
+    };
+    const anyConsole = console as any;
+
+    function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
+        return function (...args: any[]) {
+            try {
+                let payload = args[0];
+                if (payload === undefined) payload = "undefined";
+                else if (payload === null) payload = "null";
+                else if (typeof payload === "function") payload = payload.toString();
+                else if (typeof payload !== "string") {
+                    try {
+                        payload = JSON.stringify(payload);
+                    } catch (e) {
+                        payload = payload.toString();
+                    }
+                }
+
+                if (typeof payload === "string" && id !== "main")
+                    payload = `[${id}] ${payload}`;
+
+                if (asJson) {
+                    func(JSON.stringify({
+                        method: prefix,
+                        payload: payload,
+                        arguments: args
+                    }));
+                } else {
+                    func([prefix + payload, ...args.slice(1)]);
+                }
+            } catch (err) {
+                originalConsole.error(`proxyConsole failed: ${err}`);
+            }
+        };
+    }
+
+    const methods = ["debug", "trace", "warn", "info", "error"];
+    for (const m of methods) {
+        if (typeof (anyConsole[m]) !== "function") {
+            anyConsole[m] = proxyConsoleMethod(`console.${m}: `, console.log, false);
+        }
+    }
+
+    const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
+
+    consoleWebSocket = new WebSocket(consoleUrl);
+    consoleWebSocket.addEventListener("open", () => {
+        originalConsole.log(`browser: [${id}] Console websocket connected.`);
+    });
+    consoleWebSocket.addEventListener("error", (event) => {
+        originalConsole.error(`[${id}] websocket error: ${event}`, event);
+    });
+    consoleWebSocket.addEventListener("close", (event) => {
+        originalConsole.error(`[${id}] websocket closed: ${event}`, event);
+    });
+
+    const send = (msg: string) => {
+        if (consoleWebSocket.readyState === WebSocket.OPEN) {
+            consoleWebSocket.send(msg);
+        }
+        else {
+            originalConsole.log(msg);
+        }
+    };
+
+    for (const m of ["log", ...methods])
+        anyConsole[m] = proxyConsoleMethod(`console.${m}`, send, true);
+}
+
+function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+    if (!condition) {
+        const message = typeof messageFactory === "string"
+            ? messageFactory
+            : messageFactory();
+        throw new Error(`Assert failed: ${message}`);
+    }
+}
+
+
+async function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI> {
+    const moduleNames = ["./dotnet-runtime.js", "./dotnet-core.js"];
+    const modulePromises = moduleNames.map(name => import(name));
+
+    const module = {} as any;
+    const helpers: RuntimeHelpers = {} as any;
+    const api: RuntimeAPI = {} as any;
+    const exports: EarlyExports = {
+        mono: {},
+        binding: {},
+        internal: {},
+        module,
+        helpers,
+        api,
+        mono_exit
+    };
+    setImports(module, helpers);
+    await init_polyfills_async();
+    if (typeof moduleFactory === "function") {
+        const extension = moduleFactory({ Module: module, ...module });
+        Object.assign(module, extension);
+    }
+    else if (typeof moduleFactory === "object") {
+        Object.assign(module, moduleFactory);
+    }
+    else {
+        throw new Error("MONO_WASM: Can't use moduleFactory callback of createDotnetRuntime function.");
+    }
+
+    const runtimeModule: RuntimeModuleAPI = await modulePromises[0];
+    const { initializeImportsAndExports } = runtimeModule;
+
+    const { default: emscriptenModule } = await modulePromises[1];
+    module["initializeImportsAndExports"] = (imports: EarlyImports, replacements: EarlyReplacements) => {
+        init_replacements(replacements);
+        initializeImportsAndExports(imports, exports);
+        exit = mono_exit = exports.mono_exit;
+    };
+    await emscriptenModule(module);
+    return api;
+}
+
+const dotnet: DotnetHostBuilder = new HostBuilder();
+let exit = mono_exit;
+type CreateDotnetRuntimeType = typeof createDotnetRuntime;
+
+
+export {
+    dotnet, exit,
+    EmscriptenModule,
+    RuntimeAPI, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig, IMemoryView, AssetEntry, ResourceRequest,
+};
+export default createDotnetRuntime;
+declare global {
+    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
+}

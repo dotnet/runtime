@@ -7,7 +7,7 @@ import { abort_startup, mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { mono_assert } from "./types";
-import { consoleWebSocket, mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 
 /**
@@ -156,6 +156,7 @@ function logErrorOnExit(exit_code: number, reason?: any) {
             else
                 console.error(JSON.stringify(reason));
         }
+        /* TODO
         if (consoleWebSocket) {
             const stop_when_ws_buffer_empty = () => {
                 if (consoleWebSocket.bufferedAmount == 0) {
@@ -170,7 +171,7 @@ function logErrorOnExit(exit_code: number, reason?: any) {
             stop_when_ws_buffer_empty();
         } else {
             console.log("WASM EXIT " + exit_code);
-        }
+        }*/
     }
 
     try {

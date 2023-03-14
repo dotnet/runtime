@@ -424,9 +424,7 @@
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
-                       runtime/es6/dotnet.es6.lib.js;
-                       runtime/es6/dotnet.es6.post.js;
+    <Copy SourceFiles="runtime/es6/dotnet.es6.lib.js;
                        runtime/es6/dotnet.es6.extpost.js;"
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
@@ -457,7 +455,12 @@
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 
+    <Move SourceFiles="$(NativeBinDir)dotnet-core.wasm"
+          DestinationFiles="$(NativeBinDir)dotnet.wasm" />
+
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
+                       $(NativeBinDir)dotnet-runtime.js;
+                       $(NativeBinDir)dotnet-core.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;

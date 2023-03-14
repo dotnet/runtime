@@ -31,15 +31,11 @@ const terserConfig = {
         keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_set_timeout_exec)/,
         keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
     },
-    format: {
-        wrap_iife: true
-    }
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
 const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/runtime/rollup.config.js\n\n//! This is not considered public API with backward compatibility guarantees. \n";
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
-const format = "iife";
 const name = "__dotnet_runtime";
 const inlineAssert = [
     {
@@ -90,15 +86,15 @@ const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, 
 const externalDependencies = [
 ];
 
-const iffeConfig = {
+const dotnetConfig = {
     treeshake: !isDebug,
-    input: "exports.ts",
+    input: "./loader/index.ts",
     output: [
         {
-            file: nativeBinDir + "/src/es6/runtime.es6.iffe.js",
+            format: "es",
+            file: nativeBinDir + "/dotnet.js",
             name,
             banner,
-            format,
             plugins,
         }
     ],
@@ -107,7 +103,7 @@ const iffeConfig = {
     onwarn: onwarn
 };
 const typesConfig = {
-    input: "./export-types.ts",
+    input: "./loader/index.ts",
     output: [
         {
             format: "es",
@@ -118,6 +114,22 @@ const typesConfig = {
     ],
     external: externalDependencies,
     plugins: [dts()],
+};
+const runtimeConfig = {
+    treeshake: !isDebug,
+    input: "exports.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet-runtime.js",
+            name,
+            banner,
+            plugins,
+        }
+    ],
+    external: externalDependencies,
+    plugins: outputCodePlugins,
+    onwarn: onwarn
 };
 const legacyConfig = {
     input: "./net6-legacy/export-types.ts",
@@ -189,7 +201,8 @@ function makeWorkerConfig(workerName, workerInputSourcePath) {
 const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => makeWorkerConfig(workerInput.workerName, workerInput.path));
 
 const allConfigs = [
-    iffeConfig,
+    dotnetConfig,
+    runtimeConfig,
     typesConfig,
     legacyConfig,
 ].concat(workerConfigs)

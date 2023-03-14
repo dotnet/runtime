@@ -76,6 +76,8 @@ export declare interface EmscriptenModuleInternal {
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
+    requirePromise: Promise<Function>;
+    INTERNAL: any;
 }
 
 

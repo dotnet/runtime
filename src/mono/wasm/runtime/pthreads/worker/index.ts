@@ -16,7 +16,6 @@ import {
     dotnetPthreadAttached,
     WorkerThreadEventTarget
 } from "./events";
-import { setup_proxy_console } from "../../logging";
 import { afterConfigLoaded, preRunWorker } from "../../startup";
 
 // re-export some of the events types
@@ -105,7 +104,7 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
     afterConfigLoaded.promise_control.resolve(config);
 
     if (ENVIRONMENT_IS_WEB && config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
-        setup_proxy_console("pthread-worker", console, self.location.href);
+        // TODO setup_proxy_console("pthread-worker", console, self.location.href);
     }
 }
 
