@@ -24,6 +24,14 @@ static void* GetConstantPointer(Compiler* comp, GenTree* tree)
 // Save expression to a local and append it as the last statement in exprBlock
 static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprBlock, DebugInfo& debugInfo)
 {
+    if ((expr->gtFlags & GTF_GLOB_EFFECT) == 0)
+    {
+        GenTree* clone = comp->gtClone(expr, true);
+        if (clone)
+        {
+            return clone;
+        }
+    }
     unsigned const tmpNum         = comp->lvaGrabTemp(true DEBUGARG("spilling expr"));
     comp->lvaTable[tmpNum].lvType = expr->TypeGet();
     Statement* asgStmt            = comp->fgNewStmtAtEnd(exprBlock, comp->gtNewTempAssign(tmpNum, expr));
