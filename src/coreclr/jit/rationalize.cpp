@@ -499,15 +499,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         use = LIR::Use(BlockRange(), useEdge, parentStack.Top(1));
     }
 
-    if (node->TypeIs(TYP_STRUCT))
-    {
-        if (!node->OperIs(GT_CALL, GT_LCL_VAR, GT_ASG, GT_OBJ, GT_BLK, GT_LCL_FLD, GT_RETURN, GT_COMMA, GT_IND))
-        {
-            printf("%s\n", GenTree::OpName(node->OperGet()));
-            assert(!"Uh oh");
-        }
-    }
-
     assert(node == use.Def());
     switch (node->OperGet())
     {
