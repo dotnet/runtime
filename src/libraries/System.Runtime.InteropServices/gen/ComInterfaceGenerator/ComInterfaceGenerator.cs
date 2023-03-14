@@ -393,32 +393,31 @@ namespace Microsoft.Interop
             // Create the stub.
             var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, new InteropAttributeCompilationData(), generatedComAttribute), environment, typeof(VtableIndexStubGenerator).Assembly);
 
-            for (var i = 0; i < signatureContext.ElementTypeInformation.Length; ++i)
+            // Search for the element information for the managed return value.
+            // We need to transform it such that any return type is converted to an out parameter at the end of the parameter list.
+            ImmutableArray<TypePositionInfo> returnSwappedSignatureElements = signatureContext.ElementTypeInformation;
+            for (int i = 0; i < returnSwappedSignatureElements.Length; ++i)
             {
-                if (signatureContext.ElementTypeInformation[i].IsManagedReturnPosition)
+                if (returnSwappedSignatureElements[i].IsManagedReturnPosition)
                 {
-                    if (signatureContext.ElementTypeInformation[i].ManagedType == SpecialTypeInfo.Void)
+                    if (returnSwappedSignatureElements[i].ManagedType == SpecialTypeInfo.Void)
                     {
-                        signatureContext = signatureContext with
-                        {
-                            ElementTypeInformation = signatureContext.ElementTypeInformation.RemoveAt(i)
-                        };
+                        // Return type is void, just remove the element from the signature list.
+                        // We don't introduce an out parameter.
+                        returnSwappedSignatureElements = returnSwappedSignatureElements.RemoveAt(i);
                     }
                     else
                     {
-                        var managedSignatureAsNativeOut = signatureContext.ElementTypeInformation[i] with
+                        // Convert the current element into an out parameter on the native signature
+                        // while keeping it at the return position in the managed signature.
+                        var managedSignatureAsNativeOut = returnSwappedSignatureElements[i] with
                         {
                             RefKind = RefKind.Out,
                             RefKindSyntax = SyntaxKind.OutKeyword,
                             ManagedIndex = TypePositionInfo.ReturnIndex,
                             NativeIndex = symbol.Parameters.Length
                         };
-                        signatureContext = signatureContext with
-                        {
-                            ElementTypeInformation = signatureContext
-                                .ElementTypeInformation
-                                .SetItem(i, managedSignatureAsNativeOut)
-                        };
+                        returnSwappedSignatureElements = returnSwappedSignatureElements.SetItem(i, managedSignatureAsNativeOut);
                     }
                     break;
                 }
@@ -426,7 +425,9 @@ namespace Microsoft.Interop
 
             signatureContext = signatureContext with
             {
-                ElementTypeInformation = signatureContext.ElementTypeInformation.Add(
+                // Add the HRESULT return value in the native signature.
+                // This element does not have any influence on the managed signature, so don't assign a managed index.
+                ElementTypeInformation = returnSwappedSignatureElements.Add(
                     new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo())
                     {
                         NativeIndex = TypePositionInfo.ReturnIndex

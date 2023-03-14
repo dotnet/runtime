@@ -155,7 +155,7 @@ namespace Microsoft.Interop
                 return info.IsNativeReturnPosition;
             }
 
-            return false;
+            throw new InvalidOperationException("Stub contexts should not be bidirectional");
         }
     }
 }

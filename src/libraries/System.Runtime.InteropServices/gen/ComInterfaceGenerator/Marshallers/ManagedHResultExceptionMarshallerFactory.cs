@@ -19,6 +19,10 @@ namespace Microsoft.Interop
 
         public ManagedHResultExceptionMarshallerFactory(IMarshallingGeneratorFactory inner, MarshalDirection direction)
         {
+            if (direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.UnmanagedToManaged))
+            {
+                throw new ArgumentOutOfRangeException(nameof(direction));
+            }
             _inner = inner;
             _direction = direction;
         }
@@ -27,11 +31,12 @@ namespace Microsoft.Interop
         {
             if (info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo)
             {
-                if (_direction == MarshalDirection.UnmanagedToManaged)
+                return _direction switch
                 {
-                    return new UnmanagedToManagedMarshaller();
-                }
-                return new ManagedToUnmanagedMarshaller();
+                    MarshalDirection.UnmanagedToManaged => new UnmanagedToManagedMarshaller(),
+                    MarshalDirection.ManagedToUnmanaged => new ManagedToUnmanagedMarshaller(),
+                    _ => throw new UnreachableException()
+                };
             }
             else
             {
@@ -51,16 +56,16 @@ namespace Microsoft.Interop
                     yield break;
                 }
 
-                (_, string nativeIdentifier) = context.GetIdentifiers(info);
+                (string managedIdentifier, _) = context.GetIdentifiers(info);
 
-                // Marshal.ThrowExceptionForHR(<native>);
+                // Marshal.ThrowExceptionForHR(<managed>);
                 yield return ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
                             IdentifierName("ThrowExceptionForHR")),
                         ArgumentList(
-                            SingletonSeparatedList(Argument(IdentifierName(nativeIdentifier))))));
+                            SingletonSeparatedList(Argument(IdentifierName(managedIdentifier))))));
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
@@ -82,13 +87,13 @@ namespace Microsoft.Interop
                     yield break;
                 }
 
-                (_, string nativeIdentifier) = context.GetIdentifiers(info);
+                (string managedIdentifier, _) = context.GetIdentifiers(info);
 
-                //<native> = 0; // S_OK
+                //<managed> = 0; // S_OK
                 yield return ExpressionStatement(
                     AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(nativeIdentifier),
+                        IdentifierName(managedIdentifier),
                         LiteralExpression(
                             SyntaxKind.NumericLiteralExpression,
                             Literal(0))))
