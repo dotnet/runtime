@@ -189,7 +189,7 @@ namespace System.Runtime.CompilerServices
         public static bool IsReferenceOrContainsReferences<T>()
         {
             var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType || pEEType.HasPointers;
+            return !pEEType.IsValueType || pEEType.ContainsGCPointers;
         }
 
         [Intrinsic]

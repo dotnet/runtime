@@ -575,8 +575,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
         src->SetContained();
 
-        bool isSrcAddrLocal = false;
-
         if (src->OperIs(GT_IND))
         {
             GenTree* srcAddr = src->AsIndir()->Addr();
@@ -584,12 +582,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
             srcAddr->ClearContained();
-            isSrcAddrLocal = srcAddr->OperIsLocalAddr();
         }
         else
         {
-            isSrcAddrLocal = true;
-
             if (src->OperIs(GT_LCL_VAR))
             {
                 // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
