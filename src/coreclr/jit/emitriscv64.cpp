@@ -597,7 +597,6 @@ void emitter::emitIns_R_R(
     }
     else
     {
-        fprintf(stderr, "[CLAMP] Illegal %x\n", code);
         NYI_RISCV64("illegal ins within emitIns_R_R!");
     }
 
@@ -4053,6 +4052,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 emitIns_R_R_I(INS_srli, EA_8BYTE, regOp2, regOp2, 32);
             }
         }
+
         if (needCheckOv)
         {
             assert(!varTypeIsFloating(dst));
@@ -4062,6 +4062,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             if (dst->GetRegNum() == regOp1)
             {
                 assert(codeGen->rsGetRsvdReg() != regOp1);
+                assert(REG_RA != regOp1);
                 saveOperReg1 = codeGen->rsGetRsvdReg();
                 saveOperReg2 = regOp2;
                 emitIns_R_R_I(INS_addi, attr, codeGen->rsGetRsvdReg(), regOp1, 0);
@@ -4069,6 +4070,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             else if (dst->GetRegNum() == regOp2)
             {
                 assert(codeGen->rsGetRsvdReg() != regOp2);
+                assert(REG_RA != regOp2);
                 saveOperReg1 = regOp1;
                 saveOperReg2 = codeGen->rsGetRsvdReg();
                 emitIns_R_R_I(INS_addi, attr, codeGen->rsGetRsvdReg(), regOp2, 0);
@@ -4109,7 +4111,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 else
                 {
                     tempReg1 = REG_RA; // src1->GetSingleTempReg();
-                    tempReg2 = codeGen->rsGetRsvdReg();
+                    tempReg2 = REG_T5; // TODO-RISCV64-Bug?: Assign proper temp register
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);
                     assert(tempReg2 != saveOperReg2);

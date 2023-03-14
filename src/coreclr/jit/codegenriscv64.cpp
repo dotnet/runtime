@@ -3299,7 +3299,32 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 //
 void CodeGen::genCkfinite(GenTree* treeNode)
 {
-    NYI_RISCV64("genCkfinite-----unimplemented/unused on RISCV64 yet----");
+    assert(treeNode->OperGet() == GT_CKFINITE);
+
+    GenTree*  op1         = treeNode->AsOp()->gtOp1;
+    var_types targetType  = treeNode->TypeGet();
+    int       expMask     = 0x381; // 0b1110000001;
+
+    emitter* emit = GetEmitter();
+    emitAttr attr = emitActualTypeSize(treeNode);
+
+    // Extract exponent into a register.
+    regNumber intReg = treeNode->GetSingleTempReg();
+    regNumber fpReg  = genConsumeReg(op1);
+
+    emit->emitIns_R_R(attr== EA_4BYTE ? INS_fclass_s : INS_fclass_d, attr, intReg, fpReg);
+    // Mask of exponent with all 1's and check if the exponent is all 1's
+    emit->emitIns_R_R_I(INS_andi, EA_PTRSIZE, intReg, intReg, expMask);
+    // If exponent is all 1's, throw ArithmeticException
+    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_bne, intReg);
+
+    // if it is a finite value copy it to targetReg
+    if (treeNode->GetRegNum() != fpReg)
+    {
+        inst_Mov(targetType, treeNode->GetRegNum(), fpReg, /* canSkip */ true);
+    }
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -6440,8 +6465,8 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 
     if (srcType != dstType)
     {
-        instruction ins = (srcType == TYP_FLOAT) ? INS_fcvt_d_w  // convert Single to Double
-                                                 : INS_fcvt_w_d; // convert Double to Single
+        instruction ins = (srcType == TYP_FLOAT) ? INS_fcvt_d_s  // convert Single to Double
+                                                 : INS_fcvt_s_d; // convert Double to Single
 
         GetEmitter()->emitIns_R_R(ins, emitActualTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum());
     }
