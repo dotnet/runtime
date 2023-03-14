@@ -242,10 +242,9 @@ namespace System.Runtime.CompilerServices
         // Returns true iff the object has a component size;
         // i.e., is variable length like System.String or Array.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool ObjectHasComponentSize(object obj)
+        internal static unsafe bool ObjectHasComponentSize(object obj)
         {
-            Debug.Assert(obj != null);
-            return obj.GetEETypePtr().ComponentSize != 0;
+            return GetMethodTable(obj)->HasComponentSize;
         }
 
         public static void PrepareMethod(RuntimeMethodHandle method)
