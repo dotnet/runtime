@@ -40,10 +40,10 @@ namespace DebuggerTests
 
             if (res["id"] == null)
             {
-                Console.WriteLine($"InspectorClient - {testId} - HEY THAYS HANDLEMESSAGE - NULL - {msg}");
+                logger.LogInformation($"HEY THAYS HANDLEMESSAGE - NULL - {msg}");
                 return onEvent(res["sessionId"]?.Value<string>(), res["method"].Value<string>(), res["params"] as JObject, token);
             }
-            Console.WriteLine($"InspectorClient - {testId} - HEY THAYS HANDLEMESSAGE - {res["id"]} - {msg}");
+            logger.LogInformation($"HEY THAYS HANDLEMESSAGE - {res["id"]} - {msg}");
 
             var id = res.ToObject<MessageId>();
             if (!pending_cmds.Remove(id, out var item))
@@ -107,7 +107,7 @@ namespace DebuggerTests
             var str = o.ToString();
 
             var bytes = Encoding.UTF8.GetBytes(str);
-            Console.WriteLine($"InspectorClient - {testId} - HEY THAYS SENDCOMMAND - {id} - {str}");
+            logger.LogInformation($"HEY THAYS SENDCOMMAND - {id} - {str}");
             Send(bytes, token);
             return tcs.Task;
         }
