@@ -2119,7 +2119,17 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		} else if (!strcmp (tm, "AreSame")) {
 			*op = MINT_CEQ_P;
 		} else if (!strcmp (tm, "ByteOffset")) {
-			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
+#if SIZEOF_VOID_P == 4
+			interp_add_ins (td, MINT_SUB_I4);
+#else
+			interp_add_ins (td, MINT_SUB_I8);
+#endif
+			td->sp -= 2;
+			interp_ins_set_sregs2 (td->last_ins, td->sp [1].local, td->sp [0].local);
+			push_simple_type (td, STACK_TYPE_I);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			td->ip += 5;
+			return TRUE;
 		} else if (!strcmp (tm, "Unbox")) {
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
 			g_assert (ctx);
