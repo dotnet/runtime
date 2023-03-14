@@ -1038,6 +1038,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector512_Create:
         case NI_Vector128_CreateScalar:
         case NI_Vector256_CreateScalar:
+        case NI_Vector512_CreateScalar:
         {
             // We don't directly support the Vector128.Create or Vector256.Create methods in codegen
             // and instead lower them to other intrinsic nodes in LowerHWIntrinsicCreate so we expect
@@ -1934,9 +1935,10 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     GenTree* tmp2 = nullptr;
     GenTree* tmp3 = nullptr;
 
-    bool   isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
-    bool   isCreateScalar = (intrinsicId == NI_Vector128_CreateScalar) || (intrinsicId == NI_Vector256_CreateScalar);
-    size_t argCnt         = node->GetOperandCount();
+    bool isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
+    bool isCreateScalar = (intrinsicId == NI_Vector128_CreateScalar) || (intrinsicId == NI_Vector256_CreateScalar) ||
+                          (intrinsicId == NI_Vector512_CreateScalar);
+    size_t argCnt = node->GetOperandCount();
 
     if (isConstant)
     {
@@ -6680,6 +6682,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             {
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
+                case NI_Vector512_CreateScalarUnsafe:
                 {
                     if (!varTypeIsIntegral(childNode->TypeGet()))
                     {
@@ -6826,6 +6829,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
     {
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
         {
             if (!supportsSIMDScalarLoads)
             {
@@ -7055,7 +7059,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             NamedIntrinsic      childNodeId = childNode->GetHWIntrinsicId();
 
                             if ((childNodeId == NI_Vector128_CreateScalarUnsafe) ||
-                                (childNodeId == NI_Vector256_CreateScalarUnsafe))
+                                (childNodeId == NI_Vector256_CreateScalarUnsafe) ||
+                                (childNodeId == NI_Vector512_CreateScalarUnsafe))
                             {
                                 // We have a very special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
                                 //

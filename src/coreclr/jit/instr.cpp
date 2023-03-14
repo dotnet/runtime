@@ -700,6 +700,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             {
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
+                case NI_Vector512_CreateScalarUnsafe:
                 {
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
