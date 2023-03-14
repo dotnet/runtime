@@ -8003,16 +8003,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("\n---- CEE_SWITCH start in " FMT_BB " (PC=%03u) of '%s'", block->bbNum, block->bbCodeOffs,
+                    printf("\nStarting CEE_SWITCH in " FMT_BB " (PC=%03u) of '%s'", block->bbNum, block->bbCodeOffs,
                            info.compFullName);
                 }
 #endif
                 /* Pop the switch value off the stack */
-                op1 = impPopStack().val;
+                op1 = gtFoldExpr(impPopStack().val);
                 assertImp(genActualTypeIsIntOrI(op1->TypeGet()));
 
                 // Fold Switch for GT_CNS_INT
-                if ((op1->gtOper == GT_CNS_INT) && !compIsForImportOnly())
+                if (opts.OptimizationEnabled() && (op1->gtOper == GT_CNS_INT) && !compIsForImportOnly())
                 {
                     // Find the jump target
                     size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
