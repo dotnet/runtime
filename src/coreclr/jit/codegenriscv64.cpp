@@ -6876,7 +6876,21 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 //
 void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FCN_LEAVE*/)
 {
-    NYI_RISCV64("genProfilingLeaveCallback-----unimplemented/unused on RISCV64 yet----");
+    assert((helper == CORINFO_HELP_PROF_FCN_LEAVE) || (helper == CORINFO_HELP_PROF_FCN_TAILCALL));
+
+    // Only hook if profiler says it's okay.
+    if (!compiler->compIsProfilerHookNeeded())
+    {
+        return;
+    }
+
+    compiler->info.compProfilerCallback = true;
+
+    // Need to save on to the stack level, since the helper call will pop the argument
+    unsigned saveStackLvl2 = genStackLevel;
+
+    /* Restore the stack level */
+    SetStackLevel(saveStackLvl2);
 }
 
 /*-----------------------------------------------------------------------------
