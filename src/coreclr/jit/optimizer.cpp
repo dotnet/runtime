@@ -10334,6 +10334,7 @@ PhaseStatus Compiler::optOptimizeBools()
     }
 #endif
     bool     change    = false;
+    bool     retry     = false;
     unsigned numCond   = 0;
     unsigned numReturn = 0;
     unsigned numPasses = 0;
@@ -10344,8 +10345,10 @@ PhaseStatus Compiler::optOptimizeBools()
         numPasses++;
         change = false;
 
-        for (BasicBlock* const b1 : Blocks())
+        for (BasicBlock* b1 = fgFirstBB; b1 != nullptr; b1 = retry ? b1 : b1->bbNext)
         {
+            retry = false;
+
             // We're only interested in conditional jumps here
 
             if (b1->bbJumpKind != BBJ_COND)
@@ -10388,7 +10391,10 @@ PhaseStatus Compiler::optOptimizeBools()
 #ifdef TARGET_ARM64
                 else if (optBoolsDsc.optOptimizeCompareChainCondBlock())
                 {
+                    // The optimization will have merged b1 and b2. Retry the loop so that
+                    // b1 and b2->bbNext can be tested.
                     change = true;
+                    retry  = true;
                     numCond++;
                 }
 #endif
