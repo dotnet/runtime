@@ -72,7 +72,7 @@ namespace DebuggerTests
             if (DebuggerTestBase.RunningOnChrome)
                 Client = new InspectorClient(_logger, Id);
             else
-                Client = new FirefoxInspectorClient(_logger);
+                Client = new FirefoxInspectorClient(_logger, Id);
         }
 
         public Task<JObject> WaitFor(string what)
