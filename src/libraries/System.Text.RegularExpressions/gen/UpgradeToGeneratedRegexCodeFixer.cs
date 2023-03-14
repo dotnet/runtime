@@ -292,6 +292,15 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     return generator.Argument(fieldReferenceOperation.Syntax);
                 }
+                else if (argument.Value.ConstantValue.HasValue && argument.Value.ConstantValue.Value!.ToString()!.Contains('\\'))
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append('@');
+                    sb.Append(DoubleQuote);
+                    sb.Append(argument.Value.ConstantValue.Value);
+                    sb.Append(DoubleQuote);
+                    return SyntaxFactory.ParseExpression(sb.ToString());
+                }
                 else
                 {
                     return generator.LiteralExpression(argument.Value.ConstantValue.Value);
@@ -320,5 +329,7 @@ namespace System.Text.RegularExpressions.Generator
             static SyntaxNode WithTrivia(SyntaxNode method, SyntaxNode nodeToFix)
                 => method.WithLeadingTrivia(nodeToFix.GetLeadingTrivia()).WithTrailingTrivia(nodeToFix.GetTrailingTrivia());
         }
+
+        private const char DoubleQuote = '"';
     }
 }

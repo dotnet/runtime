@@ -972,7 +972,7 @@ partial class Program
         Regex regex = MyRegex();
     }
 
-    [GeneratedRegex(""a|b\\s\\n2"")]
+    [GeneratedRegex(@""a|b\s\n2"")]
     private static partial Regex MyRegex();
 }";
 
