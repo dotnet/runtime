@@ -11,7 +11,7 @@ set(DOTNET_AOT_OBJECTS
 %AotObjects%
 )
 set(DOTNET_EXTRA_SOURCES
-%ExtraSources%    load_assemblies.c
+%ExtraSources%    preloaded_assemblies.c
 )
 
 include_directories("%MonoInclude%")

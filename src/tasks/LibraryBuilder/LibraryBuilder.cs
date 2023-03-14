@@ -260,8 +260,8 @@ public class LibraryBuilderTask : AppBuilderTask
             assembliesLoader.Append($"    mono_assembly_load_with_partial_name_check(\"{exportedAssembly}\");\n");
         }
 
-        File.WriteAllText(Path.Combine(OutputDirectory, "load_assemblies.c"),
-            Utils.GetEmbeddedResource("load_assemblies.c")
+        File.WriteAllText(Path.Combine(OutputDirectory, "preloaded_assemblies.c"),
+            Utils.GetEmbeddedResource("preloaded_assemblies.c")
                 .Replace("%ASSEMBLIES_LOADER%", assembliesLoader.ToString()));
     }
 
