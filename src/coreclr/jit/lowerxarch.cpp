@@ -321,7 +321,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->SetOper(GT_STORE_BLK);
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT))
+        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
         {
             if (!src->OperIs(GT_CNS_INT))
             {
@@ -332,7 +332,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
             else
             {
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
                 // The fill value of an initblk is interpreted to hold a
                 // value of (unsigned int8) however a constant of any size
@@ -357,6 +356,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                         {
                             src->SetContained();
                         }
+                        else if (size > comp->getUnrollThreshold(Compiler::UnrollKind::Memset, /*canUseSimd*/ false))
+                        {
+                            // It turns out we can't use SIMD so the default threshold is too big
+                            goto TOO_BIG_TO_UNROLL;
+                        }
                     }
                 }
 #ifdef TARGET_AMD64
@@ -371,6 +375,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                     fill *= 0x01010101;
                 }
 
+                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
                 src->AsIntCon()->SetIconValue(fill);
 
                 ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
@@ -378,6 +383,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
+        TOO_BIG_TO_UNROLL:
 #ifdef TARGET_AMD64
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
 #else
@@ -412,7 +418,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 blkNode->SetOper(GT_STORE_BLK);
             }
 #ifndef JIT32_GCENCODER
-            else if (dstAddr->OperIsLocalAddr() && (size <= CPBLK_UNROLL_LIMIT))
+            else if (dstAddr->OperIsLocalAddr() &&
+                     (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false)))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -472,7 +479,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
             }
         }
-        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
+        else if (blkNode->OperIs(GT_STORE_BLK) &&
+                 (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, !blkNode->GetLayout()->HasGCPtr())))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -655,7 +663,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                 }
                 else
 #endif // TARGET_X86
-                    if (loadSize <= CPBLK_UNROLL_LIMIT)
+                    if (loadSize <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy))
                 {
                     putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
                 }
