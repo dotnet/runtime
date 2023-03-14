@@ -27,7 +27,9 @@
   IL_000d:  ret
 }
 
-.method public assembly static int32  main() cil managed
+.class public auto ansi Test
+{
+.method public static int32  main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00
@@ -63,4 +65,5 @@
   IL_0041:  ret
   IL_0048:  ldc.i4.s   101
   IL_0050:  ret
+}
 }

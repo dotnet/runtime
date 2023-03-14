@@ -10,7 +10,7 @@
 .assembly GitHub_19222 { }
 
 .class public auto ansi Test_GitHub_19222 extends [mscorlib] System.Object {
-.method public assembly static int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl) 
+.method public static int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl) 
         main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

@@ -30,7 +30,7 @@
 .class public auto ansi beforefieldinit Test
        extends [mscorlib]System.Object
 {
-    .method public assembly static unmanagedexp int32
+    .method public static unmanagedexp int32
             main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

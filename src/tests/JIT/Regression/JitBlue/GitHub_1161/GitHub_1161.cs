@@ -8,7 +8,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class GitHub_1161
+public class GitHub_1161
 {
     struct Number
     {

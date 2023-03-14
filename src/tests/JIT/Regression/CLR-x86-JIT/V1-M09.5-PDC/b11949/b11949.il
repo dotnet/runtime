@@ -24,9 +24,7 @@
 	ret
   } // end of method 'X::.ctor'
 
-} // end of class 'X'
 
-//Global methods
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .method public static int32 main() il managed
 {
@@ -61,5 +59,6 @@ try_end:
 	ret
 
   .try try_begin to filter_begin filter filter_begin handler except_begin to try_end
-} // end of global method 'main'
+} // end of method 'main'
+} // end of class 'X'
 }

@@ -24,7 +24,7 @@
 
 
 .class public auto ansi Test_b353858 extends [mscorlib] System.Object {
-.method public assembly static int32  main() cil managed
+.method public static int32  main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00

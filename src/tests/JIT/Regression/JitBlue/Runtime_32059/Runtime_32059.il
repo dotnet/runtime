@@ -17,7 +17,7 @@
   .entrypoint
 
    ldc.i4.0
-   newarr [mscorlib]System.String
+   newarr [System.Runtime]System.String
    call int32 Runtime_32059::MainX(string[])
    ret
 }

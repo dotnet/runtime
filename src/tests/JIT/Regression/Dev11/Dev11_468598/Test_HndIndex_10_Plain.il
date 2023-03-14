@@ -24,11 +24,11 @@
 
 
 .class
-    private auto ansi beforefieldinit sealed abstract
+    public auto ansi beforefieldinit sealed abstract
     Test.App
         extends [mscorlib]System.Object
 {
-.class public auto ansi Test_Test_HndIndex_10_Plain extends [mscorlib] System.Object {
+.class nested public auto ansi Test_Test_HndIndex_10_Plain extends [mscorlib] System.Object {
     .method public hidebysig static int32 Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

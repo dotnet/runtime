@@ -276,6 +276,8 @@ FAIL:
     ret
 }
 
+.class public auto ansi Test
+{
 .method public hidebysig static int32 Main() cil managed
 {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -319,4 +321,5 @@ FAIL:
  FAIL:
     ldc.i4 1
     ret
+}
 }
