@@ -386,10 +386,14 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const D
 {
     Statement* stmt = gtNewStmt(tree, di);
 
-    if (fgNodeThreading != NodeThreading::None)
+    if (fgNodeThreading == NodeThreading::AllTrees)
     {
         gtSetStmtInfo(stmt);
         fgSetStmtSeq(stmt);
+    }
+    else if (fgNodeThreading == NodeThreading::AllLocals)
+    {
+        fgSequenceLocals(stmt);
     }
 
 #if DEBUG
