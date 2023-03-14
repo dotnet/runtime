@@ -120,6 +120,10 @@ export type MonoConfig = {
      */
     pthreadPoolSize?: number,
     /**
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
+     */
+    startupMemoryCache?: boolean,
+    /**
      * hash of assets
      */
     assetsHash?: string,
@@ -134,6 +138,7 @@ export type MonoConfigInternal = MonoConfig & {
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
+    exitAfterSnapshot?: number,
 };
 
 export type RunArguments = {
@@ -228,8 +233,12 @@ export type RuntimeHelpers = {
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
     loadedFiles: string[],
+    loadedMemorySnapshot: boolean,
+    storeMemorySnapshotPending: boolean,
+    memorySnapshotCacheKey: string,
+    subtle: SubtleCrypto | null,
     preferredIcuAsset: string | null,
-    timezone: string | null,
+    invariantMode: boolean,
     updateMemoryViews: () => void
 }
 
