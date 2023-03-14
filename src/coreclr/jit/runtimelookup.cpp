@@ -68,6 +68,13 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
+    if (!doesMethodHaveExpRuntimeLookup())
+    {
+        // The method being compiled doesn't have expandable runtime lookups. If it does
+        // and doesMethodHaveExpRuntimeLookup() still returns false we'll assert in LowerCall
+        return result;
+    }
+
     INDEBUG(bool irIsPrinted = false);
 
     // Find all calls with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag
