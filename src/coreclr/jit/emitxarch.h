@@ -23,6 +23,11 @@ inline static bool isDoubleReg(regNumber reg)
     return isFloatReg(reg);
 }
 
+inline static bool isMaskReg(regNumber reg)
+{
+    return (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST);
+}
+
 /************************************************************************/
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
@@ -96,6 +101,7 @@ static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
+static bool IsKInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
@@ -285,6 +291,7 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vfnmsub231sd:
         case INS_unpcklpd:
         case INS_vpermilpdvar:
+        case INS_movdqa64:
         case INS_movdqu16:
         case INS_movdqu64:
         case INS_vinsertf64x4:
@@ -402,6 +409,7 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vpdpbusds:
         case INS_vpdpwssds:
         case INS_vpermilpsvar:
+        case INS_movdqa32:
         case INS_movdqu8:
         case INS_movdqu32:
         case INS_vinsertf32x8:
@@ -730,14 +738,12 @@ void emitAdjustStackDepth(instruction ins, ssize_t val);
 inline emitter::opSize emitEncodeScale(size_t scale)
 {
     assert(scale == 1 || scale == 2 || scale == 4 || scale == 8);
-
-    return static_cast<emitter::opSize>(genLog2((unsigned int)scale));
+    return static_cast<emitter::opSize>(genLog2(static_cast<unsigned>(scale)));
 }
 
 inline emitAttr emitDecodeScale(unsigned ensz)
 {
     assert(ensz < 4);
-
     return emitter::emitSizeDecode[ensz];
 }
 

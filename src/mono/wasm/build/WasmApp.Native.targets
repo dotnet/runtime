@@ -187,6 +187,7 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
+      <EmccStackSize Condition="'$(EmccStackSize)' == ''">5MB</EmccStackSize>
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
     </PropertyGroup>
 
@@ -258,7 +259,6 @@
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
       <EmscriptenEnvVars Include="WasmEnableLegacyJsInterop=$(WasmEnableLegacyJsInterop)"/>
-      <EmscriptenEnvVars Include="MonoWasmThreads=$(MonoWasmThreads)"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(WasmAllowUndefinedSymbols)' == 'true'">
@@ -323,10 +323,12 @@
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_EmccCompileRsp)" />
+      <EmscriptenMinimalBuildEnvVars Include="@(EmscriptenEnvVars)" />
+      <EmscriptenMinimalBuildEnvVars Include="FROZEN_CACHE=" />
     </ItemGroup>
 
     <!-- warm up the cache -->
-    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
+    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenMinimalBuildEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
 
     <Message Text="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..." Importance="High" />
     <ItemGroup>
@@ -421,6 +423,8 @@
       <!-- order matters -->
       <!-- some flags will be duplicated on the commandline and in the .rsp file. The last wins. -->
       <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
+      <_EmccLDSFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
+      <_EmccLDSFlags Include="-s WASM_BIGINT=1" />
       <_EmccLDSFlags Condition="'$(EmccEnvironment)' != ''" Include="-s ENVIRONMENT=&quot;$(EmccEnvironment)&quot;" />
       <_EmccLDSFlags Condition="'$(EmccAssertions)' == 'true'" Include="-s ASSERTIONS=1" />
 

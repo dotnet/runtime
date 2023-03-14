@@ -20,7 +20,6 @@ let actual_instantiated_assets_count = 0;
 let expected_downloaded_assets_count = 0;
 let expected_instantiated_assets_count = 0;
 const loaded_files: { url: string, file: string }[] = [];
-const loaded_assets: { [id: string]: [VoidPtr, number] } = Object.create(null);
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -30,6 +29,7 @@ const skipDownloadsByAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
+    "dotnetwasm": true,
 };
 
 // `response.arrayBuffer()` can't be called twice. Some usecases are calling it on response in the instantiation.
@@ -49,35 +49,8 @@ const skipInstantiateByAssetTypes: {
     "symbols": true,
 };
 
-export function get_preferred_icu_asset(): string | null {
-    if (!runtimeHelpers.config.assets)
-        return null;
-
-    // By setting <WasmIcuDataFileName> user can define what ICU source file they want to load.
-    // There is no need to check application's culture when <WasmIcuDataFileName> is set.
-    // If it was not set, then we have 3 "icu" assets in config and we should choose
-    // only one for loading, the one that matches the application's locale.
-    const icuAssets = runtimeHelpers.config.assets.filter(a => a["behavior"] == "icu");
-    if (icuAssets.length === 1)
-        return icuAssets[0].name;
-
-    // reads the browsers locale / the OS's locale
-    const preferredCulture = ENVIRONMENT_IS_WEB ? navigator.language : Intl.DateTimeFormat().resolvedOptions().locale;
-    const prefix = preferredCulture.split("-")[0];
-    const CJK = "icudt_CJK.dat";
-    const EFIGS = "icudt_EFIGS.dat";
-    const OTHERS = "icudt_no_CJK.dat";
-
-    // not all "fr-*", "it-*", "de-*", "es-*" are in EFIGS, only the one that is mostly used
-    if (prefix == "en" || ["fr", "fr-FR", "it", "it-IT", "de", "de-DE", "es", "es-ES"].includes(preferredCulture))
-        return EFIGS;
-    if (["zh", "ko", "ja"].includes(prefix))
-        return CJK;
-    return OTHERS;
-}
-
-export function shouldLoadIcuAsset(asset: AssetEntryInternal, preferredIcuAsset: string | null): boolean {
-    return !(asset.behavior == "icu" && asset.name != preferredIcuAsset);
+export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
+    return !(asset.behavior == "icu" && asset.name != runtimeHelpers.preferredIcuAsset);
 }
 
 export function resolve_asset_path(behavior: AssetBehaviours) {
@@ -89,7 +62,6 @@ export function resolve_asset_path(behavior: AssetBehaviours) {
     return asset;
 }
 export async function mono_download_assets(): Promise<void> {
-    const preferredIcuAsset = get_preferred_icu_asset();
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     runtimeHelpers.enableDownloadRetry = runtimeHelpers.config.enableDownloadRetry || runtimeHelpers.enableDownloadRetry;
@@ -104,10 +76,10 @@ export async function mono_download_assets(): Promise<void> {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
+            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                 expected_instantiated_assets_count++;
             }
-            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
+            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                 expected_downloaded_assets_count++;
                 promises_of_assets.push(start_asset_download(asset));
             }
@@ -141,10 +113,10 @@ export async function mono_download_assets(): Promise<void> {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
                         mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
+                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                             expected_downloaded_assets_count--;
                         }
-                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
+                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                             expected_instantiated_assets_count--;
                         }
                     } else {
@@ -160,17 +132,17 @@ export async function mono_download_assets(): Promise<void> {
         // and we are not awating it here
         Promise.all(promises_of_asset_instantiation).then(() => {
             allAssetsInMemory.promise_control.resolve();
-        }).catch(err => {
-            Module.printErr("MONO_WASM: Error in mono_download_assets: " + err);
-            abort_startup(err, true);
+        }).catch(e => {
+            Module.err("MONO_WASM: Error in mono_download_assets: " + e);
+            abort_startup(e, true);
         });
         // OPTIMIZATION explained:
         // we do it this way so that we could allocate memory immediately after asset is downloaded (and after onRuntimeInitialized which happened already)
         // spreading in time
         // rather than to block all downloads after onRuntimeInitialized or block onRuntimeInitialized after all downloads are done. That would create allocation burst.
-    } catch (err: any) {
-        Module.printErr("MONO_WASM: Error in mono_download_assets: " + err);
-        throw err;
+    } catch (e: any) {
+        Module.err("MONO_WASM: Error in mono_download_assets: " + e);
+        throw e;
     }
 }
 
@@ -319,7 +291,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
         err.status = response.status;
         throw err;
     } else {
-        Module.print(`MONO_WASM: optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        Module.out(`MONO_WASM: optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         return undefined;
     }
 }
@@ -410,7 +382,6 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
         case "heap":
         case "icu":
             offset = mono_wasm_load_bytes_into_heap(bytes);
-            loaded_assets[virtualName] = [offset, bytes.length];
             break;
 
         case "vfs": {
@@ -465,7 +436,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     }
     else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
-            Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
+            Module.err(`MONO_WASM: Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);

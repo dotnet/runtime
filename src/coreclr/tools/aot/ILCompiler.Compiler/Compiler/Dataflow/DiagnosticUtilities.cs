@@ -95,16 +95,6 @@ namespace ILCompiler.Dataflow
         internal static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute) =>
             method.IsInRequiresScope(requiresAttribute, true);
 
-        /// <summary>
-        /// True if member of a call is considered to be annotated with the Requires... attribute.
-        /// Doesn't check the associated symbol for overrides and virtual methods because we should warn on mismatched between the property AND the accessors
-        /// </summary>
-        /// <param name="method">
-        /// MethodDesc that is either an overriding member or an overridden/virtual member
-        /// </param>
-        internal static bool IsOverrideInRequiresScope(this MethodDesc method, string requiresAttribute) =>
-            method.IsInRequiresScope(requiresAttribute, false);
-
         private static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute, bool checkAssociatedSymbol)
         {
             if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttribute) && !method.IsStaticConstructor)
@@ -114,6 +104,9 @@ namespace ILCompiler.Dataflow
                 return true;
 
             if (checkAssociatedSymbol && method.GetPropertyForAccessor() is PropertyPseudoDesc property && TryGetRequiresAttribute(property, requiresAttribute, out _))
+                return true;
+
+            if (checkAssociatedSymbol && method.GetEventForAccessor() is EventPseudoDesc @event && TryGetRequiresAttribute(@event, requiresAttribute, out _))
                 return true;
 
             return false;
@@ -130,6 +123,14 @@ namespace ILCompiler.Dataflow
 
             if ((method.Signature.IsStatic || method.IsConstructor) && method.OwningType is TypeDesc owningType &&
                 !owningType.IsArray && TryGetRequiresAttribute(owningType, requiresAttribute, out attribute))
+                return true;
+
+            if (method.GetPropertyForAccessor() is PropertyPseudoDesc @property
+                && TryGetRequiresAttribute(@property, requiresAttribute, out attribute))
+                return true;
+
+            if (method.GetEventForAccessor() is EventPseudoDesc @event
+                && TryGetRequiresAttribute(@event, requiresAttribute, out attribute))
                 return true;
 
             return false;

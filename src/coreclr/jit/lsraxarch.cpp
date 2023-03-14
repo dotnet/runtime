@@ -228,6 +228,11 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
+        case GT_JTRUE:
+            BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
+            srcCount = 1;
+            break;
+
         case GT_JCC:
             srcCount = 0;
             assert(dstCount == 0);
@@ -2484,6 +2489,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 // get a tmp register for mask that will be cleared by gather instructions
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+                setInternalRegsDelayFree = true;
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_AVX512F_MoveMaskSpecial:
+            {
+                srcCount += BuildOperandUses(op1);
+                buildInternalMaskRegisterDefForNode(intrinsicTree);
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;

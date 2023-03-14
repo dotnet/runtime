@@ -35,6 +35,7 @@ const unsigned int RegisterTypeCount    = 2;
 typedef var_types RegisterType;
 #define IntRegisterType TYP_INT
 #define FloatRegisterType TYP_FLOAT
+#define MaskRegisterType TYP_MASK
 
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
@@ -482,15 +483,21 @@ public:
         }
         else
 #endif
-            if (emitter::isFloatReg(reg))
+            if (emitter::isGeneralRegister(reg))
+        {
+            assert(registerType == IntRegisterType);
+        }
+        else if (emitter::isFloatReg(reg))
         {
             registerType = FloatRegisterType;
         }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
         else
         {
-            // The constructor defaults to IntRegisterType
-            assert(emitter::isGeneralRegister(reg) && registerType == IntRegisterType);
+            assert(emitter::isMaskReg(reg));
+            registerType = MaskRegisterType;
         }
+#endif
         regNum       = reg;
         isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
     }
@@ -1090,6 +1097,9 @@ private:
     RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP candidates);
     RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
     RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+#if defined(FEATURE_SIMD)
+    RefPosition* buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+#endif
     void buildInternalRegisterUses();
 
     void writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumber reg);
@@ -1595,9 +1605,12 @@ private:
     // A temporary VarToRegMap used during the resolution of critical edges.
     VarToRegMap sharedCriticalVarToRegMap;
 
-    PhasedVar<regMaskTP>  availableIntRegs;
-    PhasedVar<regMaskTP>  availableFloatRegs;
-    PhasedVar<regMaskTP>  availableDoubleRegs;
+    PhasedVar<regMaskTP> availableIntRegs;
+    PhasedVar<regMaskTP> availableFloatRegs;
+    PhasedVar<regMaskTP> availableDoubleRegs;
+#if defined(TARGET_XARCH)
+    PhasedVar<regMaskTP> availableMaskRegs;
+#endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
     // Register mask of argument registers currently occupied because we saw a
@@ -1938,10 +1951,11 @@ private:
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
+#if defined(TARGET_XARCH)
+
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
-    unsigned  availableRegCount;
 
     regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -1951,11 +1965,15 @@ private:
     {
         return this->rbmFltCalleeTrash;
     }
+#endif // TARGET_AMD64
+
+    unsigned availableRegCount;
+
     unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
     // calleeSaveRegs: Get the set of callee-save registers of the given RegisterType

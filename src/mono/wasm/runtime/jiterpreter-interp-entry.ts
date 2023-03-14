@@ -5,7 +5,7 @@ import { mono_assert, MonoMethod, MonoType } from "./types";
 import { NativePointer } from "./types/emscripten";
 import { Module } from "./imports";
 import {
-    getU32, _zero_region
+    getU32_unaligned, _zero_region
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
@@ -106,7 +106,7 @@ class TrampolineInfo {
         this.name = name;
         this.paramTypes = new Array(argumentCount);
         for (let i = 0; i < argumentCount; i++)
-            this.paramTypes[i] = <any>getU32(<any>pParamTypes + (i * 4));
+            this.paramTypes[i] = <any>getU32_unaligned(<any>pParamTypes + (i * 4));
         this.defaultImplementation = defaultImplementation;
         this.result = 0;
         let subName = name;
@@ -283,10 +283,10 @@ function flush_wasm_entry_trampoline_jit_queue () {
         for (let i = 0; i < trampImports.length; i++) {
             mono_assert(trampImports[i], () => `trace #${i} missing`);
             const wasmName = compress ? i.toString(shortNameBase) : undefined;
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, wasmName);
         }
 
-        builder.generateImportSection();
+        builder._generateImportSection();
 
         // Function section
         builder.beginSection(3);
@@ -326,6 +326,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
                 throw new Error(`Failed to generate ${info.traceName}`);
 
             builder.appendU8(WasmOpcode.end);
+            builder.endFunction(true);
         }
 
         builder.endSection();

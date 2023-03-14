@@ -4,11 +4,11 @@
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal } from "./types";
+import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal, DotnetModuleInternal } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
-import { mono_wasm_globalization_init } from "./icu";
+import { get_preferred_icu_asset, mono_wasm_globalization_init } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
 import { mono_on_abort, mono_exit } from "./run";
@@ -49,7 +49,7 @@ const MONO_PTHREAD_POOL_SIZE = 4;
 
 // we are making emscripten startup async friendly
 // emscripten is executing the events without awaiting it and so we need to block progress via PromiseControllers above
-export function configure_emscripten_startup(module: DotnetModule, exportedAPI: RuntimeAPI): void {
+export function configure_emscripten_startup(module: DotnetModuleInternal, exportedAPI: RuntimeAPI): void {
     const mark = startMeasure();
     // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten
     // when user set configSrc or config, we are running our default startup sequence.
@@ -99,7 +99,7 @@ function instantiateWasm(
     // this is called so early that even Module exports like addRunDependency don't exist yet
 
     if (!Module.configSrc && !Module.config && !userInstantiateWasm) {
-        Module.print("MONO_WASM: configSrc nor config was specified");
+        Module.out("MONO_WASM: configSrc nor config was specified");
     }
     normalizeConfig();
 
@@ -124,15 +124,14 @@ async function instantiateWasmWorker(
     // wait for the config to arrive by message from the main thread
     await afterConfigLoaded.promise;
 
-    const anyModule = Module as any;
     normalizeConfig();
     replace_linker_placeholders(imports, export_linker());
 
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
-    const instance = new WebAssembly.Instance(anyModule.wasmModule, imports);
+    const instance = new WebAssembly.Instance(Module.wasmModule!, imports);
     successCallback(instance, undefined);
-    anyModule.wasmModule = null;
+    Module.wasmModule = null;
 }
 
 function preInit(userPreInit: (() => void)[]) {
@@ -209,9 +208,6 @@ async function preRunAsync(userPreRun: (() => void)[]) {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preRunAsync");
     const mark = startMeasure();
     try {
-        if (MonoWasmThreads) {
-            await instantiateWasmPThreadWorkerPool();
-        }
         // all user Module.preRun callbacks
         userPreRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.preRun);
@@ -234,12 +230,23 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
     beforeOnRuntimeInitialized.promise_control.resolve();
     try {
         await wait_for_all_assets();
-        // load runtime
+
+        // load runtime and apply environment settings (if necessary)
         await mono_wasm_before_user_runtime_initialized();
 
-        if (config.runtimeOptions) {
-            mono_wasm_set_runtime_options(config.runtimeOptions);
+        if (MonoWasmThreads) {
+            await instantiateWasmPThreadWorkerPool();
         }
+
+        bindings_init();
+        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
+        if (!runtimeHelpers.mono_wasm_symbols_are_ready) readSymbolMapFile("dotnet.js.symbols");
+
+        setTimeout(() => {
+            // when there are free CPU cycles
+            string_decoder.init_fields();
+        });
+
         // call user code
         try {
             userOnRuntimeInitialized();
@@ -266,6 +273,11 @@ async function postRunAsync(userpostRun: (() => void)[]) {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: postRunAsync");
     try {
         const mark = startMeasure();
+
+        // create /usr/share folder which is SpecialFolder.CommonApplicationData
+        Module["FS_createPath"]("/", "usr", true, true);
+        Module["FS_createPath"]("/", "usr/share", true, true);
+
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.postRun);
@@ -294,7 +306,6 @@ export function abort_startup(reason: any, should_exit: boolean): void {
     }
 }
 
-// runs in both blazor and non-blazor
 function mono_wasm_pre_init_essential(isWorker: boolean): void {
     if (!isWorker)
         Module.addRunDependency("mono_wasm_pre_init_essential");
@@ -317,7 +328,6 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
         Module.removeRunDependency("mono_wasm_pre_init_essential");
 }
 
-// runs in both blazor and non-blazor
 async function mono_wasm_pre_init_essential_async(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential_async");
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
@@ -332,7 +342,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }
 
-// runs just in non-blazor
 async function mono_wasm_pre_init_full(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_full");
     Module.addRunDependency("mono_wasm_pre_init_full");
@@ -342,28 +351,6 @@ async function mono_wasm_pre_init_full(): Promise<void> {
     Module.removeRunDependency("mono_wasm_pre_init_full");
 }
 
-// runs just in non-blazor
-async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
-    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_before_user_runtime_initialized");
-
-    try {
-        await _apply_configuration_from_args();
-        mono_wasm_globalization_init();
-
-        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
-        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
-
-        setTimeout(() => {
-            // when there are free CPU cycles
-            string_decoder.init_fields();
-        });
-    } catch (err: any) {
-        _print_error("MONO_WASM: Error in mono_wasm_before_user_runtime_initialized", err);
-        throw err;
-    }
-}
-
-// runs in both blazor and non-blazor
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized");
     try {
@@ -383,10 +370,6 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
                     console.warn(`MONO_WASM: The exported symbol ${exportName} could not be found in the emscripten module`);
                 }
             }
-        }
-        // for Blazor, init diagnostics after their "onRuntimeInitalized" sets env variables, but before their postRun callback (which calls mono_wasm_load_runtime)
-        if (MonoWasmThreads) {
-            await mono_wasm_init_diagnostics();
         }
 
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Initializing mono runtime");
@@ -408,10 +391,10 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
 
 
 function _print_error(message: string, err: any): void {
-    Module.printErr(`${message}: ${JSON.stringify(err)}`);
+    Module.err(`${message}: ${JSON.stringify(err)}`);
     if (err.stack) {
-        Module.printErr("MONO_WASM: Stacktrace: \n");
-        Module.printErr(err.stack);
+        Module.err("MONO_WASM: Stacktrace: \n");
+        Module.err(err.stack);
     }
 }
 
@@ -459,7 +442,6 @@ async function instantiate_wasm_module(
 ): Promise<void> {
     // this is called so early that even Module exports like addRunDependency don't exist yet
     try {
-        replace_linker_placeholders(imports, export_linker());
         await mono_wasm_load_config(Module.configSrc);
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
@@ -467,6 +449,8 @@ async function instantiate_wasm_module(
         await start_asset_download(assetToLoad);
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
+
+        replace_linker_placeholders(imports, export_linker());
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
@@ -482,18 +466,8 @@ async function instantiate_wasm_module(
     Module.removeRunDependency("instantiate_wasm_module");
 }
 
-// runs just in non-blazor
-async function _apply_configuration_from_args() {
-    try {
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (tz) mono_wasm_setenv("TZ", tz);
-    } catch {
-        console.info("MONO_WASM: failed to detect timezone, will fallback to UTC");
-    }
-
-    // create /usr/share folder which is SpecialFolder.CommonApplicationData
-    Module["FS_createPath"]("/", "usr", true, true);
-    Module["FS_createPath"]("/", "usr/share", true, true);
+async function mono_wasm_before_user_runtime_initialized() {
+    mono_wasm_globalization_init();
 
     for (const k in config.environmentVariables) {
         const v = config.environmentVariables![k];
@@ -512,18 +486,17 @@ async function _apply_configuration_from_args() {
     if (config.browserProfilerOptions)
         mono_wasm_init_browser_profiler(config.browserProfilerOptions);
 
-    // for non-Blazor, init diagnostics after environment variables are set
+    // init diagnostics after environment variables are set
     if (MonoWasmThreads) {
         await mono_wasm_init_diagnostics();
     }
+
+    mono_wasm_load_runtime("unused", config.debugLevel);
+
 }
 
 export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_runtime");
-    if (runtimeHelpers.mono_wasm_load_runtime_done) {
-        return;
-    }
-    runtimeHelpers.mono_wasm_load_runtime_done = true;
     try {
         const mark = startMeasure();
         if (debugLevel == undefined) {
@@ -534,9 +507,7 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
         }
         cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
         endMeasure(mark, MeasuredBlock.loadRuntime);
-        runtimeHelpers.waitForDebugger = config.waitForDebugger;
 
-        if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
     } catch (err: any) {
         _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
 
@@ -550,10 +521,10 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
 }
 
 export function bindings_init(): void {
-    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: bindings_init");
     if (runtimeHelpers.mono_wasm_bindings_is_ready) {
         return;
     }
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: bindings_init");
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
     try {
         const mark = startMeasure();
@@ -586,7 +557,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
     configLoaded = true;
     if (!configFilePath) {
         normalizeConfig();
-        afterConfigLoaded.promise_control.resolve(runtimeHelpers.config);
+        afterConfigLoaded.promise_control.resolve(config);
         return;
     }
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
@@ -607,7 +578,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
 
         if (Module.onConfigLoaded) {
             try {
-                await Module.onConfigLoaded(<MonoConfig>runtimeHelpers.config);
+                await Module.onConfigLoaded(<MonoConfig>config);
                 normalizeConfig();
             }
             catch (err: any) {
@@ -615,7 +586,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
                 throw err;
             }
         }
-        afterConfigLoaded.promise_control.resolve(runtimeHelpers.config);
+        afterConfigLoaded.promise_control.resolve(config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err}`;
         abort_startup(errMessage, true);
@@ -638,13 +609,23 @@ function normalizeConfig() {
     if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
         config.diagnosticTracing = true;
     }
-    runtimeHelpers.diagnosticTracing = !!runtimeHelpers.config.diagnosticTracing;
+    runtimeHelpers.diagnosticTracing = !!config.diagnosticTracing;
 
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
         && typeof globalThis.performance.measure === "function";
-}
+    runtimeHelpers.preferredIcuAsset = get_preferred_icu_asset();
 
+    if (runtimeHelpers.timezone === undefined && config.environmentVariables["TZ"] === undefined) {
+        try {
+            runtimeHelpers.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+            if (runtimeHelpers.timezone) config.environmentVariables["TZ"] = runtimeHelpers.timezone;
+        } catch {
+            console.info("MONO_WASM: failed to detect timezone, will fallback to UTC");
+        }
+    }
+    runtimeHelpers.waitForDebugger = config.waitForDebugger;
+}
 
 export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: number, assembly_len: number, pdb_ptr: number, pdb_len: number): void {
     // Only trigger this codepath for assemblies loaded after app is ready

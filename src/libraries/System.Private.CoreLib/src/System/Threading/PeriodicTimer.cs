@@ -12,7 +12,8 @@ namespace System.Threading
     /// <remarks>
     /// This timer is intended to be used only by a single consumer at a time: only one call to <see cref="WaitForNextTickAsync" />
     /// may be in flight at any given moment.  <see cref="Dispose"/> may be used concurrently with an active <see cref="WaitForNextTickAsync"/>
-    /// to interrupt it and cause it to return false.
+    /// to interrupt it and cause it to return false. Similarly, <see cref="Period"/> may be used concurrently with a consumer accessing
+    /// <see cref="WaitForNextTickAsync"/> in order to change the timer's period.
     /// </remarks>
     public sealed class PeriodicTimer : IDisposable
     {
@@ -23,7 +24,7 @@ namespace System.Threading
 
         /// <summary>Initializes the timer.</summary>
         /// <param name="period">The period between ticks</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="period"/> must represent a number of milliseconds equal to or larger than 1, and smaller than <see cref="uint.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="period"/> must be <see cref="Timeout.InfiniteTimeSpan"/> or represent a number of milliseconds equal to or larger than 1 and smaller than <see cref="uint.MaxValue"/>.</exception>
         public PeriodicTimer(TimeSpan period)
         {
             if (!TryGetMilliseconds(period, out uint ms))
@@ -37,7 +38,7 @@ namespace System.Threading
         }
 
         /// <summary>Gets or sets the period between ticks.</summary>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> must represent a number of milliseconds equal to or larger than 1, and smaller than <see cref="uint.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> must be <see cref="Timeout.InfiniteTimeSpan"/> or represent a number of milliseconds equal to or larger than 1 and smaller than <see cref="uint.MaxValue"/>.</exception>
         /// <remarks>
         /// All prior ticks of the timer, including any that may be waiting to be consumed by <see cref="WaitForNextTickAsync"/>,
         /// are unaffected by changes to <see cref="Period"/>. Setting <see cref="Period"/> affects only and all subsequent times
@@ -45,7 +46,7 @@ namespace System.Threading
         /// </remarks>
         public TimeSpan Period
         {
-            get => TimeSpan.FromMilliseconds(_timer._period);
+            get => _timer._period == Timeout.UnsignedInfinite ? Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(_timer._period);
             set
             {
                 if (!TryGetMilliseconds(value, out uint ms))
@@ -65,7 +66,7 @@ namespace System.Threading
         private static bool TryGetMilliseconds(TimeSpan value, out uint milliseconds)
         {
             long ms = (long)value.TotalMilliseconds;
-            if (ms >= 1 && ms <= Timer.MaxSupportedTimeout)
+            if ((ms >= 1 && ms <= Timer.MaxSupportedTimeout) || value == Timeout.InfiniteTimeSpan)
             {
                 milliseconds = (uint)ms;
                 return true;
@@ -121,6 +122,11 @@ namespace System.Threading
             /// PeriodicTimer to be finalized and unroot the TimerQueueTimer. Thus, we keep this field set during<see cref="WaitForNextTickAsync"/>
             /// so that the timer roots any async continuation chain awaiting it, and then keep it unset otherwise so that everything
             /// can be GC'd appropriately.
+            ///
+            /// Note that if the period is set to infinite, even when there's an active waiter the PeriodicTimer won't
+            /// be rooted because TimerQueueTimer won't be rooted via the static linked list.  That's fine, as the timer
+            /// will never tick in such a case, and for the timer's period to be changed, the user's code would need
+            /// some other reference to PeriodicTimer keeping it alive, anyway.
             /// </remarks>
             private PeriodicTimer? _owner;
             /// <summary>Core of the <see cref="IValueTaskSource{TResult}"/> implementation.</summary>
