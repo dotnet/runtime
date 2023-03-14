@@ -2617,6 +2617,9 @@
   <data name="InvalidProgram_Default" xml:space="preserve">
     <value>Common Language Runtime detected an invalid program.</value>
   </data>
+  <data name="InvalidTimeZone_InvalidId" xml:space="preserve">
+    <value>The time zone ID '{0}' is invalid.</value>
+  </data>
   <data name="InvalidTimeZone_InvalidFileData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the file at '{1}' was corrupt.</value>
   </data>
@@ -2640,6 +2643,9 @@
   </data>
   <data name="IO_NoFileTableInInMemoryAssemblies" xml:space="preserve">
     <value>This assembly does not have a file table because it was loaded from memory.</value>
+  </data>
+  <data name="IO_UnseekableFile" xml:space="preserve">
+    <value>Unsupported unseekable file.</value>
   </data>
   <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
     <value>Unable to read beyond the end of the stream.</value>
