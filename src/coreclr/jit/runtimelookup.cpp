@@ -140,6 +140,15 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
                 assert(prevBb != nullptr && block != nullptr);
 
+                // Block ops inserted by the split need to be morphed here since we are after morph.
+                // We cannot morph stmt yet as we may modify it further below, and the morphing
+                // could invalidate callUse.
+                while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+                {
+                    fgMorphStmtBlockOps(block, newFirstStmt);
+                    newFirstStmt = newFirstStmt->GetNextStmt();
+                }
+
                 GenTreeLclVar* rtLookupLcl = nullptr;
 
                 // Mostly for Tier0: if the current statement is ASG(LCL, RuntimeLookup)
@@ -163,13 +172,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     lvaTable[rtLookupLclNum].lvType = TYP_I_IMPL;
                     rtLookupLcl                     = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
 
-                    // Replace call with rtLookupLclNum local and update side effects
                     *callUse = gtClone(rtLookupLcl);
-                    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
-                    {
-                        fgMorphStmtBlockOps(block, newFirstStmt);
-                        newFirstStmt = newFirstStmt->GetNextStmt();
-                    }
+
                     fgMorphStmtBlockOps(block, stmt);
                     gtUpdateStmtSideEffects(stmt);
                 }
