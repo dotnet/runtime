@@ -32,7 +32,7 @@ namespace System.Xml
 
         public void SetValue(PrefixHandleType type)
         {
-            DiagnosticUtility.DebugAssert(type != PrefixHandleType.Buffer, "");
+            Debug.Assert(type != PrefixHandleType.Buffer);
             _type = type;
         }
 
@@ -116,19 +116,19 @@ namespace System.Xml
 
         public static string GetString(PrefixHandleType type)
         {
-            DiagnosticUtility.DebugAssert(type != PrefixHandleType.Buffer, "");
+            Debug.Assert(type != PrefixHandleType.Buffer);
             return s_prefixStrings[(int)type];
         }
 
         public static PrefixHandleType GetAlphaPrefix(int index)
         {
-            DiagnosticUtility.DebugAssert(index >= 0 && index < 26, "");
+            Debug.Assert(index >= 0 && index < 26);
             return (PrefixHandleType)(PrefixHandleType.A + index);
         }
 
         public static byte[] GetString(PrefixHandleType type, out int offset, out int length)
         {
-            DiagnosticUtility.DebugAssert(type != PrefixHandleType.Buffer, "");
+            Debug.Assert(type != PrefixHandleType.Buffer);
             if (type == PrefixHandleType.Empty)
             {
                 offset = 0;
