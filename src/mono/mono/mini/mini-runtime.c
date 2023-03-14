@@ -3633,7 +3633,9 @@ MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
 {
 	term_signaled = TRUE;
 
-	mono_gc_finalize_notify ();
+	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
+
+	mono_gc_finalize_notify ();			
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
