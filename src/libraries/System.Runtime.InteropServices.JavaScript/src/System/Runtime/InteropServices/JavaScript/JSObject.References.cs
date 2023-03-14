@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -10,6 +11,10 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal nint JSHandle;
 
+#if FEATURE_WASM_THREADS
+        // the JavaScript object could only exist on the single web worker and can't migrate to other workers
+        internal int OwnerThreadId;
+#endif
 #if ENABLE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
         internal int InFlightCounter;
@@ -19,6 +24,11 @@ namespace System.Runtime.InteropServices.JavaScript
         internal JSObject(IntPtr jsHandle)
         {
             JSHandle = jsHandle;
+            InFlight = null;
+            InFlightCounter = 0;
+#if FEATURE_WASM_THREADS
+            OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
+#endif
         }
 
 #if ENABLE_LEGACY_JS_INTEROP
