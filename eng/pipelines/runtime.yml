@@ -488,6 +488,8 @@ extends:
           extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
+          scenarios:
+            - normal
 
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
         parameters:

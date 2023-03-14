@@ -112,6 +112,8 @@ jobs:
       shouldRunSmokeOnly: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      # Always run for runtime-wasm because browser testing is not on runtime
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - normal
         - WasmTestOnBrowser
