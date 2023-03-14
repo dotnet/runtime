@@ -26,11 +26,10 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
 {
     unsigned const tmpNum         = comp->lvaGrabTemp(true DEBUGARG("spilling expr"));
     comp->lvaTable[tmpNum].lvType = expr->TypeGet();
-    Statement* asgStmt            = comp->fgNewStmtAtEnd(exprBlock, comp->gtNewTempAssign(tmpNum, expr));
-    asgStmt->SetDebugInfo(debugInfo);
+    Statement* asgStmt            = comp->fgNewStmtAtEnd(exprBlock, comp->gtNewTempAssign(tmpNum, expr), debugInfo);
     comp->gtSetStmtInfo(asgStmt);
     comp->fgSetStmtSeq(asgStmt);
-    return comp->gtNewLclvNode(tmpNum, expr->TypeGet());
+    return comp->gtNewLclvNode(tmpNum, genActualType(expr));
 };
 
 // Create block from the given tree
@@ -40,13 +39,8 @@ static BasicBlock* CreateBlockFromTree(
     // Fast-path basic block
     BasicBlock* newBlock = comp->fgNewBBafter(blockKind, insertAfter, true);
     newBlock->bbFlags |= BBF_INTERNAL;
-    comp->gtSetEvalOrder(tree);
-    Statement* stmt = comp->fgNewStmtFromTree(tree);
+    Statement* stmt = comp->fgNewStmtFromTree(tree, debugInfo);
     comp->fgInsertStmtAtEnd(newBlock, stmt);
-    stmt->SetDebugInfo(debugInfo);
-    comp->gtSetStmtInfo(stmt);
-    comp->fgSetStmtSeq(stmt);
-    comp->gtUpdateStmtSideEffects(stmt);
     newBlock->bbCodeOffs    = insertAfter->bbCodeOffsEnd;
     newBlock->bbCodeOffsEnd = insertAfter->bbCodeOffsEnd;
     return newBlock;
