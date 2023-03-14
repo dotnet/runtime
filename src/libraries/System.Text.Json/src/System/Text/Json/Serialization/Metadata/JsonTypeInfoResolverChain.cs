@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonTypeInfoResolverChain() : base(null) { }
         public override bool IsReadOnly => true;
         protected override void OnCollectionModifying()
-            => ThrowHelper.ThrowInvalidOperationException_TypeInfoResolverImmutable();
+            => ThrowHelper.ThrowInvalidOperationException_TypeInfoResolverChainImmutable();
 
         public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
         {

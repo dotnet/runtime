@@ -117,7 +117,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (!_resolver._mutable)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_TypeInfoResolverImmutable();
+                    ThrowHelper.ThrowInvalidOperationException_DefaultTypeInfoResolverImmutable();
                 }
             }
         }
