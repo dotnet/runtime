@@ -93,6 +93,7 @@
 
     <PropertyGroup>
       <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(_IsLibraryMode)' == 'true'">true</_EnableUnmanagedCallersOnlyMethodsExport>
+      <_UseAotDataFile Condition="'$(_IsLibraryMode)' == 'true' and '_UseAotDataFile' == ''">false</_UseAotDataFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -166,6 +167,7 @@
         Mode="$(_AOTMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="AsmOnly"
+        UseAotDataFile="$(_UseAotDataFile)"
         UseLLVM="$(MonoEnableLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="AppAssembliesInternal" />
     </MonoAOTCompiler>

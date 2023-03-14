@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-#include <fcntl.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
@@ -78,47 +76,6 @@ initialize_appctx_env_variables ()
     monovm_initialize(2, appctx_keys, appctx_values);
 }
 
-static unsigned char *
-load_aot_data (MonoAssembly *assembly, int size, void *user_data, void **out_handle)
-{
-    *out_handle = NULL;
-
-    MonoAssemblyName *assembly_name = mono_assembly_get_name (assembly);
-    const char *aname = mono_assembly_name_get_name (assembly_name);
-
-    size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (aname) + 10); // +1 "/", +8 ".aotdata", +1 null-terminating char
-    char *file_path = (char *)malloc (str_len);
-    if (!file_path) {
-        LOG_ERROR ("Out of memory.\n");
-        abort ();
-    }
-
-    int res = snprintf (file_path, str_len, "%s/%s.aotdata", bundle_path, aname);
-
-    int fd = open (file_path, O_RDONLY);
-    if (fd < 0) {
-        LOG_INFO ("Could not open file '%s' while trying to load aot data.\n", file_path);
-        return NULL;
-    }
-
-    void *ptr = mmap (NULL, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
-    if (ptr == MAP_FAILED) {
-        LOG_INFO ("Could not mmap file '%s'.\n", file_path);
-        close (fd);
-        return NULL;
-    }
-
-    close (fd);
-    *out_handle = ptr;
-    return (unsigned char *) ptr;
-}
-
-static void
-free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
-{
-    munmap (handle, size);
-}
-
 void
 runtime_init_callback ()
 {
@@ -138,8 +95,6 @@ runtime_init_callback ()
     mono_set_assemblies_path (bundle_path);
 
     mono_jit_set_aot_only (true);
-
-    mono_install_load_aot_data_hook (load_aot_data, free_aot_data, NULL);
 
     mono_set_signal_chaining (true);
 
