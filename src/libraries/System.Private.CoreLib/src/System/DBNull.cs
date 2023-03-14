@@ -21,7 +21,9 @@ namespace System
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+#pragma warning disable SYSLIB0049 // UnitySerializationHolder is obsolete
             UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.NullUnity);
+#pragma warning restore SYSLIB0049
         }
 
         public override string ToString()

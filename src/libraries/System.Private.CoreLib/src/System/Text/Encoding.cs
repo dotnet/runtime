@@ -1106,7 +1106,7 @@ namespace System.Text
             decoder!.ClearMustFlush();
         }
 
-        internal sealed class DefaultEncoder : Encoder, IObjectReference
+        internal sealed class DefaultEncoder : Encoder
         {
             private readonly Encoding _encoding;
 
@@ -1114,9 +1114,6 @@ namespace System.Text
             {
                 _encoding = encoding;
             }
-
-            public object GetRealObject(StreamingContext context) =>
-                throw new PlatformNotSupportedException();
 
             // Returns the number of bytes the next call to GetBytes will
             // produce if presented with the given range of characters and the given
@@ -1161,7 +1158,7 @@ namespace System.Text
                 _encoding.GetBytes(chars, charCount, bytes, byteCount);
         }
 
-        internal sealed class DefaultDecoder : Decoder, IObjectReference
+        internal sealed class DefaultDecoder : Decoder
         {
             private readonly Encoding _encoding;
 
@@ -1169,9 +1166,6 @@ namespace System.Text
             {
                 _encoding = encoding;
             }
-
-            public object GetRealObject(StreamingContext context) =>
-                throw new PlatformNotSupportedException();
 
             // Returns the number of characters the next call to GetChars will
             // produce if presented with the given range of bytes. The returned value

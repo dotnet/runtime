@@ -30,6 +30,7 @@ namespace System.Speech.Recognition
         {
         }
 
+#pragma warning disable SYSLIB0049 // Legacy formatter infrastructure is obsolete
         private RecognitionResult(SerializationInfo info, StreamingContext context)
         {
             // Get the set of serializable members for our class and base classes
@@ -53,6 +54,7 @@ namespace System.Speech.Recognition
                 }
             }
         }
+#pragma warning restore SYSLIB0049
 
         #endregion
 
@@ -65,6 +67,7 @@ namespace System.Speech.Recognition
             return Audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
         }
 
+#pragma warning disable SYSLIB0049 // Legacy formatter infrastructure is obsolete
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             Helpers.ThrowIfNull(info, nameof(info));
@@ -107,6 +110,8 @@ namespace System.Speech.Recognition
                 }
             }
         }
+#pragma warning restore SYSLIB0049
+
         internal bool SetTextFeedback(string text, bool isSuccessfulAction)
         {
             if (_sapiRecoResult == null)

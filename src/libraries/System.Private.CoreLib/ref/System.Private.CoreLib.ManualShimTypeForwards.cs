@@ -25,6 +25,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override int GetHashCode(string obj) { throw null; }
     }
+    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0049", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class UnitySerializationHolder : System.Runtime.Serialization.IObjectReference, System.Runtime.Serialization.ISerializable
     {
         public UnitySerializationHolder(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }

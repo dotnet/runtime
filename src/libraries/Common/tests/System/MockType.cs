@@ -86,6 +86,9 @@ namespace System
         public override bool IsSecurityCritical => throw Unexpected;
         public override bool IsSecuritySafeCritical => throw Unexpected;
         public override bool IsSecurityTransparent => throw Unexpected;
+#if NET8_0_OR_GREATER
+        [Obsolete("Legacy formatter-based serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0049", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public override bool IsSerializable => throw Unexpected;
         public override bool IsSubclassOf(Type c) => throw Unexpected;
         protected override bool IsValueTypeImpl() => throw Unexpected;

@@ -2,11 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public class ParameterInfo : ICustomAttributeProvider, IObjectReference
+    public class ParameterInfo : ICustomAttributeProvider
+#pragma warning disable SYSLIB0049 // IObjectReference is obsolete
+#pragma warning disable SA1001 // CommasMustBeSpacedCorrectly
+        , IObjectReference
+#pragma warning restore SA1001
+#pragma warning restore SYSLIB0049
     {
         protected ParameterInfo() { }
 

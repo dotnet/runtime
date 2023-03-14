@@ -1447,9 +1447,6 @@
   <data name="Argument_NotMethodCallOpcode" xml:space="preserve">
     <value>The specified opcode cannot be passed to EmitCall.</value>
   </data>
-  <data name="Argument_NotSerializable" xml:space="preserve">
-    <value>Argument passed in is not serializable.</value>
-  </data>
   <data name="Argument_NoUninitializedStrings" xml:space="preserve">
     <value>Uninitialized Strings cannot be created.</value>
   </data>

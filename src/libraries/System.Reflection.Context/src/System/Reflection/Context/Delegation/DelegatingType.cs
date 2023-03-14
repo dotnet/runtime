@@ -109,6 +109,9 @@ namespace System.Reflection.Context.Delegation
             get { return _typeInfo.IsSecurityTransparent; }
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete("Legacy formatter-based serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0049", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+#endif
         public override bool IsSerializable
         {
             get { return _typeInfo.IsSerializable; }
