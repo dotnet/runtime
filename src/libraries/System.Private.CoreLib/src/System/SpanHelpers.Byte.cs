@@ -270,7 +270,7 @@ namespace System
                                 return bitPos + offset;
                             }
                             // Clear the highest set bit.
-                            mask = BitOperations.ResetBit(mask, bitPos);
+                            mask = BitOperations.ToggleBit(mask, bitPos);
                         } while (mask != 0);
                     }
 
@@ -319,7 +319,7 @@ namespace System
                                 return bitPos + offset;
                             }
                             // Clear the highest set bit.
-                            mask = BitOperations.ResetBit(mask, bitPos);
+                            mask = BitOperations.ToggleBit(mask, bitPos);
                         } while (mask != 0);
                     }
 

@@ -945,13 +945,12 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Reset specific bit in the given value
+        /// Toggle specific bit in the given value
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint ResetBit(uint value, int bitPos)
+        internal static uint ToggleBit(uint value, int bitPos)
         {
-            // TODO: Recognize BTR on x86 and LSL+BIC on ARM
-            return value & ~(uint)(1 << bitPos);
+            return value ^ (1u << bitPos);
         }
     }
 }
