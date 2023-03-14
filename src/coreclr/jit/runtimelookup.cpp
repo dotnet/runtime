@@ -32,8 +32,12 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
 };
 
 // Create block from the given tree
-static BasicBlock* CreateBlockFromTree(
-    Compiler* comp, BasicBlock* insertAfter, BBjumpKinds blockKind, GenTree* tree, DebugInfo& debugInfo)
+static BasicBlock* CreateBlockFromTree(Compiler*   comp,
+                                       BasicBlock* insertAfter,
+                                       BBjumpKinds blockKind,
+                                       GenTree*    tree,
+                                       DebugInfo&  debugInfo,
+                                       bool        updateSideEffects = false)
 {
     // Fast-path basic block
     BasicBlock* newBlock = comp->fgNewBBafter(blockKind, insertAfter, true);
@@ -42,6 +46,10 @@ static BasicBlock* CreateBlockFromTree(
     comp->fgInsertStmtAtEnd(newBlock, stmt);
     newBlock->bbCodeOffs    = insertAfter->bbCodeOffsEnd;
     newBlock->bbCodeOffsEnd = insertAfter->bbCodeOffsEnd;
+    if (updateSideEffects)
+    {
+        comp->gtUpdateStmtSideEffects(stmt);
+    }
     return newBlock;
 }
 
@@ -256,7 +264,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 // Fallback basic block
                 GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
-                BasicBlock* fallbackBb = CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFallbackValue, debugInfo);
+                BasicBlock* fallbackBb =
+                    CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFallbackValue, debugInfo, true);
 
                 // Fast-path basic block
                 GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
