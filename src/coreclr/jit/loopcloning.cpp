@@ -977,8 +977,8 @@ void LC_ArrayDeref::DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStac
         LC_Array arrLen = array;
         arrLen.oper     = LC_Array::ArrLen;
         arrLen.dim      = level - 1;
-        (*conds)[level * 2 - 1]->Push(
-            LC_Condition(GT_LT, LC_Expr(LC_Ident::CreateVar(Lcl())), LC_Expr(LC_Ident::CreateArrAccess(arrLen)), /*unsigned*/ true));
+        (*conds)[level * 2 - 1]->Push(LC_Condition(GT_LT, LC_Expr(LC_Ident::CreateVar(Lcl())),
+                                                   LC_Expr(LC_Ident::CreateArrAccess(arrLen)), /*unsigned*/ true));
 
         // Push condition (a[i] != null)
         LC_Array arrTmp = array;
