@@ -535,9 +535,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 byte[] blobSymbolName = _sb.Append(_currentNodeZeroTerminatedName).ToUtf8String().UnderlyingArray;
 
-                ObjectNodeSection section = ObjectNodeSection.XDataSection;
-                if (ShouldShareSymbol(node))
-                    section = GetSharedSection(section, _sb.ToString());
+                ObjectNodeSection section = GetSharedSection(ObjectNodeSection.XDataSection, _sb.ToString());
                 SwitchSection(_nativeObjectWriter, section.Name, GetCustomSectionAttributes(section), section.ComdatName);
 
                 EmitAlignment(4);
@@ -612,11 +610,7 @@ namespace ILCompiler.DependencyAnalysis
                 int len = frameInfo.BlobData.Length;
                 byte[] blob = frameInfo.BlobData;
 
-                ObjectNodeSection lsdaSection = LsdaSection;
-                if (ShouldShareSymbol(node))
-                {
-                    lsdaSection = GetSharedSection(lsdaSection, ((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler));
-                }
+                ObjectNodeSection lsdaSection = GetSharedSection(LsdaSection, ((ISymbolNode)node).GetMangledName(_nodeFactory.NameMangler));
                 SwitchSection(_nativeObjectWriter, lsdaSection.Name, GetCustomSectionAttributes(lsdaSection), lsdaSection.ComdatName);
 
                 _sb.Clear().Append("_lsda").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName);
