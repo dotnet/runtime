@@ -546,6 +546,7 @@
     <!-- Linux options -->
     <ItemGroup Condition="'$(TargetsLinux)' == true">
       <_MonoCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
     <ItemGroup Condition="'$(RealTargetOS)' == 'linux'">
