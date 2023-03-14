@@ -8000,13 +8000,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto COND_JUMP;
 
             case CEE_SWITCH:
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nStarting CEE_SWITCH in " FMT_BB " (PC=%03u) of '%s'", block->bbNum, block->bbCodeOffs,
-                           info.compFullName);
-                }
-#endif
                 /* Pop the switch value off the stack */
                 op1 = gtFoldExpr(impPopStack().val);
                 assertImp(genActualTypeIsIntOrI(op1->TypeGet()));
@@ -8064,7 +8057,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             printf(" to " FMT_BB, block->bbJumpDest->bbNum);
                         }
                         printf("\n");
-                        fgDispBasicBlocks(true);
                     }
 #endif
 
