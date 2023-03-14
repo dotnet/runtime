@@ -372,7 +372,7 @@ namespace System.Text.Json
 
                 static void AddListHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue>? list)
                 {
-                    // NB hashcode calculation equates null with empty lists.
+                    // equates null with empty lists
                     if (list is null)
                         return;
 
