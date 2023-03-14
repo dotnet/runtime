@@ -71,6 +71,8 @@ export declare interface EmscriptenModuleInternal {
     mainScriptUrlOrBlob?: string;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
+    asm: { memory?: WebAssembly.Memory };
+    wasmMemory?: WebAssembly.Memory;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;

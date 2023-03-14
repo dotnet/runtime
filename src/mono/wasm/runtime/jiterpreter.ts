@@ -3,7 +3,7 @@
 
 import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import {
     getU16, getU32_unaligned
 } from "./memory";
@@ -762,6 +762,8 @@ function generate_wasm (
         //  independently jitting traces will not stomp on each other and all threads
         //  have a globally consistent view of which function pointer maps to each trace.
         rejected = false;
+        mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
+
         const idx =
             trapTraceErrors
                 ? Module.addFunction(

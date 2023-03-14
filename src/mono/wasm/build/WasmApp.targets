@@ -364,7 +364,7 @@
     <PropertyGroup>
       <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</_WasmAppIncludeThreadsWorker>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.js -->
-      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == '' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">-1</_WasmPThreadPoolSize>
+      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == ''">-1</_WasmPThreadPoolSize>
     </PropertyGroup>
 
     <ItemGroup>

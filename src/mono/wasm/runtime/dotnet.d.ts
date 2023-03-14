@@ -18,6 +18,7 @@ interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder;
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
     withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>;
     run(): Promise<number>;
 }
@@ -38,6 +39,7 @@ declare interface EmscriptenModule {
     HEAP8: Int8Array;
     HEAP16: Int16Array;
     HEAP32: Int32Array;
+    HEAP64: BigInt64Array;
     HEAPU8: Uint8Array;
     HEAPU16: Uint16Array;
     HEAPU32: Uint32Array;
@@ -128,6 +130,10 @@ type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number;
+    /**
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
+     */
+    startupMemoryCache?: boolean;
     /**
      * hash of assets
      */

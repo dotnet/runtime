@@ -8,7 +8,7 @@ import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
-import { abort_startup, beforeOnRuntimeInitialized } from "./startup";
+import { abort_startup, beforeOnRuntimeInitialized, memorySnapshotSkippedOrDone } from "./startup";
 import { AssetBehaviours, AssetEntry, AssetEntryInternal, LoadingResource, mono_assert, ResourceRequest } from "./types";
 import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
 
@@ -38,6 +38,19 @@ const skipBufferByAssetTypes: {
     "dotnetwasm": true,
 };
 
+const containedInSnapshotByAssetTypes: {
+    [k: string]: boolean
+} = {
+    "resource": true,
+    "assembly": true,
+    "pdb": true,
+    "heap": true,
+    "icu": true,
+    "js-module-threads": true,
+    "dotnetwasm": true,
+};
+
+
 // these assets are instantiated differently than the main flow
 const skipInstantiateByAssetTypes: {
     [k: string]: boolean
@@ -63,8 +76,10 @@ export async function mono_download_assets(): Promise<void> {
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     runtimeHelpers.enableDownloadRetry = runtimeHelpers.config.enableDownloadRetry || runtimeHelpers.enableDownloadRetry;
     try {
+        const alwaysLoadedAssets: AssetEntryInternal[] = [];
+        const containedInSnapshotAssets: AssetEntryInternal[] = [];
         const promises_of_assets: Promise<AssetEntryInternal>[] = [];
-        // start fetching and instantiating all assets in parallel
+
         for (const a of runtimeHelpers.config.assets!) {
             const asset: AssetEntryInternal = a;
             mono_assert(typeof asset === "object", "asset must be object");
@@ -73,6 +88,14 @@ export async function mono_download_assets(): Promise<void> {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
+            if (containedInSnapshotByAssetTypes[asset.behavior]) {
+                containedInSnapshotAssets.push(asset);
+            } else {
+                alwaysLoadedAssets.push(asset);
+            }
+        }
+
+        const countAndStartDownload = (asset: AssetEntryInternal) => {
             if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                 expected_instantiated_assets_count++;
             }
@@ -80,7 +103,36 @@ export async function mono_download_assets(): Promise<void> {
                 expected_downloaded_assets_count++;
                 promises_of_assets.push(start_asset_download(asset));
             }
+        };
+
+        // start fetching assets in parallel, only assets which are not part of memory snapshot
+        for (const asset of alwaysLoadedAssets) {
+            countAndStartDownload(asset);
         }
+
+        // continue after we know if memory snapshot is available or not
+        await memorySnapshotSkippedOrDone.promise;
+
+        // start fetching assets in parallel, only if memory snapshot is not available.
+        for (const asset of containedInSnapshotAssets) {
+            if (!runtimeHelpers.loadedMemorySnapshot) {
+                countAndStartDownload(asset);
+            } else {
+                // Otherwise cleanup in case we were given pending download. It would be even better if we could abort the download.
+                asset.pendingDownloadInternal = null as any; // GC
+                asset.pendingDownload = null as any; // GC
+                asset.buffer = null as any; // GC
+                // tell the debugger it is loaded
+                if (asset.behavior == "resource" || asset.behavior == "assembly" || asset.behavior == "pdb") {
+                    const url = resolve_path(asset, "");
+                    const virtualName: string = typeof (asset.virtualPath) === "string"
+                        ? asset.virtualPath
+                        : asset.name;
+                    loaded_files.push({ url: url, file: virtualName });
+                }
+            }
+        }
+
         allDownloadsQueued.promise_control.resolve();
 
         const promises_of_asset_instantiation: Promise<void>[] = [];
@@ -96,8 +148,9 @@ export async function mono_download_assets(): Promise<void> {
                         asset.pendingDownload = null as any; // GC
                         asset.buffer = null as any; // GC
 
+                        // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
+                        await memorySnapshotSkippedOrDone.promise;
                         await beforeOnRuntimeInitialized.promise;
-                        // this is after onRuntimeInitialized
                         _instantiate_asset(asset, url, data);
                     }
                 } else {

@@ -3,7 +3,7 @@
 
 import { mono_assert, MonoType, MonoMethod } from "./types";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked
 } from "./memory";
@@ -256,6 +256,7 @@ function getIsWasmEhSupported () : boolean {
 export function mono_jiterp_do_jit_call_indirect (
     jit_call_cb: number, cb_data: VoidPtr, thrown: Int32Ptr
 ) : void {
+    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
     const table = getWasmFunctionTable();
     const jitCallCb = table.get(jit_call_cb);
 
