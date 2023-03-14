@@ -1,0 +1,7 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <Compile Include="ReferencedAssembly1.cs" />
+  </ItemGroup>
+
+</Project>
