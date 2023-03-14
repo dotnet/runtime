@@ -19,6 +19,7 @@
 
     <LibraryBuilderTask
       Assemblies="@(AppAssembliesInternal)"
+      AssembliesLocation="$(AssembliesLocation)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"

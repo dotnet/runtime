@@ -19,6 +19,7 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private string cmakeProjectLanguages = "";
     private string targetOS = "";
+    private List<string> exportedAssemblies = new List<string>();
 
     /// <summary>
     /// The name of the library being generated
@@ -72,19 +73,11 @@ public class LibraryBuilderTask : AppBuilderTask
     /// </summary>
     public bool UsesCustomRuntimeInitCallback { get; set; }
 
+    /// <summary>
+    /// The environment variable name that will point to where assemblies
+    /// are located on the app host device.
+    /// </summary>
     public string? AssembliesLocation { get; set; }
-
-    /// <summary>
-    /// </summary>
-    public ITaskItem[] AppContextKeys { get; set; } = Array.Empty<ITaskItem>();
-
-    /// <summary>
-    /// </summary>
-    public ITaskItem[] AppContextValues { get; set; } = Array.Empty<ITaskItem>();
-
-    /// <summary>
-    /// </summary>
-    public string? RuntimeConfigBinFile { get; set; }
 
     public bool StripDebugSymbols { get; set; }
 
@@ -146,9 +139,6 @@ public class LibraryBuilderTask : AppBuilderTask
 
         return true;
     }
-
-
-    private List<string> exportedAssemblies = new List<string>();
 
     private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
     {
@@ -258,7 +248,7 @@ public class LibraryBuilderTask : AppBuilderTask
     {
         File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
             Utils.GetEmbeddedResource("autoinit.c")
-                .Replace("%ASSEMBLIES_LOCATION%", AssembliesLocation ?? "DOTNET_ASSETS_PATH")
+                .Replace("%ASSEMBLIES_LOCATION%", !string.IsNullOrEmpty(AssembliesLocation) ? AssembliesLocation : "DOTNET_ASSETS_PATH")
                 .Replace("%RUNTIME_IDENTIFIER%", RuntimeIdentifier));
     }
 
