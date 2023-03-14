@@ -168,11 +168,11 @@ internal class ChromeProvider : WasmHostProvider
     private static string GetInitParms(int port, string lang="en-US")
     {
         string str = $"--headless --disable-gpu --lang={lang} --incognito --remote-debugging-port={port} --enable-logging=stderr --v=1";
-        /*if (File.Exists("/.dockerenv"))
+        if (File.Exists("/.dockerenv"))
         {
             Console.WriteLine ("Detected a container, disabling sandboxing for debugger tests.");
             str = "--no-sandbox " + str;
-        }*/
+        }
         return str;
     }
 }
