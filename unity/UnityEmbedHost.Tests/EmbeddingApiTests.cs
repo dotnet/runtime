@@ -39,17 +39,15 @@ public class EmbeddingApiTests
     public void GCHandleNewAndGetTarget()
     {
         var obj = new object();
-        var handle1 = CoreCLRHost.gchandle_new_v2(Unsafe.As<object, IntPtr>(ref obj), false);
+        var handle1 = CoreCLRHostTestingWrappers.gchandle_new_v2(obj, false);
         Assert.That(handle1, Is.Not.EqualTo(0));
-        var roundTrip = CoreCLRHost.gchandle_get_target_v2(handle1);
-        var result = Unsafe.As<IntPtr, object>(ref roundTrip);
+        var result = CoreCLRHostTestingWrappers.gchandle_get_target_v2(handle1);
         Assert.That(obj, Is.EqualTo(result));
 
         var obj2 = new object();
-        var handle2 = CoreCLRHost.gchandle_new_v2(Unsafe.As<object, IntPtr>(ref obj2), true);
+        var handle2 = CoreCLRHostTestingWrappers.gchandle_new_v2(obj2, true);
         Assert.That(handle2, Is.Not.EqualTo(0));
-        var roundTrip2 = CoreCLRHost.gchandle_get_target_v2(handle2);
-        var result2 = Unsafe.As<IntPtr, object>(ref roundTrip2);
+        var result2 = CoreCLRHostTestingWrappers.gchandle_get_target_v2(handle2);
         Assert.That(obj2, Is.EqualTo(result2));
 
         Assert.That(handle1, Is.Not.EqualTo(handle2));
