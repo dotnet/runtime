@@ -24,9 +24,8 @@ static void* GetConstantPointer(Compiler* comp, GenTree* tree)
 // Save expression to a local and append it as the last statement in exprBlock
 static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprBlock, DebugInfo& debugInfo)
 {
-    unsigned const tmpNum         = comp->lvaGrabTemp(true DEBUGARG("spilling expr"));
-    comp->lvaTable[tmpNum].lvType = expr->TypeGet();
-    Statement* asgStmt            = comp->fgNewStmtAtEnd(exprBlock, comp->gtNewTempAssign(tmpNum, expr), debugInfo);
+    unsigned const tmpNum  = comp->lvaGrabTemp(true DEBUGARG("spilling expr"));
+    Statement*     asgStmt = comp->fgNewStmtAtEnd(exprBlock, comp->gtNewTempAssign(tmpNum, expr), debugInfo);
     comp->gtSetStmtInfo(asgStmt);
     comp->fgSetStmtSeq(asgStmt);
     return comp->gtNewLclvNode(tmpNum, genActualType(expr));
@@ -68,8 +67,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         // and doesMethodHaveExpRuntimeLookup() still returns false we'll assert in LowerCall
         return result;
     }
-
-    INDEBUG(bool irIsPrinted = false);
 
     // Find all calls with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag
     for (BasicBlock* block : Blocks())
@@ -118,17 +115,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     assert(!"can't restore signature argument value");
                     continue;
                 }
-
-#ifdef DEBUG
-                // Print full IR before any changes we're goint to make
-                if (!irIsPrinted && verbose)
-                {
-                    irIsPrinted = true;
-                    printf("\n*************** Before fgExpandRuntimeLookups()\n");
-                    fgDispBasicBlocks(true);
-                    printf("\n");
-                }
-#endif
 
                 // Restore runtimeLookup using signature argument via a global dictionary
                 CORINFO_RUNTIME_LOOKUP runtimeLookup = {};
@@ -415,14 +401,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
             fgReorderBlocks(/* useProfileData */ false);
             fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
         }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\n*************** After fgExpandRuntimeLookups()\n");
-            fgDispBasicBlocks(true);
-        }
-#endif
     }
     return result;
 }
