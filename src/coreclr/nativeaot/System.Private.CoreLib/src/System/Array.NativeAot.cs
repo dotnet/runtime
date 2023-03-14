@@ -759,11 +759,11 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            EETypePtr eeType = array.GetEETypePtr();
-            nuint totalByteLength = eeType.ComponentSize * array.NativeLength;
+            MethodTable* mt = array.GetMethodTable();
+            nuint totalByteLength = mt->ComponentSize * array.NativeLength;
             ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
 
-            if (!eeType.ContainsGCPointers)
+            if (!mt->ContainsGCPointers)
             {
                 SpanHelpers.ClearWithoutReferences(ref pStart, totalByteLength);
             }
@@ -782,10 +782,10 @@ namespace System
             ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
             int lowerBound = 0;
 
-            EETypePtr eeType = array.GetEETypePtr();
-            if (!eeType.IsSzArray)
+            MethodTable* mt = array.GetMethodTable();
+            if (!mt->IsSzArray)
             {
-                int rank = eeType.ArrayRank;
+                int rank = mt->ArrayRank;
                 lowerBound = Unsafe.Add(ref Unsafe.As<byte, int>(ref p), rank);
                 p = ref Unsafe.Add(ref p, 2 * sizeof(int) * rank); // skip the bounds
             }
@@ -795,12 +795,12 @@ namespace System
             if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > array.NativeLength)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
-            nuint elementSize = eeType.ComponentSize;
+            nuint elementSize = mt->ComponentSize;
 
             ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * elementSize);
             nuint byteLength = (uint)length * elementSize;
 
-            if (eeType.ContainsGCPointers)
+            if (mt->ContainsGCPointers)
             {
                 Debug.Assert(byteLength % (nuint)sizeof(IntPtr) == 0);
                 SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
@@ -1037,11 +1037,11 @@ namespace System
         //
         // Return storage size of an individual element in bytes.
         //
-        internal nuint ElementSize
+        internal unsafe nuint ElementSize
         {
             get
             {
-                return this.GetEETypePtr().ComponentSize;
+                return this.GetMethodTable()->ComponentSize;
             }
         }
 

@@ -231,14 +231,6 @@ namespace System
             }
         }
 
-        internal bool IsAbstract
-        {
-            get
-            {
-                return _value->IsAbstract;
-            }
-        }
-
         internal bool IsByRefLike
         {
             get
@@ -315,14 +307,6 @@ namespace System
 
                 EETypePtr baseEEType = new EETypePtr(_value->NonArrayBaseType);
                 return baseEEType;
-            }
-        }
-
-        internal ushort ComponentSize
-        {
-            get
-            {
-                return _value->ComponentSize;
             }
         }
 
