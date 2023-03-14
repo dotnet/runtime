@@ -9,7 +9,7 @@ using System.Text;
 namespace Unity.CoreCLRHelpers;
 
 using StringPtr = IntPtr;
-public static unsafe partial class CoreCLRHost
+static unsafe partial class CoreCLRHost
 {
     static ALCWrapper alcWrapper;
     static FieldInfo assemblyHandleField;
