@@ -1780,15 +1780,36 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     }
 #endif
 
-    // Slot pointer
-    GenTree* slotPtrTree = ctxTree;
-
     if (pRuntimeLookup->testForNull)
     {
-        slotPtrTree = impCloneExpr(ctxTree, &ctxTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("impRuntimeLookup slot"));
+        assert(pRuntimeLookup->indirections != 0);
+
+        // Call the helper
+        // - Setup argNode with the pointer to the signature returned by the lookup
+        GenTree* argNode =
+            gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+        GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
+
+        // No need to perform CSE/hoisting for signature node - it is expected to end up in a rarely-taken block after
+        // "Expand runtime lookups" phase.
+        argNode->gtFlags |= GTF_DONT_CSE;
+
+        // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
+        // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
+        impInlineRoot()->setMethodHasExpRuntimeLookup();
+        helperCall->SetExpRuntimeLookup();
+        if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
+        {
+            JITDUMP("Registering %p in SignatureToLookupInfoMap\n", pRuntimeLookup->signature)
+            impInlineRoot()->GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, *pRuntimeLookup);
+        }
+        unsigned callLclNum = lvaGrabTemp(true DEBUGARG("spilling helperCall"));
+        impAssignTempGen(callLclNum, helperCall);
+        return gtNewLclvNode(callLclNum, helperCall->TypeGet());
     }
 
+    // Slot pointer
+    GenTree* slotPtrTree   = ctxTree;
     GenTree* indOffTree    = nullptr;
     GenTree* lastIndOfTree = nullptr;
 
@@ -1834,72 +1855,47 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     }
 
     // No null test required
-    if (!pRuntimeLookup->testForNull)
+    assert(!pRuntimeLookup->testForNull);
+
+    if (pRuntimeLookup->indirections == 0)
     {
-        if (pRuntimeLookup->indirections == 0)
-        {
-            return slotPtrTree;
-        }
-
-        slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-        slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
-
-        if (!pRuntimeLookup->testForFixup)
-        {
-            return slotPtrTree;
-        }
-
-        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark0"));
-
-        unsigned slotLclNum = lvaGrabTemp(true DEBUGARG("impRuntimeLookup test"));
-        impAssignTempGen(slotLclNum, slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr, impCurStmtDI);
-
-        GenTree* slot = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-        // downcast the pointer to a TYP_INT on 64-bit targets
-        slot = impImplicitIorI4Cast(slot, TYP_INT);
-        // Use a GT_AND to check for the lowest bit and indirect if it is set
-        GenTree* test  = gtNewOperNode(GT_AND, TYP_INT, slot, gtNewIconNode(1));
-        GenTree* relop = gtNewOperNode(GT_EQ, TYP_INT, test, gtNewIconNode(0));
-
-        // slot = GT_IND(slot - 1)
-        slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-        GenTree* add   = gtNewOperNode(GT_ADD, TYP_I_IMPL, slot, gtNewIconNode(-1, TYP_I_IMPL));
-        GenTree* indir = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
-        indir->gtFlags |= GTF_IND_NONFAULTING;
-        indir->gtFlags |= GTF_IND_INVARIANT;
-
-        slot                = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-        GenTree*      asg   = gtNewAssignNode(slot, indir);
-        GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
-        GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
-        impAppendTree(qmark, CHECK_SPILL_NONE, impCurStmtDI);
-
-        return gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+        return slotPtrTree;
     }
 
-    assert(pRuntimeLookup->indirections != 0);
+    slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
+    slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
 
-    // Call the helper
-    // - Setup argNode with the pointer to the signature returned by the lookup
-    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-    GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
-
-    // No need to perform CSE/hoisting for signature node - it is expected to end up in a rarely-taken block after
-    // "Expand runtime lookups" phase.
-    argNode->gtFlags |= GTF_DONT_CSE;
-
-    // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
-    // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
-    impInlineRoot()->setMethodHasExpRuntimeLookup();
-    helperCall->SetExpRuntimeLookup();
-    if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
+    if (!pRuntimeLookup->testForFixup)
     {
-        JITDUMP("Registering %p in SignatureToLookupInfoMap\n", pRuntimeLookup->signature)
-        impInlineRoot()->GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, *pRuntimeLookup);
+        return slotPtrTree;
     }
-    unsigned callLclNum = lvaGrabTemp(true DEBUGARG("spilling helperCall"));
-    impAssignTempGen(callLclNum, helperCall);
-    return gtNewLclvNode(callLclNum, helperCall->TypeGet());
+
+    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark0"));
+
+    unsigned slotLclNum = lvaGrabTemp(true DEBUGARG("impRuntimeLookup test"));
+    impAssignTempGen(slotLclNum, slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr, impCurStmtDI);
+
+    GenTree* slot = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+    // downcast the pointer to a TYP_INT on 64-bit targets
+    slot = impImplicitIorI4Cast(slot, TYP_INT);
+    // Use a GT_AND to check for the lowest bit and indirect if it is set
+    GenTree* test  = gtNewOperNode(GT_AND, TYP_INT, slot, gtNewIconNode(1));
+    GenTree* relop = gtNewOperNode(GT_EQ, TYP_INT, test, gtNewIconNode(0));
+
+    // slot = GT_IND(slot - 1)
+    slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+    GenTree* add   = gtNewOperNode(GT_ADD, TYP_I_IMPL, slot, gtNewIconNode(-1, TYP_I_IMPL));
+    GenTree* indir = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
+    indir->gtFlags |= GTF_IND_NONFAULTING;
+    indir->gtFlags |= GTF_IND_INVARIANT;
+
+    slot                = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+    GenTree*      asg   = gtNewAssignNode(slot, indir);
+    GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
+    GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
+    impAppendTree(qmark, CHECK_SPILL_NONE, impCurStmtDI);
+
+    return gtNewLclvNode(slotLclNum, TYP_I_IMPL);
 }
 
 struct RecursiveGuard
