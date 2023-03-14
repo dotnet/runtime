@@ -153,7 +153,7 @@ public class XUnitLogChecker
         IEnumerable<string>? fileContents = null;
         Stopwatch fileReadStopwatch = Stopwatch.StartNew();
 
-        while (fileReadStopwatch.Elapsed.Seconds < 60)
+        while (fileReadStopwatch.ElapsedMilliseconds < 60000)
         {
             // We were able to read the file, so we can finish this loop.
             if (fileContents is not null)
