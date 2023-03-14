@@ -3,47 +3,51 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Emit;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using static System.Reflection.Emit.Experiment.EntityWrappers;
 
-namespace System.Reflection.Metadata.Experiment
+namespace System.Reflection.Emit.Experiment
 {
     public sealed class PersistableAssemblyBuilder : AssemblyBuilder
     {
         private bool _previouslySaved;
         private AssemblyName _assemblyName;
-
-        #region Internal Data Members
-
-        internal readonly AssemblyBuilderAccess _access;
         private PersistableModuleBuilder? _module;
 
-        #endregion
+        internal List<CustomAttributeWrapper> _customAttributes = new();
 
-        internal PersistableAssemblyBuilder(AssemblyName name,
-                                 AssemblyBuilderAccess access)
+        internal PersistableAssemblyBuilder(AssemblyName name, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             ArgumentNullException.ThrowIfNull(name);
 
             _assemblyName = name;
-            _access = access;
+
+            _module = new PersistableModuleBuilder(PersistableModuleBuilder.ManifestModuleName, this);
+
+            if (assemblyAttributes != null)
+            {
+                foreach (CustomAttributeBuilder assemblyAttribute in assemblyAttributes)
+                {
+                    SetCustomAttribute(assemblyAttribute);
+                }
+            }
         }
 
-        public static new PersistableAssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
-            => new PersistableAssemblyBuilder(name, access);
+        public static PersistableAssemblyBuilder DefineDynamicAssembly(AssemblyName name)
+            => new PersistableAssemblyBuilder(name, null);
 
-        public static new AssemblyBuilder DefineDynamicAssembly(
+        public static PersistableAssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
-            AssemblyBuilderAccess access,
-            IEnumerable<CustomAttributeBuilder>? _)
-                => new PersistableAssemblyBuilder(name, access);
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+                => new PersistableAssemblyBuilder(name, assemblyAttributes);
 
         private static void WritePEImage(Stream peStream, MetadataBuilder metadataBuilder, BlobBuilder ilBuilder) // MethodDefinitionHandle entryPointHandle when we have main method.
         {
-            //Create executable with the managed metadata from the specified MetadataBuilder.
+            // Create executable with the managed metadata from the specified MetadataBuilder.
             var peHeaderBuilder = new PEHeaderBuilder(
-                imageCharacteristics: Characteristics.Dll //Start off with a simple DLL
+                imageCharacteristics: Characteristics.Dll // Start off with a simple DLL
                 );
 
             var peBuilder = new ManagedPEBuilder(
@@ -51,7 +55,7 @@ namespace System.Reflection.Metadata.Experiment
                 new MetadataRootBuilder(metadataBuilder),
                 ilBuilder,
                 flags: CorFlags.ILOnly,
-                deterministicIdProvider: content => new BlobContentId(Guid.NewGuid(), 0x04030201));//Const ID, will reexamine as project progresses.
+                deterministicIdProvider: content => new BlobContentId(Guid.NewGuid(), 0x04030201)); // Const ID, will reexamine as project progresses.
 
             // Write executable into the specified stream.
             var peBlob = new BlobBuilder();
@@ -59,14 +63,14 @@ namespace System.Reflection.Metadata.Experiment
             peBlob.WriteContentTo(peStream);
         }
 
-        public void Save(string assemblyFileName)
+        public void Save(Stream stream)
         {
-            if (_previouslySaved) // You cannot save an assembly multiple times. This is consistent with Save() in .Net Framework.
+            if (_previouslySaved) // Cannot save an assembly multiple times. This is consistent with Save() in .Net Framework.
             {
                 throw new InvalidOperationException("Cannot save an assembly multiple times");
             }
 
-            ArgumentNullException.ThrowIfNull(assemblyFileName);
+            ArgumentNullException.ThrowIfNull(stream);
 
             if (_assemblyName == null || _assemblyName.Name == null)
             {
@@ -80,7 +84,7 @@ namespace System.Reflection.Metadata.Experiment
 
             // Add assembly metadata
             var metadata = new MetadataBuilder();
-            metadata.AddAssembly( // Metadata is added for the new assembly - Current design - metadata generated only when Save method is called.
+            AssemblyDefinitionHandle assemlbyHandle = metadata.AddAssembly( // Metadata is added for the new assembly - Current design - metadata generated only when Save method is called.
                metadata.GetOrAddString(value: _assemblyName.Name),
                version: _assemblyName.Version ?? new Version(0, 0, 0, 0),
                culture: _assemblyName.CultureName == null ? default : metadata.GetOrAddString(value: _assemblyName.CultureName),
@@ -89,46 +93,63 @@ namespace System.Reflection.Metadata.Experiment
                hashAlgorithm: AssemblyHashAlgorithm.None); // AssemblyName.HashAlgorithm is obsolete so default value used.
 
             // Add module's metadata
-            _module.AppendMetadata(metadata);
+            _module.AppendMetadata(metadata, assemlbyHandle);
+
+            var ilBuilder = new BlobBuilder();
+            WritePEImage(stream, metadata, ilBuilder);
+            _previouslySaved = true;
+        }
+
+        public void Save(string assemblyFileName)
+        {
+            ArgumentNullException.ThrowIfNull(assemblyFileName);
 
             using var peStream = new FileStream(assemblyFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            var ilBuilder = new BlobBuilder();
-            WritePEImage(peStream, metadata, ilBuilder);
-            _previouslySaved = true;
+            Save(peStream);
         }
 
         protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (_module != null)
+            if (_module == null)
             {
-                throw new InvalidOperationException("Multi-module assemblies are not supported");
+                throw new InvalidOperationException("Module not found");
             }
 
-            PersistableModuleBuilder moduleBuilder = new PersistableModuleBuilder(name, this);
-            _module = moduleBuilder;
-            return moduleBuilder;
+            return _module;
         }
+
         protected override ModuleBuilder? GetDynamicModuleCore(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-#pragma warning disable IL3002 // Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file
-            if (_module == null)
-            {
-                return null;
-            }
-
-            else if (_module.Name.Equals(name))
+            if (PersistableModuleBuilder.ManifestModuleName.Equals(name))
             {
                 return _module;
             }
-#pragma warning restore IL3002 // Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file
 
             return null;
         }
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
+
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            ArgumentNullException.ThrowIfNull(nameof(con));
+            ArgumentNullException.ThrowIfNull(nameof(binaryAttribute)); // This is incorrect (how?)
+
+            if (con.DeclaringType == null)
+            {
+                throw new ArgumentException("Attribute constructor has no type.");
+            }
+
+            CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(con, binaryAttribute);
+
+            _customAttributes.Add(customAttribute);
+        }
+
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        {
+            SetCustomAttribute(customBuilder.Constructor, customBuilder.Blob);
+        }
     }
 }

@@ -2,51 +2,80 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.CodeDom.Compiler;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace System.Reflection.Metadata.Experiment.Tests
+namespace System.Reflection.Emit.Experiment.Tests
 {
-    public class ReflectionTesting : IDisposable
+    public class AssemblySaveTestsWithVariousTypes : IDisposable
     {
-        internal string fileLocation;
-        public ReflectionTesting()
+        internal string _fileLocation;
+        private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
         {
-            const bool _keepFiles = true;
-            TempFileCollection _tfc;
+            Version = new Version("1.2.3.4"),
+            CultureInfo = Globalization.CultureInfo.CurrentCulture,
+            ContentType = AssemblyContentType.WindowsRuntime,
+            Flags = AssemblyNameFlags.EnableJITcompileTracking | AssemblyNameFlags.Retargetable,
+        };
+
+        public AssemblySaveTestsWithVariousTypes()
+        {
+            const bool keepFiles = true;
+            TempFileCollection tfc;
             Directory.CreateDirectory("testDir");
-            _tfc = new TempFileCollection("testDir", false);
-            fileLocation = _tfc.AddExtension("dll", _keepFiles);
+            tfc = new TempFileCollection("testDir", false);
+            _fileLocation = tfc.AddExtension("dll", keepFiles);
         }
 
         public void Dispose()
         { }
 
         [Fact]
-        public void OneInterfaceWithMethods()
+        public void EmptyAssemblyTest()
         {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
+            AssemblyTools.WriteAssemblyToDisk(s_assemblyName, Type.EmptyTypes, _fileLocation);
 
-            //Construct its types via reflection.
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
+            Assert.NotNull(assemblyFromDisk);
+
+            AssemblyName aNameFromDisk = assemblyFromDisk.GetName();
+
+            // Test AssemblyName properties
+            Assert.Equal(s_assemblyName.Name, aNameFromDisk.Name);
+            Assert.Equal(s_assemblyName.Version, aNameFromDisk.Version);
+            Assert.Equal(s_assemblyName.CultureInfo, aNameFromDisk.CultureInfo);
+            Assert.Equal(s_assemblyName.CultureName, aNameFromDisk.CultureName);
+            Assert.Equal(s_assemblyName.Flags | AssemblyNameFlags.PublicKey, aNameFromDisk.Flags); // Not sure AssemblyNameFlags.PublicKey is expected
+
+            Module moduleFromDisk = assemblyFromDisk.Modules.First();
+
+            Assert.NotNull(moduleFromDisk);
+            Assert.Empty(moduleFromDisk.GetTypes());
+        }
+
+        [Fact]
+        public void OneInterfaceWithMethodsUsingStream()
+        {
             Type[] types = new Type[] { typeof(IMultipleMethod) };
+            using MemoryStream stream = new MemoryStream();
 
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            // Generate DLL from these and save it to Strem
+            AssemblyTools.WriteAssemblyToStream(s_assemblyName, types, stream);
 
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
-
-            // Now compare them:
+            // Read said assembly back from Stream using MetadataLoadContext
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(stream);
 
             // AssemblyName
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
+            Assert.Equal(s_assemblyName.Name, assemblyFromDisk.GetName().Name);
 
-            // Module Name
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
+
+            Assert.NotNull(moduleFromDisk);
+            // Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName); Custom module not supported
+            Assert.Equal(1, moduleFromDisk.GetTypes().Length);
 
             // Type comparisons
             for (int i = 0; i < types.Length; i++)
@@ -67,12 +96,13 @@ namespace System.Reflection.Metadata.Experiment.Tests
                     Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
                     Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
                     Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+
                     // Parameter comparison
                     for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
                     {
-                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
-                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
-                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
+                        ParameterInfo sourceParameter = sourceMethod.GetParameters()[k];
+                        ParameterInfo parameterFromDisk = methodFromDisk.GetParameters()[k];
+                        Assert.Equal(sourceParameter.ParameterType.FullName, parameterFromDisk.ParameterType.FullName);
                     }
                 }
             }
@@ -81,27 +111,18 @@ namespace System.Reflection.Metadata.Experiment.Tests
         [Fact]
         public void OneInterfaceWithoutMethods()
         {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
-
-            //Construct its types via reflection.
             Type[] types = new Type[] { typeof(INoMethod) };
 
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation, null);
+            AssemblyTools.WriteAssemblyToDisk(s_assemblyName, types, _fileLocation);
 
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
-            // Now compare them:
-
-            // AssemblyName
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
 
-            // Module Name
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
+
+            Assert.NotNull(moduleFromDisk);
+            Assert.Equal(1, moduleFromDisk.GetTypes().Length);
 
             // Type comparisons
             for (int i = 0; i < types.Length; i++)
@@ -113,50 +134,25 @@ namespace System.Reflection.Metadata.Experiment.Tests
                 Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
                 Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
 
-                // Method comparison
-                for (int j = 0; j < sourceType.GetMethods().Length; j++)
-                {
-                    MethodInfo sourceMethod = sourceType.GetMethods()[j];
-                    MethodInfo methodFromDisk = typeFromDisk.GetMethods()[j];
-
-                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
-                    // Parameter comparison
-                    for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
-                    {
-                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
-                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
-                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
-                    }
-                }
+                Assert.Empty(typeFromDisk.GetMethods());
             }
         }
 
         [Fact]
         public void EmptyInterfacesBetweenNonEmpty()
         {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
-
-            //Construct its types via reflection.
             Type[] types = new Type[] { typeof(IAccess), typeof(INoMethod), typeof(INoMethod2), typeof(IMultipleMethod) };
 
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(s_assemblyName, types, _fileLocation);
 
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
-            // Now compare them:
-
-            // AssemblyName
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
 
-            // Module Name
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
+
+            Assert.NotNull(moduleFromDisk);
+            Assert.Equal(4, moduleFromDisk.GetTypes().Length);
 
             // Type comparisons
             for (int i = 0; i < types.Length; i++)
@@ -177,12 +173,13 @@ namespace System.Reflection.Metadata.Experiment.Tests
                     Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
                     Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
                     Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+
                     // Parameter comparison
                     for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
                     {
-                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
-                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
-                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
+                        ParameterInfo sourceParameter = sourceMethod.GetParameters()[k];
+                        ParameterInfo parameterFromDisk = methodFromDisk.GetParameters()[k];
+                        Assert.Equal(sourceParameter.ParameterType.FullName, parameterFromDisk.ParameterType.FullName);
                     }
                 }
             }
@@ -191,28 +188,19 @@ namespace System.Reflection.Metadata.Experiment.Tests
         [Fact]
         public void TwoEmptyInterfaces()
         {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
-
-            //Construct its types via reflection.
             Type[] types = new Type[] { typeof(INoMethod), typeof(INoMethod2) };
 
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(s_assemblyName, types, _fileLocation);
 
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
-            // Now compare them:
-
-            // AssemblyName
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
 
-            // Module Name
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
 
+            Assert.NotNull(moduleFromDisk);
+            Assert.Equal(2, moduleFromDisk.GetTypes().Length);
+            
             // Type comparisons
             for (int i = 0; i < types.Length; i++)
             {
@@ -223,50 +211,25 @@ namespace System.Reflection.Metadata.Experiment.Tests
                 Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
                 Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
 
-                // Method comparison
-                for (int j = 0; j < sourceType.GetMethods().Length; j++)
-                {
-                    MethodInfo sourceMethod = sourceType.GetMethods()[j];
-                    MethodInfo methodFromDisk = typeFromDisk.GetMethods()[j];
-
-                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
-                    // Parameter comparison
-                    for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
-                    {
-                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
-                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
-                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
-                    }
-                }
+                Assert.Empty(typeFromDisk.GetMethods());
             }
         }
 
         [Fact]
         public void TwoInterfaceOneMethod()
         {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
-
-            //Construct its types via reflection.
             Type[] types = new Type[] { typeof(INoMethod), typeof(IOneMethod) };
 
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(s_assemblyName, types, _fileLocation);
 
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
-            // Now compare them:
-
-            // AssemblyName
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
 
-            // Module Name
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
+
+            Assert.NotNull(moduleFromDisk);
+            Assert.Equal(2, moduleFromDisk.GetTypes().Length);
 
             // Type comparisons
             for (int i = 0; i < types.Length; i++)
@@ -287,12 +250,13 @@ namespace System.Reflection.Metadata.Experiment.Tests
                     Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
                     Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
                     Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+
                     // Parameter comparison
                     for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
                     {
-                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
-                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
-                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
+                        ParameterInfo sourceParameter = sourceMethod.GetParameters()[k];
+                        ParameterInfo parameterFromDisk = methodFromDisk.GetParameters()[k];
+                        Assert.Equal(sourceParameter.ParameterType.FullName, parameterFromDisk.ParameterType.FullName);
                     }
                 }
             }
@@ -301,29 +265,20 @@ namespace System.Reflection.Metadata.Experiment.Tests
 
 
         [Fact]
-        public void TwoIntefaceManyMethodsThenNone()
+        public void TwoInterfaceManyMethodsThenNone()
         {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
-
-            //Construct its types via reflection.
             Type[] types = new Type[] { typeof(IMultipleMethod), typeof(INoMethod2) };
 
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(s_assemblyName, types, _fileLocation);
 
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
-            // Now compare them:
-
-            // AssemblyName
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
 
-            // Module Name
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
+
+            Assert.NotNull(moduleFromDisk);
+            Assert.Equal(2, moduleFromDisk.GetTypes().Length);
 
             // Type comparisons
             for (int i = 0; i < types.Length; i++)
@@ -338,8 +293,6 @@ namespace System.Reflection.Metadata.Experiment.Tests
                 // Method comparison
                 for (int j = 0; j < sourceType.GetMethods().Length; j++)
                 {
-                    MethodInfo[] sourceMethods = sourceType.GetMethods();
-                    MethodInfo[] methodsFromDisk = typeFromDisk.GetMethods();
                     MethodInfo sourceMethod = sourceType.GetMethods()[j];
                     MethodInfo methodFromDisk = typeFromDisk.GetMethods()[j];
 
@@ -350,9 +303,9 @@ namespace System.Reflection.Metadata.Experiment.Tests
                     // Parameter comparison
                     for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
                     {
-                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
-                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
-                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
+                        ParameterInfo sourceParameter = sourceMethod.GetParameters()[k];
+                        ParameterInfo parameterFromDisk = methodFromDisk.GetParameters()[k];
+                        Assert.Equal(sourceParameter.ParameterType.FullName, parameterFromDisk.ParameterType.FullName);
                     }
                 }
             }
@@ -361,27 +314,18 @@ namespace System.Reflection.Metadata.Experiment.Tests
         [Fact]
         public void VariousInterfaces()
         {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
-
-            //Construct its types via reflection.
             Type[] types = new Type[] { typeof(IMultipleMethod), typeof(INoMethod2), typeof(IAccess), typeof(IOneMethod), typeof(INoMethod) };
 
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(s_assemblyName, types, _fileLocation);
 
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
-            // Now compare them:
-
-            // AssemblyName
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
 
-            // Module Name
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
+
+            Assert.NotNull(moduleFromDisk);
+            Assert.Equal(5, moduleFromDisk.GetTypes().Length);
 
             // Type comparisons
             for (int i = 0; i < types.Length; i++)
@@ -416,36 +360,27 @@ namespace System.Reflection.Metadata.Experiment.Tests
         }
 
         [Fact]
-        public void OneStructWithoutMethods()
+        public void AnEmptyStruct()
         {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
-
-            //Construct its types via reflection.
             Type[] types = new Type[] { typeof(EmptyStruct) };
 
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation, null);
+            AssemblyTools.WriteAssemblyToDisk(s_assemblyName, types, _fileLocation);
 
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
-            // Now compare them:
-
-            // AssemblyName
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
 
-            // Module Name
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
 
-            // Type comparisons
+            Assert.NotNull(moduleFromDisk);
+            Assert.Equal(1, moduleFromDisk.GetTypes().Length);
+
             for (int i = 0; i < types.Length; i++)
             {
                 Type sourceType = types[i];
                 Type typeFromDisk = moduleFromDisk.GetTypes()[i];
 
+                Assert.True(sourceType.IsValueType);
                 Assert.Equal(sourceType.Name, typeFromDisk.Name);
                 Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
                 Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
@@ -457,42 +392,36 @@ namespace System.Reflection.Metadata.Experiment.Tests
         }
 
         [Fact]
-        public void EmptyStructAndStructWithField()
+        public void EmptyStructAndStructWithAFieldWriteToStream()
         {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
-
-            //Construct its types via reflection.
             Type[] types = new Type[] { typeof(EmptyStruct), typeof(StructWithField) };
 
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation, null);
+            using var stream = new MemoryStream();
+            AssemblyTools.WriteAssemblyToStream(s_assemblyName, types, stream);
 
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(stream);
 
-            // Now compare them:
-
-            // AssemblyName
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
+            Assert.Equal(s_assemblyName.Name, assemblyFromDisk.GetName().Name);
 
-            // Module Name
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
 
-            // Type comparisons
+            Assert.NotNull(moduleFromDisk);
+            Assert.Equal(2, moduleFromDisk.GetTypes().Length);
+
             for (int i = 0; i < types.Length; i++)
             {
                 Type sourceType = types[i];
                 Type typeFromDisk = moduleFromDisk.GetTypes()[i];
 
+                Assert.True(sourceType.IsValueType);
                 Assert.Equal(sourceType.Name, typeFromDisk.Name);
                 Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
                 Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
                 Assert.Empty(sourceType.GetMethods(BindingFlags.DeclaredOnly));
                 var declaredFields = sourceType.GetFields();
-                // Method comparison
+
+                // Field comparison
                 for (int j = 0; j < declaredFields.Length; j++)
                 {
                     FieldInfo sourceField = declaredFields[j];

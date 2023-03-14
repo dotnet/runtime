@@ -4,36 +4,39 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Emit;
 using System.Runtime.InteropServices;
-using static System.Reflection.Metadata.Experiment.EntityWrappers;
+using static System.Reflection.Emit.Experiment.EntityWrappers;
 using System.Globalization;
 
-namespace System.Reflection.Metadata.Experiment
+namespace System.Reflection.Emit.Experiment
 {
     internal sealed class PersistableTypeBuilder : TypeBuilder
     {
-        public override string Name => _strName!;
+        public override string Name => _name!;
         public override Module Module => _module;
-        internal TypeAttributes UserTypeAttribute { get; set; }
         internal List<PersistableMethodBuilder> _methodDefStore = new();
         internal List<PersistableFieldBuilder> _fieldDefStore = new();
         internal List<CustomAttributeWrapper> _customAttributes = new();
         private readonly PersistableModuleBuilder _module;
-        private readonly string? _strName;
+        private readonly string? _name;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        private Type? _typeParent;
+        private TypeAttributes _attributes;
 
-        internal PersistableTypeBuilder(string name, PersistableModuleBuilder module, TypeAttributes typeAttributes)
+        internal PersistableTypeBuilder(string name, TypeAttributes typeAttributes,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PersistableModuleBuilder module)
         {
-            _strName = name;
+            _name = name;
             _module = module;
-            UserTypeAttribute = typeAttributes;
-            //Extract namespace from name
-            int idx = _strName.LastIndexOf('.');
+            _attributes = typeAttributes;
+            SetParent(parent);
+            // Extract namespace from name
+            int idx = _name.LastIndexOf('.');
 
             if (idx != -1)
             {
-                Namespace = _strName[..idx];
-                _strName = _strName[(idx + 1)..];
+                Namespace = _name[..idx];
+                _name = _name[(idx + 1)..];
             }
         }
 
@@ -76,78 +79,62 @@ namespace System.Reflection.Metadata.Experiment
         protected override ConstructorBuilder DefineTypeInitializerCore() => throw new NotImplementedException();
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override bool IsCreatedCore() => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo constructorInfo, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (constructorInfo == null)
-            {
-                ArgumentNullException.ThrowIfNull(nameof(constructorInfo));
-            }
+            ArgumentNullException.ThrowIfNull(nameof(con));
+            ArgumentNullException.ThrowIfNull(nameof(binaryAttribute)); // This is incorrect
 
-            if (binaryAttribute == null)
-            {
-                ArgumentNullException.ThrowIfNull(nameof(binaryAttribute)); // This is incorrect
-            }
-
-            if (constructorInfo!.DeclaringType == null)
+            if (con.DeclaringType == null)
             {
                 throw new ArgumentException("Attribute constructor has no type.");
             }
 
-            //We check whether the custom attribute is actually a pseudo-custom attribute.
-            //(We have only done ComImport for the prototype, eventually all pseudo-custom attributes will be hard-coded.)
-            //If it is, simply alter the TypeAttributes.
-            //We want to handle this before the type metadata is generated.
+            // We check whether the custom attribute is actually a pseudo-custom attribute.
+            // (We have only done ComImport for the prototype, eventually all pseudo-custom attributes will be hard-coded.)
+            // If it is, simply alter the TypeAttributes.
+            // We want to handle this before the type metadata is generated.
 
-            if (constructorInfo.DeclaringType.Name.Equals("ComImportAttribute"))
+            if (con.DeclaringType.Name.Equals("ComImportAttribute"))
             {
                 Debug.WriteLine("Modifying internal flags");
-                UserTypeAttribute |= TypeAttributes.Import;
+                _attributes |= TypeAttributes.Import;
             }
             else
             {
-                AssemblyReferenceWrapper assemblyReference = new AssemblyReferenceWrapper(constructorInfo.DeclaringType.Assembly);
-                TypeReferenceWrapper typeReference = new TypeReferenceWrapper(constructorInfo.DeclaringType);
-                MethodReferenceWrapper methodReference = new MethodReferenceWrapper(constructorInfo);
-                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(constructorInfo, binaryAttribute!);
-
-                if (!_module._assemblyRefStore.Contains(assemblyReference)) // Avoid adding the same assembly twice
-                {
-                    _module._assemblyRefStore.Add(assemblyReference);
-                    typeReference.parentToken = _module._nextAssemblyRefRowId++;
-                }
-                else
-                {
-                    typeReference.parentToken = _module._assemblyRefStore.IndexOf(assemblyReference) + 1; // Add 1 to account for zero based indexing
-                }
-
-                if (!_module._typeRefStore.Contains(typeReference)) // Avoid adding the same type twice
-                {
-                    _module._typeRefStore.Add(typeReference);
-                    methodReference.parentToken = _module._nextTypeRefRowId++;
-                }
-                else
-                {
-                    methodReference.parentToken = _module._typeRefStore.IndexOf(typeReference) + 1;
-                }
-
-                if (!_module._methodRefStore.Contains(methodReference)) // Avoid add the same method twice
-                {
-                    _module._methodRefStore.Add(methodReference);
-                    customAttribute.conToken = _module._nextMethodRefRowId++;
-                }
-                else
-                {
-                    customAttribute.conToken = _module._methodRefStore.IndexOf(methodReference) + 1;
-                }
-
+                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(con, binaryAttribute);
                 _customAttributes.Add(customAttribute);
             }
         }
         protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            //SetCustomAttribute(customBuilder.Constructor, customBuilder._blob);
+            SetCustomAttribute(customBuilder.Constructor, customBuilder.Blob);
         }
-        protected override void SetParentCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent) => throw new NotImplementedException();
+
+        protected override void SetParentCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent)
+        {
+            if (parent != null)
+            {
+                if (parent.IsInterface)
+                    throw new ArgumentException("SR.Argument_CannotSetParentToInterface");
+
+                _typeParent = parent;
+            }
+            else
+            {
+                if ((_attributes & TypeAttributes.Interface) != TypeAttributes.Interface)
+                {
+                    _typeParent = typeof(object);
+                }
+                else
+                {
+                    if ((_attributes & TypeAttributes.Abstract) == 0)
+                        throw new InvalidOperationException("SR.InvalidOperation_BadInterfaceNotAbstract");
+
+                    // there is no extends for interface class
+                    _typeParent = null;
+                }
+            }
+        }
 
         public override object[] GetCustomAttributes(bool inherit)
         {
@@ -172,7 +159,7 @@ namespace System.Reflection.Metadata.Experiment
         public override Assembly Assembly => _module.Assembly;
         public override Type UnderlyingSystemType => throw new NotSupportedException();
         public override Guid GUID => throw new NotSupportedException();
-        public override Type? BaseType => throw new NotSupportedException();
+        public override Type? BaseType => _typeParent;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
@@ -182,7 +169,7 @@ namespace System.Reflection.Metadata.Experiment
         protected override bool IsPointerImpl() => false;
         protected override bool IsPrimitiveImpl() => false;
         protected override bool HasElementTypeImpl() => false;
-        protected override TypeAttributes GetAttributeFlagsImpl() => UserTypeAttribute;
+        protected override TypeAttributes GetAttributeFlagsImpl() => _attributes;
         protected override bool IsCOMObjectImpl()
         {
             return ((GetAttributeFlagsImpl() & TypeAttributes.Import) != 0) ? true : false;

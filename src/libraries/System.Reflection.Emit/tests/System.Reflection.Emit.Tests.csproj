@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
@@ -64,7 +64,7 @@
     <Compile Include="ParameterBuilder\ParameterBuilderSetConstant.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblyTools.cs" />
     <Compile Include="PersistableAssemblyBuilder\CustomAttributeTesting.cs" />
-    <Compile Include="PersistableAssemblyBuilder\ReflectionTesting.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveTestsWithVariousTypes.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAttributes.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderCanRead.cs" />

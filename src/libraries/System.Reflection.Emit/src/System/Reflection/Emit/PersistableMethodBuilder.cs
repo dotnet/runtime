@@ -3,9 +3,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection.Emit;
 
-namespace System.Reflection.Metadata.Experiment
+namespace System.Reflection.Emit.Experiment
 {
     internal sealed class PersistableMethodBuilder : MethodBuilder
     {
@@ -22,7 +21,6 @@ namespace System.Reflection.Metadata.Experiment
             Type[]? parameters, PersistableModuleBuilder module, PersistableTypeBuilder declaringType)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
-
             ArgumentNullException.ThrowIfNull(module);
 
             _module = module;

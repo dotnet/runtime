@@ -1,15 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
-namespace System.Reflection.Metadata.Experiment
+namespace System.Reflection.Emit.Experiment
 {
-    //This is prototype code, to generate simple signatures.
-    //For more complex signatures, will port System.Reflection.Emit's SignatureHelper.
+    // This is prototype code, to generate simple signatures.
+    // For more complex signatures, will port System.Reflection.Emit's SignatureHelper.
     internal static class MetadataSignatureHelper
     {
-        internal static BlobBuilder FieldSignatureEnconder(Type fieldType)
+        internal static BlobBuilder FieldSignatureEncoder(Type fieldType)
         {
             var fieldSignature = new BlobBuilder();
 
@@ -18,7 +19,7 @@ namespace System.Reflection.Metadata.Experiment
             return fieldSignature;
         }
 
-        internal static BlobBuilder MethodSignatureEnconder(ParameterInfo[]? parameters, ParameterInfo? returnType, bool isInstance)
+        internal static BlobBuilder MethodSignatureEncoder(ParameterInfo[]? parameters, ParameterInfo? returnType, bool isInstance)
         {
             Type[]? typeParameters = null;
             Type? typeReturn = null;
@@ -33,9 +34,9 @@ namespace System.Reflection.Metadata.Experiment
                 typeReturn = returnType.ParameterType;
             }
 
-            return MethodSignatureEnconder(typeParameters, typeReturn, isInstance);
+            return MethodSignatureEncoder(typeParameters, typeReturn, isInstance);
         }
-        internal static BlobBuilder MethodSignatureEnconder(Type[]? parameters, Type? returnType, bool isInstance)
+        internal static BlobBuilder MethodSignatureEncoder(Type[]? parameters, Type? returnType, bool isInstance)
         {
             // Encoding return type and parameters.
             var methodSignature = new BlobBuilder();

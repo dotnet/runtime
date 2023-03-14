@@ -1,10 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection.Emit;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
-namespace System.Reflection.Metadata.Experiment
+namespace System.Reflection.Emit.Experiment
 {
     //This static helper class adds common entities to a Metadata Builder.
     internal static class MetadataHelper
@@ -32,14 +32,14 @@ namespace System.Reflection.Metadata.Experiment
                 hashValue: default); // not sure where to find hashValue.
         }
 
-        internal static TypeDefinitionHandle AddTypeDef(PersistableTypeBuilder typeBuilder, MetadataBuilder metadata, int methodToken)
+        internal static TypeDefinitionHandle AddTypeDef(MetadataBuilder metadata, PersistableTypeBuilder typeBuilder, EntityHandle baseType, int methodToken)
         {
             //Add type metadata
             return metadata.AddTypeDefinition(
-                attributes: typeBuilder.UserTypeAttribute,
+                attributes: typeBuilder.Attributes,
                 (typeBuilder.Namespace == null) ? default : metadata.GetOrAddString(typeBuilder.Namespace),
                 name: metadata.GetOrAddString(typeBuilder.Name),
-                baseType: default, //Inheritance to be added
+                baseType: baseType,
                 fieldList: MetadataTokens.FieldDefinitionHandle(1), //Update once we support fields.
                 methodList: MetadataTokens.MethodDefinitionHandle(methodToken));
         }
@@ -60,7 +60,7 @@ namespace System.Reflection.Metadata.Experiment
 
         internal static MemberReferenceHandle AddConstructorReference(MetadataBuilder metadata, TypeReferenceHandle parent, MethodBase method)
         {
-            var blob = MetadataSignatureHelper.MethodSignatureEnconder(method.GetParameters(), null, true);
+            var blob = MetadataSignatureHelper.MethodSignatureEncoder(method.GetParameters(), null, true);
             return metadata.AddMemberReference(
                 parent,
                 metadata.GetOrAddString(method.Name),
@@ -74,7 +74,7 @@ namespace System.Reflection.Metadata.Experiment
                 methodBuilder.Attributes,
                 MethodImplAttributes.IL,
                 metadata.GetOrAddString(methodBuilder.Name),
-                metadata.GetOrAddBlob(MetadataSignatureHelper.MethodSignatureEnconder(methodBuilder._parameters, methodBuilder._returnType, !methodBuilder.IsStatic)),
+                metadata.GetOrAddBlob(MetadataSignatureHelper.MethodSignatureEncoder(methodBuilder._parameters, methodBuilder._returnType, !methodBuilder.IsStatic)),
                 -1, //No body supported
                 parameterList: default
                 );
@@ -83,7 +83,7 @@ namespace System.Reflection.Metadata.Experiment
         internal static FieldDefinitionHandle AddFieldDefintion(MetadataBuilder metadata, FieldInfo field)
         {
             return metadata.AddFieldDefinition(field.Attributes, metadata.GetOrAddString(field.Name),
-                metadata.GetOrAddBlob(MetadataSignatureHelper.FieldSignatureEnconder(field.FieldType)));
+                metadata.GetOrAddBlob(MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType)));
         }
     }
 }

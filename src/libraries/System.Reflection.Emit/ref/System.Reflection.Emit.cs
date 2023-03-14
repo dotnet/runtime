@@ -680,15 +680,16 @@ namespace System.Reflection.Emit
     }
 }
 #if !BUILDING_CORELIB_REFERENCE
-namespace System.Reflection.Metadata.Experiment
+namespace System.Reflection.Emit.Experiment
 {
     public sealed partial class PersistableAssemblyBuilder : System.Reflection.Emit.AssemblyBuilder
     {
-        internal PersistableAssemblyBuilder() { }
-        public static new System.Reflection.Metadata.Experiment.PersistableAssemblyBuilder DefineDynamicAssembly(System.Reflection.AssemblyName name, System.Reflection.Emit.AssemblyBuilderAccess access) { throw null; }
-        public static new System.Reflection.Emit.AssemblyBuilder DefineDynamicAssembly(System.Reflection.AssemblyName name, System.Reflection.Emit.AssemblyBuilderAccess access, System.Collections.Generic.IEnumerable<System.Reflection.Emit.CustomAttributeBuilder>? _) { throw null; }
+        internal PersistableAssemblyBuilder(AssemblyName name, System.Collections.Generic.IEnumerable<System.Reflection.Emit.CustomAttributeBuilder>? assemblyAttributes) { }
+        public static System.Reflection.Emit.Experiment.PersistableAssemblyBuilder DefineDynamicAssembly(System.Reflection.AssemblyName name) { throw null; }
+        public static System.Reflection.Emit.Experiment.PersistableAssemblyBuilder DefineDynamicAssembly(System.Reflection.AssemblyName name, System.Collections.Generic.IEnumerable<System.Reflection.Emit.CustomAttributeBuilder>? assemblyAttributes) { throw null; }
         protected override System.Reflection.Emit.ModuleBuilder DefineDynamicModuleCore(string name) { throw null; }
         protected override System.Reflection.Emit.ModuleBuilder? GetDynamicModuleCore(string name) { throw null; }
+        public void Save(System.IO.Stream stream) { }
         public void Save(string assemblyFileName) { }
         protected override void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected override void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }

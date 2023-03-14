@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
-using System.Reflection.Emit;
 
-namespace System.Reflection.Metadata.Experiment
+namespace System.Reflection.Emit.Experiment
 {
     internal sealed class PersistableFieldBuilder : FieldBuilder
     {
-        //private int _fieldToken;
         private PersistableTypeBuilder _typeBuilder;
         private string _fieldName;
         private FieldAttributes _attributes;
@@ -31,12 +29,6 @@ namespace System.Reflection.Metadata.Experiment
 
             SignatureHelper sigHelp = SignatureHelper.GetFieldSigHelper(_typeBuilder.Module);
             sigHelp.AddArgument(type, requiredCustomModifiers, optionalCustomModifiers);
-
-            /*byte[] signature = sigHelp.InternalGetSignature(out int sigLength);
-
-            PersistableModuleBuilder module = _typeBuilder.GetModuleBuilder();
-            m_fieldTok = RuntimeTypeBuilder.DefineField(new QCallModule(ref module),
-                typeBuilder.TypeToken, fieldName, signature, sigLength, m_Attributes);*/
         }
 
         #region MemberInfo Overrides
@@ -55,9 +47,6 @@ namespace System.Reflection.Metadata.Experiment
         {
             get
             {
-                /*if (_typeBuilder.m_isHiddenGlobalType)
-                    return null;*/
-
                 return _typeBuilder;
             }
         }
@@ -66,9 +55,6 @@ namespace System.Reflection.Metadata.Experiment
         {
             get
             {
-                /*if (m_typeBuilder.m_isHiddenGlobalType)
-                    return null;*/
-
                 return _typeBuilder;
             }
         }
