@@ -318,6 +318,7 @@ namespace System.Text.Json
                 static bool CompareLists<TValue>(ConfigurationList<TValue>? left, ConfigurationList<TValue>? right)
                     where TValue : class?
                 {
+                    // NB equates null with empty lists
                     if (left is null)
                         return right is null || right.Count == 0;
 
@@ -371,11 +372,9 @@ namespace System.Text.Json
 
                 static void AddListHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue>? list)
                 {
+                    // NB hashcode calculation equates null with empty lists.
                     if (list is null)
-                    {
-                        hc.Add(0);
                         return;
-                    }
 
                     int n = list.Count;
                     for (int i = 0; i < n; i++)
