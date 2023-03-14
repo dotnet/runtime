@@ -220,8 +220,7 @@ public:
 
         if (access == nullptr)
         {
-            m_accesses.insert(m_accesses.begin() + index, Access(offs, accessType, accessLayout));
-            access = &m_accesses.back();
+            access = &*m_accesses.insert(m_accesses.begin() + index, Access(offs, accessType, accessLayout));
         }
 
         access->Count++;
