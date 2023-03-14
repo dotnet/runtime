@@ -318,7 +318,7 @@ namespace System.Text.Json
                 static bool CompareLists<TValue>(ConfigurationList<TValue>? left, ConfigurationList<TValue>? right)
                     where TValue : class?
                 {
-                    // NB equates null with empty lists
+                    // equates null with empty lists
                     if (left is null)
                         return right is null || right.Count == 0;
 
