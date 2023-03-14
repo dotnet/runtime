@@ -51,24 +51,52 @@ namespace System.Buffers.Text
                 return true;
             }
 
-            int length = base64Text.Length;
+            int length = 0;
+            bool isPaddingFound = false;
+
+            while (true)
+            {
+                int index = TBase64Validatable.IndexOfAnyExcept(base64Text);
+                if ((uint)index >= (uint)base64Text.Length)
+                {
+                    length += base64Text.Length;
+                    break;
+                }
+
+                length += index;
+
+                T charToValidate = base64Text[index];
+                base64Text = base64Text.Slice(index + 1);
+
+                if (TBase64Validatable.IsWhitespace(charToValidate))
+                {
+                    continue;
+                }
+
+                if (!TBase64Validatable.IsEncodingPad(charToValidate))
+                {
+                    // Invalid char was found.
+                    decodedLength = 0;
+                    return false;
+                }
+
+                // Encoding pad found, determine if padding is valid below.
+                isPaddingFound = true;
+                break;
+            }
+
             int paddingCount = 0;
 
-            int indexOfPaddingInvalidOrWhitespace = TBase64Validatable.IndexOfAnyExcept(base64Text);
-            if (indexOfPaddingInvalidOrWhitespace >= 0)
+            if (isPaddingFound)
             {
-                while (indexOfPaddingInvalidOrWhitespace >= 0)
+                paddingCount = 1;
+
+                foreach (T charToValidateInPadding in base64Text)
                 {
-                    T charToValidate = base64Text[indexOfPaddingInvalidOrWhitespace];
-                    if (TBase64Validatable.IsWhitespace(charToValidate))
-                    {
-                        // Chars to be ignored (e,g, whitespace...) should not count towards the length.
-                        length--;
-                    }
-                    else if (TBase64Validatable.IsEncodingPad(charToValidate))
+                    if (TBase64Validatable.IsEncodingPad(charToValidateInPadding))
                     {
                         // There can be at most 2 padding chars.
-                        if (paddingCount == 2)
+                        if (paddingCount >= 2)
                         {
                             decodedLength = 0;
                             return false;
@@ -76,44 +104,15 @@ namespace System.Buffers.Text
 
                         paddingCount++;
                     }
-                    else
+                    else if (!TBase64Validatable.IsWhitespace(charToValidateInPadding))
                     {
-                        // An invalid char was encountered.
+                        // Invalid char was found.
                         decodedLength = 0;
                         return false;
                     }
-
-                    if (indexOfPaddingInvalidOrWhitespace == base64Text.Length - 1)
-                    {
-                        // The end of the input has been reached.
-                        break;
-                    }
-
-                    // If no padding is found, slice and use IndexOfAnyExcept to look for the next invalid char.
-                    if (paddingCount == 0)
-                    {
-                        ReadOnlySpan<T> slicedSpan = base64Text.Slice(indexOfPaddingInvalidOrWhitespace + 1);
-                        int nextIndexOfPaddingInvalidOrWhitespace = TBase64Validatable.IndexOfAnyExcept(slicedSpan);
-                        if (nextIndexOfPaddingInvalidOrWhitespace == -1)
-                        {
-                            // No more invalid chars found.
-                            break;
-                        }
-                        indexOfPaddingInvalidOrWhitespace = nextIndexOfPaddingInvalidOrWhitespace + indexOfPaddingInvalidOrWhitespace + 1; // Add current index offset.
-                    }
-                    // If padding is already found, simply increment, as the common case might have 2 sequential padding chars.
-                    else
-                    {
-                        indexOfPaddingInvalidOrWhitespace++;
-                    }
                 }
 
-                // If the invalid chars all consisted of whitespace, the input will be empty.
-                if (length == 0)
-                {
-                    decodedLength = 0;
-                    return true;
-                }
+                length += paddingCount;
             }
 
             if (length % 4 != 0)
@@ -122,7 +121,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            // Remove padding to get exact length
+            // Remove padding to get exact length.
             decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
             return true;
         }
