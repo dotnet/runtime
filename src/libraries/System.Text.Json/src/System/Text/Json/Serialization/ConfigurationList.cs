@@ -3,14 +3,12 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// A list of configuration items that can be locked for modification
     /// </summary>
-    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal abstract class ConfigurationList<TItem> : IList<TItem>
     {
         protected readonly List<TItem> _list;
@@ -115,23 +113,6 @@ namespace System.Text.Json.Serialization
         IEnumerator IEnumerable.GetEnumerator()
         {
             return _list.GetEnumerator();
-        }
-
-        internal string DebuggerDisplay
-        {
-            get
-            {
-                var sb = new StringBuilder("[");
-                foreach (TItem item in _list)
-                {
-                    sb.Append(item);
-                    sb.Append(", ");
-                }
-
-                sb.Length -= 2;
-                sb.Append(']');
-                return sb.ToString();
-            }
         }
     }
 }

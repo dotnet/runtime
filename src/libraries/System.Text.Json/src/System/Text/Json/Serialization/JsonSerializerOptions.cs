@@ -861,6 +861,6 @@ namespace System.Text.Json
             return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
         }
 
-        private string DebuggerDisplay => $"TypeInfoResolver = {(TypeInfoResolver is JsonTypeInfoResolverChain chain ? chain.DebuggerDisplay : TypeInfoResolver)}, IsReadOnly = {IsReadOnly}";
+        private string DebuggerDisplay => $"TypeInfoResolver = {(TypeInfoResolver is JsonTypeInfoResolverChain chain ? chain.DebuggerDisplay : TypeInfoResolver?.GetType().Name)}, IsReadOnly = {IsReadOnly}";
     }
 }
