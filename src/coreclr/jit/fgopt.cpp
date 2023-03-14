@@ -1947,6 +1947,17 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
+    // Don't allow removing an empty loop pre-header.
+    // We can compact a pre-header into an empty `block`, as long as we propagate the BBF_LOOP_PREHEADER
+    // bit properly.
+    if (optLoopsRequirePreHeaders)
+    {
+        if (((block->bbFlags & BBF_LOOP_PREHEADER) != 0) && (bNext->countOfInEdges() != 1))
+        {
+            return false;
+        }
+    }
+
     // Don't compact the first block if it was specially created as a scratch block.
     if (fgBBisScratch(block))
     {
@@ -3050,6 +3061,15 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             {
                 // We're not allowed to remove this block due to reasons related to the EH table.
                 break;
+            }
+
+            // Don't delete empty loop pre-headers.
+            if (optLoopsRequirePreHeaders)
+            {
+                if ((block->bbFlags & BBF_LOOP_PREHEADER) != 0)
+                {
+                    break;
+                }
             }
 
             /* special case if this is the last BB */

@@ -2393,7 +2393,7 @@ private:
                 block->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
             }
 
-            // If block is newNext's only predcessor, move the IR from block to newNext,
+            // If block is newNext's only predecessor, move the IR from block to newNext,
             // but keep the now-empty block around.
             //
             // We move the IR because loop recognition has a very limited search capability and
