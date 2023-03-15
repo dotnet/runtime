@@ -9368,20 +9368,13 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
             // previously been combined by optOptimizeCompareChainCondBlock) or is it a test condition
             // that will be optimised to cbz/cbnz during lowering?
 
-            if (condOp1->OperIs(GT_AND, GT_OR) &&
-                varTypeIsIntegralOrI(condOp1->gtGetOp1()) && varTypeIsIntegralOrI(condOp1->gtGetOp2()))
+            if (condOp1->OperIs(GT_AND, GT_OR))
             {
-                // Check that the second operand of AND ends with a compare operation, as this will be
+                // Check that the second operand of AND/OR ends with a compare operation, as this will be
                 // the condition the new link in the chain will connect with.
-                if (condOp1->gtGetOp2()->OperIsCmpCompare())
+                if (condOp1->gtGetOp2()->OperIsCmpCompare() && varTypeIsIntegralOrI(condOp1->gtGetOp2()->gtGetOp1()))
                 {
                     return true;
-                }
-                if (condOp1->gtGetOp2()->OperIsCmpCompare())
-                {
-                    // Recursive check the inner condition.
-                    bool innerTestCondition;
-                    return FindCompareChain(condOp1->gtGetOp2(), &innerTestCondition);
                 }
             }
 
@@ -9474,7 +9467,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_t3 = nullptr;
 
     bool foundEndOfOrConditions = false;
-    if (m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbNext && m_b1->bbJumpDest->bbNext == m_b2->bbJumpDest)
+    if ((m_b1->bbNext == m_b2) && (m_b1->bbJumpDest == m_b2->bbNext) && (m_b1->bbJumpDest->bbNext == m_b2->bbJumpDest))
     {
         // Found the end of two (or more) conditions being ORed together.
         // The final condition has been inverted.
@@ -9511,7 +9504,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     }
 
     // Integer compares only for now (until support for Arm64 fccmp instruction is added)
-    if (varTypeIsFloating(cond1->gtGetOp1()->TypeGet()) || varTypeIsFloating(cond2->gtGetOp1()->TypeGet()))
+    if (varTypeIsFloating(cond1->gtGetOp1()) || varTypeIsFloating(cond2->gtGetOp1()))
     {
         return false;
     }
