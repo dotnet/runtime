@@ -938,6 +938,48 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_EphemeralKey_Throws()
+        {
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = TestHelper.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "localhost",
+                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+            };
+
+            var serverOptions = new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCertificate
+            };
+
+            //clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            //clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, clientChain);
+
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+
+            Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+            Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+            AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(() => t2);
+            Assert.Contains("ephemeral", e.Message);
+            server.Dispose();
+            await Assert.ThrowsAsync<IOException>(() => t1);
+            client.Dispose();
+
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+            serverCertificate.Dispose();
+            foreach (X509Certificate c in chain)
+            {
+                c.Dispose();
+            }
+        }
+
         [Theory]
         [InlineData(16384 * 100, 4096, 1024, false)]
         [InlineData(16384 * 100, 4096, 1024, true)]
