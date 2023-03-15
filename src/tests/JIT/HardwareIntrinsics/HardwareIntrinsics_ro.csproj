@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <NumberOfStripesToUseInStress>20</NumberOfStripesToUseInStress>
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</GCStressIncompatible>

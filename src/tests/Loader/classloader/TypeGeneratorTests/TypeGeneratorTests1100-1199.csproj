@@ -2,6 +2,7 @@
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="TypeGeneratorTest11??/Generated*.ilproj" />
