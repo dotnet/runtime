@@ -36,6 +36,5 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.DirectoryServices" />
-    <ProjectReference Include="..\..\System.Security.Permissions\src\System.Security.Permissions.csproj" />
   </ItemGroup>
 </Project>
