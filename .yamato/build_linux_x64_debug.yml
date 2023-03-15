@@ -11,7 +11,10 @@ variables:
   ARTIFACT_FILENAME: {{globals.artifact_base_name}}-linux-x64.7z
 
 commands:
-  - ./.yamato/scripts/build_linux.sh Debug
+  - mkdir artifacts
+  - curl https://public-stevedore.unity3d.com/r/public/7za-linux-x64/e6c75fb7ffda_e6a295cdcae3f74d315361883cf53f75141be2e739c020035f414a449d4876af.zip --output artifacts/7za-linux-x64.zip
+  - unzip artifacts/7za-linux-x64.zip -d artifacts/7za-linux-x64
+  - ./.yamato/scripts/build_yamato.sh Debug
 
 artifacts:
   7z-archives:
