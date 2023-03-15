@@ -324,7 +324,5 @@ namespace System.Text.RegularExpressions.Generator
             static SyntaxNode WithTrivia(SyntaxNode method, SyntaxNode nodeToFix)
                 => method.WithLeadingTrivia(nodeToFix.GetLeadingTrivia()).WithTrailingTrivia(nodeToFix.GetTrailingTrivia());
         }
-
-        private const char DoubleQuote = '"';
     }
 }
