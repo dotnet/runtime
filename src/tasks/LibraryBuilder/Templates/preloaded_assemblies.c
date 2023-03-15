@@ -4,27 +4,18 @@
 
 #include <mono/metadata/assembly.h>
 
-#ifdef HOST_ANDROID
-#include <android/log.h>
+#include "shared_library_log.h"
 
-#define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "MONO_SELF_CONTAINED_LIBRARY", fmt, ##__VA_ARGS__)
-#else
-#include <os/log.h>
-
-#define LOG_ERROR(fmt, ...) os_log_error (OS_LOG_DEFAULT, fmt, ##__VA_ARGS__)
-#endif
-
-void
-mono_assembly_load_with_partial_name_check (const char* filename)
+static void
+preload_assembly (const char* filename)
 {
     MonoAssembly *assembly = mono_assembly_load_with_partial_name (filename, NULL);
-    if (!assembly) {
+    if (!assembly)
         LOG_ERROR ("Could not open assembly '%s'. Unable to properly initialize GOT slots.\n", filename);
-        abort ();
-    }
 }
 
 void
-load_assemblies_with_exported_symbols ()
+preload_assemblies_with_exported_symbols ()
 {
-%ASSEMBLIES_LOADER%}
+    %ASSEMBLIES_PRELOADER%
+}

@@ -11,8 +11,9 @@ set(DOTNET_AOT_OBJECTS
 %AotObjects%
 )
 set(DOTNET_EXTRA_SOURCES
-%ExtraSources%    preloaded_assemblies.c
-)
+    shared_library_log.h
+    preloaded_assemblies.c
+%ExtraSources%)
 
 include_directories("%MonoInclude%")
 
@@ -37,7 +38,7 @@ if(TARGETS_ANDROID)
         log
     )
     add_definitions(-DHOST_ANDROID=1)
-else()
+elseif(TARGETS_APPLE_MOBILE)
     set(MOBILE_SYSTEM_LIBS
         "-framework Foundation"
         "-framework Security"
@@ -46,6 +47,9 @@ else()
         "-lc++"
         "-liconv"
     )
+    add_definitiions(-DHOST_APPLE_MOBILE=1)
+else()
+    message(FATAL_ERROR "Unsupported Platform. Ensure the TargetOS is supported by the LibraryBuilder and the platform specific libs are added here.")
 endif()
 
 target_link_libraries(

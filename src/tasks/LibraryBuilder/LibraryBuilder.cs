@@ -126,13 +126,16 @@ public class LibraryBuilderTask : AppBuilderTask
         GatherAotSourcesObjects(aotSources, aotObjects, extraSources, linkerArgs);
         GatherLinkerArgs(linkerArgs);
 
+        File.WriteAllText(Path.Combine(OutputDirectory, "shared_library_log.h"),
+            Utils.GetEmbeddedResource("shared_library_log.h"));
+
+        GenerateAssembliesLoader();
+
         if (!UsesCustomRuntimeInitCallback)
         {
             WriteAutoInitializationFromTemplate();
             extraSources.AppendLine("    autoinit.c");
         }
-
-        GenerateAssembliesLoader();
 
         WriteCMakeFileFromTemplate(aotSources.ToString(), aotObjects.ToString(), extraSources.ToString(), linkerArgs.ToString());
         OutputPath = BuildLibrary();
@@ -252,21 +255,21 @@ public class LibraryBuilderTask : AppBuilderTask
     {
         File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
             Utils.GetEmbeddedResource("autoinit.c")
-                .Replace("%ASSEMBLIES_LOCATION%", !string.IsNullOrEmpty(AssembliesLocation) ? AssembliesLocation : "DOTNET_ASSETS_PATH")
+                .Replace("%ASSEMBLIES_LOCATION%", !string.IsNullOrEmpty(AssembliesLocation) ? AssembliesLocation : "DOTNET_LIBRARY_ASSEMBLY_PATH")
                 .Replace("%RUNTIME_IDENTIFIER%", RuntimeIdentifier));
     }
 
     private void GenerateAssembliesLoader()
     {
-        var assembliesLoader = new StringBuilder();
+        var assemblyPreloaders = new List<string>();
         foreach (string exportedAssembly in exportedAssemblies)
         {
-            assembliesLoader.Append($"    mono_assembly_load_with_partial_name_check(\"{exportedAssembly}\");\n");
+            assemblyPreloaders.Add($"preload_assembly(\"{exportedAssembly}\");");
         }
 
         File.WriteAllText(Path.Combine(OutputDirectory, "preloaded_assemblies.c"),
             Utils.GetEmbeddedResource("preloaded_assemblies.c")
-                .Replace("%ASSEMBLIES_LOADER%", assembliesLoader.ToString()));
+                .Replace("%ASSEMBLIES_PRELOADER%", string.Join("\n    ", assemblyPreloaders)));
     }
 
     private void WriteCMakeFileFromTemplate(string aotSources, string aotObjects, string extraSources, string linkerArgs)

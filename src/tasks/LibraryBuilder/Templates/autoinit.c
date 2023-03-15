@@ -11,28 +11,19 @@
 #include <mono/jit/mono-private-unstable.h>
 #include <mono/metadata/assembly.h>
 
-#ifdef HOST_ANDROID
-#include <android/log.h>
-
-#define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_INFO, "MONO_SELF_CONTAINED_LIBRARY", fmt, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "MONO_SELF_CONTAINED_LIBRARY", fmt, ##__VA_ARGS__)
-#else
-#include <os/log.h>
-
-#define LOG_INFO(fmt, ...) os_log_info (OS_LOG_DEFAULT, fmt, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) os_log_error (OS_LOG_DEFAULT, fmt, ##__VA_ARGS__)
-#endif
+#include "shared_library_log.h"
 
 static const char *bundle_path;
 
 void register_aot_modules (void);
-void load_assemblies_with_exported_symbols ();
+void preload_assemblies_with_exported_symbols ();
 typedef void (*MonoRuntimeInitCallback) (void);
 void mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
+    free ((void *)args->runtimeconfig.name.path);
     free (args);
     free (user_data);
 }
@@ -43,21 +34,25 @@ initialize_runtimeconfig ()
     char *file_name = "runtimeconfig.bin";
     size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
     char *file_path = (char *)malloc (str_len);
-    if (!file_path) {
+    if (!file_path)
         LOG_ERROR ("Out of memory.\n");
-        abort ();
-    }
 
     int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
+    if (num_char < 0)
+        LOG_ERROR ("Encoding error while formatting '%s' and '%s' into \"%%s/%%s\".\n", bundle_path, file_name);
+
     struct stat buffer;
 
     if (stat (file_path, &buffer) == 0) {
         MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+        if (!arg)
+            LOG_ERROR ("Out of memory.\n");
+
         arg->kind = 0;
         arg->runtimeconfig.name.path = file_path;
-        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
     } else {
-        LOG_INFO ("Could not stat file '%s'. Runtime configuration properties not initialized.\n", file_path);
+        LOG_INFO ("Could not find file '%s'. Runtime configuration properties not initialized.\n", file_path);
         free (file_path);
     }
 }
@@ -76,15 +71,12 @@ initialize_appctx_env_variables ()
     monovm_initialize(2, appctx_keys, appctx_values);
 }
 
-void
+static void
 runtime_init_callback ()
 {
-    const char *assemblies_path = strdup(getenv("%ASSEMBLIES_LOCATION%"));
-    if (!assemblies_path) {
-        LOG_ERROR ("Out of memory.\n");
-        abort ();
-    }
-    bundle_path = (assemblies_path[0] != '\0') ? assemblies_path : "./";
+    bundle_path = getenv("%ASSEMBLIES_LOCATION%");
+    if (!bundle_path || bundle_path[0] == '\0')
+        bundle_path = "./";
 
     initialize_runtimeconfig ();
 
@@ -99,14 +91,10 @@ runtime_init_callback ()
     mono_set_signal_chaining (true);
 
     MonoDomain *domain = mono_jit_init ("mono.self.contained.library");
-    if (!domain) {
+    if (!domain)
         LOG_ERROR ("Could not auto initialize runtime.\n");
-        abort ();
-    }
 
-    load_assemblies_with_exported_symbols ();
-
-    free ((void *)assemblies_path);
+    preload_assemblies_with_exported_symbols ();
 }
 
 void __attribute__((constructor))

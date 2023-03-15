@@ -105,6 +105,8 @@
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(_IsLibraryMode)' == 'true' and $(CustomRuntimeInitCallback) == ''" Include="runtime-init-callback" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(_IsLibraryMode)' == 'true' and $(CustomRuntimeInitCallback) != ''" Include="runtime-init-callback=$(CustomRuntimeInitCallback)" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
       <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=40000" />
