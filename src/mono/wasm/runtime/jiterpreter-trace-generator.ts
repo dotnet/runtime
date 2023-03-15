@@ -12,7 +12,7 @@ import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
-    append_memset_dest, append_bailout,
+    append_memset_dest, append_bailout, append_exit,
     append_memmove_dest_src, try_append_memset_fast,
     try_append_memmove_fast, counters,
     getMemberOffset, JiterpMember, BailoutReason,
@@ -387,6 +387,7 @@ export function generate_wasm_body (
                         builder.i32_const(targetTrace);
                         builder.local("frame");
                         builder.local("pLocals");
+                        builder.local("cinfo");
                         builder.callImport("transfer");
                         builder.appendU8(WasmOpcode.return_);
                         ip = abort;
@@ -826,7 +827,7 @@ export function generate_wasm_body (
                     // We generate a bailout instead of aborting, because we don't want calls
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
-                    append_bailout(builder, ip, BailoutReason.Call);
+                    append_exit(builder, ip, result, BailoutReason.Call);
                     isLowValueOpcode = true;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
@@ -846,7 +847,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CALL_DELEGATE:
                 // See comments for MINT_CALL
                 if (builder.branchTargets.size > 0) {
-                    append_bailout(builder, ip,
+                    append_exit(builder, ip, result,
                         opcode == MintOpcode.MINT_CALL_DELEGATE
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
@@ -880,6 +881,8 @@ export function generate_wasm_body (
                 // As above, only abort if this throw happens unconditionally.
                 // Otherwise, it may be in a branch that is unlikely to execute
                 if (builder.branchTargets.size > 0) {
+                    // Not an exit, because throws are by definition unlikely
+                    // We shouldn't make optimization decisions based on them.
                     append_bailout(builder, ip, BailoutReason.Throw);
                     isLowValueOpcode = true;
                 } else {
@@ -1078,6 +1081,9 @@ export function generate_wasm_body (
                     )
                 ) {
                     if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts) {
+                        // Not an exit, because returns are normal and we don't want to make them more expensive.
+                        // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
+                        //  but the main problem is more likely to be calls early in traces. Worth testing later.
                         append_bailout(builder, ip, BailoutReason.Return);
                         isLowValueOpcode = true;
                     } else
@@ -1150,7 +1156,8 @@ export function generate_wasm_body (
                     //  to only perform a conditional bailout
                     // complex safepoint branches, just generate a bailout
                     if (builder.branchTargets.size > 0) {
-                        append_bailout(builder, ip, BailoutReason.ComplexBranch);
+                        // FIXME: Try to reduce the number of these
+                        append_exit(builder, ip, result, BailoutReason.ComplexBranch);
                         isLowValueOpcode = true;
                     } else
                         ip = abort;

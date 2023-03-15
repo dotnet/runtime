@@ -877,13 +877,18 @@ typedef struct {
 	// 64-bits because it can get very high if estimate heat is turned on
 	gint64 hit_count;
 	JiterpreterThunk thunk;
+	int size_of_trace;
+	gint32 total_opcodes;
 } TraceInfo;
 
+// The maximum number of trace segments used to store TraceInfo. This limits
+//  the maximum total number of traces to MAX_TRACE_SEGMENTS * TRACE_SEGMENT_SIZE
 #define MAX_TRACE_SEGMENTS 256
 #define TRACE_SEGMENT_SIZE 1024
 
 static volatile gint32 trace_count = 0;
 static TraceInfo *trace_segments[MAX_TRACE_SEGMENTS] = { NULL };
+static gint32 traces_rejected = 0;
 
 static TraceInfo *
 trace_info_allocate_segment (gint32 index) {
@@ -1044,6 +1049,9 @@ mono_interp_tier_prepare_jiterpreter_fast (
 			frame, method, ip, (gint32)trace_index,
 			start_of_body, size_of_body
 		);
+		// Record the maximum size of the trace (we don't know how long it actually is here)
+		//  which might be smaller than the function body if this trace is in the middle
+		trace_info->size_of_trace = size_of_body - (ip - start_of_body);
 		trace_info->thunk = result;
 		return result;
 	} else {
@@ -1233,7 +1241,7 @@ mono_jiterp_stelem_ref (
 
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_trace_transfer (
-	int displacement, JiterpreterThunk trace, void *frame, void *pLocals
+	int displacement, JiterpreterThunk trace, void *frame, void *pLocals, JiterpreterCallInfo *cinfo
 ) {
 	// This indicates that we lost a race condition, so there's no trace to call. Just bail out.
 	// FIXME: Detect this at trace generation time and spin until the trace is available
@@ -1245,7 +1253,7 @@ mono_jiterp_trace_transfer (
 	//  safepoint was already performed by the trace.
 	int relative_displacement = 0;
 	while (relative_displacement == 0)
-		relative_displacement = trace(frame, pLocals);
+		relative_displacement = trace(frame, pLocals, cinfo);
 
 	// We got a relative displacement other than 0, so the trace bailed out somewhere or
 	//  branched to another branch target. Time to return (and our caller will return too.)
@@ -1324,6 +1332,83 @@ mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
 		default:
 			g_assert_not_reached();
 	}
+}
+
+#define TRACE_EFFECTIVE_DISTANCE_LIMIT 64
+#define TRACE_LENGTH_DIVISOR 2
+#define TRACE_THRESHOLD_DIVISOR 3.0
+
+ptrdiff_t
+mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
+{
+	gint32 index = READ32(ip + 1);
+	TraceInfo *info = trace_info_get(index);
+	g_assert(info);
+
+	JiterpreterThunk thunk = info->thunk;
+	// FIXME: This shouldn't be possible
+	if (((guint32)(void *)thunk) <= JITERPRETER_NOT_JITTED)
+		return 6;
+
+	JiterpreterCallInfo cinfo;
+	cinfo.backward_branch_taken = 0;
+	cinfo.bailout_opcode_count = -1;
+
+	ptrdiff_t result = thunk(_frame, locals, &cinfo);
+	// If a backward branch was taken, we can treat the trace as if it successfully
+	//  executed at least one time. We don't know how long it actually ran, but back
+	//  branches are almost always going to be loops. It's fine if a bailout happens
+	//  after multiple loop iterations.
+	gint32 effective_distance = MIN(info->size_of_trace / TRACE_LENGTH_DIVISOR, TRACE_EFFECTIVE_DISTANCE_LIMIT),
+		effective_opcode_count = cinfo.backward_branch_taken || (cinfo.bailout_opcode_count == -1)
+			? effective_distance // FIXME
+			: cinfo.bailout_opcode_count;
+
+	InterpFrame *frame = _frame;
+
+	/*
+	if (cinfo.bailout_opcode_count >= 0)
+		g_print("trace #%d @%d '%s' bailout recorded at opcode #%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count);
+	*/
+
+	// Add the effective opcode count (either the location of the bailout, or a suitably large value)
+	//  to the sum, so we can compute an average later.
+	info->total_opcodes += effective_opcode_count;
+
+	gint64 hit_count = info->hit_count++ - mono_opt_jiterpreter_minimum_trace_hit_count;
+	if (hit_count == mono_opt_jiterpreter_trace_monitoring_period) {
+		// Prepare to enable the trace
+		volatile guint16 *mutable_ip = (volatile guint16*)ip;
+		*mutable_ip = MINT_TIER_NOP_JITERPRETER;
+
+		mono_memory_barrier ();
+		double average_opcodes = info->total_opcodes / (double)hit_count;
+		double threshold = mono_opt_jiterpreter_trace_average_opcodes_threshold,
+			low_threshold = info->size_of_trace / TRACE_THRESHOLD_DIVISOR; // FIXME
+		// Don't reject short traces as long as they run mostly to the end, we already
+		//  decided previously that they are worth keeping based on our other heuristics
+		if (low_threshold < threshold)
+			threshold = low_threshold;
+
+		if (average_opcodes >= threshold) {
+			*(volatile JiterpreterThunk*)(ip + 1) = thunk;
+			mono_memory_barrier ();
+			*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
+			// g_print("trace #%d @%d '%s' accepted; average_opcodes %f >= %f\n", index, ip, frame->imethod->method->name, average_opcodes, threshold);
+		} else {
+			traces_rejected++;
+			if (mono_opt_jiterpreter_stats_enabled)
+				g_print("trace #%d @%d '%s' rejected; average_opcodes %f < %f\n", index, ip, frame->imethod->method->name, average_opcodes, threshold);
+		}
+	}
+
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE gint32
+mono_jiterp_get_rejected_trace_count ()
+{
+	return traces_rejected;
 }
 
 // HACK: fix C4206
