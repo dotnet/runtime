@@ -12,6 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Preserves the UnmanagedCallersOnly method -->
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
 </Project>

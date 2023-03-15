@@ -705,5 +705,5 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
+  <Import Project="..\..\..\..\tools\illink\src\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 </Project>

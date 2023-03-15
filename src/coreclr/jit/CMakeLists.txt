@@ -113,6 +113,7 @@ set( JIT_SOURCES
   fginline.cpp
   fgopt.cpp
   fgprofile.cpp
+  fgprofilesynthesis.cpp
   fgstmt.cpp
   flowgraph.cpp
   forwardsub.cpp
@@ -125,6 +126,7 @@ set( JIT_SOURCES
   hwintrinsic.cpp
   hostallocator.cpp
   ifconversion.cpp
+  runtimelookup.cpp
   indirectcalltransformer.cpp
   importercalls.cpp
   importer.cpp
@@ -295,6 +297,7 @@ set( JIT_HEADERS
   emitjmps.h
   emitpub.h
   error.h
+  fgprofilesynthesis.h
   gentree.h
   gentreeopsdef.h
   gtlist.h

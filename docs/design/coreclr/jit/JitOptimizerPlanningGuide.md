@@ -95,7 +95,7 @@ worth investing in.
    collect profiles and correlate them with that machine code.  This could
    benefit any developers doing performance analysis of their own code.
    The JIT team has discussed this, options include building something on top of
-   the profiler APIs, enabling COMPlus_JitDisasm in release builds, and shipping
+   the profiler APIs, enabling DOTNET_JitDisasm in release builds, and shipping
    with or making easily available an alt jit that supports JitDisasm.
  - Hardware companies maintain optimization/performance guides for their ISAs.
    Should we maintain one for MSIL and/or C# (and/or F#)?  If we hosted such a

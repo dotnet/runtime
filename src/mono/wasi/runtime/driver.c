@@ -104,6 +104,10 @@ typedef uint32_t target_mword;
 typedef target_mword SgenDescriptor;
 typedef SgenDescriptor MonoGCDescriptor;
 
+#ifdef DRIVER_GEN
+#include "driver-gen.c"
+#endif
+
 typedef struct WasmAssembly_ WasmAssembly;
 
 struct WasmAssembly_ {
@@ -382,7 +386,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	// Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
 	// output will be sent to the console.  Right now this is the only way to emit debug logging from
 	// corlib assemblies.
-	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+	// monoeg_g_setenv ("DOTNET_DebugWriteToStdErr", "1", 0);
 #endif
 
 	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");

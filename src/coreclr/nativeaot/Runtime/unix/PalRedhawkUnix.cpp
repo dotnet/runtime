@@ -344,8 +344,6 @@ void ConfigureSignals()
     signal(SIGPIPE, SIG_IGN);
 }
 
-extern bool GetCpuLimit(uint32_t* val);
-
 void InitializeCurrentProcessCpuCount()
 {
     uint32_t count;

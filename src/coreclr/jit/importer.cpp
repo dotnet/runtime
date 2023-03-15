@@ -1780,15 +1780,36 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     }
 #endif
 
-    // Slot pointer
-    GenTree* slotPtrTree = ctxTree;
-
     if (pRuntimeLookup->testForNull)
     {
-        slotPtrTree = impCloneExpr(ctxTree, &ctxTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("impRuntimeLookup slot"));
+        assert(pRuntimeLookup->indirections != 0);
+
+        // Call the helper
+        // - Setup argNode with the pointer to the signature returned by the lookup
+        GenTree* argNode =
+            gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+        GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
+
+        // No need to perform CSE/hoisting for signature node - it is expected to end up in a rarely-taken block after
+        // "Expand runtime lookups" phase.
+        argNode->gtFlags |= GTF_DONT_CSE;
+
+        // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
+        // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
+        impInlineRoot()->setMethodHasExpRuntimeLookup();
+        helperCall->SetExpRuntimeLookup();
+        if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
+        {
+            JITDUMP("Registering %p in SignatureToLookupInfoMap\n", pRuntimeLookup->signature)
+            impInlineRoot()->GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, *pRuntimeLookup);
+        }
+        unsigned callLclNum = lvaGrabTemp(true DEBUGARG("spilling helperCall"));
+        impAssignTempGen(callLclNum, helperCall);
+        return gtNewLclvNode(callLclNum, helperCall->TypeGet());
     }
 
+    // Slot pointer
+    GenTree* slotPtrTree   = ctxTree;
     GenTree* indOffTree    = nullptr;
     GenTree* lastIndOfTree = nullptr;
 
@@ -1834,107 +1855,47 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     }
 
     // No null test required
-    if (!pRuntimeLookup->testForNull)
+    assert(!pRuntimeLookup->testForNull);
+
+    if (pRuntimeLookup->indirections == 0)
     {
-        if (pRuntimeLookup->indirections == 0)
-        {
-            return slotPtrTree;
-        }
-
-        slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-        slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
-
-        if (!pRuntimeLookup->testForFixup)
-        {
-            return slotPtrTree;
-        }
-
-        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark0"));
-
-        unsigned slotLclNum = lvaGrabTemp(true DEBUGARG("impRuntimeLookup test"));
-        impAssignTempGen(slotLclNum, slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr, impCurStmtDI);
-
-        GenTree* slot = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-        // downcast the pointer to a TYP_INT on 64-bit targets
-        slot = impImplicitIorI4Cast(slot, TYP_INT);
-        // Use a GT_AND to check for the lowest bit and indirect if it is set
-        GenTree* test  = gtNewOperNode(GT_AND, TYP_INT, slot, gtNewIconNode(1));
-        GenTree* relop = gtNewOperNode(GT_EQ, TYP_INT, test, gtNewIconNode(0));
-
-        // slot = GT_IND(slot - 1)
-        slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-        GenTree* add   = gtNewOperNode(GT_ADD, TYP_I_IMPL, slot, gtNewIconNode(-1, TYP_I_IMPL));
-        GenTree* indir = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
-        indir->gtFlags |= GTF_IND_NONFAULTING;
-        indir->gtFlags |= GTF_IND_INVARIANT;
-
-        slot                = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-        GenTree*      asg   = gtNewAssignNode(slot, indir);
-        GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
-        GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
-        impAppendTree(qmark, CHECK_SPILL_NONE, impCurStmtDI);
-
-        return gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+        return slotPtrTree;
     }
 
-    assert(pRuntimeLookup->indirections != 0);
+    slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
+    slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
 
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark1"));
-
-    // Extract the handle
-    GenTree* handleForNullCheck = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-    handleForNullCheck->gtFlags |= GTF_IND_NONFAULTING;
-
-    // Call the helper
-    // - Setup argNode with the pointer to the signature returned by the lookup
-    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-
-    GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
-
-    // Check for null and possibly call helper
-    GenTree* nullCheck       = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
-    GenTree* handleForResult = gtCloneExpr(handleForNullCheck);
-
-    GenTree* result = nullptr;
-
-    if (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+    if (!pRuntimeLookup->testForFixup)
     {
-        // Dynamic dictionary expansion support
-
-        assert((lastIndOfTree != nullptr) && (pRuntimeLookup->indirections > 0));
-
-        // sizeValue = dictionary[pRuntimeLookup->sizeOffset]
-        GenTreeIntCon* sizeOffset      = gtNewIconNode(pRuntimeLookup->sizeOffset, TYP_I_IMPL);
-        GenTree*       sizeValueOffset = gtNewOperNode(GT_ADD, TYP_I_IMPL, lastIndOfTree, sizeOffset);
-        GenTree*       sizeValue       = gtNewOperNode(GT_IND, TYP_I_IMPL, sizeValueOffset);
-        sizeValue->gtFlags |= GTF_IND_NONFAULTING;
-
-        // sizeCheck fails if sizeValue < pRuntimeLookup->offsets[i]
-        GenTree* offsetValue = gtNewIconNode(pRuntimeLookup->offsets[pRuntimeLookup->indirections - 1], TYP_I_IMPL);
-        GenTree* sizeCheck   = gtNewOperNode(GT_LE, TYP_INT, sizeValue, offsetValue);
-
-        // revert null check condition.
-        nullCheck->ChangeOperUnchecked(GT_EQ);
-
-        // ((sizeCheck fails || nullCheck fails))) ? (helperCall : handle).
-        // Add checks and the handle as call arguments, indirect call transformer will handle this.
-        NewCallArg nullCheckArg       = NewCallArg::Primitive(nullCheck);
-        NewCallArg sizeCheckArg       = NewCallArg::Primitive(sizeCheck);
-        NewCallArg handleForResultArg = NewCallArg::Primitive(handleForResult);
-        helperCall->gtArgs.PushFront(this, nullCheckArg, sizeCheckArg, handleForResultArg);
-        result = helperCall;
-        addExpRuntimeLookupCandidate(helperCall);
-    }
-    else
-    {
-        GenTreeColon* colonNullCheck = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, handleForResult, helperCall);
-        result                       = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
+        return slotPtrTree;
     }
 
-    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling Runtime Lookup tree"));
+    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark0"));
 
-    impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
-    return gtNewLclvNode(tmp, TYP_I_IMPL);
+    unsigned slotLclNum = lvaGrabTemp(true DEBUGARG("impRuntimeLookup test"));
+    impAssignTempGen(slotLclNum, slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr, impCurStmtDI);
+
+    GenTree* slot = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+    // downcast the pointer to a TYP_INT on 64-bit targets
+    slot = impImplicitIorI4Cast(slot, TYP_INT);
+    // Use a GT_AND to check for the lowest bit and indirect if it is set
+    GenTree* test  = gtNewOperNode(GT_AND, TYP_INT, slot, gtNewIconNode(1));
+    GenTree* relop = gtNewOperNode(GT_EQ, TYP_INT, test, gtNewIconNode(0));
+
+    // slot = GT_IND(slot - 1)
+    slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+    GenTree* add   = gtNewOperNode(GT_ADD, TYP_I_IMPL, slot, gtNewIconNode(-1, TYP_I_IMPL));
+    GenTree* indir = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
+    indir->gtFlags |= GTF_IND_NONFAULTING;
+    indir->gtFlags |= GTF_IND_INVARIANT;
+
+    slot                = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+    GenTree*      asg   = gtNewAssignNode(slot, indir);
+    GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
+    GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
+    impAppendTree(qmark, CHECK_SPILL_NONE, impCurStmtDI);
+
+    return gtNewLclvNode(slotLclNum, TYP_I_IMPL);
 }
 
 struct RecursiveGuard
@@ -2798,10 +2759,6 @@ typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-    if ((varDsc->TypeGet() == TYP_BLK) || (varDsc->TypeGet() == TYP_LCLBLK))
-    {
-        return typeInfo();
-    }
     if (varDsc->TypeGet() == TYP_BYREF)
     {
         // Pretend all byrefs are pointing to bytes.
@@ -2809,7 +2766,7 @@ typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
     }
     if (varTypeIsStruct(varDsc))
     {
-        return typeInfo(TI_STRUCT, varDsc->GetStructHnd());
+        return typeInfo(TI_STRUCT, varDsc->GetLayout()->GetClassHandle());
     }
 
     return typeInfo(varDsc->TypeGet());
@@ -3808,20 +3765,22 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     GenTree* node;
 
+    unsigned dimensionsSize = pCallInfo->sig.numArgs * sizeof(INT32);
     // Reuse the temp used to pass the array dimensions to avoid bloating
     // the stack frame in case there are multiple calls to multi-dim array
     // constructors within a single method.
     if (lvaNewObjArrayArgs == BAD_VAR_NUM)
     {
-        lvaNewObjArrayArgs                       = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
-        lvaTable[lvaNewObjArrayArgs].lvType      = TYP_BLK;
-        lvaTable[lvaNewObjArrayArgs].lvExactSize = 0;
+        lvaNewObjArrayArgs = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+        lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
     // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
     // for our call to CORINFO_HELP_NEW_MDARR.
-    lvaTable[lvaNewObjArrayArgs].lvExactSize =
-        max(lvaTable[lvaNewObjArrayArgs].lvExactSize, pCallInfo->sig.numArgs * sizeof(INT32));
+    if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize())
+    {
+        lvaTable[lvaNewObjArrayArgs].GrowBlockLayout(typGetBlkLayout(dimensionsSize));
+    }
 
     // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
     // to ensure that the shared lvaNewObjArrayArgs local variable is only ever used to pass arguments
@@ -3981,7 +3940,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                     if (hwAccelerated)
                     {
                         GenTreeVecCon* vec = gtNewVconNode(simdType);
-                        memcpy(&vec->gtSimd32Val, buffer, totalSize);
+                        memcpy(&vec->gtSimdVal, buffer, totalSize);
                         return vec;
                     }
                 }
@@ -6386,7 +6345,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             // Block will no longer flow to any of its successors.
             //
-            for (BasicBlock* const succ : block->Succs())
+            for (BasicBlock* const succ : block->Succs(this))
             {
                 // We may have degenerate flow, make sure to fully remove
                 fgRemoveAllRefPreds(succ, block);
@@ -9863,7 +9822,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 // If the localloc is not in a loop and its size is a small constant,
-                // create a new local var of TYP_BLK and return its address.
+                // create a new block layout struct local var and return its address.
                 {
                     bool convertedToLocal = false;
 
@@ -9899,13 +9858,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("stackallocLocal"));
                                 JITDUMP("Converting stackalloc of %zd bytes to new local V%02u\n", allocSize,
                                         stackallocAsLocal);
-                                lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
-                                lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
+                                lvaSetStruct(stackallocAsLocal, typGetBlkLayout((unsigned)allocSize), false);
                                 lvaTable[stackallocAsLocal].lvHasLdAddrOp    = true;
                                 lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
-                                op1              = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
-                                op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
-                                convertedToLocal = true;
+                                op1                                          = gtNewLclVarAddrNode(stackallocAsLocal);
+                                convertedToLocal                             = true;
 
                                 if (!this->opts.compDbgEnC)
                                 {
@@ -10645,56 +10602,47 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             }
 
             case CEE_INITBLK:
+            case CEE_CPBLK:
 
                 op3 = impPopStack().val; // Size
-                op2 = impPopStack().val; // Value
+                op2 = impPopStack().val; // Value / Src addr
                 op1 = impPopStack().val; // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
-                    size = (unsigned)op3->AsIntConCommon()->IconValue();
-                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
+                    if (op3->IsIntegralConst(0))
+                    {
+                        if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_ALL, impCurStmtDI);
+                        }
+
+                        if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            impAppendTree(gtUnusedValNode(op2), CHECK_SPILL_ALL, impCurStmtDI);
+                        }
+
+                        break;
+                    }
+
+                    size = static_cast<unsigned>(op3->AsIntConCommon()->IconValue());
+                    op1  = gtNewBlockVal(op1, size);
+                    op2  = opcode == CEE_INITBLK ? op2 : gtNewBlockVal(op2, size);
                     op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 }
                 else
                 {
-                    if (!op2->IsIntegralConst(0))
+                    if (opcode == CEE_INITBLK)
                     {
-                        op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                        if (!op2->IsIntegralConst(0))
+                        {
+                            op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                        }
                     }
-
-#ifdef TARGET_64BIT
-                    // STORE_DYN_BLK takes a native uint size as it turns into call to memset.
-                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_U_IMPL);
-#endif
-
-                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
-                    size = 0;
-
-                    if ((prefixFlags & PREFIX_VOLATILE) != 0)
+                    else
                     {
-                        op1->gtFlags |= GTF_BLK_VOLATILE;
+                        op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
                     }
-                }
-                goto SPILL_APPEND;
-
-            case CEE_CPBLK:
-
-                op3 = impPopStack().val; // Size
-                op2 = impPopStack().val; // Src addr
-                op1 = impPopStack().val; // Dst addr
-
-                if (op3->IsCnsIntOrI())
-                {
-                    size = static_cast<unsigned>(op3->AsIntConCommon()->IconValue());
-
-                    op1 = gtNewBlockVal(op1, size);
-                    op2 = gtNewBlockVal(op2, size);
-                    op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
-                }
-                else
-                {
-                    op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
 
 #ifdef TARGET_64BIT
                     // STORE_DYN_BLK takes a native uint size as it turns into call to memcpy.
@@ -11120,7 +11068,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             if (!isTailCall && opts.compGcChecks && (info.compRetType == TYP_REF))
             {
                 // DDB 3483  : JIT Stress: early termination of GC ref's life time in exception code path
-                // VSW 440513: Incorrect gcinfo on the return value under COMPlus_JitGCChecks=1 for methods with
+                // VSW 440513: Incorrect gcinfo on the return value under DOTNET_JitGCChecks=1 for methods with
                 // one-return BB.
 
                 assert(op2->gtType == TYP_REF);
@@ -13220,7 +13168,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         {
             inlCurArgInfo->argIsByRefToStructLocal = true;
 #ifdef FEATURE_SIMD
-            if (varDsc->lvSIMDType)
+            if (varTypeIsSIMD(varDsc))
             {
                 pInlineInfo->hasSIMDTypeArgLocalOrReturn = true;
             }
@@ -14092,12 +14040,6 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
     memory->m_token           = token;
     memory->m_tokenConstraint = tokenConstrained;
     return memory;
-}
-
-void Compiler::addExpRuntimeLookupCandidate(GenTreeCall* call)
-{
-    setMethodHasExpRuntimeLookup();
-    call->SetExpRuntimeLookup();
 }
 
 //------------------------------------------------------------------------
