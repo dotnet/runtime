@@ -1181,7 +1181,7 @@ namespace Internal.JitInterface
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
 #endif
-            MethodIL methodIL = _compilation.GetMethodIL(method);
+            MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 

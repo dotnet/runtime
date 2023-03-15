@@ -11110,10 +11110,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "ReturnAddress";
             }
 #if FEATURE_FIXED_OUT_ARGS
-            else if (lclNum == lvaPInvokeFrameRegSaveVar)
-            {
-                ilName = "PInvokeFrameRegSave";
-            }
             else if (lclNum == lvaOutgoingArgSpaceVar)
             {
                 ilName = "OutArgs";
@@ -15785,28 +15781,11 @@ GenTree* Compiler::gtNewTempAssign(
     {
         varDsc->lvType = dstTyp = genActualType(valTyp);
 
-        if (varTypeIsStruct(dstTyp))
+        if (dstTyp == TYP_STRUCT)
         {
-            if (varTypeIsSIMD(dstTyp))
-            {
-                varDsc->lvExactSize = genTypeSize(dstTyp);
-#ifdef FEATURE_SIMD
-                varDsc->lvSIMDType = 1;
-#endif
-            }
-            else
-            {
-                lvaSetStruct(tmp, val->GetLayout(this), false);
-            }
+            lvaSetStruct(tmp, val->GetLayout(this), false);
         }
     }
-
-#if FEATURE_SIMD
-    if (varTypeIsSIMD(dstTyp))
-    {
-        varDsc->lvSIMDType = 1;
-    }
-#endif
 
 #ifdef DEBUG
     // Make sure the actual types match.
@@ -16403,7 +16382,9 @@ bool Compiler::gtSplitTree(
                     // directly instead of the comma so that we get the proper
                     // location treatment. The edge will then be the User ---
                     // op2 edge.
-                    *use = (*use)->gtGetOp2();
+                    *use        = (*use)->gtGetOp2();
+                    MadeChanges = true;
+
                     UseInfo use2{use, user};
 
                     // Locations are never returned.
@@ -17177,7 +17158,8 @@ bool GenTree::IsPhiDefn()
 //
 bool GenTree::IsPartialLclFld(Compiler* comp)
 {
-    return OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) && (comp->lvaGetDesc(AsLclFld())->lvExactSize != AsLclFld()->GetSize());
+    return OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) &&
+           (comp->lvaGetDesc(AsLclFld())->lvExactSize() != AsLclFld()->GetSize());
 }
 
 //------------------------------------------------------------------------

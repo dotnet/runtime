@@ -3,7 +3,7 @@
 
 import { mono_assert } from "./types";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
 
@@ -1201,8 +1201,9 @@ export function getWasmFunctionTable () {
 }
 
 export function addWasmFunctionPointer (f: Function) {
-    if (!f)
-        throw new Error("Attempting to set null function into table");
+    mono_assert(f,"Attempting to set null function into table");
+    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
+
     const table = getWasmFunctionTable();
     if (wasmFunctionIndicesFree <= 0) {
         wasmNextFunctionIndex = table.length;

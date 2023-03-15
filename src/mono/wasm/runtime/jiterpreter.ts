@@ -3,7 +3,7 @@
 
 import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import {
     getU16, getU32_unaligned
 } from "./memory";
@@ -762,6 +762,8 @@ function generate_wasm (
         //  independently jitting traces will not stomp on each other and all threads
         //  have a globally consistent view of which function pointer maps to each trace.
         rejected = false;
+        mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
+
         const idx =
             trapTraceErrors
                 ? Module.addFunction(
@@ -953,7 +955,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
 
     console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
     const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100;
-    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated. ${counters.backBranchesEmitted} back-branches emitted (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%)`);
+    const tracesRejected = cwraps.mono_jiterp_get_rejected_trace_count();
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} cknulls removed. ${counters.backBranchesEmitted} back-branches (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%), ${tracesRejected} traces rejected`);
     if (concise)
         return;
 

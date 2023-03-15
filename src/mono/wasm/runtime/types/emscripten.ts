@@ -50,7 +50,6 @@ export declare interface EmscriptenModule {
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
-    FS_readFile(filename: string, opts: any): any;
     addFunction(fn: Function, signature: string): number;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
@@ -71,6 +70,8 @@ export declare interface EmscriptenModuleInternal {
     mainScriptUrlOrBlob?: string;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
+    asm: { memory?: WebAssembly.Memory };
+    wasmMemory?: WebAssembly.Memory;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;

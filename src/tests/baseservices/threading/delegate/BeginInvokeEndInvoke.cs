@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 namespace DelegateTest
 {
@@ -13,10 +14,11 @@ namespace DelegateTest
         }
     }
 
-    class BeginInvokeEndInvokeTest
+    public class BeginInvokeEndInvokeTest
     {
         public delegate string AsyncMethodCaller(int input);
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             IAsyncResult result = null;
             AsyncMethodCaller caller = new AsyncMethodCaller(DelegateCommon.TestMethod);

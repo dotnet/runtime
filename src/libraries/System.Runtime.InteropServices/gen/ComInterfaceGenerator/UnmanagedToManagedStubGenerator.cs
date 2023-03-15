@@ -37,7 +37,7 @@ namespace Microsoft.Interop
                 marshallingNotSupportedCallback(failure.Info, failure.Exception);
             }
 
-            if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
+            if (_marshallers.NativeReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.NativeReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");

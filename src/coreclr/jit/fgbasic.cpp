@@ -4619,6 +4619,50 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 }
 
 //------------------------------------------------------------------------------
+// fgSplitBlockBeforeTree : Split the given block right before the given tree
+//
+// Arguments:
+//    block        - The block containing the statement.
+//    stmt         - The statement containing the tree.
+//    splitPoint   - A tree inside the statement.
+//    firstNewStmt - [out] The first new statement that was introduced.
+//                   [firstNewStmt..stmt) are the statements added by this function.
+//    splitNodeUse - The use of the tree to split at.
+//
+// Returns:
+//    The last block after split
+//
+// Notes:
+//    See comments in gtSplitTree
+//
+BasicBlock* Compiler::fgSplitBlockBeforeTree(
+    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
+{
+    gtSplitTree(block, stmt, splitPoint, firstNewStmt, splitNodeUse);
+
+    BasicBlockFlags originalFlags = block->bbFlags;
+    BasicBlock*     prevBb        = block;
+
+    if (stmt == block->firstStmt())
+    {
+        block = fgSplitBlockAtBeginning(prevBb);
+    }
+    else
+    {
+        assert(stmt->GetPrevStmt() != block->lastStmt());
+        JITDUMP("Splitting " FMT_BB " after statement " FMT_STMT "\n", prevBb->bbNum, stmt->GetPrevStmt()->GetID());
+        block = fgSplitBlockAfterStatement(prevBb, stmt->GetPrevStmt());
+    }
+
+    // We split a block, possibly, in the middle - we need to propagate some flags
+    prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+    block->bbFlags |=
+        originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
+
+    return block;
+}
+
+//------------------------------------------------------------------------------
 // fgSplitBlockAfterNode - Split the given block, with all code after
 //                         the given node going into the second block.
 //                         This function is only used in LIR.

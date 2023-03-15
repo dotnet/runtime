@@ -23,11 +23,6 @@ namespace ILCompiler.DependencyAnalysis
             return new ExternSymbolNode(NonGCStaticsNode.GetMangledName(type, factory.NameMangler));
         }
 
-        public override ISortableSymbolNode ImportedTypeDictionaryNode(NodeFactory factory, TypeDesc type)
-        {
-            throw new NotImplementedException();
-        }
-
         public override ISortableSymbolNode ImportedMethodDictionaryNode(NodeFactory factory, MethodDesc method)
         {
             throw new NotImplementedException();

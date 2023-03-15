@@ -1995,6 +1995,13 @@ typedef enum {
 	CMP_UNORD
 } CompRelation;
 
+enum {
+	XBINOP_FORCEINT_AND,
+	XBINOP_FORCEINT_OR,
+	XBINOP_FORCEINT_ORNOT,
+	XBINOP_FORCEINT_XOR,
+};
+
 typedef enum {
 	CMP_TYPE_L,
 	CMP_TYPE_I,
