@@ -509,7 +509,6 @@ namespace R2RDump
                     {
                         Program.WriteWarning("String is not zero-terminated");
                     }
-                    // dummy commit to remove license/cla check
                     _writer.WriteLine("Composite executable: {0}", _r2r.OwnerCompositeExecutable);
                     break;
                 case ReadyToRunSectionType.ManifestAssemblyMvids:
