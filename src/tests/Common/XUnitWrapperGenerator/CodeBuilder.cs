@@ -206,8 +206,8 @@ public class CodeBuilder {
     /// <returns>A new <see cref="IndentationContext"/>.</returns>
     public IDisposable NewBracesScope(string? introduction = null, uint additionalIndent = DefaultAdditionalIndent) {
         if (!string.IsNullOrEmpty(introduction)) {
-	    this.Append(introduction!);
-	}
+            this.Append(introduction!);
+        }
         this.AppendLine(string.IsNullOrEmpty(introduction) ? "{" : " {");
         return new IndentationContext(this, additionalIndent: additionalIndent, endLine: "}");
     }
