@@ -6,5 +6,12 @@ namespace System.IO.IsolatedStorage
     internal static partial class Helper
     {
         public const string IsolatedStorageDirectoryName = ".isolated-storage";
+
+        internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
+        {
+            string? randomDirectory = GetExistingRandomDirectory(rootDirectory);
+
+            return randomDirectory ?? GetDataDirectory(scope);
+        }
     }
 }

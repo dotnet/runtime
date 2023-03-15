@@ -56,10 +56,12 @@
    <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.AnyMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\TestHelper.AnyMobile.cs" />
+    <Compile Include="System\IO\IsolatedStorage\HelperTests.AnyMobile.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'android' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'maccatalyst' and '$(TargetPlatformIdentifier)' != 'tvos' and '$(TargetPlatformIdentifier)' != ''">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.NonMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\TestHelper.NonMobile.cs" />
+    <Compile Include="System\IO\IsolatedStorage\HelperTests.NonMobile.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />

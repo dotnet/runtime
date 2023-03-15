@@ -79,38 +79,6 @@ namespace System.IO.IsolatedStorage
             identity = locationUri;
         }
 
-        internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
-        {
-            string? randomDirectory = GetExistingRandomDirectory(rootDirectory);
-            if (string.IsNullOrEmpty(randomDirectory))
-            {
-                using (Mutex m = CreateMutexNotOwned(rootDirectory))
-                {
-                    if (!m.WaitOne())
-                    {
-                        throw new IsolatedStorageException(SR.IsolatedStorage_Init);
-                    }
-
-                    try
-                    {
-                        randomDirectory = GetExistingRandomDirectory(rootDirectory);
-                        if (string.IsNullOrEmpty(randomDirectory))
-                        {
-                            // Someone else hasn't created the directory before we took the lock
-                            randomDirectory = Path.Combine(rootDirectory, Path.GetRandomFileName(), Path.GetRandomFileName());
-                            CreateDirectory(randomDirectory, scope);
-                        }
-                    }
-                    finally
-                    {
-                        m.ReleaseMutex();
-                    }
-                }
-            }
-
-            return randomDirectory;
-        }
-
         internal static string? GetExistingRandomDirectory(string rootDirectory)
         {
             // Look for an existing random directory at the given root
