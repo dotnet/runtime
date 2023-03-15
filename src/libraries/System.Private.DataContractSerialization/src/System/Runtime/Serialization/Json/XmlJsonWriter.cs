@@ -358,15 +358,8 @@ namespace System.Runtime.Serialization.Json
             ArgumentNullException.ThrowIfNull(buffer);
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - index)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
@@ -381,15 +374,8 @@ namespace System.Runtime.Serialization.Json
             ArgumentNullException.ThrowIfNull(buffer);
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - index)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
@@ -414,15 +400,8 @@ namespace System.Runtime.Serialization.Json
             ArgumentNullException.ThrowIfNull(buffer);
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - index)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
@@ -452,7 +431,7 @@ namespace System.Runtime.Serialization.Json
                 throw new XmlException(SR.JsonNoMatchingStartAttribute);
             }
 
-            Fx.Assert(!(_isWritingDataTypeAttribute && _isWritingServerTypeAttribute),
+            Debug.Assert(!(_isWritingDataTypeAttribute && _isWritingServerTypeAttribute),
                 "Can not write type attribute and __type attribute at the same time.");
 
             if (_isWritingDataTypeAttribute)
@@ -621,7 +600,7 @@ namespace System.Runtime.Serialization.Json
             {
                 // Assert on only StandaloneText and EndElement because preceding if
                 //    conditions take care of checking for QuotedText and Element.
-                Fx.Assert((_nodeType == JsonNodeType.StandaloneText) || (_nodeType == JsonNodeType.EndElement),
+                Debug.Assert((_nodeType == JsonNodeType.StandaloneText) || (_nodeType == JsonNodeType.EndElement),
                     "nodeType has invalid value " + _nodeType + ". Expected it to be QuotedText, Element, StandaloneText, or EndElement.");
             }
             if (_depth != 0)
@@ -710,15 +689,8 @@ namespace System.Runtime.Serialization.Json
             ArgumentNullException.ThrowIfNull(buffer);
 
             // Not checking upper bound because it will be caught by "count".  This is what XmlTextWriter does.
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ValueMustBeNonNegative);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - index)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));

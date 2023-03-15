@@ -30,7 +30,7 @@ struct _EventPipeProvider_Internal {
 	ep_char16_t *provider_name_utf16;
 	// List of every event currently associated with the provider.
 	// New events can be added on-the-fly.
-	ep_rt_event_list_t event_list;
+	dn_list_t *event_list;
 	// The optional provider callback function.
 	EventPipeCallback callback_func;
 	// The optional provider callback data pointer.

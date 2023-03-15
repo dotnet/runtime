@@ -62,7 +62,12 @@ extends:
         pool:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
-
+        variables:
+          # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
+          # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
+          # This is worked around by handpicking the V2 executable.
+          # The workaround should be removed when the official fix is propagated into 1es-windows-2022-open, or when we switch to another image.
+          DOCKER_COMPOSE_CMD: "C:/ProgramData/docker/cli-plugins/docker-compose.exe"
         steps:
         - checkout: self
           clean: true
@@ -79,5 +84,5 @@ extends:
 
         - powershell: |
             cd '$(sslStressProject)'
-            docker-compose up --abort-on-container-exit --no-color
+            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run SslStress

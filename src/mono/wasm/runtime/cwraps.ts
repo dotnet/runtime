@@ -89,6 +89,9 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_method_get_full_name", "number", ["number"]],
     [true, "mono_wasm_gc_lock", "void", []],
     [true, "mono_wasm_gc_unlock", "void", []],
+    [true, "mono_wasm_get_i32_unaligned", "number", ["number"]],
+    [true, "mono_wasm_get_f32_unaligned", "number", ["number"]],
+    [true, "mono_wasm_get_f64_unaligned", "number", ["number"]],
 
     // jiterpreter
     [true, "mono_jiterp_get_trace_bailout_count", "number", ["number"]],
@@ -97,6 +100,7 @@ const fn_signatures: SigLine[] = [
     [false, "mono_jiterp_encode_leb52", "number", ["number", "number", "number"]],
     [false, "mono_jiterp_encode_leb64_ref", "number", ["number", "number", "number"]],
     [false, "mono_jiterp_encode_leb_signed_boundary", "number", ["number", "number", "number"]],
+    [false, "mono_jiterp_write_number_unaligned", "void", ["number", "number", "number"]],
     [true, "mono_jiterp_type_is_byref", "number", ["number"]],
     [true, "mono_jiterp_get_size_of_stackval", "number", []],
     [true, "mono_jiterp_parse_option", "number", ["string"]],
@@ -116,6 +120,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_debug_count", "number", []],
     [true, "mono_jiterp_get_trace_hit_count", "number", ["number"]],
     [true, "mono_jiterp_get_polling_required_address", "number", []],
+    [true, "mono_jiterp_get_rejected_trace_count", "number", []],
     ...legacy_interop_cwraps
 ];
 
@@ -196,6 +201,9 @@ export interface t_Cwraps {
     mono_wasm_method_get_full_name(method: MonoMethod): CharPtr;
     mono_wasm_gc_lock(): void;
     mono_wasm_gc_unlock(): void;
+    mono_wasm_get_i32_unaligned(source: VoidPtr): number;
+    mono_wasm_get_f32_unaligned(source: VoidPtr): number;
+    mono_wasm_get_f64_unaligned(source: VoidPtr): number;
 
     mono_jiterp_get_trace_bailout_count(reason: number): number;
     mono_jiterp_value_copy(destination: VoidPtr, source: VoidPtr, klass: MonoClass): void;
@@ -228,6 +236,8 @@ export interface t_Cwraps {
     mono_jiterp_debug_count(): number;
     mono_jiterp_get_trace_hit_count(traceIndex: number): number;
     mono_jiterp_get_polling_required_address(): Int32Ptr;
+    mono_jiterp_write_number_unaligned(destination: VoidPtr, value: number, mode: number): void;
+    mono_jiterp_get_rejected_trace_count(): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

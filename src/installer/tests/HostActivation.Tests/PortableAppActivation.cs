@@ -255,7 +255,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Since SDK doesn't support building framework dependent apphost yet, emulate that behavior
             // by creating the executable from apphost.exe
             var appExe = fixture.TestProject.AppExe;
-            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
             AppHostExtensions.BindAppHost(appExe);
 
             // Get the framework location that was built
@@ -297,7 +297,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Since SDK doesn't support building framework dependent apphost yet, emulate that behavior
             // by creating the executable from apphost.exe
             var appExe = fixture.TestProject.AppExe;
-            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
             AppHostExtensions.BindAppHost(appExe);
 
             // Get the framework location that was built
@@ -403,12 +403,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command = sharedTestState.BuiltDotNet.Exec(sharedTestState.MockApp.AppDll);
             }
 
-            string hostPolicyName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
             command.EnableTracingAndCaptureOutputs()
                 .MultilevelLookup(false)
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining($"The library '{hostPolicyName}' required to execute the application was not found")
+                .And.HaveStdErrContaining($"The library '{Binaries.HostPolicy.FileName}' required to execute the application was not found")
                 .And.HaveStdErrContaining("Failed to run as a self-contained app")
                 .And.HaveStdErrContaining($"'{sharedTestState.MockApp.RuntimeConfigJson}' was not found");
         }
@@ -432,12 +431,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command = sharedTestState.BuiltDotNet.Exec(app.AppDll);
             }
 
-            string hostPolicyName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
             command.EnableTracingAndCaptureOutputs()
                 .MultilevelLookup(false)
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining($"The library '{hostPolicyName}' required to execute the application was not found")
+                .And.HaveStdErrContaining($"The library '{Binaries.HostPolicy.FileName}' required to execute the application was not found")
                 .And.HaveStdErrContaining("Failed to run as a self-contained app")
                 .And.HaveStdErrContaining($"'{app.RuntimeConfigJson}' did not specify a framework");
         }
@@ -451,7 +449,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
             AppHostExtensions.BindAppHost(appExe);
 
             string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "cliErrors"));
@@ -502,7 +500,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
             AppHostExtensions.BindAppHost(appExe);
             AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
 
@@ -546,7 +544,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
             AppHostExtensions.BindAppHost(appExe);
             AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
 
@@ -581,7 +579,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
             AppHostExtensions.BindAppHost(appExe);
             AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
 
@@ -622,7 +620,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             string appExe = fixture.TestProject.AppExe;
-            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            File.Copy(Binaries.AppHost.FilePath, appExe, overwrite: true);
             AppHostExtensions.BindAppHost(appExe);
             AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
 
@@ -698,7 +696,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public TestProjectFixture PortableAppFixture_Published { get; }
 
             public RepoDirectoriesProvider RepoDirectories { get; }
-            public string BuiltAppHost { get; }
             public DotNetCli BuiltDotNet { get; }
 
             public TestApp MockApp { get; }
@@ -706,7 +703,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
-                BuiltAppHost = Path.Combine(RepoDirectories.HostArtifacts, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost"));
                 BuiltDotNet = new DotNetCli(RepoDirectories.BuiltDotnet);
 
                 PortableAppFixture_Built = new TestProjectFixture("PortableApp", RepoDirectories)
@@ -720,7 +716,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 MockApp = new TestApp(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "portableAppActivation")), "App");
                 Directory.CreateDirectory(MockApp.Location);
                 File.WriteAllText(MockApp.AppDll, string.Empty);
-                File.Copy(BuiltAppHost, MockApp.AppExe);
+                File.Copy(Binaries.AppHost.FilePath, MockApp.AppExe);
                 AppHostExtensions.BindAppHost(MockApp.AppExe);
             }
 

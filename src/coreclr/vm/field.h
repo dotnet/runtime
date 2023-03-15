@@ -45,8 +45,6 @@ class FieldDesc
         unsigned m_dword1;
         struct {
 #endif
-        // Note that we may store other information in the high bits if available --
-        // see enum_packedMBLayout and m_requiresFullMbValue for details.
         unsigned m_mb               : 24;
 
         // 8 bits...
@@ -54,8 +52,6 @@ class FieldDesc
         unsigned m_isThreadLocal    : 1;
         unsigned m_isRVA            : 1;
         unsigned m_prot             : 3;
-        // Does this field's mb require all 24 bits
-        unsigned m_requiresFullMbValue : 1;
 #if defined(DACCESS_COMPILE)
         };
     };
@@ -93,7 +89,6 @@ public:
         m_isThreadLocal = sourceField.m_isThreadLocal;
         m_isRVA = sourceField.m_isRVA;
         m_prot = sourceField.m_prot;
-        m_requiresFullMbValue = sourceField.m_requiresFullMbValue;
 
         m_dwOffset = sourceField.m_dwOffset;
         m_type = sourceField.m_type;
@@ -131,43 +126,15 @@ public:
               BOOL fIsThreadLocal,
               LPCSTR pszFieldName);
 
-    enum {
-        enum_packedMbLayout_MbMask        = 0x01FFFF,
-        enum_packedMbLayout_NameHashMask  = 0xFE0000
-    };
-
     void SetMemberDef(mdFieldDef mb)
     {
         WRAPPER_NO_CONTRACT;
-
-        // Check if we have to avoid using the packed mb layout
-        if (RidFromToken(mb) > enum_packedMbLayout_MbMask)
-        {
-            m_requiresFullMbValue = 1;
-        }
-
-        // Set only the portion of m_mb we are using
-        if (!m_requiresFullMbValue)
-        {
-            m_mb &= ~enum_packedMbLayout_MbMask;
-            m_mb |= RidFromToken(mb);
-        }
-        else
-        {
-            m_mb = RidFromToken(mb);
-        }
+        m_mb = RidFromToken(mb);
     }
 
     mdFieldDef GetMemberDef() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        // Check if this FieldDesc is using the packed mb layout
-        if (!m_requiresFullMbValue)
-        {
-            return TokenFromRid(m_mb & enum_packedMbLayout_MbMask, mdtFieldDef);
-        }
-
         return TokenFromRid(m_mb, mdtFieldDef);
     }
 
@@ -651,8 +618,6 @@ public:
 
         return GetMDImport()->GetNameOfFieldDef(GetMemberDef(), pszName);
     }
-
-    BOOL MightHaveName(ULONG nameHashValue);
 
     // <TODO>@TODO: </TODO>This is slow, don't use it!
     DWORD   GetAttributes()

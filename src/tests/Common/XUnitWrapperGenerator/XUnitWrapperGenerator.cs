@@ -305,10 +305,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         ITestReporterWrapper reporter = new NoTestReporting();
         StringBuilder builder = new();
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
+        builder.AppendLine("namespace __GeneratedMainWrapper;");
+        builder.AppendLine("class __GeneratedMainWrapper {");
+        builder.AppendLine("public static int Main() {");
         builder.AppendLine("try {");
         builder.AppendLine(string.Join("\n", testInfos.Select(m => m.GenerateTestExecution(reporter))));
         builder.AppendLine("} catch(System.Exception ex) { System.Console.WriteLine(ex.ToString()); return 101; }");
         builder.AppendLine("return 100;");
+        builder.AppendLine("}");
+        builder.AppendLine("}");
         return builder.ToString();
     }
 

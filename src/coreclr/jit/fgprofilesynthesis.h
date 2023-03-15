@@ -96,7 +96,10 @@ private:
     void ComputeCyclicProbabilities(SimpleLoop* loop);
 
     void AssignInputWeights();
+
     void ComputeBlockWeights();
+    void ComputeBlockWeightsSubgraph(BasicBlock* block);
+    void ComputeBlockWeight(BasicBlock* block);
 
 private:
     Compiler* const m_comp;

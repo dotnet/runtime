@@ -1776,6 +1776,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 
+    compNumStatementLinksTraversed = 0;
     compPoisoningAnyImplicitByrefs = false;
 #endif
 
@@ -1950,6 +1951,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     vnStore                    = nullptr;
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
+    m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaChecksEnabled         = false;
     fgVNPassesCompleted        = 0;
@@ -3343,14 +3345,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf("OPTIONS: compProcedureSplitting   = %s\n", dspBool(opts.compProcedureSplitting));
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
 
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
-            printf("OPTIONS: optimized using %s profile data\n", pgoSourceToString(fgPgoSource));
-        }
-
-        if (fgPgoFailReason != nullptr)
-        {
-            printf("OPTIONS: %s\n", fgPgoFailReason);
+            printf("OPTIONS: optimizer should use profile data\n");
         }
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
@@ -4266,13 +4263,17 @@ const char* Compiler::compGetPgoSourceName() const
         case ICorJitInfo::PgoSource::Dynamic:
             return "Dynamic PGO";
         case ICorJitInfo::PgoSource::Blend:
-            return "Blend PGO";
+            return "Blended PGO";
         case ICorJitInfo::PgoSource::Text:
             return "Textual PGO";
         case ICorJitInfo::PgoSource::Sampling:
             return "Sample-based PGO";
+        case ICorJitInfo::PgoSource::IBC:
+            return "Classic IBC";
+        case ICorJitInfo::PgoSource::Synthesis:
+            return "Synthesized PGO";
         default:
-            return "";
+            return "Unknown PGO";
     }
 }
 
@@ -4827,14 +4828,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // However, ref counts are not kept incrementally up to date.
     assert(lvaLocalVarRefCounted());
 
-    if (opts.OptimizationEnabled())
-    {
-        // Introduce copies for some single-def locals to make them more
-        // amenable to optimization
-        //
-        DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
-    }
-
     // Figure out the order in which operators are to be evaluated
     //
     DoPhase(this, PHASE_FIND_OPER_ORDER, &Compiler::fgFindOperOrder);
@@ -4995,6 +4988,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // The loop table is no longer valid.
     fgDomsComputed    = false;
     optLoopTableValid = false;
+
+#ifdef DEBUG
+    DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
+#endif
+
+    // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
+    DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -5336,6 +5336,163 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 #endif
+
+//------------------------------------------------------------------------
+// StressSplitTree: A phase that stresses the gtSplitTree function.
+//
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//   Stress is applied on a function-by-function basis
+//
+PhaseStatus Compiler::StressSplitTree()
+{
+    if (compStressCompile(STRESS_SPLIT_TREES_RANDOMLY, 10))
+    {
+        SplitTreesRandomly();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    if (compStressCompile(STRESS_SPLIT_TREES_REMOVE_COMMAS, 10))
+    {
+        SplitTreesRemoveCommas();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
+// SplitTreesRandomly: Split all statements at a random location.
+//
+void Compiler::SplitTreesRandomly()
+{
+#ifdef DEBUG
+    CLRRandom rng;
+    rng.Init(info.compMethodHash() ^ 0x077cc4d4);
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            int numTrees = 0;
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (tree->OperIs(GT_JTRUE)) // Due to relop invariant
+                {
+                    continue;
+                }
+
+                numTrees++;
+            }
+
+            int splitTree = rng.Next(numTrees);
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (tree->OperIs(GT_JTRUE))
+                    continue;
+
+                if (splitTree == 0)
+                {
+                    JITDUMP("Splitting " FMT_STMT " at [%06u]\n", stmt->GetID(), dspTreeID(tree));
+                    Statement* newStmt;
+                    GenTree**  use;
+                    if (gtSplitTree(block, stmt, tree, &newStmt, &use))
+                    {
+                        while ((newStmt != nullptr) && (newStmt != stmt))
+                        {
+                            fgMorphStmtBlockOps(block, newStmt);
+                            newStmt = newStmt->GetNextStmt();
+                        }
+
+                        fgMorphStmtBlockOps(block, stmt);
+                        gtUpdateStmtSideEffects(stmt);
+                    }
+
+                    break;
+                }
+
+                splitTree--;
+            }
+        }
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// SplitTreesRemoveCommas: Split trees to remove all commas.
+//
+void Compiler::SplitTreesRemoveCommas()
+{
+    for (BasicBlock* block : Blocks())
+    {
+        Statement* stmt = block->FirstNonPhiDef();
+        while (stmt != nullptr)
+        {
+            Statement* nextStmt = stmt->GetNextStmt();
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (!tree->OperIs(GT_COMMA))
+                {
+                    continue;
+                }
+
+                // Supporting this weird construct would require additional
+                // handling, we need to sort of move the comma into to the
+                // next node in execution order. We don't see this so just
+                // skip it.
+                assert(!tree->IsReverseOp());
+
+                JITDUMP("Removing COMMA [%06u]\n", dspTreeID(tree));
+                Statement* newStmt;
+                GenTree**  use;
+                gtSplitTree(block, stmt, tree, &newStmt, &use);
+                GenTree* op1SideEffects = nullptr;
+                gtExtractSideEffList(tree->gtGetOp1(), &op1SideEffects);
+
+                if (op1SideEffects != nullptr)
+                {
+                    Statement* op1Stmt = fgNewStmtFromTree(op1SideEffects);
+                    fgInsertStmtBefore(block, stmt, op1Stmt);
+                    if (newStmt == nullptr)
+                    {
+                        newStmt = op1Stmt;
+                    }
+                }
+
+                *use = tree->gtGetOp2();
+
+                for (Statement* cur = newStmt; (cur != nullptr) && (cur != stmt); cur = cur->GetNextStmt())
+                {
+                    fgMorphStmtBlockOps(block, cur);
+                }
+
+                fgMorphStmtBlockOps(block, stmt);
+                gtUpdateStmtSideEffects(stmt);
+
+                // Morphing block ops can introduce commas (and the original
+                // statement can also have more commas left). Proceed from the
+                // earliest newly introduced statement.
+                nextStmt = newStmt != nullptr ? newStmt : stmt;
+                break;
+            }
+
+            stmt = nextStmt;
+        }
+    }
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            for (GenTree* tree : stmt->TreeList())
+            {
+                assert(!tree->OperIs(GT_COMMA));
+            }
+        }
+    }
+}
 
 //------------------------------------------------------------------------
 // generatePatchpointInfo: allocate and fill in patchpoint info data,
@@ -10280,6 +10437,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_stressPoisonImplicitByrefs++;
                     break;
 
+                case AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY:
+                    m_externallyVisibleImplicitly++;
+                    break;
+
                 default:
                     unreached();
                     break;
@@ -10376,5 +10537,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_stressLclFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
     PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
+    PRINT_STATS(m_externallyVisibleImplicitly, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

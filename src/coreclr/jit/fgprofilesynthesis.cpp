@@ -96,7 +96,8 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     // For now, since we have installed synthesized profile data,
     // act as if we don't have "real" profile data.
     //
-    m_comp->fgPgoHaveWeights = false;
+    m_comp->fgPgoHaveWeights = true;
+    m_comp->fgPgoSource      = ICorJitInfo::PgoSource::Synthesis;
 
 #ifdef DEBUG
     if (JitConfig.JitCheckSynthesizedCounts() > 0)
@@ -847,11 +848,9 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
 //------------------------------------------------------------------------
 // fgAssignInputWeights: provide initial profile weights for all blocks
 //
-//
 // Notes:
-//   For finallys we may want to come back and rescale once we know the
-//   weights of all the callfinallies, or perhaps just use the weight
-//   of the first block in the associated try.
+//   For finallys we will pick up new entry weights when we process
+//   the subtree that can invoke them normally.
 //
 void ProfileSynthesis::AssignInputWeights()
 {
@@ -860,19 +859,19 @@ void ProfileSynthesis::AssignInputWeights()
 
     for (BasicBlock* block : m_comp->Blocks())
     {
-        block->bbWeight = 0.0;
+        block->setBBProfileWeight(0.0);
     }
 
-    m_comp->fgFirstBB->bbWeight = entryWeight;
+    m_comp->fgFirstBB->setBBProfileWeight(entryWeight);
 
     for (EHblkDsc* const HBtab : EHClauses(m_comp))
     {
         if (HBtab->HasFilter())
         {
-            HBtab->ebdFilter->bbWeight = ehWeight;
+            HBtab->ebdFilter->setBBProfileWeight(ehWeight);
         }
 
-        HBtab->ebdHndBeg->bbWeight = ehWeight;
+        HBtab->ebdHndBeg->setBBProfileWeight(ehWeight);
     }
 }
 
@@ -880,62 +879,129 @@ void ProfileSynthesis::AssignInputWeights()
 // ComputeBlockWeights: compute weights for all blocks
 //   based on input weights, edge likelihoods, and cyclic probabilities
 //
+// Notes:
+//   We want to first walk the main method body, then any finally
+//   handers from outermost to innermost.
+//
+//   The depth first walk we did to kick off synthesis has split the
+//   graph into a forest of depth first spanning trees. We leverage
+//   this and the EH table structure to accomplish the visiting order above.
+//
+//   We might be able to avoid all this if during the DFS walk we
+//   walked from try entries to filter or handlers, so that a
+//   single DFST encompassed all the reachable blocks in the right order.
+//
 void ProfileSynthesis::ComputeBlockWeights()
 {
     JITDUMP("Computing block weights\n");
 
-    for (unsigned int i = 1; i <= m_comp->fgBBNumMax; i++)
+    // Main method body
+    //
+    ComputeBlockWeightsSubgraph(m_comp->fgFirstBB);
+
+    // All finally and fault handlers from outer->inner
+    // (walk EH table backwards)
+    //
+    for (unsigned i = 0; i < m_comp->compHndBBtabCount; i++)
+    {
+        unsigned const  XTnum = m_comp->compHndBBtabCount - i - 1;
+        EHblkDsc* const HBtab = &m_comp->compHndBBtab[XTnum];
+        if (HBtab->HasFilter())
+        {
+            // Filter subtree includes handler
+            //
+            ComputeBlockWeightsSubgraph(HBtab->ebdFilter);
+        }
+        else
+        {
+            ComputeBlockWeightsSubgraph(HBtab->ebdHndBeg);
+        }
+    }
+
+    // Anything else is unreachable and will have zero count
+}
+
+//------------------------------------------------------------------------
+// ComputeBlockWeights: compute weights for all blocks in a particular DFST
+//
+// Arguments:
+//   entry - root node of a DFST
+//
+void ProfileSynthesis::ComputeBlockWeightsSubgraph(BasicBlock* entry)
+{
+    // Determine the range of indices for this DFST in the overall RPO.
+    //
+    const unsigned firstIndex = m_comp->fgBBNumMax - entry->bbPostorderNum + 1;
+    assert(m_comp->fgBBReversePostorder[firstIndex] == entry);
+
+    assert(entry->bbPostorderNum >= entry->bbPreorderNum);
+    const unsigned lastIndex = firstIndex + entry->bbPostorderNum - entry->bbPreorderNum;
+
+    for (unsigned int i = firstIndex; i <= lastIndex; i++)
     {
         BasicBlock* const block = m_comp->fgBBReversePostorder[i];
-        SimpleLoop* const loop  = GetLoopFromHeader(block);
+        ComputeBlockWeight(block);
+    }
+}
 
-        if (loop != nullptr)
-        {
-            // Start with initial weight, sum entry edges, multiply by Cp
-            //
-            weight_t newWeight = block->bbWeight;
+//------------------------------------------------------------------------
+// ComputeBlockWeight: compute weight for a given block
+//
+// Arguments:
+//    block: block in question
+//
+void ProfileSynthesis::ComputeBlockWeight(BasicBlock* block)
+{
+    SimpleLoop* const loop      = GetLoopFromHeader(block);
+    weight_t          newWeight = block->bbWeight;
+    const char*       kind      = "";
 
-            for (FlowEdge* const edge : loop->m_entryEdges)
-            {
-                if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
-                {
-                    newWeight += edge->getLikelyWeight();
-                }
-            }
-
-            newWeight *= loop->m_cyclicProbability;
-            block->bbWeight = newWeight;
-
-            JITDUMP("cbw (header): " FMT_BB " :: " FMT_WT "\n", block->bbNum, block->bbWeight);
-        }
-        else
-        {
-            // start with initial weight, sum all incoming edges
-            //
-            weight_t newWeight = block->bbWeight;
-
-            for (FlowEdge* const edge : block->PredEdges())
-            {
-                if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
-                {
-                    newWeight += edge->getLikelyWeight();
-                }
-            }
-
-            block->bbWeight = newWeight;
-
-            JITDUMP("cbw: " FMT_BB " :: " FMT_WT "\n", block->bbNum, block->bbWeight);
-        }
-
-        // Todo: just use weight to determine run rarely, not flag
+    if (loop != nullptr)
+    {
+        // Sum all entry edges that aren't EH flow
         //
-        if (block->bbWeight == 0.0)
+        for (FlowEdge* const edge : loop->m_entryEdges)
         {
-            block->bbSetRunRarely();
+            if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
+            {
+                newWeight += edge->getLikelyWeight();
+            }
         }
-        else
+
+        // Scale by cyclic probability
+        //
+        newWeight *= loop->m_cyclicProbability;
+        kind = " (loop head)";
+    }
+    else
+    {
+        // Sum all incoming edges that aren't EH flow
+        //
+        for (FlowEdge* const edge : block->PredEdges())
         {
-            block->bbFlags &= ~BBF_RUN_RARELY;
+            if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
+            {
+                newWeight += edge->getLikelyWeight();
+            }
+        }
+    }
+
+    block->setBBProfileWeight(newWeight);
+    JITDUMP("cbw%s: " FMT_BB " :: " FMT_WT "\n", kind, block->bbNum, block->bbWeight);
+
+    // If we're at the start of try in a try/finally, update the finally
+    // entry to reflect the proper weight.
+    //
+    if (m_comp->bbIsTryBeg(block))
+    {
+        EHblkDsc* const HBtab = m_comp->ehGetBlockTryDsc(block);
+
+        if (HBtab->HasFinallyHandler())
+        {
+            BasicBlock* const finallyEntry = HBtab->ebdHndBeg;
+            finallyEntry->setBBProfileWeight(newWeight);
+            kind = " (finally)";
+            JITDUMP("cbw%s: " FMT_BB " :: " FMT_WT "\n", kind, finallyEntry->bbNum, finallyEntry->bbWeight);
         }
     }
 }

@@ -533,6 +533,27 @@ namespace ILCompiler.Dataflow
                     }
                     break;
 
+                //
+                // string System.Reflection.Assembly.Location getter
+                // string System.Reflection.AssemblyName.CodeBase getter
+                // string System.Reflection.AssemblyName.EscapedCodeBase getter
+                //
+                case IntrinsicId.Assembly_get_Location:
+                case IntrinsicId.AssemblyName_get_CodeBase:
+                case IntrinsicId.AssemblyName_get_EscapedCodeBase:
+                    diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile, calledMethod.GetDisplayName());
+                    break;
+
+                //
+                // string System.Reflection.Assembly.GetFile(string)
+                // string System.Reflection.Assembly.GetFiles()
+                // string System.Reflection.Assembly.GetFiles(bool)
+                //
+                case IntrinsicId.Assembly_GetFile:
+                case IntrinsicId.Assembly_GetFiles:
+                    diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile, calledMethod.GetDisplayName());
+                    break;
+
                 default:
                     throw new NotImplementedException("Unhandled intrinsic");
             }

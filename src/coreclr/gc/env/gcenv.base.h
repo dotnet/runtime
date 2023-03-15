@@ -403,7 +403,7 @@ typedef struct _PROCESSOR_NUMBER {
 
 // -----------------------------------------------------------------------------------------------------------
 //
-// The subset of the contract code required by the GC/HandleTable sources. If Redhawk moves to support
+// The subset of the contract code required by the GC/HandleTable sources. If NativeAOT moves to support
 // contracts these local definitions will disappear and be replaced by real implementations.
 //
 
@@ -485,8 +485,6 @@ class MethodTable;
 class Object;
 class ArrayBase;
 
-// Various types used to refer to object references or handles. This will get more complex if we decide
-// Redhawk wants to wrap object references in the debug build.
 typedef DPTR(Object) PTR_Object;
 typedef DPTR(PTR_Object) PTR_PTR_Object;
 

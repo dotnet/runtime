@@ -994,9 +994,6 @@ namespace System
             return new MdUtf8String(_GetUtf8Name(method));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool MatchesNameHash(RuntimeMethodHandleInternal method, uint hash);
-
         [DebuggerStepThrough]
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1253,9 +1250,6 @@ namespace System
         private static extern void* _GetUtf8Name(RuntimeFieldHandleInternal field);
 
         internal static MdUtf8String GetUtf8Name(RuntimeFieldHandleInternal field) { return new MdUtf8String(_GetUtf8Name(field)); }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool MatchesNameHash(RuntimeFieldHandleInternal handle, uint hash);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern FieldAttributes GetAttributes(RuntimeFieldHandleInternal field);

@@ -94,17 +94,17 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">Les interfaces sont attribuées à « GeneratedComInterfaceAttribute » doivent être partielles et doivent spécifier un GUID avec « System.Runtime.InteropServices.GuidAttribute ».</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">L’interface « {0} » est attribuée à « GeneratedComInterfaceAttribute » mais « System.Runtime.InteropServices.GuidAttribute » est manquant.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
         <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
-        <target state="new">Invalid 'GeneratedComInterfaceAttribute' usage.</target>
+        <target state="translated">Utilisation de « GeneratedComInterfaceAttribute » non valide.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">

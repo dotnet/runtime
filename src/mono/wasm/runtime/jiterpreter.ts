@@ -3,9 +3,9 @@
 
 import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import {
-    getU16, getU32
+    getU16, getU32_unaligned
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode, OpcodeInfo } from "./mintops";
@@ -15,7 +15,8 @@ import {
     _now, elapsedTimes, shortNameBase,
     counters, getRawCwrap, importDef,
     JiterpreterOptions, getOptions, recordFailure,
-    JiterpMember, getMemberOffset
+    JiterpMember, getMemberOffset,
+    BailoutReasonNames
 } from "./jiterpreter-support";
 import {
     generate_wasm_body
@@ -164,60 +165,6 @@ struct InterpMethod {
        MonoExceptionClause *clauses; // num_clauses
        void **data_items;
 */
-
-export const enum BailoutReason {
-    Unknown,
-    InterpreterTiering,
-    NullCheck,
-    VtableNotInitialized,
-    Branch,
-    BackwardBranch,
-    ConditionalBranch,
-    ConditionalBackwardBranch,
-    ComplexBranch,
-    ArrayLoadFailed,
-    ArrayStoreFailed,
-    StringOperationFailed,
-    DivideByZero,
-    Overflow,
-    Return,
-    Call,
-    Throw,
-    AllocFailed,
-    SpanOperationFailed,
-    CastFailed,
-    SafepointBranchTaken,
-    UnboxFailed,
-    CallDelegate,
-    Debugging
-}
-
-export const BailoutReasonNames = [
-    "Unknown",
-    "InterpreterTiering",
-    "NullCheck",
-    "VtableNotInitialized",
-    "Branch",
-    "BackwardBranch",
-    "ConditionalBranch",
-    "ConditionalBackwardBranch",
-    "ComplexBranch",
-    "ArrayLoadFailed",
-    "ArrayStoreFailed",
-    "StringOperationFailed",
-    "DivideByZero",
-    "Overflow",
-    "Return",
-    "Call",
-    "Throw",
-    "AllocFailed",
-    "SpanOperationFailed",
-    "CastFailed",
-    "SafepointBranchTaken",
-    "UnboxFailed",
-    "CallDelegate",
-    "Debugging"
-];
 
 export let traceBuilder : WasmBuilder;
 export let traceImports : Array<[string, string, Function]> | undefined;
@@ -723,7 +670,7 @@ function generate_wasm (
                 name: traceName,
                 export: true,
                 locals: {
-                    "eip": WasmValtype.i32,
+                    "disp": WasmValtype.i32,
                     "temp_ptr": WasmValtype.i32,
                     "cknull_ptr": WasmValtype.i32,
                     "math_lhs32": WasmValtype.i32,
@@ -743,6 +690,8 @@ function generate_wasm (
                 if (getU16(ip) !== MintOpcode.MINT_TIER_PREPARE_JITERPRETER)
                     throw new Error(`Expected *ip to be MINT_TIER_PREPARE_JITERPRETER but was ${getU16(ip)}`);
 
+                builder.cfg.initialize(startOfBody, backwardBranchTable, !!instrument);
+
                 // TODO: Call generate_wasm_body before generating any of the sections and headers.
                 // This will allow us to do things like dynamically vary the number of locals, in addition
                 //  to using global constants and figuring out how many constant slots we need in advance
@@ -751,7 +700,10 @@ function generate_wasm (
                     frame, traceName, ip, startOfBody, endOfBody,
                     builder, instrumentedTraceId, backwardBranchTable
                 );
+
                 keep = (opcodesProcessed >= mostRecentOptions!.minimumTraceLength);
+
+                return builder.cfg.generate();
             }
         );
 
@@ -769,6 +721,8 @@ function generate_wasm (
 
         compileStarted = _now();
         const buffer = builder.getArrayView();
+        // console.log(`bytes generated: ${buffer.length}`);
+
         if (trace > 0)
             console.log(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
@@ -808,6 +762,8 @@ function generate_wasm (
         //  independently jitting traces will not stomp on each other and all threads
         //  have a globally consistent view of which function pointer maps to each trace.
         rejected = false;
+        mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
+
         const idx =
             trapTraceErrors
                 ? Module.addFunction(
@@ -950,9 +906,9 @@ export function mono_interp_tier_prepare_jiterpreter (
     const methodName = Module.UTF8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
 
-    const imethod = getU32(getMemberOffset(JiterpMember.Imethod) + <any>frame);
-    const backBranchCount = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
-    const pBackBranches = getU32(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
+    const imethod = getU32_unaligned(getMemberOffset(JiterpMember.Imethod) + <any>frame);
+    const backBranchCount = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
+    const pBackBranches = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
     let backwardBranchTable = backBranchCount
         ? new Uint16Array(Module.HEAPU8.buffer, pBackBranches, backBranchCount)
         : null;
@@ -999,7 +955,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
 
     console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
     const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100;
-    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated. ${counters.backBranchesEmitted} back-branches emitted (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%)`);
+    const tracesRejected = cwraps.mono_jiterp_get_rejected_trace_count();
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} cknulls removed. ${counters.backBranchesEmitted} back-branches (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%), ${tracesRejected} traces rejected`);
     if (concise)
         return;
 
