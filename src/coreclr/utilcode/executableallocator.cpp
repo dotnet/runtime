@@ -332,7 +332,7 @@ void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
 #endif // ENABLE_CACHED_MAPPINGS
 }
 
-void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size)
+void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size, CacheableMapping cacheMapping)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -345,7 +345,8 @@ void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size)
 #else
             InterlockedIncrement((LONG*)&pBlock->refCount);
 #endif
-            UpdateCachedMapping(pBlock);
+            if (cacheMapping == AddToCache)
+                UpdateCachedMapping(pBlock);
 
             return (BYTE*)pBlock->baseRW + ((size_t)baseRX - (size_t)pBlock->baseRX);
         }
@@ -375,7 +376,8 @@ bool ExecutableAllocator::AddRWBlock(void* baseRW, void* baseRX, size_t size)
     pBlockRW->refCount = 1;
     m_pFirstBlockRW = pBlockRW;
 
-    UpdateCachedMapping(pBlockRW);
+    if (cacheMapping == AddToCache)
+        UpdateCachedMapping(pBlockRW);
 
     return true;
 }
@@ -799,7 +801,7 @@ void* ExecutableAllocator::ReserveAt(void* baseAddressRX, size_t size)
 // Map an executable memory block as writeable. If there is already a mapping
 // covering the specified block, return that mapping instead of creating a new one.
 // Return starting address of the writeable mapping.
-void* ExecutableAllocator::MapRW(void* pRX, size_t size)
+void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheMapping)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -818,7 +820,7 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size)
     StopWatch sw(&g_mapTimeSum);
 #endif
 
-    void* result = FindRWBlock(pRX, size);
+    void* result = FindRWBlock(pRX, size, cacheMapping);
     if (result != NULL)
     {
         return result;
@@ -848,7 +850,7 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size)
                 g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Failed to create RW mapping for RX memory"));
             }
 
-            AddRWBlock(pRW, (BYTE*)pBlock->baseRX + mapOffset, mapSize);
+            AddRWBlock(pRW, (BYTE*)pBlock->baseRX + mapOffset, mapSize, cacheMapping);
 
             return (void*)((size_t)pRW + (offset - mapOffset));
         }

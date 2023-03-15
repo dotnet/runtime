@@ -123,10 +123,10 @@ class ExecutableAllocator
 
     // Find existing RW block that maps the whole specified range of RX memory.
     // Return NULL if no such block exists.
-    void* FindRWBlock(void* baseRX, size_t size);
+    void* FindRWBlock(void* baseRX, size_t size, CacheableMapping cacheMapping);
 
     // Add RW block to the list of existing RW blocks
-    bool AddRWBlock(void* baseRW, void* baseRX, size_t size);
+    bool AddRWBlock(void* baseRW, void* baseRX, size_t size, CacheableMapping cacheMapping);
 
     // Remove RW block from the list of existing RW blocks and return the base
     // address and size the underlying memory was mapped at.
@@ -177,6 +177,12 @@ class ExecutableAllocator
 #endif
 
 public:
+
+    enum CacheableMapping
+    {
+        AddToCache
+        DoNotAddToCache,
+    }
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     static void LogUsage(const char* source, int line, const char* function);
@@ -234,7 +240,7 @@ public:
     void Release(void* pRX);
 
     // Map the specified block of executable memory as RW
-    void* MapRW(void* pRX, size_t size);
+    void* MapRW(void* pRX, size_t size, CacheableMapping cacheMapping);
 
     // Unmap the RW mapping at the specified address
     void UnmapRW(void* pRW);
@@ -294,14 +300,14 @@ public:
     {
     }
 
-    ExecutableWriterHolder(T* addressRX, size_t size)
+    ExecutableWriterHolder(T* addressRX, size_t size, ExecutableAllocator::CacheableMapping cacheMapping = ExecutableAllocator::AddToCache)
     {
         m_addressRX = addressRX;
 #if defined(HOST_OSX) && defined(HOST_ARM64)
         m_addressRW = addressRX;
         PAL_JitWriteProtect(true);
 #else
-        m_addressRW = (T *)ExecutableAllocator::Instance()->MapRW((void*)addressRX, size);
+        m_addressRW = (T *)ExecutableAllocator::Instance()->MapRW((void*)addressRX, size, cacheMapping);
 #endif
     }
 
