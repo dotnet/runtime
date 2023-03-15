@@ -29,12 +29,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         private const string MacOSAssembly = "osx/MacOSAssembly.dll";
         private const string WindowsAssembly = "win/WindowsAssembly.dll";
 
-        [Theory]
-        [InlineData("win", WindowsAssembly, $"{LinuxAssembly};{MacOSAssembly}")]
-        [InlineData("win10-x64", WindowsAssembly, $"{LinuxAssembly};{MacOSAssembly}")]
-        [InlineData("linux-x64", LinuxAssembly, $"{MacOSAssembly};{WindowsAssembly}")]
-        [InlineData("osx-x64", MacOSAssembly, $"{LinuxAssembly};{WindowsAssembly}")]
-        public void RidSpecificAssembly(string rid, string includedPath, string excludedPath, bool hasRuntimeFallbacks = true)
+        private void RidSpecificAssemblyImpl(string rid, string includedPath, string excludedPath, bool hasRuntimeFallbacks)
         {
             RunTest(
                 p => p
@@ -42,6 +37,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .WithAssemblyGroup("linux", g => g.WithAsset(LinuxAssembly))
                     .WithAssemblyGroup("osx", g => g.WithAsset(MacOSAssembly)),
                 rid, includedPath, excludedPath, null, null, hasRuntimeFallbacks);
+        }
+
+        [Theory]
+        [InlineData("win", WindowsAssembly, $"{LinuxAssembly};{MacOSAssembly}")]
+        [InlineData("win10-x64", WindowsAssembly, $"{LinuxAssembly};{MacOSAssembly}")]
+        [InlineData("linux-x64", LinuxAssembly, $"{MacOSAssembly};{WindowsAssembly}")]
+        [InlineData("osx-x64", MacOSAssembly, $"{LinuxAssembly};{WindowsAssembly}")]
+        public void RidSpecificAssembly(string rid, string includedPath, string excludedPath)
+        {
+            RidSpecificAssemblyImpl(rid, includedPath, excludedPath, hasRuntimeFallbacks: true);
         }
 
         [Theory]
@@ -82,15 +87,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 }
             }
 
-            RidSpecificAssembly(rid, includedPath, excludedPath, hasRuntimeFallbacks);
+            RidSpecificAssemblyImpl(rid, includedPath, excludedPath, hasRuntimeFallbacks);
         }
 
-        [Theory]
-        [InlineData("win", "win", "linux;osx")]
-        [InlineData("win10-x64", "win", "linux;osx")]
-        [InlineData("linux-x64", "linux", "osx;win")]
-        [InlineData("osx-x64", "osx", "linux;win")]
-        public void RidSpecificNativeLibrary(string rid, string includedPath, string excludedPath, bool hasRuntimeFallbacks = true)
+        private void RidSpecificNativeLibraryImpl(string rid, string includedPath, string excludedPath, bool hasRuntimeFallbacks)
         {
             RunTest(
                 p => p
@@ -98,6 +98,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .WithNativeLibraryGroup("linux", g => g.WithAsset("linux/LinuxNativeLibrary.so"))
                     .WithNativeLibraryGroup("osx", g => g.WithAsset("osx/MacOSNativeLibrary.dylib")),
                 rid, null, null, includedPath, excludedPath, hasRuntimeFallbacks);
+        }
+
+        [Theory]
+        [InlineData("win", "win", "linux;osx")]
+        [InlineData("win10-x64", "win", "linux;osx")]
+        [InlineData("linux-x64", "linux", "osx;win")]
+        [InlineData("osx-x64", "osx", "linux;win")]
+        public void RidSpecificNativeLibrary(string rid, string includedPath, string excludedPath)
+        {
+            RidSpecificNativeLibraryImpl(rid, includedPath, excludedPath, hasRuntimeFallbacks: true);
         }
 
         [Theory]
@@ -133,7 +143,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 }
             }
 
-            RidSpecificNativeLibrary(rid, includedPath, excludedPath, hasRuntimeFallbacks);
+            RidSpecificNativeLibraryImpl(rid, includedPath, excludedPath, hasRuntimeFallbacks);
         }
 
         [Theory]
