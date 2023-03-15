@@ -5526,7 +5526,7 @@ mono_profiler_fire_buffered_gc_event_roots (
 			objects++;
 
 			// GCRoots.Values[].AddressID.
-			address_id = (uintptr_t)*objects;
+			address_id = (uintptr_t)*addresses;
 			memcpy (buffer, &address_id, sizeof (address_id));
 			buffer += sizeof (address_id);
 			addresses++;
