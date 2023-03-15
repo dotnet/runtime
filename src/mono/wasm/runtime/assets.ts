@@ -598,7 +598,7 @@ export function mono_wasm_get_loaded_files(): string[] {
 }
 
 export function cleanupAsset(asset: AssetEntryInternal) {
-    // give GC change to collect resources
+    // give GC chance to collect resources
     asset.pendingDownloadInternal = null as any; // GC
     asset.pendingDownload = null as any; // GC
     asset.buffer = null as any; // GC
