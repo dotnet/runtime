@@ -52,7 +52,7 @@
 /* v16/v17 is reserved for a scratch reg */
 #define MONO_ARCH_CALLEE_FREGS 0xfffc00ff
 /* v8..v15 */
-#define MONO_ARCH_CALLEE_SAVED_FREGS 0xff00
+#define MONO_ARCH_CALLEE_SAVED_FREGS (0xff00 & ~(1 << 31))
 
 #define MONO_ARCH_CALLEE_SAVED_XREGS MONO_ARCH_CALLEE_SAVED_FREGS
 
@@ -71,6 +71,8 @@
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
 #define MONO_ARCH_CODE_ALIGNMENT 32
+
+#define NEON_TMP_REG 31
 
 /* callee saved regs + fp + sp */
 #define MONO_ARCH_LMF_REGS ((0x3ff << 19) | (1 << ARMREG_FP) | (1 << ARMREG_SP))
