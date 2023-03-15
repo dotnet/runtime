@@ -2124,7 +2124,7 @@ namespace System.Net.Http
                 {
                     if (e is HttpResponseReadException responseReadEx && responseReadEx.HttpRequestError.HasValue)
                     {
-                        throw new HttpRequestException(responseReadEx.Message, e, responseReadEx.HttpRequestError.Value, HttpVersion.Version20);
+                        throw new HttpRequestException(responseReadEx.Message, e, responseReadEx.HttpRequestError.Value);
                     }
 
                     throw new HttpRequestException(SR.net_http_client_execution_error, e);

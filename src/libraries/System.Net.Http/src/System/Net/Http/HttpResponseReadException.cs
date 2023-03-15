@@ -8,13 +8,11 @@ namespace System.Net.Http
     public class HttpResponseReadException : IOException
     {
         public HttpRequestError? HttpRequestError { get; }
-        public Version? HttpVersion { get; }
 
-        public HttpResponseReadException(HttpRequestError? httpRequestError, string? message, Exception? innerException = null, Version? httpVersion = null)
+        public HttpResponseReadException(HttpRequestError? httpRequestError, string? message, Exception? innerException = null)
             : base(message, innerException)
         {
             HttpRequestError = httpRequestError;
-            HttpVersion = httpVersion;
         }
     }
 }
