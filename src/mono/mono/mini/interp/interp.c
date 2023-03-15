@@ -7929,8 +7929,12 @@ interp_parse_options (const char *options)
 				opt = INTERP_OPT_BBLOCKS;
 			else if (strncmp (arg, "tiering", 7) == 0)
 				opt = INTERP_OPT_TIERING;
-			else if (strncmp (arg, "simd", 7) == 0)
+			else if (strncmp (arg, "simd", 4) == 0)
 				opt = INTERP_OPT_SIMD;
+#if HOST_BROWSER
+			else if (strncmp (arg, "jiterp", 6) == 0)
+				opt = INTERP_OPT_JITERPRETER;
+#endif
 			else if (strncmp (arg, "all", 3) == 0)
 				opt = ~INTERP_OPT_NONE;
 

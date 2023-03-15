@@ -10732,7 +10732,8 @@ retry:
 		interp_optimize_code (td);
 		interp_alloc_offsets (td);
 #if HOST_BROWSER
-		jiterp_insert_entry_points (rtm, td);
+		if (mono_interp_opt & INTERP_OPT_JITERPRETER)
+			jiterp_insert_entry_points (rtm, td);
 #endif
 	}
 
