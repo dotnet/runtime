@@ -275,6 +275,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
                 return true;
+
             Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
             if (!res.IsOk || res.Value?["result"]?["value"]?.Type != JTokenType.Boolean) //if runtime is not ready this may be the response
                 return false;
