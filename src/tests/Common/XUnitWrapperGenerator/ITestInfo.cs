@@ -130,7 +130,7 @@ sealed class ConditionalTest : ITestInfo
         builder.AppendLine($"if ({_condition})");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($"{_innerTest.GenerateTestExecution(testReporterWrapper)}");
+            builder.AppendLine(_innerTest.GenerateTestExecution(testReporterWrapper));
         }
         builder.AppendLine($"else");
         using (builder.NewBracesScope())
@@ -284,8 +284,7 @@ sealed class OutOfProcessTest : ITestInfo
 
     private CodeBuilder ExecutionStatement { get; }
 
-    public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
-        => testReporterWrapper.WrapTestExecutionWithReporting(ExecutionStatement, this);
+    public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper) => testReporterWrapper.WrapTestExecutionWithReporting(ExecutionStatement, this);
 
     public override bool Equals(object obj)
     {
