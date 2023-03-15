@@ -324,6 +324,7 @@ mono_marshal_init (void)
 		register_icall (monoeg_g_free, mono_icall_sig_void_ptr, FALSE);
 		register_icall (mono_object_isinst_icall, mono_icall_sig_object_object_ptr, TRUE);
 		register_icall (mono_struct_delete_old, mono_icall_sig_void_ptr_ptr, FALSE);
+		register_icall (mono_get_addr_compiled_method, mono_icall_sig_ptr_object_ptr, FALSE);
 		register_icall (mono_delegate_begin_invoke, mono_icall_sig_object_object_ptr, FALSE);
 		register_icall (mono_delegate_end_invoke, mono_icall_sig_object_object_ptr, FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore_internal, mono_icall_sig_void_ptr, TRUE);
@@ -2085,7 +2086,7 @@ free_signature_pointer_pair (SignaturePointerPair *pair)
 MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method)
 {
-	MonoMethodSignature *sig, *invoke_sig;
+	MonoMethodSignature *sig, *invoke_sig, *target_method_sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
@@ -2129,6 +2130,11 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		}
 
 		closed_over_null = sig->param_count == mono_method_signature_internal (target_method)->param_count;
+
+		/*
+		 * We don't want to use target_method's signature because it can be freed early
+		 */
+		target_method_sig = mono_method_signature_internal (target_method);
 	}
 
 	if (static_method_with_first_arg_bound) {
@@ -2239,7 +2245,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		/* FIXME: Other subtypes */
 		mb->mem_manager = m_method_get_mem_manager (method);
 
-	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, target_class, ctx, container);
+	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, target_method_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, target_class, ctx, container);
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
@@ -5459,6 +5465,31 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 			continue;
 		}
 	}
+}
+
+void*
+mono_get_addr_compiled_method (MonoObject *object, MonoMethod *method)
+{
+	ERROR_DECL (error);
+	MonoMethod *res;
+	gpointer addr;
+
+	if (object == NULL) {
+		mono_error_set_null_reference (error);
+		mono_error_set_pending_exception (error);
+		return NULL;
+	}
+
+	res = mono_object_get_virtual_method_internal (object, method);
+
+	addr = mono_compile_method_checked (res, error);
+
+	if (!is_ok (error)) {
+		mono_error_set_pending_exception (error);
+		return NULL;
+	}
+
+	return addr;
 }
 
 void

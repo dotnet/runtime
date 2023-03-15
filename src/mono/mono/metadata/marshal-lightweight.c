@@ -1909,7 +1909,7 @@ emit_delegate_end_invoke_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 }
 
 static void
-emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class, MonoGenericContext *ctx, MonoGenericContainer *container)
+emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, MonoMethodSignature *target_method_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class, MonoGenericContext *ctx, MonoGenericContainer *container)
 {
 	int local_i, local_len, local_delegates, local_d, local_target, local_res = 0;
 	int pos0, pos1, pos2;
@@ -2015,10 +2015,13 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 				mono_mb_emit_op (mb, CEE_CALL, target_method);
 			} else {
 				mono_mb_emit_ldarg (mb, 1);
-				mono_mb_emit_op (mb, CEE_CASTCLASS, target_class);
-				for (i = 1; i < sig->param_count; ++i)
-					mono_mb_emit_ldarg (mb, i + 1);
-				mono_mb_emit_op (mb, CEE_CALLVIRT, target_method);
+				for (i = 1; i <= sig->param_count; ++i)
+					mono_mb_emit_ldarg (mb, i);
+				mono_mb_emit_ldarg (mb, 0);
+				mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, method));
+				mono_mb_emit_byte (mb, CEE_LDIND_I);
+				mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
+				mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
 			}
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDNULL);

@@ -203,6 +203,7 @@ MONO_JIT_ICALL (mono_gc_wbarrier_generic_nostore_internal) \
 MONO_JIT_ICALL (mono_gc_wbarrier_range_copy) \
 MONO_JIT_ICALL (mono_gchandle_get_target_internal) \
 MONO_JIT_ICALL (mono_generic_class_init) \
+MONO_JIT_ICALL (mono_get_addr_compiled_method) \
 MONO_JIT_ICALL (mono_get_assembly_object) \
 MONO_JIT_ICALL (mono_get_method_object) \
 MONO_JIT_ICALL (mono_get_native_calli_wrapper) \
