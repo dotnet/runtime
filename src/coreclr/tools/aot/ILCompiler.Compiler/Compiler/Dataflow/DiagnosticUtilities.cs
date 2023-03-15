@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using Internal.TypeSystem;
@@ -37,7 +36,7 @@ namespace ILCompiler.Dataflow
         internal static bool TryGetRequiresAttribute(TypeSystemEntity member, string requiresAttributeName, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             attribute = default;
-            CustomAttributeValue<TypeDesc>? decoded = default;
+            CustomAttributeValue<TypeDesc>? decoded;
             switch (member)
             {
                 case MethodDesc method:
@@ -59,8 +58,9 @@ namespace ILCompiler.Dataflow
                     decoded = @event.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
                 default:
-                    Debug.Fail("Trying to operate with unsupported TypeSystemEntity " + member.GetType().ToString());
-                    break;
+                    // This can happen for a compiler generated method, for example if mark methods on array for reflection (through DAM)
+                    // There are several different types which can occur here, but none should ever have any of Requires* attributes.
+                    return false;
             }
             if (!decoded.HasValue)
                 return false;
