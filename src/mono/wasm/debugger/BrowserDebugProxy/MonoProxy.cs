@@ -273,21 +273,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         protected async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
         {
-            logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready");
             if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
-            {
-                logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready - 0 - TRUE");
                 return true;
-            }
-            logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready - 1");
             Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
-            logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready - 2");
             if (!res.IsOk || res.Value?["result"]?["value"]?.Type != JTokenType.Boolean) //if runtime is not ready this may be the response
-            {
-                logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready - 3 - FALSE");
                 return false;
-            }
-            logger.LogDebug($"OLHA THAYS - IsRuntimeAlreadyReadyAlready - 4 - {res.Value?["result"]?["value"]?.Value<bool>() ?? false}");
             return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
         }
         private static PauseOnExceptionsKind GetPauseOnExceptionsStatusFromString(string state)
@@ -304,7 +294,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var args = parms["params"] as JObject;
             // Inspector doesn't use the Target domain or sessions
             // so we try to init immediately
-            if (id == SessionId.Null && method != "Profiler.enable" && method != "Runtime.enable" && method != "Debugger.enable" && method != "Runtime.runIfWaitingForDebugger" && method != "Debugger.setAsyncCallStackDepth" && method != "Target.setAutoAttach")
+            if (id == SessionId.Null/* && method != "Profiler.enable" && method != "Runtime.enable" && method != "Debugger.enable" && method != "Runtime.runIfWaitingForDebugger" && method != "Debugger.setAsyncCallStackDepth" && method != "Target.setAutoAttach"*/)
                 await AttachToTarget(id, token);
 
             if (!contexts.TryGetValue(id, out ExecutionContext context) && !s_executionContextIndependentCDPCommandNames.Contains(method))
@@ -648,12 +638,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "DotnetDebugger.runTests":
                     {
                         SendResponse(id, Result.OkFromObject(new { }), token);
-                        while (!await IsRuntimeAlreadyReadyAlready(id, token))
-                        {
-                            logger.LogDebug("OLHA THAYS - tentei uma vez vou tentar de novo");
+                        while (!await IsRuntimeAlreadyReadyAlready(id, token)) //retry on debugger-tests until the runtime is ready
                             await Task.Delay(1000, token);
-                        }
-                        logger.LogDebug("OLHA THAYS - agora recebi uma boa resposta");
                         await RuntimeReady(id, token);
                         return true;
                     }

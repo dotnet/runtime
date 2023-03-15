@@ -70,9 +70,9 @@ namespace DebuggerTests
             _logger = s_loggerFactory.Value
                             .CreateLogger($"{nameof(Inspector)}-{Id}");
             if (DebuggerTestBase.RunningOnChrome)
-                Client = new InspectorClient(_logger, Id);
+                Client = new InspectorClient(_logger);
             else
-                Client = new FirefoxInspectorClient(_logger, Id);
+                Client = new FirefoxInspectorClient(_logger);
         }
 
         public Task<JObject> WaitFor(string what)
@@ -298,7 +298,6 @@ namespace DebuggerTests
             }
             else if (fail)
             {
-                _logger.LogDebug($"HEY THAYS - {method} - {args.ToString()}");
                 args["__forMethod"] = method;
                 FailAllWaiters(new ArgumentException(args.ToString()));
             }
@@ -327,22 +326,17 @@ namespace DebuggerTests
                         {
                             Console.WriteLine ($"client exiting with exception, and proxy has: {state}");
                         }
-                        _logger.LogDebug($"HEY THAYS 2 - {args.reason}");
                         FailAllWaiters(args.exception);
                         break;
 
                     case RunLoopStopReason.Cancelled when Token.IsCancellationRequested:
-                        if (_isFailingWithException is null) {
-                            _logger.LogDebug($"HEY THAYS 3 - Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})");
-                            FailAllWaiters(new TaskCanceledException($"HEY THAYS 3 - Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})"));
-                        }
+                        if (_isFailingWithException is null)
+                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})"));
                         break;
 
                     default:
-                        if (_isFailingWithException is null) {
-                            _logger.LogDebug($"HEY THAYS 4");
+                        if (_isFailingWithException is null)
                             FailAllWaiters();
-                        }
                         break;
                 };
             };
@@ -352,7 +346,6 @@ namespace DebuggerTests
                 if (_isFailingWithException is null && state.reason == RunLoopStopReason.Exception)
                 {
                     Client.Fail(state.exception);
-                    _logger.LogDebug($"HEY THAYS 5 - {state.exception}");
                     FailAllWaiters(state.exception);
                 }
             });
@@ -380,11 +373,7 @@ namespace DebuggerTests
                     string cmd_name = init_cmds[cmdIdx].Item1;
 
                     if (_isFailingWithException is not null)
-                    {
-                        _logger.LogDebug($"HEY THAYS 5 - {cmd_name}");
-                        _logger.LogDebug($"HEY THAYS 6 - {_isFailingWithException.ToString()}");
                         throw _isFailingWithException;
-                    }
 
                     if (completedTask.IsCanceled)
                     {

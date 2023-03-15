@@ -20,12 +20,10 @@ namespace DebuggerTests
         protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
         protected Func<string, string, JObject, CancellationToken, Task> onEvent;
         protected int next_cmd_id;
-        protected int testId;
         public SessionId CurrentSessionId { get; set; } = SessionId.Null;
 
-        public InspectorClient(ILogger logger, int id) : base(logger)
+        public InspectorClient(ILogger logger) : base(logger)
         {
-            testId = id;
         }
 
         protected override async Task<WasmDebuggerConnection> SetupConnection(Uri webserverUri, CancellationToken token)
@@ -39,12 +37,7 @@ namespace DebuggerTests
             var res = JObject.Parse(msg);
 
             if (res["id"] == null)
-            {
-                logger.LogInformation($"HEY THAYS HANDLEMESSAGE - NULL - {msg}");
                 return onEvent(res["sessionId"]?.Value<string>(), res["method"].Value<string>(), res["params"] as JObject, token);
-            }
-            if (res["method"]?.Value<string>() != "Debugger.scriptParsed")
-                logger.LogInformation($"HEY THAYS HANDLEMESSAGE - {res["id"]} - {msg}");
 
             var id = res.ToObject<MessageId>();
             if (!pending_cmds.Remove(id, out var item))
@@ -108,7 +101,6 @@ namespace DebuggerTests
             var str = o.ToString();
 
             var bytes = Encoding.UTF8.GetBytes(str);
-            logger.LogInformation($"HEY THAYS SENDCOMMAND - {id} - {str}");
             Send(bytes, token);
             return tcs.Task;
         }
