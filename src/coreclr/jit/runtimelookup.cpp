@@ -256,7 +256,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 // Save dictionary slot to a local (to be used by fast path)
                 GenTree* fastPathValueClone =
                     opts.OptimizationEnabled() ? fgMakeMultiUse(&fastPathValue) : gtCloneExpr(fastPathValue);
-                GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
+                GenTree* nullcheckOp = gtNewOperNode(GT_NE, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* nullcheckBb =
                     CreateBlockFromTree(this, prevBb, BBJ_COND, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
