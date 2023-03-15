@@ -228,7 +228,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             protected void UseFallbacksFromBuiltDotNet(NetCoreAppBuilder builder)
             {
                 IReadOnlyList<RuntimeFallbacks> fallbacks;
-                string depsJson = Path.Combine(new DotNetCli(BuiltDotnetPath).GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
+                string depsJson = Path.Combine(new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet).GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
                 using (FileStream fileStream = File.Open(depsJson, FileMode.Open))
                 using (DependencyContextJsonReader reader = new DependencyContextJsonReader())
                 {

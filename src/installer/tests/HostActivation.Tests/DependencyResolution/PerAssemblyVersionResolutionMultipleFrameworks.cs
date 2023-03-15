@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -104,7 +104,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     HighWare,
                     "1.1.1",
                     runtimeConfig => runtimeConfig.WithFramework(MicrosoftNETCoreApp, "4.0.0"),
-                    path => NetCoreAppBuilder.ForNETCoreApp(HighWare, RepoDirectories.TargetRID)
+                    path => NetCoreAppBuilder.ForNETCoreApp(HighWare, RepoDirectoriesProvider.Default.TargetRID)
                         .WithProject(HighWare, "1.1.1", p => p
                             .WithAssemblyGroup(null, g => g
                             .WithAsset(TestAssemblyWithNoVersions + ".dll")
