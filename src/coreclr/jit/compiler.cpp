@@ -4828,14 +4828,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // However, ref counts are not kept incrementally up to date.
     assert(lvaLocalVarRefCounted());
 
-    if (opts.OptimizationEnabled())
-    {
-        // Introduce copies for some single-def locals to make them more
-        // amenable to optimization
-        //
-        DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
-    }
-
     // Figure out the order in which operators are to be evaluated
     //
     DoPhase(this, PHASE_FIND_OPER_ORDER, &Compiler::fgFindOperOrder);
