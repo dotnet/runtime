@@ -291,22 +291,39 @@ namespace System.Management
         {
             RegistryKey netFrameworkSubKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\");
             string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue("InstallRoot");
+            string netFrameworkInstallRootArm64 = (string)netFrameworkSubKey?.GetValue("InstallRootArm64");
+            string wminet_utilsPath = string.Empty;
 
-            if (netFrameworkInstallRoot == null)
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 &&
+                netFrameworkInstallRootArm64 != null)
             {
-                // In some Windows versions, like Nano Server, the .NET Framework is not installed by default.
-                // It is possible that general failure to access the registry get to this code branch but it is
-                // very unlikely.
-                // Load PNSE delegates. This way it will throw PNSE when methods are used not when type is loaded.
-                LoadPlatformNotSupportedDelegates(SR.PlatformNotSupported_FullFrameworkRequired);
-                return;
+                // This piece is isolated to if it is ARM64
+                string[] dirs = Directory.GetDirectories(netFrameworkInstallRootArm64, "v*", SearchOption.TopDirectoryOnly);
+                if (dirs.Length > 0 && dirs[0] != null)
+                {
+                    wminet_utilsPath = Path.Combine(
+                        netFrameworkInstallRootArm64,
+                        dirs[0], // Pick any ARM64 framework
+                        "wminet_utils.dll");
+                }
             }
+            else
+            {
+                if (netFrameworkInstallRoot == null)
+                {
+                    // In some Windows versions, like Nano Server, the .NET Framework is not installed by default.
+                    // It is possible that general failure to access the registry get to this code branch but it is
+                    // very unlikely.
+                    // Load PNSE delegates. This way it will throw PNSE when methods are used not when type is loaded.
+                    LoadPlatformNotSupportedDelegates(SR.PlatformNotSupported_FullFrameworkRequired);
+                    return;
+                }
 
-            string wminet_utilsPath = Path.Combine(
-                netFrameworkInstallRoot,
-                CompatSwitches.DotNetVersion, // The same value is hard coded on Environment.Version and quirks for WMI
-                "wminet_utils.dll");
-
+                wminet_utilsPath = Path.Combine(
+                    netFrameworkInstallRoot,
+                    CompatSwitches.DotNetVersion, // The same value is hard coded on Environment.Version and quirks for WMI
+                    "wminet_utils.dll");
+            }
             IntPtr hModule = Interop.Kernel32.LoadLibrary(wminet_utilsPath);
             if (hModule == IntPtr.Zero)
             {

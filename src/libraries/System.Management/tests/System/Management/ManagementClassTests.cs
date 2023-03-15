@@ -25,6 +25,23 @@ namespace System.Management.Tests
             }
         }
 
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/81400", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Any)]
+        public void Get_Scope()
+        {
+            bool passed = false;
+            try
+            {
+                var scope = new System.Management.ManagementScope(@"root\cimv2");
+                scope.Connect();
+                passed = true;
+            }
+            finally
+            {
+                Assert.True(passed);
+            }
+        }
+
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(CodeLanguage.CSharp)]
