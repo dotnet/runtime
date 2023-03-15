@@ -173,9 +173,8 @@ namespace System.IO.Hashing
         private static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
 #if NET7_0_OR_GREATER
-            if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated
-                && System.Runtime.Intrinsics.X86.Sse2.IsSupported
-                && System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported
+            // The presence of Pclmulqdq support implies support for SSE2 and Vector128 hardware acceleration
+            if (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported
                 && source.Length >= X86MinimumLength)
             {
                 return UpdateX86(crc, source);
