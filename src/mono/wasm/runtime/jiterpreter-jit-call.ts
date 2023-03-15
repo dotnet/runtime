@@ -156,6 +156,9 @@ class TrampolineInfo {
     }
 }
 
+// this is cached replacements for Module.getWasmTableEntry();
+// we could add <EmccExportedLibraryFunction Include="$getWasmTableEntry" /> and <EmccExportedRuntimeMethod Include="getWasmTableEntry" /> 
+// if we need to export the original
 function getWasmTableEntry (index: number) {
     let result = fnCache[index];
     if (!result) {
@@ -172,8 +175,6 @@ function getWasmTableEntry (index: number) {
 export function mono_interp_invoke_wasm_jit_call_trampoline (
     thunkIndex: number, ret_sp: number, sp: number, ftndesc: number, thrown: NativePointer
 ) {
-    // FIXME: It's impossible to get emscripten to export this for some reason
-    // const thunk = <Function>Module.getWasmTableEntry(thunkIndex);
     const thunk = <Function>getWasmTableEntry(thunkIndex);
     try {
         thunk(ret_sp, sp, ftndesc, thrown);
