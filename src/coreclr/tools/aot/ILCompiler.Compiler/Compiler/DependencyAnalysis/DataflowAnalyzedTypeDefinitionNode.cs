@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (type.BaseType.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) &&
                         !type.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
-                        needsDataflowAnalysis |= true;
+                        needsDataflowAnalysis = true;
 
                     needsDataflowAnalysis |= GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, type.BaseType);
                 }
@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
             if (needsDataflowAnalysis)
             {
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.DataflowAnalyzedTypeDefinition(type), "Generic parameter dataflow");
+                dependencies.Add(factory.DataflowAnalyzedTypeDefinition(type), "Dataflow for type definition");
             }
         }
 
