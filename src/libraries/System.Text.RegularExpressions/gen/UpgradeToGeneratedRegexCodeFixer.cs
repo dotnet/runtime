@@ -292,14 +292,9 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     return generator.Argument(fieldReferenceOperation.Syntax);
                 }
-                else if (argument.Value.ConstantValue.HasValue && argument.Value.ConstantValue.Value!.ToString()!.Contains('\\'))
+                else if (argument.Value.ConstantValue.Value is string str && str.Contains('\\'))
                 {
-                    StringBuilder sb = new StringBuilder();
-                    sb.Append('@');
-                    sb.Append(DoubleQuote);
-                    sb.Append(argument.Value.ConstantValue.Value);
-                    sb.Append(DoubleQuote);
-                    return SyntaxFactory.ParseExpression(sb.ToString());
+                    return SyntaxFactory.ParseExpression($"@\"{str}\"");
                 }
                 else
                 {
