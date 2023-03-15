@@ -175,17 +175,17 @@ namespace System.IO.Hashing
 #if NET7_0_OR_GREATER
             if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated
                 && System.Runtime.Intrinsics.X86.Sse2.IsSupported
-                && System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported)
+                && System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported
+                && source.Length >= X86MinimumLength)
             {
                 return UpdateX86(crc, source);
             }
 #endif
 
-            return UpdateSlowPath(crc, source);
+            return UpdateScalar(crc, source);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint UpdateSlowPath(uint crc, ReadOnlySpan<byte> source)
+        private static uint UpdateScalar(uint crc, ReadOnlySpan<byte> source)
         {
             ReadOnlySpan<uint> crcLookup = CrcLookup;
             for (int i = 0; i < source.Length; i++)

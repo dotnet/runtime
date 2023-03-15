@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
@@ -11,7 +11,8 @@ namespace System.IO.Hashing
 {
     public partial class Crc32
     {
-        private const int X86BlockSize = 64;
+        // Minimum length to use UpdateX86
+        private const int X86MinimumLength = 64;
 
         private const byte CarrylessMultiplyLower = 0x00;
         private const byte CarrylessMultiplyUpper = 0x11;
@@ -19,13 +20,11 @@ namespace System.IO.Hashing
 
         // Processes the bytes in source in X86BlockSize chunks using x86 intrinsics, followed by processing 16
         // byte chunks, and then processing remaining bytes individually. Requires support for Sse2 and Pclmulqdq intrinsics.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        // Based on the algorithm put forth in the Intel paper "Fast CRC Computation for Generic Polynomials Using
+        // PCLMULQDQ Instruction" in December, 2009.
         private static uint UpdateX86(uint crc, ReadOnlySpan<byte> source)
         {
-            if (source.Length < X86BlockSize)
-            {
-                return UpdateSlowPath(crc, source);
-            }
+            Debug.Assert(source.Length >= X86MinimumLength);
 
             // Work with a reference to where we're at in the ReadOnlySpan and a local length
             // to avoid extraneous range checks.
@@ -41,11 +40,11 @@ namespace System.IO.Hashing
             x1 ^= Vector128.CreateScalar((ulong)crc);
             Vector128<ulong> x0 = Vector128.Create(0x0154442bd4, 0x01c6e41596).AsUInt64(); // k1, k2
 
-            srcRef = ref Unsafe.Add(ref srcRef, X86BlockSize);
-            length -= X86BlockSize;
+            srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
+            length -= Vector128<byte>.Count * 4;
 
             // Parallel fold blocks of 64, if any.
-            while (length >= X86BlockSize)
+            while (length >= Vector128<byte>.Count * 4)
             {
                 x5 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyLower);
                 Vector128<ulong> x6 = Pclmulqdq.CarrylessMultiply(x2, x0, CarrylessMultiplyLower);
@@ -72,8 +71,8 @@ namespace System.IO.Hashing
                 x3 ^= y7;
                 x4 ^= y8;
 
-                srcRef = ref Unsafe.Add(ref srcRef, X86BlockSize);
-                length -= X86BlockSize;
+                srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
+                length -= Vector128<byte>.Count * 4;
             }
 
             // Fold into 128-bits.
@@ -95,7 +94,7 @@ namespace System.IO.Hashing
             x1 ^= x5;
 
             // Single fold blocks of 16, if any.
-            while (length >= 16)
+            while (length >= Vector128<byte>.Count)
             {
                 x2 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
 
@@ -104,8 +103,8 @@ namespace System.IO.Hashing
                 x1 ^= x2;
                 x1 ^= x5;
 
-                srcRef = ref Unsafe.Add(ref srcRef, 16);
-                length -= 16;
+                srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count);
+                length -= Vector128<byte>.Count;
             }
 
             // Fold 128 bits to 64 bits.
@@ -131,9 +130,10 @@ namespace System.IO.Hashing
             x1 ^= x2;
 
             // Process the remaining bytes, if any
+            uint result = x1.AsUInt32().GetElement(1);
             return length > 0
-                ? UpdateSlowPath(x1.AsUInt32().GetElement(1), MemoryMarshal.CreateReadOnlySpan(ref srcRef, length))
-                : x1.AsUInt32().GetElement(1);
+                ? UpdateScalar(result, MemoryMarshal.CreateReadOnlySpan(ref srcRef, length))
+                : result;
         }
     }
 }
