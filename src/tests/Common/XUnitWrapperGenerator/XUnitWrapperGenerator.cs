@@ -234,6 +234,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
                     testExecutorBuilder.Append(test.GenerateTestExecution(reporter));
                     totalTestsEmitted++;
+                    testsLeftInCurrentTestExecutor--;
                 }
 
                 testExecutorBuilder.PopIndent();
