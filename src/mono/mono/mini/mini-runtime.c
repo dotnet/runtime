@@ -118,7 +118,7 @@ const char *mono_build_date;
 gboolean mono_do_signal_chaining;
 gboolean mono_do_crash_chaining;
 int mini_verbose = 0;
-gboolean term_signaled = FALSE;
+gboolean mono_term_signaled = FALSE;
 
 /*
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
@@ -3633,7 +3633,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
 {
 	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
 
-	term_signaled = TRUE;
+	mono_term_signaled = TRUE;
 
 	mono_gc_finalize_notify ();			
 

@@ -64,7 +64,7 @@ static gboolean gc_disabled;
 
 static gboolean finalizing_root_domain;
 
-extern volatile gboolean term_signaled;
+extern gboolean mono_term_signaled;
 
 gboolean mono_log_finalizers;
 gboolean mono_do_not_finalize;
@@ -883,12 +883,6 @@ finalizer_thread (gpointer unused)
 
 	while (!finished) {
 
-		/* Just in case we've received a SIGTERM */
-		if (term_signaled) {
-			mono_runtime_try_shutdown();
-			exit(mono_environment_exitcode_get());
-		}
-
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
@@ -901,6 +895,12 @@ finalizer_thread (gpointer unused)
 			mono_coop_sem_wait (&finalizer_sem, MONO_SEM_FLAGS_ALERTABLE);
 		}
 		wait = TRUE;
+
+		/* Just in case we've received a SIGTERM */
+		if (mono_term_signaled) {
+			mono_runtime_try_shutdown();
+			exit(mono_environment_exitcode_get());
+		}
 
 		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
 
