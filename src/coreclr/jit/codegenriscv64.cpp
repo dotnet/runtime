@@ -1026,7 +1026,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     regMaskTP regMask;
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
-    // see: src/jit/registerloongarch64.h
+    // see: src/jit/registerriscv64.h
     availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
                                                         // currently live
     availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for
@@ -1686,7 +1686,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     regNumber            pspSymReg                = REG_NA;
     var_types            type                     = genActualType(size->gtType);
     emitAttr             easz                     = emitTypeSize(type);
-    BasicBlock*          endLabel                 = nullptr; // can optimize for loongarch.
+    BasicBlock*          endLabel                 = nullptr; // can optimize for riscv64.
     unsigned             stackAdjustment          = 0;
     const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = (target_ssize_t)-1;
     target_ssize_t       lastTouchDelta =
@@ -6531,7 +6531,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     // TODO-RISCV64-CQ: The purpose of the GT_LEA node is to directly reflect a single target architecture
     //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
     //             instructions to generate the addressing mode so we need to modify lowering to
-    //             produce LEAs that are a 1:1 relationship to the LOONGARCH64 architecture.
+    //             produce LEAs that are a 1:1 relationship to the RISCV64 architecture.
     if (lea->Base() && lea->Index())
     {
         GenTree* memBase = lea->Base();
@@ -6612,8 +6612,8 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     {
         // If we encounter a GT_LEA node without a base it means it came out
         // when attempting to optimize an arbitrary arithmetic expression during lower.
-        // This is currently disabled in LOONGARCH64 since we need to adjust lower to account
-        // for the simpler instructions LOONGARCH64 supports.
+        // This is currently disabled in RISCV64 since we need to adjust lower to account
+        // for the simpler instructions RISCV64 supports.
         // TODO-RISCV64-CQ:  Fix this and let LEA optimize arithmetic trees too.
         assert(!"We shouldn't see a baseless address computation during CodeGen for RISCV64");
     }
@@ -6643,17 +6643,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 
 //------------------------------------------------------------------------
 // genAllocLclFrame: Probe the stack and allocate the local stack frame: subtract from SP.
-//
-// Notes:
-//      On LOONGARCH64, this only does the probing; allocating the frame is done when callee-saved registers are saved.
-//      This is done before anything has been pushed. The previous frame might have a large outgoing argument
-//      space that has been allocated, but the lowest addresses have not been touched. Our frame setup might
-//      not touch up to the first 504 bytes. This means we could miss a guard page. On Windows, however,
-//      there are always three guard pages, so we will not miss them all. On Linux, there is only one guard
-//      page by default, so we need to be more careful. We do an extra probe if we might not have probed
-//      recently enough. That is, if a call and prolog establishment might lead to missing a page. We do this
-//      on Windows as well just to be consistent, even though it should not be necessary.
-//
+
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
     NYI_RISCV64("genAllocLclFrame-----unimplemented/unused on RISCV64 yet----");

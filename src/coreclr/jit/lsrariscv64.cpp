@@ -431,7 +431,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
 
-            // Need a variable number of temp regs (see genLclHeap() in codegenloongarch64.cpp):
+            // Need a variable number of temp regs (see genLclHeap() in codegenrisv64.cpp):
             // Here '-' means don't care.
             //
             //  Size?                   Init Memory?    # temp regs
@@ -705,11 +705,11 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
             index                = lea->Index();
             cns                  = lea->Offset();
 
-            // On LOONGARCH we may need a single internal register
+            // On RISCV64 we may need a single internal register
             // (when both conditions are true then we still only need a single internal register)
             if ((index != nullptr) && (cns != 0))
             {
-                // LOONGARCH does not support both Index and offset so we need an internal register
+                // RISCV64 does not support both Index and offset so we need an internal register
                 buildInternalIntRegisterDefForNode(indirTree);
             }
             else if (!emitter::isValidSimm12(cns))
@@ -937,7 +937,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         // Don't assign the call target to any of the argument registers because
         // we will use them to also pass floating point arguments as required
-        // by LOONGARCH64 ABI.
+        // by RISCV64 ABI.
         ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS);
     }
 
@@ -996,7 +996,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
         }
         else
         {
-            // We can use a ld/st sequence so we need two internal registers for LOONGARCH64.
+            // We can use a ld/st sequence so we need two internal registers for RISCV64.
             buildInternalIntRegisterDefForNode(argNode);
             buildInternalIntRegisterDefForNode(argNode);
 
@@ -1099,7 +1099,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
                 if (isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES))
                 {
-                    // TODO-LoongArch64: For larger block sizes CodeGen can choose to use 16-byte SIMD instructions.
+                    // TODO-RISCV64: For larger block sizes CodeGen can choose to use 16-byte SIMD instructions.
                     // here just used a temp register.
                     buildInternalIntRegisterDefForNode(blkNode);
                 }

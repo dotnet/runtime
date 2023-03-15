@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*****************************************************************************
- *  LoongArch64 instructions for JIT compiler
+ *  RISCV64 instructions for JIT compiler
  *
  *          id          -- the enum name for the instruction
  *          nm          -- textual name (for assembly dipslay)
@@ -26,7 +26,7 @@
 // If you're adding a new instruction:
 // You need not only to fill in one of these macros describing the instruction, but also:
 //   * If the instruction writes to more than one destination register, update the function
-//     emitInsMayWriteMultipleRegs in emitLoongarch64.cpp.
+//     emitInsMayWriteMultipleRegs in emitriscv64.cpp.
 
 // clang-format off
 

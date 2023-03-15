@@ -417,7 +417,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
         // Codegen supports containment of local addresses under OBJs.
         if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_VAR_ADDR))
         {
-            // TODO-LOONGARCH64-CQ: support containment of LCL_FLD_ADDR too.
+            // TODO-RISCV64-CQ: support containment of LCL_FLD_ADDR too.
             MakeSrcContained(src, src->AsObj()->Addr());
         }
     }

@@ -3,7 +3,7 @@
 
 #if defined(TARGET_RISCV64)
 
-// The LOONGARCH64 instructions are all 32 bits in size.
+// The RISCV64 instructions are all 32 bits in size.
 // we use an unsigned int to hold the encoded instructions.
 // This typedef defines the type that we use to hold encoded instructions.
 //
@@ -66,7 +66,7 @@ emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + offset]
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
-//  Emit the 32-bit LOONGARCH64 instruction 'code' into the 'dst'  buffer
+//  Emit the 32-bit RISCV64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code);
 
 // Method to do check if mov is redundant with respect to the last instruction.
@@ -203,10 +203,10 @@ enum EmitCallType
 {
 
     // I have included here, but commented out, all the values used by the x86 emitter.
-    // However, LOONGARCH has a much reduced instruction set, and so the LOONGARCH emitter only
+    // However, RISCV64 has a much reduced instruction set, and so the RISCV64 emitter only
     // supports a subset of the x86 variants.  By leaving them commented out, it becomes
     // a compile time error if code tries to use them (and hopefully see this comment
-    // and know why they are unavailable on LOONGARCH), while making it easier to stay
+    // and know why they are unavailable on RISCV64), while making it easier to stay
     // in-sync with x86 and possibly add them back in if needed.
 
     EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method
@@ -242,4 +242,4 @@ unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
 
 unsigned get_curTotalCodeSize(); // bytes of code
 
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_RISCV64

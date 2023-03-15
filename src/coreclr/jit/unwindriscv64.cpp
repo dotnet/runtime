@@ -788,7 +788,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
     // First we need to split the function or funclet into fragments that are no larger
     // than 512K, so the fragment size will fit in the unwind data "Function Length" field.
-    // The LOONGARCH Exception Data specification "Function Fragments" section describes this.
+    // The RISCV64 Exception Data specification "Function Fragments" section describes this.
     func->uwi.Split();
 
     func->uwi.Reserve(isFunclet, true);

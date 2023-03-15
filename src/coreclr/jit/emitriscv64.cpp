@@ -847,7 +847,7 @@ void emitter::emitIns_R_C(
     id->idSetIsBound(); // We won't patch address since we will know the exact distance
                         // once JIT code and data are allocated together.
 
-    assert(addrReg == REG_NA); // NOTE: for LOONGARCH64, not support addrReg != REG_NA.
+    assert(addrReg == REG_NA); // NOTE: for RISV64, not support addrReg != REG_NA.
 
     id->idAddr()->iiaFieldHnd = fldHnd;
 
