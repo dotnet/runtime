@@ -20,11 +20,10 @@ namespace DebuggerTests
         protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
         protected Func<string, string, JObject, CancellationToken, Task> onEvent;
         protected int next_cmd_id;
+
         public SessionId CurrentSessionId { get; set; } = SessionId.Null;
 
-        public InspectorClient(ILogger logger) : base(logger)
-        {
-        }
+        public InspectorClient(ILogger logger) : base(logger) { }
 
         protected override async Task<WasmDebuggerConnection> SetupConnection(Uri webserverUri, CancellationToken token)
             => new DevToolsDebuggerConnection(
