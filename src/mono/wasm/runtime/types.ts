@@ -386,7 +386,7 @@ export interface ExitStatusError {
     new(status: number): any;
 }
 export type PThreadReplacements = {
-    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void,
+    loadWasmModuleToWorker(worker: Worker): Promise<Worker>,
     threadInitTLS: () => void,
     allocateUnusedWorker: () => void,
 }
