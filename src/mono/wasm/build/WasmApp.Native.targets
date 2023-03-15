@@ -170,7 +170,6 @@
 
       <_WasmDevel Condition="'$(_WasmDevel)' == '' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">true</_WasmDevel>
 
-      <_EmccAssertionLevelDefault Condition="'$(_EmccAssertionLevelDefault)' == ''">0</_EmccAssertionLevelDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">-O1</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Oz</_EmccOptimizationFlagDefault>
@@ -187,6 +186,7 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
+      <EmccStackSize Condition="'$(EmccStackSize)' == ''">5MB</EmccStackSize>
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
     </PropertyGroup>
 
@@ -208,7 +208,6 @@
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
-      <_EmccCFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
 
       <_EmccCFlags Include="-DDISABLE_PERFTRACING_LISTEN_PORTS=1" />
@@ -226,7 +225,6 @@
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
-      <_EmccLDFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
 
       <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
@@ -322,10 +320,12 @@
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_EmccCompileRsp)" />
+      <EmscriptenMinimalBuildEnvVars Include="@(EmscriptenEnvVars)" />
+      <EmscriptenMinimalBuildEnvVars Include="FROZEN_CACHE=" />
     </ItemGroup>
 
     <!-- warm up the cache -->
-    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
+    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenMinimalBuildEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
 
     <Message Text="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..." Importance="High" />
     <ItemGroup>
@@ -413,12 +413,18 @@
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
       <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>
       <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
+      <_EmccExportedLibraryFunction>&quot;[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
     <ItemGroup>
       <!-- order matters -->
+      <!-- some flags will be duplicated on the commandline and in the .rsp file. The last wins. -->
       <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
+      <_EmccLDSFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
+      <_EmccLDSFlags Include="-s WASM_BIGINT=1" />
+      <_EmccLDSFlags Condition="'$(EmccEnvironment)' != ''" Include="-s ENVIRONMENT=&quot;$(EmccEnvironment)&quot;" />
+      <_EmccLDSFlags Condition="'$(EmccEnableAssertions)' == 'true'" Include="-s ASSERTIONS=1" />
 
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
@@ -444,6 +450,7 @@
       <_EmccLinkStepArgs Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
       <_WasmLinkDependencies Include="$(_EmccLinkRsp)" />
 
+      <_EmccLinkStepArgs Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" Condition="'$(_EmccExportedLibraryFunction)' != ''" />
       <_EmccLinkStepArgs Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
       <_EmccLinkStepArgs Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
 

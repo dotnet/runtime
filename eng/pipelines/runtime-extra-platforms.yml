@@ -15,7 +15,6 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml

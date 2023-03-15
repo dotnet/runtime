@@ -190,7 +190,7 @@ enum _regMask_enum : unsigned
 #error Unsupported target architecture
 #endif
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
 // AVAILABLE_REG_COUNT is defined to be dynamic, based on whether AVX-512 high registers are available.
 #define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
 #else
@@ -680,6 +680,11 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
 inline bool isFloatRegType(var_types type)
 {
     return varTypeUsesFloatReg(type);
+}
+
+inline bool isMaskReg(var_types type)
+{
+    return varTypeIsMask(type);
 }
 
 // If the WINDOWS_AMD64_ABI is defined make sure that TARGET_AMD64 is also defined.

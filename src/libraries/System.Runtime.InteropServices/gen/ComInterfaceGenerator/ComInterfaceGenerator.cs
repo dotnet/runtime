@@ -134,7 +134,7 @@ namespace Microsoft.Interop
                             var syntax = (MethodDeclarationSyntax)interfaceData.Syntax.FindNode(locationInAttributeSyntax.SourceSpan);
                             var method = (IMethodSymbol)member;
                             Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(syntax, method);
-                            methods.Add((syntax, method, diagnostic is not null ? methodVtableOffset++ : 0, diagnostic));
+                            methods.Add((syntax, method, diagnostic is null ? methodVtableOffset++ : 0, diagnostic));
                         }
                     }
                 }
@@ -313,7 +313,7 @@ namespace Microsoft.Interop
 
                 private static void** m_vtable;
 
-                public static void* VirtualMethodTableManagedImplementation
+                public static void** ManagedVirtualMethodTable
                 {
                     get
                     {
@@ -392,6 +392,47 @@ namespace Microsoft.Interop
 
             // Create the stub.
             var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, new InteropAttributeCompilationData(), generatedComAttribute), environment, typeof(VtableIndexStubGenerator).Assembly);
+
+            // Search for the element information for the managed return value.
+            // We need to transform it such that any return type is converted to an out parameter at the end of the parameter list.
+            ImmutableArray<TypePositionInfo> returnSwappedSignatureElements = signatureContext.ElementTypeInformation;
+            for (int i = 0; i < returnSwappedSignatureElements.Length; ++i)
+            {
+                if (returnSwappedSignatureElements[i].IsManagedReturnPosition)
+                {
+                    if (returnSwappedSignatureElements[i].ManagedType == SpecialTypeInfo.Void)
+                    {
+                        // Return type is void, just remove the element from the signature list.
+                        // We don't introduce an out parameter.
+                        returnSwappedSignatureElements = returnSwappedSignatureElements.RemoveAt(i);
+                    }
+                    else
+                    {
+                        // Convert the current element into an out parameter on the native signature
+                        // while keeping it at the return position in the managed signature.
+                        var managedSignatureAsNativeOut = returnSwappedSignatureElements[i] with
+                        {
+                            RefKind = RefKind.Out,
+                            RefKindSyntax = SyntaxKind.OutKeyword,
+                            ManagedIndex = TypePositionInfo.ReturnIndex,
+                            NativeIndex = symbol.Parameters.Length
+                        };
+                        returnSwappedSignatureElements = returnSwappedSignatureElements.SetItem(i, managedSignatureAsNativeOut);
+                    }
+                    break;
+                }
+            }
+
+            signatureContext = signatureContext with
+            {
+                // Add the HRESULT return value in the native signature.
+                // This element does not have any influence on the managed signature, so don't assign a managed index.
+                ElementTypeInformation = returnSwappedSignatureElements.Add(
+                    new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo())
+                    {
+                        NativeIndex = TypePositionInfo.ReturnIndex
+                    })
+            };
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 
@@ -555,7 +596,7 @@ namespace Microsoft.Interop
                                 ReturnStatement(LiteralExpression(SyntaxKind.NullLiteralExpression)))));
             }
 
-            // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <interfaceMethodStubs.Array.Length>);
+            // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <max(vtableIndex) + 1>);
             var vtableDeclarationStatement =
                 LocalDeclarationStatement(
                     VariableDeclaration(
@@ -575,7 +616,7 @@ namespace Microsoft.Interop
                                                 BinaryExpression(
                                                     SyntaxKind.MultiplyExpression,
                                                     SizeOfExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))),
-                                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethodStubs.Length)))))))))));
+                                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1 + interfaceMethodStubs.Max(x => x.VtableIndexData.Index))))))))))));
 
             var fillIUnknownSlots = Block()
                 .AddStatements(
@@ -680,7 +721,7 @@ namespace Microsoft.Interop
                     FieldDeclaration(VariableDeclaration(VoidStarStarSyntax, SingletonSeparatedList(VariableDeclarator(vtableFieldName))))
                         .AddModifiers(Token(SyntaxKind.PrivateKeyword), Token(SyntaxKind.StaticKeyword)),
                     // public static void* VirtualMethodTableManagedImplementation => _vtable != null ? _vtable : (_vtable = InterfaceImplementation.CreateManagedVirtualMethodTable());
-                    PropertyDeclaration(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))), "VirtualMethodTableManagedImplementation")
+                    PropertyDeclaration(VoidStarStarSyntax, "ManagedVirtualMethodTable")
                         .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                         .WithExpressionBody(
                             ArrowExpressionClause(

@@ -1790,6 +1790,9 @@ void Lowering::LowerCall(GenTree* node)
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
 
+    // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
+    assert(!call->IsExpRuntimeLookup());
+
     call->ClearOtherRegs();
     LowerArgsForCall(call);
 
@@ -2359,7 +2362,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 
             if (tmpTyp == TYP_STRUCT)
             {
-                comp->lvaSetStruct(tmpLclNum, comp->lvaGetStruct(lclNum), false);
+                comp->lvaSetStruct(tmpLclNum, comp->lvaGetDesc(lclNum)->GetLayout(), false);
             }
             GenTreeLclVar* storeLclVar = comp->gtNewStoreLclVar(tmpLclNum, value);
             BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeLclVar));
@@ -3267,7 +3270,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
     // Optimize EQ/NE(relop/SETCC, 0) into (maybe reversed) cond.
-    if (op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))
+    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))
     {
         LIR::Use use;
         if (BlockRange().TryGetUse(cmp, &use))
@@ -3277,6 +3280,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 GenTree* reversed = comp->gtReverseCond(op1);
                 assert(reversed == op1);
             }
+
+            // Relops and SETCC can be either TYP_INT or TYP_LONG typed, so we
+            // may need to retype it.
+            op1->gtType = cmp->TypeGet();
 
             GenTree* next = cmp->gtNext;
             use.ReplaceWith(op1);

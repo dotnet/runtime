@@ -30,6 +30,40 @@
 
 #include "interp/interp.h"
 
+// The following defines are here to support the inclusion of simd-arm64.h
+#define EXPAND(x) x
+#define PARENTHESIZE(...) (__VA_ARGS__)
+#define EXPAND_FUN(m, ...) EXPAND(m PARENTHESIZE(__VA_ARGS__))
+#define OPFMT_WDSS _w, dreg, sreg1, sreg2
+#define OPFMT_WTDSS _w, _t, dreg, sreg1, sreg2
+#define OPFMT_WTDSS_REV _w, _t, dreg, sreg2, sreg1
+#define _UNDEF(...) g_assert_not_reached ()
+#define SIMD_OP_CODE(reg_w, op, c) ((reg_w << 31) | (op) << 16 | (c))
+#define VREG_64 VREG_LOW
+#define VREG_128 VREG_FULL
+#define OPCODE_BASIC 0
+#define OPCODE_SIMD 1
+
+#define SIMD_OP_INTERNAL(code, reg_w, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
+	if (_f) { \
+		if (_t == TYPE_F32) { \
+			EXPAND_FUN (f32fun, code, OPFMT_##fmt); \
+		} else { \
+			EXPAND_FUN (f64fun, code, OPFMT_##fmt); \
+		} \
+	} else { \
+		if (_t == TYPE_I8) { \
+			EXPAND_FUN (i8fun, code, OPFMT_##fmt); \
+		} else if (_t == TYPE_I16) { \
+			EXPAND_FUN (i16fun, code, OPFMT_##fmt); \
+		} else if (_t == TYPE_I32) { \
+			EXPAND_FUN (i32fun, code, OPFMT_##fmt); \
+		} else { \
+			EXPAND_FUN (i64fun, code, OPFMT_##fmt); \
+		} \
+	}
+
+
 // Several of the 32-bit bit shifts must remain 32-bit, since they assume possible wrap around.
 // result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
 MONO_DISABLE_WARNING(4334)
@@ -61,6 +95,8 @@ static gpointer bp_trampoline;
 
 static gboolean ios_abi;
 static gboolean enable_ptrauth;
+
+static char opcode_simd_status[OP_LAST - OP_START];
 
 #if defined(HOST_WIN32)
 #define WARN_UNUSED_RESULT _Check_return_
@@ -160,6 +196,49 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 	return MINI_ADDR_TO_FTNPTR (start);
 }
 
+#define MAX_VIRTUAL_DELEGATE_OFFSET 32
+
+static gpointer
+get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, int offset)
+{
+	guint8 *code, *start;
+	const int size = 20;
+	char *tramp_name;
+	GSList *unwind_ops;
+
+	if (offset / (int)sizeof (target_mgreg_t) > MAX_VIRTUAL_DELEGATE_OFFSET)
+		return NULL;
+
+	MINI_BEGIN_CODEGEN ();
+
+	start = code = mono_global_codeman_reserve (size);
+
+	unwind_ops = mono_arch_get_cie_program ();
+
+	/* Replace the this argument with the target */
+	arm_ldrx (code, ARMREG_R0, ARMREG_R0, MONO_STRUCT_OFFSET (MonoDelegate, target));
+
+	if (load_imt_reg)
+		// FIXME:
+		g_assert_not_reached ();
+
+	/* Load this->vtable [offset] */
+	arm_ldrx (code, ARMREG_IP0, ARMREG_R0, MONO_STRUCT_OFFSET (MonoObject, vtable));
+	arm_ldrx (code, ARMREG_IP0, ARMREG_IP0, offset);
+
+	code = mono_arm_emit_brx (code, ARMREG_IP0);
+
+	g_assert ((code - start) <= size);
+
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
+
+	tramp_name = mono_get_delegate_virtual_invoke_impl_name (load_imt_reg, offset);
+	*info = mono_tramp_info_create (tramp_name, start, GPTRDIFF_TO_UINT32 (code - start), NULL, unwind_ops);
+	g_free (tramp_name);
+
+	return start;
+}
+
 /*
  * mono_arch_get_delegate_invoke_impls:
  *
@@ -172,17 +251,24 @@ mono_arch_get_delegate_invoke_impls (void)
 	GSList *res = NULL;
 	guint8 *code;
 	guint32 code_len;
-	int i;
 	char *tramp_name;
+	MonoTrampInfo *info = NULL;
 
 	code = (guint8*)get_delegate_invoke_impl (TRUE, 0, &code_len);
 	res = g_slist_prepend (res, mono_tramp_info_create ("delegate_invoke_impl_has_target", code, code_len, NULL, NULL));
 
-	for (i = 0; i <= MAX_ARCH_DELEGATE_PARAMS; ++i) {
+	for (int i = 0; i <= MAX_ARCH_DELEGATE_PARAMS; ++i) {
 		code = (guint8*)get_delegate_invoke_impl (FALSE, i, &code_len);
 		tramp_name = g_strdup_printf ("delegate_invoke_impl_target_%d", i);
 		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
 		g_free (tramp_name);
+	}
+
+	for (int i = 0; i <= MAX_VIRTUAL_DELEGATE_OFFSET; ++i) {
+		get_delegate_virtual_invoke_impl (&info, FALSE, i * TARGET_SIZEOF_VOID_P);
+		res = g_slist_prepend (res, info);
+		//get_delegate_virtual_invoke_impl (&info, TRUE, i * TARGET_SIZEOF_VOID_P);
+		//res = g_slist_prepend (res, info);
 	}
 
 	return res;
@@ -243,7 +329,18 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 gpointer
 mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
 {
-	return NULL;
+	MonoTrampInfo *info;
+	gpointer code;
+
+	if (load_imt_reg)
+		// FIXME:
+		return FALSE;
+
+	code = get_delegate_virtual_invoke_impl (&info, load_imt_reg, offset);
+	if (code)
+		mono_tramp_info_register (info, NULL);
+
+	return code;
 }
 
 gpointer
@@ -271,6 +368,13 @@ mono_arch_init (void)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
 
 	mono_arm_gsharedvt_init ();
+
+#ifndef DISABLE_JIT
+	memset(opcode_simd_status, OPCODE_BASIC, OP_LAST - OP_START);
+	#undef SIMD_OP 
+	#define SIMD_OP(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) opcode_simd_status[(op) - OP_START] = OPCODE_SIMD;
+	#include "simd-arm64.h"
+#endif
 }
 
 void
@@ -299,17 +403,26 @@ mono_arch_finish_init (void)
 static guint8*
 emit_imm (guint8 *code, int dreg, int imm)
 {
-	// FIXME: Optimize this
 	if (imm < 0) {
-		gint64 limm = imm;
+		int limm = imm;
+		int himm = (limm >> 16) & 0xffff;
 		arm_movnx (code, dreg, (~limm) & 0xffff, 0);
-		arm_movkx (code, dreg, (limm >> 16) & 0xffff, 16);
-	} else {
-		arm_movzx (code, dreg, imm & 0xffff, 0);
-		if (imm >> 16)
-			arm_movkx (code, dreg, (imm >> 16) & 0xffff, 16);
-	}
+		if (himm != 0xffff)
+			arm_movkx (code, dreg, himm, 16);
 
+	} else {
+		int low = imm & 0xffff;
+		int hi = (imm >> 16) & 0xffff;
+
+		if (low == 0) {
+			arm_movzx (code, dreg, hi, 16);
+		} else if (hi == 0) {
+			arm_movzx (code, dreg, low, 0);
+		} else {
+			arm_movzx (code, dreg, low, 0);
+			arm_movkx (code, dreg, hi, 16);
+		}
+	}
 	return code;
 }
 
@@ -317,15 +430,24 @@ emit_imm (guint8 *code, int dreg, int imm)
 static guint8*
 emit_imm64 (guint8 *code, int dreg, guint64 imm)
 {
-	// FIXME: Optimize this
-	arm_movzx (code, dreg, imm & 0xffff, 0);
-	if ((imm >> 16) & 0xffff)
-		arm_movkx (code, dreg, (imm >> 16) & 0xffff, 16);
-	if ((imm >> 32) & 0xffff)
-		arm_movkx (code, dreg, (imm >> 32) & 0xffff, 32);
-	if ((imm >> 48) & 0xffff)
-		arm_movkx (code, dreg, (imm >> 48) & 0xffff, 48);
+	if (imm == 0) {
+		arm_movzx (code, dreg, 0, 0);
+	} else {
+		gboolean is_inited = FALSE;
 
+		for (int idx = 0; idx < 64; idx += 16) {
+			int w = (imm >> idx) & 0xffff;
+
+			if (w) {
+				if (is_inited) {
+					arm_movkx (code, dreg, w, idx);
+				} else {
+					arm_movzx (code, dreg, w, idx);
+					is_inited = TRUE;
+				}
+			}
+		}
+	}
 	return code;
 }
 
@@ -3271,9 +3393,16 @@ emit_branch_island (MonoCompile *cfg, guint8 *code, int start_offset)
 	return code;
 }
 
+static gboolean
+is_type_float_macro (MonoTypeEnum type)
+{
+	return (type == MONO_TYPE_R4 || type == MONO_TYPE_R8); 
+}
+
 static int
 get_vector_size_macro (MonoInst *ins)
 {
+	g_assert (ins->klass);
 	int size = mono_class_value_size (ins->klass, NULL);
 	switch (size) {
 	case 16:
@@ -3352,6 +3481,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		sreg2 = ins->sreg2;
 		imm = ins->inst_imm;
 
+		if (opcode_simd_status [ins->opcode - OP_START] == OPCODE_SIMD)
+		{
+			const int _t = get_type_size_macro (ins->inst_c1);
+			const gboolean _f = is_type_float_macro (ins->inst_c1);
+			const int _w = get_vector_size_macro (ins);
+
+			#undef SIMD_OP
+			#define SIMD_OP(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
+				case SIMD_OP_CODE (VREG_##reg_w, (op), (c)): { \
+					SIMD_OP_INTERNAL (code, reg_w, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun); \
+					} break;
+
+			switch (SIMD_OP_CODE (_w, ins->opcode, ins->inst_c0)) {
+				#include "simd-arm64.h"
+			default:
+				g_assert_not_reached();
+				break;
+			}
+
+			goto after_instruction_emit;
+		}
+		
 		switch (ins->opcode) {
 		case OP_ICONST:
 			code = emit_imm (code, dreg, ins->inst_c0);
@@ -3500,9 +3651,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADX_MEMBASE:
 			code = emit_ldrfpq (code, dreg, sreg1, ins->inst_offset);
 			break;
-		case OP_XZERO:
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
-			break;
 		case OP_XMOVE:
 			arm_neon_mov (code, dreg, sreg1);
 			break;
@@ -3589,18 +3737,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_ARM64_CBZ);
 			arm_cbnzx (code, sreg1, 0);
 			break;
-		case OP_XBINOP:
-			switch (ins->inst_c0) {
-			case OP_IADD:
-				arm_neon_add (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
-				break;
-			case OP_FADD:
-				arm_neon_fadd (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
-				break;
-			default:
-				g_assert_not_reached ();
+
+			/* SIMD that is not table-generated */
+			/* TODO: once https://github.com/dotnet/runtime/issues/83252 is done,
+			 * move these to the codegen table in simd-arm64.h
+			 */
+		case OP_ONES_COMPLEMENT:
+			arm_neon_not (code, get_vector_size_macro (ins), dreg, sreg1);
+			break;
+		case OP_NEGATION:
+			if (is_type_float_macro (ins->inst_c1)) {
+				arm_neon_fneg (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1);
+			} else {
+				arm_neon_neg (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1);
 			}
 			break;
+		case OP_XZERO:
+			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			break;
+
 			/* ALU */
 		case OP_IADD:
 			arm_addw (code, dreg, sreg1, sreg2);
@@ -4831,15 +4986,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) || i == ARMREG_SP || i == ARMREG_FP)
 					arm_strx (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (target_mgreg_t));
 			break;
+
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
-
+		
+	after_instruction_emit:
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
+		
 		}
 	}
 	set_code_cursor (cfg, code);

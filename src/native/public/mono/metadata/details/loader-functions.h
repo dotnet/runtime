@@ -44,7 +44,7 @@ MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_dllmap_insert, (MonoImage *as
 
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void*, mono_lookup_pinvoke_call, (MonoMethod *method, const char **exc_class, const char **exc_arg))
 
-MONO_API_FUNCTION(void, mono_method_get_param_names, (MonoMethod *method, const char **names))
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_method_get_param_names, (MonoMethod *method, const char **names))
 
 MONO_API_FUNCTION(uint32_t, mono_method_get_param_token, (MonoMethod *method, int idx))
 
