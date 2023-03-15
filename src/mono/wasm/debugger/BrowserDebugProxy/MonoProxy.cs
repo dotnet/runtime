@@ -273,12 +273,21 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         protected async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
         {
+            logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready");
             if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
+            {
+                logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready - 0 - TRUE");
                 return true;
-
+            }
+            logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready - 1");
             Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
+            logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready - 2");
             if (!res.IsOk || res.Value?["result"]?["value"]?.Type != JTokenType.Boolean) //if runtime is not ready this may be the response
+            {
+                logger.LogDebug("OLHA THAYS - IsRuntimeAlreadyReadyAlready - 3 - FALSE");
                 return false;
+            }
+            logger.LogDebug($"OLHA THAYS - IsRuntimeAlreadyReadyAlready - 4 - {res.Value?["result"]?["value"]?.Value<bool>() ?? false}");
             return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
         }
         private static PauseOnExceptionsKind GetPauseOnExceptionsStatusFromString(string state)
@@ -640,7 +649,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         SendResponse(id, Result.OkFromObject(new { }), token);
                         while (!await IsRuntimeAlreadyReadyAlready(id, token))
+                        {
+                            logger.LogDebug("OLHA THAYS - tentei uma vez vou tentar de novo");
                             await Task.Delay(1000, token);
+                        }
+                        logger.LogDebug("OLHA THAYS - agora recebi uma boa resposta");
                         await RuntimeReady(id, token);
                         return true;
                     }

@@ -43,7 +43,8 @@ namespace DebuggerTests
                 logger.LogInformation($"HEY THAYS HANDLEMESSAGE - NULL - {msg}");
                 return onEvent(res["sessionId"]?.Value<string>(), res["method"].Value<string>(), res["params"] as JObject, token);
             }
-            logger.LogInformation($"HEY THAYS HANDLEMESSAGE - {res["id"]} - {msg}");
+            if (res["method"]?.Value<string>() != "Debugger.scriptParsed")
+                logger.LogInformation($"HEY THAYS HANDLEMESSAGE - {res["id"]} - {msg}");
 
             var id = res.ToObject<MessageId>();
             if (!pending_cmds.Remove(id, out var item))
