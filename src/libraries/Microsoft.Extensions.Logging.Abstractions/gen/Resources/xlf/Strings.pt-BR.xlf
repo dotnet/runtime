@@ -68,8 +68,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="translated">Não pode ter cadeia de caracteres de formato malformadas (como final {, etc)</target>
+        <source>Logging method '{0}' contains malformed format strings</source>
+        <target state="translated">O método de registro '{0}' contém strings de formato malformado</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Logging method contains malformed format strings</source>
+        <target state="translated">O método de registro contém strings de formato malformadas</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">

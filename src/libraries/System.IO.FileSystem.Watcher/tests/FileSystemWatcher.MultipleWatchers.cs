@@ -79,20 +79,15 @@ namespace System.IO.Tests
 
                 local.Value = 42;
 
-                ExecutionContext.SuppressFlow();
-                try
+                using (ExecutionContext.SuppressFlow())
                 {
                     watcher1.EnableRaisingEvents = true;
                 }
-                finally
-                {
-                    ExecutionContext.RestoreFlow();
-                }
 
-                    File.Create(fileName).Dispose();
-                    tcs1.Task.Wait(WaitForExpectedEventTimeout);
+                File.Create(fileName).Dispose();
+                tcs1.Task.Wait(WaitForExpectedEventTimeout);
 
-                    Assert.Equal(0, tcs1.Task.Result);
+                Assert.Equal(0, tcs1.Task.Result);
            }
         }
 

@@ -2388,16 +2388,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         // Get a temp integer register to compute long address.
                         regNumber addrReg = tree->GetSingleTempReg();
 
-                        simd8_t              constValue = vecCon->gtSimd8Val;
-                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
+                        simd8_t constValue;
+                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
 
+                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(constValue);
                         emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
                     }
                     break;
                 }
 
                 case TYP_SIMD12:
-                case TYP_SIMD16:
                 {
                     if (vecCon->IsAllBitsSet())
                     {
@@ -2413,14 +2413,33 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         regNumber addrReg = tree->GetSingleTempReg();
 
                         simd16_t constValue = {};
-
-                        if (vecCon->TypeIs(TYP_SIMD12))
-                            memcpy(&constValue, &vecCon->gtSimd12Val, sizeof(simd12_t));
-                        else
-                            constValue = vecCon->gtSimd16Val;
+                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd12_t));
 
                         CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
+                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                    }
+                    break;
+                }
 
+                case TYP_SIMD16:
+                {
+                    if (vecCon->IsAllBitsSet())
+                    {
+                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_4S);
+                    }
+                    else if (vecCon->IsZero())
+                    {
+                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, INS_OPTS_4S);
+                    }
+                    else
+                    {
+                        // Get a temp integer register to compute long address.
+                        regNumber addrReg = tree->GetSingleTempReg();
+
+                        simd16_t constValue;
+                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
+
+                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
                         emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
                     }
                     break;
@@ -2696,35 +2715,6 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         return;
     }
 
-    if (tree->isContainedCompareChainSegment(op2))
-    {
-        GenCondition cond;
-        bool         chain = false;
-
-        JITDUMP("Generating compare chain:\n");
-        if (op1->isContained())
-        {
-            // Generate Op1 into flags.
-            genCodeForContainedCompareChain(op1, &chain, &cond);
-            assert(chain);
-        }
-        else
-        {
-            // Op1 is not contained, move it from a register into flags.
-            emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
-            cond  = GenCondition::NE;
-            chain = true;
-        }
-        // Gen Op2 into flags.
-        genCodeForContainedCompareChain(op2, &chain, &cond);
-        assert(chain);
-
-        // Move the result from flags into a register.
-        inst_SETCC(cond, tree->TypeGet(), targetReg);
-        genProduceReg(tree);
-        return;
-    }
-
     instruction ins = genGetInsForOper(tree->OperGet(), targetType);
 
     if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
@@ -2928,7 +2918,6 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 if (targetReg != REG_NA)
                 {
                     emit->emitIns_R_I(INS_movi, emitActualTypeSize(targetType), targetReg, 0x00, INS_OPTS_16B);
-                    genProduceReg(lclNode);
                 }
                 else
                 {
@@ -2941,8 +2930,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                         assert(targetType == TYP_SIMD8);
                         GetEmitter()->emitIns_S_R(INS_str, EA_8BYTE, REG_ZR, varNum, 0);
                     }
-                    genUpdateLife(lclNode);
                 }
+                genUpdateLifeStore(lclNode, targetReg, varDsc);
                 return;
             }
             if (zeroInit)
@@ -2971,18 +2960,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             emitAttr    attr = emitActualTypeSize(targetType);
 
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
-
-            genUpdateLife(lclNode);
-
-            varDsc->SetRegNum(REG_STK);
         }
         else // store into register (i.e move into register)
         {
             // Assign into targetReg when dataReg (from op1) is not the same register
             inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
-
-            genProduceReg(lclNode);
         }
+        genUpdateLifeStore(lclNode, targetReg, varDsc);
     }
 }
 
@@ -3140,7 +3124,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         if (compiler->info.compInitMem)
         {
-            if (amount <= LCLHEAP_UNROLL_LIMIT)
+            if (amount <= compiler->getUnrollThreshold(Compiler::UnrollKind::Memset))
             {
                 // The following zeroes the last 16 bytes and probes the page containing [sp, #16] address.
                 // stp xzr, xzr, [sp, #-16]!
@@ -3475,103 +3459,68 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     }
     else // an integer divide operation
     {
+        // Generate the require runtime checks for GT_DIV or GT_UDIV.
+
         GenTree* divisorOp = tree->gtGetOp2();
         emitAttr size      = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
 
-        if (divisorOp->IsIntegralConst(0))
-        {
-            // We unconditionally throw a divide by zero exception
-            genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+        regNumber divisorReg = divisorOp->GetRegNum();
 
-            // We still need to call genProduceReg
-            genProduceReg(tree);
-        }
-        else // the divisor is not the constant zero
-        {
-            regNumber divisorReg = divisorOp->GetRegNum();
+        ExceptionSetFlags exSetFlags = tree->OperExceptions(compiler);
 
-            // Generate the require runtime checks for GT_DIV or GT_UDIV
-            if (tree->gtOper == GT_DIV)
+        // (AnyVal / 0) => DivideByZeroException
+        if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+        {
+            if (divisorOp->IsIntegralConst(0))
             {
-                BasicBlock* sdivLabel = genCreateTempLabel();
+                // We unconditionally throw a divide by zero exception
+                genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
 
-                // Two possible exceptions:
-                //     (AnyVal /  0) => DivideByZeroException
-                //     (MinInt / -1) => ArithmeticException
-                //
-                bool checkDividend = true;
+                // We still need to call genProduceReg
+                genProduceReg(tree);
 
-                // Do we have an immediate for the 'divisorOp' or 'dividendOp'?
-                //
-                GenTree* dividendOp = tree->gtGetOp1();
-                if (dividendOp->IsCnsIntOrI())
-                {
-                    GenTreeIntConCommon* intConstTree  = dividendOp->AsIntConCommon();
-                    ssize_t              intConstValue = intConstTree->IconValue();
-                    if ((targetType == TYP_INT && intConstValue != INT_MIN) ||
-                        (targetType == TYP_LONG && intConstValue != INT64_MIN))
-                    {
-                        checkDividend = false; // We statically know that the dividend is not the minimum int
-                    }
-                }
-                if (divisorOp->IsCnsIntOrI())
-                {
-                    GenTreeIntConCommon* intConstTree  = divisorOp->AsIntConCommon();
-                    ssize_t              intConstValue = intConstTree->IconValue();
-                    assert(intConstValue != 0); // already checked above by IsIntegralConst(0)
-                    if (intConstValue != -1)
-                    {
-                        checkDividend = false; // We statically know that the dividend is not -1
-                    }
-                }
-                else // insert check for division by zero
-                {
-                    // Check if the divisor is zero throw a DivideByZeroException
-                    emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-                    genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
-                }
-
-                if (checkDividend)
-                {
-                    // Check if the divisor is not -1 branch to 'sdivLabel'
-                    emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
-
-                    inst_JMP(EJ_ne, sdivLabel);
-                    // If control flow continues past here the 'divisorReg' is known to be -1
-
-                    regNumber dividendReg = dividendOp->GetRegNum();
-                    // At this point the divisor is known to be -1
-                    //
-                    // Issue the 'adds  zr, dividendReg, dividendReg' instruction
-                    // this will set both the Z and V flags only when dividendReg is MinInt
-                    //
-                    emit->emitIns_R_R_R(INS_adds, size, REG_ZR, dividendReg, dividendReg);
-                    inst_JMP(EJ_ne, sdivLabel);                   // goto sdiv if the Z flag is clear
-                    genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
-                                                                  // ArithmeticException
-
-                    genDefineTempLabel(sdivLabel);
-                }
-                genCodeForBinary(tree); // Generate the sdiv instruction
+                return;
             }
-            else // (tree->gtOper == GT_UDIV)
+            else
             {
-                // Only one possible exception
-                //     (AnyVal /  0) => DivideByZeroException
-                //
-                // Note that division by the constant 0 was already checked for above by the
-                // op2->IsIntegralConst(0) check
-                //
-                if (!divisorOp->IsCnsIntOrI())
-                {
-                    // divisorOp is not a constant, so it could be zero
-                    //
-                    emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-                    genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
-                }
-                genCodeForBinary(tree);
+                // Check if the divisor is zero throw a DivideByZeroException
+                emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
+                genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
             }
         }
+
+        // (MinInt / -1) => ArithmeticException
+        if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+        {
+            // Signed-division might overflow.
+
+            assert(tree->OperIs(GT_DIV));
+            assert(!divisorOp->IsIntegralConst(0));
+
+            BasicBlock* sdivLabel  = genCreateTempLabel();
+            GenTree*    dividendOp = tree->gtGetOp1();
+
+            // Check if the divisor is not -1 branch to 'sdivLabel'
+            emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
+
+            inst_JMP(EJ_ne, sdivLabel);
+            // If control flow continues past here the 'divisorReg' is known to be -1
+
+            regNumber dividendReg = dividendOp->GetRegNum();
+            // At this point the divisor is known to be -1
+            //
+            // Issue the 'cmp dividendReg, 1' instruction.
+            // This is an alias to 'subs zr, dividendReg, 1' on ARM64 itself.
+            // This will set the V (overflow) flags only when dividendReg is MinInt
+            //
+            emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
+            genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
+                                                          // ArithmeticException
+
+            genDefineTempLabel(sdivLabel);
+        }
+
+        genCodeForBinary(tree); // Generate the sdiv instruction
     }
 }
 
@@ -4578,7 +4527,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         // We don't support swapping op1 and op2 to generate cmp reg, imm
         assert(!op1->isContainedIntOrIImmed());
 
-        instruction ins = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_tst : INS_cmp;
+        instruction ins = tree->OperIs(GT_TEST_EQ, GT_TEST_NE, GT_TEST) ? INS_tst : INS_cmp;
 
         if (op2->isContainedIntOrIImmed())
         {
@@ -4600,114 +4549,57 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForJTrue: Produce code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - the node
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+    GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(op), compiler->compCurBB->bbJumpDest, reg);
+}
+
+//------------------------------------------------------------------------
 // genCodeForConditionalCompare: Produce code for a compare that's dependent on a previous compare.
 //
 // Arguments:
 //    tree - a compare node (GT_EQ etc)
 //    cond - the condition of the previous generated compare.
 //
-void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond)
+void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
 {
     emitter* emit = GetEmitter();
 
-    GenTree*  op1       = tree->gtGetOp1();
-    GenTree*  op2       = tree->gtGetOp2();
-    var_types op1Type   = genActualType(op1->TypeGet());
-    var_types op2Type   = genActualType(op2->TypeGet());
-    emitAttr  cmpSize   = EA_ATTR(genTypeSize(op1Type));
-    regNumber targetReg = tree->GetRegNum();
-    regNumber srcReg1   = op1->GetRegNum();
+    genConsumeOperands(ccmp);
+    GenTree*  op1     = ccmp->gtGetOp1();
+    GenTree*  op2     = ccmp->gtGetOp2();
+    var_types op1Type = genActualType(op1->TypeGet());
+    var_types op2Type = genActualType(op2->TypeGet());
+    emitAttr  cmpSize = emitActualTypeSize(op1Type);
+    regNumber srcReg1 = op1->GetRegNum();
 
     // No float support or swapping op1 and op2 to generate cmp reg, imm.
     assert(!varTypeIsFloating(op2Type));
     assert(!op1->isContainedIntOrIImmed());
 
-    // Should only be called on contained nodes.
-    assert(targetReg == REG_NA);
-
-    // Should not be called for test conditionals (Arm64 does not have a ctst).
-    assert(tree->OperIsCmpCompare());
-
     // For the ccmp flags, invert the condition of the compare.
-    insCflags cflags = InsCflagsForCcmp(GenCondition::FromRelop(tree));
-
     // For the condition, use the previous compare.
-    const GenConditionDesc& prevDesc    = GenConditionDesc::Get(prevCond);
-    insCond                 prevInsCond = JumpKindToInsCond(prevDesc.jumpKind1);
+    const GenConditionDesc& condDesc = GenConditionDesc::Get(ccmp->gtCondition);
+    insCond                 insCond  = JumpKindToInsCond(condDesc.jumpKind1);
 
     if (op2->isContainedIntOrIImmed())
     {
         GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-        emit->emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, (int)intConst->IconValue(), cflags, prevInsCond);
+        emit->emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, (int)intConst->IconValue(), ccmp->gtFlagsVal, insCond);
     }
     else
     {
         regNumber srcReg2 = op2->GetRegNum();
-        emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, cflags, prevInsCond);
-    }
-}
-
-//------------------------------------------------------------------------
-// genCodeForContainedCompareChain: Produce code for a chain of conditional compares.
-//
-// Only generates for contained nodes. Nodes that are not contained are assumed to be
-// generated as part of standard tree generation.
-//
-// Arguments:
-//    tree - the node. Either a compare or a tree of compares connected by ANDs.
-//    inChain - whether a contained chain is in progress.
-//    prevCond - If a chain is in progress, the condition of the previous compare.
-// Return:
-//    The last compare node generated.
-//
-void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenCondition* prevCond)
-{
-    assert(tree->isContained());
-
-    if (tree->OperIs(GT_AND))
-    {
-        GenTree* op1 = tree->gtGetOp1();
-        GenTree* op2 = tree->gtGetOp2();
-
-        assert(op2->isContained());
-
-        // If Op1 is contained, generate into flags. Otherwise, move the result into flags.
-        if (op1->isContained())
-        {
-            genCodeForContainedCompareChain(op1, inChain, prevCond);
-            assert(*inChain);
-        }
-        else
-        {
-            emitter* emit = GetEmitter();
-            emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
-            *prevCond = GenCondition::NE;
-            *inChain  = true;
-        }
-
-        // Generate Op2 based on Op1.
-        genCodeForContainedCompareChain(op2, inChain, prevCond);
-        assert(*inChain);
-    }
-    else
-    {
-        assert(tree->OperIsCmpCompare());
-
-        // Generate the compare, putting the result in the flags register.
-        if (!*inChain)
-        {
-            // First item in a chain. Use a standard compare.
-            genCodeForCompare(tree->AsOp());
-        }
-        else
-        {
-            // Within the chain. Use a conditional compare (which is
-            // dependent on the previous emitted compare).
-            genCodeForConditionalCompare(tree->AsOp(), *prevCond);
-        }
-
-        *inChain  = true;
-        *prevCond = GenCondition::FromRelop(tree);
+        emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, ccmp->gtFlagsVal, insCond);
     }
 }
 
@@ -4719,45 +4611,37 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenC
 //
 void CodeGen::genCodeForSelect(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_SELECT));
-    GenTreeConditional* select = tree->AsConditional();
-    emitter*            emit   = GetEmitter();
+    assert(tree->OperIs(GT_SELECT, GT_SELECTCC));
+    GenTree* opcond = nullptr;
+    if (tree->OperIs(GT_SELECT))
+    {
+        opcond = tree->AsConditional()->gtCond;
+        genConsumeRegs(opcond);
+    }
 
-    GenTree*  opcond  = select->gtCond;
-    GenTree*  op1     = select->gtOp1;
-    GenTree*  op2     = select->gtOp2;
-    var_types op1Type = genActualType(op1->TypeGet());
-    var_types op2Type = genActualType(op2->TypeGet());
-    emitAttr  attr    = emitActualTypeSize(select->TypeGet());
+    emitter* emit = GetEmitter();
+
+    GenTree*  op1     = tree->gtOp1;
+    GenTree*  op2     = tree->gtOp2;
+    var_types op1Type = genActualType(op1);
+    var_types op2Type = genActualType(op2);
+    emitAttr  attr    = emitActualTypeSize(tree);
 
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
-    GenCondition prevCond;
-    genConsumeRegs(opcond);
-    if (opcond->isContained())
-    {
-        // Generate the contained condition.
-        if (opcond->OperIsCompare())
-        {
-            genCodeForCompare(opcond->AsOp());
-            prevCond = GenCondition::FromRelop(opcond);
-        }
-        else
-        {
-            // Condition is a compare chain. Try to contain it.
-            assert(opcond->OperIs(GT_AND));
-            bool chain = false;
-            JITDUMP("Generating compare chain:\n");
-            genCodeForContainedCompareChain(opcond, &chain, &prevCond);
-            assert(chain);
-        }
-    }
-    else
+    GenCondition cond;
+
+    if (opcond != nullptr)
     {
         // Condition has been generated into a register - move it into flags.
         emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
-        prevCond = GenCondition::NE;
+        cond = GenCondition::NE;
+    }
+    else
+    {
+        assert(tree->OperIs(GT_SELECTCC));
+        cond = tree->AsOpCC()->gtCondition;
     }
 
     assert(!op1->isContained() || op1->IsIntegralConst(0));
@@ -4766,7 +4650,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
     regNumber               targetReg = tree->GetRegNum();
     regNumber               srcReg1   = op1->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op1);
     regNumber               srcReg2   = op2->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op2);
-    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
+    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
 
     emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
 
@@ -5266,8 +5150,9 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 {
     assert(treeNode->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
 
-    unsigned offs   = treeNode->GetLclOffs();
-    unsigned varNum = treeNode->GetLclNum();
+    unsigned   offs   = treeNode->GetLclOffs();
+    unsigned   varNum = treeNode->GetLclNum();
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
     assert(varNum < compiler->lvaCount);
 
     GenTree* data = treeNode->gtGetOp1();
@@ -5285,8 +5170,6 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 
         // Update life after instruction emitted
         genUpdateLife(treeNode);
-
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         varDsc->SetRegNum(REG_STK);
 
         return;
@@ -5301,20 +5184,14 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
         assert(GetEmitter()->isVectorRegister(tgtReg));
 
         inst_Mov(treeNode->TypeGet(), tgtReg, dataReg, /* canSkip */ true);
-        genProduceReg(treeNode);
     }
     else
     {
         // Need an additional integer register to extract upper 4 bytes from data.
         regNumber tmpReg = treeNode->GetSingleTempReg();
         GetEmitter()->emitStoreSimd12ToLclOffset(varNum, offs, dataReg, tmpReg);
-
-        // Update life after instruction emitted
-        genUpdateLife(treeNode);
-
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-        varDsc->SetRegNum(REG_STK);
     }
+    genUpdateLifeStore(treeNode, tgtReg, varDsc);
 }
 
 #endif // FEATURE_SIMD
@@ -5411,7 +5288,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 /*****************************************************************************
  * Unit testing of the ARM64 emitter: generate a bunch of instructions into the prolog
- * (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late
+ * (it's as good a place as any), then use DOTNET_JitLateDisasm=* to see if the late
  * disassembler thinks the instructions as the same as we do.
  */
 
@@ -10393,50 +10270,6 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
     }
 
     genProduceReg(tree);
-}
-
-//------------------------------------------------------------------------
-// InsCflagsForCcmp: Get the Cflags for a required for a CCMP instruction.
-//
-// Consider:
-//   cmp w, x
-//   ccmp y, z, A, COND
-// This is: compare w and x, if this matches condition COND, then compare y and z.
-// Otherwise set flags to A - this should match the case where cmp failed.
-// Given COND, this function returns A.
-//
-// Arguments:
-//    cond - the GenCondition.
-//
-insCflags CodeGen::InsCflagsForCcmp(GenCondition cond)
-{
-    GenCondition inverted = GenCondition::Reverse(cond);
-    switch (inverted.GetCode())
-    {
-        case GenCondition::EQ:
-            return INS_FLAGS_Z;
-        case GenCondition::NE:
-            return INS_FLAGS_NONE;
-        case GenCondition::SGE:
-            return INS_FLAGS_Z;
-        case GenCondition::SGT:
-            return INS_FLAGS_NONE;
-        case GenCondition::SLT:
-            return INS_FLAGS_NC;
-        case GenCondition::SLE:
-            return INS_FLAGS_NZC;
-        case GenCondition::UGE:
-            return INS_FLAGS_C;
-        case GenCondition::UGT:
-            return INS_FLAGS_C;
-        case GenCondition::ULT:
-            return INS_FLAGS_NONE;
-        case GenCondition::ULE:
-            return INS_FLAGS_Z;
-        default:
-            NO_WAY("unexpected condition type");
-            return INS_FLAGS_NONE;
-    }
 }
 
 //------------------------------------------------------------------------

@@ -895,7 +895,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             if (method is null)
                 return false;
 
-            if (await ShouldSkipMethod(sessionId, context, event_kind, 0, method, token))
+            if (await ShouldSkipMethod(sessionId, context, event_kind, 0, frame_count, method, token))
             {
                 await SendResume(sessionId, token);
                 return true;

@@ -195,7 +195,7 @@ int g_rgCrstLevelMap[] =
     3,          // CrstInlineTrackingMap
     17,         // CrstInstMethodHashTable
     20,         // CrstInterop
-    5,          // CrstInteropData
+    10,         // CrstInteropData
     0,          // CrstIsJMCMethod
     7,          // CrstISymUnmanagedReader
     11,         // CrstJit

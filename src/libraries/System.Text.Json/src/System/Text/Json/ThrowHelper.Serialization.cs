@@ -173,9 +173,15 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_TypeInfoResolverImmutable()
+        public static void ThrowInvalidOperationException_DefaultTypeInfoResolverImmutable()
         {
-            throw new InvalidOperationException(SR.TypeInfoResolverImmutable);
+            throw new InvalidOperationException(SR.DefaultTypeInfoResolverImmutable);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeInfoResolverChainImmutable()
+        {
+            throw new InvalidOperationException(SR.TypeInfoResolverChainImmutable);
         }
 
         [DoesNotReturn]
@@ -185,9 +191,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_PropertyInfoImmutable()
+        public static void ThrowInvalidOperationException_InvalidChainedResolver()
         {
-            throw new InvalidOperationException(SR.PropertyInfoImmutable);
+            throw new InvalidOperationException(SR.SerializerOptions_InvalidChainedResolver);
         }
 
         [DoesNotReturn]
@@ -598,7 +604,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_UnmappedJsonProperty(Type type, string unmappedPropertyName)
         {
-            throw new JsonException(SR.Format(SR.UnmappedJsonProperty, type, unmappedPropertyName));
+            throw new JsonException(SR.Format(SR.UnmappedJsonProperty, unmappedPropertyName, type));
         }
 
         [DoesNotReturn]

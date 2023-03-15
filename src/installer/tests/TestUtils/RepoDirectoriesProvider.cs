@@ -9,6 +9,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class RepoDirectoriesProvider
     {
+        public static readonly RepoDirectoriesProvider Default = new RepoDirectoriesProvider();
+
         public string BuildRID { get; }
         public string BuildArchitecture { get; }
         public string TargetRID { get; }
@@ -19,6 +21,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string BaseArtifactsFolder { get; }
         public string Artifacts { get; }
         public string HostArtifacts { get; }
+        public string HostTestArtifacts { get; }
         public string BuiltDotnet { get; }
         public string NugetPackages { get; }
         public string DotnetSDK { get; }
@@ -54,6 +57,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string osPlatformConfig = $"{BuildRID}.{Configuration}";
             Artifacts = Path.Combine(BaseArtifactsFolder, "bin", osPlatformConfig);
             HostArtifacts = Path.Combine(Artifacts, "corehost");
+            HostTestArtifacts = Path.Combine(Artifacts, "corehost_test");
 
             DotnetSDK = GetTestContextVariable("DOTNET_SDK_PATH");
             if (!Directory.Exists(DotnetSDK))

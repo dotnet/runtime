@@ -20,6 +20,39 @@ using Microsoft.Win32.SafeHandles;
 
 namespace CoreclrTestLib
 {
+    static class DbgHelp
+    {
+        public enum MiniDumpType : int
+        {
+            MiniDumpNormal                          = 0x00000000,
+            MiniDumpWithDataSegs                    = 0x00000001,
+            MiniDumpWithFullMemory                  = 0x00000002,
+            MiniDumpWithHandleData                  = 0x00000004,
+            MiniDumpFilterMemory                    = 0x00000008,
+            MiniDumpScanMemory                      = 0x00000010,
+            MiniDumpWithUnloadedModules             = 0x00000020,
+            MiniDumpWithIndirectlyReferencedMemory  = 0x00000040,
+            MiniDumpFilterModulePaths               = 0x00000080,
+            MiniDumpWithProcessThreadData           = 0x00000100,
+            MiniDumpWithPrivateReadWriteMemory      = 0x00000200,
+            MiniDumpWithoutOptionalData             = 0x00000400,
+            MiniDumpWithFullMemoryInfo              = 0x00000800,
+            MiniDumpWithThreadInfo                  = 0x00001000,
+            MiniDumpWithCodeSegs                    = 0x00002000,
+            MiniDumpWithoutAuxiliaryState           = 0x00004000,
+            MiniDumpWithFullAuxiliaryState          = 0x00008000,
+            MiniDumpWithPrivateWriteCopyMemory      = 0x00010000,
+            MiniDumpIgnoreInaccessibleMemory        = 0x00020000,
+            MiniDumpWithTokenInformation            = 0x00040000,
+            MiniDumpWithModuleHeaders               = 0x00080000,
+            MiniDumpFilterTriage                    = 0x00100000,
+            MiniDumpValidTypeFlags                  = 0x001fffff
+        }
+
+        [DllImport("DbgHelp.dll", SetLastError = true)]
+        public static extern bool MiniDumpWriteDump(IntPtr handle, int processId, SafeFileHandle file, MiniDumpType dumpType, IntPtr exceptionParam, IntPtr userStreamParam, IntPtr callbackParam);
+    }
+
     static class Kernel32
     {
         public const int MAX_PATH = 260;
@@ -207,25 +240,44 @@ namespace CoreclrTestLib
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
 
+        public const string TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR = "__TestArchitecture";
+
         static bool CollectCrashDump(Process process, string crashDumpPath, StreamWriter outputWriter)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return CollectCrashDumpWithMiniDumpWriteDump(process, crashDumpPath, outputWriter);
+            }
+            else
+            {
+                return CollectCrashDumpWithCreateDump(process, crashDumpPath, outputWriter);
+            }
+        }
+
+        static bool CollectCrashDumpWithMiniDumpWriteDump(Process process, string crashDumpPath, StreamWriter outputWriter)
+        {
+            bool collectedDump = false;
+            using (var crashDump = File.OpenWrite(crashDumpPath))
+            {
+                var flags = DbgHelp.MiniDumpType.MiniDumpWithFullMemory | DbgHelp.MiniDumpType.MiniDumpIgnoreInaccessibleMemory;
+                collectedDump = DbgHelp.MiniDumpWriteDump(process.Handle, process.Id, crashDump.SafeFileHandle, flags, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            }
+            if (collectedDump)
+            {
+                TryPrintStackTraceFromDmp(crashDumpPath, outputWriter);
+            }
+            return collectedDump;
+        }
+
+        static bool CollectCrashDumpWithCreateDump(Process process, string crashDumpPath, StreamWriter outputWriter)
         {
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             string createdumpPath = Path.Combine(coreRoot, "createdump");
-            string arguments = $"--name \"{crashDumpPath}\" {process.Id} --withheap";
+            string arguments = $"--crashreport --name \"{crashDumpPath}\" {process.Id} --withheap";
             Process createdump = new Process();
-            bool crashReportPresent = false;
 
-            if (OperatingSystem.IsWindows())
-            {
-                createdump.StartInfo.FileName = createdumpPath + ".exe";
-                createdump.StartInfo.Arguments = arguments;
-            }
-            else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
-            {
-                createdump.StartInfo.FileName = "sudo";
-                createdump.StartInfo.Arguments = $"{createdumpPath} --crashreport {arguments}";
-                crashReportPresent = true;
-            }
+            createdump.StartInfo.FileName = "sudo";
+            createdump.StartInfo.Arguments = $"{createdumpPath} {arguments}";
 
             createdump.StartInfo.UseShellExecute = false;
             createdump.StartInfo.RedirectStandardOutput = true;
@@ -249,10 +301,7 @@ namespace CoreclrTestLib
                 Console.WriteLine("createdump stderr:");
                 Console.WriteLine(error);
 
-                if (crashReportPresent)
-                {
-                    TryPrintStackTraceFromCrashReport(crashDumpPath + ".crashreport.json", outputWriter);
-                }
+                TryPrintStackTraceFromCrashReport(crashDumpPath + ".crashreport.json", outputWriter);
             }
             else
             {
@@ -267,7 +316,7 @@ namespace CoreclrTestLib
         private static string SKIP_LINE_TAG = "# <SKIP_LINE>";
 
 
-        static bool RunProcess(string fileName, string arguments)
+        static bool RunProcess(string fileName, string arguments, TextWriter outputWriter)
         {
             Process proc = new Process()
             {
@@ -281,7 +330,7 @@ namespace CoreclrTestLib
                 }
             };
 
-            Console.WriteLine($"Invoking: {proc.StartInfo.FileName} {proc.StartInfo.Arguments}");
+            outputWriter.WriteLine($"Invoking: {proc.StartInfo.FileName} {proc.StartInfo.Arguments}");
             proc.Start();
 
             Task<string> stdOut = proc.StandardOutput.ReadToEndAsync();
@@ -289,7 +338,7 @@ namespace CoreclrTestLib
             if(!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
                 proc.Kill(true);
-                Console.WriteLine($"Timedout: '{fileName} {arguments}");
+                outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
                 return false;
             }
 
@@ -298,11 +347,11 @@ namespace CoreclrTestLib
             string error = stdErr.Result;
             if (!string.IsNullOrWhiteSpace(output))
             {
-                Console.WriteLine($"stdout: {output}");
+                outputWriter.WriteLine($"stdout: {output}");
             }
             if (!string.IsNullOrWhiteSpace(error))
             {
-                Console.WriteLine($"stderr: {error}");
+                outputWriter.WriteLine($"stderr: {error}");
             }
             return true;
         }
@@ -318,7 +367,7 @@ namespace CoreclrTestLib
         {
             if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
-                if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}"))
+                if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
                 {
                     return false;
                 }
@@ -327,19 +376,19 @@ namespace CoreclrTestLib
                 string userName = Environment.GetEnvironmentVariable("USER");
                 if (!string.IsNullOrEmpty(userName))
                 {
-                    if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}"))
+                    if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
                     {
                         return false;
                     }
 
                     Console.WriteLine("=========================================");
-                    if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}"))
+                    if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
                     {
                         return false;
                     }
 
                     Console.WriteLine("=========================================");
-                    if (!RunProcess("ls", $"-l {crashReportJsonFile}"))
+                    if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
                     {
                         return false;
                     }
@@ -536,6 +585,38 @@ namespace CoreclrTestLib
             }
         }
 
+        static bool TryPrintStackTraceFromDmp(string dmpFile, StreamWriter outputWriter)
+        {
+            string targetArchitecture = Environment.GetEnvironmentVariable(TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR);
+            if (string.IsNullOrEmpty(targetArchitecture))
+            {
+                outputWriter.WriteLine($"Environment variable {TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR} is not set.");
+                return false;
+            }
+
+            string cdbPath = $@"C:\Program Files (x86)\Windows Kits\10\Debuggers\{targetArchitecture}\cdb.exe";
+            if (!File.Exists(cdbPath))
+            {
+                outputWriter.WriteLine($"Unable to find cdb.exe at {cdbPath}");
+                return false;
+            }
+
+            var cdbScriptPath = Path.GetTempFileName();
+            // TODO: Add SOS support once we can easily download SOS to install.
+            File.WriteAllText(cdbScriptPath, """
+                ~*k
+                q
+                """);
+
+            // cdb outputs the stacks directly, so we don't need to parse the output.
+            if (!RunProcess(cdbPath, $@"-c ""$<{cdbScriptPath}"" -z ""{dmpFile}""", outputWriter))
+            {
+                outputWriter.WriteLine("Unable to run cdb.exe");
+                return false;
+            }
+            return true;
+        }
+
         // Finds all children processes starting with a process named childName
         // The children are sorted in the order they should be dumped
         static unsafe IEnumerable<Process> FindChildProcessesByName(Process process, string childName)
@@ -627,16 +708,16 @@ namespace CoreclrTestLib
                         MobileAppHandler.CheckExitCode(exitCode, testBinaryBase, category, outputWriter);
                         Task.WaitAll(copyOutput, copyError);
 
-                        if (!OperatingSystem.IsWindows())
+                        if (exitCode != 0)
                         {
-                            // crashreport is only for non-windows.
-                            if (exitCode != 0)
+                            // Search for dump, if created.
+                            if (Directory.Exists(crashDumpFolder))
                             {
-                                // Search for dump, if created.
-                                if (Directory.Exists(crashDumpFolder))
+                                outputWriter.WriteLine($"Test failed. Trying to see if dump file was created in {crashDumpFolder} since {startTime}");
+                                DirectoryInfo crashDumpFolderInfo = new DirectoryInfo(crashDumpFolder);
+                                // crashreport is only for non-windows.
+                                if (!OperatingSystem.IsWindows())
                                 {
-                                    outputWriter.WriteLine($"Test failed. Trying to see if dump file was created in {crashDumpFolder} since {startTime}");
-                                    DirectoryInfo crashDumpFolderInfo = new DirectoryInfo(crashDumpFolder);
                                     var dmpFilesInfo = crashDumpFolderInfo.GetFiles("*.crashreport.json").OrderByDescending(f => f.CreationTime);
                                     foreach (var dmpFile in dmpFilesInfo)
                                     {
@@ -648,6 +729,21 @@ namespace CoreclrTestLib
                                         }
                                         outputWriter.WriteLine($"Processing {dmpFile.FullName}");
                                         TryPrintStackTraceFromCrashReport(dmpFile.FullName, outputWriter);
+                                    }
+                                }
+                                else
+                                {
+                                    var dmpFilesInfo = crashDumpFolderInfo.GetFiles("*.dmp").OrderByDescending(f => f.CreationTime);
+                                    foreach (var dmpFile in dmpFilesInfo)
+                                    {
+                                        if (dmpFile.CreationTime < startTime)
+                                        {
+                                            // No new files since test started.
+                                            outputWriter.WriteLine("Finished looking for *.dmp. No new files created.");
+                                            break;
+                                        }
+                                        outputWriter.WriteLine($"Processing {dmpFile.FullName}");
+                                        TryPrintStackTraceFromDmp(dmpFile.FullName, outputWriter);
                                     }
                                 }
                             }

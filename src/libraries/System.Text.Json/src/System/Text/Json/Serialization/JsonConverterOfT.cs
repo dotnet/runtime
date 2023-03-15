@@ -56,11 +56,6 @@ namespace System.Text.Json.Serialization
             return new JsonTypeInfo<T>(this, options);
         }
 
-        internal sealed override JsonParameterInfo CreateJsonParameterInfo()
-        {
-            return new JsonParameterInfo<T>();
-        }
-
         internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
         {
             if (this is JsonConverter<TTarget> conv)

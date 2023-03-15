@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 else
                 {
-                    Assert.Equal(expectedResolvers, GetCombinedResolvers(combinedResolver));
+                    Assert.Equal(expectedResolvers, GetAndValidateCombinedResolvers(combinedResolver));
                 }
             }
         }
@@ -150,23 +150,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(4, resolverId);
         }
 
-        private static IJsonTypeInfoResolver[] GetCombinedResolvers(IJsonTypeInfoResolver resolver)
+        private static IList<IJsonTypeInfoResolver> GetAndValidateCombinedResolvers(IJsonTypeInfoResolver resolver)
         {
-            (Type combinedResolverType, FieldInfo underlyingResolverField) = s_combinedResolverMembers.Value;
-            Assert.IsType(combinedResolverType, resolver);
-            return (IJsonTypeInfoResolver[])underlyingResolverField.GetValue(resolver);
-        }
+            var list = (IList<IJsonTypeInfoResolver>)resolver;
 
-        private static Lazy<(Type, FieldInfo)> s_combinedResolverMembers = new Lazy<(Type, FieldInfo)>
-        (
-            static () =>
-            {
-                Type? combinedResolverType = typeof(JsonTypeInfoResolver).GetNestedType("CombiningJsonTypeInfoResolver", BindingFlags.NonPublic);
-                Assert.NotNull(combinedResolverType);
-                FieldInfo underlyingResolverField = combinedResolverType.GetField("_resolvers", BindingFlags.NonPublic | BindingFlags.Instance);
-                Assert.NotNull(underlyingResolverField);
-                return (combinedResolverType, underlyingResolverField);
-            }
-        );
+            Assert.True(list.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => list.Clear());
+            Assert.Throws<InvalidOperationException>(() => list.Add(new DefaultJsonTypeInfoResolver()));
+
+            return list;
+        }
     }
 }

@@ -24,6 +24,11 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName ();
 		}
 
+		public static IEnumerable<object[]> Generics ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
 		public static IEnumerable<object[]> LinkXml()
 		{
 			return TestNamesBySuiteName();
@@ -35,6 +40,16 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		public static IEnumerable<object[]> RequiresCapability ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
+		public static IEnumerable<object[]> SingleFile ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
+		public static IEnumerable<object[]> Warnings ()
 		{
 			return TestNamesBySuiteName ();
 		}

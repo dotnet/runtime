@@ -28,9 +28,9 @@ namespace System.Collections.Frozen
             _values = new TValue[entries.Length];
 
             _hashTable = FrozenHashTable.Create(
-                entries,
-                pair => pair.Key,
-                (index, pair) => _values[index] = pair.Value);
+                entries.Length,
+                index => entries[index].Key,
+                (destIndex, srcIndex) => _values[destIndex] = entries[srcIndex].Value);
         }
 
         /// <inheritdoc />

@@ -600,7 +600,7 @@ void emitter::emitIns(instruction ins)
  *        the negtive `offs` is special for optimizing the large offset which >2047.
  *        when offs >2047 we can't encode one instruction to load/store the data,
  *        if there are several load/store at this case, you have to repeat the similar
- *        large offs with reduntant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
+ *        large offs with reduntant instructions and maybe eat up the `emitIGbuffSize`.
  *
  *    Before optimizing the following instructions:
  *      lu12i.w  x0, 0x0

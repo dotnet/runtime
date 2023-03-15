@@ -24,31 +24,31 @@ and for libraries runs is defined [here](../../../eng/pipelines/libraries/helix-
 Many test runs use a non-default product configuration, to allow re-using existing test assets to stress various aspects of the system.
 Determine the precise test configuration under which the test has failed. This might be evident from the test job name. For example,
 `net8.0-windows-Release-x86-CoreCLR_checked-jitstress1-Windows.10.Amd64.Open` is a libraries test run on Windows with a Release x86 libraries
-build, Checked coreclr build, and setting the `COMPlus_JitStress=1` configuration setting, in the `Windows.10.Amd64.Open` Helix queue.
+build, Checked coreclr build, and setting the `DOTNET_JitStress=1` configuration setting, in the `Windows.10.Amd64.Open` Helix queue.
 
 You need to be careful when reproducing failures to set all the correct environment variables. In the above example, if you look at the
 test failure console log, you find:
 
 ```
-C:\h\w\AE88094B\w\B1B409BF\e>set COMPlus
-COMPlus_JitStress=1
-COMPlus_TieredCompilation=0
+C:\h\w\AE88094B\w\B1B409BF\e>set DOTNET
+DOTNET_JitStress=1
+DOTNET_TieredCompilation=0
 ```
 
-Thus, you can see that you also need to set `COMPlus_TieredCompilation=0` when attempting to reproduce the failure.
+Thus, you can see that you also need to set `DOTNET_TieredCompilation=0` when attempting to reproduce the failure.
 
 On non-Windows platforms, you'll see a similar output for the test configuration. E.g.,
 
 ```
 + printenv
-+ grep COMPlus
-COMPlus_TieredCompilation=1
-COMPlus_JitStress=1
-COMPlus_DbgMiniDumpName=/home/helixbot/dotnetbuild/dumps/coredump.%d.dmp
-COMPlus_DbgEnableMiniDump=1
++ grep DOTNET
+DOTNET_TieredCompilation=1
+DOTNET_JitStress=1
+DOTNET_DbgMiniDumpName=/home/helixbot/dotnetbuild/dumps/coredump.%d.dmp
+DOTNET_DbgEnableMiniDump=1
 ```
 
-You might need to set variables in addition to the `COMPlus_*` (equivalently, `DOTNET_*`) variables. For example, you might see:
+You might need to set variables in addition to the `DOTNET_*` variables. For example, you might see:
 ```
 set RunCrossGen2=1
 ```
@@ -179,22 +179,22 @@ architecture/OS/OS version/Docker container, etc. Note that this applies to repr
 modes set.
 
 Once the problem can be reproduced, attempt to reproduce the problem without setting any of the JIT stress variables, e.g., do not set:
-- `COMPlus_TieredCompilation`
-- `COMPlus_JitStress`
-- `COMPlus_JitStressRegs`
+- `DOTNET_TieredCompilation`
+- `DOTNET_JitStress`
+- `DOTNET_JitStressRegs`
 
 If the test reliably fails with the JIT stress modes, but passes without, consider it a JIT issue.
 
 ## Example: GC stress failures
 
-Failures that occur only when the `COMPlus_GCStress` variable is set are called "GCStress failures". There are several general kinds
+Failures that occur only when the `DOTNET_GCStress` variable is set are called "GCStress failures". There are several general kinds
 of failures:
 - Timeouts: tests run under this stress mode run very slowly.
 - A "GC hole": the JIT (or sometimes VM) doesn't properly report all GC object locations to the system.
 - A bug in the GC stress infrastructure.
 - A bug in the GC itself.
 
-Note the value `COMPlus_GCStress` is set to is a bitmask. Failures with 0x1 or 0x2 (and thus 0x3) are typically VM failures.
+Note the value `DOTNET_GCStress` is set to is a bitmask. Failures with 0x1 or 0x2 (and thus 0x3) are typically VM failures.
 Failures with 0x4 or 0x8 (and thus 0xC) are typically JIT failures. Ideally, a failure can be reduced to fail with only a single
 bit set (that is, either 0x4 or 0x8, which is more specific than just 0xC). That is especially true for 0xF, where we don't know if
 it's likely a VM or a JIT failure without reducing it.

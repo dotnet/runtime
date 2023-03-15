@@ -67,6 +67,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonTypeInfo.ValidateType(type);
             JsonTypeInfo typeInfo = CreateJsonTypeInfo(type, options);
+            typeInfo.OriginatingResolver = this;
+
+            // We've finished configuring the metadata, brand the instance as user-unmodified.
+            // This should be the last update operation in the resolver to avoid resetting the flag.
+            typeInfo.IsCustomized = false;
 
             if (_modifiers != null)
             {
@@ -107,12 +112,12 @@ namespace System.Text.Json.Serialization.Metadata
                 _resolver = resolver;
             }
 
-            protected override bool IsImmutable => !_resolver._mutable;
-            protected override void VerifyMutable()
+            public override bool IsReadOnly => !_resolver._mutable;
+            protected override void OnCollectionModifying()
             {
                 if (!_resolver._mutable)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_TypeInfoResolverImmutable();
+                    ThrowHelper.ThrowInvalidOperationException_DefaultTypeInfoResolverImmutable();
                 }
             }
         }

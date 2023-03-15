@@ -157,10 +157,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
                 AdditionalDepsComponent = CreateComponentWithNoDependencies();
 
-                TestApp app = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, NetCoreAppVersion);
-                FrameworkReferenceApp = NetCoreAppBuilder.PortableForNETCoreApp(app)
-                    .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
-                    .Build(app);
+                FrameworkReferenceApp = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, NetCoreAppVersion);
 
                 // Copy dependency next to app
                 File.Copy(AdditionalDepsComponent.AppDll, Path.Combine(FrameworkReferenceApp.Location, $"{AdditionalDepsComponent.AssemblyName}.dll"));

@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 namespace Internal.IL.Stubs
 {
     /// <summary>
-    /// Synthetic method override of "int ValueType.__GetFieldHelper(Int32, out EETypePtr)". This method is injected
+    /// Synthetic method override of "int ValueType.__GetFieldHelper(Int32, out MethodTable*)". This method is injected
     /// into all value types that cannot have their Equals(object) and GetHashCode() methods operate on individual
     /// bytes. The purpose of the override is to provide access to the value types' fields and their types.
     /// </summary>
@@ -46,7 +46,7 @@ namespace Internal.IL.Stubs
                 {
                     TypeSystemContext context = _owningType.Context;
                     TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
-                    TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
+                    TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable").MakePointerType();
 
                     _signature = new MethodSignature(0, 0, int32Type, new[] {
                         int32Type,
@@ -64,9 +64,8 @@ namespace Internal.IL.Stubs
 
             ILEmitter emitter = new ILEmitter();
 
-            TypeDesc eeTypePtrType = Context.SystemModule.GetKnownType("System", "EETypePtr");
-            MethodDesc eeTypePtrOfMethod = eeTypePtrType.GetKnownMethod("EETypePtrOf", null);
-            ILToken eeTypePtrToken = emitter.NewToken(eeTypePtrType);
+            TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
+            MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of", null);
 
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();
@@ -98,10 +97,10 @@ namespace Internal.IL.Stubs
                 // Don't unnecessarily create an MethodTable for the enum.
                 boxableFieldType = boxableFieldType.UnderlyingType;
 
-                MethodDesc ptrOfField = eeTypePtrOfMethod.MakeInstantiatedMethod(boxableFieldType);
-                getFieldStream.Emit(ILOpcode.call, emitter.NewToken(ptrOfField));
+                MethodDesc mtOfFieldMethod = methodTableOfMethod.MakeInstantiatedMethod(boxableFieldType);
+                getFieldStream.Emit(ILOpcode.call, emitter.NewToken(mtOfFieldMethod));
 
-                getFieldStream.Emit(ILOpcode.stobj, eeTypePtrToken);
+                getFieldStream.Emit(ILOpcode.stind_i);
 
                 getFieldStream.EmitLdArg(0);
                 getFieldStream.Emit(ILOpcode.ldflda, emitter.NewToken(field));

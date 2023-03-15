@@ -17,7 +17,6 @@
 #include "shash.h"
 #include "eventtracepriv.h"
 #include "shash.inl"
-#include "palredhawk.h"
 
 #if defined(FEATURE_EVENT_TRACE)
 

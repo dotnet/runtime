@@ -1696,10 +1696,10 @@ MONO_RESTORE_WARNING
 static MonoInst*
 mono_create_fast_tls_getter (MonoCompile *cfg, MonoTlsKey key)
 {
-	int tls_offset = mono_tls_get_tls_offset (key);
-
 	if (cfg->compile_aot)
 		return NULL;
+
+	int tls_offset = mono_tls_get_tls_offset (key);
 
 	if (tls_offset != -1 && mono_arch_have_fast_tls ()) {
 		MonoInst *ins;
@@ -2595,7 +2595,7 @@ get_gshared_info_slot (MonoCompile *cfg, MonoJumpInfo *patch_info, MonoRgctxInfo
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_VIRT_METHOD:
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_DELEGATE_INFO:
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		data = (gpointer)patch_info->data.target;
@@ -3610,18 +3610,31 @@ emit_set_deopt_il_offset (MonoCompile *cfg, int offset)
 }
 
 static MonoInst*
-emit_get_rgctx_dele_tramp (MonoCompile *cfg, int context_used,
-							MonoClass *klass, MonoMethod *virt_method, gboolean _virtual, MonoRgctxInfoType rgctx_type)
+emit_get_rgctx_dele_tramp_info (MonoCompile *cfg, int context_used,
+								MonoClass *klass, MonoMethod *method, gboolean is_virtual, MonoRgctxInfoType rgctx_type)
 {
 	MonoDelegateClassMethodPair *info;
 	MonoJumpInfoRgctxEntry *entry;
 
 	info = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoDelegateClassMethodPair));
 	info->klass = klass;
-	info->method = virt_method;
-	info->is_virtual = _virtual;
+	info->method = method;
+	info->is_virtual = is_virtual;
 
-	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, info, rgctx_type);
+	if (!context_used) {
+		MonoInst *ins;
+
+		g_assert (rgctx_type == MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
+		if (cfg->compile_aot) {
+			EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_DELEGATE_INFO, info);
+		} else {
+			MonoDelegateTrampInfo *tramp_info = mono_create_delegate_trampoline_info (klass, method, is_virtual);
+			EMIT_NEW_PCONST (cfg, ins, tramp_info);
+		}
+		return ins;
+	}
+
+	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_DELEGATE_INFO, info, rgctx_type);
 
 	return emit_rgctx_fetch (cfg, context_used, entry);
 }
@@ -3630,15 +3643,13 @@ emit_get_rgctx_dele_tramp (MonoCompile *cfg, int context_used,
  * Returns NULL and set the cfg exception on error.
  */
 static G_GNUC_UNUSED MonoInst*
-handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, MonoMethod *method, int target_method_context_used, int invoke_context_used, gboolean virtual_)
+handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, MonoMethod *method, int target_method_context_used, int invoke_context_used, gboolean is_virtual)
 {
 	MonoInst *ptr;
 	int dreg;
-	gpointer trampoline;
-	MonoInst *obj, *tramp_ins;
-	guint8 **code_slot;
+	MonoInst *obj, *info_ins;
 
-	if (virtual_ && !cfg->llvm_only) {
+	if (is_virtual && !cfg->llvm_only) {
 		MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
 		g_assert (invoke);
 
@@ -3651,7 +3662,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	if (!obj)
 		return NULL;
 
-	/* Inline the contents of mono_delegate_ctor */
+	/* Inline the contents of mini_init_delegate */
 
 	/* Set target field */
 	/* Optimize away setting of NULL target */
@@ -3670,23 +3681,27 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		}
 	}
 
-	/* Set method field */
-	if (!(target_method_context_used || invoke_context_used) && !cfg->llvm_only) {
-		//If compiling with gsharing enabled, it's faster to load method the delegate trampoline info than to use a rgctx slot
-		MonoInst *method_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
-	}
+	info_ins = emit_get_rgctx_dele_tramp_info (cfg, target_method_context_used | invoke_context_used, klass, method, is_virtual, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
 
 	if (cfg->llvm_only) {
-		if (virtual_) {
-			MonoInst *args [ ] = {
-				obj,
-				target,
-				emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD)
-			};
-			mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate_virtual, args);
-			return obj;
-		}
+		MonoInst *args [] = {
+			obj,
+			info_ins
+		};
+		mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, args);
+		return obj;
+	}
+
+	/* Set method field */
+	if (target_method_context_used || invoke_context_used) {
+		// We copy from the delegate trampoline info as it's faster than a rgctx fetch
+		dreg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method));
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), dreg);
+	} else {
+		// This is emitted as a constant store for the non-shared case.
+		MonoInst *method_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
 	}
 
 	/*
@@ -3694,80 +3709,32 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	 * in mono_delegate_trampoline (), we allocate a per-domain memory slot to
 	 * store it, and we fill it after the method has been compiled.
 	 */
-	if (!method->dynamic && !cfg->llvm_only) {
+	if (!method->dynamic) {
 		MonoInst *code_slot_ins;
 
-		if (target_method_context_used) {
+		if (target_method_context_used)
 			code_slot_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD_DELEGATE_CODE);
-		} else {
-			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
-
-			jit_mm_lock (jit_mm);
-			if (!jit_mm->method_code_hash)
-				jit_mm->method_code_hash = g_hash_table_new (NULL, NULL);
-			code_slot = (guint8 **)g_hash_table_lookup (jit_mm->method_code_hash, method);
-			if (!code_slot) {
-				code_slot = (guint8 **)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (gpointer));
-				g_hash_table_insert (jit_mm->method_code_hash, method, code_slot);
-			}
-			jit_mm_unlock (jit_mm);
-
+		else
 			code_slot_ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_METHOD_CODE_SLOT, method);
-		}
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);
 	}
 
-	if (target_method_context_used || invoke_context_used) {
-		tramp_ins = emit_get_rgctx_dele_tramp (cfg, target_method_context_used | invoke_context_used, klass, method, virtual_, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
-
-		//This is emitted as a constant store for the non-shared case.
-		//We copy from the delegate trampoline info as it's faster than a rgctx fetch
-		dreg = alloc_preg (cfg);
-		if (!cfg->llvm_only) {
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method));
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), dreg);
-		}
-	} else if (cfg->compile_aot) {
-		MonoDelegateClassMethodPair *del_tramp;
-
-		del_tramp = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoDelegateClassMethodPair));
-		del_tramp->klass = klass;
-		del_tramp->method = method;
-		del_tramp->is_virtual = virtual_;
-		EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
-	} else {
-		if (virtual_)
-			trampoline = mono_create_delegate_virtual_trampoline (klass, method);
-		else
-			trampoline = mono_create_delegate_trampoline_info (klass, method);
-		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
-	}
-
-	if (cfg->llvm_only) {
-		MonoInst *args [ ] = {
-			obj,
-			tramp_ins
-		};
-		mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, args);
-		return obj;
-	}
-
 	/* Set invoke_impl field */
-	if (virtual_) {
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), tramp_ins->dreg);
-	} else {
-		dreg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, invoke_impl));
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), dreg);
+	dreg = alloc_preg (cfg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, invoke_impl));
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl), dreg);
 
+	if (!is_virtual) {
 		dreg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, tramp_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method_ptr));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, info_ins->dreg, MONO_STRUCT_OFFSET (MonoDelegateTrampInfo, method_ptr));
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), dreg);
 	}
 
-	dreg = alloc_preg (cfg);
-	MONO_EMIT_NEW_ICONST (cfg, dreg, virtual_ ? 1 : 0);
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_is_virtual), dreg);
+	if (is_virtual) {
+		dreg = alloc_preg (cfg);
+		MONO_EMIT_NEW_ICONST (cfg, dreg, 1);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_is_virtual), dreg);
+	}
 
 	/* All the checks which are in mono_delegate_ctor () are done by the delegate trampoline */
 
@@ -3787,11 +3754,32 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 	MonoInst *ins = NULL;
 	gboolean emit_widen = *ref_emit_widen;
 	gboolean supported;
+	MonoJumpInfoVirtMethod *info;
+	MonoJumpInfoRgctxEntry *entry;
+	MonoInst *call_info_ins;
+	int context_used;
+	MonoBasicBlock *end_bb = NULL, *slowpath_bb = NULL;
+	MonoInst *calls [2];
+	MonoInst *args [7];
+	MonoInst *orig_receiver = sp [0];
 
 	/*
-	 * Constrained calls need to behave differently at runtime dependending on whenever the receiver is instantiated as ref type or as a vtype.
-	 * This is hard to do with the current call code, since we would have to emit a branch and two different calls. So instead, we
-	 * pack the arguments into an array, and do the rest of the work in an icall.
+	 * The calls are of the form:
+	 * .constrained T_GSHAREDVT
+	 * callvirt <method>
+	 *
+	 * There are 3 basic cases:
+	 * - T is a vtype and the called method is a vtype method (ie. on T).
+	 *   In this case a normal call is made.
+	 * - T is a vtype, and the called method is a method on a reference type
+	 *   (i.e. a method on Object/Valuetype/Enum)
+	 *   In this case the receiver needs to be boxed.
+	 * - T is a reference type.
+	 *   In this case, it needs to be dereferenced (since its type is T&), and
+	 *   a virtual call is made based on its runtime type.
+	 *
+	 * This is implemented by precomputing some data into an rgctx slot, then
+	 * passing that data to jit icalls.
 	 */
 	supported = ((cmethod->klass == mono_defaults.object_class) || mono_class_is_interface (cmethod->klass) || (!m_class_is_valuetype (cmethod->klass) && m_class_get_image (cmethod->klass) != mono_defaults.corlib));
 	if (supported)
@@ -3807,101 +3795,161 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 			}
 		}
 	}
-	if (supported) {
-		MonoInst *args [5];
+	if (!supported)
+		GSHAREDVT_FAILURE (CEE_CALLVIRT);
 
-		/*
-		 * This case handles calls to
-		 * - object:ToString()/Equals()/GetHashCode(),
-		 * - System.IComparable<T>:CompareTo()
-		 * - System.IEquatable<T>:Equals ()
-		 * plus some simple interface calls enough to support AsyncTaskMethodBuilder.
-		 */
+	/* rgctx entry containing precomputed data */
+	context_used = mono_method_check_context_used (cmethod) | mono_class_check_context_used (constrained_class);
 
-		if (fsig->hasthis)
-			args [0] = sp [0];
+	info = (MonoJumpInfoVirtMethod *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoVirtMethod));
+	info->klass = constrained_class;
+	info->method = cmethod;
+
+	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_VIRT_METHOD, info, MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO);
+	call_info_ins = emit_rgctx_fetch (cfg, context_used, entry);
+
+	/*
+	 * Fastpath: call mono_gsharedvt_constrained_call_fast, which returns
+	 * both the boxed/unboxed etc. receiver and the address to call, then
+	 * do an indirect call.
+	 */
+	calls [0] = NULL;
+	// FIXME: Add more cases
+	if (fsig->hasthis && (fsig->ret->type == MONO_TYPE_VOID || MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_IS_REFERENCE (fsig->ret)) && !mini_is_gsharedvt_signature (fsig)) {
+		/* Call mono_gsharedvt_constrained_call_fast (receiver, info, &new_receiver) */
+		args [0] = sp [0];
+		args [1] = call_info_ins;
+		int receiver_vreg = alloc_preg (cfg);
+		MONO_EMIT_NEW_PCONST (cfg, receiver_vreg, NULL);
+		EMIT_NEW_VARLOADA_VREG (cfg, args [2], receiver_vreg, mono_get_int_type ());
+
+		/* This returns the address/ftndesc to call */
+		MonoInst *code_ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call_fast, args);
+
+		NEW_BBLOCK (cfg, end_bb);
+		NEW_BBLOCK (cfg, slowpath_bb);
+
+		/* If NULL, go to slowpath */
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, code_ins->dreg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, slowpath_bb);
+
+		/* Change the receiver to the new receiver returned by mono_gsharedvt_constrained_call_fast () */
+		int tmp_reg = alloc_preg (cfg);
+		EMIT_NEW_UNALU (cfg, ins, OP_MOVE, tmp_reg, receiver_vreg);
+		sp [0] = ins;
+
+		if (cfg->llvm_only)
+			calls [0] = mini_emit_llvmonly_calli (cfg, fsig, sp, code_ins);
 		else
-			EMIT_NEW_PCONST (cfg, args [0], NULL);
-		args [1] = emit_get_rgctx_method (cfg, mono_method_check_context_used (cmethod), cmethod, MONO_RGCTX_INFO_METHOD);
-		args [2] = mini_emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_class), constrained_class, MONO_RGCTX_INFO_KLASS);
+			calls [0] = mini_emit_calli (cfg, fsig, sp, code_ins, NULL, NULL);
 
-		/* !fsig->hasthis is for the wrapper for the Object.GetType () icall or static virtual methods */
-		if ((fsig->hasthis || m_method_is_static (cmethod)) && fsig->param_count) {
-			/* Call mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean *deref_args, gpointer *args) */
-			gboolean has_gsharedvt = FALSE;
-			for (int i = 0; i < fsig->param_count; ++i) {
-				if (mini_is_gsharedvt_type (fsig->params [i]))
-					has_gsharedvt = TRUE;
-			}
-			/* Pass an array of bools which signal whenever the corresponding argument is a gsharedvt ref type */
-			if (has_gsharedvt) {
-				MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
-				ins->dreg = alloc_preg (cfg);
-				ins->inst_imm = fsig->param_count;
-				MONO_ADD_INS (cfg->cbb, ins);
-				args [3] = ins;
-			} else {
-				EMIT_NEW_PCONST (cfg, args [3], 0);
-			}
-			/* Pass the arguments using a localloc-ed array using the format expected by runtime_invoke () */
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+		MONO_START_BB (cfg, slowpath_bb);
+	}
+
+	/*
+	 * Slowpath: store the arguments to an array on the stack, then call
+	 * mono_gsharedvt_constrained_call () which computes the target method and calls it using
+	 * runtime invoke.
+	 */
+	if (fsig->hasthis)
+		args [0] = orig_receiver;
+	else
+		EMIT_NEW_PCONST (cfg, args [0], NULL);
+	args [1] = emit_get_rgctx_method (cfg, mono_method_check_context_used (cmethod), cmethod, MONO_RGCTX_INFO_METHOD);
+	args [2] = mini_emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_class), constrained_class, MONO_RGCTX_INFO_KLASS);
+	args [3] = call_info_ins;
+
+	MonoInst *is_gsharedvt_ins = NULL, *args_ins = NULL;
+
+	/* !fsig->hasthis is for the wrapper for the Object.GetType () icall or static virtual methods */
+	if ((fsig->hasthis || m_method_is_static (cmethod)) && fsig->param_count) {
+		/* Call mono_gsharedvt_constrained_call () */
+		gboolean has_gsharedvt = FALSE;
+		for (int i = 0; i < fsig->param_count; ++i) {
+			if (mini_is_gsharedvt_type (fsig->params [i]))
+				has_gsharedvt = TRUE;
+		}
+
+		/* Pass an array of bools which signal whenever the corresponding argument is a gsharedvt ref type */
+		if (has_gsharedvt) {
 			MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
 			ins->dreg = alloc_preg (cfg);
-			ins->inst_imm = fsig->param_count * sizeof (target_mgreg_t);
+			ins->inst_imm = fsig->param_count;
 			MONO_ADD_INS (cfg->cbb, ins);
-			args [4] = ins;
-
-			for (int i = 0; i < fsig->param_count; ++i) {
-				int addr_reg;
-
-				if (mini_is_gsharedvt_type (fsig->params [i])) {
-					MonoInst *is_deref;
-					int deref_arg_reg;
-					ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (fsig->params [i]), MONO_RGCTX_INFO_CLASS_BOX_TYPE);
-					deref_arg_reg = alloc_preg (cfg);
-					/* deref_arg = BOX_TYPE != MONO_GSHAREDVT_BOX_TYPE_VTYPE */
-					EMIT_NEW_BIALU_IMM (cfg, is_deref, OP_ISUB_IMM, deref_arg_reg, ins->dreg, 1);
-					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, args [3]->dreg, i, is_deref->dreg);
-				} else if (has_gsharedvt) {
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, args [3]->dreg, i, 0);
-				}
-
-				MonoInst *arg = sp [i + fsig->hasthis];
-
-				if (mini_is_gsharedvt_type (fsig->params [i]) || MONO_TYPE_IS_PRIMITIVE (fsig->params [i]) || MONO_TYPE_ISSTRUCT (fsig->params [i])) {
-					EMIT_NEW_VARLOADA_VREG (cfg, ins, arg->dreg, fsig->params [i]);
-					addr_reg = ins->dreg;
-					EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, i * sizeof (target_mgreg_t), addr_reg);
-				} else {
-					EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, i * sizeof (target_mgreg_t), arg->dreg);
-				}
-			}
+			is_gsharedvt_ins = ins;
 		} else {
-			EMIT_NEW_ICONST (cfg, args [3], 0);
-			EMIT_NEW_ICONST (cfg, args [4], 0);
+			EMIT_NEW_PCONST (cfg, is_gsharedvt_ins, 0);
 		}
-		ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call, args);
-		emit_widen = FALSE;
+		/* Pass the arguments using a localloc-ed array using the format expected by runtime_invoke () */
+		MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+		ins->dreg = alloc_preg (cfg);
+		ins->inst_imm = fsig->param_count * sizeof (target_mgreg_t);
+		MONO_ADD_INS (cfg->cbb, ins);
+		args_ins = ins;
 
-		if (mini_is_gsharedvt_type (fsig->ret)) {
-			ins = handle_unbox_gsharedvt (cfg, mono_class_from_mono_type_internal (fsig->ret), ins);
-		} else if (MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || m_class_is_enumtype (mono_class_from_mono_type_internal (fsig->ret))) {
-			MonoInst *add;
+		for (int i = 0; i < fsig->param_count; ++i) {
+			int addr_reg;
 
-			/* Unbox */
-			NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), ins->dreg, MONO_ABI_SIZEOF (MonoObject));
-			MONO_ADD_INS (cfg->cbb, add);
-			/* Load value */
-			NEW_LOAD_MEMBASE_TYPE (cfg, ins, fsig->ret, add->dreg, 0);
-			MONO_ADD_INS (cfg->cbb, ins);
-			/* ins represents the call result */
+			if (mini_is_gsharedvt_type (fsig->params [i])) {
+				MonoInst *is_deref;
+				int deref_arg_reg;
+				ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (fsig->params [i]), MONO_RGCTX_INFO_CLASS_BOX_TYPE);
+				deref_arg_reg = alloc_preg (cfg);
+				/* deref_arg = BOX_TYPE != MONO_GSHAREDVT_BOX_TYPE_VTYPE */
+				EMIT_NEW_BIALU_IMM (cfg, is_deref, OP_ISUB_IMM, deref_arg_reg, ins->dreg, 1);
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, is_gsharedvt_ins->dreg, i, is_deref->dreg);
+			} else if (has_gsharedvt) {
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI1_MEMBASE_IMM, is_gsharedvt_ins->dreg, i, 0);
+			}
+
+			MonoInst *arg = sp [i + fsig->hasthis];
+			if (mini_is_gsharedvt_type (fsig->params [i]) || MONO_TYPE_IS_PRIMITIVE (fsig->params [i]) || MONO_TYPE_ISSTRUCT (fsig->params [i])) {
+				EMIT_NEW_VARLOADA_VREG (cfg, ins, arg->dreg, fsig->params [i]);
+				addr_reg = ins->dreg;
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args_ins->dreg, i * sizeof (target_mgreg_t), addr_reg);
+			} else {
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args_ins->dreg, i * sizeof (target_mgreg_t), arg->dreg);
+			}
 		}
 	} else {
-		GSHAREDVT_FAILURE (CEE_CALLVIRT);
+		EMIT_NEW_ICONST (cfg, is_gsharedvt_ins, 0);
+		EMIT_NEW_ICONST (cfg, args_ins, 0);
 	}
+
+	args [4] = is_gsharedvt_ins;
+	args [5] = args_ins;
+
+	ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call, args);
+	emit_widen = FALSE;
+
+	/* Unbox the return value */
+	if (mini_is_gsharedvt_type (fsig->ret)) {
+		ins = handle_unbox_gsharedvt (cfg, mono_class_from_mono_type_internal (fsig->ret), ins);
+	} else if (MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || m_class_is_enumtype (mono_class_from_mono_type_internal (fsig->ret))) {
+		MonoInst *add;
+
+		/* Unbox */
+		NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), ins->dreg, MONO_ABI_SIZEOF (MonoObject));
+		MONO_ADD_INS (cfg->cbb, add);
+		/* Load value */
+		NEW_LOAD_MEMBASE_TYPE (cfg, ins, fsig->ret, add->dreg, 0);
+		MONO_ADD_INS (cfg->cbb, ins);
+	}
+	calls [1] = ins;
+
+	/* Merge fastpath/slowpath */
+	if (slowpath_bb) {
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+		MONO_START_BB (cfg, end_bb);
+	}
+	if (calls [0] && fsig->ret->type != MONO_TYPE_VOID)
+		calls [0]->dreg = calls [1]->dreg;
 
 	*ref_emit_widen = emit_widen;
 
-	return ins;
+	return calls [1];
 
  exception_exit:
 	return NULL;
@@ -5735,7 +5783,8 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 	if (!iface_method ||
 		iface_method->is_generic ||
 		iface_method->dynamic || 					// Reflection.Emit-generated methods should have this flag
-		!strcmp (iface_method->name, "GetHashCode")) // the callvirt handler itself optimizes those
+		!strcmp (iface_method->name, "GetHashCode") || // the callvirt handler itself optimizes those
+		(iface_method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return NULL;
 
 	MonoMethodSignature* iface_method_sig;
@@ -10820,9 +10869,16 @@ field_access_end:
 					} else {
 						EMIT_NEW_PCONST (cfg, ins, handle);
 					}
+
 					EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, ins->dreg);
 					EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
+					ins->opcode = OP_LDTOKEN_FIELD;
+					ins->inst_c0 = n;
+					ins->inst_p1 = handle;
+
+					cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+					cfg->cbb->needs_decompose = TRUE;
 				}
 			}
 
@@ -12559,6 +12615,7 @@ mono_op_no_side_effects (int opcode)
 	case OP_VZERO:
 	case OP_XZERO:
 	case OP_XONES:
+	case OP_XCONST:
 	case OP_ICONST:
 	case OP_I8CONST:
 	case OP_ADD_IMM:
@@ -12625,11 +12682,6 @@ mono_handle_global_vregs (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 
 	vreg_to_bb = (gint32 *)mono_mempool_alloc0 (cfg->mempool, sizeof (gint32*) * cfg->next_vreg + 1);
-
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	if (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION)
-		mono_simd_simplify_indirection (cfg);
-#endif
 
 	/* Find local vregs used in more than one bb */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {

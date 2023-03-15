@@ -147,7 +147,11 @@ namespace ILCompiler.DependencyAnalysis
                                 && InlineableStringsResourceNode.IsInlineableStringsResource(module, resName + ".resources"))
                             {
                                 dependencies ??= new DependencyList();
-                                dependencies.Add(factory.InlineableStringResource(module), "EventSource used resource");
+                                var accessorMethod = module.GetType(
+                                    InlineableStringsResourceNode.ResourceAccessorTypeNamespace,
+                                    InlineableStringsResourceNode.ResourceAccessorTypeName)
+                                    .GetMethod(InlineableStringsResourceNode.ResourceAccessorGetStringMethodName, null);
+                                dependencies.Add(factory.ReflectedMethod(accessorMethod), "EventSource used resource");
                             }
                         }
                     }

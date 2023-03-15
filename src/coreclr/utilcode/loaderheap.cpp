@@ -1198,6 +1198,12 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         return FALSE;
     }
 
+    NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+    if (pNewBlock == NULL)
+    {
+        return FALSE;
+    }
+
     // Record reserved range in range list, if one is specified
     // Do this AFTER the commit - otherwise we'll have bogus ranges included.
     if (m_pRangeList != NULL)
@@ -1210,14 +1216,9 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         }
     }
 
-    LoaderHeapBlock *pNewBlock = new (nothrow) LoaderHeapBlock;
-    if (pNewBlock == NULL)
-    {
-        return FALSE;
-    }
-
     m_dwTotalAlloc += dwSizeToCommit;
 
+    pNewBlock.SuppressRelease();
     pData.SuppressRelease();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
@@ -1285,11 +1286,12 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         size_t unusedRemainder = (size_t)((BYTE*)m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
 
+        PTR_BYTE pCommitBaseAddress = m_pPtrToEndOfCommittedRegion;
         if (IsInterleaved())
         {
             // The end of committed region for interleaved heaps points to the end of the executable
             // page and the data pages goes right after that. So we skip the data page here.
-            m_pPtrToEndOfCommittedRegion += GetOsPageSize();
+            pCommitBaseAddress += GetOsPageSize();
         }
         else
         {
@@ -1307,7 +1309,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             dwSizeToCommitPart /= 2;
         }
 
-        if (!CommitPages(m_pPtrToEndOfCommittedRegion, dwSizeToCommitPart))
+        if (!CommitPages(pCommitBaseAddress, dwSizeToCommitPart))
         {
             return FALSE;
         }
@@ -1328,10 +1330,10 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
             // For interleaved heaps, further allocations will start from the newly committed page as they cannot
             // cross page boundary.
-            m_pAllocPtr = (BYTE*)m_pPtrToEndOfCommittedRegion;
+            m_pAllocPtr = (BYTE*)pCommitBaseAddress;
         }
 
-        m_pPtrToEndOfCommittedRegion += dwSizeToCommitPart;
+        m_pPtrToEndOfCommittedRegion += dwSizeToCommit;
         m_dwTotalAlloc += dwSizeToCommit;
 
         return TRUE;
