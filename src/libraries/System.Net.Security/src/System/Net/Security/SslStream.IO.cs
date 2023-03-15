@@ -715,15 +715,10 @@ namespace System.Net.Security
                 return frameSize;
             }
 
-            if (frameSize < int.MaxValue)
-            {
-                _buffer.EnsureAvailableSpace(frameSize - _buffer.EncryptedLength);
-            }
-
             while (_buffer.EncryptedLength < frameSize)
             {
-                // there should be space left to read into
-                Debug.Assert(_buffer.AvailableLength > 0, "_buffer.AvailableBytes > 0");
+                // make sure we have space to read into
+                _buffer.EnsureAvailableSpace(Math.Min(frameSize, _buffer.Capacity) - _buffer.EncryptedLength);
 
                 // We either don't have full frame or we don't have enough data to even determine the size.
                 int bytesRead = await TIOAdapter.ReadAsync(InnerStream, _buffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
