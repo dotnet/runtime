@@ -5,22 +5,20 @@
   </PropertyGroup>
 
   <Target Name="VerifyAssemblySupportsDocsXmlGeneration"
-    Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true'">
-    <Error
-      Condition="'$(IsPartialFacadeAssembly)' == 'true'"
-      Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for partial facade assemblies: $(AssemblyName)" />
-    <Error
-      Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''"
-      Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for assemblies that throw PlatformNotSupportedException: $(AssemblyName)" />
+          Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true'">
+    <Error Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for partial facade assemblies: $(AssemblyName)"
+           Condition="'$(IsPartialFacadeAssembly)' == 'true'" />
+    <Error Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for assemblies that throw PlatformNotSupportedException: $(AssemblyName)"
+           Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''" />
   </Target>
 
-  <PropertyGroup>
-    <NoWarn Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">$(NoWarn);1591</NoWarn>
+  <PropertyGroup Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">
+    <NoWarn>$(NoWarn);1591</NoWarn>
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
     <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
     <IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>
-    <IntellisensePackageXmlFilePath Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
-    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and '$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,7 +29,7 @@
   <!-- Replace the default xml file generated in the obj folder with the one that comes from the docs feed. -->
   <Target Name="ChangeDocumentationFileForPackaging"
           BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup"
-          Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">
+          Condition="'$(IntellisensePackageXmlFilePath)' != ''">
     <ItemGroup>
       <DocFileItem Remove="@(DocFileItem)" />
       <DocFileItem Include="$(IntellisensePackageXmlFilePath)" />
