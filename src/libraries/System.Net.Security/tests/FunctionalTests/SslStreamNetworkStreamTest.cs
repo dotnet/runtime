@@ -957,10 +957,6 @@ namespace System.Net.Security.Tests
                 ServerCertificate = serverCertificate
             };
 
-            //clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-            //clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, clientChain);
-
-
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
 
             Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
