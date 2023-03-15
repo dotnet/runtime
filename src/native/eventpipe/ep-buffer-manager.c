@@ -596,7 +596,7 @@ buffer_manager_move_next_event_any_thread (
 
 	dn_vector_ptr_custom_init_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
-	params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
 
 	ep_raise_error_if_nok (dn_vector_ptr_custom_init (&buffer_array, &params));
 	ep_raise_error_if_nok (dn_vector_ptr_custom_init (&buffer_list_array, &params));
@@ -1061,7 +1061,7 @@ ep_buffer_manager_suspend_write_event (
 
 	dn_vector_ptr_custom_init_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
-	params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
 
 	dn_vector_ptr_t thread_vector;
 	ep_raise_error_if_nok (dn_vector_ptr_custom_init (&thread_vector, &params));
@@ -1205,7 +1205,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 
 	dn_vector_ptr_custom_init_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
-	params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
 
 	dn_vector_ptr_t session_states_to_delete;
 	ep_raise_error_if_nok (dn_vector_ptr_custom_init (&session_states_to_delete, &params));
@@ -1383,7 +1383,7 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 
 	dn_vector_ptr_custom_init_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
-	params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
 
 	dn_vector_ptr_t thread_session_states_to_remove;
 	ep_raise_error_if_nok (dn_vector_ptr_custom_init (&thread_session_states_to_remove, &params));
