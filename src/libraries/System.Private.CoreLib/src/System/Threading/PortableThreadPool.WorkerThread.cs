@@ -7,6 +7,7 @@ namespace System.Threading
 {
     internal sealed partial class PortableThreadPool
     {
+#if !(TARGET_BROWSER && FEATURE_WASM_THREADS)
         /// <summary>
         /// The worker thread infastructure for the CLR thread pool.
         /// </summary>
@@ -312,5 +313,6 @@ namespace System.Threading
                 workerThread.UnsafeStart();
             }
         }
+#endif // !(TARGET_BROWSER && FEATURE_WASM_THREADS)
     }
 }
