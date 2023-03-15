@@ -236,8 +236,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 //     ...
                 //
                 // nullcheckBb(BBJ_COND):               [weight: 1.0]
-                //     if (*fastPathValue == null)
-                //         goto fallbackBb;
+                //     if (*fastPathValue != null)
+                //         goto fastPathBb;
                 //
                 // fallbackBb(BBJ_ALWAYS):              [weight: 0.2]
                 //     rtLookupLcl = HelperCall();
@@ -284,8 +284,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     //     ...
                     //
                     // nullcheckBb(BBJ_COND):               [weight: 0.8]
-                    //     if (*fastPathValue == null)
-                    //         goto fallbackBb;
+                    //     if (*fastPathValue != null)
+                    //         goto fastPathBb;
                     //
                     // fallbackBb(BBJ_ALWAYS):              [weight: 0.36]
                     //     rtLookupLcl = HelperCall();
