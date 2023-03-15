@@ -82,7 +82,7 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 
     GenTree* addr = indir->Addr();
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR) && comp->lvaGetDesc(addr->AsLclVar())->lvSIMDType)
+    if (addr->OperIs(GT_LCL_VAR_ADDR) && varTypeIsSIMD(comp->lvaGetDesc(addr->AsLclVar())))
     {
         // If we have GT_IND(GT_LCL_VAR_ADDR) and the var is a SIMD type,
         // replace the expression by GT_LCL_VAR or GT_LCL_FLD.

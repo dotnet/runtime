@@ -1951,6 +1951,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     vnStore                    = nullptr;
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
+    m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaChecksEnabled         = false;
     fgVNPassesCompleted        = 0;
@@ -4827,14 +4828,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // However, ref counts are not kept incrementally up to date.
     assert(lvaLocalVarRefCounted());
 
-    if (opts.OptimizationEnabled())
-    {
-        // Introduce copies for some single-def locals to make them more
-        // amenable to optimization
-        //
-        DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
-    }
-
     // Figure out the order in which operators are to be evaluated
     //
     DoPhase(this, PHASE_FIND_OPER_ORDER, &Compiler::fgFindOperOrder);
@@ -4999,6 +4992,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
 #endif
+
+    // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
+    DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);

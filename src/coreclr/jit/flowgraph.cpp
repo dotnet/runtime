@@ -2668,17 +2668,6 @@ PhaseStatus Compiler::fgAddInternal()
         LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         // Make room for the inlined frame.
         lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(eeGetEEInfo()->inlinedCallFrameInfo.size), false);
-#if FEATURE_FIXED_OUT_ARGS
-        // Grab and reserve space for TCB, Frame regs used in PInvoke epilog to pop the inlined frame.
-        // See genPInvokeMethodEpilog() for use of the grabbed var. This is only necessary if we are
-        // not using the P/Invoke helpers.
-        if (!opts.ShouldUsePInvokeHelpers() && compJmpOpUsed)
-        {
-            lvaPInvokeFrameRegSaveVar = lvaGrabTempWithImplicitUse(false DEBUGARG("PInvokeFrameRegSave Var"));
-            varDsc                    = lvaGetDesc(lvaPInvokeFrameRegSaveVar);
-            lvaSetStruct(lvaPInvokeFrameRegSaveVar, typGetBlkLayout(2 * REGSIZE_BYTES), false);
-        }
-#endif
     }
 
     // Do we need to insert a "JustMyCode" callback?

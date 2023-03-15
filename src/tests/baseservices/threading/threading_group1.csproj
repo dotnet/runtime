@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="commitstackonlyasneeded/**/*.??proj" />
+    <MergedWrapperProjectReference Include="coverage/**/*.??proj" />
+    <MergedWrapperProjectReference Include="DeadThreads/**/*.??proj" />
+    <MergedWrapperProjectReference Include="delegate/**/*.??proj" />
+    <MergedWrapperProjectReference Include="generics/threadstart/*.??proj" />
+    <MergedWrapperProjectReference Include="generics/syncdelegate/*.??proj" />
+    <MergedWrapperProjectReference Include="regressions/**/*.??proj" />
+    <MergedWrapperProjectReference Update="**" Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;))))" />
+    <ProjectReference Include="@(MergedWrapperProjectReference)" />
+  </ItemGroup>
+</Project>

@@ -492,13 +492,10 @@ public:
     // Morph will update if this local is passed in a register.
     LclVarDsc()
         : _lvArgReg(REG_STK)
-        ,
 #if FEATURE_MULTIREG_ARGS
-        _lvOtherArgReg(REG_STK)
-        ,
+        , _lvOtherArgReg(REG_STK)
 #endif // FEATURE_MULTIREG_ARGS
-        lvClassHnd(NO_CLASS_HANDLE)
-        , lvRefBlks(BlockSetOps::UninitVal())
+        , lvClassHnd(NO_CLASS_HANDLE)
         , lvPerSsaData()
     {
     }
@@ -553,9 +550,8 @@ public:
 #endif                             // defined(TARGET_LOONGARCH64)
 
     unsigned char lvIsBoolean : 1; // set if variable is boolean
-    unsigned char lvSingleDef : 1; // variable has a single def
-                                   // before lvaMarkLocalVars: identifies ref type locals that can get type updates
-                                   // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
+    unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
+                                   // updates
 
     unsigned char lvSingleDefRegCandidate : 1; // variable has a single def and hence is a register candidate
                                                // Currently, this is only used to decide if an EH variable can be
@@ -571,7 +567,6 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
-    unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
 
 #ifndef TARGET_64BIT
@@ -622,9 +617,6 @@ public:
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
 
 #ifdef FEATURE_SIMD
-    // Note that both SIMD vector args and locals are marked as lvSIMDType = true, but the
-    // type of an arg node is TYP_BYREF and a local node is TYP_SIMD*.
-    unsigned char lvSIMDType : 1;            // This is a SIMD struct
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
     unsigned char lvSimdBaseJitType : 5;     // Note: this only packs because CorInfoType has less than 32 entries
 
@@ -760,7 +752,7 @@ public:
         assert(varTypeIsStruct(lvType));
         unsigned slots = 0;
 #ifdef TARGET_ARM
-        slots = lvExactSize / sizeof(float);
+        slots = lvExactSize() / sizeof(float);
         assert(slots <= 8);
 #elif defined(TARGET_ARM64)
         switch (GetLvHfaElemKind())
@@ -769,17 +761,17 @@ public:
                 assert(!"lvHfaSlots called for non-HFA");
                 break;
             case CORINFO_HFA_ELEM_FLOAT:
-                assert((lvExactSize % 4) == 0);
-                slots = lvExactSize >> 2;
+                assert((lvExactSize() % 4) == 0);
+                slots = lvExactSize() >> 2;
                 break;
             case CORINFO_HFA_ELEM_DOUBLE:
             case CORINFO_HFA_ELEM_VECTOR64:
-                assert((lvExactSize % 8) == 0);
-                slots = lvExactSize >> 3;
+                assert((lvExactSize() % 8) == 0);
+                slots = lvExactSize() >> 3;
                 break;
             case CORINFO_HFA_ELEM_VECTOR128:
-                assert((lvExactSize % 16) == 0);
-                slots = lvExactSize >> 4;
+                assert((lvExactSize() % 16) == 0);
+                slots = lvExactSize() >> 4;
                 break;
             default:
                 unreached();
@@ -943,12 +935,6 @@ public:
 #endif // FEATURE_MULTIREG_ARGS
 
 #ifdef FEATURE_SIMD
-    // Is this is a SIMD struct?
-    bool lvIsSIMDType() const
-    {
-        return lvSIMDType;
-    }
-
     // Is this is a SIMD struct which is used for SIMD intrinsic?
     bool lvIsUsedInSIMDIntrinsic() const
     {
@@ -1085,9 +1071,7 @@ public:
         lvStkOffs = offset;
     }
 
-    // TODO-Cleanup: Remove this in favor of GetLayout()->Size/genTypeSize(lvType).
-    unsigned lvExactSize; // (exact) size of a STRUCT/SIMD/BLK local in bytes.
-
+    unsigned lvExactSize() const;
     unsigned lvSize() const;
 
     size_t lvArgStackSize() const;
@@ -1101,10 +1085,6 @@ private:
     ClassLayout* m_layout; // layout info for structs
 
 public:
-    BlockSet   lvRefBlks;          // Set of blocks that contain refs
-    Statement* lvDefStmt;          // Pointer to the statement with the single definition
-    void       lvaDisqualifyVar(); // Call to disqualify a local variable from use in optAddCopies
-
     var_types TypeGet() const
     {
         return (var_types)lvType;
@@ -1185,8 +1165,7 @@ public:
         assert(varTypeIsStruct(lvType));
         assert((m_layout == nullptr) || (m_layout->IsBlockLayout() && (m_layout->GetSize() <= layout->GetSize())));
         assert(layout->IsBlockLayout());
-        m_layout    = layout;
-        lvExactSize = layout->GetSize();
+        m_layout = layout;
     }
 
     SsaDefArray<LclSsaVarDsc> lvPerSsaData;
@@ -3257,9 +3236,6 @@ public:
 
     unsigned lvaInlinedPInvokeFrameVar; // variable representing the InlinedCallFrame
     unsigned lvaReversePInvokeFrameVar; // variable representing the reverse PInvoke frame
-#if FEATURE_FIXED_OUT_ARGS
-    unsigned lvaPInvokeFrameRegSaveVar; // variable representing the RegSave for PInvoke inlining.
-#endif
     unsigned lvaMonAcquired; // boolean variable introduced into in synchronized methods
                              // that tracks whether the lock has been taken
 
@@ -3620,7 +3596,6 @@ public:
     bool lvaMapSimd12ToSimd16(const LclVarDsc* varDsc)
     {
         assert(varDsc->lvType == TYP_SIMD12);
-        assert(varDsc->lvExactSize == 12);
 
 #if defined(TARGET_64BIT)
         assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
@@ -4814,6 +4789,7 @@ public:
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);
     BasicBlock* fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node); // for LIR
     BasicBlock* fgSplitEdge(BasicBlock* curr, BasicBlock* succ);
+    BasicBlock* fgSplitBlockBeforeTree(BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse);
 
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di);
     Statement* fgNewStmtFromTree(GenTree* tree);
@@ -4947,6 +4923,17 @@ public:
             m_nodeToLoopMemoryBlockMap = new (getAllocator()) NodeToLoopMemoryBlockMap(getAllocator());
         }
         return m_nodeToLoopMemoryBlockMap;
+    }
+
+    typedef JitHashTable<void*, JitPtrKeyFuncs<void>, CORINFO_RUNTIME_LOOKUP> SignatureToLookupInfoMap;
+    SignatureToLookupInfoMap* m_signatureToLookupInfoMap;
+    SignatureToLookupInfoMap* GetSignatureToLookupInfoMap()
+    {
+        if (m_signatureToLookupInfoMap == nullptr)
+        {
+            m_signatureToLookupInfoMap = new (getAllocator()) SignatureToLookupInfoMap(getAllocator());
+        }
+        return m_signatureToLookupInfoMap;
     }
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
@@ -5281,6 +5268,7 @@ public:
     PhaseStatus StressSplitTree();
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
+    PhaseStatus fgExpandRuntimeLookups();
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -6777,12 +6765,6 @@ protected:
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
 
-        // ToDo: This can be removed when gtGetStructHandleIfPresent stops guessing
-        // and GT_IND nodes always have valid struct handle.
-        //
-        CORINFO_CLASS_HANDLE csdStructHnd; // The class handle, currently needed to create a SIMD LclVar in PerformCSE
-        bool                 csdStructHndMismatch;
-
         ValueNum defExcSetPromise; // The exception set that is now required for all defs of this CSE.
                                    // This will be set to NoVN if we decide to abandon this CSE
 
@@ -7082,13 +7064,6 @@ public:
     {
         optMethodFlags |= OMF_HAS_EXPRUNTIMELOOKUP;
     }
-
-    void clearMethodHasExpRuntimeLookup()
-    {
-        optMethodFlags &= ~OMF_HAS_EXPRUNTIMELOOKUP;
-    }
-
-    void addExpRuntimeLookupCandidate(GenTreeCall* call);
 
     bool doesMethodHavePatchpoints()
     {
@@ -7454,10 +7429,7 @@ public:
     };
 
 protected:
-    static fgWalkPreFn optAddCopiesCallback;
     static fgWalkPreFn optVNAssertionPropCurStmtVisitor;
-    unsigned           optAddCopyLclNum;
-    GenTree*           optAddCopyAsgnNode;
 
     bool optLocalAssertionProp;  // indicates that we are performing local assertion prop
     bool optAssertionPropagated; // set to true if we modified the trees
@@ -7604,8 +7576,6 @@ public:
 
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
-
-    PhaseStatus optAddCopies();
 
     /**************************************************************************
      *                          Range checks
@@ -8717,7 +8687,7 @@ private:
     // Returns true if the lclVar is an opaque SIMD type.
     bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
     {
-        if (!varDsc->lvSIMDType)
+        if (!varTypeIsSIMD(varDsc))
         {
             return false;
         }
@@ -8953,6 +8923,75 @@ private:
 #endif // FEATURE_SIMD
 
 public:
+    enum UnrollKind
+    {
+        Memset, // Initializing memory with some value
+        Memcpy  // Copying memory from src to dst
+    };
+
+    //------------------------------------------------------------------------
+    // getUnrollThreshold: Calculates the unrolling threshold for the given operation
+    //
+    // Arguments:
+    //    type       - kind of the operation (memset/memcpy)
+    //    canUseSimd - whether it is allowed to use SIMD or not
+    //
+    // Return Value:
+    //    The unrolling threshold for the given operation in bytes
+    //
+    unsigned int getUnrollThreshold(UnrollKind type, bool canUseSimd = true)
+    {
+        unsigned threshold = TARGET_POINTER_SIZE;
+
+#if defined(FEATURE_SIMD)
+        if (canUseSimd)
+        {
+            threshold = maxSIMDStructBytes();
+#if defined(TARGET_ARM64)
+            // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
+            //
+            //   ldp q0, q1, [x1]
+            //   stp q0, q1, [x0]
+            //
+            threshold *= 2;
+#elif defined(TARGET_XARCH)
+            // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
+            threshold = max(threshold, YMM_REGSIZE_BYTES);
+#endif
+        }
+#if defined(TARGET_XARCH)
+        else
+        {
+            // Compatibility with previous logic: we used to allow memset:128/memcpy:64
+            // on AMD64 (and 64/32 on x86) for cases where we don't use SIMD
+            // see https://github.com/dotnet/runtime/issues/83297
+            threshold *= 2;
+        }
+#endif
+#endif
+
+        if (type == UnrollKind::Memset)
+        {
+            // Typically, memset-like operations require less instructions than memcpy
+            threshold *= 2;
+        }
+
+        // Use 4 as a multiplier by default, thus, the final threshold will be:
+        //
+        // | arch        | memset | memcpy |
+        // |-------------|--------|--------|
+        // | x86 avx512  |   512  |   256  | (TODO-XARCH-AVX512: ignored for now)
+        // | x86 avx     |   256  |   128  |
+        // | x86 sse     |   128  |    64  |
+        // | arm64       |   256  |   128  | ldp/stp (2x128bit)
+        // | arm         |    32  |    16  | no SIMD support
+        // | loongarch64 |    64  |    32  | no SIMD support
+        //
+        // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
+        //
+        return threshold * 4;
+    }
+
     //------------------------------------------------------------------------
     // largestEnregisterableStruct: The size in bytes of the largest struct that can be enregistered.
     //
@@ -9001,16 +9040,6 @@ public:
 #endif // FEATURE_HW_INTRINSICS
 
 private:
-    // These routines need not be enclosed under FEATURE_SIMD since lvIsSIMDType()
-    // is defined for both FEATURE_SIMD and !FEATURE_SIMD appropriately. The use
-    // of this routines also avoids the need of #ifdef FEATURE_SIMD specific code.
-
-    // Is this var is of type simd struct?
-    bool lclVarIsSIMDType(unsigned varNum)
-    {
-        return lvaGetDesc(varNum)->lvIsSIMDType();
-    }
-
     // Returns true if the TYP_SIMD locals on stack are aligned at their
     // preferred byte boundary specified by getSIMDTypeAlignment().
     //
@@ -9031,10 +9060,11 @@ private:
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
 #if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
-        if (lclVarIsSIMDType(varNum) && lvaTable[varNum].lvType != TYP_BYREF)
+        LclVarDsc* lcl = lvaGetDesc(varNum);
+        if (varTypeIsSIMD(lcl))
         {
             // TODO-Cleanup: Can't this use the lvExactSize on the varDsc?
-            int alignment = getSIMDTypeAlignment(lvaTable[varNum].lvType);
+            int alignment = getSIMDTypeAlignment(lcl->TypeGet());
             if (alignment <= STACK_ALIGN)
             {
                 bool rbpBased;

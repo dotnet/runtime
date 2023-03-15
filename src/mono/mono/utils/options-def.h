@@ -119,6 +119,10 @@ DEFINE_INT(jiterpreter_minimum_trace_length, "jiterpreter-minimum-trace-length",
 DEFINE_INT(jiterpreter_minimum_distance_between_traces, "jiterpreter-minimum-distance-between-traces", 4, "Don't insert entry points closer together than this")
 // once a trace entry point is inserted, we only actually JIT code for it once it's been hit this many times
 DEFINE_INT(jiterpreter_minimum_trace_hit_count, "jiterpreter-minimum-trace-hit-count", 5000, "JIT trace entry points once they are hit this many times")
+// trace prepares turn into a monitor opcode and stay one this long before being converted to enter or nop
+DEFINE_INT(jiterpreter_trace_monitoring_period, "jiterpreter-trace-monitoring-period", 3000, "Monitor jitted traces for this many calls to determine whether to keep them")
+// traces that only offset ip by less than this on average will be rejected
+DEFINE_INT(jiterpreter_trace_average_distance_threshold, "jiterpreter-trace-average-distance-threshold", 52, "Traces with an average distance less than this will be discarded")
 // After a do_jit_call call site is hit this many times, we will queue it to be jitted
 DEFINE_INT(jiterpreter_jit_call_trampoline_hit_count, "jiterpreter-jit-call-hit-count", 1000, "Queue specialized do_jit_call trampoline for JIT after this many hits")
 // After a do_jit_call call site is hit this many times without being jitted, we will flush the JIT queue

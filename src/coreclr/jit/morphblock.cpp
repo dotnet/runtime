@@ -186,9 +186,6 @@ void MorphInitBlockHelper::PrepareDst()
         m_dstLclNum    = m_dstLclNode->GetLclNum();
         m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNum);
 
-        assert((m_dstVarDsc->TypeGet() != TYP_STRUCT) ||
-               (m_dstVarDsc->GetLayout()->GetSize() == m_dstVarDsc->lvExactSize));
-
         // Kill everything about m_dstLclNum (and its field locals)
         if (m_comp->optLocalAssertionProp && (m_comp->optAssertionCount > 0))
         {
@@ -502,7 +499,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         return;
     }
 
-    if (destLclVar->lvExactSize != blockSize)
+    if (destLclVar->lvExactSize() != blockSize)
     {
         JITDUMP(" dest size mismatch.\n");
         return;
@@ -808,7 +805,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             noway_assert(varTypeIsStruct(m_dstVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
 
-            if (m_blockSize == m_dstVarDsc->lvExactSize)
+            if (m_blockSize == m_dstVarDsc->lvExactSize())
             {
                 JITDUMP(" (m_dstDoFldAsg=true)");
                 // We may decide later that a copyblk is required when this struct has holes
@@ -828,7 +825,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             noway_assert(varTypeIsStruct(m_srcVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
 
-            if (m_blockSize == m_srcVarDsc->lvExactSize)
+            if (m_blockSize == m_srcVarDsc->lvExactSize())
             {
                 JITDUMP(" (m_srcDoFldAsg=true)");
                 // We may decide later that a copyblk is required when this struct has holes
@@ -1467,8 +1464,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                         assert(destType != TYP_STRUCT);
                         unsigned destSize = genTypeSize(destType);
                         m_srcVarDsc       = m_comp->lvaGetDesc(m_srcLclNum);
-                        unsigned srcSize =
-                            (m_srcVarDsc->lvType == TYP_STRUCT) ? m_srcVarDsc->lvExactSize : genTypeSize(m_srcVarDsc);
+                        unsigned srcSize  = m_srcVarDsc->lvExactSize();
                         if (destSize == srcSize)
                         {
                             m_srcLclNode->ChangeOper(GT_LCL_FLD);

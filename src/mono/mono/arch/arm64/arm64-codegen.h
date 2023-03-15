@@ -1576,8 +1576,6 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 /* NEON :: across lanes */
 #define arm_neon_xln_opcode(p, q, u, size, opcode, rd, rn) arm_neon_opcode_2reg ((p), (q), 0b00001110001100000000100000000000 | (u) << 29 | (size) << 22 | (opcode) << 12, (rd), (rn))
 
-
-
 // contrary to most other opcodes, the suffix is the type of source
 #define arm_neon_saddlv_8b(p, rd, rn) arm_neon_xln_opcode ((p), VREG_LOW, 0b0, SIZE_1, 0b00011, (rd), (rn))
 #define arm_neon_saddlv_16b(p, rd, rn) arm_neon_xln_opcode ((p), VREG_FULL, 0b0, SIZE_1, 0b00011, (rd), (rn))
@@ -1821,6 +1819,8 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_cmgt(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b0, (type), 0b00110, (rd), (rn), (rm))
 #define arm_neon_cmge(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b0, (type), 0b00111, (rd), (rn), (rm))
 #define arm_neon_cmeq(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, (type), 0b10001, (rd), (rn), (rm))
+#define arm_neon_cmhi(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, (type), 0b00110, (rd), (rn), (rm))
+#define arm_neon_cmhs(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, (type), 0b00111, (rd), (rn), (rm))
 
 // Generalized macros for float ops:
 //   width - determines if full register or its lower half is used one of {VREG_LOW, VREG_FULL}
@@ -2303,7 +2303,10 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 
 
 /* NEON :: modified immediate */
-// TODO
+#define arm_neon_mimm_opcode(p, q, op, cmode, o2, imm, rd) arm_neon_opcode_1reg ((p), (q), 0b00001111000000000000010000000000 | (op) << 29 | (cmode) << 12 | (o2) << 11 | (imm & 0b11100000) << 11 | (imm & 0b11111) << 5, (rd))
+
+#define ARM_IMM_FONE (0b01110000)
+#define arm_neon_fmov_imm(p, width, type, rd, imm) arm_neon_mimm_opcode ((p), (width), (type), 0b1111, 0b0, (imm), (rd))
 
 /* NEON :: shift by immediate */
 #define arm_neon_shimm_opcode(p, q, u, immh, immb, opcode, rd, rn) arm_neon_opcode_2reg ((p), (q), 0b00001111000000000000010000000000 | (u) << 29 | (immh) << 19 | (immb) << 16 | (opcode) << 11, (rd), (rn))

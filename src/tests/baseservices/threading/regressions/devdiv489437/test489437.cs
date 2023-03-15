@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 /*
  * Issue description:
@@ -19,9 +20,10 @@ Change description:
   cancel the associated Task.
 */
 
-class Test
+public class Test
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         SemaphoreSlim s = new SemaphoreSlim(initialCount: 1);
 

@@ -17,7 +17,6 @@
 #include "commontypes.h"
 #include "daccess.h"
 #include "debugmacrosext.h"
-#include "palredhawkcommon.h"
 #include "gcrhenv.h"
 #define Win32EventWrite PalEtwEventWrite
 #define InterlockedExchange64 PalInterlockedExchange64

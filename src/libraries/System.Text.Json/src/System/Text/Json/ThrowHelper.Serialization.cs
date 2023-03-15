@@ -173,15 +173,27 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_TypeInfoResolverImmutable()
+        public static void ThrowInvalidOperationException_DefaultTypeInfoResolverImmutable()
         {
-            throw new InvalidOperationException(SR.TypeInfoResolverImmutable);
+            throw new InvalidOperationException(SR.DefaultTypeInfoResolverImmutable);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeInfoResolverChainImmutable()
+        {
+            throw new InvalidOperationException(SR.TypeInfoResolverChainImmutable);
         }
 
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_TypeInfoImmutable()
         {
             throw new InvalidOperationException(SR.TypeInfoImmutable);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InvalidChainedResolver()
+        {
+            throw new InvalidOperationException(SR.SerializerOptions_InvalidChainedResolver);
         }
 
         [DoesNotReturn]
