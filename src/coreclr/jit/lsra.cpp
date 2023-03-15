@@ -731,7 +731,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Initialize the availableRegs to use for each TYP_*
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf) availableRegs[static_cast<int>(TYP_##tn)] = &lsra;
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf)                                              \
+    availableRegs[static_cast<int>(TYP_##tn)] = &lsra;
 #include "typelist.h"
 #undef DEF_TP
 
