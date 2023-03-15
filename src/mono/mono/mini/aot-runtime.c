@@ -2346,6 +2346,25 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	} else {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
 	}
+
+	/* Initialize exported methods since they can be called without being loaded */
+	if (!amodule->out_of_date && info->n_exported_methods) {
+		guint32 *exported = (guint32*)(amodule->blob + info->exported_methods);
+
+		for (guint32 i = 0; i < info->n_exported_methods; ++i) {
+			ERROR_DECL (load_error);
+			guint32 token = exported [i];
+			MonoMethod *m = mono_get_method_checked (assembly->image, token, NULL, NULL, load_error);
+			mono_error_cleanup (load_error); /* FIXME don't swallow the error */
+			error_init (load_error);
+			if (m) {
+				mono_class_init_internal (m->klass);
+				mono_aot_get_method (m, load_error);
+				mono_error_cleanup (load_error); /* FIXME don't swallow the error */
+				error_init (load_error);
+			}
+		}
+	}
 }
 
 /*
@@ -2582,6 +2601,10 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	MonoTableInfo  *t;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	GHashTable *nspace_table;
+#ifdef DEBUG_AOT_NAME_TABLE
+	char *debug_full_name;
+	uint32_t debug_hash;
+#endif
 
 	if (!amodule || !amodule->class_name_table)
 		return FALSE;
@@ -2615,6 +2638,10 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 			full_name = g_strdup_printf ("%s.%s", name_space, name);
 		}
 	}
+#ifdef DEBUG_AOT_NAME_TABLE
+	debug_full_name = g_strdup (full_name);
+	debug_hash = mono_metadata_str_hash (full_name) % table_size;
+#endif
 	hash = mono_metadata_str_hash (full_name) % table_size;
 	if (full_name != full_name_buf)
 		g_free (full_name);
@@ -2654,6 +2681,9 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 					g_hash_table_insert (nspace_table, (char*)name2, *klass);
 					amodule_unlock (amodule);
 				}
+#ifdef DEBUG_AOT_NAME_TABLE
+				g_free (debug_full_name);
+#endif
 				return TRUE;
 			}
 
@@ -2666,6 +2696,13 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	}
 
 	amodule_unlock (amodule);
+
+#ifdef DEBUG_AOT_NAME_TABLE
+	if (*klass == NULL) {
+		g_warning ("AOT class name cache '%s'=%08x not found\n", debug_full_name, debug_hash);
+	}
+	g_free (debug_full_name);
+#endif
 
 	return TRUE;
 }
@@ -3784,7 +3821,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		if (!ji->data.klass)
 			goto cleanup;
 		break;
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_DELEGATE_INFO:
 		ji->data.del_tramp = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (mp, sizeof (MonoDelegateClassMethodPair));
 		ji->data.del_tramp->klass = decode_klass_ref (aot_module, p, &p, error);
 		mono_error_cleanup (error); /* FIXME don't swallow the error */
@@ -3840,6 +3877,26 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		val [1] = decode_value (p, &p);
 		v = ((guint64)val [1] << 32) | ((guint64)val [0]);
 		*(double*)ji->data.target = *(double*)&v;
+		break;
+	}
+	case MONO_PATCH_INFO_X128:
+	case MONO_PATCH_INFO_X128_GOT: {
+		guint32 val [4];
+		guint64 v[2];
+
+		// FIXME: Align to 16 bytes ?
+		ji->data.target = mono_mem_manager_alloc0 (mem_manager, 16);
+
+		val [0] = decode_value (p, &p);
+		val [1] = decode_value (p, &p);
+		val [2] = decode_value (p, &p);
+		val [3] = decode_value (p, &p);
+
+		v[0] = ((guint64)val [1] << 32) | ((guint64)val [0]);
+		((guint64*)ji->data.target)[0] = v[0];
+
+		v[1] = ((guint64)val [3] << 32) | ((guint64)val [2]);
+		((guint64*)ji->data.target)[1] = v[1];
 		break;
 	}
 	case MONO_PATCH_INFO_LDSTR:
@@ -4013,7 +4070,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 				entry->data = decode_resolve_method_ref (aot_module, p, &p, error);
 				mono_error_assert_ok (error);
 				break;
-			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
@@ -4472,11 +4529,14 @@ inst_is_private (MonoGenericInst *inst)
 gboolean
 mono_aot_can_dedup (MonoMethod *method)
 {
-#ifdef TARGET_WASM
 	/* Use a set of wrappers/instances which work and useful */
 	switch (method->wrapper_type) {
 	case MONO_WRAPPER_RUNTIME_INVOKE:
+#ifdef TARGET_WASM
 		return TRUE;
+#else
+		return FALSE;
+#endif
 		break;
 	case MONO_WRAPPER_OTHER: {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
@@ -4516,12 +4576,6 @@ mono_aot_can_dedup (MonoMethod *method)
 		return TRUE;
 	}
 	return FALSE;
-#else
-	gboolean not_normal_gshared = method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE);
-	gboolean extra_method = (method->wrapper_type != MONO_WRAPPER_NONE) || not_normal_gshared;
-
-	return extra_method;
-#endif
 }
 
 

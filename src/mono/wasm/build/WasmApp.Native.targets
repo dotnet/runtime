@@ -1,7 +1,7 @@
 <Project>
   <!-- not really meant to be used w/o WasmApp.targets -->
 
-  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
@@ -113,8 +113,6 @@
       <!-- build AOT, only if explicitly requested -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
 
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableSIMD)' == 'true'">true</WasmBuildNative>
-
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
@@ -125,7 +123,6 @@
       <!-- AOT==true overrides WasmBuildNative -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableSIMD)' == 'true'">true</WasmBuildNative>
 
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
@@ -190,6 +187,7 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
+      <EmccStackSize Condition="'$(EmccStackSize)' == ''">5MB</EmccStackSize>
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
     </PropertyGroup>
 
@@ -203,7 +201,7 @@
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
-      <_EmccCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />
+      <_EmccCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true' and '$(_WasmShouldAOT)' == 'true'" />
 
       <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
       <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
@@ -221,7 +219,6 @@
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
       <_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
-      <_EmccCFlags Include="-DCORE_BINDINGS" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="-emit-llvm" />
 
@@ -261,6 +258,7 @@
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+      <EmscriptenEnvVars Include="WasmEnableLegacyJsInterop=$(WasmEnableLegacyJsInterop)"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(WasmAllowUndefinedSymbols)' == 'true'">
@@ -325,10 +323,12 @@
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_EmccCompileRsp)" />
+      <EmscriptenMinimalBuildEnvVars Include="@(EmscriptenEnvVars)" />
+      <EmscriptenMinimalBuildEnvVars Include="FROZEN_CACHE=" />
     </ItemGroup>
 
     <!-- warm up the cache -->
-    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
+    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenMinimalBuildEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
 
     <Message Text="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..." Importance="High" />
     <ItemGroup>
@@ -422,6 +422,8 @@
     <ItemGroup>
       <!-- order matters -->
       <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
+      <_EmccLDSFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
+      <_EmccLDSFlags Include="-s WASM_BIGINT=1" />
 
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />

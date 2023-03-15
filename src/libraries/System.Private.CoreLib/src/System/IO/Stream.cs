@@ -1041,16 +1041,16 @@ namespace System.IO
                     Task.CompletedTask;
 
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-                TaskToApm.Begin(Task<int>.s_defaultResultTask, callback, state);
+                TaskToAsyncResult.Begin(Task<int>.s_defaultResultTask, callback, state);
 
             public override int EndRead(IAsyncResult asyncResult) =>
-                TaskToApm.End<int>(asyncResult);
+                TaskToAsyncResult.End<int>(asyncResult);
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-                TaskToApm.Begin(Task.CompletedTask, callback, state);
+                TaskToAsyncResult.Begin(Task.CompletedTask, callback, state);
 
             public override void EndWrite(IAsyncResult asyncResult) =>
-                TaskToApm.End(asyncResult);
+                TaskToAsyncResult.End(asyncResult);
 
             public override int Read(byte[] buffer, int offset, int count) => 0;
 

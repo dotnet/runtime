@@ -59,7 +59,7 @@ namespace System.IO.IsolatedStorage
                 hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
                 if (hash != null)
                 {
-                    hash = "StrongName" + separator + hash;
+                    hash = string.Concat("StrongName", new ReadOnlySpan<char>(in separator), hash);
                     identity = assemblyName;
                     return;
                 }
@@ -75,7 +75,7 @@ namespace System.IO.IsolatedStorage
             if (string.IsNullOrEmpty(location))
                 throw new IsolatedStorageException(SR.IsolatedStorage_Init);
             Uri locationUri = new Uri(location);
-            hash = "Url" + separator + IdentityHelper.GetNormalizedUriHash(locationUri);
+            hash = string.Concat("Url", new ReadOnlySpan<char>(in separator), IdentityHelper.GetNormalizedUriHash(locationUri));
             identity = locationUri;
         }
 

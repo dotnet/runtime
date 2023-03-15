@@ -16030,7 +16030,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 
     if (canOptimize &&                       // Don't optimize if unsafe.
         (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
-        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
+        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous
+                                             // instruction.
     {
         // Check if we did same move in prev instruction except dst/src were switched.
         regNumber prevDst    = emitLastIns->idReg1();

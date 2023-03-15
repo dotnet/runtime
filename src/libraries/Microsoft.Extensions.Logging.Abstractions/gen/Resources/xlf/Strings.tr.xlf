@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="new">Logging method '{0}' contains malformed format strings</target>
+        <target state="translated">'{0}' günlüğe kaydetme yöntemi hatalı biçimlendirilmiş biçim dizeleri içeriyor</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsTitle">
         <source>Logging method contains malformed format strings</source>
-        <target state="new">Logging method contains malformed format strings</target>
+        <target state="translated">Günlüğe kaydetme yöntemi hatalı biçimlendirilmiş biçim dizeleri içeriyor</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">

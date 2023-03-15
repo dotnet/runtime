@@ -24,8 +24,8 @@ namespace DebuggerTests
     DebuggerTestFirefox
 #endif
     {
-        public DebuggerTests(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
-                : base(testOutput, driver)
+        public DebuggerTests(ITestOutputHelper testOutput, string locale = "en-US", string driver = "debugger-driver.html")
+                : base(testOutput, locale, driver)
         {}
     }
 
@@ -130,19 +130,19 @@ namespace DebuggerTests
                 Directory.Delete(TempPath, recursive: true);
         }
 
-        public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
+        public DebuggerTestBase(ITestOutputHelper testOutput, string locale, string driver = "debugger-driver.html")
         {
             _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
             Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
             // we want the test to mach it. We are also starting chrome with --lang=en-US
-            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(locale);
 
             insp = new Inspector(Id, _testOutput);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
-            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput);
+            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput, locale);
         }
 
         public virtual async Task InitializeAsync()
@@ -252,7 +252,38 @@ namespace DebuggerTests
         {
             return await insp.WaitFor(what);
         }
+        public async Task WaitForConsoleMessage(string message)
+        {
+            object llock = new();
+            var tcs = new TaskCompletionSource();
+            insp.On("Runtime.consoleAPICalled", async (args, c) =>
+            {
+                (string line, string type) = insp.FormatConsoleAPICalled(args);
+                if (string.IsNullOrEmpty(line))
+                    return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
 
+                lock (llock)
+                {
+                    try
+                    {
+                        if (line == message)
+                        {
+                            tcs.SetResult();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        tcs.SetException(ex);
+                    }
+                }
+
+                return tcs.Task.IsCompleted
+                            ? await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler)
+                            : await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
+            });
+
+            await tcs.Task;
+        }
         public async Task WaitForScriptParsedEventsAsync(params string[] paths)
         {
             object llock = new();

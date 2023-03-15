@@ -455,15 +455,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
 }
 FCIMPLEND
 
-FCIMPL1(void*, StubHelpers::GetNDirectTarget, NDirectMethodDesc* pNMD)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0xa2);
-    return pNMD->GetNDirectTarget();
-}
-FCIMPLEND
-
 FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 {
     PCODE pEntryPoint = NULL;

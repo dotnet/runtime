@@ -63,7 +63,7 @@ internal static class KeyParser
         }
 
         Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo> terminfoDb = terminalFormatStrings.KeyFormatToConsoleKey; // the most important source of truth
-        ConsoleModifiers modifiers = 0;
+        ConsoleModifiers modifiers = ConsoleModifiers.None;
         ConsoleKey key;
 
         // Is it a three character sequence? (examples: '^[[H' (Home), '^[OP' (F1))

@@ -1620,6 +1620,32 @@ void Compiler::fgAddFinallyTargetFlags()
     }
 }
 
+//------------------------------------------------------------------------
+// fgFixFinallyTargetFlags: Update BBF_FINALLY_TARGET bits after redirecting flow
+//
+// Arguments:
+//   pred - source of flow
+//   succ - original target of flow from pred
+//   newSucc - new target of flow from pred
+//
+void Compiler::fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, BasicBlock* newSucc)
+{
+    if (pred->isBBCallAlwaysPairTail())
+    {
+        assert(succ->bbFlags & BBF_FINALLY_TARGET);
+        newSucc->bbFlags |= BBF_FINALLY_TARGET;
+        succ->bbFlags &= ~BBF_FINALLY_TARGET;
+
+        for (BasicBlock* const pred : succ->PredBlocks())
+        {
+            if (pred->isBBCallAlwaysPairTail())
+            {
+                succ->bbFlags |= BBF_FINALLY_TARGET;
+                break;
+            }
+        }
+    }
+}
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 //------------------------------------------------------------------------
@@ -2144,15 +2170,15 @@ PhaseStatus Compiler::fgTailMergeThrows()
     {
         BasicBlock* const nonCanonicalBlock = iter->GetKey();
         BasicBlock* const canonicalBlock    = iter->GetValue();
-        flowList*         nextPredEdge      = nullptr;
+        FlowEdge*         nextPredEdge      = nullptr;
         bool              updated           = false;
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
-        for (flowList* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
+        for (FlowEdge* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
         {
-            BasicBlock* const predBlock = predEdge->getBlock();
-            nextPredEdge                = predEdge->flNext;
+            BasicBlock* const predBlock = predEdge->getSourceBlock();
+            nextPredEdge                = predEdge->getNextPredEdge();
 
             switch (predBlock->bbJumpKind)
             {
@@ -2247,7 +2273,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                                   BasicBlock* nonCanonicalBlock,
                                                   BasicBlock* canonicalBlock,
-                                                  flowList*   predEdge)
+                                                  FlowEdge*   predEdge)
 {
     assert(predBlock->bbNext == nonCanonicalBlock);
 
@@ -2290,7 +2316,7 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
 void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
                                              BasicBlock* nonCanonicalBlock,
                                              BasicBlock* canonicalBlock,
-                                             flowList*   predEdge)
+                                             FlowEdge*   predEdge)
 {
     assert(predBlock->bbJumpDest == nonCanonicalBlock);
 

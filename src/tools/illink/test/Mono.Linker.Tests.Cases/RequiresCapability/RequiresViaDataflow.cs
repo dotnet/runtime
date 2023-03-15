@@ -15,10 +15,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[ExpectedNoWarnings]
 	class RequiresViaDataflow
 	{
-		// Base/Derived and Implementation/Interface differs between linker and analyzer https://github.com/dotnet/linker/issues/2533
+		// Base/Derived and Implementation/Interface differs between ILLink and analyzer https://github.com/dotnet/linker/issues/2533
 		[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequires.MethodWithRequires--")]
-		[ExpectedWarning ("IL2026", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL2026", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3002", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--")]
+		[ExpectedWarning ("IL3002", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
 		public static void Main ()
 		{
 			TestDynamicallyAccessedMembersWithRequires (typeof (DynamicallyAccessedTypeWithRequires));
@@ -66,14 +70,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--")]
-		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		// https://github.com/dotnet/runtime/issues/83080 - Analyzer doesn't recognize DynamicDependency in any way
+		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
 		[DynamicDependency ("RequiresInDynamicDependency")]
 		static void TestRequiresInDynamicDependency ()
 		{
-			RequiresInDynamicDependency ();
 		}
 	}
 }

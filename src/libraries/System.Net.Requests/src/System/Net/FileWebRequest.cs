@@ -158,7 +158,7 @@ namespace System.Net
             CheckAndMarkAsyncGetRequestStreamPending();
             Task<Stream> t = Task.Factory.StartNew<Stream>(s => ((FileWebRequest)s!).CreateWriteStream(),
                 this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-            return TaskToApm.Begin(t, callback, state);
+            return TaskToAsyncResult.Begin(t, callback, state);
         }
 
         public override Task<Stream> GetRequestStreamAsync()
@@ -219,7 +219,7 @@ namespace System.Net
             CheckAndMarkAsyncGetResponsePending();
             Task<WebResponse> t = Task.Factory.StartNew(s => ((FileWebRequest)s!).CreateResponse(),
                  this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-            return TaskToApm.Begin(t, callback, state);
+            return TaskToAsyncResult.Begin(t, callback, state);
         }
 
         public override Task<WebResponse> GetResponseAsync()
@@ -236,14 +236,14 @@ namespace System.Net
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
-            Stream stream = TaskToApm.End<Stream>(asyncResult);
+            Stream stream = TaskToAsyncResult.End<Stream>(asyncResult);
             _writePending = false;
             return stream;
         }
 
         public override WebResponse EndGetResponse(IAsyncResult asyncResult)
         {
-            WebResponse response = TaskToApm.End<WebResponse>(asyncResult);
+            WebResponse response = TaskToAsyncResult.End<WebResponse>(asyncResult);
             _readPending = false;
             return response;
         }

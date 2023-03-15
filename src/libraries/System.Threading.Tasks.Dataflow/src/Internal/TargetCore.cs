@@ -618,7 +618,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Common.ContractAssertMonitorStatus(IncomingLock, held: false);
 
             // Iterate until we either consume a message successfully or there are no more postponed messages.
-            bool countIncrementedExpectingToGetItem = false;
+            bool stateOptimisticallyUpdatedForConsumedMessage = false;
             long messageId = Common.INVALID_REORDERING_ID;
             while (true)
             {
@@ -632,22 +632,30 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // In particular, the input queue may have been filled up and messages may have
                     // gotten postponed. If we process such a postponed message, we would mess up the
                     // order. Therefore, we have to double-check the input queue first.
-                    if (!forPostponementTransfer && _messages.TryDequeue(out result)) return true;
+                    if (!forPostponementTransfer && _messages.TryDequeue(out result))
+                    {
+                        // We got a message.  If on a previous iteration of this loop we allocated a
+                        // message ID, we need to inform the reordering buffer (if there is one) that
+                        // the message ID will never used (since the message we got already has its
+                        // own ID assigned).
+                        if (stateOptimisticallyUpdatedForConsumedMessage)
+                        {
+                            _reorderingBuffer?.IgnoreItem(messageId);
+                        }
+
+                        return true;
+                    }
 
                     // We can consume a message to process if there's one to process and also if
                     // if we have logical room within our bound for the message.
                     if (!_boundingState!.CountIsLessThanBound || !_boundingState.PostponedMessages.TryPop(out element))
                     {
-                        if (countIncrementedExpectingToGetItem)
-                        {
-                            countIncrementedExpectingToGetItem = false;
-                            _boundingState.CurrentCount -= 1;
-                        }
                         break;
                     }
-                    if (!countIncrementedExpectingToGetItem)
+
+                    if (!stateOptimisticallyUpdatedForConsumedMessage)
                     {
-                        countIncrementedExpectingToGetItem = true;
+                        stateOptimisticallyUpdatedForConsumedMessage = true;
                         messageId = _nextAvailableInputMessageId.Value++; // optimistically assign an ID
                         Debug.Assert(messageId != Common.INVALID_REORDERING_ID, "The assigned message ID is invalid.");
                         _boundingState.CurrentCount += 1; // optimistically take bounding space
@@ -666,24 +674,26 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     result = new KeyValuePair<TInput, long>(consumedValue!, messageId);
                     return true;
                 }
-                else
-                {
-                    if (forPostponementTransfer)
-                    {
-                        // We didn't consume message so we need to decrement because we haven't consumed the element.
-                        _boundingState.OutstandingTransfers--;
-                    }
-                }
             }
 
-            // We optimistically acquired a message ID for a message that, in the end, we never got.
-            // So, we need to let the reordering buffer (if one exists) know that it should not
-            // expect an item with this ID.  Otherwise, it would stall forever.
-            if (_reorderingBuffer != null && messageId != Common.INVALID_REORDERING_ID) _reorderingBuffer.IgnoreItem(messageId);
+            if (stateOptimisticallyUpdatedForConsumedMessage)
+            {
+                // If we optimistically increased the bounding count, allocated a message ID,
+                // and noted an outstanding transfer, we need to undo those state changes, now
+                // that we've failed to consume any message.
 
-            // Similarly, we optimistically increased the bounding count, expecting to get another message in.
-            // Since we didn't, we need to fix the bounding count back to what it should have been.
-            if (countIncrementedExpectingToGetItem) ChangeBoundingCount(-1);
+                _reorderingBuffer?.IgnoreItem(messageId);
+
+                if (forPostponementTransfer)
+                {
+                    lock (IncomingLock)
+                    {
+                        _boundingState!.OutstandingTransfers--;
+                    }
+                }
+
+                ChangeBoundingCount(-1);
+            }
 
             // Inform the caller that no message could be consumed.
             result = default(KeyValuePair<TInput, long>);

@@ -31,16 +31,10 @@ namespace System.Drawing.Imaging
         /// </summary>
         public static readonly Encoder SaveAsCmyk = new Encoder(new Guid(unchecked((int)0xa219bbc9), unchecked((short)0x0a9d), unchecked((short)0x4005), new byte[] { 0xa3, 0xee, 0x3a, 0x42, 0x1b, 0x8b, 0xb0, 0x6c }));
 
-        private Guid _guid;
+        private readonly Guid _guid;
 
-        public Encoder(Guid guid)
-        {
-            _guid = guid;
-        }
+        public Encoder(Guid guid) => _guid = guid;
 
-        public Guid Guid
-        {
-            get { return _guid; }
-        }
+        public Guid Guid => _guid;
     }
 }

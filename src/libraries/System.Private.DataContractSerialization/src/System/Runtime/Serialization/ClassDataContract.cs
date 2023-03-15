@@ -617,7 +617,7 @@ namespace System.Runtime.Serialization.DataContracts
             /// in serialization/deserialization we base the decision whether to Demand SerializationFormatter permission on this value and hasDataContract
             /// </SecurityNote>
             private bool _hasDataContract;
-            private bool _hasExtensionData;
+            private readonly bool _hasExtensionData;
 
             internal XmlDictionaryString[]? ContractNamespaces;
             internal XmlDictionaryString[]? MemberNames;
@@ -1009,8 +1009,8 @@ namespace System.Runtime.Serialization.DataContracts
                     int endIndex = i;
                     bool hasConflictingType = false;
                     while (endIndex < membersInHierarchy.Count - 1
-                        && string.CompareOrdinal(membersInHierarchy[endIndex]._member.Name, membersInHierarchy[endIndex + 1]._member.Name) == 0
-                        && string.CompareOrdinal(membersInHierarchy[endIndex]._ns, membersInHierarchy[endIndex + 1]._ns) == 0)
+                        && membersInHierarchy[endIndex]._member.Name == membersInHierarchy[endIndex + 1]._member.Name
+                        && membersInHierarchy[endIndex]._ns == membersInHierarchy[endIndex + 1]._ns)
                     {
                         membersInHierarchy[endIndex]._member.ConflictingMember = membersInHierarchy[endIndex + 1]._member;
                         if (!hasConflictingType)
@@ -1282,7 +1282,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             private static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 
-            internal struct Member
+            internal readonly struct Member
             {
                 internal Member(DataMember member, string ns, int baseTypeIndex)
                 {
@@ -1290,9 +1290,9 @@ namespace System.Runtime.Serialization.DataContracts
                     _ns = ns;
                     _baseTypeIndex = baseTypeIndex;
                 }
-                internal DataMember _member;
-                internal string _ns;
-                internal int _baseTypeIndex;
+                internal readonly DataMember _member;
+                internal readonly string _ns;
+                internal readonly int _baseTypeIndex;
             }
 
             internal sealed class DataMemberConflictComparer : IComparer<Member>
