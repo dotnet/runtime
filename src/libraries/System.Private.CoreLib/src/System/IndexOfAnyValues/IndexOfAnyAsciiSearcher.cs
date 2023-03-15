@@ -972,8 +972,9 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
             where TNegator : struct, INegator
         {
+            Debug.Assert(result != Vector128<byte>.Zero);
             uint mask = TNegator.ExtractMask(result) & 0xFFFF;
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = BitOperations.Log2NonZero(mask);
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
         }
 
@@ -981,8 +982,9 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector128<byte> result)
             where TNegator : struct, INegator
         {
+            Debug.Assert(result != Vector128<byte>.Zero);
             uint mask = TNegator.ExtractMask(result) & 0xFFFF;
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = BitOperations.Log2NonZero(mask);
             if (offsetInVector < Vector128<short>.Count)
             {
                 return offsetInVector;
@@ -1032,6 +1034,8 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
             where TNegator : struct, INegator
         {
+            Debug.Assert(result != Vector256<byte>.Zero);
+
             if (typeof(T) == typeof(short))
             {
                 result = FixUpPackedVector256Result(result);
@@ -1039,7 +1043,7 @@ namespace System.Buffers
 
             uint mask = TNegator.ExtractMask(result);
 
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = BitOperations.Log2NonZero(mask);
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
         }
 
@@ -1047,6 +1051,8 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector256<byte> result)
             where TNegator : struct, INegator
         {
+            Debug.Assert(result != Vector256<byte>.Zero);
+
             if (typeof(T) == typeof(short))
             {
                 result = FixUpPackedVector256Result(result);
@@ -1054,7 +1060,7 @@ namespace System.Buffers
 
             uint mask = TNegator.ExtractMask(result);
 
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = BitOperations.Log2NonZero(mask);
             if (offsetInVector < Vector256<short>.Count)
             {
                 return offsetInVector;

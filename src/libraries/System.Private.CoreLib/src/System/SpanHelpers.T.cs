@@ -3013,17 +3013,19 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeLastIndex<T>(nint offset, Vector128<T> equals) where T : struct
         {
+            Debug.Assert(equals != Vector128<T>.Zero);
+
             uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
+            return (int)offset + BitOperations.Log2NonZero(notEqualsElements);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeLastIndex<T>(nint offset, Vector256<T> equals) where T : struct
         {
+            Debug.Assert(equals != Vector256<T>.Zero);
+
             uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
+            return (int)offset + BitOperations.Log2NonZero(notEqualsElements);
         }
 
         internal interface INegator<T> where T : struct

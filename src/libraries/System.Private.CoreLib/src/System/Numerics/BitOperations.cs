@@ -934,6 +934,15 @@ namespace System.Numerics
             }
         }
 
+        internal static int Log2NonZero(uint value)
+        {
+            Debug.Assert(value != 0);
+
+            // Leading zero count is in the range 0..31, so the identity "31 ^ n == 31 - n" holds.
+            // Subtraction from a constant requires one more instruction.
+            return 31 ^ LeadingZeroCount(value);
+        }
+
         /// <summary>
         /// Reset the lowest significant bit in the given value
         /// </summary>

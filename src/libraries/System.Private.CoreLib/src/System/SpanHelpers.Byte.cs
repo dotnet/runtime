@@ -261,7 +261,7 @@ namespace System
                         do
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                            int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
+                            int bitPos = BitOperations.Log2NonZero(mask);
                             if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
                                     ref Unsafe.Add(ref searchSpace, offset + bitPos),
@@ -310,7 +310,7 @@ namespace System
                         do
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                            int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
+                            int bitPos = BitOperations.Log2NonZero(mask);
                             if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
                                     ref Unsafe.Add(ref searchSpace, offset + bitPos),
