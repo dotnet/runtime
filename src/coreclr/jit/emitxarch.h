@@ -222,8 +222,7 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_movq:
         case INS_addpd:
         case INS_addsd:
-        case INS_movsd:
-        case INS_movsdsse2:
+        case INS_movsd_simd:
         case INS_mulsd:
         case INS_mulpd:
         case INS_movntpd:
@@ -306,7 +305,7 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vfnmsub231sd:
         case INS_unpcklpd:
         case INS_vpermilpdvar:
-        case INS_movdqu16:
+        case INS_vmovdqu16:
         case INS_vinsertf64x4:
         case INS_vinserti64x4:
         {
@@ -422,7 +421,7 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vpdpbusds:
         case INS_vpdpwssds:
         case INS_vpermilpsvar:
-        case INS_movdqu8:
+        case INS_vmovdqu8:
         case INS_vinsertf32x8:
         case INS_vinserti32x8:
         {

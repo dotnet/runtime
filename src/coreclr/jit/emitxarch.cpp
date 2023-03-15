@@ -288,7 +288,7 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
             // once
             // k registers are used (as that is the point of the "break out operand type" of these instructions)
             // case INS_movdqa:         // INS_vmovdqa32, INS_vmovdqa64.
-            // case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_vmovdqu32, INS_vmovdqu64.
+            // case INS_movdqu:         // INS_vmovdqu8, INS_vmovdqu16, INS_vmovdqu32, INS_vmovdqu64.
             // case INS_pand:           // INS_vpandd, INS_vpandq.
             // case INS_pandn:          // INS_vpandnd, INS_vpandnq.
             // case INS_por:            // INS_vpord, INS_vporq.
@@ -5937,11 +5937,11 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_movdqu:
-        case INS_movdqu8:
-        case INS_movdqu16:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
         case INS_vmovdqu32:
         case INS_vmovdqu64:
-        case INS_movsdsse2:
+        case INS_movsd_simd:
         case INS_movss:
         case INS_movsx:
         case INS_movupd:
@@ -6059,7 +6059,7 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-        case INS_movsdsse2:
+        case INS_movsd_simd:
         case INS_movss:
         {
             // Clears the upper bits under VEX encoding
@@ -6085,8 +6085,8 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
 
         case INS_vmovdqa32:
         case INS_vmovdqa64:
-        case INS_movdqu8:
-        case INS_movdqu16:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
         case INS_vmovdqu32:
         case INS_vmovdqu64:
         {
@@ -6302,11 +6302,11 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_movdqu:
-        case INS_movdqu8:
-        case INS_movdqu16:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
         case INS_vmovdqu32:
         case INS_vmovdqu64:
-        case INS_movsdsse2:
+        case INS_movsd_simd:
         case INS_movss:
         case INS_movupd:
         case INS_movups:
@@ -17541,8 +17541,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_movdqu:
-        case INS_movdqu8:
-        case INS_movdqu16:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
         case INS_vmovdqu32:
         case INS_vmovdqu64:
         case INS_movaps:
@@ -17618,7 +17618,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movss:
-        case INS_movsdsse2:
+        case INS_movsd_simd:
         case INS_movddup:
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {

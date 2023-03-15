@@ -1264,7 +1264,7 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
     {
         if (srcType == TYP_DOUBLE)
         {
-            return (srcInReg) ? INS_movaps : INS_movsdsse2;
+            return (srcInReg) ? INS_movaps : INS_movsd_simd;
         }
         else if (srcType == TYP_FLOAT)
         {
@@ -1401,7 +1401,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #ifdef FEATURE_SIMD
         if (srcType == TYP_SIMD8)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else
 #endif // FEATURE_SIMD
@@ -1423,7 +1423,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_XARCH)
         if (srcType == TYP_DOUBLE)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else if (srcType == TYP_FLOAT)
         {
@@ -1659,7 +1659,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #ifdef FEATURE_SIMD
         if (dstType == TYP_SIMD8)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else
 #endif // FEATURE_SIMD
@@ -1674,7 +1674,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     {
         if (dstType == TYP_DOUBLE)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else if (dstType == TYP_FLOAT)
         {
