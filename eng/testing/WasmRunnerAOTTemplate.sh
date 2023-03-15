@@ -4,7 +4,7 @@
 [[SetCommands]]
 [[SetCommandsEcho]]
 
-PATH="$HOME/.jsvu/bin:$PATH"
+export PATH="$HOME/.jsvu/bin:$PATH"
 
 EXECUTION_DIR=$(dirname $0)
 if [[ -n "$3" ]]; then
@@ -55,6 +55,7 @@ if [[ -z "$XHARNESS_ARGS" ]]; then
 	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
 fi
 
+echo PATH=$PATH
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo SCENARIO=$SCENARIO
 echo XHARNESS_OUT=$XHARNESS_OUT
