@@ -45,7 +45,11 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 	fi
 
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
-		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
+		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
+			JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
+		else
+			JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000 --engine-arg=--experimental-wasm-bigint"
+		fi
 	fi
 fi
 

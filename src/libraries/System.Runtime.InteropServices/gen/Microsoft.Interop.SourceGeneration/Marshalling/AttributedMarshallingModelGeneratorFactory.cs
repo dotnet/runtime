@@ -274,7 +274,7 @@ namespace Microsoft.Interop
                 new LinearCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, string.Empty, context));
 
             ExpressionSyntax numElementsExpression = LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0));
-            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+            if (MarshallerHelpers.GetMarshalDirection(info, context) != MarshalDirection.ManagedToUnmanaged)
             {
                 // In this case, we need a numElementsExpression supplied from metadata, so we'll calculate it here.
                 numElementsExpression = GetNumElementsExpressionFromMarshallingInfo(info, marshalInfo.ElementCountInfo, context);

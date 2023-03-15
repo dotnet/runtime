@@ -1502,18 +1502,15 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 				 * Align the size too so the code generated for passing vtypes in
 				 * registers doesn't overwrite random locals.
 				 */
-				size = (size + (align - 1)) & ~(align -1);
+				size = ALIGN_TO (size, align);
 			}
 
 			if (backward) {
-				offset += size;
-				offset += align - 1;
-				offset &= ~(align - 1);
+				offset = ALIGN_TO (offset + size, align);
 				slot = offset;
 			}
 			else {
-				offset += align - 1;
-				offset &= ~(align - 1);
+				offset = ALIGN_TO (offset, align);
 				slot = offset;
 				offset += size;
 			}

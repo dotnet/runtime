@@ -545,23 +545,10 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
                 /* Start the list with the first CSE candidate recorded */
 
-                hashDsc->csdTreeList  = newElem;
-                hashDsc->csdTreeLast  = newElem;
-                hashDsc->csdStructHnd = NO_CLASS_HANDLE;
+                hashDsc->csdTreeList = newElem;
+                hashDsc->csdTreeLast = newElem;
 
-                hashDsc->csdIsSharedConst     = isSharedConst;
-                hashDsc->csdStructHndMismatch = false;
-
-                if (varTypeIsStruct(tree->gtType))
-                {
-                    // When we have a GT_IND node with a SIMD type then we don't have a reliable
-                    // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
-                    //
-                    if ((hashDsc->csdTree->OperGet() != GT_IND) || !varTypeIsSIMD(tree))
-                    {
-                        hashDsc->csdStructHnd = gtGetStructHandleIfPresent(hashDsc->csdTree);
-                    }
-                }
+                hashDsc->csdIsSharedConst = isSharedConst;
             }
 
             noway_assert(hashDsc->csdTreeList);
@@ -577,38 +564,6 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             hashDsc->csdTreeLast->tslNext = newElem;
             hashDsc->csdTreeLast          = newElem;
-
-            if (varTypeIsStruct(newElem->tslTree->gtType))
-            {
-                // When we have a GT_IND node with a SIMD type then we don't have a reliable
-                // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
-                //
-                if ((newElem->tslTree->OperGet() != GT_IND) || !varTypeIsSIMD(newElem->tslTree))
-                {
-                    CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
-                    if (newElemStructHnd != NO_CLASS_HANDLE)
-                    {
-                        if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
-                        {
-                            // The previous node(s) were GT_IND's and didn't carry the struct handle info
-                            // The current node does have the struct handle info, so record it now
-                            //
-                            hashDsc->csdStructHnd = newElemStructHnd;
-                        }
-                        else if (newElemStructHnd != hashDsc->csdStructHnd)
-                        {
-                            hashDsc->csdStructHndMismatch = true;
-#ifdef DEBUG
-                            if (verbose)
-                            {
-                                printf("Abandoned - CSE candidate has mismatching struct handles!\n");
-                                printTreeID(newElem->tslTree);
-                            }
-#endif // DEBUG
-                        }
-                    }
-                }
-            }
 
             optDoCSE = true; // Found a duplicate CSE tree
 
@@ -1805,7 +1760,7 @@ public:
             bool onStack = (regAvailEstimate == 0); // true when it is likely that this LclVar will have a stack home
 
             // Some LclVars always have stack homes
-            if ((varDsc->lvDoNotEnregister) || (varDsc->lvType == TYP_LCLBLK))
+            if (varDsc->lvDoNotEnregister)
             {
                 onStack = true;
             }
@@ -1918,7 +1873,7 @@ public:
             }
 
             // Some LclVars always have stack homes
-            if ((varDsc->lvDoNotEnregister) || (varDsc->lvType == TYP_LCLBLK))
+            if (varDsc->lvDoNotEnregister)
             {
                 continue;
             }
@@ -2232,8 +2187,8 @@ public:
     //------------------------------------------------------------------------
     // optConfigBiasedCSE:
     //     Stress mode to shuffle the decision to CSE or not using environment
-    //     variable COMPlus_JitStressBiasedCSE (= 0 to 100%). When the bias value
-    //     is not specified but COMPlus_JitStress is ON, generate a random bias.
+    //     variable DOTNET_JitStressBiasedCSE (= 0 to 100%). When the bias value
+    //     is not specified but DOTNET_JitStress is ON, generate a random bias.
     //
     // Return Value:
     //      0 -- This method is indifferent about this CSE (no bias specified and no stress)
@@ -2244,13 +2199,13 @@ public:
     //     A debug stress only method that returns "1" with probability (P)
     //     defined by:
     //
-    //         P = (COMPlus_JitStressBiasedCSE / 100) (or)
-    //         P = (random(100) / 100) when COMPlus_JitStress is specified and
-    //                                 COMPlus_JitStressBiasedCSE is unspecified.
+    //         P = (DOTNET_JitStressBiasedCSE / 100) (or)
+    //         P = (random(100) / 100) when DOTNET_JitStress is specified and
+    //                                 DOTNET_JitStressBiasedCSE is unspecified.
     //
     //     When specified, the bias is reinterpreted as a decimal number between 0
     //     to 100.
-    //     When bias is not specified, a bias is randomly generated if COMPlus_JitStress
+    //     When bias is not specified, a bias is randomly generated if DOTNET_JitStress
     //     is non-zero.
     //
     //     Callers are supposed to call this method for each CSE promotion decision
@@ -2389,15 +2344,8 @@ public:
         if (candidate->Expr()->TypeIs(TYP_STRUCT))
         {
             // This is a non-enregisterable struct.
-            canEnregister                  = false;
-            CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(candidate->Expr());
-            if (structHnd == NO_CLASS_HANDLE)
-            {
-                JITDUMP("Can't determine the struct size, so we can't consider it for CSE promotion\n");
-                return false; //  Do not make this a CSE
-            }
-
-            unsigned size = m_pCompiler->info.compCompHnd->getClassSize(structHnd);
+            canEnregister = false;
+            unsigned size = candidate->Expr()->GetLayout(m_pCompiler)->GetSize();
             // Note that the slotCount is used to estimate the reference cost, but it may overestimate this
             // because it doesn't take into account that we might use a vector register for struct copies.
             slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
@@ -2655,10 +2603,10 @@ public:
                 //
                 int spillSimdRegInProlog = 1;
 
-// If we have a SIMD32 that is live across a call we have even higher spill costs
-//
 #if defined(TARGET_XARCH)
-                if (candidate->Expr()->TypeIs(TYP_SIMD32))
+                // If we have a SIMD32/64 that is live across a call we have even higher spill costs
+                //
+                if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
                 {
                     // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
                     // (to hold the upper half of the simd32 register that isn't preserved across the call)
@@ -2816,24 +2764,14 @@ public:
         // we will create a  long lifetime temp for the new CSE LclVar
         unsigned  cseLclVarNum = m_pCompiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
         var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
-        if (varTypeIsStruct(cseLclVarTyp))
+
+        LclVarDsc* lclDsc = m_pCompiler->lvaGetDesc(cseLclVarNum);
+        if (cseLclVarTyp == TYP_STRUCT)
         {
-            // Retrieve the struct handle that we recorded while building the list of CSE candidates.
-            // If all occurrences were in GT_IND nodes it could still be NO_CLASS_HANDLE
-            //
-            CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
-            if (structHnd == NO_CLASS_HANDLE)
-            {
-                assert(varTypeIsSIMD(cseLclVarTyp));
-                // We are not setting it for `SIMD* indir` during the first path
-                // because it is not precise, see `optValnumCSE_Index`.
-                structHnd = m_pCompiler->gtGetStructHandle(successfulCandidate->CseDsc()->csdTree);
-            }
-            assert(structHnd != NO_CLASS_HANDLE);
-            m_pCompiler->lvaSetStruct(cseLclVarNum, structHnd, false);
+            m_pCompiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_pCompiler), false);
         }
-        m_pCompiler->lvaTable[cseLclVarNum].lvType  = cseLclVarTyp;
-        m_pCompiler->lvaTable[cseLclVarNum].lvIsCSE = true;
+        lclDsc->lvType  = cseLclVarTyp;
+        lclDsc->lvIsCSE = true;
 
         // Record that we created a new LclVar for use as a CSE temp
         m_addCSEcount++;
@@ -2856,12 +2794,12 @@ public:
         {
             JITDUMP(FMT_CSE " is single-def, so associated CSE temp V%02u will be in SSA\n", dsc->csdIndex,
                     cseLclVarNum);
-            m_pCompiler->lvaTable[cseLclVarNum].lvInSsa = true;
+            lclDsc->lvInSsa = true;
 
             // Allocate the ssa num
             CompAllocator allocator = m_pCompiler->getAllocator(CMK_SSA);
-            cseSsaNum               = m_pCompiler->lvaTable[cseLclVarNum].lvPerSsaData.AllocSsaNum(allocator);
-            ssaVarDsc               = m_pCompiler->lvaTable[cseLclVarNum].GetPerSsaData(cseSsaNum);
+            cseSsaNum               = lclDsc->lvPerSsaData.AllocSsaNum(allocator);
+            ssaVarDsc               = lclDsc->GetPerSsaData(cseSsaNum);
         }
 
         // Verify that all of the ValueNumbers in this list are correct as
@@ -2929,20 +2867,20 @@ public:
 
                 if (setRefCnt)
                 {
-                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCnt(1);
-                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCntWtd(curWeight);
+                    lclDsc->setLvRefCnt(1);
+                    lclDsc->setLvRefCntWtd(curWeight);
                     setRefCnt = false;
                 }
                 else
                 {
-                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(curWeight, m_pCompiler);
+                    lclDsc->incRefCnts(curWeight, m_pCompiler);
                 }
 
                 // A CSE Def references the LclVar twice
                 //
                 if (isDef)
                 {
-                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(curWeight, m_pCompiler);
+                    lclDsc->incRefCnts(curWeight, m_pCompiler);
                 }
             }
             lst = lst->tslNext;
@@ -3365,12 +3303,6 @@ public:
                 continue;
             }
 
-            if (dsc->csdStructHndMismatch)
-            {
-                JITDUMP("Abandoned " FMT_CSE " because we had mismatching struct handles\n", candidate.CseIndex());
-                continue;
-            }
-
             candidate.InitializeCounts();
 
             if (candidate.UseCount() == 0)
@@ -3526,13 +3458,6 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
     genTreeOps oper = tree->OperGet();
 
     if (type == TYP_VOID)
-    {
-        return false;
-    }
-
-    // If this is a struct type (including SIMD*), we can only consider it for CSE-ing
-    // if we can get its handle, so that we can create a temp.
-    if (varTypeIsStruct(type) && (gtGetStructHandleIfPresent(tree) == NO_CLASS_HANDLE))
     {
         return false;
     }
@@ -3751,7 +3676,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 //
 bool Compiler::optConfigDisableCSE()
 {
-    // Next check if COMPlus_JitNoCSE is set and applies to this method
+    // Next check if DOTNET_JitNoCSE is set and applies to this method
     //
     unsigned jitNoCSE = JitConfig.JitNoCSE();
 

@@ -34,7 +34,7 @@ jiterp_preserve_module ();
 
 // HACK: Pass void* so that this header can include safely in files without definition for TransformData
 void
-jiterp_insert_entry_points (void *td);
+jiterp_insert_entry_points (void *imethod, void *td);
 
 // used by the typescript JIT implementation to notify the runtime that it has finished jitting a thunk
 //  for a specific callsite, since it can take a while before it happens
@@ -138,6 +138,9 @@ mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod);
 
 void
 mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackval *sp2);
+
+ptrdiff_t
+mono_jiterp_monitor_trace (const guint16 *ip, void *frame, void *locals);
 
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 

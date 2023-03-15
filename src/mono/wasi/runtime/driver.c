@@ -62,8 +62,11 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
-extern const char* dotnet_wasi_getbundledfile(const char* name, int* out_length);
-extern void dotnet_wasi_registerbundledassemblies();
+extern void mono_wasm_register_timezones_bundle();
+#ifdef BUNDLED_ASSEMBLIES
+extern void mono_wasm_register_assemblies_bundle();
+#endif
+
 extern const char* dotnet_wasi_getentrypointassemblyname();
 int32_t mono_wasi_load_icu_data(const void* pData);
 void load_icu_data (void);
@@ -100,6 +103,10 @@ wasi_trace_logger (const char *log_domain, const char *log_level, const char *me
 typedef uint32_t target_mword;
 typedef target_mword SgenDescriptor;
 typedef SgenDescriptor MonoGCDescriptor;
+
+#ifdef DRIVER_GEN
+#include "driver-gen.c"
+#endif
 
 typedef struct WasmAssembly_ WasmAssembly;
 
@@ -369,11 +376,9 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
-#ifndef INVARIANT_GLOBALIZATION
-	load_icu_data();
-#else
-	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
-#endif
+    char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+    if (strcmp(invariant_globalization, "true") != 0 && strcmp(invariant_globalization, "1") != 0)
+	    load_icu_data();
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
@@ -381,7 +386,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	// Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
 	// output will be sent to the console.  Right now this is the only way to emit debug logging from
 	// corlib assemblies.
-	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+	// monoeg_g_setenv ("DOTNET_DebugWriteToStdErr", "1", 0);
 #endif
 
 	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
@@ -427,6 +432,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
+	mono_wasm_register_timezones_bundle();
+#ifdef BUNDLED_ASSEMBLIES
+	mono_wasm_register_assemblies_bundle();
+#endif
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 

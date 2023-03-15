@@ -3,12 +3,14 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class TimerTest
 {
     public static void Target(Object foo){}
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int retVal = 0;
         Timer timer = new Timer(new TimerCallback(Target),new Object(), 1000,1000);

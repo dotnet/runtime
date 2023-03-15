@@ -1610,6 +1610,27 @@ inline void GenTree::BashToZeroConst(var_types type)
     }
 }
 
+//------------------------------------------------------------------------
+// BashToLclVar: Bash node to a LCL_VAR.
+//
+// Arguments:
+//    comp   - compiler object
+//    lclNum - the local's number
+//
+// Return Value:
+//    The bashed node.
+//
+inline GenTreeLclVar* GenTree::BashToLclVar(Compiler* comp, unsigned lclNum)
+{
+    LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
+
+    ChangeOper(GT_LCL_VAR);
+    ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
+    AsLclVar()->SetLclNum(lclNum);
+
+    return AsLclVar();
+}
+
 /*****************************************************************************
  *
  * Returns true if the node is of the "ovf" variety, for example, add.ovf.i1.
@@ -3935,7 +3956,7 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
                   (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
 #if FEATURE_FIXED_OUT_ARGS
-    result = result || (varNum == lvaPInvokeFrameRegSaveVar) || (varNum == lvaOutgoingArgSpaceVar);
+    result = result || (varNum == lvaOutgoingArgSpaceVar);
 #endif
 
 #if defined(FEATURE_EH_FUNCLETS)

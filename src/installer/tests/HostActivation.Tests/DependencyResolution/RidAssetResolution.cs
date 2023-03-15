@@ -228,7 +228,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             protected void UseFallbacksFromBuiltDotNet(NetCoreAppBuilder builder)
             {
                 IReadOnlyList<RuntimeFallbacks> fallbacks;
-                string depsJson = Path.Combine(new DotNetCli(BuiltDotnetPath).GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
+                string depsJson = Path.Combine(new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet).GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
                 using (FileStream fileStream = File.Open(depsJson, FileMode.Open))
                 using (DependencyContextJsonReader reader = new DependencyContextJsonReader())
                 {
@@ -377,7 +377,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             public ComponentSharedTestState()
             {
-                HostApp = CreateSelfContainedAppWithMockCoreClr("ComponentHostSelfContainedApp", "1.0.0");
+                HostApp = CreateSelfContainedAppWithMockCoreClr("ComponentHostSelfContainedApp");
             }
         }
     }
@@ -432,12 +432,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             {
                 HostApp = CreateSelfContainedAppWithMockCoreClr(
                     "ComponentHostSelfContainedApp",
-                    "1.0.0",
                     b => b.WithStandardRuntimeFallbacks());
 
                 HostApp_RuntimeFallbacks = CreateSelfContainedAppWithMockCoreClr(
                     "ComponentHostSelfContainedApp_RuntimeFallbacks",
-                    "1.0.0",
                     UseFallbacksFromBuiltDotNet);
             }
         }

@@ -22,6 +22,12 @@ jobs:
       # map dependencies variables to local variables
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
+      - name: workloadsTestPreviousVersionsVar
+        value: $[
+          or(
+            eq(variables['Build.SourceBranchName'], 'main'),
+            eq(variables['System.PullRequest.TargetBranch'], 'main'))
+          ]
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
@@ -33,7 +39,7 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: WasmBuildTests
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
       timeoutInMinutes: 180
       condition: >-
         or(

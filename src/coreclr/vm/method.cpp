@@ -384,31 +384,6 @@ VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
 #endif
 
 //*******************************************************************************
-BOOL MethodDesc::MightHaveName(ULONG nameHashValue)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We only have space for a name hash when we are using the packed slot layout
-    if (RequiresFullSlotNumber())
-    {
-        return TRUE;
-    }
-
-    WORD thisHashValue = m_wSlotNumber & enum_packedSlotLayout_NameHashMask;
-
-    // A zero value might mean no hash has ever been set
-    // (checking this way is better than dedicating a bit to tell us)
-    if (thisHashValue == 0)
-    {
-        return TRUE;
-    }
-
-    WORD testHashValue = (WORD) nameHashValue & enum_packedSlotLayout_NameHashMask;
-
-    return (thisHashValue == testHashValue);
-}
-
-//*******************************************************************************
 void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
 {
     CONTRACTL
@@ -2108,17 +2083,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     if (pRS == NULL)
     {
-        TADDR pInstr = PCODEToPINSTR(entryPoint);
-        if (PrecodeStubManager::g_pManager->GetStubPrecodeRangeList()->IsInRange(entryPoint))
-        {
-            return (MethodDesc*)((StubPrecode*)pInstr)->GetMethodDesc();
-        }
-
-        if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(entryPoint))
-        {
-            return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();
-        }
-
         // Is it an FCALL?
         MethodDesc* pFCallMD = ECall::MapTargetBackToMethod(entryPoint);
         if (pFCallMD != NULL)
@@ -2129,16 +2093,38 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         return NULL;
     }
 
+    // Inlined fast path for fixup precode and stub precode from RangeList implementation
+    if (pRS->_flags == RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_FIXUPPRECODE)
+        {
+            return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+        }
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+        }
+    }
+
     MethodDesc* pMD;
-    if (pRS->pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
+    if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
         return pMD;
 
-    if (pRS->pjit->GetStubCodeBlockKind(pRS, entryPoint) == STUB_CODE_BLOCK_PRECODE)
-        return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
+    auto stubCodeBlockKind = pRS->_pjit->GetStubCodeBlockKind(pRS, entryPoint);
 
-    // We should never get here
-    _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
-    return NULL;
+    switch(stubCodeBlockKind)
+    {
+    case STUB_CODE_BLOCK_PRECODE:
+        return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
+    case STUB_CODE_BLOCK_FIXUPPRECODE:
+        return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+    case STUB_CODE_BLOCK_STUBPRECODE:
+        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+    default:
+        // We should never get here
+        _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
+        return NULL;
+    }
 }
 
 //*******************************************************************************
