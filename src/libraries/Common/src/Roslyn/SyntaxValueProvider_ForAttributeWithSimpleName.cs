@@ -334,7 +334,15 @@ internal static partial class SyntaxValueProviderExtensions
                         // For any other node, just keep recursing deeper to see if we can find an attribute. Note: we cannot
                         // terminate the search anywhere as attributes may be found on things like local functions, and that
                         // means having to dive deep into statements and expressions.
-                        foreach (var child in node.ChildNodesAndTokens().Reverse())
+                        var childNodesAndTokens = node.ChildNodesAndTokens();
+
+                        // Avoid performance issue (in .NET 7 and earlier) iterating the child list in reverse
+                        // by iterating forward first, to populate the cache.
+                        foreach (var childNode in childNodesAndTokens)
+                        {
+                        }
+
+                        foreach (var child in childNodesAndTokens.Reverse())
                         {
                             if (child.IsNode)
                                 nodeStack.Append(child.AsNode()!);
