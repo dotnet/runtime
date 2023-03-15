@@ -863,13 +863,24 @@ typedef struct {
 	// 64-bits because it can get very high if estimate heat is turned on
 	gint64 hit_count;
 	JiterpreterThunk thunk;
+	int size_of_trace;
+	gint32 total_distance;
 } TraceInfo;
 
+// If a trace exits with an exterior backward branch, treat its distance as this value
+#define TRACE_NEGATIVE_DISTANCE 64
+// Don't allow a trace to increase the total distance by more than this amount, since
+//  it would skew the average too much
+#define TRACE_DISTANCE_LIMIT 512
+
+// The maximum number of trace segments used to store TraceInfo. This limits
+//  the maximum total number of traces to MAX_TRACE_SEGMENTS * TRACE_SEGMENT_SIZE
 #define MAX_TRACE_SEGMENTS 256
 #define TRACE_SEGMENT_SIZE 1024
 
 static volatile gint32 trace_count = 0;
 static TraceInfo *trace_segments[MAX_TRACE_SEGMENTS] = { NULL };
+static gint32 traces_rejected = 0;
 
 static TraceInfo *
 trace_info_allocate_segment (gint32 index) {
@@ -1030,6 +1041,9 @@ mono_interp_tier_prepare_jiterpreter_fast (
 			frame, method, ip, (gint32)trace_index,
 			start_of_body, size_of_body
 		);
+		// Record the maximum size of the trace (we don't know how long it actually is here)
+		//  which might be smaller than the function body if this trace is in the middle
+		trace_info->size_of_trace = size_of_body - (ip - start_of_body);
 		trace_info->thunk = result;
 		return result;
 	} else {
@@ -1307,6 +1321,63 @@ mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
 		default:
 			g_assert_not_reached();
 	}
+}
+
+ptrdiff_t
+mono_jiterp_monitor_trace (const guint16 *ip, void *frame, void *locals)
+{
+	gint32 index = READ32(ip + 1);
+	TraceInfo *info = trace_info_get(index);
+	g_assert(info);
+
+	JiterpreterThunk thunk = info->thunk;
+	// FIXME: This shouldn't be possible
+	if (((guint32)(void *)thunk) <= JITERPRETER_NOT_JITTED)
+		return 6;
+	ptrdiff_t result = thunk(frame, locals);
+	// Maintain an approximate sum of how far trace execution has advanced over
+	//  the monitoring period, so we can evaluate its average later and decide
+	//  whether to keep the trace
+	// Note that a result of 0 means that a loop back-branched to itself.
+	info->total_distance += result <= 0
+		? TRACE_NEGATIVE_DISTANCE
+		: (result > TRACE_DISTANCE_LIMIT
+			? TRACE_DISTANCE_LIMIT
+			: result
+		);
+
+	gint64 hit_count = info->hit_count++ - mono_opt_jiterpreter_minimum_trace_hit_count;
+	if (hit_count == mono_opt_jiterpreter_trace_monitoring_period) {
+		// Prepare to enable the trace
+		volatile guint16 *mutable_ip = (volatile guint16*)ip;
+		*mutable_ip = MINT_TIER_NOP_JITERPRETER;
+
+		mono_memory_barrier ();
+		gint64 average_distance = info->total_distance / hit_count;
+		gint64 threshold = mono_opt_jiterpreter_trace_average_distance_threshold,
+			low_threshold = info->size_of_trace / 2;
+		// Don't reject short traces as long as they run mostly to the end, we already
+		//  decided previously that they are worth keeping for some reason
+		if (low_threshold < threshold)
+			threshold = low_threshold;
+
+		if (average_distance >= threshold) {
+			*(volatile JiterpreterThunk*)(ip + 1) = thunk;
+			mono_memory_barrier ();
+			*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
+		} else {
+			traces_rejected++;
+			// g_print("trace #%d @%d rejected; average_distance==%d\n", index, ip, average_distance);
+		}
+	}
+
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE gint32
+mono_jiterp_get_rejected_trace_count ()
+{
+	return traces_rejected;
 }
 
 // HACK: fix C4206

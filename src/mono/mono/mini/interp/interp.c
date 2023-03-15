@@ -7787,11 +7787,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						 * (note that right now threading doesn't work, but it's worth being correct
 						 *  here so that implementing thread support will be easier later.)
 						 */
-						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier ();
-						*(volatile JiterpreterThunk*)(ip + 1) = prepare_result;
-						mono_memory_barrier ();
-						*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
+						*mutable_ip = MINT_TIER_MONITOR_JITERPRETER;
 						// now execute the trace
 						// this isn't important for performance, but it makes it easier to use the
 						//  jiterpreter early in automated tests where code only runs once
@@ -7803,6 +7799,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				ip += 3;
 			}
 
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_TIER_MONITOR_JITERPRETER) {
+			// The trace is in monitoring mode, where we track how far it actually goes
+			//  each time it is executed for a while. After N more hits, we either
+			//  turn it into an ENTER or a NOP depending on how well it is working
+			ptrdiff_t offset = mono_jiterp_monitor_trace (ip, frame, locals);
+			ip = (guint16*) (((guint8*)ip) + offset);
 			MINT_IN_BREAK;
 		}
 
