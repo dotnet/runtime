@@ -2844,7 +2844,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
     TADDR genericContextPtr = *(TADDR*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
     pResult->signature = NULL;
-
+    pResult->testForNull = false;
     pResult->indirectFirstOffset = 0;
     pResult->indirectSecondOffset = 0;
     // Dictionary size checks skipped by default, unless we decide otherwise
