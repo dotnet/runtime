@@ -247,7 +247,6 @@ function configureRuntime(dotnet, runArgs, INTERNAL) {
         .withVirtualWorkingDirectory(runArgs.workingDirectory)
         .withEnvironmentVariables(runArgs.environmentVariables)
         .withDiagnosticTracing(runArgs.diagnosticTracing)
-        .withDiagnosticTracing(true)
         .withExitOnUnhandledError()
         .withExitCodeLogging()
         .withElementOnExit();
