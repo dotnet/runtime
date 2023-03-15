@@ -557,14 +557,12 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (offset > buffer.Length)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, buffer.Length)));
-            if (count < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, buffer.Length));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - offset)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset));
             MoveToInitial(quotas, onClose);
             ArraySegment<byte> seg = EncodingStreamWrapper.ProcessBuffer(buffer, offset, count, encoding);
             BufferReader.SetBuffer(seg.Array!, seg.Offset, seg.Count, null, null);
@@ -594,17 +592,7 @@ namespace System.Xml
             base.Close();
             OnXmlDictionaryReaderClose? onClose = _onClose;
             _onClose = null;
-            if (onClose != null)
-            {
-                try
-                {
-                    onClose(this);
-                }
-                catch (Exception e)
-                {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperCallback(e);
-                }
-            }
+            onClose?.Invoke(this);
         }
 
         private void SkipWhitespace()
@@ -888,7 +876,7 @@ namespace System.Xml
         // 0xFFFE and 0xFFFF are not valid characters per Unicode specification. The first byte in the UTF8 representation is 0xEF.
         private static bool IsNextCharacterNonFFFE(byte[] buffer, int offset)
         {
-            Fx.Assert(buffer[offset] == 0xEF, "buffer[offset] MUST be 0xEF.");
+            Debug.Assert(buffer[offset] == 0xEF, "buffer[offset] MUST be 0xEF.");
 
             if (buffer[offset + 1] == 0xBF && (buffer[offset + 2] == 0xBE || buffer[offset + 2] == 0xBF))
             {
@@ -1097,7 +1085,7 @@ namespace System.Xml
 
         private int ReadCharRef()
         {
-            DiagnosticUtility.DebugAssert(BufferReader.GetByte() == '&', "");
+            Debug.Assert(BufferReader.GetByte() == '&');
             int charEntityOffset = BufferReader.Offset;
             BufferReader.SkipByte();
             while (BufferReader.GetByte() != ';')

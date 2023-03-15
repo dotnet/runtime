@@ -4497,7 +4497,7 @@ public:
 
 #if defined(FEATURE_NATIVEAOT) || defined(BUILD_AS_STANDALONE)
     // The GC expects the following methods that are provided by the Object class in the CLR but not provided
-    // by Redhawk's version of Object.
+    // by NativeAOT's version of Object.
     uint32_t GetNumComponents()
     {
         return ((ArrayBase *)this)->GetNumComponents();
@@ -28908,7 +28908,8 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
         return;
     }
 
-    set_region_plan_gen_num_sip (current_region, current_plan_gen_num);
+    decide_on_demotion_pin_surv (current_region);
+
     if (!heap_segment_swept_in_plan (current_region))
     {
         heap_segment_plan_allocated (current_region) = generation_allocation_pointer (consing_gen);
@@ -30628,6 +30629,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
         gc_time_info[time_plan] = gc_time_info[time_sweep] - gc_time_info[time_plan];
     }
 #endif //FEATURE_EVENT_TRACE
+
+#ifdef USE_REGIONS
+    if (special_sweep_p)
+    {
+        should_compact = FALSE;
+    }
+#endif //!USE_REGIONS
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_LOH_COMPACTION
@@ -34767,7 +34775,7 @@ BOOL gc_heap::commit_mark_array_bgc_init()
             {
                 // For ro segments they could always be only partially in range so we'd
                 // be calling this at the beginning of every BGC. We are not making this
-                // more efficient right now - ro segments are currently only used by redhawk.
+                // more efficient right now - ro segments are currently only used by NativeAOT.
                 if (heap_segment_read_only_p (seg))
                 {
                     if ((heap_segment_mem (seg) >= lowest_address) &&
@@ -43960,7 +43968,7 @@ CFinalize*        GCHeap::m_Finalize              = 0;
 BOOL              GCHeap::GcCollectClasses        = FALSE;
 VOLATILE(int32_t) GCHeap::m_GCFLock               = 0;
 
-#ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
+#ifndef FEATURE_NATIVEAOT // NativeAOT forces relocation a different way
 #ifdef STRESS_HEAP
 #ifndef MULTIPLE_HEAPS
 OBJECTHANDLE      GCHeap::m_StressObjs[NUM_HEAP_STRESS_OBJS];
@@ -45599,7 +45607,7 @@ HRESULT GCHeap::Initialize()
         return E_FAIL;
     }
 
-#ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
+#ifndef FEATURE_NATIVEAOT // NativeAOT forces relocation a different way
 #if defined (STRESS_HEAP) && !defined (MULTIPLE_HEAPS)
     if (GCStress<cfg_any>::IsEnabled())
     {
@@ -46163,7 +46171,7 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
     return size( pObj ) >= loh_size_threshold;
 }
 
-#ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
+#ifndef FEATURE_NATIVEAOT // NativeAOT forces relocation a different way
 #ifdef STRESS_HEAP
 
 void StressHeapDummy ();

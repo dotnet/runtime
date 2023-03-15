@@ -735,15 +735,16 @@ namespace System.Threading
 
         // TODO https://github.com/dotnet/runtime/issues/22144: Replace with official nothrow await solution once available.
         /// <summary>Awaiter used to await a task.ConfigureAwait(false) but without throwing any exceptions for faulted or canceled tasks.</summary>
-        private readonly struct ConfiguredNoThrowAwaiter<T> : ICriticalNotifyCompletion
+        private readonly struct ConfiguredNoThrowAwaiter<T> : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
         {
             private readonly Task<T> _task;
             public ConfiguredNoThrowAwaiter(Task<T> task) => _task = task;
             public ConfiguredNoThrowAwaiter<T> GetAwaiter() => this;
             public bool IsCompleted => _task.IsCompleted;
             public void GetResult() => _task.MarkExceptionsAsHandled();
-            public void UnsafeOnCompleted(Action continuation) => _task.ConfigureAwait(false).GetAwaiter().UnsafeOnCompleted(continuation);
-            public void OnCompleted(Action continuation) => _task.ConfigureAwait(false).GetAwaiter().OnCompleted(continuation);
+            public void OnCompleted(Action continuation) => TaskAwaiter.OnCompletedInternal(_task, continuation, continueOnCapturedContext: false, flowExecutionContext: true);
+            public void UnsafeOnCompleted(Action continuation) => TaskAwaiter.OnCompletedInternal(_task, continuation, continueOnCapturedContext: false, flowExecutionContext: false);
+            public void AwaitUnsafeOnCompleted(IAsyncStateMachineBox box) => TaskAwaiter.UnsafeOnCompletedInternal(_task, box, continueOnCapturedContext: false);
         }
 
         /// <summary>

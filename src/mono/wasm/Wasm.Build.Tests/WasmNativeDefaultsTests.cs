@@ -40,7 +40,9 @@ namespace Wasm.Build.Tests
         {
             string output = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, dotnetWasmFromRuntimePack: !publishValue);
 
-            Assert.Contains($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+            // for build
+            Assert.DoesNotContain($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+            // for publish
             Assert.Contains($"** WasmBuildNative: '{publishValue.ToString().ToLower()}', WasmBuildingForNestedPublish: 'true'", output);
             Assert.Contains("Stopping the build", output);
         }
@@ -61,7 +63,9 @@ namespace Wasm.Build.Tests
                                                         dotnetWasmFromRuntimePack: !publishValue,
                                                         extraItems: nativeRefItem);
 
-            Assert.Contains($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+            // for build
+            Assert.DoesNotContain($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+            // for publish
             Assert.Contains($"** WasmBuildNative: '{publishValue.ToString().ToLower()}', WasmBuildingForNestedPublish: 'true'", output);
             Assert.Contains("Stopping the build", output);
         }

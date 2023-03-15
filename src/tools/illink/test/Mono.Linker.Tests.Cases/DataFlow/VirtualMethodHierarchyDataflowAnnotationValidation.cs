@@ -26,6 +26,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	{
 		// The code below marks methods which have RUC on them, it's not the point of this test to validate these here
 		[UnconditionalSuppressMessage ("test", "IL2026")]
+		// The code below marks methods which have RDC on them, it's not the point of this test to validate these here
+		[UnconditionalSuppressMessage ("test", "IL3050")]
 		public static void Main ()
 		{
 			// The test uses data flow annotation to mark all public methods on the specified types

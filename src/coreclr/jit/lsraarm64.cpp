@@ -408,6 +408,11 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildCmp(tree);
             break;
 
+        case GT_JTRUE:
+            BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
+            srcCount = 1;
+            break;
+
         case GT_CKFINITE:
             srcCount = 1;
             assert(dstCount == 1);
@@ -586,7 +591,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     // localloc.
                     sizeVal = AlignUp(sizeVal, STACK_ALIGN);
 
-                    if (sizeVal <= LCLHEAP_UNROLL_LIMIT)
+                    if (sizeVal <= compiler->getUnrollThreshold(Compiler::UnrollKind::Memset))
                     {
                         // Need no internal registers
                     }
