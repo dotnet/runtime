@@ -149,11 +149,13 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static void AppendAliasMap(CodeBuilder builder, ImmutableDictionary<string, string> aliasMap)
     {
+        bool didOutput = false;
         foreach (string alias in aliasMap.Values.Where(alias => alias != "global"))
         {
             builder.AppendLine($"extern alias {alias};");
+            didOutput = true;
         }
-        if (!aliasMap.IsEmpty)
+        if (didOutput)
         {
             builder.AppendLine();
         }
@@ -268,7 +270,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         StringBuilder builder = new();
         CodeBuilder codeBuilder = new();
         AppendAliasMap(codeBuilder, aliasMap);
-        builder.Append(codeBuilder);
+        builder.Append(codeBuilder.GetCode());
 
         builder.AppendLine(string.Join(Environment.NewLine, aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
         builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
