@@ -45,7 +45,10 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release")]
     public void DefaultTemplate_NoAOT_WithWorkload(string config)
     {
-        string id = $"blz_no_aot_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
+        // disable relinking tests for Unicode: github.com/emscripten-core/emscripten/issues/17817
+        string id = config == "Release" ?
+            $"blz_no_aot_{config}_{Path.GetRandomFileName()}" :
+            $"blz_no_aot_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
