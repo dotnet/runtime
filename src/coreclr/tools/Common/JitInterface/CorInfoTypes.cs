@@ -233,10 +233,6 @@ namespace Internal.JitInterface
         public byte _testForNull;
         public bool testForNull { get { return _testForNull != 0; } set { _testForNull = value ? (byte)1 : (byte)0; } }
 
-        // If set, test the lowest bit and dereference if set (see code:FixupPointer)
-        public byte _testForFixup;
-        public bool testForFixup { get { return _testForFixup != 0; } set { _testForFixup = value ? (byte)1 : (byte)0; } }
-
         public ushort sizeOffset;
         public IntPtr offset0;
         public IntPtr offset1;

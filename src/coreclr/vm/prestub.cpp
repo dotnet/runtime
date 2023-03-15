@@ -2843,7 +2843,6 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
 
     TADDR genericContextPtr = *(TADDR*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
-    pResult->testForFixup = pResult->testForNull = false;
     pResult->signature = NULL;
 
     pResult->indirectFirstOffset = 0;

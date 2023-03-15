@@ -1837,7 +1837,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
     slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
 
-    assert(!pRuntimeLookup->testForFixup);
     return slotPtrTree;
 }
 
