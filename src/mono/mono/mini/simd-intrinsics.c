@@ -1216,6 +1216,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_LessThanOrEqual:
 		case SN_Negate:
 		case SN_OnesComplement:
+		case SN_Subtract:
+		case SN_BitwiseAnd:
+		case SN_BitwiseOr:
+		case SN_Xor:
 			break;
 		default: 
 			return NULL;
@@ -1880,8 +1884,21 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!COMPILE_LLVM (cfg)) {
 		if (size != 16)
 			return NULL;
-		if (!(id == SN_get_One || id == SN_get_Zero))
+		switch (id) {
+		case SN_get_One:
+		case SN_get_Zero:
+		case SN_op_OnesComplement:
+		case SN_op_UnaryNegation:
+		case SN_op_UnaryPlus:
+		case SN_op_Addition:
+		case SN_op_Subtraction:
+		case SN_op_BitwiseAnd:
+		case SN_op_BitwiseOr:
+		case SN_op_ExclusiveOr:
+			break;
+		default:
 			return NULL;
+		}
 	}
 #endif
 
