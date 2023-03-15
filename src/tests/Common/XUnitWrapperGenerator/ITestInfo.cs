@@ -54,7 +54,7 @@ sealed class BasicTestMethod : ITestInfo
 
     public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
     {
-        return testReporterWrapper.WrapTestExecutionWithReporting(CodeBuilder.Create(ExecutionStatement), this);
+        return testReporterWrapper.WrapTestExecutionWithReporting(CodeBuilder.CreateNewLine(ExecutionStatement), this);
     }
 
     public override bool Equals(object obj)
@@ -86,7 +86,7 @@ sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
 
     public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
     {
-        return testReporterWrapper.WrapTestExecutionWithReporting(CodeBuilder.Create(ExecutionStatement), this);
+        return testReporterWrapper.WrapTestExecutionWithReporting(CodeBuilder.CreateNewLine(ExecutionStatement), this);
     }
 
     public override bool Equals(object obj)
@@ -130,12 +130,12 @@ sealed class ConditionalTest : ITestInfo
         builder.AppendLine($"if ({_condition})");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine(_innerTest.GenerateTestExecution(testReporterWrapper));
+            builder.Append(_innerTest.GenerateTestExecution(testReporterWrapper));
         }
         builder.AppendLine($"else");
         using (builder.NewBracesScope())
         {
-            builder.Append(testReporterWrapper.GenerateSkippedTestReporting(_innerTest));
+            builder.AppendLine(testReporterWrapper.GenerateSkippedTestReporting(_innerTest));
         }
         return builder;
     }

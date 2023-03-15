@@ -71,6 +71,13 @@ public class CodeBuilder {
         return code;
     }
 
+    public static CodeBuilder CreateNewLine(string initialCode) {
+        var code = new CodeBuilder();
+        code.Append(initialCode);
+        code.AppendLine();
+        return code;
+    }
+
     /// <summary>
     ///     Push a new indent level.
     /// </summary>
