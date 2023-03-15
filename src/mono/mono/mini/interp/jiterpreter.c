@@ -1367,7 +1367,7 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *frame, void *locals)
 			*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
 		} else {
 			traces_rejected++;
-			g_print("trace #%d @%d rejected; average_distance==%d\n", index, ip, average_distance);
+			// g_print("trace #%d @%d rejected; average_distance==%d\n", index, ip, average_distance);
 		}
 	}
 

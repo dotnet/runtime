@@ -64,15 +64,6 @@ export function mono_on_abort(error: any): void {
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_exit(exit_code: number, reason?: any): void {
-    try {
-        // Note that we need to do this before printing WASM EXIT, because not doing so
-        //  causes the stats to not be logged sometimes for some reason
-        jiterpreter_dump_stats(false);
-    } catch {
-        // eslint-disable-next-line @typescript-eslint/no-extra-semi
-        ;
-    }
-
     if (runtimeHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
         (async () => {
@@ -180,5 +171,12 @@ function logErrorOnExit(exit_code: number, reason?: any) {
         } else {
             console.log("WASM EXIT " + exit_code);
         }
+    }
+
+    try {
+        jiterpreter_dump_stats(false);
+    } catch {
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
+        ;
     }
 }
