@@ -7,8 +7,6 @@
 #import <Foundation/Foundation.h>
 #import <Foundation/NSFormatter.h>
 
-#include "pal_localeStringData.h"
-
 char* DetectDefaultAppleLocaleName()
 {
     NSLocale *currentLocale = [NSLocale currentLocale];
@@ -33,7 +31,7 @@ char* DetectDefaultAppleLocaleName()
 
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
-const char* NativeGetLocaleName(const char* localeName,
+const char* GlobalizationNative_GetLocaleNameNative(const char* localeName,
                                          int32_t valueLength)
 {
      NSString *locName = [NSString stringWithFormat:@"%s", localeName];
@@ -42,7 +40,7 @@ const char* NativeGetLocaleName(const char* localeName,
      return strdup(value);
 }
 
-const char* NativeGetLocaleInfoString(const char* localeName,
+const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName,
                                                 LocaleStringData localeStringData,
                                                 int32_t valueLength,
                                                 const char* uiLocaleName)
@@ -61,8 +59,6 @@ const char* NativeGetLocaleInfoString(const char* localeName,
     {
         ///// <summary>localized name of locale, eg "German (Germany)" in UI language (corresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>
         case LocaleString_LocalizedDisplayName:
-            value = [[gbLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier] UTF8String];
-            break;
         /// <summary>Display name (language + country usually) in English, eg "German (Germany)" (corresponds to LOCALE_SENGLISHDISPLAYNAME)</summary>
         case LocaleString_EnglishDisplayName:
             value = [[gbLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier] UTF8String];
@@ -73,8 +69,6 @@ const char* NativeGetLocaleInfoString(const char* localeName,
             break;
         /// <summary>Language Display Name for a language, eg "German" in UI language (corresponds to LOCALE_SLOCALIZEDLANGUAGENAME)</summary>
         case LocaleString_LocalizedLanguageName:
-            value = [[gbLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
-            break;
         /// <summary>English name of language, eg "German" (corresponds to LOCALE_SENGLISHLANGUAGENAME)</summary>
         case LocaleString_EnglishLanguageName:
             value = [[gbLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
@@ -98,10 +92,6 @@ const char* NativeGetLocaleInfoString(const char* localeName,
             value = [currentLocale.decimalSeparator UTF8String];
             // or value = [[currentLocale objectForKey:NSLocaleDecimalSeparator] UTF8String];
             break;
-        case LocaleString_Digits:
-            // TODO find mapping for Digits
-            value = "0123456789";
-           break;
         case LocaleString_MonetarySymbol:
             value = [currentLocale.currencySymbol UTF8String];
             break;
@@ -114,14 +104,6 @@ const char* NativeGetLocaleInfoString(const char* localeName,
             break;
         case LocaleString_CurrencyNativeName:
             value = [[currentLocale localizedStringForCurrencyCode:currentLocale.currencyCode] UTF8String];
-            break;
-        case LocaleString_MonetaryDecimalSeparator:
-            // TODO find mapping for MonetaryDecimalSeparator
-            value = "";
-            break;
-        case LocaleString_MonetaryThousandSeparator:
-            // TODO find mapping for MonetaryThousandSeparator
-            value = "";
             break;
         case LocaleString_AMDesignator:
             value = [dateFormatter.AMSymbol UTF8String];
@@ -139,16 +121,7 @@ const char* NativeGetLocaleInfoString(const char* localeName,
             // check if this is correct
             value = [[currentLocale objectForKey:NSLocaleLanguageCode] UTF8String];
             break;
-        case LocaleString_Iso639LanguageThreeLetterName:
-            // TODO find mapping for Iso639LanguageThreeLetterName
-            // check ISOLanguageCodes
-            value = [currentLocale.languageCode UTF8String];
-            break;
         case LocaleString_Iso3166CountryName:
-            value = [currentLocale.countryCode UTF8String];
-            break;
-        case LocaleString_Iso3166CountryName2:
-            // TODO find mapping for Iso3166CountryName2
             value = [currentLocale.countryCode UTF8String];
             break;
         case LocaleString_NaNSymbol:
@@ -160,20 +133,25 @@ const char* NativeGetLocaleInfoString(const char* localeName,
         case LocaleString_NegativeInfinitySymbol:
             value = [numberFormatter.negativeInfinitySymbol UTF8String];
             break;
-        case LocaleString_ParentName:
-            // TODO find mapping for ParentName
-            value = "";
-            break;
         case LocaleString_PercentSymbol:
             value = [numberFormatter.percentSymbol UTF8String];
             break;
         case LocaleString_PerMilleSymbol:
             value = [numberFormatter.perMillSymbol UTF8String];
             break;
+        // TODO find mapping for below cases
+        case LocaleString_Digits:
+        case LocaleString_MonetaryDecimalSeparator:
+        case LocaleString_MonetaryThousandSeparator:
+        case LocaleString_Iso639LanguageThreeLetterName:
+        case LocaleString_ParentName:
+        case LocaleString_Iso3166CountryName2:
+            value = "";
+            break;
         default:
             break;
     }
-    NSLog(@"Globalization nativeGetLocaleInfo value: %s", value);
+    NSLog(@"Globalization GlobalizationNative_GetLocaleInfoStringNative value: %s", value);
     return strdup(value);
 }
 

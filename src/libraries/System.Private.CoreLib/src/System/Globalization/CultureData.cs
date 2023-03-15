@@ -2303,12 +2303,11 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
-#if TARGET_IOS
-            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type)
-                                                : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type)
-                                                : IcuGetLocaleInfo(type);
-#endif
+#if TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+#else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+#endif
         }
 
         private string GetLocaleInfoCore(LocaleStringData type, string? uiCultureName = null)
@@ -2316,12 +2315,11 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
-#if TARGET_IOS
-            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type)
-                                            : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type, uiCultureName)
-                                            : IcuGetLocaleInfo(type, uiCultureName);
-#endif
+#if TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type, uiCultureName) : IcuGetLocaleInfo(type, uiCultureName);
+#else
         return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
+#endif
         }
 
         private string GetLocaleInfoCore(string localeName, LocaleStringData type, string? uiCultureName = null)
@@ -2329,12 +2327,11 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
-#if TARGET_IOS
-            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type)
-                                            : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(localeName, type, uiCultureName)
-                                            : IcuGetLocaleInfo(localeName, type, uiCultureName);
-#endif
+#if TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(localeName, type, uiCultureName) : IcuGetLocaleInfo(localeName, type, uiCultureName);
+#else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
+#endif
         }
 
         private int[] GetLocaleInfoCoreUserOverride(LocaleGroupingData type)

@@ -58,9 +58,9 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_ToAscii)
     DllImportEntry(GlobalizationNative_ToUnicode)
     DllImportEntry(GlobalizationNative_WindowsIdToIanaId)
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-    DllImportEntry(NativeGetLocaleName)
-    DllImportEntry(NativeGetLocaleInfoString)
+#ifdef __APPLE__
+    DllImportEntry(GlobalizationNative_GetLocaleNameNative)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoStringNative)
 #endif
 };
 

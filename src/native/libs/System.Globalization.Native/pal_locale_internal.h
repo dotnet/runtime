@@ -64,20 +64,20 @@ char* DetectDefaultAppleLocaleName(void);
 
 /*
 Function:
-NativeGetLocaleName
+GlobalizationNative_GetLocaleNameNative
 
-NativeGetLocaleName for Apple platforms
+GlobalizationNative_GetLocaleNameNative for Apple platforms
 */
-const char* NativeGetLocaleName(const char* localeName,
+const char* GlobalizationNative_GetLocaleNameNative(const char* localeName,
                                          int32_t valueLength);
 
 /*
 Function:
-NativeGetLocaleInfoString
+GlobalizationNative_GetLocaleInfoStringNative
 
-NativeGetLocaleInfoString for Apple platforms
+GlobalizationNative_GetLocaleInfoStringNative for Apple platforms
 */
-const char* NativeGetLocaleInfoString(const char* localeName,
+const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName,
                                                 LocaleStringData localeStringData,
                                                 int32_t valueLength,
                                                 const char* uiLocaleName);

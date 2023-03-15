@@ -26,33 +26,31 @@ namespace System.Globalization
             string realNameBuffer = _sRealName;
 
             // Get the locale name
-            NativeGetLocaleName(realNameBuffer, out _sWindowsName);
+            GetLocaleNameNative(realNameBuffer, out _sWindowsName);
             return true;
         }
 
-        internal static unsafe bool NativeGetLocaleName(string localeName, out string? windowsName)
+        internal static unsafe bool GetLocaleNameNative(string localeName, out string? windowsName)
         {
-            windowsName = Interop.Globalization.NativeGetLocaleName(localeName, Native_ULOC_FULLNAME_CAPACITY);
+            windowsName = Interop.Globalization.GetLocaleNameNative(localeName, Native_ULOC_FULLNAME_CAPACITY);
             return true;
         }
 
-        private string NativeGetLocaleInfo(LocaleStringData type, string? uiCultureName = null)
+        private string GetLocaleInfoNative(LocaleStringData type, string? uiCultureName = null)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(_sWindowsName != null, "[CultureData.NativeGetLocaleInfo] Expected _sWindowsName to be populated already");
+            Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfoNative] Expected _sWindowsName to be populated already");
 
-            return NativeGetLocaleInfo(_sWindowsName, type, uiCultureName);
+            return GetLocaleInfoNative(_sWindowsName, type, uiCultureName);
         }
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        private static unsafe string NativeGetLocaleInfo(string localeName, LocaleStringData type, string? uiCultureName = null)
+        private static unsafe string GetLocaleInfoNative(string localeName, LocaleStringData type, string? uiCultureName = null)
         {
-            Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(localeName != null, "[CultureData.NativeGetLocaleInfo] Expected localeName to be not be null");
+            Debug.Assert(localeName != null, "[CultureData.GetLocaleInfoNative] Expected localeName to be not be null");
 
-            string result = Interop.Globalization.NativeGetLocaleInfoString(localeName, (uint)type, Native_ULOC_KEYWORD_AND_VALUES_CAPACITY, uiCultureName);
+            string result = Interop.Globalization.GetLocaleInfoStringNative(localeName, (uint)type, Native_ULOC_KEYWORD_AND_VALUES_CAPACITY, uiCultureName);
             return result;
         }
     }
