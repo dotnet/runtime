@@ -9342,7 +9342,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 //
 // Arguments:
 //      condition:        Condition to check.
-//      isTestCondition:  Returns true if condition is a EQ/NE(AND(...),0) but is not a compare chain.
+//      isTestCondition:  Returns true if condition is but is not a compare chain.
 //
 //  Returns:
 //      true if chain optimization is a compare chain.
@@ -9358,28 +9358,41 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
 
     *isTestCondition = false;
 
-    if (condition->OperIs(GT_EQ, GT_NE) && condOp2->IsIntegralConst() && condOp2->AsIntCon()->IconValue() == 0)
+    if (condition->OperIs(GT_EQ, GT_NE) && condOp2->IsIntegralConst())
     {
-        // Found a test condition. Does it contain a compare chain?
+        ssize_t condOp2Value = condOp2->AsIntCon()->IconValue();
 
-        if (condOp1->OperIs(GT_AND, GT_OR) && varTypeIsIntegralOrI(condOp1->gtGetOp1()) &&
-            varTypeIsIntegralOrI(condOp1->gtGetOp2()))
+        if (condOp2Value == 0)
         {
-            // Check that the second operand of AND ends with a compare operation, as this will be
-            // the condition the new link in the chain will connect with.
-            if (condOp1->gtGetOp2()->OperIsCmpCompare())
-            {
-                return true;
-            }
-            if (condOp1->gtGetOp2()->OperIsCmpCompare())
-            {
-                // Recursive check the inner condition.
-                bool innerTestCondition;
-                return FindCompareChain(condOp1->gtGetOp2(), &innerTestCondition);
-            }
-        }
+            // Found a EQ/NE(...,0). Does it contain a compare chain (ie - conditions that have
+            // previously been combined by optOptimizeCompareChainCondBlock) or is it a test condition
+            // that will be optimised to cbz/cbnz during lowering?
 
-        *isTestCondition = true;
+            if (condOp1->OperIs(GT_AND, GT_OR) &&
+                varTypeIsIntegralOrI(condOp1->gtGetOp1()) && varTypeIsIntegralOrI(condOp1->gtGetOp2()))
+            {
+                // Check that the second operand of AND ends with a compare operation, as this will be
+                // the condition the new link in the chain will connect with.
+                if (condOp1->gtGetOp2()->OperIsCmpCompare())
+                {
+                    return true;
+                }
+                if (condOp1->gtGetOp2()->OperIsCmpCompare())
+                {
+                    // Recursive check the inner condition.
+                    bool innerTestCondition;
+                    return FindCompareChain(condOp1->gtGetOp2(), &innerTestCondition);
+                }
+            }
+
+            *isTestCondition = true;
+        }
+        else if (condOp1->OperIs(GT_AND) && isPow2(static_cast<target_size_t>(condOp2Value)) &&
+                 condOp1->gtGetOp2()->IsIntegralConst(condOp2Value))
+        {
+            // Found a EQ/NE(AND(...,n),n) which will be optimized to tbz/tbnz during lowering.
+            *isTestCondition = true;
+        }
     }
 
     return false;
@@ -9509,10 +9522,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     bool op1IsCondChain = FindCompareChain(cond1, &op1IsTestCond);
     bool op2IsCondChain = FindCompareChain(cond2, &op2IsTestCond);
 
-    // Specifically for Arm64, avoid cases where optimizations in lowering will produce better
-    // code than optimizing here. Specificially:
-    // * CMP(AND(...), 0) will be turned into a TEST_ opcode.
-    // * Compares against zero will be optimized with cbz.
+    // Avoid cases where optimizations in lowering will produce better code than optimizing here.
     if (op1IsTestCond || op2IsTestCond)
     {
         return false;
