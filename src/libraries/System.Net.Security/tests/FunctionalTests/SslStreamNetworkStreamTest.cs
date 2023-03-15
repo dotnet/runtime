@@ -939,7 +939,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task SslStream_EphemeralKey_Throws()
         {
