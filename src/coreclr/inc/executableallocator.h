@@ -102,9 +102,10 @@ class ExecutableAllocator
     // for platforms that don't use shared memory.
     size_t m_freeOffset = 0;
 
-    // Last RW mapping cached so that it can be reused for the next mapping
+    // Last RW mappings cached so that it can be reused for the next mapping
     // request if it goes into the same range.
-    BlockRW* m_cachedMapping = NULL;
+    // This is handled as a 6 element cache with an LRU replacement policy
+    BlockRW* m_cachedMapping[6] = { 0 };
 
     // Synchronization of the public allocator methods
     CRITSEC_COOKIE m_CriticalSection;
@@ -114,8 +115,11 @@ class ExecutableAllocator
     // and replaces it by the passed in one.
     void UpdateCachedMapping(BlockRW *pBlock);
 
-    // Remove the cached mapping
-    void RemoveCachedMapping();
+    // Remove the cached mapping (1 based indexing)
+    void RemoveCachedMapping(size_t indexToRemove);
+
+    // Find an overlapped cached mapping with pBlock, or return 0
+    size_t FindOverlappingCachedMapping(BlockRX* pBlock);
 
     // Find existing RW block that maps the whole specified range of RX memory.
     // Return NULL if no such block exists.

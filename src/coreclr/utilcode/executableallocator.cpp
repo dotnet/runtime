@@ -19,6 +19,8 @@ bool ExecutableAllocator::g_isWXorXEnabled = false;
 ExecutableAllocator::FatalErrorHandler ExecutableAllocator::g_fatalErrorHandler = NULL;
 ExecutableAllocator* ExecutableAllocator::g_instance = NULL;
 
+#define EXECUTABLE_ALLOCATOR_CACHE_SIZE ARRAY_SIZE(m_cachedMapping)
+
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 int64_t ExecutableAllocator::g_mapTimeSum = 0;
 int64_t ExecutableAllocator::g_mapTimeWithLockSum = 0;
@@ -261,13 +263,21 @@ bool ExecutableAllocator::Initialize()
 
 #define ENABLE_CACHED_MAPPINGS
 
-void ExecutableAllocator::RemoveCachedMapping()
+void ExecutableAllocator::RemoveCachedMapping(size_t index)
 {
 #ifdef ENABLE_CACHED_MAPPINGS
+    if (index == 0)
+        return;
+
+    BlockRW*& cachedMapping = m_cachedMapping[index - 1];
+
+    if (cachedMapping == NULL)
+        return;
+
     void* unmapAddress = NULL;
     size_t unmapSize;
 
-    if (!RemoveRWBlock(m_cachedMapping->baseRW, &unmapAddress, &unmapSize))
+    if (!RemoveRWBlock(cachedMapping->baseRW, &unmapAddress, &unmapSize))
     {
         g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RW block to unmap was not found"));
     }
@@ -276,24 +286,49 @@ void ExecutableAllocator::RemoveCachedMapping()
         g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the RW mapping failed"));
     }
 
-    m_cachedMapping = NULL;
+    cachedMapping = NULL;
 #endif // ENABLE_CACHED_MAPPINGS
 }
+
+#ifdef ENABLE_CACHED_MAPPINGS
+size_t ExecutableAllocator::FindOverlappingCachedMapping(BlockRX* pBlock)
+{
+    for (size_t index = 0; index < executableAllocatorCacheSize; index++)
+    {
+        BlockRW*& cachedMapping = m_cachedMapping[index];
+        if (cachedMapping != NULL)
+        {
+            // In case the cached mapping maps the region being released, it needs to be removed
+            if ((pBlock->baseRX <= cachedMapping->baseRX) && (cachedMapping->baseRX < ((BYTE*)pBlock->baseRX + pBlock->size)))
+            {
+                return index + 1;
+            }
+        }
+    }
+    return 0;
+}
+#endif
 
 void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
 {
     LIMITED_METHOD_CONTRACT;
 #ifdef ENABLE_CACHED_MAPPINGS
-    if (m_cachedMapping != pBlock)
+    for (size_t index = 0; index < executableAllocatorCacheSize; index++)
     {
-        if (m_cachedMapping != NULL)
+        if (pBlock == m_cachedMapping[index])
         {
-            RemoveCachedMapping();
+            // Move the found mapping to the front
+            memmove(&m_cachedMapping[1], &m_cachedMapping[0], sizeof(m_cachedMapping[0]) * index);
+            m_cachedMapping[0] = pBlock;
+            return;
         }
-
-        m_cachedMapping = pBlock;
-        pBlock->refCount++;
     }
+
+    // Must insert mapping in front
+    RemoveCachedMapping(executableAllocatorCacheSize);
+    memmove(&m_cachedMapping[1], &m_cachedMapping[0], sizeof(m_cachedMapping[0]) * (executableAllocatorCacheSize - 1));
+    m_cachedMapping[0] = pBlock;
+    pBlock->refCount++;
 #endif // ENABLE_CACHED_MAPPINGS
 }
 
@@ -461,13 +496,11 @@ void ExecutableAllocator::Release(void* pRX)
 
         if (pBlock != NULL)
         {
-            if (m_cachedMapping != NULL)
+            size_t cachedMappingThatOverlaps = FindOverlappingCachedMapping(pBlock);
+            while (cachedMappingThatOverlaps != 0)
             {
-                // In case the cached mapping maps the region being released, it needs to be removed
-                if ((pBlock->baseRX <= m_cachedMapping->baseRX) && (m_cachedMapping->baseRX < ((BYTE*)pBlock->baseRX + pBlock->size)))
-                {
-                    RemoveCachedMapping();
-                }
+                RemoveCachedMapping(cachedMappingThatOverlaps);
+                cachedMappingThatOverlaps = FindOverlappingCachedMapping(pBlock);
             }
 
             if (!VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size))
