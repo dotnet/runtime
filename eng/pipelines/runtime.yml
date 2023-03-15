@@ -498,8 +498,6 @@ extends:
           nameSuffix: _Threading_PerfTracing
           extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
           alwaysRun: ${{ variables.isRollingBuild }}
-          scenarios:
-            - normal
 
       # WASI/WASM
 
