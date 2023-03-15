@@ -239,12 +239,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 //     if (*fastPathValue == null)
                 //         goto fallbackBb;
                 //
-                // fastPathBb(BBJ_ALWAYS):              [weight: 0.8]
-                //     rtLookupLcl = *fastPathValue;
+                // fallbackBb(BBJ_ALWAYS):              [weight: 0.2]
+                //     rtLookupLcl = HelperCall();
                 //     goto block;
                 //
-                // fallbackBb(BBJ_NONE):                [weight: 0.2]
-                //     rtLookupLcl = HelperCall();
+                // fastPathBb(BBJ_NONE):                [weight: 0.8]
+                //     rtLookupLcl = *fastPathValue;
                 //
                 // block(...):                          [weight: 1.0]
                 //     use(rtLookupLcl);
@@ -262,15 +262,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     CreateBlockFromTree(this, prevBb, BBJ_COND, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
                                         debugInfo);
 
+                // Fast-path basic block
+                GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
+                BasicBlock* fastPathBb = CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFastpathValue, debugInfo);
+
                 // Fallback basic block
                 GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
                 BasicBlock* fallbackBb =
-                    CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFallbackValue, debugInfo, true);
-
-                // Fast-path basic block
-                GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
-                BasicBlock* fastPathBb =
-                    CreateBlockFromTree(this, nullcheckBb, BBJ_ALWAYS, asgFastpathValue, debugInfo);
+                    CreateBlockFromTree(this, nullcheckBb, BBJ_ALWAYS, asgFallbackValue, debugInfo, true);
 
                 BasicBlock* sizeCheckBb = nullptr;
                 if (needsSizeCheck)
@@ -288,12 +287,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     //     if (*fastPathValue == null)
                     //         goto fallbackBb;
                     //
-                    // fastPathBb(BBJ_ALWAYS):              [weight: 0.64]
-                    //     rtLookupLcl = *fastPathValue;
+                    // fallbackBb(BBJ_ALWAYS):              [weight: 0.36]
+                    //     rtLookupLcl = HelperCall();
                     //     goto block;
                     //
-                    // fallbackBb(BBJ_NONE):                [weight: 0.36]
-                    //     rtLookupLcl = HelperCall();
+                    // fastPathBb(BBJ_NONE):                [weight: 0.64]
+                    //     rtLookupLcl = *fastPathValue;
                     //
                     // block(...):                          [weight: 1.0]
                     //     use(rtLookupLcl);
@@ -322,8 +321,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fgRemoveRefPred(block, prevBb);
                 fgAddRefPred(block, fastPathBb);
                 fgAddRefPred(block, fallbackBb);
-                nullcheckBb->bbJumpDest = fallbackBb;
-                fastPathBb->bbJumpDest  = block;
+                nullcheckBb->bbJumpDest = fastPathBb;
+                fallbackBb->bbJumpDest  = block;
 
                 if (needsSizeCheck)
                 {
@@ -412,13 +411,5 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         }
     }
 
-    if (result == PhaseStatus::MODIFIED_EVERYTHING)
-    {
-        if (opts.OptimizationEnabled())
-        {
-            fgReorderBlocks(/* useProfileData */ false);
-            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
-        }
-    }
     return result;
 }
