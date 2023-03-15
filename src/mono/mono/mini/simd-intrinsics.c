@@ -369,10 +369,10 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_op_Division:
 				return NULL;
 			case SN_Max:
-				instc0 = OP_IMAX;
+				instc0 = type_enum_is_unsigned(arg_type) ? OP_IMAX_UN : OP_IMAX;
 				break;
 			case SN_Min:
-				instc0 = OP_IMIN;
+				instc0 =type_enum_is_unsigned(arg_type) ? OP_IMIN_UN : OP_IMIN;
 				break;
 			case SN_Multiply:
 			case SN_op_Multiply:
@@ -1190,10 +1190,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
-#ifdef TARGET_ARM64
-	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
-		return NULL;
-#endif
+// #ifdef TARGET_ARM64
+// 	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
+// 		return NULL;
+// #endif
 
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
 	if (id == -1) {
