@@ -134,16 +134,7 @@ namespace System.Reflection.Emit.Experiment
 
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(nameof(con));
-            ArgumentNullException.ThrowIfNull(nameof(binaryAttribute)); // This is incorrect (how?)
-
-            if (con.DeclaringType == null)
-            {
-                throw new ArgumentException("Attribute constructor has no type.");
-            }
-
             CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(con, binaryAttribute);
-
             _customAttributes.Add(customAttribute);
         }
 

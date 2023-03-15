@@ -14,11 +14,12 @@ namespace System.Reflection.Emit.Experiment.Tests
     {
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation)
         {
-            WriteAssemblyToDisk(assemblyName, types, fileLocation, null, null, null);
+            WriteAssemblyToDisk(assemblyName, types, fileLocation, null);
         }
 
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> assemblyAttributes,
-            List<CustomAttributeBuilder> moduleAttributes, List<CustomAttributeBuilder> typeAttributes)
+            List<CustomAttributeBuilder> moduleAttributes = null, List<CustomAttributeBuilder> typeAttributes = null,
+            List<CustomAttributeBuilder> methodAttributes = null, List<CustomAttributeBuilder> fieldAttributes = null)
         {
             PersistableAssemblyBuilder assemblyBuilder = PersistableAssemblyBuilder.DefineDynamicAssembly(assemblyName, assemblyAttributes);
 
@@ -48,11 +49,28 @@ namespace System.Reflection.Emit.Experiment.Tests
                 foreach (var method in methods)
                 {
                     var paramTypes = Array.ConvertAll(method.GetParameters(), item => item.ParameterType);
-                    tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, paramTypes);
+                    MethodBuilder meb = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, paramTypes);
+                    if (methodAttributes != null)
+                    {
+                        foreach(CustomAttributeBuilder typeAttribute in methodAttributes)
+                        {
+                            meb.SetCustomAttribute(typeAttribute);
+                        }
+                    }
                 }
+
                 foreach (var field in type.GetFields())
                 {
-                    tb.DefineField(field.Name, field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), field.Attributes);
+                    FieldBuilder fb = tb.DefineField(field.Name, field.FieldType, field.GetRequiredCustomModifiers(),
+                        field.GetOptionalCustomModifiers(), field.Attributes);
+
+                    if (fieldAttributes != null)
+                    {
+                        foreach(var attribute in fieldAttributes)
+                        {
+                            fb.SetCustomAttribute(attribute);
+                        }
+                    }
                 }
             }
 

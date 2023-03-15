@@ -76,24 +76,35 @@ namespace System.Reflection.Emit.Experiment
                     parent = GetTypeReference(metadata, typeBuilder.BaseType);
                 }
 
-                TypeDefinitionHandle typeDefintionHandle = MetadataHelper.AddTypeDef(metadata, typeBuilder, parent, _nextMethodDefRowId);
+                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDef(metadata, typeBuilder, parent, _nextMethodDefRowId);
 
                 // Add each method definition to metadata table.
                 foreach (PersistableMethodBuilder method in typeBuilder._methodDefStore)
                 {
-                    MetadataHelper.AddMethodDefintion(metadata, method);
+                    MethodDefinitionHandle methodHandle = MetadataHelper.AddMethodDefintion(metadata, method);
                     _nextMethodDefRowId++;
+
+                    foreach (CustomAttributeWrapper customAttribute in method._customAttributes)
+                    {
+                        metadata.AddCustomAttribute(methodHandle, GetConstructorHandle(metadata, customAttribute.constructorInfo),
+                            metadata.GetOrAddBlob(customAttribute.binaryAttribute));
+                    }
                 }
 
-                foreach (FieldInfo field in typeBuilder._fieldDefStore)
+                foreach (PersistableFieldBuilder field in typeBuilder._fieldDefStore)
                 {
-                    MetadataHelper.AddFieldDefintion(metadata, field);
+                    FieldDefinitionHandle fieldHandle = MetadataHelper.AddFieldDefintion(metadata, field);
+                    foreach (CustomAttributeWrapper customAttribute in field._customAttributes)
+                    {
+                        metadata.AddCustomAttribute(fieldHandle, GetConstructorHandle(metadata, customAttribute.constructorInfo),
+                            metadata.GetOrAddBlob(customAttribute.binaryAttribute));
+                    }
                 }
 
                 // Add each custom attribute to metadata table.
                 foreach (CustomAttributeWrapper customAttribute in typeBuilder._customAttributes)
                 {
-                    metadata.AddCustomAttribute(typeDefintionHandle, GetConstructorHandle(metadata, customAttribute.constructorInfo),
+                    metadata.AddCustomAttribute(typeDefinitionHandle, GetConstructorHandle(metadata, customAttribute.constructorInfo),
                         metadata.GetOrAddBlob(customAttribute.binaryAttribute));
                 }
             }
@@ -160,9 +171,6 @@ namespace System.Reflection.Emit.Experiment
         protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(nameof(con));
-            ArgumentNullException.ThrowIfNull(nameof(binaryAttribute)); // This is incorrect
-
             CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(con, binaryAttribute);
             _customAttributes.Add(customAttribute);
         }

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using Xunit;
 
 namespace System.Reflection.Emit.Experiment.Tests
@@ -24,7 +25,7 @@ namespace System.Reflection.Emit.Experiment.Tests
         {
             new CustomAttributeBuilder(s_comVisiblePair.con, s_comVisiblePair.args),
             new CustomAttributeBuilder(s_guidPair.con, s_guidPair.args),
-            new CustomAttributeBuilder(typeof(ComImportAttribute).GetConstructor(new Type[] { }), new object[] { })
+            new CustomAttributeBuilder(s_comImportPair.con, s_comImportPair.args)
         };
 
         private List<CustomAttributeBuilder> _attributes = new List<CustomAttributeBuilder>
@@ -32,11 +33,14 @@ namespace System.Reflection.Emit.Experiment.Tests
             new CustomAttributeBuilder(s_comVisiblePair.con, s_comVisiblePair.args),
             new CustomAttributeBuilder(s_guidPair.con, s_guidPair.args)
         };
+
         private static readonly Type s_comVisibleType = typeof(ComVisibleAttribute);
         private static readonly Type s_guideType = typeof(GuidAttribute);
+        private static readonly Type s_comImportType = typeof(ComImportAttribute);
         private static readonly (ConstructorInfo con, object [] args) s_comVisiblePair = (s_comVisibleType.GetConstructor(new Type[] { typeof(bool) }), new object[] { true });
         private static readonly (ConstructorInfo con, object [] args) s_guidPair = (s_guideType.GetConstructor(new Type[] { typeof(string) }), new object[] { "9ED54F84-A89D-4fcd-A854-44251E925F09" });
-
+        private static readonly (ConstructorInfo con, object [] args) s_comImportPair = (s_comImportType.GetConstructor(Type.EmptyTypes), new object[] { });
+        private static readonly MyComparer s_comparer = new();
         internal string _fileLocation;
 
         public CustomAttributeTesting()
@@ -75,9 +79,14 @@ namespace System.Reflection.Emit.Experiment.Tests
                 foreach (var attribute in attributesFromDisk)
                 {
                     if (attribute.AttributeType.Name == "ComImportAttribute")
-                        continue;
-
-                    ValidateAttributes(attribute);
+                    {
+                        Assert.Equal(s_comImportPair.con, attribute.Constructor, s_comparer);
+                        Assert.Empty(attribute.ConstructorArguments);
+                    }
+                    else
+                    {
+                        ValidateAttributes(attribute);
+                    }
                 }
             }
         }
@@ -95,14 +104,12 @@ namespace System.Reflection.Emit.Experiment.Tests
         {
             AssemblyName assemblyName = PopulateAssemblyName();
 
-            // These attributes not for Module, but seems existing AssemblyBuidler also just ignores the target
+            // These attributes not for Module, but seems existing AssemblyBuilder also just ignores the target
             AssemblyTools.WriteAssemblyToDisk(assemblyName, Type.EmptyTypes, _fileLocation, null, _attributes, null);
 
             Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
             Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
-            Assert.Equal(assemblyName.Version, assemblyFromDisk.GetName().Version);
 
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
 
@@ -113,6 +120,102 @@ namespace System.Reflection.Emit.Experiment.Tests
 
             ValidateAttributes(attributesFromDisk[0]);
             ValidateAttributes(attributesFromDisk[1]);
+        }
+
+        [Fact]
+        public void MethodWithCustomAttributes()
+        {
+            AssemblyName assemblyName = PopulateAssemblyName();
+            Type[] types = new Type[] { typeof(IMultipleMethod), typeof(IOneMethod) };
+
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null, methodAttributes: _attributes);
+
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
+
+            Assert.NotNull(assemblyFromDisk);
+
+            Module moduleFromDisk = assemblyFromDisk.Modules.First();
+            Type[] typesFromDisk = moduleFromDisk.GetTypes();
+
+            for (int i = 0; i < types.Length; i++)
+            {
+                MethodInfo[] sourceMethods = types[i].GetMethods();
+                MethodInfo[] methodsFromDisk = typesFromDisk[i].GetMethods();
+
+                for (int j = 0; j < sourceMethods.Length; j++)
+                {
+                    MethodInfo sourceMethod = sourceMethods[j];
+                    MethodInfo methodFromDisk = methodsFromDisk[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+
+                    List<CustomAttributeData> attributesFromDisk = methodFromDisk.GetCustomAttributesData().ToList();
+                    Assert.Equal(2, attributesFromDisk.Count);
+
+                    foreach (var attribute in attributesFromDisk)
+                    {
+                        ValidateAttributes(attribute);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void FieldWithCustomAttributes()
+        {
+            AssemblyName assemblyName = PopulateAssemblyName();
+            Type[] types = new Type[] { typeof(IOneMethod), typeof(StructWithField) };
+
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null, fieldAttributes: _attributes);
+
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
+
+            Assert.NotNull(assemblyFromDisk);
+
+            Module moduleFromDisk = assemblyFromDisk.Modules.First();
+            Type[] typesFromDisk = moduleFromDisk.GetTypes();
+
+            Assert.Equal(2, typesFromDisk.Length);
+
+            for (int i = 0; i < types.Length; i++)
+            {
+                MethodInfo[] sourceMethods = types[i].IsValueType ? types[i].GetMethods(BindingFlags.DeclaredOnly) : types[i].GetMethods();
+                MethodInfo[] methodsFromDisk = typesFromDisk[i].IsValueType ? typesFromDisk[i].GetMethods(BindingFlags.DeclaredOnly) : typesFromDisk[i].GetMethods();
+
+                for (int j = 0; j < methodsFromDisk.Length; j++)
+                {
+                    MethodInfo sourceMethod = sourceMethods[j];
+                    MethodInfo methodFromDisk = methodsFromDisk[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+
+                    Assert.Empty(methodFromDisk.GetCustomAttributesData());
+                }
+
+                var declaredFields = types[i].GetFields();
+
+                for (int j = 0; j < declaredFields.Length; j++)
+                {
+                    FieldInfo sourceField = declaredFields[j];
+                    FieldInfo fieldFromDisk = typesFromDisk[i].GetFields()[j];
+
+                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
+
+                    List<CustomAttributeData> attributesFromDisk = fieldFromDisk.GetCustomAttributesData().ToList();
+                    Assert.Equal(2, attributesFromDisk.Count);
+
+                    foreach (var attribute in attributesFromDisk)
+                    {
+                        ValidateAttributes(attribute);
+                    }
+                }
+            }
         }
 
         [Fact]
@@ -144,18 +247,18 @@ namespace System.Reflection.Emit.Experiment.Tests
         {
             if (customAttribute.AttributeType.Name == s_comVisibleType.Name)
             {
-                Assert.Equal(s_comVisiblePair.con, customAttribute.Constructor, new MyComparer());
+                Assert.Equal(s_comVisiblePair.con, customAttribute.Constructor, s_comparer);
 
-                //Assert.Equal(typeof(System.Boolean), customAttribute.ConstructorArguments[0].ArgumentType);
+                Assert.Equal(s_comVisiblePair.args[0].GetType().FullName, customAttribute.ConstructorArguments[0].ArgumentType.FullName);
                 Assert.Equal(true, customAttribute.ConstructorArguments[0].Value);
             }
             else
             {
-                Assert.Equal(s_guidPair.con, customAttribute.Constructor, new MyComparer());
+                Assert.Equal(s_guidPair.con, customAttribute.Constructor, s_comparer);
 
-                //Assert.Equal(typeof(string), customAttribute.ConstructorArguments[0].ArgumentType);
+                Assert.Equal(s_guidPair.args[0].GetType().FullName, customAttribute.ConstructorArguments[0].ArgumentType.FullName);
                 Assert.Equal(customAttribute.AttributeType.Name, s_guideType.Name);
-                Assert.Equal("9ED54F84-A89D-4fcd-A854-44251E925F09", customAttribute.ConstructorArguments[0].Value);
+                Assert.Equal(s_guidPair.args[0], customAttribute.ConstructorArguments[0].Value);
             }
         }
 
