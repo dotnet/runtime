@@ -115,7 +115,6 @@ jobs:
       # Always run for runtime-wasm because browser testing is not on runtime
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - normal
         - WasmTestOnBrowser
 
   # Library tests with full threading

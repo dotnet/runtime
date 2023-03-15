@@ -489,7 +489,7 @@ extends:
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
-            - normal
+            - WasmTestOnBrowser
 
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
         parameters:
