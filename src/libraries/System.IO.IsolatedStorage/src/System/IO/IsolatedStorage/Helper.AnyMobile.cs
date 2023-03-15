@@ -9,9 +9,7 @@ namespace System.IO.IsolatedStorage
 
         internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
         {
-            string? randomDirectory = GetExistingRandomDirectory(rootDirectory);
-
-            return randomDirectory ?? GetDataDirectory(scope);
+            return GetExistingRandomDirectory(rootDirectory) ?? GetDataDirectory(scope);
         }
     }
 }
