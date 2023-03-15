@@ -7962,12 +7962,74 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_SWITCH:
                 /* Pop the switch value off the stack */
-                op1 = impPopStack().val;
+                op1 = gtFoldExpr(impPopStack().val);
                 assertImp(genActualTypeIsIntOrI(op1->TypeGet()));
 
-                /* We can create a switch node */
+                // Fold Switch for GT_CNS_INT
+                if (opts.OptimizationEnabled() && (op1->gtOper == GT_CNS_INT) && !compIsForImportOnly())
+                {
+                    // Find the jump target
+                    size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    unsigned     jumpCnt   = block->bbJumpSwt->bbsCount;
+                    BasicBlock** jumpTab   = block->bbJumpSwt->bbsDstTab;
+                    bool         foundVal  = false;
 
-                op1 = gtNewOperNode(GT_SWITCH, TYP_VOID, op1);
+                    for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
+                    {
+                        BasicBlock* curJump = *jumpTab;
+
+                        assert(curJump->countOfInEdges() > 0);
+
+                        // If val matches switchVal or we are at the last entry and
+                        // we never found the switch value then set the new jump dest
+
+                        if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
+                        {
+                            if (curJump != block->bbNext)
+                            {
+                                // transform the basic block into a BBJ_ALWAYS
+                                block->bbJumpKind = BBJ_ALWAYS;
+                                block->bbJumpDest = curJump;
+                            }
+                            else
+                            {
+                                // transform the basic block into a BBJ_NONE
+                                block->bbJumpKind = BBJ_NONE;
+                            }
+                            foundVal = true;
+                        }
+                        else
+                        {
+                            // Remove 'block' from the predecessor list of 'curJump'
+                            fgRemoveRefPred(curJump, block);
+                        }
+                    }
+
+                    assert(foundVal);
+
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("\nSwitch folded at " FMT_BB "\n", block->bbNum);
+                        printf(FMT_BB " becomes a %s", block->bbNum,
+                               block->bbJumpKind == BBJ_ALWAYS ? "BBJ_ALWAYS" : "BBJ_NONE");
+                        if (block->bbJumpKind == BBJ_ALWAYS)
+                        {
+                            printf(" to " FMT_BB, block->bbJumpDest->bbNum);
+                        }
+                        printf("\n");
+                    }
+#endif
+
+                    // Create a NOP node
+                    op1 = gtNewNothingNode();
+                }
+                else
+                {
+                    // We can create a switch node
+
+                    op1 = gtNewOperNode(GT_SWITCH, TYP_VOID, op1);
+                }
 
                 val = (int)getU4LittleEndian(codeAddr);
                 codeAddr += 4 + val * 4; // skip over the switch-table
