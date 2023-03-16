@@ -3370,6 +3370,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                 emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
+            srcOffset += regSize;
             dstOffset += regSize;
             size -= regSize;
         } while (size >= regSize);
@@ -3389,9 +3390,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                     regSize = XMM_REGSIZE_BYTES;
                 }
 
+                assert(srcOffset >= (int)regSize);
                 assert(dstOffset >= (int)regSize);
 
                 // Rewind dstOffset so we can fit a vector for the while remainder
+                srcOffset -= (regSize - size);
                 dstOffset -= (regSize - size);
 
                 if (srcLclNum != BAD_VAR_NUM)
