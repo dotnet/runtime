@@ -2451,8 +2451,10 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 	assm->image->alc = alc;
 	assm->aname.name = container_assm_name;
 
+	mono_image_init (assm->image);
 	MonoAotFileInfo* info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assm->aname.name);
 	assm->image->guid = (char*)info->assembly_guid;
+	mono_assembly_addref (assm);
 
 	load_aot_module(alc, assm, NULL, error);
 	g_assert (assm->image->aot_module);
