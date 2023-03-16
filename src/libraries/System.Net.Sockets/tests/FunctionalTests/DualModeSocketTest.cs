@@ -1432,7 +1432,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Linux | TestPlatforms.Android | TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS, "Expected behavior is different on Apple platforms, Linux and Android")]
+        [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior is different on Unix
         public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1449,8 +1449,8 @@ namespace System.Net.Sockets.Tests
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Android)]  // Read the comment above
-        public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived_Linux()
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Read the comment above
+        public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived_Unix()
         {
             AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
             {
