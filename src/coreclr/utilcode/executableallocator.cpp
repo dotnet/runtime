@@ -293,7 +293,7 @@ void ExecutableAllocator::RemoveCachedMapping(size_t index)
 #ifdef ENABLE_CACHED_MAPPINGS
 size_t ExecutableAllocator::FindOverlappingCachedMapping(BlockRX* pBlock)
 {
-    for (size_t index = 0; index < executableAllocatorCacheSize; index++)
+    for (size_t index = 0; index < EXECUTABLE_ALLOCATOR_CACHE_SIZE; index++)
     {
         BlockRW*& cachedMapping = m_cachedMapping[index];
         if (cachedMapping != NULL)
@@ -313,7 +313,7 @@ void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
 {
     LIMITED_METHOD_CONTRACT;
 #ifdef ENABLE_CACHED_MAPPINGS
-    for (size_t index = 0; index < executableAllocatorCacheSize; index++)
+    for (size_t index = 0; index < EXECUTABLE_ALLOCATOR_CACHE_SIZE; index++)
     {
         if (pBlock == m_cachedMapping[index])
         {
@@ -325,8 +325,8 @@ void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
     }
 
     // Must insert mapping in front
-    RemoveCachedMapping(executableAllocatorCacheSize);
-    memmove(&m_cachedMapping[1], &m_cachedMapping[0], sizeof(m_cachedMapping[0]) * (executableAllocatorCacheSize - 1));
+    RemoveCachedMapping(EXECUTABLE_ALLOCATOR_CACHE_SIZE);
+    memmove(&m_cachedMapping[1], &m_cachedMapping[0], sizeof(m_cachedMapping[0]) * (EXECUTABLE_ALLOCATOR_CACHE_SIZE - 1));
     m_cachedMapping[0] = pBlock;
     pBlock->refCount++;
 #endif // ENABLE_CACHED_MAPPINGS
