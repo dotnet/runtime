@@ -42,6 +42,23 @@ struct Access
     unsigned CountReturns = 0;
     unsigned CountPassedAsRetbuf = 0;
 
+    // Number of times we saw this access.
+    weight_t CountWtd = 0;
+    // Number of times this access is on the RHS of an assignment.
+    weight_t CountAssignmentSourceWtd = 0;
+    // Number of times this access is on the LHS of an assignment.
+    weight_t CountAssignmentDestinationWtd = 0;
+    // Number of times this access is on the RHS of an assignment where the LHS is a probable register candidate.
+    weight_t CountAssignmentsToRegisterCandidateWtd = 0;
+    // Number of times this access is on the LHS of an assignment where the RHS is a probable register candidate.
+    weight_t CountAssignmentsFromRegisterCandidateWtd = 0;
+    weight_t CountCallArgsWtd = 0;
+    weight_t CountCallArgsByImplicitRefWtd = 0;
+    weight_t CountCallArgsOnStackWtd = 0;
+    weight_t CountReturnsWtd = 0;
+    weight_t CountPassedAsRetbufWtd = 0;
+
+
     Access(
         unsigned offset, var_types accessType, ClassLayout* layout)
         : Layout(layout), Offset(offset), AccessType(accessType)
@@ -185,7 +202,7 @@ public:
     {
     }
 
-    void RecordAccess(unsigned offs, var_types accessType, ClassLayout* accessLayout, AccessKindFlags flags)
+    void RecordAccess(unsigned offs, var_types accessType, ClassLayout* accessLayout, AccessKindFlags flags, weight_t weight)
     {
         Access* access = nullptr;
 
@@ -228,49 +245,60 @@ public:
         }
 
         access->Count++;
+        access->CountWtd += weight;
+
         if ((flags & AccessKindFlags::IsAssignmentSource) != AccessKindFlags::None)
         {
             access->CountAssignmentSource++;
+            access->CountAssignmentSourceWtd += weight;
 
             if ((flags & AccessKindFlags::IsAssignmentToRegisterCandidate) != AccessKindFlags::None)
             {
                 access->CountAssignmentsToRegisterCandidate++;
+                access->CountAssignmentsToRegisterCandidateWtd += weight;
             }
         }
 
         if ((flags & AccessKindFlags::IsAssignmentDestination) != AccessKindFlags::None)
         {
             access->CountAssignmentDestination++;
+            access->CountAssignmentDestinationWtd += weight;
 
             if ((flags & AccessKindFlags::IsAssignmentFromRegisterCandidate) != AccessKindFlags::None)
             {
                 access->CountAssignmentsFromRegisterCandidate++;
+                access->CountAssignmentsFromRegisterCandidateWtd += weight;
             }
         }
 
         if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
         {
             access->CountCallArgs++;
+            access->CountCallArgsWtd += weight;
 
             if ((flags & AccessKindFlags::IsCallArgByImplicitRef) != AccessKindFlags::None)
             {
                 access->CountCallArgsByImplicitRef++;
+                access->CountCallArgsByImplicitRefWtd += weight;
             }
 
             if ((flags & AccessKindFlags::IsCallArgOnStack) != AccessKindFlags::None)
             {
                 access->CountCallArgsOnStack++;
+                access->CountCallArgsOnStackWtd += weight;
             }
         }
 
         if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
         {
             access->CountPassedAsRetbuf++;
+            access->CountPassedAsRetbufWtd += weight;
         }
 
         if ((flags & AccessKindFlags::IsReturned) != AccessKindFlags::None)
         {
             access->CountReturns++;
+            access->CountReturnsWtd += weight;
         }
     }
 
@@ -375,6 +403,11 @@ public:
         unsigned countOverlappedRetbufs = 0;
         unsigned countOverlappedAssignmentDestination = 0;
         unsigned countOverlappedAssignmentSource = 0;
+        weight_t countOverlappedCallsWtd = 0;
+        weight_t countOverlappedReturnsWtd = 0;
+        weight_t countOverlappedRetbufsWtd = 0;
+        weight_t countOverlappedAssignmentDestinationWtd = 0;
+        weight_t countOverlappedAssignmentSourceWtd = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
@@ -397,49 +430,55 @@ public:
             countOverlappedRetbufs += otherAccess.CountPassedAsRetbuf;
             countOverlappedAssignmentDestination += otherAccess.CountAssignmentDestination;
             countOverlappedAssignmentSource += otherAccess.CountAssignmentSource;
+
+            countOverlappedCallsWtd += otherAccess.CountCallArgsWtd;
+            countOverlappedReturnsWtd += otherAccess.CountReturnsWtd;
+            countOverlappedRetbufsWtd += otherAccess.CountPassedAsRetbufWtd;
+            countOverlappedAssignmentDestinationWtd += otherAccess.CountAssignmentDestinationWtd;
+            countOverlappedAssignmentSourceWtd += otherAccess.CountAssignmentSourceWtd;
         }
 
-        unsigned costWithout = 0;
+        weight_t costWithout = 0;
         // A normal access without promotion looks like:
         // mov reg, [reg+offs]
         // Which is 5 bytes on x64.
 
-        costWithout += access.Count * 50;
+        costWithout += access.CountWtd * 50;
 
         // The register then also needs to be used. In many cases it is containable, however, so we pay a bit less for this.
-        costWithout += access.Count * 25;
+        costWithout += access.CountWtd * 25;
 
-        unsigned costWith = 0;
+        weight_t costWith = 0;
 
         // For any use we expect to just use the register directly.
-        costWith += access.Count * 25;
+        costWith += access.CountWtd * 25;
 
-        unsigned numReadBacks = 0;
+        weight_t countReadBacksWtd = 0;
         LclVarDsc* lcl = comp->lvaGetDesc(lclNum);
         // For parameters we need an initial read back
         if (lcl->lvIsParam)
         {
-            numReadBacks++;
+            countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
         }
 
-        numReadBacks += countOverlappedRetbufs;
-        numReadBacks += countOverlappedAssignmentDestination;
+        countReadBacksWtd += countOverlappedRetbufsWtd;
+        countReadBacksWtd += countOverlappedAssignmentDestinationWtd;
 
-        costWith += numReadBacks * 50;
+        costWith += countReadBacksWtd * 50;
 
         // Write backs with TYP_REFs when the base local is an implicit byref
         // involves checked write barriers, so they are very expensive.
         // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
-        unsigned writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 150 : 50;
-        unsigned numWriteBacks = countOverlappedCalls + countOverlappedReturns + countOverlappedAssignmentSource;
-        costWith += numWriteBacks * writeBackCost;
+        int writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 150 : 50;
+        weight_t countWriteBacksWtd = countOverlappedCallsWtd + countOverlappedReturnsWtd + countOverlappedAssignmentSourceWtd;
+        costWith += countWriteBacksWtd * writeBackCost;
 
         JITDUMP("Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
-        JITDUMP("  Write-back cost: %u\n", writeBackCost);
-        JITDUMP("  # write backs: %u\n", numWriteBacks);
-        JITDUMP("  # read backs: %u\n", numReadBacks);
-        JITDUMP("  Cost with: %u\n", costWith);
-        JITDUMP("  Cost without: %u\n", costWithout);
+        JITDUMP("  Write-back cost: %d\n", writeBackCost);
+        JITDUMP("  # write backs: " FMT_WT "\n", countWriteBacksWtd);
+        JITDUMP("  # read backs: " FMT_WT "\n", countReadBacksWtd);
+        JITDUMP("  Cost with: " FMT_WT "\n", costWith);
+        JITDUMP("  Cost without: " FMT_WT "\n", costWithout);
 
         if (costWith < costWithout)
         {
@@ -488,6 +527,7 @@ class LocalsUseVisitor : public GenTreeVisitor<LocalsUseVisitor>
 {
     Promotion* m_prom;
     LocalsUses* m_uses;
+    BasicBlock* m_curBB;
 public:
     enum
     {
@@ -499,6 +539,11 @@ public:
         m_uses = reinterpret_cast<LocalsUses*>(new (prom->m_compiler, CMK_Promotion) char[prom->m_compiler->lvaCount * sizeof(LocalsUses)]);
         for (size_t i = 0; i < prom->m_compiler->lvaCount; i++)
             new (&m_uses[i], jitstd::placement_t()) LocalsUses(prom->m_compiler);
+    }
+
+    void SetBB(BasicBlock* bb)
+    {
+        m_curBB = bb;
     }
 
     LocalsUses* GetUsesByLocal(unsigned lcl) { return &m_uses[lcl]; }
@@ -526,7 +571,7 @@ public:
                     var_types accessType = lcl->TypeGet();
                     ClassLayout* accessLayout = varTypeIsStruct(lcl) ? lcl->GetLayout(m_compiler) : nullptr;
                     AccessKindFlags accessFlags = ClassifyLocalAccess(lcl, user);
-                    m_uses[lcl->GetLclNum()].RecordAccess(offs, accessType, accessLayout, accessFlags);
+                    m_uses[lcl->GetLclNum()].RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
                 }
             }
         }
@@ -933,6 +978,8 @@ PhaseStatus Promotion::Run()
     LocalsUseVisitor localsUse(this);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
+        localsUse.SetBB(bb);
+
         for (Statement* stmt : bb->Statements())
         {
             DISPSTMT(stmt);
