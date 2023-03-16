@@ -185,6 +185,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_IlcConditionallyRootedAssemblies Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copyused'" />
       <_IlcTrimmedAssemblies Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'link'" />
       <_IlcNoSingleWarnAssemblies Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimmerSingleWarn) == 'false'" />
+
+      <!-- always export unmanaged entry points from System.Private.CoreLib -->
+      <UnmanagedEntryPointsAssembly Include="System.Private.CoreLib" />
     </ItemGroup>
 
     <ItemGroup>

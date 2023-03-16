@@ -166,7 +166,6 @@ namespace ILCompiler
             {
                 // Either single file, or multifile library, or multifile consumption.
                 EcmaModule entrypointModule = null;
-                bool systemModuleIsInputModule = false;
                 foreach (var inputFile in typeSystemContext.InputFilePaths)
                 {
                     EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
@@ -177,9 +176,6 @@ namespace ILCompiler
                             throw new Exception("Multiple EXE modules");
                         entrypointModule = module;
                     }
-
-                    if (module == typeSystemContext.SystemModule)
-                        systemModuleIsInputModule = true;
 
                     compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
@@ -209,8 +205,6 @@ namespace ILCompiler
                     if (entrypointModule == null && (!nativeLib || SplitExeInitialization))
                         throw new Exception("No entrypoint module");
 
-                    if (!systemModuleIsInputModule)
-                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
