@@ -183,6 +183,8 @@
     <MicrosoftBuildUtilitiesCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildUtilitiesCoreVersion>
     <NugetProjectModelVersion>6.2.2</NugetProjectModelVersion>
     <NugetPackagingVersion>6.2.2</NugetPackagingVersion>
+    <DotnetSosVersion>7.0.412701</DotnetSosVersion>
+    <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.1.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
