@@ -7654,6 +7654,29 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
     if (regArgNum > 0)
     {
+        for (int i = MAX_REG_ARG - 1; i >= 0; i--)
+        {
+            if (regArg[i] > 0 && (regArgInit[i] <= REG_S1 || regArgInit[i] > REG_A7))
+            {
+                instruction ins;
+                if ((regArgMaskIsInt & (1 << regArg[i])) != 0)
+                {
+                    ins = INS_slliw;
+                }
+                else
+                {
+                    ins = INS_ori;
+                }
+                GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
+                regArgMaskLive &= ~genRegMask((regNumber)regArg[i]);
+                regArg[i] = 0;
+                regArgNum -= 1;
+            }
+        }
+    }
+
+    if (regArgNum > 0)
+    {
         instruction ins;
         for (int i = MAX_REG_ARG - 1; i >= 0; i--)
         {
@@ -7678,7 +7701,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
                     break;
                 }
-                else if (regArgInit[i] > regArg[i] || (regArgInit[i] >= REG_T0 && regArgInit[i] <= REG_S1))
+                else if (regArgInit[i] > regArg[i])
                 {
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
                 }
@@ -7706,10 +7729,6 @@ void CodeGen::genFnPrologCalleeRegArgs()
                                                         0);
                             regArgNum--;
                             regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                            if (regArgNum == 0)
-                            {
-                                break;
-                            }
                         }
                         else if (k == i)
                         {
@@ -7721,14 +7740,15 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             regArgNum--;
                             regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
                             regArg[j] = 0;
-                            if (regArgNum == 0)
-                            {
-                                break;
-                            }
                         }
                         else
                         {
                             NYI_RISCV64("-----------CodeGen::genFnPrologCalleeRegArgs() error!--");
+                        }
+
+                        if (regArgNum == 0)
+                        {
+                            break;
                         }
                     }
                 }
