@@ -4,10 +4,12 @@
 using System;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
-class BindHandleInvalid
+public class BindHandleInvalid
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (new BindHandleInvalid().RunTest());
     }

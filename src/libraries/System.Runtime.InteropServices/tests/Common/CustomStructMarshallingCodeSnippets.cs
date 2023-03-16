@@ -3,13 +3,12 @@
 
 namespace Microsoft.Interop.UnitTests
 {
-    public class CustomStructMarshallingCodeSnippets<TSignatureTestProvider>
-        where TSignatureTestProvider : ICustomMarshallingSignatureTestProvider
+    public class CustomStructMarshallingCodeSnippets
     {
-        readonly TSignatureTestProvider _provider;
+        readonly ICustomMarshallingSignatureTestProvider _provider;
         public StatelessSnippets Stateless { get; }
         public StatefulSnippets Stateful { get; }
-        public CustomStructMarshallingCodeSnippets(TSignatureTestProvider provider)
+        public CustomStructMarshallingCodeSnippets(ICustomMarshallingSignatureTestProvider provider)
         {
             _provider = provider;
             Stateless = new StatelessSnippets(provider);
@@ -57,8 +56,8 @@ public struct Marshaller
 
         public class StatelessSnippets
         {
-            public readonly TSignatureTestProvider _provider;
-            public StatelessSnippets(TSignatureTestProvider provider)
+            public readonly ICustomMarshallingSignatureTestProvider _provider;
+            public StatelessSnippets(ICustomMarshallingSignatureTestProvider provider)
             {
                 this._provider = provider;
             }
@@ -260,8 +259,8 @@ public static class Marshaller
 
         public class StatefulSnippets
         {
-            private readonly TSignatureTestProvider _provider;
-            public StatefulSnippets (TSignatureTestProvider provider)
+            private readonly ICustomMarshallingSignatureTestProvider _provider;
+            public StatefulSnippets (ICustomMarshallingSignatureTestProvider provider)
             {
                 _provider = provider;
             }

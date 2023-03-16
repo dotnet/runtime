@@ -50,6 +50,7 @@
   <!-- Samples that require a multi-threaded runtime -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' != 'multithread'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
   </ItemGroup>
 
   <!-- Samples that require a perf-tracing wasm runtime -->
@@ -417,6 +418,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/83167 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj"
+                       Condition="'$(TargetArchitecture)' == 'arm64'" />
+
     <!-- https://github.com/dotnet/runtime/issues/73431 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj" />
@@ -545,6 +550,10 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\System.Runtime.Serialization.Json.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Globalization\tests\System.Globalization.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Globalization\tests\Invariant\Invariant.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.Packaging\tests\System.IO.Packaging.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Data.DataSetExtensions\tests\System.Data.DataSetExtensions.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\System.Runtime.Serialization.Xml.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\ReflectionOnly\System.Runtime.Serialization.Xml.ReflectionOnly.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
@@ -557,6 +566,12 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\System.Runtime.InteropServices.UnitTests\System.Runtime.InteropServices.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">
+    <!-- Don't want the default smoke tests - just verify that threading works -->
+    <SmokeTestProject Remove="@(SmokeTestProject)" />
+    <SmokeTestProject Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
   </ItemGroup>
 
   <ItemGroup>

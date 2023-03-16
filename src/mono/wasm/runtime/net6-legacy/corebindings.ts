@@ -88,7 +88,7 @@ export function init_legacy_exports(): void {
     legacyHelpers.runtime_legacy_exports_classname = "LegacyExports";
     legacyHelpers.runtime_legacy_exports_class = cwraps.mono_wasm_assembly_find_class(runtimeHelpers.runtime_interop_module, runtimeHelpers.runtime_interop_namespace, legacyHelpers.runtime_legacy_exports_classname);
     if (!legacyHelpers.runtime_legacy_exports_class)
-        throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
+        throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + legacyHelpers.runtime_legacy_exports_classname + " class";
 
     for (const sig of fn_signatures) {
         const wf: any = legacyManagedExports;

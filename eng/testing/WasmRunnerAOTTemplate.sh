@@ -32,22 +32,22 @@ if [[ -z "$XHARNESS_COMMAND" ]]; then
 fi
 
 if [[ "$XHARNESS_COMMAND" == "test" ]]; then
+	if [[ -z "$JS_ENGINE_ARGS" ]]; then
+		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
+	fi
+
 	if [[ -z "$JS_ENGINE" ]]; then
 		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
 			JS_ENGINE="--engine=NodeJS"
 			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--experimental-wasm-simd"
 		else
 			JS_ENGINE="--engine=V8"
-			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--experimental-wasm-simd"
+			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--experimental-wasm-simd --engine-arg=--experimental-wasm-bigint"
 		fi
 	fi
 
 	if [[ -z "$MAIN_JS" ]]; then
 		MAIN_JS="--js-file=test-main.js"
-	fi
-
-	if [[ -z "$JS_ENGINE_ARGS" ]]; then
-		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
 	fi
 fi
 

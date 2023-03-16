@@ -1155,7 +1155,7 @@ mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
 		memcpy (res->data.rgctx_entry, patch_info->data.rgctx_entry, sizeof (MonoJumpInfoRgctxEntry));
 		res->data.rgctx_entry->data = mono_patch_info_dup_mp (mp, res->data.rgctx_entry->data);
 		break;
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_DELEGATE_INFO:
 		res->data.del_tramp = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (mp, sizeof (MonoDelegateClassMethodPair));
 		memcpy (res->data.del_tramp, patch_info->data.del_tramp, sizeof (MonoDelegateClassMethodPair));
 		break;
@@ -1275,7 +1275,7 @@ mono_patch_info_hash (gconstpointer data)
 		return hash | ji->data.table->table_size;
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 		return hash | GPOINTER_TO_UINT (ji->data.gsharedvt_method->method);
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_DELEGATE_INFO:
 		return (guint)(hash | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual);
 	case MONO_PATCH_INFO_VIRT_METHOD: {
 		MonoJumpInfoVirtMethod *info = ji->data.virt_method;
@@ -1347,7 +1347,7 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 		return ji1->data.gsharedvt_method->method == ji2->data.gsharedvt_method->method;
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_DELEGATE_INFO:
 		return ji1->data.del_tramp->klass == ji2->data.del_tramp->klass && ji1->data.del_tramp->method == ji2->data.del_tramp->method && ji1->data.del_tramp->is_virtual == ji2->data.del_tramp->is_virtual;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		return ji1->data.uindex == ji2->data.uindex;
@@ -1386,7 +1386,7 @@ mini_gshared_method_info_dup (MonoMemoryManager *mem_manager, MonoGSharedMethodI
 		MonoRuntimeGenericContextInfoTemplate *entry = &info->entries [i];
 		MonoRuntimeGenericContextInfoTemplate *new_entry = &res->entries [i];
 		switch (mini_rgctx_info_type_to_patch_info_type (entry->info_type)) {
-		case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
+		case MONO_PATCH_INFO_DELEGATE_INFO: {
 			MonoDelegateClassMethodPair *old_info = (MonoDelegateClassMethodPair*)entry->data;
 			MonoDelegateClassMethodPair *new_info = mono_mem_manager_alloc0 (mem_manager, sizeof (MonoDelegateClassMethodPair));
 			memcpy (new_info, old_info, sizeof (MonoDelegateClassMethodPair));
@@ -1565,13 +1565,10 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		target = mono_class_vtable_checked (patch_info->data.klass, error);
 		mono_error_assert_ok (error);
 		break;
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
+	case MONO_PATCH_INFO_DELEGATE_INFO: {
 		MonoDelegateClassMethodPair *del_tramp = patch_info->data.del_tramp;
 
-		if (del_tramp->is_virtual)
-			target = mono_create_delegate_virtual_trampoline (del_tramp->klass, del_tramp->method);
-		else
-			target = mono_create_delegate_trampoline_info (del_tramp->klass, del_tramp->method);
+		target = mono_create_delegate_trampoline_info (del_tramp->klass, del_tramp->method, del_tramp->is_virtual);
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
@@ -4214,20 +4211,20 @@ register_counters (void)
 static void runtime_invoke_info_free (gpointer value);
 
 static gint
-class_method_pair_equal (gconstpointer ka, gconstpointer kb)
+delegate_class_method_pair_equal (gconstpointer ka, gconstpointer kb)
 {
-	const MonoClassMethodPair *apair = (const MonoClassMethodPair *)ka;
-	const MonoClassMethodPair *bpair = (const MonoClassMethodPair *)kb;
+	const MonoDelegateClassMethodPair *apair = (const MonoDelegateClassMethodPair *)ka;
+	const MonoDelegateClassMethodPair *bpair = (const MonoDelegateClassMethodPair *)kb;
 
-	return apair->klass == bpair->klass && apair->method == bpair->method ? 1 : 0;
+	return apair->klass == bpair->klass && apair->method == bpair->method && apair->is_virtual == bpair->is_virtual ? 1 : 0;
 }
 
 static guint
-class_method_pair_hash (gconstpointer data)
+delegate_class_method_pair_hash (gconstpointer data)
 {
-	const MonoClassMethodPair *pair = (const MonoClassMethodPair *)data;
+	const MonoDelegateClassMethodPair *pair = (const MonoDelegateClassMethodPair *)data;
 
-	return (guint)((gsize)pair->klass ^ (gsize)pair->method);
+	return (guint)((gsize)pair->klass ^ (gsize)pair->method ^ (gsize)pair->is_virtual);
 }
 
 static void
@@ -4239,7 +4236,7 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	info->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->jump_target_hash = g_hash_table_new (NULL, NULL);
 	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	info->delegate_trampoline_hash = g_hash_table_new (class_method_pair_hash, class_method_pair_equal);
+	info->delegate_info_hash = g_hash_table_new (delegate_class_method_pair_hash, delegate_class_method_pair_equal);
 	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
 	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -4308,7 +4305,7 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	g_hash_table_destroy (info->method_code_hash);
 	g_hash_table_destroy (info->jump_trampoline_hash);
 	g_hash_table_destroy (info->jit_trampoline_hash);
-	g_hash_table_destroy (info->delegate_trampoline_hash);
+	g_hash_table_destroy (info->delegate_info_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->mrgctx_hash);
 	g_hash_table_destroy (info->interp_method_pointer_hash);
@@ -5004,7 +5001,6 @@ register_icalls (void)
 	/* This needs a wrapper so it can have a preserveall cconv */
 	register_icall (mini_llvmonly_init_vtable_slot, mono_icall_sig_ptr_ptr_int, FALSE);
 	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object_ptr, TRUE);
-	register_icall (mini_llvmonly_init_delegate_virtual, mono_icall_sig_void_object_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mini_llvmonly_interp_entry_gsharedvt, mono_icall_sig_void_ptr_ptr_ptr, TRUE);

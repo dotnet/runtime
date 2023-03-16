@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
@@ -1820,6 +1821,21 @@ namespace System.Runtime.Intrinsics
             return Unsafe.ReadUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref source));
         }
 
+        /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<ushort> LoadUnsafe(ref char source) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source));
+
+        /// <summary>Loads a vector from the given source and element offset and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
+        /// <param name="elementOffset">The element offset from <paramref name="source" /> from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" /> plus <paramref name="elementOffset" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -2417,6 +2433,35 @@ namespace System.Runtime.Intrinsics
             }
 
             return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].
+        /// On hardware with <see cref="Ssse3"/> support, indices are treated as modulo 16, and if the high bit is set, the result will be set to 0 for that element.
+        /// On hardware with <see cref="AdvSimd.Arm64"/> or <see cref="PackedSimd"/> support, this method behaves the same as Shuffle.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
+        {
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.Shuffle(vector, indices);
+            }
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
+            }
+
+            if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Swizzle(vector, indices);
+            }
+
+            return Shuffle(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>

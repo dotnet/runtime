@@ -69,9 +69,18 @@ REGALIAS(EDI, RDI)
 #ifdef TARGET_AMD64
 #define XMMBASE 16
 #define XMMMASK(x) ((__int64)(1) << ((x)+XMMBASE))
+
+#define KBASE 48
+#define KMASK(x) ((__int64)(1) << ((x)+KBASE))
+
 #else // !TARGET_AMD64
 #define XMMBASE 8
 #define XMMMASK(x) ((__int32)(1) << ((x)+XMMBASE))
+
+#define KBASE 16
+#define KMASK(x) ((__int32)(1) << ((x)+KBASE))
+
+
 #endif // !TARGET_AMD64
 
 REGDEF(XMM0,    0+XMMBASE,  XMMMASK(0),   "mm0"  )
@@ -83,9 +92,7 @@ REGDEF(XMM5,    5+XMMBASE,  XMMMASK(5),   "mm5"  )
 REGDEF(XMM6,    6+XMMBASE,  XMMMASK(6),   "mm6"  )
 REGDEF(XMM7,    7+XMMBASE,  XMMMASK(7),   "mm7"  )
 
-#ifdef TARGET_X86
-REGDEF(STK,     8+XMMBASE,  0x0000,       "STK"  )
-#else // !TARGET_X86
+#ifdef TARGET_AMD64
 REGDEF(XMM8,    8+XMMBASE,  XMMMASK(8),   "mm8"  )
 REGDEF(XMM9,    9+XMMBASE,  XMMMASK(9),   "mm9"  )
 REGDEF(XMM10,  10+XMMBASE,  XMMMASK(10),  "mm10" )
@@ -113,9 +120,18 @@ REGDEF(XMM29,  29+XMMBASE,  XMMMASK(29),  "mm29" )
 REGDEF(XMM30,  30+XMMBASE,  XMMMASK(30),  "mm30" )
 REGDEF(XMM31,  31+XMMBASE,  XMMMASK(31),  "mm31" )
 
-REGDEF(STK,    32+XMMBASE,  0x0000,       "STK"  )
+#endif // !TARGET_AMD64
 
-#endif // !TARGET_X86
+REGDEF(K0,     0+KBASE,    KMASK(0),     "k0"   )
+REGDEF(K1,     1+KBASE,    KMASK(1),     "k1"   )
+REGDEF(K2,     2+KBASE,    KMASK(2),     "k2"   )
+REGDEF(K3,     3+KBASE,    KMASK(3),     "k3"   )
+REGDEF(K4,     4+KBASE,    KMASK(4),     "k4"   )
+REGDEF(K5,     5+KBASE,    KMASK(5),     "k5"   )
+REGDEF(K6,     6+KBASE,    KMASK(6),     "k6"   )
+REGDEF(K7,     7+KBASE,    KMASK(7),     "k7"   )
+
+REGDEF(STK,    8+KBASE,    0x0000,       "STK"  )
 
 #elif defined(TARGET_ARM)
  #include "registerarm.h"

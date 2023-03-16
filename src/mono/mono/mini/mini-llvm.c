@@ -3900,7 +3900,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	}
 
 	names = g_new (char *, sig->param_count);
-	mono_method_get_param_names (cfg->method, (const char **) names);
+	mono_method_get_param_names_internal (cfg->method, (const char **) names);
 
 	for (int i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = &linfo->args [i + sig->hasthis];
@@ -12209,7 +12209,7 @@ emit_method_inner (EmitContext *ctx)
 		LLVMSetValueName (LLVMGetParam (method, linfo->dummy_arg_pindex), "dummy_arg");
 
 	names = g_new (char *, sig->param_count);
-	mono_method_get_param_names (cfg->method, (const char **) names);
+	mono_method_get_param_names_internal (cfg->method, (const char **) names);
 
 	/* Set parameter names/attributes */
 	for (int i = 0; i < sig->param_count; ++i) {

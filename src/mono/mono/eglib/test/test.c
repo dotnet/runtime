@@ -67,7 +67,7 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 	gboolean time, const char *tests_to_run_s)
 {
 	Test *tests = group->handler();
-	gint i, j, passed = 0, total = 0;
+	gint passed = 0, total = 0;
 	gdouble start_time_group, start_time_test;
 	gchar **tests_to_run = NULL;
 
@@ -85,15 +85,14 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 
 	start_time_group = get_timestamp();
 
-	for(i = 0; tests[i].name != NULL; i++) {
+	for(gint i = 0; tests[i].name != NULL; i++) {
 		gchar *result = (char*)"";
 		gboolean iter_pass, run;
 
 		iter_pass = FALSE;
 		if(tests_to_run != NULL) {
-			gint j;
 			run = FALSE;
-			for(j = 0; tests_to_run[j] != NULL; j++) {
+			for(gint j = 0; tests_to_run[j] != NULL; j++) {
 				if(strcmp(tests_to_run[j], tests[i].name) == 0) {
 					run = TRUE;
 					break;
@@ -115,7 +114,7 @@ run_group(const Group *group, gint iterations, gboolean quiet,
 
 		start_time_test = get_timestamp();
 
-		for(j = 0; j < iterations; j++) {
+		for(gint j = 0; j < iterations; j++) {
 			iter_pass = run_test(&(tests[i]), &result);
 			if(!iter_pass) {
 				break;

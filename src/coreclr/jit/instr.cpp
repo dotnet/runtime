@@ -101,7 +101,8 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
+    if (GetEmitter()->IsVexOrEvexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins) &&
+        !GetEmitter()->IsKInstruction(ins))
     {
         sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
         retbuf = buf[curBuf];
@@ -699,6 +700,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             {
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
+                case NI_Vector512_CreateScalarUnsafe:
                 {
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
@@ -772,34 +774,37 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #if defined(FEATURE_SIMD)
                     case TYP_SIMD8:
                     {
-                        simd8_t constValue = op->AsVecCon()->gtSimd8Val;
+                        simd8_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd8_t));
                         return OperandDesc(emit->emitSimd8Const(constValue));
                     }
 
                     case TYP_SIMD12:
-                    case TYP_SIMD16:
                     {
                         simd16_t constValue = {};
-
-                        if (op->TypeIs(TYP_SIMD12))
-                            memcpy(&constValue, &op->AsVecCon()->gtSimd12Val, sizeof(simd12_t));
-                        else
-                            constValue = op->AsVecCon()->gtSimd16Val;
-
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd12_t));
+                        return OperandDesc(emit->emitSimd16Const(constValue));
+                    }
+                    case TYP_SIMD16:
+                    {
+                        simd16_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd16_t));
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 
 #if defined(TARGET_XARCH)
                     case TYP_SIMD32:
                     {
-                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
+                        simd32_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd32_t));
                         return OperandDesc(emit->emitSimd32Const(constValue));
                     }
 
-                    case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+                    case TYP_SIMD64:
                     {
-                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
-                        return OperandDesc(emit->emitSimd32Const(constValue));
+                        simd64_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
+                        return OperandDesc(emit->emitSimd64Const(constValue));
                     }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD

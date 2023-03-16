@@ -515,6 +515,16 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsMultiDimensionalArray
+        {
+            get
+            {
+                Debug.Assert(HasComponentSize);
+                // See comment on RawArrayData for details
+                return BaseSize > (uint)(3 * sizeof(IntPtr));
+            }
+        }
+
         internal bool IsGeneric
         {
             get
@@ -762,7 +772,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool HasGCPointers
+        internal bool ContainsGCPointers
         {
             get
             {

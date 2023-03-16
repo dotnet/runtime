@@ -23,13 +23,7 @@ namespace AppHost.Bundle.Tests
             try
             {
                 // We include mockcoreclr in our project to test native binaries extraction.
-                string mockCoreClrPath = Path.Combine(RepoDirectories.Artifacts, "corehost_test",
-                    RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr"));
-                TestFixture = PreparePublishedSelfContainedTestProject("SingleFileApiTests", $"/p:AddFile={mockCoreClrPath}");
-
-                var singleFileHost = Path.Combine(
-                    RepoDirectories.HostArtifacts,
-                    RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("singlefilehost"));
+                TestFixture = PreparePublishedSelfContainedTestProject("SingleFileApiTests", $"/p:AddFile={Binaries.CoreClr.MockPath}");
 
                 // This uses the repo's SDK to publish single file using the live-built singlefilehost,
                 // such that the publish directory is the real scenario, rather than manually constructed
@@ -42,7 +36,7 @@ namespace AppHost.Bundle.Tests
                                     outputDirectory: BundleHelper.GetPublishPath(PublishedSingleFile),
                                     selfContained: true,
                                     singleFile: true,
-                                    extraArgs: new[] { $"/p:AddFile={mockCoreClrPath}", $"/p:SingleFileHostSourcePath={singleFileHost}" });
+                                    extraArgs: new[] { $"/p:AddFile={Binaries.CoreClr.MockPath}", $"/p:SingleFileHostSourcePath={Binaries.SingleFileHost.FilePath}" });
             }
             catch (Exception e) when (TestUtils.FailFast(e)) // Fail fast to gather a crash dump
             {

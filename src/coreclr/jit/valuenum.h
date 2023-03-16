@@ -1611,6 +1611,7 @@ private:
         return m_simd16CnsMap;
     }
 
+#if defined(TARGET_XARCH)
     struct Simd32PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd32_t>
     {
         static bool Equals(simd32_t x, simd32_t y)
@@ -1688,7 +1689,7 @@ private:
         }
         return m_simd64CnsMap;
     }
-
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
     template <size_t NumArgs>

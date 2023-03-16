@@ -2609,16 +2609,15 @@ void emitter::emitSetFrameRangeArgs(int offsLo, int offsHi)
 
 /*****************************************************************************
  *
- *  A conversion table used to map an operand size value (in bytes) into its
- *  small encoding (0 through 3), and vice versa.
+ *  A conversion table used to map an operand size value (in bytes) into its emitAttr
  */
 
-const emitter::opSize emitter::emitSizeEncode[] = {
-    emitter::OPSZ1, emitter::OPSZ2, emitter::OPSZ4, emitter::OPSZ8, emitter::OPSZ16, emitter::OPSZ32, emitter::OPSZ64,
+const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {
+    EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE, EA_16BYTE,
+#if defined(TARGET_XARCH)
+    EA_32BYTE, EA_64BYTE,
+#endif // TARGET_XARCH
 };
-
-const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE,
-                                                               EA_16BYTE, EA_32BYTE, EA_64BYTE};
 
 /*****************************************************************************
  *
@@ -8294,12 +8293,13 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 i += j;
                                 break;
 
+                            case 64:
                             case 32:
                             case 16:
                             case 8:
                                 assert((data->dsSize % 8) == 0);
                                 printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
-                                for (j = 8; j < 32; j += 8)
+                                for (j = 8; j < 64; j += 8)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
