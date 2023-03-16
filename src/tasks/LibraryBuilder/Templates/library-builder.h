@@ -1,3 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#ifndef __MONO_LIBRARY_BUILDER_H__
+#define __MONO_LIBRARY_BUILDER_H__
+
 #include <stdlib.h>
 
 #if defined(HOST_ANDROID)
@@ -32,3 +38,5 @@ void register_aot_modules (void);
 void preload_assemblies_with_exported_symbols ();
 typedef void (*MonoRuntimeInitCallback) (void);
 void mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);
+
+#endif /*__MONO_LIBRARY_BUILDER_H__*/
