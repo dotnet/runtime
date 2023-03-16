@@ -59,7 +59,6 @@ declare interface EmscriptenModule {
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
-    FS_readFile(filename: string, opts: any): any;
     addFunction(fn: Function, signature: string): number;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
@@ -178,7 +177,7 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads";
+type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
 "auto";

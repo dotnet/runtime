@@ -118,6 +118,12 @@ namespace System
             return new EETypePtr(_value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal MethodTable* ToMethodTable()
+        {
+            return (MethodTable*)_value;
+        }
+
         internal bool IsNull
         {
             get

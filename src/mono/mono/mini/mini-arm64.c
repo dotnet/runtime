@@ -34,6 +34,7 @@
 #define EXPAND(x) x
 #define PARENTHESIZE(...) (__VA_ARGS__)
 #define EXPAND_FUN(m, ...) EXPAND(m PARENTHESIZE(__VA_ARGS__))
+#define OPFMT_WDSS _w, dreg, sreg1, sreg2
 #define OPFMT_WTDSS _w, _t, dreg, sreg1, sreg2
 #define OPFMT_WTDSS_REV _w, _t, dreg, sreg2, sreg1
 #define OPFMT_WTDSI _w, _t, _dreg, sreg1, _i

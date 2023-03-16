@@ -666,7 +666,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_GETITEM_SPAN:
 		case MINT_GETITEM_LOCALSPAN:
 		case MINT_INTRINS_SPAN_CTOR:
-		case MINT_INTRINS_UNSAFE_BYTE_OFFSET:
 		case MINT_INTRINS_GET_TYPE:
 		case MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF:
 		case MINT_CASTCLASS:

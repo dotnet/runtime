@@ -16,7 +16,7 @@ interface PThreadLibrary {
     unusedWorkers: Worker[];
     pthreads: PThreadInfoMap;
     allocateUnusedWorker: () => void;
-    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void;
+    loadWasmModuleToWorker: (worker: Worker) => Promise<Worker>;
 }
 
 interface EmscriptenPThreadInfo {
@@ -67,8 +67,8 @@ const Internals = {
     getUnusedWorkerPool: (): Worker[] => {
         return Internals.modulePThread.unusedWorkers;
     },
-    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading: () => void): void => {
-        Internals.modulePThread.loadWasmModuleToWorker(worker, onFinishedLoading);
+    loadWasmModuleToWorker: (worker: Worker): Promise<Worker> => {
+        return Internals.modulePThread.loadWasmModuleToWorker(worker);
     }
 };
 

@@ -1790,6 +1790,9 @@ void Lowering::LowerCall(GenTree* node)
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
 
+    // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
+    assert(!call->IsExpRuntimeLookup());
+
     call->ClearOtherRegs();
     LowerArgsForCall(call);
 

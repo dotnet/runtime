@@ -21,7 +21,6 @@ import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
 import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download, wait_for_all_assets } from "./assets";
-import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 import { export_linker } from "./exports-linker";
@@ -267,7 +266,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         bindings_init();
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
-        if (!runtimeHelpers.mono_wasm_symbols_are_ready) readSymbolMapFile("dotnet.js.symbols");
 
         setTimeout(() => {
             // when there are free CPU cycles

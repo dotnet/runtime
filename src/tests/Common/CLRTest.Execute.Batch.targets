@@ -298,7 +298,7 @@ if defined DoLink (
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
-      <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" 300</WatcherRunFile>
+      <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" %_WatcherTimeoutMilliseconds%</WatcherRunFile>
 
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
@@ -439,6 +439,11 @@ set "lockFolder=%~dp0\lock"
 pushd %~dp0
 set "scriptPath=%~dp0"
 set /A _RunWithWatcher=0
+set _WatcherTimeoutMilliseconds=600000
+
+IF NOT "%__TestTimeout%"=="" (
+    set _WatcherTimeoutMilliseconds=%__TestTimeout%
+)
 
 $(BatchCLRTestArgPrep)
 $(BatchCLRTestExitCodePrep)

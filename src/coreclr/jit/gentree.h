@@ -1947,8 +1947,8 @@ public:
 
     template <typename T>
     void BashToConst(T value, var_types type = TYP_UNDEF);
-
     void BashToZeroConst(var_types type);
+    GenTreeLclVar* BashToLclVar(Compiler* comp, unsigned lclNum);
 
 #if NODEBASH_STATS
     static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew);
@@ -6355,7 +6355,9 @@ struct GenTreeVecCon : public GenTree
             case NI_Vector256_Create:
             case NI_Vector512_Create:
             case NI_Vector256_CreateScalar:
+            case NI_Vector512_CreateScalar:
             case NI_Vector256_CreateScalarUnsafe:
+            case NI_Vector512_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
             case NI_Vector64_Create:
             case NI_Vector64_CreateScalar:
@@ -6371,7 +6373,8 @@ struct GenTreeVecCon : public GenTree
 // CreateScalar leaves the upper bits as zero
 
 #if defined(TARGET_XARCH)
-                    if ((intrinsic != NI_Vector128_CreateScalar) && (intrinsic != NI_Vector256_CreateScalar))
+                    if ((intrinsic != NI_Vector128_CreateScalar) && (intrinsic != NI_Vector256_CreateScalar) &&
+                        (intrinsic != NI_Vector512_CreateScalar))
 #elif defined(TARGET_ARM64)
                     if ((intrinsic != NI_Vector64_CreateScalar) && (intrinsic != NI_Vector128_CreateScalar))
 #endif

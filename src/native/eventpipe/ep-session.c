@@ -336,7 +336,7 @@ ep_session_suspend_write_event (EventPipeSession *session)
 
 	dn_vector_ptr_custom_init_params_t params = {0, };
 	params.allocator = (dn_allocator_t *)&allocator;
-	params.capacity = dn_vector_ptr_buffer_capacity (dn_vector_ptr_default_local_allocator_byte_size);
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
 
 	dn_vector_ptr_t threads;
 

@@ -728,34 +728,13 @@ LinearScan::LinearScan(Compiler* theCompiler)
     }
 #endif
 
-    for (unsigned int i = 0; i < TYP_COUNT; i++)
-    {
-        var_types thisType = (var_types)genActualTypes[i];
-        if (thisType == TYP_FLOAT)
-        {
-            availableRegs[i] = &availableFloatRegs;
-        }
-        else if (thisType == TYP_DOUBLE)
-        {
-            availableRegs[i] = &availableDoubleRegs;
-        }
-#ifdef FEATURE_SIMD
-        else if (varTypeIsSIMD(thisType))
-        {
-            availableRegs[i] = &availableDoubleRegs;
-        }
-#ifdef TARGET_XARCH
-        else if (thisType == TYP_MASK)
-        {
-            availableRegs[i] = &availableMaskRegs;
-        }
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-        else
-        {
-            availableRegs[i] = &availableIntRegs;
-        }
-    }
+    // Initialize the availableRegs to use for each TYP_*
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf)                                              \
+    availableRegs[static_cast<int>(TYP_##tn)] = &lsra;
+#include "typelist.h"
+#undef DEF_TP
 
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;

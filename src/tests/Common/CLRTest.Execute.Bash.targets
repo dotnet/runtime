@@ -290,7 +290,7 @@ fi
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
-      <WatcherRunFile>"$CORE_ROOT/watchdog" 300</WatcherRunFile>
+      <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMilliseconds</WatcherRunFile>
 
       <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
@@ -549,6 +549,11 @@ ReleaseLock()
 cd "$%28dirname "${BASH_SOURCE[0]}")"
 LockFile="lock"
 _RunWithWatcher=0
+_WatcherTimeoutMilliseconds=600000
+
+if [[ ! -z "$__TestTimeout" ]]%3B then
+    _WatcherTimeoutMilliseconds=$__TestTimeout
+fi
 
 
 # The __TestEnv variable may be used to specify a script to source before the test.
