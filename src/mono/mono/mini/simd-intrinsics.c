@@ -1899,7 +1899,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #if defined(TARGET_AMD64) || defined(TARGET_WASM)
 	if (!COMPILE_LLVM (cfg))
-			return NULL;
+		return NULL;
 #endif
 
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
