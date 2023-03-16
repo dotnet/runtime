@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
     <NativeLib>Shared</NativeLib>
   </PropertyGroup>
 
