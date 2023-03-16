@@ -684,10 +684,15 @@ namespace System.Net.Security
                 return frameSize;
             }
 
+            // make sure we have space to read into, there are two cases which can happen
+            // - we know the exact frame size (frameSize != int.MaxValue) - we make sure we have space for the whole frame
+            // - we don't know the frame size (frameSize == int.MaxValue) - we move existing data to the beginning of the buffer (they will be couple of bytes only)
+            _buffer.EnsureAvailableSpace(Math.Min(frameSize, _buffer.Capacity) - _buffer.EncryptedLength);
+
             while (_buffer.EncryptedLength < frameSize)
             {
-                // make sure we have space to read into
-                _buffer.EnsureAvailableSpace(Math.Min(frameSize, _buffer.Capacity) - _buffer.EncryptedLength);
+                // there should be space left to read into
+                Debug.Assert(_buffer.AvailableLength > 0, "_buffer.AvailableBytes > 0");
 
                 // We either don't have full frame or we don't have enough data to even determine the size.
                 int bytesRead = await TIOAdapter.ReadAsync(InnerStream, _buffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
