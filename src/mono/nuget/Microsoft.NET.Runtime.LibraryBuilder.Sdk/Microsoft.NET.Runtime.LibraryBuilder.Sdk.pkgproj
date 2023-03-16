@@ -6,8 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoTasksDir)AndroidAppBuilder\AndroidAppBuilder.csproj" />
-    <ProjectReference Include="$(RepoTasksDir)AppleAppBuilder\AppleAppBuilder.csproj" />
     <ProjectReference Include="$(RepoTasksDir)LibraryBuilder\LibraryBuilder.csproj" />
 
     <PackageFile Include="Sdk\AutoImport.props" TargetPath="Sdk" />

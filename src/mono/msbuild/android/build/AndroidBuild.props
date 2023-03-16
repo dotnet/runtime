@@ -6,16 +6,16 @@
 
     <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
 
-    <AndroidBuildAppAfterThisTarget Condition="'$(AndroidBuildAppAfterThisTarget)' == ''">Publish</AndroidBuildAppAfterThisTarget>
-    <AndroidBuildAppDependsOn>
+    <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
+    <AndroidBuildDependsOn>
         _InitializeCommonProperties;
-        _BeforeAndroidBuildApp;
+        _BeforeAndroidBuild;
         _AndroidResolveReferences;
         _AndroidPrepareProfiledAot;
-        _AndroidAotCompileApp;
+        _AndroidAotCompile;
         _BuildNativeLibrary;
         _AndroidGenerateAppBundle;
-        _AfterAndroidBuildApp
-    </AndroidBuildAppDependsOn>
+        _AfterAndroidBuild
+    </AndroidBuildDependsOn>
   </PropertyGroup>
 </Project>

@@ -1,7 +1,4 @@
 <Project>
-  <UsingTask TaskName="AndroidAppBuilderTask"
-             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
-
   <PropertyGroup>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
@@ -11,9 +8,13 @@
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
-  <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />
+  <UsingTask Condition="'$(AndroidGenerateAppBundle)' == 'true'"
+             TaskName="AndroidAppBuilderTask"
+             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
-  <Target Name="_AndroidCoreBuild" BeforeTargets="AndroidBuildApp" DependsOnTargets="$(AndroidBuildAppDependsOn)" />
+  <Target Name="AndroidBuild" AfterTargets="$(AndroidBuildAfterThisTarget)" />
+
+  <Target Name="_AndroidCoreBuild" BeforeTargets="AndroidBuild" DependsOnTargets="$(AndroidBuildDependsOn)" />
 
   <Target Name="_InitializeCommonProperties">
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
@@ -31,12 +32,12 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <AndroidAppDir Condition="'$(AndroidAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(PublishDir)))</AndroidAppDir>
-      <AndroidAppBundleDir Condition="'$(AndroidAppBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</AndroidAppBundleDir>
+      <AndroidBuildDir Condition="'$(AndroidBuildDir)' == ''">$([MSBuild]::NormalizeDirectory($(PublishDir)))</AndroidBuildDir>
+      <AndroidBundleDir Condition="'$(AndroidBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AndroidBundleDir>
 
-      <BundleDir>$(AndroidAppBundleDir)</BundleDir>
+      <BundleDir>$(AndroidBundleDir)</BundleDir>
       <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
-      <_AotModuleTablePath>$(AndroidAppBundleDir)\modules.c</_AotModuleTablePath>
+      <_AotModuleTablePath>$(AndroidBundleDir)\modules.c</_AotModuleTablePath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -54,23 +55,23 @@
         Include="$(RuntimeComponents)" />
 
       <_RuntimeLibraries 
-        Include="$(AndroidAppDir)\*-stub-static.a" />
+        Include="$(AndroidBuildDir)\*-stub-static.a" />
       <_RuntimeLibraries 
-        Include="$(AndroidAppDir)\*.a"
-        Exclude="$(AndroidAppDir)\*-static.a" />
+        Include="$(AndroidBuildDir)\*.a"
+        Exclude="$(AndroidBuildDir)\*-static.a" />
 
-      <_RuntimeLibraries Remove="$(AndroidAppDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
-      <_RuntimeLibraries Include="$(AndroidAppDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
+      <_RuntimeLibraries Remove="$(AndroidBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Include="$(AndroidBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
     </ItemGroup>
   </Target>
 
-  <Target Name="_BeforeAndroidBuildApp">
+  <Target Name="_BeforeAndroidBuild">
     <PropertyGroup>
-      <_AndroidRuntimeConfigFilePath Condition="'$(_AndroidRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AndroidAppDir), '$(AssemblyName).runtimeconfig.json'))</_AndroidRuntimeConfigFilePath>
-      <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AndroidAppDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
+      <_AndroidRuntimeConfigFilePath Condition="'$(_AndroidRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AndroidBuildDir), '$(AssemblyName).runtimeconfig.json'))</_AndroidRuntimeConfigFilePath>
+      <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AndroidBuildDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
-    <RemoveDir Directories="$(AndroidAppBundleDir)" />
+    <RemoveDir Directories="$(AndroidBundleDir)" />
   </Target>
 
   <Target Name="_AndroidResolveReferences">
@@ -80,15 +81,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
-      <AppAssembliesInternal Include="@(AndroidAssembliesToBundle)">
+      <AssembliesToBundleInternal Remove="@(AssembliesToBundleInternal)" />
+      <AssembliesToBundleInternal Include="@(AndroidAssembliesToBundle)">
         <_InternalForceInterpret>%(AndroidAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
         <_IsNative>%(AndroidAssembliesToBundle._IsNative)</_IsNative>
-      </AppAssembliesInternal>
+      </AssembliesToBundleInternal>
     </ItemGroup>
   </Target>
 
-  <Target Name="_AndroidBeforeAotCompileApp">
+  <Target Name="_AndroidBeforeAotCompile">
     <PropertyGroup>
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Normal</_AOTMode>
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
@@ -119,14 +120,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_AotInputAssemblies Include="@(AppAssembliesInternal)"
-                           Condition="'%(AppAssembliesInternal._InternalForceInterpret)' != 'true'">
+      <_AotInputAssemblies Include="@(AssembliesToBundleInternal)"
+                           Condition="'%(AssembliesToBundleInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
       </_AotInputAssemblies>
 
-      <_AOT_InternalForceInterpretAssemblies Include="@(AppAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
-      <AppAssembliesInternal Remove="@(AppAssembliesInternal)" />
+      <_AOT_InternalForceInterpretAssemblies Include="@(AssembliesToBundleInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+      <AssembliesToBundleInternal Remove="@(AssembliesToBundleInternal)" />
     </ItemGroup>
 
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
@@ -134,7 +135,7 @@
 
   <Target Name="_AndroidPrepareProfiledAot"
           Condition="'$(NetTraceFilePath)' != '' and '$(ForceFullAOT)' != 'true'"
-          DependsOnTargets="_AndroidBeforeAotCompileApp">
+          DependsOnTargets="_AndroidBeforeAotCompile">
     <PropertyGroup>
       <_ToolPath>$([System.IO.Path]::GetDirectoryName('$(DotnetPgoToolPath)'))</_ToolPath>
     </PropertyGroup>
@@ -148,9 +149,9 @@
     </NetTraceToMibcConverter>
   </Target>
 
-  <Target Name="_AndroidAotCompileApp"
+  <Target Name="_AndroidAotCompile"
           Condition="'$(RunAOTCompilation)' == 'true'"
-          DependsOnTargets="_AndroidBeforeAotCompileApp">
+          DependsOnTargets="_AndroidBeforeAotCompile">
 
     <ItemGroup>
       <ProfiledAOTProfilePaths Include="$(MibcFilePath)" />
@@ -184,11 +185,11 @@
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="AsmOnly"
         UseLLVM="$(MonoEnableLLVM)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="AppAssembliesInternal" />
+        <Output TaskParameter="CompiledAssemblies" ItemName="AssembliesToBundleInternal" />
     </MonoAOTCompiler>
 
     <ItemGroup>
-      <AppAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+      <AssembliesToBundleInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
   </Target>
 
@@ -203,8 +204,8 @@
     </ItemGroup>
 
     <AndroidAppBuilderTask
-        AppDir="$(AndroidAppDir)"
-        Assemblies="@(AppAssembliesInternal)"
+        AppDir="$(AndroidBuildDir)"
+        Assemblies="@(AssembliesToBundleInternal)"
         DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
         ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
@@ -215,7 +216,7 @@
         MainLibraryFileName="$(MainLibraryFileName)"
         MonoRuntimeHeaders="$(_MonoHeaderPath)"
         NativeDependencies="@(_NativeDependencies)"
-        OutputDir="$(AndroidAppBundleDir)"
+        OutputDir="$(AndroidBundleDir)"
         ProjectName="$(AssemblyName)"
         RuntimeComponents="$(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
@@ -229,7 +230,7 @@
     <Message Importance="High" Text="Apk:             $(ApkBundlePath)"/>
   </Target>
 
-  <Target Name="_AfterAndroidBuildApp">
+  <Target Name="_AfterAndroidBuild">
 
   </Target>
 

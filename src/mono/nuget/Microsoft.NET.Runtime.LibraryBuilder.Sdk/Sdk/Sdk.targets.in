@@ -8,8 +8,6 @@
     <GenerateAppBundle>false</GenerateAppBundle>
     <NativeLib Condition="'$(NativeLib)' == ''">shared</NativeLib>
 
-    <AndroidAppBuilderTasksAssemblyPath Condition="'$(TargetsAndroid)' == 'true'">$(_TasksDir)AndroidAppBuilder.dll</AndroidAppBuilderTasksAssemblyPath>
-    <AppleAppBuilderTasksAssemblyPath Condition="'$(TargetsAppleMobile)' == 'true'">$(_TasksDir)AppleAppBuilder.dll</AppleAppBuilderTasksAssemblyPath>
     <LibraryBuilderTasksAssemblyPath>$(_TasksDir)LibraryBuilder.dll</LibraryBuilderTasksAssemblyPath>
   </PropertyGroup>
 

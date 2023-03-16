@@ -4,6 +4,7 @@
     <UseMonoRuntime>true</UseMonoRuntime>
     <OutputType>Exe</OutputType>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
+    <DevTeamProvisioning Condition="'$(TargetsAppleMobile)' == 'true' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 </Project>
