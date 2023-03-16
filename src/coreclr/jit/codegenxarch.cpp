@@ -3042,11 +3042,13 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                                ? YMM_REGSIZE_BYTES
                                : XMM_REGSIZE_BYTES;
 
+        bool zeroing = false;
         if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
         {
             // If the source is constant 0 then always use xorps, it's faster
             // than copying the constant from a GPR to a XMM register.
             emit->emitIns_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg);
+            zeroing = true;
         }
         else
         {
@@ -3094,13 +3096,45 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             dstOffset += regSize;
             bytesWritten += regSize;
 
-            if (regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES)
+            if (!zeroing && regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES)
             {
                 regSize = XMM_REGSIZE_BYTES;
             }
         }
 
         size -= bytesWritten;
+
+        // Handle the remainder by overlapping with previosly processed data
+        if (zeroing && (size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
+        {
+            if (isPow2(size) && (size < REGSIZE_BYTES))
+            {
+                // For sizes like 1,2,4 and 8 we delegate handling to normal stores
+                // because that will be a single instruction that is smaller than SIMD mov
+            }
+            else
+            {
+                // if reminder is <=16 then switch to XMM
+                if (regSize == YMM_REGSIZE_BYTES && size <= XMM_REGSIZE_BYTES)
+                {
+                    regSize = XMM_REGSIZE_BYTES;
+                }
+
+                assert(dstOffset >= regSize);
+
+                dstOffset -= (regSize - size);
+                if (dstLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
+                }
+                else
+                {
+                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
+                                        dstAddrIndexScale, dstOffset);
+                }
+                size = 0;
+            }
+        }
     }
 
 // Fill the remainder using normal stores.
