@@ -7,6 +7,7 @@
 // #define LOG_NON_DICTIONARY_WRITES
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -34,7 +35,7 @@ namespace System.Xml
         public XmlBinaryNodeWriter()
         {
             // Sanity check on node values
-            DiagnosticUtility.DebugAssert(XmlBinaryNodeType.MaxAttribute < XmlBinaryNodeType.MinElement &&
+            Debug.Assert(XmlBinaryNodeType.MaxAttribute < XmlBinaryNodeType.MinElement &&
                                           XmlBinaryNodeType.MaxElement < XmlBinaryNodeType.MinText &&
                                           (int)XmlBinaryNodeType.MaxText < 256, "NodeTypes enumeration messed up");
         }
@@ -59,7 +60,7 @@ namespace System.Xml
         private void WroteAttributeValue()
         {
             if (_wroteAttributeValue && !_inList)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlOnlySingleValue));
+                throw new InvalidOperationException(SR.XmlOnlySingleValue);
             _wroteAttributeValue = true;
         }
 
@@ -67,7 +68,7 @@ namespace System.Xml
         {
             if (_inAttribute)
                 WroteAttributeValue();
-            DiagnosticUtility.DebugAssert(nodeType >= XmlBinaryNodeType.MinText && nodeType <= XmlBinaryNodeType.MaxText && ((byte)nodeType & 1) == 0, "Invalid nodeType");
+            Debug.Assert(nodeType >= XmlBinaryNodeType.MinText && nodeType <= XmlBinaryNodeType.MaxText && ((byte)nodeType & 1) == 0, "Invalid nodeType");
             WriteByte((byte)nodeType);
             _textNodeOffset = this.BufferOffset - 1;
         }
@@ -83,7 +84,7 @@ namespace System.Xml
 
         private void WriteTextNodeWithLength(XmlBinaryNodeType nodeType, int length)
         {
-            DiagnosticUtility.DebugAssert(nodeType == XmlBinaryNodeType.Chars8Text || nodeType == XmlBinaryNodeType.Bytes8Text || nodeType == XmlBinaryNodeType.UnicodeChars8Text, "");
+            Debug.Assert(nodeType == XmlBinaryNodeType.Chars8Text || nodeType == XmlBinaryNodeType.Bytes8Text || nodeType == XmlBinaryNodeType.UnicodeChars8Text);
             if (length < 256)
             {
                 WriteTextNodeWithInt8(nodeType, unchecked((byte)length));
@@ -105,7 +106,7 @@ namespace System.Xml
             // GetTextNodeBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
             byte[] buffer = GetTextNodeBuffer(1 + Unsafe.SizeOf<T>(), out int offset);
 
-            DiagnosticUtility.DebugAssert(offset >= 0 && offset + 1 + Unsafe.SizeOf<T>() <= buffer.Length, "WriteTextNodeRaw");
+            Debug.Assert(offset >= 0 && offset + 1 + Unsafe.SizeOf<T>() <= buffer.Length, "WriteTextNodeRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
 
             bytePtr = (byte)nodeType;
@@ -120,7 +121,7 @@ namespace System.Xml
             // GetBuffer performs bounds checks and ensures returned buffer has size of at least (Unsafe.SizeOf<T>())
             byte[] buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset);
 
-            DiagnosticUtility.DebugAssert(offset >= 0 && offset + Unsafe.SizeOf<T>() <= buffer.Length, "WriteRaw");
+            Debug.Assert(offset >= 0 && offset + Unsafe.SizeOf<T>() <= buffer.Length, "WriteRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
             Unsafe.WriteUnaligned<T>(ref bytePtr, value);
             Advance(Unsafe.SizeOf<T>());
@@ -184,7 +185,7 @@ namespace System.Xml
                 if (string.IsNullOrEmpty(prefix))
                 {
                     WriteNode(XmlBinaryNodeType.ShortDictionaryElement);
-                    WriteDictionaryString(localName, key);
+                    WriteDictionaryString(key);
                 }
                 else
                 {
@@ -193,13 +194,13 @@ namespace System.Xml
                     if (prefix.Length == 1 && char.IsAsciiLetterLower(ch))
                     {
                         WritePrefixNode(XmlBinaryNodeType.PrefixDictionaryElementA, ch - 'a');
-                        WriteDictionaryString(localName, key);
+                        WriteDictionaryString(key);
                     }
                     else
                     {
                         WriteNode(XmlBinaryNodeType.DictionaryElement);
                         WriteName(prefix);
-                        WriteDictionaryString(localName, key);
+                        WriteDictionaryString(key);
                     }
                 }
             }
@@ -224,7 +225,7 @@ namespace System.Xml
             {
                 byte[] buffer = this.StreamBuffer;
                 XmlBinaryNodeType nodeType = (XmlBinaryNodeType)buffer[_textNodeOffset];
-                DiagnosticUtility.DebugAssert(nodeType >= XmlBinaryNodeType.MinText && nodeType <= XmlBinaryNodeType.MaxText && ((byte)nodeType & 1) == 0, "");
+                Debug.Assert(nodeType >= XmlBinaryNodeType.MinText && nodeType <= XmlBinaryNodeType.MaxText && ((byte)nodeType & 1) == 0);
                 buffer[_textNodeOffset] = (byte)(nodeType + 1);
                 _textNodeOffset = -1;
             }
@@ -272,7 +273,7 @@ namespace System.Xml
                 if (prefix.Length == 0)
                 {
                     WriteNode(XmlBinaryNodeType.ShortDictionaryAttribute);
-                    WriteDictionaryString(localName, key);
+                    WriteDictionaryString(key);
                 }
                 else
                 {
@@ -280,13 +281,13 @@ namespace System.Xml
                     if (prefix.Length == 1 && char.IsAsciiLetterLower(ch))
                     {
                         WritePrefixNode(XmlBinaryNodeType.PrefixDictionaryAttributeA, ch - 'a');
-                        WriteDictionaryString(localName, key);
+                        WriteDictionaryString(key);
                     }
                     else
                     {
                         WriteNode(XmlBinaryNodeType.DictionaryAttribute);
                         WriteName(prefix);
-                        WriteDictionaryString(localName, key);
+                        WriteDictionaryString(key);
                     }
                 }
                 _inAttribute = true;
@@ -331,13 +332,13 @@ namespace System.Xml
                 if (string.IsNullOrEmpty(prefix))
                 {
                     WriteNode(XmlBinaryNodeType.ShortDictionaryXmlnsAttribute);
-                    WriteDictionaryString(ns, key);
+                    WriteDictionaryString(key);
                 }
                 else
                 {
                     WriteNode(XmlBinaryNodeType.DictionaryXmlnsAttribute);
                     WriteName(prefix);
-                    WriteDictionaryString(ns, key);
+                    WriteDictionaryString(key);
                 }
             }
         }
@@ -353,7 +354,7 @@ namespace System.Xml
             XmlDictionaryString? t;
             if (_dictionary != null && _dictionary.TryLookup(s, out t))
             {
-                DiagnosticUtility.DebugAssert(t.Dictionary == _dictionary, "");
+                Debug.Assert(t.Dictionary == _dictionary);
                 key = t.Key * 2;
                 return true;
             }
@@ -370,7 +371,7 @@ namespace System.Xml
             return true;
         }
 
-        private void WriteDictionaryString(XmlDictionaryString s, int key)
+        private void WriteDictionaryString(int key)
         {
             WriteMultiByteInt32(key);
         }
@@ -402,7 +403,7 @@ namespace System.Xml
                 int offset;
                 byte[] buffer = GetBuffer(1 + charCount * maxBytesPerChar, out offset);
                 int length = UnsafeGetUTF8Chars(chars, charCount, buffer, offset + 1);
-                DiagnosticUtility.DebugAssert(length < 128, "");
+                Debug.Assert(length < 128);
                 buffer[offset] = (byte)length;
                 Advance(1 + length);
             }
@@ -559,7 +560,7 @@ namespace System.Xml
                 else
                 {
                     WriteTextNode(XmlBinaryNodeType.DictionaryText);
-                    WriteDictionaryString(value, key);
+                    WriteDictionaryString(key);
                 }
             }
         }
@@ -626,7 +627,7 @@ namespace System.Xml
         private unsafe void UnsafeWriteText(char* chars, int charCount)
         {
             // Callers should handle zero
-            DiagnosticUtility.DebugAssert(charCount > 0, "");
+            Debug.Assert(charCount > 0);
 
             if (charCount == 1)
             {
@@ -662,7 +663,7 @@ namespace System.Xml
                     length = UnsafeGetUnicodeChars(chars, charCount, buffer, offset + 2);
                 }
                 _textNodeOffset = offset;
-                DiagnosticUtility.DebugAssert(length <= byte.MaxValue, "");
+                Debug.Assert(length <= byte.MaxValue);
                 buffer[offset + 1] = (byte)length;
                 Advance(2 + length);
             }
@@ -719,6 +720,7 @@ namespace System.Xml
         public override void WriteFloatText(float f)
         {
             int i;
+            // Only write as an integer-type if it would save space. A full Int32 value doesn't.
             if (f >= short.MinValue && f <= short.MaxValue && (i = (int)f) == f)
             {
                 WriteInt32Text(i);
@@ -732,6 +734,8 @@ namespace System.Xml
         public override void WriteDoubleText(double d)
         {
             float f;
+
+            // Same as WriteFloatText. If we can save space by writing as a 32-bit float or integer, do that.
             if ((f = (float)d) == d)
             {
                 WriteFloatText(f);
@@ -780,7 +784,7 @@ namespace System.Xml
 
         public override void WriteStartListText()
         {
-            DiagnosticUtility.DebugAssert(!_inList, "");
+            Debug.Assert(!_inList);
             _inList = true;
             WriteNode(XmlBinaryNodeType.StartListText);
         }
@@ -791,7 +795,7 @@ namespace System.Xml
 
         public override void WriteEndListText()
         {
-            DiagnosticUtility.DebugAssert(_inList, "");
+            Debug.Assert(_inList);
             _inList = false;
             _wroteAttributeValue = true;
             WriteNode(XmlBinaryNodeType.EndListText);
@@ -807,6 +811,153 @@ namespace System.Xml
             WriteNode(nodeType);
             WriteMultiByteInt32(count);
         }
+
+        #region BigEndian Arrays
+        // These are presently unused in this commit. But they are part of the merging of big-endian-ness to get back inline
+        // with main. There will be much refactoring when correcting this merge-fixed version of the PR, and these will
+        // probably go away then.
+        public unsafe void UnsafeWriteBoolArray(bool[] array, int offset, int count)
+        {
+            WriteArrayInfo(XmlBinaryNodeType.BoolTextWithEndElement, count);
+            fixed (bool* items = &array[offset])
+            {
+                base.WriteBytes(MemoryMarshal.AsBytes(array.AsSpan(offset, count)));
+            }
+        }
+
+        public unsafe void UnsafeWriteInt16Array(short[] array, int offset, int count)
+        {
+            WriteArrayInfo(XmlBinaryNodeType.Int16TextWithEndElement, count);
+            if (BitConverter.IsLittleEndian)
+            {
+                fixed (short* items = &array[offset])
+                {
+                    base.WriteBytes(MemoryMarshal.AsBytes(array.AsSpan(offset, count)));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    Span<byte> span = GetBuffer(sizeof(short), out int bufferOffset).AsSpan(bufferOffset, sizeof(short));
+                    BinaryPrimitives.WriteInt16LittleEndian(span, array[offset + i]);
+                    Advance(sizeof(short));
+                }
+            }
+        }
+
+        public unsafe void UnsafeWriteInt32Array(int[] array, int offset, int count)
+        {
+            WriteArrayInfo(XmlBinaryNodeType.Int32TextWithEndElement, count);
+            if (BitConverter.IsLittleEndian)
+            {
+                fixed (int* items = &array[offset])
+                {
+                    base.WriteBytes(MemoryMarshal.AsBytes(array.AsSpan(offset, count)));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    Span<byte> span = GetBuffer(sizeof(int), out int bufferOffset).AsSpan(bufferOffset, sizeof(int));
+                    BinaryPrimitives.WriteInt32LittleEndian(span, array[offset + i]);
+                    Advance(sizeof(int));
+                }
+            }
+        }
+
+        public unsafe void UnsafeWriteInt64Array(long[] array, int offset, int count)
+        {
+            WriteArrayInfo(XmlBinaryNodeType.Int64TextWithEndElement, count);
+            if (BitConverter.IsLittleEndian)
+            {
+                fixed (long* items = &array[offset])
+                {
+                    base.WriteBytes(MemoryMarshal.AsBytes(array.AsSpan(offset, count)));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    Span<byte> span = GetBuffer(sizeof(long), out int bufferOffset).AsSpan(bufferOffset, sizeof(long));
+                    BinaryPrimitives.WriteInt64LittleEndian(span, array[offset + i]);
+                    Advance(sizeof(long));
+                }
+            }
+        }
+
+        public unsafe void UnsafeWriteFloatArray(float[] array, int offset, int count)
+        {
+            WriteArrayInfo(XmlBinaryNodeType.FloatTextWithEndElement, count);
+            if (BitConverter.IsLittleEndian)
+            {
+                fixed (float* items = &array[offset])
+                {
+                    base.WriteBytes(MemoryMarshal.AsBytes(array.AsSpan(offset, count)));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    Span<byte> span = GetBuffer(sizeof(float), out int bufferOffset).AsSpan(bufferOffset, sizeof(float));
+                    BinaryPrimitives.WriteSingleLittleEndian(span, array[offset + i]);
+                    Advance(sizeof(float));
+                }
+            }
+        }
+
+        public unsafe void UnsafeWriteDoubleArray(double[] array, int offset, int count)
+        {
+            WriteArrayInfo(XmlBinaryNodeType.DoubleTextWithEndElement, count);
+            if (BitConverter.IsLittleEndian)
+            {
+                fixed (double* items = &array[offset])
+                {
+                    base.WriteBytes(MemoryMarshal.AsBytes(array.AsSpan(offset, count)));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    Span<byte> span = GetBuffer(sizeof(double), out int bufferOffset).AsSpan(bufferOffset, sizeof(double));
+                    BinaryPrimitives.WriteDoubleLittleEndian(span, array[offset + i]);
+                    Advance(sizeof(double));
+                }
+            }
+        }
+
+        public unsafe void UnsafeWriteDecimalArray(decimal[] array, int offset, int count)
+        {
+            WriteArrayInfo(XmlBinaryNodeType.DecimalTextWithEndElement, count);
+            if (BitConverter.IsLittleEndian)
+            {
+                fixed (decimal* items = &array[offset])
+                {
+                    base.WriteBytes(MemoryMarshal.AsBytes(array.AsSpan(offset, count)));
+                }
+            }
+            else
+            {
+                Span<int> bits = stackalloc int[4];
+                for (int i = 0; i < count; i++)
+                {
+                    decimal.TryGetBits(array[offset + i], bits, out int intsWritten);
+                    Debug.Assert(intsWritten == 4);
+
+                    Span<byte> span = GetBuffer(16, out int bufferOffset).AsSpan(bufferOffset, 16);
+                    BinaryPrimitives.WriteInt32LittleEndian(span, bits[3]);
+                    BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), bits[2]);
+                    BinaryPrimitives.WriteInt32LittleEndian(span.Slice(8), bits[0]);
+                    BinaryPrimitives.WriteInt32LittleEndian(span.Slice(12), bits[1]);
+                    Advance(16);
+                }
+            }
+        }
+        #endregion
 
         public void WriteArray(XmlBinaryNodeType nodeType, int count, ReadOnlySpan<byte> bytes)
         {
@@ -864,7 +1015,7 @@ namespace System.Xml
                 if (prefix.Length == 1 && char.IsAsciiLetterLower(ch) && TryGetKey(localName, out key))
                 {
                     WriteTextNodeWithInt8(XmlBinaryNodeType.QNameDictionaryText, (byte)(ch - 'a'));
-                    WriteDictionaryString(localName, key);
+                    WriteDictionaryString(key);
                 }
                 else
                 {
@@ -906,8 +1057,8 @@ namespace System.Xml
                 {
                     ArraySegment<byte> arraySegment;
                     bool result = _captureStream.TryGetBuffer(out arraySegment);
-                    DiagnosticUtility.DebugAssert(result, "");
-                    _captureText = XmlConverter.Base64Encoding.GetString(arraySegment.Array!, arraySegment.Offset, arraySegment.Count);
+                    Debug.Assert(result);
+                    _captureText = DataContractSerializer.Base64Encoding.GetString(arraySegment.Array!, arraySegment.Offset, arraySegment.Count);
                     _captureStream = null;
                 }
 
@@ -945,9 +1096,9 @@ namespace System.Xml
                 {
                     if (trailByteCount > 0)
                     {
-                        WriteText(XmlConverter.Base64Encoding.GetString(trailBytes!, 0, trailByteCount));
+                        WriteText(DataContractSerializer.Base64Encoding.GetString(trailBytes!, 0, trailByteCount));
                     }
-                    WriteText(XmlConverter.Base64Encoding.GetString(buffer, offset, count));
+                    WriteText(DataContractSerializer.Base64Encoding.GetString(buffer, offset, count));
                 }
                 else
                 {
@@ -976,7 +1127,7 @@ namespace System.Xml
                 {
                     ArraySegment<byte> arraySegment;
                     bool result = _captureStream.TryGetBuffer(out arraySegment);
-                    DiagnosticUtility.DebugAssert(result, "");
+                    Debug.Assert(result);
                     writer.WriteBase64Text(null, 0, arraySegment.Array!, arraySegment.Offset, arraySegment.Count);
                     _captureStream = null;
                 }
@@ -1119,14 +1270,12 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (offset < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (offset > array.Length)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length)));
-            if (count < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > array.Length - offset)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset)));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset));
         }
 
         public override void WriteArray(string? prefix, string localName, string? namespaceUri, bool[] array, int offset, int count)
