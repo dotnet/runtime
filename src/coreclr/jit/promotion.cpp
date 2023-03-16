@@ -592,7 +592,7 @@ public:
                 if (user->gtGetOp2()->OperIs(GT_LCL_VAR))
                 {
                     LclVarDsc* dsc = m_compiler->lvaGetDesc(user->gtGetOp2()->AsLclVarCommon());
-                    if (!dsc->IsAddressExposed())
+                    if ((dsc->TypeGet() != TYP_STRUCT) && !dsc->IsAddressExposed())
                     {
                         flags |= AccessKindFlags::IsAssignmentFromRegisterCandidate;
                     }
@@ -606,7 +606,7 @@ public:
                 if (user->gtGetOp1()->OperIs(GT_LCL_VAR))
                 {
                     LclVarDsc* dsc = m_compiler->lvaGetDesc(user->gtGetOp1()->AsLclVarCommon());
-                    if (!dsc->IsAddressExposed())
+                    if ((dsc->TypeGet() != TYP_STRUCT) && !dsc->IsAddressExposed())
                     {
                         flags |= AccessKindFlags::IsAssignmentToRegisterCandidate;
                     }
