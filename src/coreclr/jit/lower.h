@@ -85,10 +85,9 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
 #ifdef TARGET_ARM64
-    bool IsValidCompareChain(GenTree* child, GenTree* parent);
-    bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
-    void ContainCheckCompareChainForAnd(GenTree* tree);
-    void ContainCheckConditionalCompare(GenTreeOp* cmp);
+    GenTree* TryLowerAndOrToCCMP(GenTreeOp* tree);
+    insCflags TruthifyingFlags(GenCondition cond);
+    void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
@@ -137,7 +136,7 @@ private:
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
     GenTree* LowerSelect(GenTreeConditional* cond);
-    bool TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond);
+    bool TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* code);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
@@ -307,7 +306,7 @@ private:
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
-    GenTree* TryLowerAndNegativeOne(GenTreeOp* node);
+    bool TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
@@ -504,6 +503,10 @@ private:
 
     bool IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
     bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
+    bool IsRangeInvariantInRange(GenTree* rangeStart,
+                                 GenTree* rangeEnd,
+                                 GenTree* endExclusive,
+                                 GenTree* ignoreNode) const;
 
     // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
     // can be contained.

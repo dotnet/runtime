@@ -276,6 +276,7 @@ set(interp_sources
     interp/interp.h
     interp/interp-internals.h
     interp/interp.c
+    interp/interp-simd.c
     interp/interp-intrins.h
     interp/interp-intrins.c
     interp/mintops.h
@@ -295,7 +296,7 @@ endif()
 
 if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
-target_link_libraries(mono-ee-interp monoapi eglib_api)
+target_link_libraries(mono-ee-interp PRIVATE monoapi eglib_api)
 target_include_directories(mono-ee-interp PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
@@ -412,7 +413,7 @@ if(NOT DISABLE_SHARED_LIBS)
   install(TARGETS monosgen-shared LIBRARY)
   if(HOST_WIN32 AND TARGET_AMD64)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
-    target_link_libraries(monosgen-shared-dac monoapi eglib_api)
+    target_link_libraries(monosgen-shared-dac PRIVATE monoapi eglib_api)
     set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
   endif()
 

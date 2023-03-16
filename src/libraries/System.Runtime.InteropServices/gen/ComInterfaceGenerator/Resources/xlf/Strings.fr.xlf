@@ -54,7 +54,7 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
         <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
-        <target state="new">Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </target>
+        <target state="translated">Le type conteneur de méthode avec VirtualMethodIndexAttribute n’a pas de UnmanagedObjectUnwrapperAttribute. </target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
@@ -92,6 +92,21 @@
         <target state="translated">La valeur fournie n’est pas un indicateur connu de l’énumération « ExceptionMarshalling ».</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="translated">Les interfaces sont attribuées à « GeneratedComInterfaceAttribute » doivent être partielles et doivent spécifier un GUID avec « System.Runtime.InteropServices.GuidAttribute ».</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="translated">L’interface « {0} » est attribuée à « GeneratedComInterfaceAttribute » mais « System.Runtime.InteropServices.GuidAttribute » est manquant.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
+        <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
+        <target state="translated">Utilisation de « GeneratedComInterfaceAttribute » non valide.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
         <target state="translated">La configuration de « StringMarshalling » et de « StringMarshallingCustomType » n’est pas valide.</target>
@@ -119,17 +134,17 @@
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
         <source>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
-        <target state="new">All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</target>
+        <target state="translated">Toutes les méthodes doivent être déclarées dans la même définition partielle d’un type d’interface avec attribut « GeneratedComInterface » pour garantir un calcul fiable des décalages de table de méthodes virtuelles.</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceMessage">
         <source>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</source>
-        <target state="new">The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</target>
+        <target state="translated">La méthode « {0} » est déclarée sur une autre définition partielle de l’interface « {1} » que la définition qui a l’attribut « GeneratedComInterface »</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
         <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
-        <target state="new">Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</target>
+        <target state="translated">La méthode est déclarée dans une déclaration partielle différente de l’attribut « GeneratedComInterface ».</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

@@ -54,6 +54,11 @@
 #include <time.h>
 #endif
 
+#ifdef TARGET_APPLE
+#include <minipal/getexepath.h>
+#include <mach-o/getsect.h>
+#endif
+
 using std::nullptr_t;
 
 #define PalRaiseFailFastException RaiseFailFastException
@@ -297,10 +302,9 @@ public:
     {
         pthread_mutex_lock(&m_mutex);
         m_state = true;
-        pthread_mutex_unlock(&m_mutex);
-
         // Unblock all threads waiting for the condition variable
         pthread_cond_broadcast(&m_condition);
+        pthread_mutex_unlock(&m_mutex);
     }
 
     void Reset()
@@ -339,8 +343,6 @@ void ConfigureSignals()
     // issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
     signal(SIGPIPE, SIG_IGN);
 }
-
-extern bool GetCpuLimit(uint32_t* val);
 
 void InitializeCurrentProcessCpuCount()
 {
@@ -488,14 +490,63 @@ extern "C" bool PalDetachThread(void* thread)
 }
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+
+#ifdef TARGET_APPLE
+static const struct section_64 *thunks_section;
+static const struct section_64 *thunks_data_section;
+#endif
+
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
+#ifdef TARGET_APPLE
+    int f;
+    Dl_info info;
+
+    int st = dladdr((const void*)hTemplateModule, &info);
+    if (st == 0)
+    {
+        return UInt32_FALSE;
+    }
+
+    f = open(info.dli_fname, O_RDONLY);
+    if (f < 0)
+    {
+        return UInt32_FALSE;
+    }
+
+    // NOTE: We ignore templateRva since we would need to convert it to file offset
+    // and templateSize is useless too. Instead we read the sections from the
+    // executable and determine the size from them.
+    if (thunks_section == NULL)
+    {
+        const struct mach_header_64 *hdr = (const struct mach_header_64 *)hTemplateModule;
+        thunks_section = getsectbynamefromheader_64(hdr, "__THUNKS", "__thunks");
+        thunks_data_section = getsectbynamefromheader_64(hdr, "__THUNKS_DATA", "__thunks");
+    }
+
+    *newThunksOut = mmap(
+        NULL,
+        thunks_section->size + thunks_data_section->size,
+        PROT_READ | PROT_EXEC,
+        MAP_PRIVATE,
+        f,
+        thunks_section->offset);
+    close(f);
+
+    return *newThunksOut == NULL ? UInt32_FALSE : UInt32_TRUE;
+#else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#endif
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress)
 {
+#ifdef TARGET_APPLE
+    int ret = munmap(pBaseAddress, thunks_section->size + thunks_data_section->size);
+    return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
+#else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#endif
 }
 #endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
@@ -506,7 +557,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     int thunkBlockSize,
     int thunkBlocksPerMapping)
 {
-    return UInt32_TRUE;
+    int ret = mprotect(
+        (void*)((uintptr_t)virtualAddress + (thunkBlocksPerMapping * OS_PAGE_SIZE)),
+        thunkBlocksPerMapping * OS_PAGE_SIZE,
+        PROT_READ | PROT_WRITE);
+    return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
@@ -678,7 +733,9 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
     // message, so there is not much that can be done here.
-    write(STDERR_FILENO, message, strlen(message));
+    // write() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)write(..)`,
+    // so we use additional NOT(!) operator to force unused-result suppression.
+    (void)!write(STDERR_FILENO, message, strlen(message));
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)

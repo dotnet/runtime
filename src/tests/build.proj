@@ -236,15 +236,15 @@
         DestinationFolder="$(BuildDir)" />
 
     <AndroidAppBuilderTask
-        RuntimeIdentifier="$(RuntimeIdentifier)"
-        ProjectName="$(Category)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
-        RuntimeComponents="$(RuntimeComponents)"
-        DiagnosticPorts="$(DiagnosticPorts)"
-        StripDebugSymbols="$(StripDebugSymbols)"
-        ForceInterpreter="$(MonoInterp)"
         AppDir="$(BuildDir)"
-        OutputDir="$(AppDir)">
+        DiagnosticPorts="$(DiagnosticPorts)"
+        ForceInterpreter="$(MonoInterp)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
+        OutputDir="$(AppDir)"
+        ProjectName="$(Category)"
+        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeIdentifier="$(RuntimeIdentifier)"
+        StripDebugSymbols="$(StripDebugSymbols)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>

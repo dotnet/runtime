@@ -147,6 +147,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.HaveStdErrContaining($"Using specified additional deps.json: '{depsFilePath}'");
         }
 
+        public static AndConstraint<CommandResultAssertions> HaveUsedFallbackRid(this CommandResultAssertions assertion, bool usedFallbackRid)
+        {
+            string msg = "Falling back to base HostRID";
+            return usedFallbackRid ? assertion.HaveStdErrContaining(msg) : assertion.NotHaveStdErrContaining(msg);
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path, int level)
+        {
+            return assertion.HaveStdErrContaining($"probe type=framework dir=[{path}] fx_level={level}");
+        }
+
+        public static AndConstraint<CommandResultAssertions> NotHaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path)
+        {
+            return assertion.NotHaveStdErrContaining($"probe type=framework dir=[{path}]");
+        }
+
         private static string GetAppMockPropertyValue(CommandResultAssertions assertion, string propertyName) =>
             GetMockPropertyValue(assertion, $"mock property[{propertyName}] = ");
 

@@ -108,11 +108,15 @@ DEFINE_BOOL(jiterpreter_dump_traces, "jiterpreter-dump-traces", FALSE, "Dump the
 DEFINE_BOOL(jiterpreter_use_constants, "jiterpreter-use-constants", FALSE, "Use runtime imports for pointer constants")
 // Attempt to eliminate redundant null checks in compiled traces
 DEFINE_BOOL(jiterpreter_eliminate_null_checks, "jiterpreter-eliminate-null-checks", TRUE, "Attempt to eliminate redundant null checks in traces")
+// enables performing backward branches without exiting traces
+DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branches-enabled", TRUE, "Enable performing backward branches without exiting traces")
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")
 // any trace that doesn't have at least this many meaningful (non-nop) opcodes in it will be rejected
 DEFINE_INT(jiterpreter_minimum_trace_length, "jiterpreter-minimum-trace-length", 10, "Reject traces shorter than this number of meaningful opcodes")
+// ensure that we don't create trace entry points too close together
+DEFINE_INT(jiterpreter_minimum_distance_between_traces, "jiterpreter-minimum-distance-between-traces", 4, "Don't insert entry points closer together than this")
 // once a trace entry point is inserted, we only actually JIT code for it once it's been hit this many times
 DEFINE_INT(jiterpreter_minimum_trace_hit_count, "jiterpreter-minimum-trace-hit-count", 5000, "JIT trace entry points once they are hit this many times")
 // After a do_jit_call call site is hit this many times, we will queue it to be jitted

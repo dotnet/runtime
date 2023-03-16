@@ -1087,7 +1087,7 @@ param_objects_construct (MonoClass *refclass, MonoMethodSignature **addr_of_sig,
 	MonoReflectionMethodHandle member = mono_method_get_object_handle (method, refclass, error);
 	goto_if_nok (error, leave);
 	names = g_new (char *, sig->param_count);
-	mono_method_get_param_names (method, (const char **) names);
+	mono_method_get_param_names_internal (method, (const char **) names);
 
 	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);

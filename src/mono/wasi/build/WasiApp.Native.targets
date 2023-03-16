@@ -1,7 +1,6 @@
 <Project>
   <!-- not really meant to be used w/o WasmApp.targets -->
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmResolveAssemblyDependencies" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
@@ -169,7 +168,8 @@
 
     <ItemGroup>
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
-      <_WasmCommonCFlags Include="-DINVARIANT_GLOBALIZATION=1" Condition="'$(InvariantGlobalization)' == 'true'"/>
+      <_WasmCommonCFlags Condition="'$(WasmSingleFileBundle)' == 'true'" Include="-DBUNDLED_ASSEMBLIES=1" />
+
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <!--<_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />-->
       <!--<_EmccCFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />-->
@@ -182,7 +182,6 @@
       <!--<_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />-->
       <!--<_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />-->
       <!--<_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />-->
-      <!--<_EmccCFlags Include="-DCORE_BINDINGS" />-->
       <!--<_EmccCFlags Include="-DGEN_PINVOKE=1" />-->
       <!--<_EmccCFlags Include="-emit-llvm" />-->
 
@@ -292,8 +291,6 @@
       <!--<_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>-->
       <!--<_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>-->
       <!--<_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>-->
-      <!--<_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>-->
-      <!--<_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>-->
     <!--</PropertyGroup>-->
     <!--<ItemGroup>-->
       <!--[> order matters <]-->
@@ -344,40 +341,40 @@
           <!--EnvironmentVariables="@(EmscriptenEnvVars)" />-->
   <!--</Target>-->
 
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="_GenerateAssemblyObjectFiles" Returns="@(_WasiObjectFilesForBundle)">
-    <PropertyGroup>
-      <_GetBundledFileSourcePath>$(_WasmIntermediateOutputPath)dotnet_wasi_getbundledfile.c</_GetBundledFileSourcePath>
-    </PropertyGroup>
-
-    <!-- Get the file hashes of everything in @(_WasmBundleFiles), then pass it all to EmitWasmBundleObjectFile. This
+    <!-- Get the file hashes of everything in @(_WasmBundleFiles), then pass it all to EmitWasmBundleObjectFiles. This
          will emit corresponding .o files for anything we don't already have on disk. -->
+    <PropertyGroup>
+      <_WasmAssembliesBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
+    </PropertyGroup>
     <GetFileHash Files="@(_WasmAssembliesInternal)">
-      <Output TaskParameter="Items" ItemName="WasmBundleFilesWithHashes" />
+      <Output TaskParameter="Items" ItemName="WasmBundleAssembliesWithHashes" />
     </GetFileHash>
     <ItemGroup>
-      <WasmBundleFilesWithHashes Update="@(WasmBundleFilesWithHashes)">
-        <ObjectFile>$(_WasmIntermediateOutputPath)%(WasmBundleFilesWithHashes.Filename)%(WasmBundleFilesWithHashes.Extension).$([System.String]::Copy(%(WasmBundleFilesWithHashes.FileHash)).Substring(0, 8)).o</ObjectFile>
-      </WasmBundleFilesWithHashes>
+      <WasmBundleAssembliesWithHashes Update="@(WasmBundleAssembliesWithHashes)">
+        <DestinationFile>$(_WasmIntermediateOutputPath)%(WasmBundleAssembliesWithHashes.Filename)%(WasmBundleAssembliesWithHashes.Extension).$([System.String]::Copy(%(WasmBundleAssembliesWithHashes.FileHash)).Substring(0, 8)).o</DestinationFile>
+      </WasmBundleAssembliesWithHashes>
     </ItemGroup>
-    <EmitWasmBundleObjectFile FilesToBundle="@(WasmBundleFilesWithHashes)" ClangExecutable="$(WasiClang)">
-      <Output TaskParameter="BundleApiSourceCode" ItemName="_WasiBundleApiSourceCode" />
-    </EmitWasmBundleObjectFile>
+    <!-- TODO make this incremental compilation -->
+    <EmitWasmBundleObjectFiles
+      FilesToBundle="@(WasmBundleAssembliesWithHashes)"
+      ClangExecutable="$(WasiClang)"
+      BundleName="assemblies"
+      BundleFile="$(_WasmAssembliesBundleObjectFile)"
+      RegistrationCallbackFunctionName="mono_wasm_add_assembly"
+      />
 
-    <!-- Write out the .c source code of a file that knows about all the bundled files and can supply them at runtime.
-         Also include this, and the bundle object files, in the set of files to compile. -->
-    <WriteLinesToFile File="$(_GetBundledFileSourcePath)"
-      Overwrite="true"
-      Lines="@(_WasiBundleApiSourceCode)"
-      WriteOnlyWhenDifferent="true" />
     <ItemGroup>
-      <_WasiObjectFilesForBundle Include="$(_GetBundledFileSourcePath)" />
-      <_WasiObjectFilesForBundle Include="%(WasmBundleFilesWithHashes.ObjectFile)" />
+      <_WasiObjectFilesForBundle Include="$(_WasmAssembliesBundleObjectFile)" />
+      <_WasiObjectFilesForBundle Include="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
     </ItemGroup>
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <WasmBundleFileToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <WasmBundleFileToDelete Remove="%(WasmBundleFilesWithHashes.ObjectFile)" />
+      <WasmBundleFileToDelete Remove="$(_WasmAssembliesBundleObjectFile)" />
+      <WasmBundleFileToDelete Remove="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
     </ItemGroup>
     <Delete Files="@(WasmBundleFileToDelete)" />
   </Target>

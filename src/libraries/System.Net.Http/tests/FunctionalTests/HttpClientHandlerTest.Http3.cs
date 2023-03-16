@@ -285,10 +285,9 @@ namespace System.Net.Http.Functional.Tests
                 await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
-                await stream.SendFrameAsync(ReservedHttp2PriorityFrameId, new byte[8]);
-
                 QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () =>
                 {
+                    await stream.SendFrameAsync(ReservedHttp2PriorityFrameId, new byte[8]);
                     await stream.HandleRequestAsync();
                     await using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
                 });

@@ -1374,8 +1374,8 @@
     <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs">
       <Link>Common\System\Threading\OpenExistingResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs">
+      <Link>Common\System\Threading\Tasks\TaskToAsyncResult.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsMobileLike)' != 'true' and '$(FeatureNativeAot)' != 'true'">
@@ -1854,6 +1854,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SystemTimeToFileTime.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SystemTimeToFileTime.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Threading.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.Threading.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TimeZone.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.TimeZone.cs</Link>
     </Compile>
@@ -1934,9 +1937,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\Secur32\Interop.GetUserNameExW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.CommandLineToArgv.cs">
-      <Link>Common\Interop\Windows\Shell32\Interop.CommandLineToArgv.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs">
       <Link>Common\Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs</Link>
@@ -2142,6 +2142,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDefaultTimeZone.AnyMobile.cs" Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(IsiOSLike)' == 'true'">
       <Link>Common\Interop\Unix\System.Native\Interop.GetDefaultTimeZone.AnyMobile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetTimeZoneData.Wasm.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'">
+      <Link>Common\src\Interop\Unix\System.Native\Interop.GetTimeZoneData.Wasm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnv.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEnv.cs</Link>
@@ -2419,6 +2422,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512CD.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512DQ.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnni.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi2.cs" />
@@ -2439,6 +2446,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512CD.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512DQ.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnni.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi1.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi2.PlatformNotSupported.cs" />
@@ -2499,8 +2510,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WaitThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerTracking.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.cs" Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmThreads)' == 'true'" />
@@ -2534,9 +2545,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.Windows.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Threading.cs">
-      <Link>Interop\Windows\Kernel32\Interop.Threading.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\IParsable.cs" />
