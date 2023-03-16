@@ -3079,7 +3079,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
             if (bytesWritten + regSize > size)
             {
-                assert(srcIntReg != REG_NA);
                 break;
             }
 
@@ -3104,10 +3103,10 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
         size -= bytesWritten;
 
-        // Handle the remainder by overlapping with previosly processed data
+        // Handle the remainder by overlapping with previosly processed data (only for zeroing)
         if (zeroing && (size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
         {
-            if (isPow2(size) && (size < REGSIZE_BYTES))
+            if (isPow2(size) && (size <= REGSIZE_BYTES))
             {
                 // For sizes like 1,2,4 and 8 we delegate handling to normal stores
                 // because that will be a single instruction that is smaller than SIMD mov
@@ -3115,13 +3114,14 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             else
             {
                 // if reminder is <=16 then switch to XMM
-                if (regSize == YMM_REGSIZE_BYTES && size <= XMM_REGSIZE_BYTES)
+                if ((regSize == YMM_REGSIZE_BYTES) && (size <= XMM_REGSIZE_BYTES))
                 {
                     regSize = XMM_REGSIZE_BYTES;
                 }
 
-                assert(dstOffset >= regSize);
+                assert(dstOffset >= (int)regSize);
 
+                // Rewind dstOffset so we can fit a vector for the while remainder
                 dstOffset -= (regSize - size);
                 if (dstLclNum != BAD_VAR_NUM)
                 {
@@ -3136,6 +3136,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             }
         }
     }
+
+    assert((srcIntReg != REG_NA) || (size == 0));
 
 // Fill the remainder using normal stores.
 #ifdef TARGET_AMD64
