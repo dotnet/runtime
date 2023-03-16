@@ -1818,7 +1818,8 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             // we will generate 'push 0'.
             assert((sizeVal % REGSIZE_BYTES) == 0);
 
-            if (!compiler->info.compInitMem)
+            // explictly zeroed LCLHEAP also needs a regCnt in case of x86 or large page
+            if (!compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_ZEROED))
             {
 #ifdef TARGET_X86
                 // x86 always needs regCnt.

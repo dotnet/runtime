@@ -9894,6 +9894,34 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
                         op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
 
+#ifdef TARGET_XARCH
+                        // Emit GT_BLK to zero const-sized LCLHEAP on XARCH
+                        if (op2->IsIntegralConst() && info.compInitMem)
+                        {
+                            const ssize_t size = op2->AsIntCon()->IconValue();
+                            if ((size > 0) && (size <= UINT_MAX))
+                            {
+                                // Align LCLHEAP's size so the zeroing via BLK will be more efficient
+                                op2->AsIntCon()->gtIconVal = AlignUp((size_t)op2->AsIntCon()->IconValue(), STACK_ALIGN);
+                                op2->gtFlags |= GTF_DONT_CSE;
+
+                                // Mark as "explicitly zeroed"
+                                op1->gtFlags |= GTF_LCLHEAP_ZEROED;
+
+                                // Spill LCLHEAP to a local
+                                unsigned tmpNum = lvaGrabTemp(true DEBUGARG("spilling LCLHEAP"));
+                                impAssignTempGen(tmpNum, op1);
+                                op1 = gtNewLclvNode(tmpNum, op1->TypeGet());
+
+                                GenTree* blkTree = new (this, GT_BLK)
+                                    GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout((unsigned)size));
+                                blkTree = gtNewBlkOpNode(blkTree, gtNewIconNode(0));
+                                impAppendTree(blkTree, CHECK_SPILL_NONE, impCurStmtDI);
+                                op1 = gtClone(op1);
+                            }
+                        }
+#endif
+
                         // Ensure we have stack security for this method.
                         setNeedsGSSecurityCookie();
 

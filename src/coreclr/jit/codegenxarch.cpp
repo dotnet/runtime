@@ -2573,6 +2573,9 @@ void CodeGen::genLclHeap(GenTree* tree)
     target_size_t stackAdjustment     = 0;
     target_size_t locAllocStackOffset = 0;
 
+    // Zeroed via BLK that follows this LCLHEAP
+    const bool zeroedViaBlk = tree->gtFlags & GTF_LCLHEAP_ZEROED;
+
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
     if (size->IsCnsIntOrI())
@@ -2586,6 +2589,12 @@ void CodeGen::genLclHeap(GenTree* tree)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
             goto BAILOUT;
+        }
+
+        if (zeroedViaBlk)
+        {
+            // it is expected to be already STACK_ALIGN aligned
+            assert((amount % STACK_ALIGN) == 0);
         }
 
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
@@ -2693,6 +2702,32 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(amount > 0);
         assert((amount % STACK_ALIGN) == 0);
         assert((amount % REGSIZE_BYTES) == 0);
+
+        // Whether this LCLHEAP is explicitly zeroed via BLK or not
+        if (zeroedViaBlk)
+        {
+            assert(compiler->info.compInitMem); // why would we zero it with !compInitMem
+            const bool largePage = amount >= compiler->eeGetPageSize();
+            assert(regCnt == REG_NA);
+            if (largePage || (TARGET_POINTER_SIZE == 4))
+            {
+                regCnt = tree->GetSingleTempReg();
+                instGen_Set_Reg_To_Imm(EA_8BYTE, regCnt, amount);
+                // Negate this value before calling the function to adjust the stack (which adds to ESP).
+                inst_RV(INS_NEG, regCnt, TYP_I_IMPL);
+                genStackPointerDynamicAdjustmentWithProbe(regCnt);
+                // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
+                // we're going to assume the worst and probe.
+            }
+            else
+            {
+                // Since the size is less than a page, and we don't need to zero init memory, simply adjust ESP.
+                // ESP might already be in the guard page, so we must touch it BEFORE the alloc, not after.
+                lastTouchDelta = genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount,
+                                                                                /* trackSpAdjustments */ true);
+            }
+            goto ALLOC_DONE;
+        }
 
         // For small allocations we will generate up to six push 0 inline
         size_t cntRegSizedWords = amount / REGSIZE_BYTES;
