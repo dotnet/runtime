@@ -11,9 +11,6 @@ variables:
   ARTIFACT_FILENAME: {{globals.artifact_base_name}}-osx-arm64.7z
 
 commands:
-  - mkdir -p artifacts
-  - curl https://public-stevedore.unity3d.com/r/public/7za-mac-x64/e6c75fb7ffda_5bd76652986a0e3756d1cfd7e84ce056a9e1dbfc5f70f0514a001f724c0fbad2.zip --output artifacts/7za-mac-x64.zip
-  - unzip -o artifacts/7za-mac-x64.zip -d artifacts/7za-mac-x64
   - ./.yamato/scripts/build_yamato.sh arm64 Release
 
 artifacts:

@@ -5,11 +5,15 @@ namespace BuildDriver;
 
 public class Program
 {
-    public static int Main(string[] args)
+    public static bool RunningOnYamato() => Environment.GetEnvironmentVariable("YAMATO_PROJECT_ID") != null;
+    public static async Task<int> Main(string[] args)
     {
         string architecture = GetArchitectures()[0]; // Get default arch for current system
         string configuration = "Release";
         bool silent = false;
+        bool zip = RunningOnYamato();
+        bool skipBuild = false;
+        Task<NPath>? zipTask = null;
         foreach (string arg in args)
         {
             if ((arg.StartsWith("--arch") || arg.StartsWith("--architecture="))
@@ -18,8 +22,17 @@ public class Program
             if ((arg.StartsWith("--config=") || arg.StartsWith("--configuration="))
                      && !TryParseArgument(new[] {"Release", "Debug"}, arg, out configuration))
                 return 1;
-            if (arg.Equals("--silent"))
+            if (arg.Equals("--silent") || arg.Equals("--s"))
                 silent = true;
+            if (arg.Equals("--zip") || arg.Equals("--z"))
+                zip = true;
+            if (arg.Equals("--skip-build"))
+                skipBuild = true;
+        }
+
+        if (RunningOnYamato())
+        {
+            zipTask = SevenZip.DownloadAndUnzip7Zip();
         }
 
         Console.WriteLine("*****************************");
@@ -30,13 +43,25 @@ public class Program
         Console.WriteLine("*****************************");
 
         GlobalConfig gConfig = new (){ Architecture = architecture, Configuration = configuration, Silent = silent};
-        BuildEmbeddingHost.Run(gConfig);
-        BuildNullGC.Run(gConfig);
-        BuildCoreCLR.Run(gConfig);
+        if (!skipBuild)
+        {
+            BuildEmbeddingHost.Run(gConfig);
+            BuildNullGC.Run(gConfig);
+            BuildCoreCLR.Run(gConfig);
+        }
+
         NPath artifacts = ConsolidateArtifacts(gConfig);
-        NPath zipArtifact = new (Environment.GetEnvironmentVariable("ARTIFACT_FILENAME") ??
-                            $"dotnet-unity-{architecture}.7z");
-        SevenZip.Create7z(artifacts, Paths.Artifacts.Combine(zipArtifact));
+
+        NPath zipExe = new("7z");
+        if (zipTask != null)
+        {
+            zipExe = await zipTask;
+            if (zipTask.Exception != null)
+                throw zipTask.Exception;
+        }
+
+        if (zip)
+            SevenZip.Zip(zipExe, artifacts, gConfig);
 
         return 0;
     }
