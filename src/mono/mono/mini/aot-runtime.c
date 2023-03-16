@@ -2433,7 +2433,7 @@ mono_aot_init (void)
 /*
  * load_container_amodule:
  *
- *   Load the container assembly and its AOT image.
+ *   Load AOT module of a container assembly
  */
 static void
 load_container_amodule (MonoAssemblyLoadContext *alc)
@@ -2443,24 +2443,20 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 	if (!container_assm_name || container_amodule)
 		return;
 
-	char *local_ref = container_assm_name;
+	// Create a fake MonoAssembly/MonoImage to retrieve its AOT module.
+	// Container MonoAssembly/MonoImage shouldn't be used during the runtime.
+	MonoAssembly *assm = g_new0 (MonoAssembly, 1);
+	assm->image = g_new0 (MonoImage, 1);
+	assm->image->dynamic = 0;
+	assm->image->alc = alc;
+	assm->aname.name = container_assm_name;
+
+	MonoAotFileInfo* info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assm->aname.name);
+	assm->image->guid = (char*)info->assembly_guid;
+
+	load_aot_module(alc, assm, NULL, error);
+	g_assert (assm->image->aot_module);
 	container_assm_name = NULL;
-	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoAssemblyOpenRequest req;
-	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
-	/*
-	 * Don't fire managed assembly load events whose execution
-	 * might require this module to be already loaded.
-	 */
-	mono_assembly_request_prepare_open (&req, alc);
-	req.request.no_managed_load_event = TRUE;
-	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
-	if (!assm) {
-		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
-		assm = mono_assembly_request_open (exe, &req, &status);
-	}
-	g_assert (assm);
-	load_aot_module (alc, assm, NULL, error);
 	container_amodule = assm->image->aot_module;
 }
 
