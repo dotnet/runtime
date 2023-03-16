@@ -290,8 +290,10 @@ namespace System.Management
         static WmiNetUtilsHelper()
         {
             RegistryKey netFrameworkSubKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\");
-            string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue("InstallRoot");
-
+            string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue(RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ?
+                "InstallRootArm64" :
+                "InstallRoot");
+            
             if (netFrameworkInstallRoot == null)
             {
                 // In some Windows versions, like Nano Server, the .NET Framework is not installed by default.
