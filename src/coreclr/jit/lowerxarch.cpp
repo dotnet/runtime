@@ -4269,12 +4269,14 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     {
         // We will be constructing the following parts:
         //   ...
-        //          /--*  tmp1 simd16
-        //          *  STORE_LCL_VAR simd16
-        //   tmp1 =    LCL_VAR       simd16
-        //   tmp2 =    LCL_VAR       simd16
+        //          /--*  tmp1 simd32
+        //          *  STORE_LCL_VAR simd32
+        //   tmp1 =    LCL_VAR       simd32
+        //          /--*  tmp1 simd32
+        //   tmp1 = *  HWINTRINSIC   simd16 T GetLower
+        //   tmp2 =    LCL_VAR       simd32
         //   idx  =    CNS_INT       int    0x01
-        //          /--*  tmp2 simd16
+        //          /--*  tmp2 simd32
         //          +--*  idx  int
         //   tmp2 = *  HWINTRINSIC   simd16 T ExtractVector128
         //          /--*  tmp1 simd16
@@ -4286,7 +4288,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         //   ...
         //   var tmp2 = tmp1;
         //       tmp2 = Avx.ExtractVector128(tmp2, 0x01);
-        //   var tmp1 = Isa.Add(tmp1, tmp2);
+        //   var tmp1 = Isa.Add(tmp1.GetLower(), tmp2);
         //   ...
 
         assert(simdBaseType != TYP_FLOAT);
@@ -4298,6 +4300,10 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
         tmp2 = comp->gtClone(tmp1);
         BlockRange().InsertAfter(tmp1, tmp2);
+
+        tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
+        BlockRange().InsertBefore(tmp2, tmp1);
+        LowerNode(tmp1);
 
         idx = comp->gtNewIconNode(0x01, TYP_INT);
         BlockRange().InsertAfter(tmp2, idx);
