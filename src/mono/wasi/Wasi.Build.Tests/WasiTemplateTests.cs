@@ -27,11 +27,13 @@ public class WasiTemplateTests : BuildTestBase
     {
         string id = $"{config}_{Path.GetRandomFileName()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
+        AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simpleMainWithArgs);
 
-        var buildArgs = new BuildArgs(projectName, config, false, id, null);
-        buildArgs = ExpandBuildArgs(buildArgs);
+        var buildArgs = new BuildArgs(projectName, config, true, id, null);
+        // FIXME: this doesn't support already generated project!!
+        //buildArgs = ExpandBuildArgs(buildArgs);
 
         BuildProject(buildArgs,
                     id: id,

@@ -65,7 +65,7 @@ public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICanc
             return (registeredName, symbolName);
         }).ToList();
 
-        Log.LogMessage(MessageImportance.Low, "Bundling {numFiles} files for {bundleName}", files.Count, BundleName);
+        Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleName}");
 
         if (remainingDestinationFilesToBundle.Length > 0)
         {
@@ -109,6 +109,7 @@ public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICanc
         return Emit(BundleFile, (inputStream) =>
         {
             using var outputUtf8Writer = new StreamWriter(inputStream, Utf8NoBom);
+            // FIXME: validate BundleName
             GenerateRegisteredBundledObjects($"mono_wasm_register_{BundleName}_bundle", RegistrationCallbackFunctionName, files, outputUtf8Writer);
         }) && !Log.HasLoggedErrors;
     }

@@ -7,6 +7,7 @@
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/mono-embed.h"
 #include "mono/utils/mono-path.h"
+#include "mono/utils/mono-logger-internals.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -107,7 +108,7 @@ typedef struct {
 int
 mono_wasm_add_bundled_file (const char *name, const unsigned char *data, unsigned int size)
 {
-	// printf("mono_wasm_add_bundled_file: %s %p %d\n", name, data, size);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_CONFIG, "Added bundle file %s %p %d", name, data, size);
 	if(name_to_blob == NULL)
 	{
 		name_to_blob = g_hash_table_new (g_str_hash, g_str_equal);
@@ -125,12 +126,12 @@ mono_wasm_get_bundled_file (const char *name, int* out_length)
 	FileBlob *blob = (FileBlob *)g_hash_table_lookup (name_to_blob, name);
 	if (blob != NULL)
 	{
-		// printf("mono_wasm_get_bundled_file: %s %p %d \n", name, blob->data, blob->size);
+		/*mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_CONFIG, "mono_wasm_get_bundled_file: %s %p %d", name, blob->data, blob->size);*/
 		*out_length = blob->size;
 		return blob->data;
 	}
 
-	// printf("mono_wasm_get_bundled_file: %s not found \n", name);
+	/*printf ("mono_wasm_get_bundled_file: %s not found \n", name);*/
 	*out_length = 0;
 	return NULL;
 }

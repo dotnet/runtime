@@ -43,7 +43,7 @@
     <Copy SourceFiles="@(_optimizationMibcFile)"
           DestinationFiles="@(_optimizationMibcFile->'$(MibcOptimizationDataDir)%(SubdirectoryName)/%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
+          UseHardlinksIfPossible="false" />
 
   </Target>
 </Project>

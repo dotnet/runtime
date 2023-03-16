@@ -20,6 +20,10 @@ int main(int argc, char * argv[]) {
 
 	const char* assembly_name = dotnet_wasi_getentrypointassemblyname();
 	MonoAssembly* assembly = mono_assembly_open(assembly_name, NULL);
+    if (!assembly) {
+		fprintf(stderr, "Could not open assembly %s\n", assembly_name);
+		exit(1);
+    }
 	MonoMethod* entry_method = mono_wasi_assembly_get_entry_point (assembly);
 	if (!entry_method) {
 		fprintf(stderr, "Could not find entrypoint in assembly %s\n", assembly_name);

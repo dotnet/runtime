@@ -23,6 +23,7 @@
 
 #include <mono/metadata/mono-private-unstable.h>
 
+/*#include <mono/utils/mono-dl.h>*/
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
 #include <mono/jit/jit.h>
@@ -35,7 +36,6 @@
 #endif
 #include "gc-common.h"
 #include "driver.h"
-
 
 #if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
 #define NEED_INTERP 1
@@ -65,6 +65,9 @@ char *mono_method_get_full_name (MonoMethod *method);
 extern void mono_wasm_register_timezones_bundle();
 #ifdef BUNDLED_ASSEMBLIES
 extern void mono_wasm_register_assemblies_bundle();
+extern void mono_wasm_register_icu_bundle();
+
+extern const unsigned char* mono_wasm_get_bundled_file (const char *name, int* out_length);
 #endif
 
 extern const char* dotnet_wasi_getentrypointassemblyname();
@@ -336,30 +339,43 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 	}
 }
 
-void load_icu_data (void)
+// AJ: mono_wasm_get_bundled_file
+void
+load_icu_data (void)
 {
-	FILE *fileptr;
-	unsigned char *buffer;
-	long filelen;
-	char filename[256];
-	sprintf(filename, "./icudt.dat");
+#ifdef BUNDLED_ASSEMBLIES
+    mono_wasm_register_icu_bundle();
 
-	fileptr = fopen(filename, "rb");
-	if (fileptr == 0) {
-		printf("Failed to load %s\n", filename);
-		fflush(stdout);
-	}
+    int length = -1;
+    const unsigned char* buffer = mono_wasm_get_bundled_file("icudt.dat", &length);
+    if (!buffer) {
+        printf("Could not load icudt.dat from the bundle");
+        assert(buffer);
+    }
+#else
+    FILE *fileptr;
+    unsigned char *buffer;
+    long filelen;
+    char filename[256];
+    sprintf(filename, "./icudt.dat");
 
-	fseek(fileptr, 0, SEEK_END);
-	filelen = ftell(fileptr);
-	rewind(fileptr);
+    fileptr = fopen(filename, "rb");
+    if (fileptr == 0) {
+        printf("Failed to load %s\n", filename);
+        fflush(stdout);
+    }
 
-	buffer = (unsigned char *)malloc(filelen * sizeof(char));
-	if(!fread(buffer, filelen, 1, fileptr)) {
-		printf("Failed to load %s\n", filename);
-		fflush(stdout);
-	}
-	fclose(fileptr);
+    fseek(fileptr, 0, SEEK_END);
+    filelen = ftell(fileptr);
+    rewind(fileptr);
+
+    buffer = (unsigned char *)malloc(filelen * sizeof(char));
+    if(!fread(buffer, filelen, 1, fileptr)) {
+        printf("Failed to load %s\n", filename);
+        fflush(stdout);
+    }
+    fclose(fileptr);
+#endif
 
 	assert(mono_wasi_load_icu_data(buffer));
 }
@@ -375,10 +391,6 @@ void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
-
-    char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
-    if (strcmp(invariant_globalization, "true") != 0 && strcmp(invariant_globalization, "1") != 0)
-	    load_icu_data();
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
@@ -432,9 +444,21 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
+	mono_trace_init ();
+	mono_trace_set_log_handler (wasi_trace_logger, NULL);
+
+#ifndef INVARIANT_GLOBALIZATION
+    char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+    if (strcmp(invariant_globalization, "true") != 0 && strcmp(invariant_globalization, "1") != 0)
+	    load_icu_data();
+#endif
+
 	mono_wasm_register_timezones_bundle();
 #ifdef BUNDLED_ASSEMBLIES
 	mono_wasm_register_assemblies_bundle();
+#else
+    // FIXME: get this from runtimeconfig?
+    mono_set_assemblies_path("managed");
 #endif
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
@@ -503,8 +527,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	}
 
 	mono_wasm_register_bundled_satellite_assemblies ();
-	mono_trace_init ();
-	mono_trace_set_log_handler (wasi_trace_logger, NULL);
 
 	root_domain = mono_jit_init_version ("mono", NULL);
 	mono_thread_set_main (mono_thread_current ());

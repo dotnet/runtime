@@ -45,7 +45,7 @@
     <Copy SourceFiles="@(DocFileItem)"
           DestinationFolder="$(XmlDocDir)"
           SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
+          UseHardlinksIfPossible="false" />
   </Target>
 
 </Project>

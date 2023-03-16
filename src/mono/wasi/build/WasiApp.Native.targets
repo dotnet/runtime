@@ -3,23 +3,25 @@
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmResolveAssemblyDependencies" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleSourceFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
     <_WasiBuildNativeCoreDependsOn>
-        _SetupWasiSdk;
-        _SetWasmBuildNativeDefaults;
+        _WasmAotCompileApp;
         _PrepareForWasiBuildNative;
         _GetNativeFilesForLinking;
         _GenerateManagedToNative;
         _GenerateAssemblyObjectFiles;
         _WasiLink;
+        _CompleteWasmBuildNative 
     </_WasiBuildNativeCoreDependsOn>
 
-    <!--<_BeforeWasmBuildAppDependsOn>-->
-      <!--$(_BeforeWasmBuildAppDependsOn);-->
-      <!--_SetupEmscripten;-->
-      <!--_SetWasmBuildNativeDefaults-->
-    <!--</_BeforeWasmBuildAppDependsOn>-->
+    <_BeforeWasmBuildAppDependsOn>
+      $(_BeforeWasmBuildAppDependsOn);
+        _SetupWasiSdk;
+      _SetWasmBuildNativeDefaults
+    </_BeforeWasmBuildAppDependsOn>
 
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
     <!--<WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>-->
@@ -101,7 +103,7 @@
            Text="$(_ToolchainMissingErrorMessage) Emscripten SDK is required for building native files." />
 
     <PropertyGroup>
-      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
+      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','wasi-wasm'))</_MonoAotCrossCompilerPath>
       <_WasiClangDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_WasiClangDefaultFlagsRsp>
       <_WasiClangDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_WasiClangDefaultLinkFlagsRsp>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">false</WasmNativeStrip>
@@ -176,9 +178,9 @@
       <!--<_EmccCFlags Include="@(_EmccCommonFlags)" />-->
 
       <!--<_EmccCFlags Include="-DDISABLE_PERFTRACING_LISTEN_PORTS=1" />-->
-      <!--<_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />-->
-      <!--<_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />-->
-      <!--<_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />-->
+      <_WasiSdkClangArgs Include="-DENABLE_AOT=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
+      <_WasiSdkClangArgs Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
+      <_WasiSdkClangArgs Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
       <!--<_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />-->
       <!--<_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />-->
       <!--<_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />-->
@@ -194,16 +196,12 @@
       <!-- ILLinker should have removed unused imports, so error for Publish -->
       <!--<_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />-->
 
-      <!--<_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />-->
-      <!--<_DriverCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />-->
+      <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
+      <_DriverCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
 
-      <!--<_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)pinvoke.c"-->
-                               <!--Dependencies="$(_WasmPInvokeHPath);$(_WasmPInvokeTablePath)" />-->
-      <!--<_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)driver.c"-->
-                               <!--Dependencies="@(_DriverCDependencies)" />-->
-      <!--<_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)corebindings.c" />-->
-
-      <!--<_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />-->
+      <!-- TODO: Dependencies -->
+      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)*.c" />
+      <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
       <!-- See src\mono\wasm\runtime\modularize-dotnet.md -->
       <!--<_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.%(JSFileType.Identity)"     Kind="%(JSFileType.Kind)" />-->
@@ -271,6 +269,7 @@
     <ItemGroup>
       <!-- order matters -->
       <!--<_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />-->
+      <_WasmNativeFileForLinking Include="@(_BitcodeFile)" />
       <!--<_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />-->
       <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" />
 
@@ -343,42 +342,56 @@
           <!--EnvironmentVariables="@(EmscriptenEnvVars)" />-->
   <!--</Target>-->
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <Target Name="_GenerateAssemblyObjectFiles" Returns="@(_WasiObjectFilesForBundle)">
+  <!-- AJ: need the deps only when doing single file? -->
+  <Target Name="_GenerateAssemblyObjectFiles" DependsOnTargets="_GetWasiGenerateAppBundleDependencies" Returns="@(_WasiObjectFilesForBundle)" Condition="'$(WasmSingleFileBundle)' == 'true'">
     <!-- Get the file hashes of everything in @(_WasmBundleFiles), then pass it all to EmitWasmBundleObjectFiles. This
          will emit corresponding .o files for anything we don't already have on disk. -->
     <PropertyGroup>
       <_WasmAssembliesBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
     </PropertyGroup>
+
     <GetFileHash Files="@(_WasmAssembliesInternal)">
-      <Output TaskParameter="Items" ItemName="WasmBundleAssembliesWithHashes" />
+      <Output TaskParameter="Items" ItemName="_WasmBundleAssembliesWithHashes" />
     </GetFileHash>
+
     <ItemGroup>
-      <WasmBundleAssembliesWithHashes Update="@(WasmBundleAssembliesWithHashes)">
-        <DestinationFile>$(_WasmIntermediateOutputPath)%(WasmBundleAssembliesWithHashes.Filename)%(WasmBundleAssembliesWithHashes.Extension).$([System.String]::Copy(%(WasmBundleAssembliesWithHashes.FileHash)).Substring(0, 8)).o</DestinationFile>
-      </WasmBundleAssembliesWithHashes>
+      <_WasmBundleAssembliesWithHashes Update="@(_WasmBundleAssembliesWithHashes)">
+        <DestinationFile>$(_WasmIntermediateOutputPath)%(_WasmBundleAssembliesWithHashes.Filename)%(_WasmBundleAssembliesWithHashes.Extension).$([System.String]::Copy(%(_WasmBundleAssembliesWithHashes.FileHash)).Substring(0, 8)).o</DestinationFile>
+      </_WasmBundleAssembliesWithHashes>
+
+      <WasmIcuDataFileNames DestinationFile="$(_WasmIntermediateOutputPath)%(Filename)%(Extension).c" />
     </ItemGroup>
+
     <!-- TODO make this incremental compilation -->
     <EmitWasmBundleObjectFiles
-      FilesToBundle="@(WasmBundleAssembliesWithHashes)"
+      FilesToBundle="@(_WasmBundleAssembliesWithHashes)"
       ClangExecutable="$(WasiClang)"
       BundleName="assemblies"
       BundleFile="$(_WasmAssembliesBundleObjectFile)"
       RegistrationCallbackFunctionName="mono_wasm_add_assembly"
       />
 
+    <EmitWasmBundleSourceFiles
+      FilesToBundle="@(WasmIcuDataFileNames)"
+      BundleName="icu"
+      BundleFile="$(_WasmIntermediateOutputPath)\wasm-bundled-icu.c"
+      RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
+      />
+
     <ItemGroup>
       <_WasiObjectFilesForBundle Include="$(_WasmAssembliesBundleObjectFile)" />
-      <_WasiObjectFilesForBundle Include="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
+      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)wasm-bundled-icu.c" />
+      <_WasiObjectFilesForBundle Include="%(WasmIcuDataFileNames.DestinationFile)" />
+      <_WasiObjectFilesForBundle Include="%(_WasmBundleAssembliesWithHashes.DestinationFile)" />
     </ItemGroup>
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <WasmBundleFileToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
       <WasmBundleFileToDelete Remove="$(_WasmAssembliesBundleObjectFile)" />
-      <WasmBundleFileToDelete Remove="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
+      <WasmBundleFileToDelete Remove="%(_WasmBundleAssembliesWithHashes.DestinationFile)" />
     </ItemGroup>
-    <Delete Files="@(WasmBundleFileToDelete)" />
+    <!--<Delete Files="@(WasmBundleFileToDelete)" />-->
   </Target>
 
   <Target Name="_WasiLink">
@@ -392,7 +405,7 @@
     </PropertyGroup>
     <WriteLinesToFile File="$(_WasiGetEntrypointCFile)"
               Overwrite="true"
-              Lines="const char* dotnet_wasi_getentrypointassemblyname() { return &quot;$(WasmMainAssemblyFileName)&quot;%3B }"
+              Lines="const char* dotnet_wasi_getentrypointassemblyname() { return &quot;managed/$(WasmMainAssemblyFileName)&quot;%3B }"
               WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <!--<_WasmNativeFileForLinking Include="$(_WasiObjectFilesForBundle)" />-->
@@ -401,7 +414,7 @@
       <WasiAfterRuntimeLoadedDeclarations Include="@(WasiAfterRuntimeLoaded->'void %(Identity)();')" />
       <WasiAfterRuntimeLoadedCalls Include="@(WasiAfterRuntimeLoaded->'%(Identity)();')" />
 
-      <_WasmRuntimePackSrcFile Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)src/*.c" />
+      <!--<_WasmRuntimePackSrcFile Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)src/*.c" />-->
     </ItemGroup>
 
     <!-- Invoke the WASI SDK clang binary to build the .wasm file -->
@@ -435,11 +448,11 @@
       <_WasiSdkClangArgs Include="-o &quot;$(_WasmOutputFileName.Replace('\', '/'))&quot;" />
     </ItemGroup>
 
-    <WriteLinesToFile Lines="@(_WasiSdkClangArgs)" File="$(_WasmIntermediateOutputPath)clang-compile.rsp" Overwrite="true" />
+    <WriteLinesToFile Lines="@(_WasiSdkClangArgs)" File="$(_WasmIntermediateOutputPath)clang-link.rsp" Overwrite="true" />
     <!--<Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; @(_WasiSdkClangArgs, ' ')" />-->
-    <Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; @$(_WasmIntermediateOutputPath)clang-compile.rsp" />
+    <Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; @$(_WasmIntermediateOutputPath)clang-link.rsp" />
     <!--<Exec Command="&quot;$(WasiClang)&quot; @(_WasiSdkClangArgs, ' ')" />-->
-    <Exec Command="&quot;$(WasiClang)&quot; @$(_WasmIntermediateOutputPath)clang-compile.rsp" />
+    <Exec Command="&quot;$(WasiClang)&quot; @$(_WasmIntermediateOutputPath)clang-link.rsp" />
 
     <!-- FIXME: this will be done by the bundler -->
     <Copy SourceFiles="$(_WasmOutputFileName)" DestinationFolder="$(WasmAppDir)" />
@@ -450,9 +463,7 @@
 
   <Target Name="_CompleteWasmBuildNative">
     <ItemGroup>
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.worker.js" Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.worker.js')" />
+      <WasmNativeAsset Include="$(_WasmOutputFileName)" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.js.symbols')" />
     </ItemGroup>
   </Target>
@@ -469,7 +480,7 @@
   <Target Name="_WasmAotCompileApp" Condition="'$(_WasmShouldAOT)' == 'true'">
     <PropertyGroup>
       <!-- FIXME: do it once -->
-      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
+      <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','wasi-wasm'))</_MonoAotCrossCompilerPath>
     </PropertyGroup>
 
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
@@ -552,7 +563,7 @@
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"
       LLVMDebug="dwarfdebug"
-      LLVMPath="$(EmscriptenUpstreamBinPath)"
+      LLVMPath="$(WasiSdkBinPath)"
       IntermediateOutputPath="$(_WasmIntermediateOutputPath)"
       AotProfilePath="@(AotProfilePath)">
 

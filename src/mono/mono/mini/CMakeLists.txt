@@ -324,6 +324,9 @@ set(llvm_runtime_sources
 elseif(ENABLE_LLVM_RUNTIME AND NOT HOST_WASM)
 set(llvm_runtime_sources
     llvm-runtime.cpp)
+elseif(ENABLE_LLVM_RUNTIME AND HOST_WASI)
+set(llvm_runtime_sources
+    llvm-runtime-no-exceptions.c)
 else()
 set(llvm_runtime_sources)
 endif()

@@ -29,6 +29,7 @@
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.wasi-wasm",
         "Microsoft.NET.Runtime.WebAssembly.Templates"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
@@ -354,6 +355,17 @@
         "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.browser-wasm",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm",
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.browser-wasm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.wasi-wasm": {
+      "kind": "Sdk",
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm",
+        "win-arm64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm",
+        "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.wasi-wasm",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.wasi-wasm",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.wasi-wasm"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.browser-wasm" : {
