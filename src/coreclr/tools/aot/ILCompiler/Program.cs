@@ -166,6 +166,7 @@ namespace ILCompiler
             {
                 // Either single file, or multifile library, or multifile consumption.
                 EcmaModule entrypointModule = null;
+                bool systemModuleIsInputModule = false;
                 foreach (var inputFile in typeSystemContext.InputFilePaths)
                 {
                     EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
@@ -176,6 +177,9 @@ namespace ILCompiler
                             throw new Exception("Multiple EXE modules");
                         entrypointModule = module;
                     }
+
+                    if (module == typeSystemContext.SystemModule)
+                        systemModuleIsInputModule = true;
 
                     compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module));
                 }
@@ -235,6 +239,9 @@ namespace ILCompiler
                 foreach (var unmanagedEntryPointsAssembly in Get(_command.UnmanagedEntryPointsAssemblies))
                 {
                     EcmaModule module = typeSystemContext.GetModuleForSimpleName(unmanagedEntryPointsAssembly);
+                    // Skip adding the system module as a UnmanagedEntryPointsRootProvider if it was already added as an input module
+                    if (module == typeSystemContext.SystemModule && systemModuleIsInputModule)
+                        continue;
                     compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module));
                 }
 
