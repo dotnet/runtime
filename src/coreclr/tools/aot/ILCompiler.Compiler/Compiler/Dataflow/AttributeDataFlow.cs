@@ -28,6 +28,7 @@ namespace ILCompiler.Dataflow
         private readonly NodeFactory _factory;
         private readonly FlowAnnotations _annotations;
         private readonly MessageOrigin _origin;
+        private readonly DiagnosticContext _diagnosticContext;
 
         public AttributeDataFlow(Logger logger, NodeFactory factory, FlowAnnotations annotations, in MessageOrigin origin)
         {
@@ -35,11 +36,20 @@ namespace ILCompiler.Dataflow
             _factory = factory;
             _logger = logger;
             _origin = origin;
+
+            _diagnosticContext = new DiagnosticContext(
+                _origin,
+                _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                _logger);
         }
 
         public DependencyList? ProcessAttributeDataflow(MethodDesc method, CustomAttributeValue arguments)
         {
             DependencyList? result = null;
+
+            ReflectionMethodBodyScanner.CheckAndReportAllRequires(_diagnosticContext, method);
 
             // First do the dataflow for the constructor parameters if necessary.
             if (_annotations.RequiresDataflowAnalysisDueToSignature(method))
@@ -62,6 +72,8 @@ namespace ILCompiler.Dataflow
                     FieldDesc field = attributeType.GetField(namedArgument.Name);
                     if (field != null)
                     {
+                        ReflectionMethodBodyScanner.CheckAndReportAllRequires(_diagnosticContext, field);
+
                         ProcessAttributeDataflow(field, namedArgument.Value, ref result);
                     }
                 }
@@ -72,6 +84,8 @@ namespace ILCompiler.Dataflow
                     MethodDesc setter = property.SetMethod;
                     if (setter != null && setter.Signature.Length > 0 && !setter.Signature.IsStatic)
                     {
+                        ReflectionMethodBodyScanner.CheckAndReportAllRequires(_diagnosticContext, setter);
+
                         ProcessAttributeDataflow(setter, ImmutableArray.Create(namedArgument.Value), ref result);
                     }
                 }
@@ -88,21 +102,19 @@ namespace ILCompiler.Dataflow
                 if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                 {
                     MultiValue value = GetValueForCustomAttributeArgument(arguments[parameter.MetadataIndex]);
-                    var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _logger);
-                    RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue, method.GetDisplayName(), ref result);
+                    RequireDynamicallyAccessedMembers(_diagnosticContext, value, parameterValue, method.GetDisplayName(), ref result);
                 }
             }
         }
 
-        public void ProcessAttributeDataflow(FieldDesc field, object? value, ref DependencyList? result)
+        private void ProcessAttributeDataflow(FieldDesc field, object? value, ref DependencyList? result)
         {
             var fieldValueCandidate = _annotations.GetFieldValue(field);
             if (fieldValueCandidate is ValueWithDynamicallyAccessedMembers fieldValue
                 && fieldValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
             {
                 MultiValue valueNode = GetValueForCustomAttributeArgument(value);
-                var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _logger);
-                RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, fieldValue, field.GetDisplayName(), ref result);
+                RequireDynamicallyAccessedMembers(_diagnosticContext, valueNode, fieldValue, field.GetDisplayName(), ref result);
             }
         }
 

@@ -30,9 +30,7 @@ namespace ILCompiler.Dataflow
                 logger.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
                 logger);
 
-            ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, Field, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
-            ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, Field, DiagnosticUtilities.RequiresDynamicCodeAttribute);
-            ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, Field, DiagnosticUtilities.RequiresAssemblyFilesAttribute);
+            ReflectionMethodBodyScanner.CheckAndReportAllRequires(diagnosticContext, Field);
         }
     }
 }
