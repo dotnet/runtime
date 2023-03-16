@@ -28,6 +28,10 @@ struct Access
 
     // Number of times we saw this access.
     unsigned Count = 0;
+    // Number of times this access is on the RHS of an assignment.
+    unsigned CountAssignmentSource = 0;
+    // Number of times this access is on the LHS of an assignment.
+    unsigned CountAssignmentDestination = 0;
     // Number of times this access is on the RHS of an assignment where the LHS is a probable register candidate.
     unsigned CountAssignmentsToRegisterCandidate = 0;
     // Number of times this access is on the LHS of an assignment where the RHS is a probable register candidate.
@@ -224,16 +228,24 @@ public:
         }
 
         access->Count++;
-        AccessKindFlags assignmentTo = AccessKindFlags::IsAssignmentSource | AccessKindFlags::IsAssignmentToRegisterCandidate;
-        if ((flags & assignmentTo) == assignmentTo)
+        if ((flags & AccessKindFlags::IsAssignmentSource) != AccessKindFlags::None)
         {
-            access->CountAssignmentsToRegisterCandidate++;
+            access->CountAssignmentSource++;
+
+            if ((flags & AccessKindFlags::IsAssignmentToRegisterCandidate) != AccessKindFlags::None)
+            {
+                access->CountAssignmentsToRegisterCandidate++;
+            }
         }
 
-        AccessKindFlags assignmentFrom = AccessKindFlags::IsAssignmentDestination | AccessKindFlags::IsAssignmentFromRegisterCandidate;
-        if ((flags & assignmentFrom) == assignmentFrom)
+        if ((flags & AccessKindFlags::IsAssignmentDestination) != AccessKindFlags::None)
         {
-            access->CountAssignmentsFromRegisterCandidate++;
+            access->CountAssignmentDestination++;
+
+            if ((flags & AccessKindFlags::IsAssignmentFromRegisterCandidate) != AccessKindFlags::None)
+            {
+                access->CountAssignmentsFromRegisterCandidate++;
+            }
         }
 
         if ((flags & AccessKindFlags::IsCallArg) != AccessKindFlags::None)
@@ -361,6 +373,9 @@ public:
         unsigned countOverlappedCalls = 0;
         unsigned countOverlappedReturns = 0;
         unsigned countOverlappedRetbufs = 0;
+        unsigned countOverlappedAssignmentDestination = 0;
+        unsigned countOverlappedAssignmentSource = 0;
+
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
         {
@@ -380,6 +395,8 @@ public:
             countOverlappedCalls += otherAccess.CountCallArgs;
             countOverlappedReturns += otherAccess.CountReturns;
             countOverlappedRetbufs += otherAccess.CountPassedAsRetbuf;
+            countOverlappedAssignmentDestination += otherAccess.CountAssignmentDestination;
+            countOverlappedAssignmentSource += otherAccess.CountAssignmentSource;
         }
 
         unsigned costWithout = 0;
@@ -406,13 +423,15 @@ public:
         }
 
         numReadBacks += countOverlappedRetbufs;
+        numReadBacks += countOverlappedAssignmentDestination;
+
         costWith += numReadBacks * 50;
 
         // Write backs with TYP_REFs when the base local is an implicit byref
         // involves checked write barriers, so they are very expensive.
         // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
         unsigned writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 150 : 50;
-        unsigned numWriteBacks = countOverlappedCalls + countOverlappedReturns;
+        unsigned numWriteBacks = countOverlappedCalls + countOverlappedReturns + countOverlappedAssignmentSource;
         costWith += numWriteBacks * writeBackCost;
 
         JITDUMP("Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
@@ -452,13 +471,14 @@ public:
                 printf("  %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
             }
 
-            printf("    #:                              %u\n", access.Count);
-            printf("    # assignments to reg-candidate: %u\n", access.CountAssignmentsToRegisterCandidate);
-            printf("    # as call arg:                  %u\n", access.CountCallArgs);
-            printf("    # as implicit by-ref call arg:  %u\n", access.CountCallArgsByImplicitRef);
-            printf("    # as on-stack call arg:         %u\n", access.CountCallArgsOnStack);
-            printf("    # as retbuf:                    %u\n", access.CountPassedAsRetbuf);
-            printf("    # as returned value:            %u\n\n", access.CountReturns);
+            printf("    #:                             %u\n", access.Count);
+            printf("    # assigned from:               %u\n", access.CountAssignmentSource);
+            printf("    # assigned to:                 %u\n", access.CountAssignmentDestination);
+            printf("    # as call arg:                 %u\n", access.CountCallArgs);
+            printf("    # as implicit by-ref call arg: %u\n", access.CountCallArgsByImplicitRef);
+            printf("    # as on-stack call arg:        %u\n", access.CountCallArgsOnStack);
+            printf("    # as retbuf:                   %u\n", access.CountPassedAsRetbuf);
+            printf("    # as returned value:           %u\n\n", access.CountReturns);
         }
     }
 #endif
