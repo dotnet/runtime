@@ -11,8 +11,8 @@ namespace System.IO.IsolatedStorage
 
         /// <summary>
         /// The full root directory is the relevant special folder from Environment.GetFolderPath() plus IsolatedStorageDirectoryName
-        /// and a set of random directory names if not roaming. (The random directories aren't created for WinRT as
-        /// the FolderPath locations for WinRT are app isolated already.)
+        /// and a set of random directory names if not roaming. (The random directories aren't created for Android/iOS as
+        /// the FolderPath locations for Android/iOS are app isolated already.)
         ///
         /// Examples:
         ///
