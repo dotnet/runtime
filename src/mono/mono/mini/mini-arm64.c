@@ -3665,6 +3665,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_XCAST:
+			break;
 
 			/* BRANCH */
 		case OP_BR:

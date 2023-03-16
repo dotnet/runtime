@@ -1190,10 +1190,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
-#ifdef TARGET_ARM64
-	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
-		return NULL;
-#endif
+// #ifdef TARGET_ARM64
+// 	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
+// 		return NULL;
+// #endif
 
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
 	if (id == -1) {
@@ -1220,6 +1220,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_BitwiseAnd:
 		case SN_BitwiseOr:
 		case SN_Xor:
+		case SN_As:
+		case SN_AsByte:
+		case SN_AsDouble:
+		case SN_AsInt16:
+		case SN_AsInt32:
+		case SN_AsInt64:
+		case SN_AsSByte:
+		case SN_AsSingle:
+		case SN_AsUInt16:
+		case SN_AsUInt32:
+		case SN_AsUInt64:
 			break;
 		default: 
 			return NULL;
