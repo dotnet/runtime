@@ -9463,17 +9463,21 @@ inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondit
 //
 bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 {
-    assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
+    assert((m_b1 != nullptr) && (m_b2 != nullptr) && (m_b3 == nullptr));
     m_t3 = nullptr;
 
     bool foundEndOfOrConditions = false;
-    if ((m_b1->bbNext == m_b2) && (m_b1->bbJumpDest == m_b2->bbNext) && (m_b1->bbJumpDest->bbNext == m_b2->bbJumpDest))
+    if ((m_b1->bbNext == m_b2) && (m_b1->bbJumpDest == m_b2->bbNext))
     {
         // Found the end of two (or more) conditions being ORed together.
         // The final condition has been inverted.
         foundEndOfOrConditions = true;
     }
-    else if (!(m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbJumpDest))
+    else if ((m_b1->bbNext == m_b2) && (m_b1->bbJumpDest == m_b2->bbJumpDest))
+    {
+        // Found two conditions connected together.
+    }
+    else
     {
         return false;
     }
