@@ -37,8 +37,6 @@
 #define OPFMT_WDSS _w, dreg, sreg1, sreg2
 #define OPFMT_WTDSS _w, _t, dreg, sreg1, sreg2
 #define OPFMT_WTDSS_REV _w, _t, dreg, sreg2, sreg1
-#define OPFMT_WTDSI _w, _t, _dreg, sreg1, _i
-#define OPFMT_TDSI _t, _dreg, sreg1, _i
 #define _UNDEF(...) g_assert_not_reached ()
 #define SIMD_OP_CODE(reg_w, op, c) ((reg_w << 31) | (op) << 16 | (c))
 #define VREG_64 VREG_LOW
@@ -3775,18 +3773,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
-			break;
-		case OP_EXTRACT_I1:
-			arm_neon_umov_b (code, dreg, sreg1, ins->inst_c0);
-			break;
-		case OP_EXTRACT_I2:
-			arm_neon_umov_h (code, dreg, sreg1, ins->inst_c0);
-			break;
-		case OP_EXTRACT_I4:
-			arm_neon_umov_s (code, dreg, sreg1, ins->inst_c0);
-			break;
-		case OP_EXTRACT_I8:
-			arm_neon_umov_d (code, dreg, sreg1, ins->inst_c0);
 			break;
 		case OP_XEXTRACT: 
 			code = emit_xextract (code, ins->inst_c0, dreg, sreg1);
