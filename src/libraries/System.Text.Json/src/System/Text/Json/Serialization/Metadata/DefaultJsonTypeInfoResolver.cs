@@ -112,12 +112,12 @@ namespace System.Text.Json.Serialization.Metadata
                 _resolver = resolver;
             }
 
-            protected override bool IsImmutable => !_resolver._mutable;
-            protected override void VerifyMutable()
+            public override bool IsReadOnly => !_resolver._mutable;
+            protected override void OnCollectionModifying()
             {
                 if (!_resolver._mutable)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_TypeInfoResolverImmutable();
+                    ThrowHelper.ThrowInvalidOperationException_DefaultTypeInfoResolverImmutable();
                 }
             }
         }

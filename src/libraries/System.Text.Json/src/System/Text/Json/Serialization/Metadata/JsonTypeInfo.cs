@@ -1282,8 +1282,8 @@ namespace System.Text.Json.Serialization.Metadata
                 _jsonTypeInfo = jsonTypeInfo;
             }
 
-            protected override bool IsImmutable => _jsonTypeInfo.IsReadOnly || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
-            protected override void VerifyMutable()
+            public override bool IsReadOnly => _jsonTypeInfo.IsReadOnly || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
+            protected override void OnCollectionModifying()
             {
                 _jsonTypeInfo.VerifyMutable();
 
@@ -1293,7 +1293,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
-            protected override void OnAddingElement(JsonPropertyInfo item)
+            protected override void ValidateAddedValue(JsonPropertyInfo item)
             {
                 item.EnsureChildOf(_jsonTypeInfo);
             }

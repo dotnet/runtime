@@ -11056,7 +11056,7 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unw
     _ASSERTE_MSG(m_theUnwindBlock == NULL,
         "reserveUnwindInfo() can only be called before allocMem(), but allocMem() has already been called. "
         "This may indicate the JIT has hit a NO_WAY assert after calling allocMem(), and is re-JITting. "
-        "Set COMPlus_JitBreakOnBadCode=1 and rerun to get the real error.");
+        "Set DOTNET_JitBreakOnBadCode=1 and rerun to get the real error.");
 
     uint32_t currentSize  = unwindSize;
 
@@ -11688,8 +11688,59 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
 
             if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
             {
-                memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
-                result = true;
+                // For structs containing GC pointers we want to make sure those GC pointers belong to FOH
+                // so we expect valueOffset to be a real field offset (same for bufferSize)
+                if (!field->IsRVA() && field->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+                {
+                    PTR_MethodTable structType = field->GetFieldTypeHandleThrowing().AsMethodTable();
+                    if (structType->ContainsPointers() && (UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE))
+                    {
+                        ApproxFieldDescIterator fieldIterator(structType, ApproxFieldDescIterator::INSTANCE_FIELDS);
+                        for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
+                        {
+                            // TODO: If subField is also a struct we might want to inspect its fields too
+                            if (subField->GetOffset() == (DWORD)valueOffset && subField->IsObjRef())
+                            {
+                                GCX_COOP();
+
+                                // Read field's value
+                                Object* subFieldValue = nullptr;
+                                memcpy(&subFieldValue, (uint8_t*)baseAddr + valueOffset, bufferSize);
+
+                                if (subFieldValue == nullptr)
+                                {
+                                    // Report null
+                                    memset(buffer, 0, bufferSize);
+                                    result = true;
+                                }
+                                else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
+                                {
+                                    CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(
+                                        ObjectToOBJECTREF(subFieldValue), /*knownFrozen*/ true);
+
+                                    // GC handle is either from FOH or null
+                                    memcpy(buffer, &handle, bufferSize);
+                                    result = true;
+                                }
+
+                                // We're done with this struct
+                                break;
+                            }
+                        }
+                    }
+                    else if (!structType->ContainsPointers())
+                    {
+                        // No gc pointers in the struct
+                        memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                        result = true;
+                    }
+                }
+                else
+                {
+                    // Primitive or RVA
+                    memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                    result = true;
+                }
             }
         }
     }
@@ -11949,7 +12000,11 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     size_t roDataAlignment = sizeof(void*);
-    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
+    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN)!= 0)
+    {
+        roDataAlignment = 64;
+    }
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
     {
         roDataAlignment = 32;
     }
@@ -14346,10 +14401,10 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     if (pRS == NULL)
         goto Invalid;
 
-    if (!pRS->pjit->JitCodeToMethodInfo(pRS, codeAddress, &m_pMD, this))
+    if (!pRS->_pjit->JitCodeToMethodInfo(pRS, codeAddress, &m_pMD, this))
         goto Invalid;
 
-    m_pJM = pRS->pjit;
+    m_pJM = pRS->_pjit;
     return;
 
 Invalid:

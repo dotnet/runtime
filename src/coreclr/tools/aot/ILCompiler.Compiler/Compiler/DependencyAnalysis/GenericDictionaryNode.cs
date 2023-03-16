@@ -117,6 +117,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => true;
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => GetDictionaryLayout(factory).IsEmpty;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -141,8 +142,6 @@ namespace ILCompiler.DependencyAnalysis
                         "Default constructor for lazy generics"));
                 }
             }
-
-            factory.MetadataManager.GetDependenciesForGenericDictionary(ref result, factory, _owningType);
 
             return result;
         }

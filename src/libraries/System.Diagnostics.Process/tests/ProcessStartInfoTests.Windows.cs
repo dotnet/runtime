@@ -68,5 +68,47 @@ namespace System.Diagnostics.Tests
                 }
             }
         }
+
+        [ConditionalTheory(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(ProcessWindowStyle.Normal, true)]
+        [InlineData(ProcessWindowStyle.Normal, false)]
+        [InlineData(ProcessWindowStyle.Hidden, true)]
+        [InlineData(ProcessWindowStyle.Hidden, false)]
+        [InlineData(ProcessWindowStyle.Minimized, true)]
+        [InlineData(ProcessWindowStyle.Minimized, false)]
+        [InlineData(ProcessWindowStyle.Maximized, true)]
+        [InlineData(ProcessWindowStyle.Maximized, false)]
+        public void TestWindowStyle(ProcessWindowStyle windowStyle, bool useShellExecute)
+        {
+            // "x y" where x is the expected dwFlags & 0x1 result and y is the wShowWindow value
+            (int expectedDwFlag, int expectedWindowFlag) = windowStyle switch
+            {
+                ProcessWindowStyle.Hidden => (1, 0),
+                ProcessWindowStyle.Minimized => (1, 2),
+                ProcessWindowStyle.Maximized => (1, 3),
+                // UseShellExecute always sets the flag but no shell does not for Normal.
+                _ => useShellExecute ? (1, 1) : (0, 0),
+            };
+
+            using Process p = CreateProcess((string procArg) =>
+            {
+                Interop.GetStartupInfoW(out Interop.STARTUPINFO si);
+
+                string[] argSplit = procArg.Split(" ");
+                int expectedDwFlag = int.Parse(argSplit[0]);
+                short expectedWindowFlag = short.Parse(argSplit[1]);
+
+                Assert.Equal(expectedDwFlag, si.dwFlags);
+                Assert.Equal(expectedWindowFlag, si.wShowWindow);
+                return RemoteExecutor.SuccessExitCode;
+            }, $"{expectedDwFlag} {expectedWindowFlag}");
+            p.StartInfo.UseShellExecute  = useShellExecute;
+            p.StartInfo.WindowStyle = windowStyle;
+            p.Start();
+
+            Assert.True(p.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
+        }
     }
 }

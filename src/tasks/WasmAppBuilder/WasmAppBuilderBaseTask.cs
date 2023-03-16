@@ -22,6 +22,7 @@ public abstract class WasmAppBuilderBaseTask : Task
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
+    // files like dotnet.wasm, icudt.dat etc
     [NotNull]
     [Required]
     public ITaskItem[] NativeAssets { get; set; } = Array.Empty<ITaskItem>();
@@ -33,11 +34,12 @@ public abstract class WasmAppBuilderBaseTask : Task
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-    public string? IcuDataFileName { get; set; }
+    public string[] IcuDataFileNames { get; set; } = Array.Empty<string>();
 
     public int DebugLevel { get; set; }
     public ITaskItem[] SatelliteAssemblies { get; set; } = Array.Empty<ITaskItem>();
     public bool InvariantGlobalization { get; set; }
+    public ITaskItem[] FilesToIncludeInFileSystem { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraFilesToDeploy { get; set; } = Array.Empty<ITaskItem>();
 
     public string? DefaultHostConfig { get; set; }
@@ -64,6 +66,25 @@ public abstract class WasmAppBuilderBaseTask : Task
     }
 
     protected abstract bool ExecuteInternal();
+
+    protected virtual bool ValidateArguments() => true;
+
+    protected void ProcessSatelliteAssemblies(Action<(string fullPath, string culture)> addSatelliteAssemblyFunc)
+    {
+        foreach (var assembly in SatelliteAssemblies)
+        {
+            string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
+            string fullPath = assembly.GetMetadata("Identity");
+            if (string.IsNullOrEmpty(culture))
+            {
+                Log.LogWarning(null, "WASM0002", "", "", 0, 0, 0, 0, $"Missing CultureName metadata for satellite assembly {fullPath}");
+                continue;
+            }
+
+            // FIXME: validate the culture?
+            addSatelliteAssemblyFunc((fullPath, culture));
+        }
+    }
 
     protected virtual void UpdateRuntimeConfigJson()
     {

@@ -5,6 +5,7 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-types.h"
+#include "ep-rt.h"
 
 #undef EP_IMPL_GETTER_SETTER
 #ifdef EP_IMPL_STREAM_GETTER_SETTER

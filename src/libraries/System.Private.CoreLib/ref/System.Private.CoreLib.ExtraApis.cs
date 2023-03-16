@@ -37,19 +37,3 @@ namespace System.Diagnostics
         public static System.Diagnostics.DebugProvider SetProvider(System.Diagnostics.DebugProvider provider) { throw null; }
     }
 }
-namespace System.Runtime.Intrinsics.X86
-{
-    public abstract partial class X86Base
-    {
-        public abstract partial class X64
-        {
-            public static (ulong Quotient, ulong Remainder) DivRem(ulong lower, ulong upper, ulong divisor) { throw null; }
-            public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) { throw null; }
-        }
-
-        public static (uint Quotient, uint Remainder) DivRem(uint lower, uint upper, uint divisor) { throw null; }
-        public static (int Quotient, int Remainder) DivRem(uint lower, int upper, int divisor) { throw null; }
-        public static (nuint Quotient, nuint Remainder) DivRem(nuint lower, nuint upper, nuint divisor) { throw null; }
-        public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw null; }
-    }
-}

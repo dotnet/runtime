@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
@@ -115,6 +116,7 @@ namespace System
         /// Indicates whether the current application is running on the specified platform.
         /// </summary>
         /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsOSPlatform(string platform)
         {
             ArgumentNullException.ThrowIfNull(platform);
@@ -150,7 +152,6 @@ namespace System
             false;
 #endif
 
-/* TODO https://github.com/dotnet/runtime/issues/78389
         /// <summary>
         /// Indicates whether the current application is running as WASI.
         /// </summary>
@@ -161,7 +162,6 @@ namespace System
 #else
             false;
 #endif
-*/
 
         /// <summary>
         /// Indicates whether the current application is running on Linux.

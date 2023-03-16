@@ -23,6 +23,11 @@ inline static bool isDoubleReg(regNumber reg)
     return isFloatReg(reg);
 }
 
+inline static bool isMaskReg(regNumber reg)
+{
+    return (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST);
+}
+
 /************************************************************************/
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
@@ -96,6 +101,7 @@ static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
+static bool IsKInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
@@ -127,8 +133,10 @@ bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumbe
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
 
+#ifdef TARGET_64BIT
 bool AreUpper32BitsZero(regNumber reg);
 bool AreUpper32BitsSignExtended(regNumber reg);
+#endif // TARGET_64BIT
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
@@ -283,6 +291,11 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vfnmsub231sd:
         case INS_unpcklpd:
         case INS_vpermilpdvar:
+        case INS_movdqa64:
+        case INS_movdqu16:
+        case INS_movdqu64:
+        case INS_vinsertf64x4:
+        case INS_vinserti64x4:
         {
             return true; // W1
         }
@@ -396,6 +409,11 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vpdpbusds:
         case INS_vpdpwssds:
         case INS_vpermilpsvar:
+        case INS_movdqa32:
+        case INS_movdqu8:
+        case INS_movdqu32:
+        case INS_vinsertf32x8:
+        case INS_vinserti32x8:
         {
             return false; // W0
         }
@@ -612,14 +630,14 @@ void SetContainsAVX(bool value)
     containsAVXInstruction = value;
 }
 
-bool contains256bitAVXInstruction = false;
-bool Contains256bitAVX()
+bool contains256bitOrMoreAVXInstruction = false;
+bool Contains256bitOrMoreAVX()
 {
-    return contains256bitAVXInstruction;
+    return contains256bitOrMoreAVXInstruction;
 }
-void SetContains256bitAVX(bool value)
+void SetContains256bitOrMoreAVX(bool value)
 {
-    contains256bitAVXInstruction = value;
+    contains256bitOrMoreAVXInstruction = value;
 }
 
 bool IsDstDstSrcAVXInstruction(instruction ins);
@@ -659,6 +677,7 @@ void emitDispShift(instruction ins, int cnt = 0);
 
 const char* emitXMMregName(unsigned reg);
 const char* emitYMMregName(unsigned reg);
+const char* emitZMMregName(unsigned reg);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -719,14 +738,12 @@ void emitAdjustStackDepth(instruction ins, ssize_t val);
 inline emitter::opSize emitEncodeScale(size_t scale)
 {
     assert(scale == 1 || scale == 2 || scale == 4 || scale == 8);
-
-    return emitSizeEncode[scale - 1];
+    return static_cast<emitter::opSize>(genLog2(static_cast<unsigned>(scale)));
 }
 
 inline emitAttr emitDecodeScale(unsigned ensz)
 {
     assert(ensz < 4);
-
     return emitter::emitSizeDecode[ensz];
 }
 

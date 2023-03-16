@@ -222,7 +222,7 @@ private:
     {
 #if defined(FEATURE_SIMD)
 #if defined(TARGET_XARCH)
-        TEMP_MAX_SIZE = YMM_REGSIZE_BYTES,
+        TEMP_MAX_SIZE = ZMM_REGSIZE_BYTES,
 #elif defined(TARGET_ARM64)
         TEMP_MAX_SIZE = FP_REGSIZE_BYTES,
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)

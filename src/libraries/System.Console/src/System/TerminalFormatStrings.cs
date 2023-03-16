@@ -211,7 +211,7 @@ internal sealed class TerminalFormatStrings
             case "konsole":
                 return "\x1B]30;%p1%s\x07";
             case "screen":
-                return "\x1Bk%p1%s\x1B";
+                return "\x1Bk%p1%s\x1B\\";
             default:
                 return string.Empty;
         }

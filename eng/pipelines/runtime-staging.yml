@@ -36,7 +36,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -102,3 +101,5 @@ extends:
               extraStepsParameters:
                 creator: dotnet-bot
                 testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              extraVariablesTemplates:
+                - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

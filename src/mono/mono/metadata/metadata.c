@@ -5524,7 +5524,8 @@ guint
 mono_metadata_str_hash (gconstpointer v1)
 {
 	/* Same as g_str_hash () in glib */
-	char *p = (char *) v1;
+	/* note: signed/unsigned char matters - we feed UTF-8 to this function, so the high bit will give diferent results if we don't match. */
+	unsigned char *p = (unsigned char *) v1;
 	guint hash = *p;
 
 	while (*p++) {

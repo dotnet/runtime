@@ -11,10 +11,10 @@ namespace System.Reflection
     internal sealed unsafe class MdFieldInfo : RuntimeFieldInfo
     {
         #region Private Data Members
-        private int m_tkField;
+        private readonly int m_tkField;
         private string? m_name;
         private RuntimeType? m_fieldType;
-        private FieldAttributes m_fieldAttributes;
+        private readonly FieldAttributes m_fieldAttributes;
         #endregion
 
         #region Constructor

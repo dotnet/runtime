@@ -571,6 +571,7 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
 
     // Retrieve the IErrorInfo to use.
     IErrorInfo *pErrorInfo = (IErrorInfo*)errorInfo;
+#ifdef FEATURE_COMINTEROP
     if (pErrorInfo == (IErrorInfo*)(-1))
     {
         pErrorInfo = NULL;
@@ -581,6 +582,7 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
             pErrorInfo = NULL;
     }
 
+#endif // FEATURE_COMINTEROP
     ::GetExceptionForHR(errorCode, pErrorInfo, &RetExceptionObj);
 
     HELPER_METHOD_FRAME_END();
@@ -589,6 +591,7 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
 }
 FCIMPLEND
 
+#ifdef FEATURE_COMINTEROP
 FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 {
     CONTRACTL {
@@ -608,7 +611,6 @@ FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 }
 FCIMPLEND
 
-#ifdef FEATURE_COMINTEROP
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
