@@ -21053,6 +21053,13 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
                 intrinsic = NI_Vector256_op_Inequality;
             }
+            else if (simdSize == 64)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+                intrinsic = NI_Vector512_op_Inequality;
+            }
             else
             {
                 intrinsic = NI_Vector128_op_Inequality;

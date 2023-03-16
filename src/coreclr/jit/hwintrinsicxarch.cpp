@@ -1417,6 +1417,24 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector512_EqualsAny:
+        {
+            assert(sig->numArgs == 2);
+            assert(simdSize == 64);
+
+            if (IsBaselineVector512IsaSupported())
+            {
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
+                op2 = impSIMDPopStack(simdType);
+                op1 = impSIMDPopStack(simdType);
+
+                retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
+                                                /* isSimdAsHWIntrinsic */ false);
+            }
+            break;
+        }
+
         case NI_Vector128_EqualsAny:
         case NI_Vector256_EqualsAny:
         {
