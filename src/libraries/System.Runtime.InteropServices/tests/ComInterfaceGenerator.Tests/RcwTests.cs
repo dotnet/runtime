@@ -37,7 +37,7 @@ public static unsafe partial class Native
 
 public class RcwTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/83289")]
+    [Fact]
     public unsafe void CallRcwFromGeneratedComInterface()
     {
         var ptr = Native.NewNativeObject(); // new_native_object
