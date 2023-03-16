@@ -977,10 +977,11 @@ PhaseStatus Promotion::Run()
                 assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
                 if (rep.NeedsReadBack)
                 {
-                    JITDUMP("Reading back dirty replacement V%02.[%03u..%03u) -> V%02u at the end of " FMT_BB "\n",
+                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u at the end of " FMT_BB "\n",
                         i,
                         rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
-                        rep.LclNum);
+                        rep.LclNum,
+                        bb->bbNum);
 
                     GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
                     GenTree* src = m_compiler->gtNewLclFldNode(i, rep.AccessType, rep.Offset);
