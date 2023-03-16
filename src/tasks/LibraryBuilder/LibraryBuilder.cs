@@ -19,6 +19,7 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private string cmakeProjectLanguages = "";
     private string targetOS = "";
+    private bool usesAOTDataFile;
     private List<string> exportedAssemblies = new List<string>();
 
     /// <summary>
@@ -160,6 +161,11 @@ public class LibraryBuilderTask : AppBuilderTask
                 aotSources.AppendLine($"    {compiledAssembly.AssemblerFile}");
             }
 
+            if (!usesAOTDataFile && !string.IsNullOrEmpty(compiledAssembly.DataFile))
+            {
+                usesAOTDataFile = true;
+            }
+
             if (!string.IsNullOrEmpty(compiledAssembly.LlvmObjectFile))
             {
                 aotObjects.AppendLine($"    {compiledAssembly.LlvmObjectFile}");
@@ -279,6 +285,7 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private void WriteCMakeFileFromTemplate(string aotSources, string aotObjects, string extraSources, string linkerArgs)
     {
+        string extraDefinitions = GenerateExtraDefinitions();
         // BundleDir
         File.WriteAllText(Path.Combine(OutputDirectory, "CMakeLists.txt"),
             Utils.GetEmbeddedResource("CMakeLists.txt.template")
@@ -288,8 +295,21 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%MonoInclude%", MonoRuntimeHeaders)
                 .Replace("%AotSources%", aotSources)
                 .Replace("%AotObjects%", aotObjects)
+                .Replace("%ExtraDefinitions%", extraDefinitions)
                 .Replace("%ExtraSources%", extraSources)
                 .Replace("%LIBRARY_LINKER_ARGS%", linkerArgs));
+    }
+
+    private string GenerateExtraDefinitions()
+    {
+        var extraDefinitions = new StringBuilder();
+
+        if (usesAOTDataFile)
+        {
+            extraDefinitions.AppendLine("add_definitions(-DUSES_AOT_DATA=1)");
+        }
+
+        return extraDefinitions.ToString();
     }
 
     private string BuildLibrary()

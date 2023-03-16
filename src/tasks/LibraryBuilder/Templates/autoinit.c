@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#if defined(USES_AOT_DATA)
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
@@ -60,15 +65,59 @@ initialize_appctx_env_variables (const char *bundle_path)
     appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
     appctx_values[1] = bundle_path;
 
-    monovm_initialize(2, appctx_keys, appctx_values);
+    monovm_initialize (2, appctx_keys, appctx_values);
 }
+
+#if defined(USES_AOT_DATA)
+static unsigned char *
+load_aot_data (MonoAssembly *assembly, int size, void *user_data, void **out_handle)
+{
+    *out_handle = NULL;
+    const char *bundle_path = (const char*)user_data;
+
+    MonoAssemblyName *assembly_name = mono_assembly_get_name (assembly);
+    const char *aname = mono_assembly_name_get_name (assembly_name);
+
+    size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (aname) + 10); // +1 "/", +8 ".aotdata", +1 null-terminating char
+    char *file_path = (char *)malloc (str_len);
+    if (!file_path)
+        LOG_ERROR ("Out of memory.\n");
+
+    int res = snprintf (file_path, str_len, "%s/%s.aotdata", bundle_path, aname);
+    if (res <= 0 || res >= str_len)
+        LOG_ERROR ("Encoding error while formatting '%s' and '%s' into \"%%s/%%s\".\n", bundle_path, aname);
+
+    int fd = open (file_path, O_RDONLY);
+    if (fd < 0)
+        LOG_ERROR ("Could not open file '%s'.\n", file_path);
+
+    void *ptr = mmap (NULL, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
+    close (fd);
+    if (ptr == MAP_FAILED)
+        LOG_ERROR ("Could not map file '%s' to memory.\n", file_path);
+
+    *out_handle = ptr;
+    return (unsigned char *) ptr;
+}
+
+static void
+free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
+{
+    munmap (handle, size);
+}
+#endif
 
 static void
 runtime_init_callback ()
 {
-    const char *bundle_path = getenv("%ASSEMBLIES_LOCATION%");
-    if (!bundle_path || bundle_path[0] == '\0')
-        bundle_path = "./";
+    const char *assemblies_location = getenv ("%ASSEMBLIES_LOCATION%");
+    if (!assemblies_location || assemblies_location[0] == '\0')
+        assemblies_location = "./";
+
+    // Don't free as load_aot_data may be called later on, if used.
+    const char *bundle_path = strdup (assemblies_location);
+    if (!bundle_path)
+        LOG_ERROR ("Out of memory.\n");
 
     initialize_runtimeconfig (bundle_path);
 
@@ -79,6 +128,10 @@ runtime_init_callback ()
     mono_set_assemblies_path (bundle_path);
 
     mono_jit_set_aot_only (true);
+
+#if defined(USES_AOT_DATA)
+    mono_install_load_aot_data_hook (load_aot_data, free_aot_data, bundle_path);
+#endif
 
     mono_set_signal_chaining (true);
 
