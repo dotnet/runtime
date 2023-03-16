@@ -12,10 +12,10 @@
 
     <PackageFile Include="Sdk\AutoImport.props" TargetPath="Sdk" />
     <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\android\build\AndroidApp.props" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\android\build\AndroidApp.targets" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\apple\build\AppleApp.props" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\apple\build\AppleApp.targets" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\android\build\AndroidBuild.props" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\android\build\AndroidBuild.targets" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\apple\build\AppleBuild.props" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\apple\build\AppleBuild.targets" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\LibraryBuilder.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\LibraryBuilder.targets" TargetPath="Sdk" />
   </ItemGroup>

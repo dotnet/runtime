@@ -41,8 +41,8 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <AppleAppDir Condition="'$(AndroidAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(PublishDir)))</AppleAppDir>
-      <AppleAppBundleDir Condition="'$(AndroidAppBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</AppleAppBundleDir>
+      <AppleAppDir Condition="'$(AppleAppDir)' == ''">$([MSBuild]::NormalizeDirectory($(PublishDir)))</AppleAppDir>
+      <AppleAppBundleDir Condition="'$(AppleAppBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</AppleAppBundleDir>
 
       <BundleDir>$(AppleAppBundleDir)</BundleDir>
       <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>

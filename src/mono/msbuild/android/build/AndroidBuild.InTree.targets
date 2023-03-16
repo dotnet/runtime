@@ -5,7 +5,7 @@
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <Import Project="..\..\common\LibraryBuilder.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)AndroidApp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)AndroidBuild.targets" />
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->

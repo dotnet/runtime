@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <Import Project="$(_LibraryTargetsDir)LibraryBuilder.props" Condition="Exists('$(_LibraryTargetsDir)LibraryBuilder.props')" />
-  <Import Project="$(_AppleTargetsDir)AppleApp.LocalBuild.props" Condition="Exists('$(_AppleTargetsDir)AppleApp.LocalBuild.props')" />
+  <Import Project="$(_AppleTargetsDir)AppleBuild.LocalBuild.props" Condition="Exists('$(_AppleTargetsDir)AppleBuild.LocalBuild.props')" />
   <PropertyGroup>
     <AppleBuildAppDependsOn>PrepareForAppleBuild;$(AppleBuildAppDependsOn)</AppleBuildAppDependsOn>
   </PropertyGroup>

@@ -4,8 +4,8 @@
   </PropertyGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" /> 
-  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidApp.props" />
-  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidApp.InTree.targets" />
+  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
+  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets" />
 
   <PropertyGroup>
     <AndroidBuildAppDependsOn>PrepareForAndroidBuildApp;$(AndroidBuildAppDependsOn);_CopyTestArchive</AndroidBuildAppDependsOn>

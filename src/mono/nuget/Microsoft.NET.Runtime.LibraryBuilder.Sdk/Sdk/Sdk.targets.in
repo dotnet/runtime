@@ -14,10 +14,10 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\LibraryBuilder.props" />
-  <Import Condition="'$(TargetsAndroid)' == 'true'" Project="$(MSBuildThisFileDirectory)\AndroidApp.props" />
-  <Import Condition="'$(TargetsAppleMobile)' == 'true'" Project="$(MSBuildThisFileDirectory)\AppleApp.props" />
+  <Import Condition="'$(TargetsAndroid)' == 'true'" Project="$(MSBuildThisFileDirectory)\AndroidBuild.props" />
+  <Import Condition="'$(TargetsAppleMobile)' == 'true'" Project="$(MSBuildThisFileDirectory)\AppleBuild.props" />
   
   <Import Project="$(MSBuildThisFileDirectory)\LibraryBuilder.targets" />
-  <Import Condition="'$(TargetsAndroid)' == 'true'" Project="$(MSBuildThisFileDirectory)\AndroidApp.targets" />
-  <Import Condition="'$(TargetsAppleMobile)' == 'true'" Project="$(MSBuildThisFileDirectory)\AppleApp.targets" />
+  <Import Condition="'$(TargetsAndroid)' == 'true'" Project="$(MSBuildThisFileDirectory)\AndroidBuild.targets" />
+  <Import Condition="'$(TargetsAppleMobile)' == 'true'" Project="$(MSBuildThisFileDirectory)\AppleBuild.targets" />
 </Project>

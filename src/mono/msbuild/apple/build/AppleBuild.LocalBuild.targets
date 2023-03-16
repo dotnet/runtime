@@ -1,5 +1,5 @@
 <!--
-    AppleApp.LocalBuild* files are meant for projects that want to use
+    AppleBuild.LocalBuild* files are meant for projects that want to use
     a local build of `dotnet/runtime` repo.
 
     Two ways to use this:
@@ -20,7 +20,7 @@
         $(AppleBuildSupportDir)
 -->
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)AppleApp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)AppleBuild.targets" />
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
