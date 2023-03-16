@@ -8,6 +8,7 @@
 #include "pal_locale_internal.h"
 #include "pal_errors_internal.h"
 #include "pal_calendarData.h"
+#include "minipal/utils.h"
 
 #if defined(TARGET_UNIX)
 #include <strings.h>
@@ -421,7 +422,7 @@ static int32_t EnumAbbrevEraNames(const char* locale,
     char localeNameBuf[ULOC_FULLNAME_CAPACITY];
     char parentNameBuf[ULOC_FULLNAME_CAPACITY];
 
-    STRING_COPY(localeNameBuf, sizeof(localeNameBuf), locale);
+    STRING_COPY(localeNameBuf, STRING_LENGTH(localeNameBuf), locale);
 
     char* localeNamePtr = localeNameBuf;
     char* parentNamePtr = parentNameBuf;

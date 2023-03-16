@@ -18,6 +18,10 @@
       <CrossDir Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel'">x64</CrossDir>
       <CrossDir Condition="'$(TargetArchitecture)' == 'x86'">$(BuildArchitecture)</CrossDir>
     </PropertyGroup>
+    <!-- If we're building a sanitized build, we need to use an unsanitized build of crossgen2's native components since we run crossgen2 here with a non-sanitized dotnet host. -->
+    <PropertyGroup Condition="'$(BuildArchitecture)' == '$(TargetArchitecture)' and '$(EnableNativeSanitizers)' != ''">
+      <CrossDir>$(BuildArchitecture)</CrossDir>
+    </PropertyGroup>
 
     <PropertyGroup>
       <BuildDll>true</BuildDll>

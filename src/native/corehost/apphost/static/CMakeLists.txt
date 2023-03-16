@@ -244,3 +244,8 @@ target_link_libraries(
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
 )
+
+if (CLR_CMAKE_ENABLE_ASAN)
+    target_sources(singlefilehost
+        PRIVATE "$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SRC_NATIVE_DIR}/minipal/asansupport.cpp>")
+endif()

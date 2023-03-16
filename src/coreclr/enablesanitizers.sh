@@ -9,8 +9,7 @@ if [ $# -eq 0 ]; then
     else
         echo " cd $(dirname $0);. enablesanitizers.sh [options]; cd -"
     fi
-    echo "Usage: [asan] [ubsan] [lsan] [all] [off] [clangx.y]"
-    echo " asan: optional argument to enable Address Sanitizer."
+    echo "Usage: [ubsan] [lsan] [all] [off] [clangx.y]"
     echo " ubsan: optional argument to enable Undefined Behavior Sanitizer."
     echo " lsan - optional argument to enable memory Leak Sanitizer."
     echo " all - optional argument to enable asan, ubsan and lsan."
@@ -21,7 +20,6 @@ else
     __ClangMajorVersion=3
     __ClangMinorVersion=6
 
-    __EnableASan=0
     __EnableUBSan=0
     __EnableLSan=0
     __TurnOff=0
@@ -32,18 +30,13 @@ else
         do
             lowerI="$(echo $i | tr "[:upper:]" "[:lower:]")"
             case $lowerI in
-            asan)
-                __EnableASan=1
-                ;;
             ubsan)
                 __EnableUBSan=1
                 ;;
             lsan)
-                __EnableASan=1
                 __EnableLSan=1
                 ;;
             all)
-                __EnableASan=1
                 __EnableUBSan=1
                 __EnableLSan=1
                 ;;
@@ -83,22 +76,16 @@ else
         unset DEBUG_SANITIZERS
         echo "Setting DEBUG_SANITIZERS="
     else
-        # for now, specify alloc_dealloc_mismatch=0 as there are too many error reports that are not an issue.
-        # Also specify use_sigaltstack=0 as coreclr uses own alternate stack for signal handlers
-        ASAN_OPTIONS="symbolize=1 alloc_dealloc_mismatch=0 use_sigaltstack=0"
         # when Clang 3.8 available, add: suppressions=$(readlink -f sanitizersuppressions.txt)
         UBSAN_OPTIONS="print_stacktrace=1"
 
-        if [[ "$__EnableASan" == 1 ]]; then
-            __Options="$__Options asan"
-        fi
-        if [[ "$__EnableUBSan" == 1 ]]; then
+        if [ $__EnableUBSan == 1 ]; then
             __Options="$__Options ubsan"
         fi
-        if [[ "$__EnableLSan" == 1 ]]; then
-            ASAN_OPTIONS="$ASAN_OPTIONS detect_leaks=1"
+        if [ $__EnableLSan == 1 ]; then
+            LSAN_OPTIONS="detect_leaks=1"
         else
-            ASAN_OPTIONS="$ASAN_OPTIONS detect_leaks=0"
+            LSAN_OPTIONS="detect_leaks=0"
         fi
 
         # passed to build.sh
@@ -128,7 +115,6 @@ else
 
     unset __ClangMajorVersion
     unset __ClangMinorVersion
-    unset __EnableASan
     unset __EnableUBSan
     unset __EnableLSan
     unset __TurnOff

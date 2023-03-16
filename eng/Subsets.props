@@ -276,6 +276,20 @@
       Category="clr" />
   </ItemGroup>
 
+  <!-- Build the cross-arch tools of CoreCLR for the same target architecture as an unsanitized build whenever we build a sanitized coreclr build. -->
+  <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' and '$(EnableNativeSanitizers)' != ''">
+    <ProjectToBuild
+      Include="$(CoreClrProjectRoot)runtime.proj"
+      AdditionalProperties="%(AdditionalProperties);
+                            ClrCrossComponentsSubset=true;
+                            PgoInstrument=false;
+                            NoPgoOptimize=true;
+                            CrossBuild=false;
+                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
+      UndefineProperties="EnableNativeSanitizers"
+      Category="clr" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(_subset.Contains('+clr.paltestlist+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)pal/tests/palsuite/producepaltestlist.proj" />
   </ItemGroup>
@@ -326,7 +340,7 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
 
     <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(TargetArchitecture)' != '$(BuildArchitecture)'" Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_crossarch.csproj" Category="clr" />
-    <ProjectToBuild Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+    <ProjectToBuild Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
 
     <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'osx'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
   </ItemGroup>
@@ -367,7 +381,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
     <!-- Build crossgen2 that will be used to compile System.Private.CoreLib library for CoreCLR -->
-    <ProjectToBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+    <ProjectToBuild Condition="('$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64') or '$(EnableNativeSanitizers)' != ''" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
     <ProjectToBuild Condition="!('$(TargetArchitecture)' != 'x64' and '$(BuildArchitecture)' == 'x64')" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
   </ItemGroup>

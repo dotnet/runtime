@@ -4,13 +4,14 @@ set(SOURCES
     ../main.cpp
 )
 
-add_library(bootstrapper STATIC ${SOURCES})
+add_library(bootstrapper OBJECT ${SOURCES})
+set_target_properties(bootstrapper PROPERTIES OUTPUT_NAME bootstrapper)
 
-install_static_library(bootstrapper aotsdk nativeaot)
+install_bootstrapper_object(bootstrapper aotsdk)
 
 if (CLR_CMAKE_TARGET_WIN32)
-  add_library(bootstrapper.GuardCF STATIC ${SOURCES})
-  install_static_library(bootstrapper.GuardCF aotsdk nativeaot)
+  add_library(bootstrapper.GuardCF OBJECT ${SOURCES})
+  install_bootstrapper_object(bootstrapper.GuardCF aotsdk)
   target_compile_options(bootstrapper.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
 else()
   add_library(stdc++compat STATIC ../stdcppshim.cpp)

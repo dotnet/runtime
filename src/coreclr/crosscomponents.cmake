@@ -6,13 +6,7 @@ if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
         COMPONENT crosscomponents
     )
 
-    if (CLR_CMAKE_TARGET_OSX AND ARCH_TARGET_NAME STREQUAL arm64)
-        install_clr (TARGETS
-            clrjit_universal_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME}
-            DESTINATIONS .
-            COMPONENT crosscomponents
-        )
-    elseif (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
+    if (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
         install_clr (TARGETS
             clrjit_universal_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME}
             DESTINATIONS .
@@ -31,9 +25,21 @@ if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
             COMPONENT crosscomponents
         )
     endif()
+
+    if (CLR_CMAKE_HOST_ARCH STREQUAL CLR_CMAKE_TARGET_ARCH)
+        install_clr (TARGETS
+            mscordaccore
+            mscordbi
+            DESTINATIONS .
+            COMPONENT crosscomponents
+        )
+    endif()
 endif()
 
-if(NOT CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_APPLE AND NOT FEATURE_CROSSBITNESS)
+# We support the DAC as a cross-component for a few specific cases:
+# - Same OS and architecture, sanitized runtime with unsanitized DAC
+# - Windows Host OS, any target OS, different architectures with the same bitness
+if((NOT CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_APPLE AND NOT FEATURE_CROSSBITNESS) OR (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS AND CLR_CMAKE_HOST_ARCH STREQUAL CLR_CMAKE_TARGET_ARCH))
     install_clr (TARGETS
         mscordaccore
         mscordbi

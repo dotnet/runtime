@@ -42,6 +42,7 @@
   <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
           Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 
   <Target Name="RewriteRuntimePackDir"
           Condition="'$(_IsPublishing)' == 'true'"

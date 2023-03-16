@@ -748,7 +748,14 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
     if (offs >= StressMsg::maxOffset)
     {
 #ifdef _DEBUG
+        // ASAN-TODO: An ASAN-enabled CoreCLR is too large and it's size exceeds Stress:Msg::maxOffset
+        // Don't force a debugger breakpoint here, otherwise we'll hit this every time we run
+        // tests on an ASAN-based CoreCLR.
+        // Consider revving the StressLog format (and SOS) versions to make the StressLog more reliable for larger
+        // module cases.
+#ifndef HAS_ADDRESS_SANITIZER
         DebugBreak(); // in lieu of the above _ASSERTE
+#endif // HAS_ADDRESS_SANITIZER
 #endif // _DEBUG
 
         // Set it to this string instead.

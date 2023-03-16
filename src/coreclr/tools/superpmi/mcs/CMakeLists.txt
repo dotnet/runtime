@@ -3,11 +3,6 @@ project(mcs)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 
-if(CLR_CMAKE_HOST_WIN32)
-  #use static crt
-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
-endif(CLR_CMAKE_HOST_WIN32)
-
 include_directories(.)
 include_directories(../superpmi-shared)
 

@@ -618,7 +618,7 @@ protected:
 
 private:
 
-    BOOL UsesAllocatedMemory(CMiniColDef* pCols);
+    BOOL DISABLE_ASAN UsesAllocatedMemory(CMiniColDef* pCols);
 };
 
 

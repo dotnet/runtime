@@ -8,10 +8,6 @@ add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>:FEATURE_METAD
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>:FEATURE_METADATA_RELEASE_MEMORY_ON_REOPEN>)
 add_compile_definitions($<$<NOT:$<OR:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>,$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>>>:FEATURE_METADATA_VERIFY_LAYOUTS>)
 
-if (CLR_CMAKE_HOST_WIN32)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<AND:$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>,$<CONFIG:DEBUG>>:Debug>)
-endif()
-
 add_subdirectory(compiler)
 add_subdirectory(runtime)
 add_subdirectory(enc)

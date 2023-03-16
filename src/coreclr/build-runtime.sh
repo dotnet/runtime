@@ -23,6 +23,7 @@ usage_list+=("-pgoinstrument: generate instrumented code for profile guided opti
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
 usage_list+=("-staticanalyzer: use scan_build static analyzer.")
 usage_list+=("-component: Build individual components instead of the full project. Available options are 'hosts', 'jit', 'runtime', 'paltests', 'alljits', 'iltools', 'nativeaot', and 'spmi'. Can be specified multiple times.")
+usage_list+=("-forcearchdir: Append a directory with the name of the host architecture to the intermediate and output paths.")
 
 setup_dirs_local()
 {
@@ -53,6 +54,11 @@ handle_arguments_local() {
             __RequestedBuildComponents="$__RequestedBuildComponents $2"
             __ShiftArgs=1
             ;;
+
+        forcearchdir|-forcearchdir)
+            __ForceArchDir=1
+            ;;
+
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;
@@ -98,6 +104,7 @@ __UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __RequestedBuildComponents=""
+__ForceArchDir=0
 
 source "$__ProjectRoot"/_build-commons.sh
 
@@ -114,7 +121,7 @@ __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
 
-if [[ "$__TargetArch" != "$__HostArch" ]]; then
+if [[ "$__TargetArch" != "$__HostArch" || $__ForceArchDir == 1 ]]; then
     __IntermediatesDir="$__IntermediatesDir/$__HostArch"
     __BinDir="$__BinDir/$__HostArch"
 fi

@@ -217,6 +217,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
                   testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -253,6 +254,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
                   testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -292,6 +294,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
                   testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),

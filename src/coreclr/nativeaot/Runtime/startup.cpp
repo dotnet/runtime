@@ -377,7 +377,7 @@ bool InitGSCookie()
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef FEATURE_READONLY_GS_COOKIE
-    // The GS cookie is stored in a read only data segment    
+    // The GS cookie is stored in a read only data segment
     if (!PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE))
     {
         return false;
@@ -464,7 +464,7 @@ static void UninitDLL()
 #ifdef _WIN32
 // This is set to the thread that initiates and performs the shutdown and may run
 // after other threads are rudely terminated. So far this is a Windows-specific concern.
-// 
+//
 // On POSIX OSes a process typically lives as long as any of its threads are alive or until
 // the process is terminated via `exit()` or a signal. Thus there is no such distinction
 // between threads.

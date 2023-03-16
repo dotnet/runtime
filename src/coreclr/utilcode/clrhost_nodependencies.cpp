@@ -12,12 +12,6 @@
 #include "clrnt.h"
 #include "contract.h"
 
-#if defined __llvm__
-#  if defined(__has_feature) && __has_feature(address_sanitizer)
-#    define HAS_ADDRESS_SANITIZER
-#  endif
-#endif
-
 #ifdef _DEBUG_IMPL
 
 //
@@ -38,10 +32,6 @@ void DisableThrowCheck()
     dbg_fDisableThrowCheck = TRUE;
 }
 
-#ifdef HAS_ADDRESS_SANITIZER
-// use the functionality from address sanitizer (which does not throw exceptions)
-#else
-
 #define CLRThrowsExceptionWorker() RealCLRThrowsExceptionWorker(__FUNCTION__, __FILE__, __LINE__)
 
 static void RealCLRThrowsExceptionWorker(_In_z_ const char *szFunction,
@@ -58,7 +48,6 @@ static void RealCLRThrowsExceptionWorker(_In_z_ const char *szFunction,
     CONTRACT_THROWSEX(szFunction, szFile, lineNum);
 }
 
-#endif // HAS_ADDRESS_SANITIZER
 #endif //_DEBUG_IMPL
 
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS_IMPL)

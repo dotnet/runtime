@@ -108,6 +108,7 @@
                                                  .Replace('{MicrosoftNetCoreAppFrameworkName}', '$(MicrosoftNetCoreAppFrameworkName)')
                                                  .Replace('{MicrosoftNetCoreAppRefPackDir}', '$(MicrosoftNetCoreAppRefPackDir)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)')
+                                                 .Replace('{NativeSanitizersTargets}', '$(RepositoryEngineeringDir)nativeSanitizers.targets')
                                                  .Replace('{AppHostSourcePath}', '$(AppHostSourcePath)')
                                                  .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)'))"
                       Overwrite="true" />

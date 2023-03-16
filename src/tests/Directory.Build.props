@@ -19,6 +19,7 @@
 
   <PropertyGroup>
     <AltJitArch>$(__AltJitArch)</AltJitArch>
+    <EnableNativeSanitizers Condition="'$(__EnableNativeSanitizers)' != ''">$(__EnableNativeSanitizers)</EnableNativeSanitizers>
   </PropertyGroup>
 
   <!-- Output paths -->

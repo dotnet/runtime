@@ -1,5 +1,6 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+
 if(CLR_CMAKE_HOST_WIN32)
     # remove /ltcg from resource-only libraries
     string(REPLACE "/LTCG" "" CMAKE_SHARED_LINKER_FLAGS_RELEASE ${CMAKE_SHARED_LINKER_FLAGS_RELEASE})

@@ -19,7 +19,7 @@ function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)
   set(multiValueArgs DESTINATIONS)
-  cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  cmake_parse_arguments(TARGETDETAILS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx")
     if (NOT (TARGETDETAILS_ARCH STREQUAL "arm64"))
@@ -494,40 +494,41 @@ endif()
 
 add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
-set(JIT_LINK_LIBRARIES
-   utilcodestaticnohost
-)
-
-set(JIT_ARCH_LINK_LIBRARIES
-   gcinfo
-)
-
-if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND JIT_LINK_LIBRARIES
-       mscorrc
-       coreclrpal
-    )
-else()
-    list(APPEND JIT_LINK_LIBRARIES
-       ${STATIC_MT_CRT_LIB}
-       ${STATIC_MT_VCRT_LIB}
-       kernel32.lib
-       advapi32.lib
-       ole32.lib
-       oleaut32.lib
-       uuid.lib
-       user32.lib
-       version.lib
-       shlwapi.lib
-       bcrypt.lib
-       crypt32.lib
-       RuntimeObject.lib
-    )
-endif(CLR_CMAKE_HOST_UNIX)
-
 # Shared function for generating JIT
 # optional arguments: DESTINATIONS path
 function(add_jit jitName)
+    set(options "")
+    set(oneValueArgs "")
+    set(multiValueArgs DESTINATIONS)
+    cmake_parse_arguments(ADD_JIT "${options}" "${oneValueArgs}"
+                          "${multiValueArgs}" ${ARGN} )
+
+    set(JIT_LINK_LIBRARIES
+      utilcodestaticnohost
+    )
+
+    if(CLR_CMAKE_HOST_UNIX)
+        list(APPEND JIT_LINK_LIBRARIES
+          mscorrc
+          coreclrpal
+        )
+    else()
+        list(APPEND JIT_LINK_LIBRARIES
+          ${STATIC_MT_CRT_LIB}
+          ${STATIC_MT_VCRT_LIB}
+          kernel32.lib
+          advapi32.lib
+          ole32.lib
+          oleaut32.lib
+          uuid.lib
+          user32.lib
+          version.lib
+          shlwapi.lib
+          bcrypt.lib
+          crypt32.lib
+          RuntimeObject.lib
+        )
+    endif(CLR_CMAKE_HOST_UNIX)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
 
@@ -578,7 +579,7 @@ function(add_jit jitName)
     endif()
 
     # add the install targets
-    install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
+    install_clr(TARGETS ${jitName} COMPONENT alljits DESTINATIONS ${ADD_JIT_DESTINATIONS})
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -619,7 +620,6 @@ create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DE
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
   create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
-
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_RISCV64)
     if (NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6 AND NOT ARCH_TARGET_NAME STREQUAL ppc64le)
       if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)

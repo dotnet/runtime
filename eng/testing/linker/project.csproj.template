@@ -56,4 +56,5 @@
                       IsImplicitlyDefined="true" />
   </ItemGroup>
 
+  <Import Project="{NativeSanitizersTargets}" />
 </Project>

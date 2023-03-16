@@ -11,6 +11,9 @@ include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
 
+# Set up build flags for sanitizers
+add_sanitizers_to_all_targets()
+
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(${CLR_REPO_ROOT_DIR}/src/coreclr/pal/prebuilt/inc ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/pal/prebuilt/inc)
 

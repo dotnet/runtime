@@ -39,3 +39,8 @@ else(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 install_clr(TARGETS corerun DESTINATIONS . COMPONENT hosts)
+
+# If there's a dynamic ASAN runtime, then install it in the directory where we put our executable.
+if (NOT "${ASAN_RUNTIME}" STREQUAL "")
+    install(FILES ${ASAN_RUNTIME} DESTINATION .)
+endif()

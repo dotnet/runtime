@@ -14,8 +14,9 @@
           DependsOnTargets="GetPgoDataPackagePath"
           BeforeTargets="Build">
     <ItemGroup>
+      <_CMakeArgs Include="$(CMakeArgs)" />
+      <_CoreClrBuildArg Include="@(_CMakeArgs->'-cmakeargs &quot;%(Identity)&quot;')" />
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
-      <_CoreClrBuildArg Condition="'$(CMakeArgs)' != ''" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Include="$(Compiler)" />
       <_CoreClrBuildArg Condition="'$(ConfigureOnly)' == 'true'" Include="-configureonly" />
@@ -37,6 +38,8 @@
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
       <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
       <_CoreClrBuildArg Condition="'$(HostArchitecture)' != ''" Include="-hostarch $(HostArchitecture)" />
+      <_CoreClrBuildArg Condition="('$(HostArchitecture)' == '' or '$(HostArchitecture)' == '$(TargetArchitecture)') and '$(ClrCrossComponentsSubset)' == 'true'" Include="-forcearchdir" />
+      <_CoreClrBuildArg Condition="'$(EnableNativeSanitizers)' != ''" Include="-fsanitize $(EnableNativeSanitizers)" />
       <_CoreClrBuildArg Include="-outputrid $(OutputRid)" />
     </ItemGroup>
 
@@ -62,4 +65,6 @@
     <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 </Project>

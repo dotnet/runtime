@@ -49,9 +49,6 @@ set(CORDBDI_HEADERS
 
 
 if(CLR_CMAKE_HOST_WIN32)
-    #use static crt
-    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
-
     if (CLR_CMAKE_TARGET_ARCH_AMD64 OR ((CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
         AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD))
         set(CORDBDI_SOURCES_ASM_FILE ${ARCH_SOURCES_DIR}/floatconversion.asm)
@@ -82,5 +79,6 @@ endif (CLR_CMAKE_TARGET_WIN32)
 list(APPEND CORDBDI_SOURCES ${CORDBDI_SOURCES_ASM_FILE})
 
 add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
+set_target_properties(cordbdi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(cordbdi PRIVATE stdafx.h)
 add_dependencies(cordbdi eventing_headers)
