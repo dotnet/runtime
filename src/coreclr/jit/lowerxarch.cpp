@@ -4003,7 +4003,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
             GenTreeVecCon* vecCon1 = comp->gtNewVconNode(simdType);
             memcpy(&vecCon1->gtSimdVal, &simd16Val, sizeof(simd16_t));
-
             BlockRange().InsertAfter(op1, vecCon1);
 
             op1 = comp->gtNewSimdBinOpNode(GT_AND, simdType, op1, vecCon1, simdBaseJitType, simdSize, false);
@@ -4032,7 +4031,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
             GenTreeVecCon* vecCon2 = comp->gtNewVconNode(simdType);
             memcpy(&vecCon2->gtSimdVal, &simd16Val, sizeof(simd16_t));
-
             BlockRange().InsertAfter(op2, vecCon2);
 
             op2 = comp->gtNewSimdBinOpNode(GT_AND, simdType, op2, vecCon2, simdBaseJitType, simdSize, false);

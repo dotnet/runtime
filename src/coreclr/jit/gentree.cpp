@@ -19545,7 +19545,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
     assert(varTypeIsArithmetic(simdBaseType));
 
     assert(op1 != nullptr);
-    assert(op1->TypeIs(type, simdBaseType, genActualType(simdBaseType)));
+    assert(op1->TypeIs(type, simdBaseType, genActualType(simdBaseType)) ||
+           (op1->TypeIs(TYP_SIMD12) && type == TYP_SIMD16));
 
     assert(op2 != nullptr);
 
@@ -19555,7 +19556,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
     }
     else
     {
-        assert(op2->TypeIs(type, simdBaseType, genActualType(simdBaseType)));
+        assert(op2->TypeIs(type, simdBaseType, genActualType(simdBaseType)) ||
+               (op2->TypeIs(TYP_SIMD12) && type == TYP_SIMD16));
     }
 
     NamedIntrinsic       intrinsic = NI_Illegal;
