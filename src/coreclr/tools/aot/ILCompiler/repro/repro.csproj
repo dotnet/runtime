@@ -38,6 +38,7 @@
       <ReproResponseLines Include="--feature:System.Linq.Expressions.CanCompileToIL=false" />
       <ReproResponseLines Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
       <ReproResponseLines Include="--feature:System.Linq.Expressions.CanCreateArbitraryDelegates=false" />
+      <ReproResponseLines Include="--generateunmanagedentrypoints:System.Private.CoreLib" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(OutputPath)\compile-with-$(LibrariesConfiguration)-libs.rsp"
