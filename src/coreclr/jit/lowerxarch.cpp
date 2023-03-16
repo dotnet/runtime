@@ -3737,11 +3737,13 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //          /--*  op1  simd16
                 //          +--*  op2  simd16
                 //          +--*  idx  int
-                //   tmp1 = *  HWINTRINSIC   simd16 T DotProduct
-                //          /--*  tmp1 simd16
-                //          *  STORE_LCL_VAR simd16
-                //   tmp1 =    LCL_VAR       simd16
-                //   tmp2 =    LCL_VAR       simd16
+                //   tmp1 = *  HWINTRINSIC   simd32 T DotProduct
+                //          /--*  tmp1 simd32
+                //          *  STORE_LCL_VAR simd32
+                //   tmp1 =    LCL_VAR       simd32
+                //          /--*  tmp1 simd32
+                //   tmp1 = *  HWINTRINSIC   simd16 T GetLower
+                //   tmp2 =    LCL_VAR       simd32
                 //   idx  =    CNS_INT       int    0x01
                 //          /--*  tmp2 simd16
                 //          +--*  idx  int
@@ -3773,6 +3775,10 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 tmp2 = comp->gtClone(tmp1);
                 BlockRange().InsertAfter(tmp1, tmp2);
+
+                tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
+                BlockRange().InsertBefore(tmp2, tmp1);
+                LowerNode(tmp1);
 
                 idx = comp->gtNewIconNode(0x01, TYP_INT);
                 BlockRange().InsertAfter(tmp2, idx);
