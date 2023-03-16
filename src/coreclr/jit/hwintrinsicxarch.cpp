@@ -1372,12 +1372,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                GenTree* compNode =
-                    gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512F_CompareEqualSpecial, simdBaseJitType,
-                                             simdSize, /* isSimdAsHWIntrinsic */ false);
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, compNode, NI_AVX512F_MoveMaskToVectorSpecial,
-                                                   simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                retNode = gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ false);
             }
             break;
         }

@@ -20236,6 +20236,11 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
     NamedIntrinsic       intrinsic = NI_Illegal;
     CORINFO_CLASS_HANDLE clsHnd    = gtGetStructHandleForSimdOrHW(type, simdBaseJitType, isSimdAsHWIntrinsic);
 
+    if (simdSize == 64)
+    {
+        assert(op == GT_EQ);
+    }
+
     switch (op)
     {
 #if defined(TARGET_XARCH)
@@ -20254,6 +20259,13 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
                     intrinsic = NI_AVX2_CompareEqual;
                 }
+            }
+            else if (simdSize == 64)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+                intrinsic = NI_AVX512F_CompareEqualSpecial;
             }
             else if (simdBaseType == TYP_FLOAT)
             {
@@ -20835,7 +20847,22 @@ GenTree* Compiler::gtNewSimdCmpOpNode(genTreeOps  op,
     }
 
     assert(intrinsic != NI_Illegal);
+
+#if defined(TARGET_XARCH)
+    if (simdSize != 64)
+    {
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else
+    {
+        GenTree* cmp = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize,
+                                                /* isSimdAsHWIntrinsic */ false);
+        return gtNewSimdHWIntrinsicNode(type, cmp, NI_AVX512F_MoveMaskToVectorSpecial, simdBaseJitType, simdSize,
+                                        /* isSimdAsHWIntrinsic */ false);
+    }
+#else
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#endif
 }
 
 GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
