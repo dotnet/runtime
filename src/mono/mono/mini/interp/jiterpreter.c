@@ -666,7 +666,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_GETITEM_SPAN:
 		case MINT_GETITEM_LOCALSPAN:
 		case MINT_INTRINS_SPAN_CTOR:
-		case MINT_INTRINS_UNSAFE_BYTE_OFFSET:
 		case MINT_INTRINS_GET_TYPE:
 		case MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF:
 		case MINT_CASTCLASS:
@@ -1075,6 +1074,9 @@ mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher)
 	//  blocked the use of Module.addFunction
 	if (!dispatcher)
 		dispatcher = (WasmDoJitCall)mono_llvm_cpp_catch_exception;
+	else if (((int)(void*)dispatcher)==-1)
+		dispatcher = mono_jiterp_do_jit_call_indirect;
+
 	jiterpreter_do_jit_call = dispatcher;
 }
 

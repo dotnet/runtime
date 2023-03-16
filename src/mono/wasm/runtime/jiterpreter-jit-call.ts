@@ -3,7 +3,7 @@
 
 import { mono_assert, MonoType, MonoMethod } from "./types";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked
 } from "./memory";
@@ -156,6 +156,9 @@ class TrampolineInfo {
     }
 }
 
+// this is cached replacements for Module.getWasmTableEntry();
+// we could add <EmccExportedLibraryFunction Include="$getWasmTableEntry" /> and <EmccExportedRuntimeMethod Include="getWasmTableEntry" /> 
+// if we need to export the original
 function getWasmTableEntry (index: number) {
     let result = fnCache[index];
     if (!result) {
@@ -172,8 +175,6 @@ function getWasmTableEntry (index: number) {
 export function mono_interp_invoke_wasm_jit_call_trampoline (
     thunkIndex: number, ret_sp: number, sp: number, ftndesc: number, thrown: NativePointer
 ) {
-    // FIXME: It's impossible to get emscripten to export this for some reason
-    // const thunk = <Function>Module.getWasmTableEntry(thunkIndex);
     const thunk = <Function>getWasmTableEntry(thunkIndex);
     try {
         thunk(ret_sp, sp, ftndesc, thrown);
@@ -256,6 +257,7 @@ function getIsWasmEhSupported () : boolean {
 export function mono_jiterp_do_jit_call_indirect (
     jit_call_cb: number, cb_data: VoidPtr, thrown: Int32Ptr
 ) : void {
+    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
     const table = getWasmFunctionTable();
     const jitCallCb = table.get(jit_call_cb);
 

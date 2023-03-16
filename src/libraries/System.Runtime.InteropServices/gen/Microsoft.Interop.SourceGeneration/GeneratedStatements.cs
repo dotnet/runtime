@@ -105,10 +105,16 @@ namespace Microsoft.Interop
                 return ExpressionStatement(invoke);
             }
 
+            var (managed, native) = context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo);
+
+            string targetIdentifier = marshallers.NativeReturnMarshaller.Generator.UsesNativeIdentifier(marshallers.NativeReturnMarshaller.TypeInfo, context)
+                ? native
+                : managed;
+
             return ExpressionStatement(
                     AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native),
+                        IdentifierName(targetIdentifier),
                         invoke));
         }
 

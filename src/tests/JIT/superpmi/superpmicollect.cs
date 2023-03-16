@@ -218,13 +218,11 @@ namespace SuperPMICollection
                 testName = testName.Replace(".cmd", ".sh");
                 testName = testName.Replace(".bat", ".sh");
 
-                // The way tests are run on Linux, we might need to do some setup. In particular,
-                // if the test scripts are copied from Windows, we need to convert line endings
-                // to Unix line endings, and make the script executable. We can always do this
-                // more than once. This same transformation is done in runtest.sh.
+                // The way tests are run on Linux, we might need to do some setup. It is assumed
+                // that the line endings of the tests wrapper scripts are correct.
+                // We need to make the wrapper script executable.
                 // Review: RunProgram doesn't seem to work if the program isn't a full path.
 
-                RunProgram("/usr/bin/perl", @"-pi -e 's/\r\n|\n|\r/\n/g' " + "\"" + testName + "\"");
                 RunProgram("/bin/chmod", "+x \"" + testName + "\"");
 
                 // Now, figure out how to run the test.

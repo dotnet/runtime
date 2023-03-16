@@ -129,7 +129,7 @@ umap_do_rehash (
 	for (uint32_t i = 0; i < current_bucket_count; i++){
 		dn_umap_node_t *node, *next_node;
 		for (node = buckets [i]; node; node = next_node){
-			uint32_t hashcode = map->_internal._hash_func (node->key) % map->_internal._bucket_count;
+			uint32_t hashcode = (map->_internal._hash_func (node->key)) % map->_internal._bucket_count;
 			next_node = node->next;
 
 			node->next = map->_internal._buckets [hashcode];
@@ -144,13 +144,12 @@ static void
 umap_rehash (dn_umap_t *map)
 {
 	uint32_t diff;
-
 	if (map->_internal._last_rehash > map->_internal._node_count)
 		diff = map->_internal._last_rehash - map->_internal._node_count;
 	else
 		diff = map->_internal._node_count - map->_internal._last_rehash;
 
-	if (!((double)diff * 0.75 > (double)map->_internal._bucket_count * 2))
+	if (!(diff * 0.75 > map->_internal._bucket_count * 2))
 		return;
 
 	umap_do_rehash (map, umap_spaced_primes_closest (map->_internal._node_count));
@@ -202,45 +201,57 @@ umap_erase_node (
 	umap_sanity_check (map);
 }
 
-static dn_umap_result_t
+static inline void
+umap_insert_set_result (
+	dn_umap_result_t *insert_result,
+	dn_umap_t *map,
+	dn_umap_node_t *node,
+	uint32_t index,
+	bool result)
+{
+	insert_result->it._internal._map = map;
+	insert_result->it._internal._node = node;
+	insert_result->it._internal._index = index;
+	insert_result->result = result;
+	return;
+}
+
+static void
 umap_insert (
 	dn_umap_t *map,
 	void *key,
 	void *value,
-	bool assign)
+	bool assign,
+	dn_umap_result_t *result)
 {
 	umap_sanity_check (map);
 
-	dn_umap_result_t result = { { map, NULL, 0 }, false };
+	if (map->_internal._node_count == dn_umap_max_size (map)) {
+		umap_insert_set_result (result, map, NULL, 0, false);
+		return;
+	}
+
+	umap_rehash (map);
+
 	dn_umap_equal_func_t equal_func = map->_internal._key_equal_func;
+	uint32_t hashcode = (map->_internal._hash_func (key)) % map->_internal._bucket_count;
 
-	if (map->_internal._node_count == dn_umap_max_size (map))
-		return result;
-
-	if (map->_internal._node_count >= map->_internal._threshold)
-		umap_rehash (map);
-
-	uint32_t hashcode = map->_internal._hash_func (key) % map->_internal._bucket_count;
 	for (dn_umap_node_t *node = map->_internal._buckets [hashcode]; node; node = node->next) {
 		if (equal_func (node->key, key)) {
-			if (!assign) {
-				result.it._internal._node = node;
-				result.it._internal._index = hashcode;
-				return result;
+			if (assign) {
+				if (map->_internal._value_dispose_func)
+					map->_internal._value_dispose_func (node->value);
+
+				node->value = value;
+
+				umap_sanity_check (map);
+
+				umap_insert_set_result (result, map, node, hashcode, true);
+				return;
+			} else {
+				umap_insert_set_result (result, map, node, hashcode, false);
+				return;
 			}
-
-			if (map->_internal._value_dispose_func)
-				map->_internal._value_dispose_func (node->value);
-
-			node->value = value;
-
-			umap_sanity_check (map);
-
-			result.it._internal._index = hashcode;
-			result.it._internal._node = node;
-			result.result = true;
-
-			return result;
 		}
 	}
 
@@ -254,12 +265,12 @@ umap_insert (
 
 		umap_sanity_check (map);
 
-		result.it._internal._index = hashcode;
-		result.it._internal._node = node;
-		result.result = true;
+		umap_insert_set_result (result, map, node, hashcode, true);
+		return;
 	}
 
-	return result;
+	umap_insert_set_result (result, map, NULL, 0, false);
+	return;
 }
 
 static bool
@@ -295,12 +306,11 @@ dn_umap_begin (dn_umap_t *map)
 {
 	DN_ASSERT (map);
 
-	dn_umap_it_t it = dn_umap_end (map);
 	uint32_t index = 0;
 
 	while (true) {
 		if (index >= map->_internal._bucket_count)
-			return it;
+			return dn_umap_end (map);
 
 		if (map->_internal._buckets [index])
 			break;
@@ -308,9 +318,7 @@ dn_umap_begin (dn_umap_t *map)
 		index ++;
 	}
 
-	it._internal._node = map->_internal._buckets [index];
-	it._internal._index = index;
-
+	dn_umap_it_t it = { map, map->_internal._buckets [index], index };
 	return it;
 }
 
@@ -422,7 +430,10 @@ dn_umap_insert (
 	void *value)
 {
 	DN_ASSERT (map);
-	return umap_insert (map, key, value, false);
+
+	dn_umap_result_t result;
+	umap_insert (map, key, value, false, &result);
+	return result;
 }
 
 dn_umap_result_t
@@ -432,7 +443,10 @@ dn_umap_insert_or_assign (
 	void *value)
 {
 	DN_ASSERT (map);
-	return umap_insert (map, key, value, true);
+
+	dn_umap_result_t result;
+	umap_insert (map, key, value, true, &result);
+	return result;
 }
 
 dn_umap_it_t
@@ -459,11 +473,11 @@ dn_umap_erase_key (
 	umap_sanity_check (map);
 
 	dn_umap_equal_func_t equal_func = map->_internal._key_equal_func;
-	uint32_t hashcode = map->_internal._hash_func (key) % map->_internal._bucket_count;
+	uint32_t hashcode = (map->_internal._hash_func (key)) % map->_internal._bucket_count;
 
 	dn_umap_node_t *prev_node = NULL;
 	for (dn_umap_node_t *node = map->_internal._buckets [hashcode]; node; node = node->next){
-		if (equal_func (node->key, key)){
+		if (equal_func (node->key, key)) {
 			umap_erase_node (map, hashcode, node, prev_node);
 			return 1;
 		}
@@ -484,11 +498,11 @@ dn_umap_extract_key (
 	DN_ASSERT (map);
 
 	dn_umap_equal_func_t equal_func = map->_internal._key_equal_func;
-	uint32_t hashcode = map->_internal._hash_func (key) % map->_internal._bucket_count;
+	uint32_t hashcode = (map->_internal._hash_func (key)) % map->_internal._bucket_count;
 
 	dn_umap_node_t *prev_node = NULL;
 	for (dn_umap_node_t *node = map->_internal._buckets [hashcode]; node; node = node->next){
-		if (equal_func (node->key, key)){
+		if (equal_func (node->key, key)) {
 			if (!prev_node)
 				map->_internal._buckets [hashcode] = node->next;
 			else
@@ -515,24 +529,24 @@ dn_umap_extract_key (
 dn_umap_it_t
 dn_umap_custom_find (
 	dn_umap_t *map,
-	const void *data,
+	const void *key,
 	dn_umap_equal_func_t equal_func)
 {
 	DN_ASSERT (map);
 
-	dn_umap_it_t found = dn_umap_end (map);
-	equal_func = equal_func ? equal_func : map->_internal._key_equal_func;
+	if (!equal_func)
+		equal_func = map->_internal._key_equal_func;
 
-	for (uint32_t i = 0; i < map->_internal._bucket_count; i++) {
-		for (dn_umap_node_t *node = map->_internal._buckets [i]; node; node = node->next)
-			if (equal_func (node->key, data)) {
-				found._internal._index = i;
-				found._internal._node = node;
-				return found;
-			}
+	uint32_t hashcode = (map->_internal._hash_func (key)) % map->_internal._bucket_count;
+
+	for (dn_umap_node_t *node = map->_internal._buckets [hashcode]; node; node = node->next) {
+		if (equal_func (node->key, key)) {
+			dn_umap_it_t found = { map, node, hashcode };
+			return found;
+		}
 	}
 
-	return found;
+	return dn_umap_end (map);
 }
 
 void

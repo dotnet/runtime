@@ -120,6 +120,10 @@ export type MonoConfig = {
      */
     pthreadPoolSize?: number,
     /**
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
+     */
+    startupMemoryCache?: boolean,
+    /**
      * hash of assets
      */
     assetsHash?: string,
@@ -134,6 +138,7 @@ export type MonoConfigInternal = MonoConfig & {
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
+    exitAfterSnapshot?: number,
 };
 
 export type RunArguments = {
@@ -201,6 +206,7 @@ export type AssetBehaviours =
     | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
     | "dotnetwasm" // the binary of the dotnet runtime
     | "js-module-threads" // the javascript module for threads
+    | "symbols" // the symbols for the wasm native code
 
 export type RuntimeHelpers = {
     runtime_interop_module: MonoAssembly;
@@ -211,7 +217,6 @@ export type RuntimeHelpers = {
     _i52_error_scratch_buffer: Int32Ptr;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
-    mono_wasm_symbols_are_ready: boolean;
 
     loaded_files: string[];
     maxParallelDownloads: number;
@@ -228,9 +233,13 @@ export type RuntimeHelpers = {
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
     loadedFiles: string[],
+    loadedMemorySnapshot: boolean,
+    storeMemorySnapshotPending: boolean,
+    memorySnapshotCacheKey: string,
+    subtle: SubtleCrypto | null,
     preferredIcuAsset: string | null,
-    timezone: string | null,
-    updateGlobalBufferAndViews: (buffer: ArrayBufferLike) => void
+    invariantMode: boolean,
+    updateMemoryViews: () => void
 }
 
 export type GlobalizationMode =
@@ -368,7 +377,7 @@ export type EarlyReplacements = {
     require: any,
     requirePromise: Promise<Function>,
     noExitRuntime: boolean,
-    updateGlobalBufferAndViews: Function,
+    updateMemoryViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
     scriptUrl: string
@@ -377,7 +386,7 @@ export interface ExitStatusError {
     new(status: number): any;
 }
 export type PThreadReplacements = {
-    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void,
+    loadWasmModuleToWorker(worker: Worker): Promise<Worker>,
     threadInitTLS: () => void,
     allocateUnusedWorker: () => void,
 }

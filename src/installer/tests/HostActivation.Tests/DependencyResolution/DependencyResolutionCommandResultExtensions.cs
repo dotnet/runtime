@@ -153,6 +153,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return usedFallbackRid ? assertion.HaveStdErrContaining(msg) : assertion.NotHaveStdErrContaining(msg);
         }
 
+        public static AndConstraint<CommandResultAssertions> HaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path, int level)
+        {
+            return assertion.HaveStdErrContaining($"probe type=framework dir=[{path}] fx_level={level}");
+        }
+
+        public static AndConstraint<CommandResultAssertions> NotHaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path)
+        {
+            return assertion.NotHaveStdErrContaining($"probe type=framework dir=[{path}]");
+        }
+
         private static string GetAppMockPropertyValue(CommandResultAssertions assertion, string propertyName) =>
             GetMockPropertyValue(assertion, $"mock property[{propertyName}] = ");
 

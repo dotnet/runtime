@@ -126,6 +126,7 @@ set( JIT_SOURCES
   hwintrinsic.cpp
   hostallocator.cpp
   ifconversion.cpp
+  runtimelookup.cpp
   indirectcalltransformer.cpp
   importercalls.cpp
   importer.cpp

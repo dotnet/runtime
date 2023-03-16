@@ -81,7 +81,7 @@ namespace DebuggerTests
 
         public virtual Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
-            int id = ++next_cmd_id;
+            int id = Interlocked.Increment(ref next_cmd_id);
             if (args == null)
                 args = new JObject();
 
