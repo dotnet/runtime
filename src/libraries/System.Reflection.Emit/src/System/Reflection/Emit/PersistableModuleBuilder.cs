@@ -10,7 +10,7 @@ using static System.Reflection.Emit.Experiment.EntityWrappers;
 
 namespace System.Reflection.Emit.Experiment
 {
-    public sealed class PersistableModuleBuilder : ModuleBuilder
+    internal sealed class PersistableModuleBuilder : ModuleBuilder
     {
         public override string ScopeName { get; }
         private readonly PersistableAssemblyBuilder _assemblyBuilder;

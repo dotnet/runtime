@@ -21,9 +21,18 @@ namespace System.Reflection.Emit.Experiment.Tests
             List<CustomAttributeBuilder> moduleAttributes = null, List<CustomAttributeBuilder> typeAttributes = null,
             List<CustomAttributeBuilder> methodAttributes = null, List<CustomAttributeBuilder> fieldAttributes = null)
         {
-            PersistableAssemblyBuilder assemblyBuilder = PersistableAssemblyBuilder.DefineDynamicAssembly(assemblyName, assemblyAttributes);
+            Type assemblyType = Type.GetType(
+                    "System.Reflection.Emit.Experiment.PersistableAssemblyBuilder, System.Reflection.Emit",
+                    throwOnError: true)!;
 
-            PersistableModuleBuilder mb = (PersistableModuleBuilder)assemblyBuilder.DefineDynamicModule(assemblyName.Name);
+            MethodInfo defineDynamicAssemblyMethod = assemblyType.GetMethod( "DefineDynamicAssembly", BindingFlags.Public | BindingFlags.Static,
+                new Type[] { typeof(AssemblyName), typeof(List<CustomAttributeBuilder>) });
+
+            MethodInfo saveMethod = assemblyType.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance, new Type[] { typeof(string) });
+
+            AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null, new object[] { assemblyName , assemblyAttributes });
+
+            ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
             if (moduleAttributes != null)
             {
@@ -74,7 +83,7 @@ namespace System.Reflection.Emit.Experiment.Tests
                 }
             }
 
-            assemblyBuilder.Save(fileLocation);
+            saveMethod.Invoke(assemblyBuilder, new object[] { fileLocation });
         }
 
         internal static void WriteAssemblyToStream(AssemblyName assemblyName, Type[] types, Stream stream)
@@ -84,9 +93,18 @@ namespace System.Reflection.Emit.Experiment.Tests
 
         internal static void WriteAssemblyToStream(AssemblyName assemblyName, Type[] types, Stream stream, List<CustomAttributeBuilder>? assemblyAttributes)
         {
-            PersistableAssemblyBuilder assemblyBuilder = PersistableAssemblyBuilder.DefineDynamicAssembly(assemblyName, assemblyAttributes);
+            Type assemblyType = Type.GetType(
+                    "System.Reflection.Emit.Experiment.PersistableAssemblyBuilder, System.Reflection.Emit",
+                    throwOnError: true)!;
 
-            PersistableModuleBuilder mb = (PersistableModuleBuilder)assemblyBuilder.DefineDynamicModule(assemblyName.Name);
+            MethodInfo defineDynamicAssemblyMethod = assemblyType.GetMethod("DefineDynamicAssembly", BindingFlags.Public | BindingFlags.Static,
+                new Type[] { typeof(AssemblyName), typeof(List<CustomAttributeBuilder>) });
+
+            MethodInfo saveMethod = assemblyType.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance, new Type[] { typeof(Stream) });
+
+            AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null, new object[] { assemblyName, assemblyAttributes });
+
+            ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
             foreach (Type type in types)
             {
@@ -100,11 +118,13 @@ namespace System.Reflection.Emit.Experiment.Tests
                 }
                 foreach (var field in type.GetFields())
                 {
+                    //PersistableFieldBuilder fb;
+
                     tb.DefineField(field.Name, field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), field.Attributes);
                 }
             }
 
-            assemblyBuilder.Save(stream);
+            saveMethod.Invoke(assemblyBuilder, new object[] { stream });
         }
 
         internal static Assembly TryLoadAssembly(string filePath)
@@ -165,6 +185,8 @@ namespace System.Reflection.Emit.Experiment.Tests
             Debug.WriteLine("Ended MetadataReader class");
         }
     }
+
+    // The resolver copied from MLC tests
     public class CoreMetadataAssemblyResolver : MetadataAssemblyResolver
     {
         public CoreMetadataAssemblyResolver() { }
