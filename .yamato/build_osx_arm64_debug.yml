@@ -11,7 +11,7 @@ variables:
   ARTIFACT_FILENAME: {{globals.artifact_base_name}}-osx-arm64.7z
 
 commands:
-  - ./.yamato/scripts/build_yamato.sh arm64 Debug
+  - ./.yamato/scripts/build_yamato.sh --arch=arm64 --config=Debug
 
 artifacts:
   7z-archives:

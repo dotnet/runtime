@@ -11,7 +11,7 @@ variables:
   ARTIFACT_FILENAME: {{globals.artifact_base_name}}-linux-x64.7z
 
 commands:
-  - ./.yamato/scripts/build_yamato.sh Release
+  - ./.yamato/scripts/build_yamato.sh --config=Release
 
 artifacts:
   7z-archives:
