@@ -150,11 +150,13 @@ namespace Wasm.Build.Tests
                                            string? extraXHarnessMonoArgs = null,
                                            string? extraXHarnessArgs = null,
                                            string jsRelativePath = "test-main.js",
-                                           string environmentLocale = DefaultEnvironmentLocale)
+                                           string environmentLocale = DefaultEnvironmentLocale,
+                                           string? safeProjectNameRegex = null)
         {
             buildDir ??= _projectDir;
             envVars ??= new();
             envVars["XHARNESS_DISABLE_COLORED_OUTPUT"] = "true";
+            safeProjectNameRegex ??= buildArgs.ProjectName;
             if (buildArgs.AOT)
             {
                 envVars["MONO_LOG_LEVEL"] = "debug";
@@ -195,16 +197,8 @@ namespace Wasm.Build.Tests
                                 useWasmConsoleOutput: useWasmConsoleOutput
                                 );
 
-            if (buildArgs.AOT)
-            {
-                Assert.Contains("AOT: image 'System.Private.CoreLib' found.", output);
-                Assert.Contains($"AOT: image '{buildArgs.ProjectName}' found.", output);
-            }
-            else
-            {
-                Assert.DoesNotContain("AOT: image 'System.Private.CoreLib' found.", output);
-                Assert.DoesNotContain($"AOT: image '{buildArgs.ProjectName}' found.", output);
-            }
+            AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
+            AssertSubstringByRegex($"AOT: image '{safeProjectNameRegex}' found.", output, contains: buildArgs.AOT);
 
             if (test != null)
                 test(output);
@@ -1204,6 +1198,23 @@ namespace Wasm.Build.Tests
             RunHost.NodeJS => new NodeJSHostRunner(),
             _ => new BrowserHostRunner(),
         };
+
+        protected void AssertSubstring(string substring, string full, bool contains)
+        {
+            if (contains)
+                Assert.Contains(substring, full);
+            else
+                Assert.DoesNotContain(substring, full);
+        }
+
+        protected void AssertSubstringByRegex(string regex, string full, bool contains)
+        {
+            bool isSubstring = System.Text.RegularExpressions.Regex.IsMatch(full, regex);
+            if (contains)
+                Assert.True(isSubstring);
+            else
+                Assert.False(isSubstring);
+        }
     }
 
     public record BuildArgs(string ProjectName,
