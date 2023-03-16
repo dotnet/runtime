@@ -14,7 +14,7 @@
         _GenerateManagedToNative;
         _GenerateAssemblyObjectFiles;
         _WasiLink;
-        _CompleteWasmBuildNative 
+        _CompleteWasmBuildNative
     </_WasiBuildNativeCoreDependsOn>
 
     <_BeforeWasmBuildAppDependsOn>
