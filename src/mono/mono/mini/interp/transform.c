@@ -2782,8 +2782,8 @@ interp_icall_op_for_sig (MonoMethodSignature *sig)
 	return op;
 }
 
-/* Same as mono jit */
-#define INLINE_LENGTH_LIMIT 20
+/* larger than mono jit; chosen to ensure that List<T>.get_Item can be inlined */
+#define INLINE_LENGTH_LIMIT 30
 #define INLINE_DEPTH_LIMIT 10
 
 static gboolean
