@@ -4390,6 +4390,11 @@ inline static bool StructHasDontDigFieldsFlagSet(DWORD attribs)
     return ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0);
 }
 
+inline static bool StructHasIndexableFields(DWORD attribs)
+{
+    return ((attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0);
+}
+
 //------------------------------------------------------------------------------
 // DEBUG_DESTROY_NODE: sets value of tree to garbage to catch extra references
 //
