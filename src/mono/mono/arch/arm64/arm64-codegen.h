@@ -2299,10 +2299,6 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_bit_8b(p, rd, rn, rm) arm_neon_3svec_opcode ((p), VREG_LOW, 0b1, 0b10, 0b00011, (rd), (rn), (rm))
 #define arm_neon_bit_16b(p, rd, rn, rm) arm_neon_3svec_opcode ((p), VREG_FULL, 0b1, 0b10, 0b00011, (rd), (rn), (rm))
 
-#define arm_neon_bif_8b(p, rd, rn, rm) arm_neon_3svec_opcode ((p), VREG_LOW, 0b1, 0b11, 0b00011, (rd), (rn), (rm))
-#define arm_neon_bif_16b(p, rd, rn, rm) arm_neon_3svec_opcode ((p), VREG_FULL, 0b1, 0b11, 0b00011, (rd), (rn), (rm))
-
-
 /* NEON :: modified immediate */
 #define arm_neon_mimm_opcode(p, q, op, cmode, o2, imm, rd) arm_neon_opcode_1reg ((p), (q), 0b00001111000000000000010000000000 | (op) << 29 | (cmode) << 12 | (o2) << 11 | (imm & 0b11100000) << 11 | (imm & 0b11111) << 5, (rd))
 
