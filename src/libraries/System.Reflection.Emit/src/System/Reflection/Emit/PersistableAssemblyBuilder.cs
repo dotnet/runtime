@@ -6,7 +6,6 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using static System.Reflection.Emit.Experiment.EntityWrappers;
 
 namespace System.Reflection.Emit.Experiment
 {
@@ -15,8 +14,6 @@ namespace System.Reflection.Emit.Experiment
         private bool _previouslySaved;
         private AssemblyName _assemblyName;
         private PersistableModuleBuilder? _module;
-
-        internal List<CustomAttributeWrapper> _customAttributes = new();
 
         internal PersistableAssemblyBuilder(AssemblyName name, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
@@ -84,7 +81,7 @@ namespace System.Reflection.Emit.Experiment
 
             // Add assembly metadata
             var metadata = new MetadataBuilder();
-            AssemblyDefinitionHandle assemlbyHandle = metadata.AddAssembly( // Metadata is added for the new assembly - Current design - metadata generated only when Save method is called.
+            metadata.AddAssembly( // Metadata is added for the new assembly - Current design - metadata generated only when Save method is called.
                metadata.GetOrAddString(value: _assemblyName.Name),
                version: _assemblyName.Version ?? new Version(0, 0, 0, 0),
                culture: _assemblyName.CultureName == null ? default : metadata.GetOrAddString(value: _assemblyName.CultureName),
@@ -93,7 +90,7 @@ namespace System.Reflection.Emit.Experiment
                hashAlgorithm: AssemblyHashAlgorithm.None); // AssemblyName.HashAlgorithm is obsolete so default value used.
 
             // Add module's metadata
-            _module.AppendMetadata(metadata, assemlbyHandle);
+            _module.AppendMetadata(metadata);
 
             var ilBuilder = new BlobBuilder();
             WritePEImage(stream, metadata, ilBuilder);
@@ -132,15 +129,8 @@ namespace System.Reflection.Emit.Experiment
             return null;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(con, binaryAttribute);
-            _customAttributes.Add(customAttribute);
-        }
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotSupportedException();
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            SetCustomAttribute(customBuilder.Constructor, customBuilder.Blob);
-        }
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotSupportedException();
     }
 }

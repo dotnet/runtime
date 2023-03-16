@@ -96,9 +96,7 @@ namespace System.Reflection.Emit.Experiment
                 case "System.String":
                     signature.String();
                     break;
-                /*case "System.Type":
-                    signature.Type();
-                    break;*/
+
                 default: throw new NotImplementedException("This parameter type is not yet supported: " + type.FullName);
             }
         }

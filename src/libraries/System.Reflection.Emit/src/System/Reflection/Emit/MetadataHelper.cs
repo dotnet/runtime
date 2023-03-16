@@ -58,16 +58,6 @@ namespace System.Reflection.Emit.Experiment
                 );
         }
 
-        internal static MemberReferenceHandle AddConstructorReference(MetadataBuilder metadata, TypeReferenceHandle parent, MethodBase method)
-        {
-            var blob = MetadataSignatureHelper.MethodSignatureEncoder(method.GetParameters(), null, true);
-            return metadata.AddMemberReference(
-                parent,
-                metadata.GetOrAddString(method.Name),
-                metadata.GetOrAddBlob(blob)
-                );
-        }
-
         internal static MethodDefinitionHandle AddMethodDefintion(MetadataBuilder metadata, PersistableMethodBuilder methodBuilder)
         {
             return metadata.AddMethodDefinition(

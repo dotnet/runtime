@@ -63,7 +63,6 @@
     <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute.cs" />
     <Compile Include="ParameterBuilder\ParameterBuilderSetConstant.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblyTools.cs" />
-    <Compile Include="PersistableAssemblyBuilder\CustomAttributeTesting.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveTestsWithVariousTypes.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAttributes.cs" />
@@ -119,7 +118,7 @@
     <Compile Include="Utilities.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Reflection.Emit.csproj"/>
+    <ProjectReference Include="..\src\System.Reflection.Emit.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.MetadataLoadContext\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>

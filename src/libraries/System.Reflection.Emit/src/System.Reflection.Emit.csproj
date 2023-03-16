@@ -5,7 +5,6 @@
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Reflection\Emit\EntityWrappers.cs" />
     <Compile Include="System\Reflection\Emit\MetadataHelper.cs" />
     <Compile Include="System\Reflection\Emit\PersistableAssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\PersistableFieldBuilder.cs" />

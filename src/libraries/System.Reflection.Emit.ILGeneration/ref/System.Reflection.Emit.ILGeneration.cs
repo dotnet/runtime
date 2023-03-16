@@ -12,8 +12,6 @@ namespace System.Reflection.Emit
         public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.FieldInfo[] namedFields, object?[] fieldValues) { }
         public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object?[] propertyValues) { }
         public CustomAttributeBuilder(System.Reflection.ConstructorInfo con, object?[] constructorArgs, System.Reflection.PropertyInfo[] namedProperties, object?[] propertyValues, System.Reflection.FieldInfo[] namedFields, object?[] fieldValues) { }
-        public ConstructorInfo Constructor { get { throw null; } }
-        public byte[] Blob { get { throw null; } }
     }
     public partial class ILGenerator
     {

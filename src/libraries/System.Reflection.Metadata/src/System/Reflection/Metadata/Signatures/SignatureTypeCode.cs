@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata
         Invalid = 0x0,
 
         /// <summary>
-        /// Represents <see cref="Void"/> in signatures.
+        /// Represents <see cref="System.Void"/> in signatures.
         /// </summary>
         Void = CorElementType.ELEMENT_TYPE_VOID,
 

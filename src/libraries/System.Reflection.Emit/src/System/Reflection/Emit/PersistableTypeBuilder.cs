@@ -2,35 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using static System.Reflection.Emit.Experiment.EntityWrappers;
 using System.Globalization;
 
 namespace System.Reflection.Emit.Experiment
 {
     internal sealed class PersistableTypeBuilder : TypeBuilder
     {
-        public override string Name => _name!;
         public override Module Module => _module;
         internal List<PersistableMethodBuilder> _methodDefStore = new();
         internal List<PersistableFieldBuilder> _fieldDefStore = new();
-        internal List<CustomAttributeWrapper> _customAttributes = new();
         private readonly PersistableModuleBuilder _module;
-        private readonly string? _name;
+        private readonly string _name;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private TypeAttributes _attributes;
 
-        internal PersistableTypeBuilder(string name, TypeAttributes typeAttributes,
+        internal PersistableTypeBuilder(string fullName, TypeAttributes typeAttributes,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PersistableModuleBuilder module)
         {
-            _name = name;
+            _name = fullName;
             _module = module;
             _attributes = typeAttributes;
             SetParent(parent);
-            // Extract namespace from name
+            // Extract namespace from fullName
             int idx = _name.LastIndexOf('.');
 
             if (idx != -1)
@@ -41,15 +37,8 @@ namespace System.Reflection.Emit.Experiment
         }
 
         internal PersistableModuleBuilder GetModuleBuilder() => _module;
-
-        public override bool IsDefined(Type attributeType, bool inherit)
-        {
-            throw new NotImplementedException();
-        }
         protected override PackingSize PackingSizeCore => throw new NotImplementedException();
-
         protected override int SizeCore => throw new NotImplementedException();
-
         protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type interfaceType) => throw new NotImplementedException();
         [return: DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))]
         protected override TypeInfo CreateTypeInfoCore() => throw new NotImplementedException();
@@ -79,36 +68,8 @@ namespace System.Reflection.Emit.Experiment
         protected override ConstructorBuilder DefineTypeInitializerCore() => throw new NotImplementedException();
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override bool IsCreatedCore() => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            ArgumentNullException.ThrowIfNull(nameof(con));
-            ArgumentNullException.ThrowIfNull(nameof(binaryAttribute)); // This is incorrect
-
-            if (con.DeclaringType == null)
-            {
-                throw new ArgumentException("Attribute constructor has no type.");
-            }
-
-            // We check whether the custom attribute is actually a pseudo-custom attribute.
-            // (We have only done ComImport for the prototype, eventually all pseudo-custom attributes will be hard-coded.)
-            // If it is, simply alter the TypeAttributes.
-            // We want to handle this before the type metadata is generated.
-
-            if (con.DeclaringType.Name.Equals("ComImportAttribute"))
-            {
-                Debug.WriteLine("Modifying internal flags");
-                _attributes |= TypeAttributes.Import;
-            }
-            else
-            {
-                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(con, binaryAttribute);
-                _customAttributes.Add(customAttribute);
-            }
-        }
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            SetCustomAttribute(customBuilder.Constructor, customBuilder.Blob);
-        }
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
 
         protected override void SetParentCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent)
         {
@@ -135,23 +96,10 @@ namespace System.Reflection.Emit.Experiment
                 }
             }
         }
-
-        public override object[] GetCustomAttributes(bool inherit)
-        {
-            return _customAttributes.ToArray();
-        }
-
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
-        {
-            ArgumentNullException.ThrowIfNull(attributeType);
-            List<CustomAttributeWrapper> copy = new();
-           foreach (var customAttribute in _customAttributes)
-           {
-                if (customAttribute.constructorInfo.DeclaringType == attributeType)
-                    copy.Add(customAttribute);
-           }
-           return copy.ToArray();
-        }
+        public override string Name => _name;
+        public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
+        public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override Type GetElementType() => throw new NotSupportedException();
         public override string? AssemblyQualifiedName => throw new NotSupportedException();
         public override string? FullName => throw new NotSupportedException();

@@ -25,9 +25,6 @@ namespace System.Reflection.Emit
         private readonly object?[] m_constructorArgs;
         private readonly byte[] m_blob;
 
-        public ConstructorInfo Constructor => m_con;
-        public byte[] Blob => m_blob;
-
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs) :

@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using static System.Reflection.Emit.Experiment.EntityWrappers;
 
 namespace System.Reflection.Emit.Experiment
 {
@@ -13,7 +12,6 @@ namespace System.Reflection.Emit.Experiment
         private string _fieldName;
         private FieldAttributes _attributes;
         private Type _fieldType;
-        internal List<CustomAttributeWrapper> _customAttributes = new();
 
         internal PersistableFieldBuilder(PersistableTypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
@@ -26,6 +24,7 @@ namespace System.Reflection.Emit.Experiment
                 throw new ArgumentException("Bad field type");
 
             _fieldName = fieldName;
+
             _typeBuilder = typeBuilder;
             _fieldType = type;
             _attributes = attributes & ~FieldAttributes.ReservedMask;
@@ -36,16 +35,9 @@ namespace System.Reflection.Emit.Experiment
 
         #region MemberInfo Overrides
         protected override void SetConstantCore(object? defaultValue) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(con, binaryAttribute);
-            _customAttributes.Add(customAttribute);
-        }
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            SetCustomAttribute(customBuilder.Constructor, customBuilder.Blob);
-        }
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
         protected override void SetOffsetCore(int iOffset) => throw new NotImplementedException();
 
         public override int MetadataToken => throw new NotImplementedException();

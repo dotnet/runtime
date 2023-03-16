@@ -6,22 +6,18 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
-using static System.Reflection.Emit.Experiment.EntityWrappers;
 
 namespace System.Reflection.Emit.Experiment
 {
     internal sealed class PersistableModuleBuilder : ModuleBuilder
     {
-        public override string ScopeName { get; }
         private readonly PersistableAssemblyBuilder _assemblyBuilder;
 
         #region Internal Data Members
 
         internal Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new Dictionary<Assembly, AssemblyReferenceHandle>();
         internal Dictionary<Type, TypeReferenceHandle> _typeRefStore = new Dictionary<Type, TypeReferenceHandle>();
-        internal Dictionary<ConstructorInfo, MemberReferenceHandle> _constructorRefStore = new Dictionary<ConstructorInfo, MemberReferenceHandle>();
         internal List<PersistableTypeBuilder> _typeDefStore = new List<PersistableTypeBuilder>();
-        internal List<CustomAttributeWrapper> _customAttributes = new();
         internal int _nextMethodDefRowId = 1;
         internal const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
 
@@ -34,10 +30,10 @@ namespace System.Reflection.Emit.Experiment
             ScopeName = name;
         }
 
-        internal void AppendMetadata(MetadataBuilder metadata, AssemblyDefinitionHandle assemlbyHandle)
+        internal void AppendMetadata(MetadataBuilder metadata)
         {
             // Add module metadata
-            ModuleDefinitionHandle moduleHandle = metadata.AddModule(
+            metadata.AddModule(
                 generation: 0,
                 metadata.GetOrAddString(ScopeName),
                 metadata.GetOrAddGuid(Guid.NewGuid()),
@@ -53,20 +49,6 @@ namespace System.Reflection.Emit.Experiment
                 fieldList: MetadataTokens.FieldDefinitionHandle(1),
                 methodList: MetadataTokens.MethodDefinitionHandle(1));
 
-            // Add Assembly attributes
-            foreach (CustomAttributeWrapper customAttribute in _assemblyBuilder._customAttributes)
-            {
-                metadata.AddCustomAttribute(assemlbyHandle, GetConstructorHandle(metadata, customAttribute.constructorInfo),
-                    metadata.GetOrAddBlob(customAttribute.binaryAttribute));
-            }
-
-            // Add Module attributes
-            foreach (CustomAttributeWrapper customAttribute in this._customAttributes)
-            {
-                metadata.AddCustomAttribute(moduleHandle, GetConstructorHandle(metadata, customAttribute.constructorInfo),
-                    metadata.GetOrAddBlob(customAttribute.binaryAttribute));
-            }
-
             // Add each type definition to metadata table.
             foreach (PersistableTypeBuilder typeBuilder in _typeDefStore)
             {
@@ -81,47 +63,15 @@ namespace System.Reflection.Emit.Experiment
                 // Add each method definition to metadata table.
                 foreach (PersistableMethodBuilder method in typeBuilder._methodDefStore)
                 {
-                    MethodDefinitionHandle methodHandle = MetadataHelper.AddMethodDefintion(metadata, method);
+                    MetadataHelper.AddMethodDefintion(metadata, method);
                     _nextMethodDefRowId++;
-
-                    foreach (CustomAttributeWrapper customAttribute in method._customAttributes)
-                    {
-                        metadata.AddCustomAttribute(methodHandle, GetConstructorHandle(metadata, customAttribute.constructorInfo),
-                            metadata.GetOrAddBlob(customAttribute.binaryAttribute));
-                    }
                 }
 
                 foreach (PersistableFieldBuilder field in typeBuilder._fieldDefStore)
                 {
-                    FieldDefinitionHandle fieldHandle = MetadataHelper.AddFieldDefintion(metadata, field);
-                    foreach (CustomAttributeWrapper customAttribute in field._customAttributes)
-                    {
-                        metadata.AddCustomAttribute(fieldHandle, GetConstructorHandle(metadata, customAttribute.constructorInfo),
-                            metadata.GetOrAddBlob(customAttribute.binaryAttribute));
-                    }
-                }
-
-                // Add each custom attribute to metadata table.
-                foreach (CustomAttributeWrapper customAttribute in typeBuilder._customAttributes)
-                {
-                    metadata.AddCustomAttribute(typeDefinitionHandle, GetConstructorHandle(metadata, customAttribute.constructorInfo),
-                        metadata.GetOrAddBlob(customAttribute.binaryAttribute));
+                    MetadataHelper.AddFieldDefintion(metadata, field);
                 }
             }
-        }
-
-        private MemberReferenceHandle GetConstructorHandle(MetadataBuilder metadata, ConstructorInfo constructorInfo)
-        {
-            if (_constructorRefStore.TryGetValue(constructorInfo, out var constructorHandle))
-            {
-                return constructorHandle;
-            }
-
-            TypeReferenceHandle parentHandle = GetTypeReference(metadata, constructorInfo.DeclaringType!);
-
-            constructorHandle = MetadataHelper.AddConstructorReference(metadata, parentHandle, constructorInfo);
-            _constructorRefStore.Add(constructorInfo, constructorHandle);
-            return constructorHandle;
         }
 
         private TypeReferenceHandle GetTypeReference(MetadataBuilder metadata, Type type)
@@ -145,11 +95,8 @@ namespace System.Reflection.Emit.Experiment
             return MetadataHelper.AddAssemblyReference(assembly, metadata);
         }
 
-        public override bool IsDefined(Type attributeType, bool inherit)
-        {
-            return false;
-        }
-
+        public override string ScopeName { get; }
+        public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override int GetFieldMetadataToken(FieldInfo field) => throw new NotImplementedException();
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => throw new NotImplementedException();
         public override int GetMethodMetadataToken(MethodInfo method) => throw new NotImplementedException();
@@ -169,15 +116,8 @@ namespace System.Reflection.Emit.Experiment
         }
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(con, binaryAttribute);
-            _customAttributes.Add(customAttribute);
-        }
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            SetCustomAttributeCore(customBuilder.Constructor, customBuilder.Blob);
-        }
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotSupportedException();
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotSupportedException();
         public override int GetSignatureMetadataToken(SignatureHelper signature) => throw new NotImplementedException();
     }
 }

@@ -24,9 +24,5 @@ namespace System.Reflection.Emit
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
-
-        public ConstructorInfo Constructor => default;
-
-        public byte[] Blob => default;
     }
 }
