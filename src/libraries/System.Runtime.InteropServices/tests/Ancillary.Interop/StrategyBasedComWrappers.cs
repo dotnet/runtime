@@ -4,6 +4,7 @@
 // Types that are only needed for the VTable source generator or to provide abstract concepts that the COM generator would use under the hood.
 // These are types that we can exclude from the API proposals and either inline into the generated code, provide as file-scoped types, or not provide publicly (indicated by comments on each type).
 
+using System.Reflection;
 using System.Collections;
 
 namespace System.Runtime.InteropServices.Marshalling
@@ -21,6 +22,16 @@ namespace System.Runtime.InteropServices.Marshalling
         protected virtual IIUnknownStrategy GetOrCreateIUnknownStrategy() => DefaultIUnknownStrategy;
 
         protected virtual IIUnknownCacheStrategy CreateCacheStrategy() => CreateDefaultCacheStrategy();
+
+        protected override sealed unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
+        {
+            if (obj.GetType().GetCustomAttribute(typeof(ComExposedClassAttribute<>)) is IComExposedDetails details)
+            {
+                return details.GetComInterfaceEntries(out count);
+            }
+            count = 0;
+            return null;
+        }
 
         protected override sealed unsafe object CreateObject(nint externalComObject, CreateObjectFlags flags)
         {

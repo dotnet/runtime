@@ -3,8 +3,6 @@
 
 namespace System.Runtime.InteropServices.Marshalling
 {
-    public interface IComObjectWrapper<T> { }
-
     [AttributeUsage(AttributeTargets.Interface)]
     public class GeneratedComInterfaceAttribute : Attribute
     {
