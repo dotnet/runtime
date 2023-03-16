@@ -9889,25 +9889,28 @@ interp_super_instructions (TransformData *td)
 						int mask_var = amount_def->sregs [1];
 						if (get_sreg_imm (td, mask_var, &imm, MINT_TYPE_I2)) {
 							// ldc + and + shl -> shl_and_imm
-							InterpInst *new_inst;
-							if (opcode == MINT_SHL_I4)
-								new_inst = interp_insert_ins (td, ins, MINT_SHL_AND_I4_IMM);
-							else
-								new_inst = interp_insert_ins (td, ins, MINT_SHL_AND_I8_IMM);
-							new_inst->dreg = ins->dreg;
-							new_inst->sregs [0] = ins->sregs [0];
-							new_inst->sregs [1] = amount_def->sregs [0];
-							new_inst->data [0] = imm;
+							int new_opcode = -1;
+							if (opcode == MINT_SHL_I4 && imm == 31)
+								new_opcode = MINT_SHL_AND_I4;
+							else if (opcode == MINT_SHL_I8 && imm == 63)
+								new_opcode = MINT_SHL_AND_I8;
 
-							local_ref_count [amount_var]--;
-							local_ref_count [mask_var]--;
+							if (new_opcode != -1) {
+								InterpInst *new_inst = interp_insert_ins (td, ins, new_opcode);
+								new_inst->dreg = ins->dreg;
+								new_inst->sregs [0] = ins->sregs [0];
+								new_inst->sregs [1] = amount_def->sregs [0];
 
-							interp_clear_ins (td->locals [mask_var].def);
-							interp_clear_ins (amount_def);
-							interp_clear_ins (ins);
-							if (td->verbose_level) {
-								g_print ("superins: ");
-								dump_interp_inst (new_inst);
+								local_ref_count [amount_var]--;
+								local_ref_count [mask_var]--;
+
+								interp_clear_ins (td->locals [mask_var].def);
+								interp_clear_ins (amount_def);
+								interp_clear_ins (ins);
+								if (td->verbose_level) {
+									g_print ("superins: ");
+									dump_interp_inst (new_inst);
+								}
 							}
 						}
 					}
