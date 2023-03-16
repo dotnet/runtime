@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <_GetWasmGenerateAppBundleDependenciesDependsOn>
+      _GetWasmIcuNativeAssets
+    </_GetWasmGenerateAppBundleDependenciesDependsOn>
+  </PropertyGroup>
+
+  <Target Name="_GetWasmIcuNativeAssets" Returns="@(WasmIcuDataFileNames);@(WasmNativeAsset)">
+    <PropertyGroup>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*" />
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
+
+      <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
+    </ItemGroup>
+  </Target>
+</Project>
