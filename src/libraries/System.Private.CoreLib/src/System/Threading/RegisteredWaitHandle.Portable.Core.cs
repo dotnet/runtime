@@ -15,7 +15,6 @@ namespace System.Threading
 #endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
-
         private static AutoResetEvent RentEvent() =>
             Interlocked.Exchange(ref s_cachedEvent, null) ??
             new AutoResetEvent(false);
@@ -34,7 +33,7 @@ namespace System.Threading
             TimeoutTimeMs = Environment.TickCount + TimeoutDurationMs;
         }
 
-        private bool UnregisterCore(WaitHandle waitObject)
+        private bool UnregisterPortableCore(WaitHandle waitObject)
         {
             // The registered wait handle must have been registered by this time, otherwise the instance is not handed out to
             // the caller of the public variants of RegisterWaitForSingleObject

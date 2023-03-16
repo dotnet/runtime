@@ -91,6 +91,6 @@ namespace System.Threading
         /// </summary>
         internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
-        public bool Unregister(WaitHandle waitObject) => UnregisterCore(waitObject);
+        public bool Unregister(WaitHandle waitObject) => UnregisterPortableCore(waitObject);
     }
 }

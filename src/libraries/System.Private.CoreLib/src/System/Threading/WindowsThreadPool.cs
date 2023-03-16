@@ -13,7 +13,7 @@ namespace System.Threading
     //
     // Windows-specific implementation of ThreadPool
     //
-    public static partial class WindowsThreadPool
+    public static class WindowsThreadPool
     {
         internal const bool IsWorkerTrackingEnabledInConfig = false;
 
@@ -43,7 +43,7 @@ namespace System.Threading
         }
 
         [ThreadStatic]
-        private static ThreadCountHolder t_threadCountHolder;
+        private static ThreadCountHolder? t_threadCountHolder;
         private static int s_threadCount;
 
         [StructLayout(LayoutKind.Sequential)]
@@ -137,7 +137,7 @@ namespace System.Threading
         internal static void NotifyWorkItemProgress() => IncrementCompletedWorkItemCount();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int _ /*currentTimeMs*/)
+        internal static bool NotifyWorkItemComplete(object threadLocalCompletionCountObject, int _ /*currentTimeMs*/)
         {
             ThreadInt64PersistentCounter.Increment(threadLocalCompletionCountObject);
             return true;
@@ -206,7 +206,7 @@ namespace System.Threading
             // OS doesn't signal handle, so do it here
             overlapped->InternalLow = (IntPtr)0;
             // Both types of callbacks are executed on the same thread pool
-            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);
+            return ThreadPool.UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);
         }
 
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]

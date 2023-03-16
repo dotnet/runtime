@@ -111,6 +111,7 @@
   <PropertyGroup>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
+    <NativeAotSourcesRoot>$(MSBuildThisFileDirectory)..\nativeaot\System.Private.CoreLib\src</NativeAotSourcesRoot>
   </PropertyGroup>
 
   <!-- Compilation options -->
@@ -289,6 +290,12 @@
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\RegisteredWaitHandle.CoreCLR.Windows.cs" />
+    <Compile Include="$(NativeAotSourcesRoot)\System\Threading\ThreadPoolCallbackWrapper.cs" />
+    <Compile Include="$(NativeAotSourcesRoot)\System\Threading\Thread.NativeAot.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPool.cs">
+      <Link>Interop\Windows\Kernel32\Interop.ThreadPool.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.CoreCLR.cs" />

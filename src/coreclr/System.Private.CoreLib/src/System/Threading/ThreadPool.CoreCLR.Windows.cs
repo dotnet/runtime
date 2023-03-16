@@ -9,7 +9,7 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
-        private static readonly bool UseWindowsThreadPool =
+        internal static readonly bool UseWindowsThreadPool =
             Environment.GetEnvironmentVariable("DOTNET_ThreadPool_UseWindowsThreadPool") == "1" ||
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", false);
 

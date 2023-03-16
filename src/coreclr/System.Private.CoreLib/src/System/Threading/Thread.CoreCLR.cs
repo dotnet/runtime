@@ -68,94 +68,19 @@ namespace System.Threading
         }
 
         /// <summary>Returns handle for interop with EE. The handle is guaranteed to be non-null.</summary>
-        internal ThreadHandle GetNativeHandle()
-        {
-            IntPtr thread = _DONT_USE_InternalThread;
+        internal ThreadHandle GetNativeHandle() => GetNativeHandleCore();
 
-            // This should never happen under normal circumstances.
-            if (thread == IntPtr.Zero)
-            {
-                throw new ArgumentException(null, SR.Argument_InvalidHandle);
-            }
+        public static void SpinWait(int iterations) => SpinWaitCore(iterations);
 
-            return new ThreadHandle(thread);
-        }
-
-        private unsafe void StartCore()
-        {
-            lock (this)
-            {
-                fixed (char* pThreadName = _name)
-                {
-                    StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, pThreadName);
-                }
-            }
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
-        private static unsafe partial void StartInternal(ThreadHandle t, int stackSize, int priority, char* pThreadName);
-
-        // Called from the runtime
-        private void StartCallback()
-        {
-            StartHelper? startHelper = _startHelper;
-            Debug.Assert(startHelper != null);
-            _startHelper = null;
-
-            startHelper.Run();
-        }
-
-        // Invoked by VM. Helper method to get a logical thread ID for StringBuilder (for
-        // correctness) and for FileStream's async code path (for perf, to avoid creating
-        // a Thread instance).
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalGetCurrentThread();
-
-        /// <summary>
-        /// Suspends the current thread for timeout milliseconds. If timeout == 0,
-        /// forces the thread to give up the remainder of its timeslice.  If timeout
-        /// == Timeout.Infinite, no timeout will occur.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void SleepInternal(int millisecondsTimeout);
-
-        /// <summary>
-        /// Wait for a length of time proportional to 'iterations'.  Each iteration is should
-        /// only take a few machine instructions.  Calling this API is preferable to coding
-        /// a explicit busy loop because the hardware can be informed that it is busy waiting.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void SpinWaitInternal(int iterations);
-
-        public static void SpinWait(int iterations) => SpinWaitInternal(iterations);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
-        private static partial Interop.BOOL YieldInternal();
-
-        public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Thread InitializeCurrentThread() => t_currentThread = GetCurrentThreadNative();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern Thread GetCurrentThreadNative();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void Initialize();
+        public static bool Yield() => YieldCore();
 
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void InternalFinalize();
 
         partial void ThreadNameChanged(string? value)
         {
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
         public extern bool IsAlive
@@ -181,12 +106,6 @@ namespace System.Threading
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool IsBackgroundNative();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void SetBackgroundNative(bool isBackground);
-
         /// <summary>Returns true if the thread is a threadpool thread.</summary>
         public extern bool IsThreadPoolThread
         {
@@ -210,84 +129,13 @@ namespace System.Threading
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern int GetPriorityNative();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void SetPriorityNative(int priority);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
-        private static partial ulong GetCurrentOSThreadId();
-
         /// <summary>
         /// Return the thread state as a consistent set of bits.  This is more
         /// general then IsAlive or IsBackground.
         /// </summary>
         public ThreadState ThreadState => (ThreadState)GetThreadStateNative();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern int GetThreadStateNative();
-
-        public ApartmentState GetApartmentState() =>
-#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            (ApartmentState)GetApartmentStateNative();
-#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            ApartmentState.Unknown;
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
-        /// <summary>
-        /// An unstarted thread can be marked to indicate that it will host a
-        /// single-threaded or multi-threaded apartment.
-        /// </summary>
-#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
-        {
-            ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state);
-
-            // Special case where we pass in Unknown and get back MTA.
-            //  Once we CoUninitialize the thread, the OS will still
-            //  report the thread as implicitly in the MTA if any
-            //  other thread in the process is CoInitialized.
-            if ((state == System.Threading.ApartmentState.Unknown) && (retState == System.Threading.ApartmentState.MTA))
-            {
-                return true;
-            }
-
-            if (retState != state)
-            {
-                if (throwOnError)
-                {
-                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState);
-                    throw new InvalidOperationException(msg);
-                }
-
-                return false;
-            }
-
-            return true;
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int GetApartmentStateNative();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int SetApartmentStateNative(int state);
-#else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
-        {
-             if (state != ApartmentState.Unknown)
-             {
-                if (throwOnError)
-                {
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-                }
-
-                return false;
-             }
-
-             return true;
-        }
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        public ApartmentState GetApartmentState() => GetApartmentStateCore();
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -297,27 +145,6 @@ namespace System.Threading
         {
         }
 #endif // FEATURE_COMINTEROP
-
-        /// <summary>
-        /// Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
-        /// thread is not currently blocked in that manner, it will be interrupted
-        /// when it next begins to block.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern void Interrupt();
-
-        /// <summary>
-        /// Waits for the thread to die or for timeout milliseconds to elapse.
-        /// </summary>
-        /// <returns>
-        /// Returns true if the thread died, or false if the wait timed out. If
-        /// -1 is given as the parameter, no timeout will occur.
-        /// </returns>
-        /// <exception cref="ArgumentException">if timeout &lt; -1 (Timeout.Infinite)</exception>
-        /// <exception cref="ThreadInterruptedException">if the thread is interrupted while waiting</exception>
-        /// <exception cref="ThreadStateException">if the thread has not been started yet</exception>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern bool Join(int millisecondsTimeout);
 
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
@@ -330,15 +157,6 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ResetThreadPoolThread()
-        {
-            Debug.Assert(this == CurrentThread);
-            Debug.Assert(IsThreadPoolThread);
-
-            if (_mayNeedResetForThreadPool)
-            {
-                ResetThreadPoolThreadSlow();
-            }
-        }
+        internal void ResetThreadPoolThread() => ResetThreadPoolThreadCore();
     }
 }
