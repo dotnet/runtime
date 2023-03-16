@@ -2119,7 +2119,17 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		} else if (!strcmp (tm, "AreSame")) {
 			*op = MINT_CEQ_P;
 		} else if (!strcmp (tm, "ByteOffset")) {
-			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
+#if SIZEOF_VOID_P == 4
+			interp_add_ins (td, MINT_SUB_I4);
+#else
+			interp_add_ins (td, MINT_SUB_I8);
+#endif
+			td->sp -= 2;
+			interp_ins_set_sregs2 (td->last_ins, td->sp [1].local, td->sp [0].local);
+			push_simple_type (td, STACK_TYPE_I);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			td->ip += 5;
+			return TRUE;
 		} else if (!strcmp (tm, "Unbox")) {
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
 			g_assert (ctx);
@@ -9871,6 +9881,39 @@ interp_super_instructions (TransformData *td)
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						dump_interp_inst (new_inst);
+					}
+				}
+			} else if (opcode == MINT_DIV_UN_I4 || opcode == MINT_DIV_UN_I8) {
+				// ldc + div.un -> shr.imm
+				int sreg_imm = ins->sregs [1];
+				InterpInst *def = td->locals [sreg_imm].def;
+				if (def != NULL && td->local_ref_count [sreg_imm] == 1) {
+					int power2 = -1;
+					if (MINT_IS_LDC_I4 (def->opcode)) {
+						guint32 ct = interp_get_const_from_ldc_i4 (def);
+						power2 = mono_is_power_of_two ((guint32)ct);
+					} else if (MINT_IS_LDC_I8 (def->opcode)) {
+						guint64 ct = interp_get_const_from_ldc_i8 (def);
+						if (ct < G_MAXUINT32)
+							power2 = mono_is_power_of_two ((guint32)ct);
+					}
+					if (power2 > 0) {
+						InterpInst *new_inst;
+						if (opcode == MINT_DIV_UN_I4)
+							new_inst = interp_insert_ins (td, ins, MINT_SHR_UN_I4_IMM);
+						else
+							new_inst = interp_insert_ins (td, ins, MINT_SHR_UN_I8_IMM);
+						new_inst->dreg = ins->dreg;
+						new_inst->sregs [0] = ins->sregs [0];
+						new_inst->data [0] = power2;
+
+						interp_clear_ins (def);
+						interp_clear_ins (ins);
+						local_ref_count [sreg_imm]--;
+						if (td->verbose_level) {
+							g_print ("lower div.un: ");
+							dump_interp_inst (new_inst);
+						}
 					}
 				}
 			} else if (MINT_IS_LDIND_INT (opcode)) {
