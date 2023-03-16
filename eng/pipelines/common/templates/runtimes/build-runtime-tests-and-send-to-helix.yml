@@ -29,10 +29,10 @@ parameters:
   shouldContinueOnError: false
 
 steps:
-  - ${{ if eq(parameters.osGroup, 'windows') }}:
+  - ${{ if and(eq(parameters.osGroup, 'windows'), ne(parameters.runtimeFlavor, 'mono'))  }}:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ci ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
       displayName: Build Tests
-  - ${{ if ne(parameters.osGroup, 'windows') }}:
+  - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.runtimeFlavor, 'mono')) }}:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
       displayName: Build Tests
 
