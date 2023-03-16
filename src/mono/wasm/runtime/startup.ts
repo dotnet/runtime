@@ -689,7 +689,7 @@ function normalizeConfig() {
     }
     runtimeHelpers.diagnosticTracing = !!config.diagnosticTracing;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
-    config.startupMemoryCache = config.startupMemoryCache == undefined ? true : !!config.startupMemoryCache;
+    config.startupMemoryCache = !!config.startupMemoryCache;
     if (config.startupMemoryCache && runtimeHelpers.waitForDebugger) {
         if (runtimeHelpers.diagnosticTracing) console.info("MONO_WASM: Disabling startupMemoryCache because waitForDebugger is set");
         config.startupMemoryCache = false;
