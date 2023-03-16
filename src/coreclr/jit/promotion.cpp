@@ -715,7 +715,7 @@ public:
             if (lhsLcl->TypeIs(TYP_STRUCT))
             {
                 unsigned size = lhsLcl->GetLayout(m_compiler)->GetSize();
-                ReadBackAfter(use, user, lhsLcl->GetLclNum(), lhsLcl->GetLclOffs(), size);
+                ReadBackAfter(use, user, lhsLcl->GetLclNum(), lhsLcl->GetLclOffs(), size, true);
             }
         }
 
@@ -875,7 +875,7 @@ public:
         }
     }
 
-    void ReadBackAfter(GenTree** use, GenTree* user, unsigned lcl, unsigned offs, unsigned size)
+    void ReadBackAfter(GenTree** use, GenTree* user, unsigned lcl, unsigned offs, unsigned size, bool conservative = false)
     {
         jitstd::vector<Replacement>& replacements = m_replacements[lcl];
         size_t index = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
@@ -906,6 +906,12 @@ public:
             //use = &comma->gtOp2;
 
             //m_madeChanges = true;
+
+            if (conservative)
+            {
+                JITDUMP("*** Conservatively marking as read-back\n");
+                conservative = false;
+            }
         }
     }
 };
