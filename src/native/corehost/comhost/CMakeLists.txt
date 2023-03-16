@@ -38,8 +38,8 @@ if (CLR_CMAKE_TARGET_WIN32)
         list(APPEND WINLIBS Ole32.lib OleAut32.lib)
     endif()
 
-    target_link_libraries(comhost ${WINLIBS})
+    target_link_libraries(comhost PRIVATE ${WINLIBS})
 endif()
 
 install_with_stripped_symbols(comhost TARGETS corehost)
-target_link_libraries(comhost libhostcommon)
+target_link_libraries(comhost PRIVATE libhostcommon)

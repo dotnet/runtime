@@ -194,7 +194,6 @@ Example use of the `wasmconsole` template:
 > dotnet publish
 > cd bin/Debug/net7.0/browser-wasm/AppBundle
 > node main.mjs
-mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
 Hello World!
 Args:
 ```

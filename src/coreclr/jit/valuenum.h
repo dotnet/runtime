@@ -352,7 +352,10 @@ public:
     simd8_t GetConstantSimd8(ValueNum argVN);
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
+#if defined(TARGET_XARCH)
     simd32_t GetConstantSimd32(ValueNum argVN);
+    simd64_t GetConstantSimd64(ValueNum argVN);
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 private:
@@ -434,7 +437,10 @@ public:
     ValueNum VNForSimd8Con(simd8_t cnsVal);
     ValueNum VNForSimd12Con(simd12_t cnsVal);
     ValueNum VNForSimd16Con(simd16_t cnsVal);
+#if defined(TARGET_XARCH)
     ValueNum VNForSimd32Con(simd32_t cnsVal);
+    ValueNum VNForSimd64Con(simd64_t cnsVal);
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 #ifdef TARGET_64BIT
@@ -1605,6 +1611,7 @@ private:
         return m_simd16CnsMap;
     }
 
+#if defined(TARGET_XARCH)
     struct Simd32PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd32_t>
     {
         static bool Equals(simd32_t x, simd32_t y)
@@ -1639,6 +1646,50 @@ private:
         }
         return m_simd32CnsMap;
     }
+
+    struct Simd64PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd64_t>
+    {
+        static bool Equals(simd64_t x, simd64_t y)
+        {
+            return x == y;
+        }
+
+        static unsigned GetHashCode(const simd64_t val)
+        {
+            unsigned hash = 0;
+
+            hash = static_cast<unsigned>(hash ^ val.u32[0]);
+            hash = static_cast<unsigned>(hash ^ val.u32[1]);
+            hash = static_cast<unsigned>(hash ^ val.u32[2]);
+            hash = static_cast<unsigned>(hash ^ val.u32[3]);
+            hash = static_cast<unsigned>(hash ^ val.u32[4]);
+            hash = static_cast<unsigned>(hash ^ val.u32[5]);
+            hash = static_cast<unsigned>(hash ^ val.u32[6]);
+            hash = static_cast<unsigned>(hash ^ val.u32[7]);
+            hash = static_cast<unsigned>(hash ^ val.u32[8]);
+            hash = static_cast<unsigned>(hash ^ val.u32[9]);
+            hash = static_cast<unsigned>(hash ^ val.u32[10]);
+            hash = static_cast<unsigned>(hash ^ val.u32[11]);
+            hash = static_cast<unsigned>(hash ^ val.u32[12]);
+            hash = static_cast<unsigned>(hash ^ val.u32[13]);
+            hash = static_cast<unsigned>(hash ^ val.u32[14]);
+            hash = static_cast<unsigned>(hash ^ val.u32[15]);
+
+            return hash;
+        }
+    };
+
+    typedef VNMap<simd64_t, Simd64PrimitiveKeyFuncs> Simd64ToValueNumMap;
+    Simd64ToValueNumMap* m_simd64CnsMap;
+    Simd64ToValueNumMap* GetSimd64CnsMap()
+    {
+        if (m_simd64CnsMap == nullptr)
+        {
+            m_simd64CnsMap = new (m_alloc) Simd64ToValueNumMap(m_alloc);
+        }
+        return m_simd64CnsMap;
+    }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
     template <size_t NumArgs>
@@ -1730,7 +1781,7 @@ private:
 #ifdef DEBUG
     // This helps test some performance pathologies related to "evaluation" of VNF_MapSelect terms,
     // especially relating to GcHeap/ByrefExposed.  We count the number of applications of such terms we consider,
-    // and if this exceeds a limit, indicated by a COMPlus_ variable, we assert.
+    // and if this exceeds a limit, indicated by a DOTNET_ variable, we assert.
     unsigned m_numMapSels;
 #endif
 };
@@ -1779,12 +1830,21 @@ struct ValueNumStore::VarTypConv<TYP_SIMD16>
     typedef simd16_t Type;
     typedef simd16_t Lang;
 };
+#if defined(TARGET_XARCH)
 template <>
 struct ValueNumStore::VarTypConv<TYP_SIMD32>
 {
     typedef simd32_t Type;
     typedef simd32_t Lang;
 };
+
+template <>
+struct ValueNumStore::VarTypConv<TYP_SIMD64>
+{
+    typedef simd64_t Type;
+    typedef simd64_t Lang;
+};
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 template <>
@@ -1846,12 +1906,21 @@ FORCEINLINE simd16_t ValueNumStore::SafeGetConstantValue<simd16_t>(Chunk* c, uns
     return reinterpret_cast<VarTypConv<TYP_SIMD16>::Lang*>(c->m_defs)[offset];
 }
 
+#if defined(TARGET_XARCH)
 template <>
 FORCEINLINE simd32_t ValueNumStore::SafeGetConstantValue<simd32_t>(Chunk* c, unsigned offset)
 {
     assert(c->m_typ == TYP_SIMD32);
     return reinterpret_cast<VarTypConv<TYP_SIMD32>::Lang*>(c->m_defs)[offset];
 }
+
+template <>
+FORCEINLINE simd64_t ValueNumStore::SafeGetConstantValue<simd64_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_SIMD64);
+    return reinterpret_cast<VarTypConv<TYP_SIMD64>::Lang*>(c->m_defs)[offset];
+}
+#endif // TARGET_XARCH
 
 template <>
 FORCEINLINE simd8_t ValueNumStore::ConstantValueInternal<simd8_t>(ValueNum vn DEBUGARG(bool coerce))
@@ -1895,6 +1964,7 @@ FORCEINLINE simd16_t ValueNumStore::ConstantValueInternal<simd16_t>(ValueNum vn 
     return SafeGetConstantValue<simd16_t>(c, offset);
 }
 
+#if defined(TARGET_XARCH)
 template <>
 FORCEINLINE simd32_t ValueNumStore::ConstantValueInternal<simd32_t>(ValueNum vn DEBUGARG(bool coerce))
 {
@@ -1908,6 +1978,21 @@ FORCEINLINE simd32_t ValueNumStore::ConstantValueInternal<simd32_t>(ValueNum vn 
 
     return SafeGetConstantValue<simd32_t>(c, offset);
 }
+
+template <>
+FORCEINLINE simd64_t ValueNumStore::ConstantValueInternal<simd64_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_SIMD64);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simd64_t>(c, offset);
+}
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 // Inline functions.

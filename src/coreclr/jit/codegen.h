@@ -883,8 +883,7 @@ protected:
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
-    void genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond);
-    void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
+    void genCodeForCCMP(GenTreeCCMP* ccmp);
 #endif
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
@@ -947,7 +946,7 @@ protected:
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
-    void genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node);
+    void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node);
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node);
@@ -1025,6 +1024,30 @@ protected:
     void genStoreLongLclVar(GenTree* treeNode);
 
 #endif // !defined(TARGET_64BIT)
+
+    //-------------------------------------------------------------------------
+    // genUpdateLifeStore: Do liveness udpate after tree store instructions
+    // were emitted, update result var's home if it was stored on stack.
+    //
+    // Arguments:
+    //     tree        -  Gentree node
+    //     targetReg   -  of the tree
+    //     varDsc      -  result value's variable
+    //
+    // Return Value:
+    //     None.
+    __forceinline void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
+    {
+        if (targetReg != REG_NA)
+        {
+            genProduceReg(tree);
+        }
+        else
+        {
+            genUpdateLife(tree);
+            varDsc->SetRegNum(REG_STK);
+        }
+    }
 
     // Do liveness update for register produced by the current node in codegen after
     // code has been emitted for it.
@@ -1535,7 +1558,6 @@ public:
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
-    static insCflags InsCflagsForCcmp(GenCondition cond);
     static insCond JumpKindToInsCond(emitJumpKind condition);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
@@ -1588,6 +1610,7 @@ public:
 
     void genCodeForJcc(GenTreeCC* tree);
     void genCodeForSetcc(GenTreeCC* setcc);
+    void genCodeForJTrue(GenTreeOp* jtrue);
 #endif // !TARGET_LOONGARCH64
 };
 

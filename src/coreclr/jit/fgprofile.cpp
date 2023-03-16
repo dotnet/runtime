@@ -7,6 +7,8 @@
 #pragma hdrstop
 #endif
 
+#include "fgprofilesynthesis.h"
+
 // Flowgraph Profile Support
 
 //------------------------------------------------------------------------
@@ -52,11 +54,6 @@ bool Compiler::fgHaveProfileData()
 //
 bool Compiler::fgHaveProfileWeights()
 {
-    if (!fgHaveProfileData())
-    {
-        return false;
-    }
-
     return fgPgoHaveWeights;
 }
 
@@ -77,12 +74,29 @@ bool Compiler::fgHaveSufficientProfileWeights()
         return false;
     }
 
-    if ((fgFirstBB != nullptr) && (fgPgoSource == ICorJitInfo::PgoSource::Static))
+    switch (fgPgoSource)
     {
-        const weight_t sufficientSamples = 1000;
-        return fgFirstBB->bbWeight > sufficientSamples;
+        case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Text:
+            return true;
+
+        case ICorJitInfo::PgoSource::Static:
+        case ICorJitInfo::PgoSource::Blend:
+        {
+            // We sometimes call this very early, eg evaluating the prejit root.
+            //
+            if (fgFirstBB != nullptr)
+            {
+                const weight_t sufficientSamples = 1000;
+                return fgFirstBB->bbWeight > sufficientSamples;
+            }
+
+            return true;
+        }
+
+        default:
+            return false;
     }
-    return true;
 }
 
 //------------------------------------------------------------------------
@@ -377,6 +391,8 @@ public:
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
     void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory) override;
+
+    static GenTree* CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType);
 };
 
 //------------------------------------------------------------------------
@@ -522,6 +538,10 @@ void BlockCountInstrumentor::RelocateProbes()
                 {
                     m_comp->fgRemoveRefPred(pred, block);
                     m_comp->fgAddRefPred(intermediary, block);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+                    m_comp->fgFixFinallyTargetFlags(pred, block, intermediary);
+#endif
                 }
             }
         }
@@ -586,19 +606,32 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     assert(block->bbCodeOffs == (IL_OFFSET)entry.ILOffset);
     assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
            (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
-    size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
+    uint8_t* addrOfCurrentExecutionCount = entry.Offset + profileMemory;
+
+#ifdef DEBUG
+    if (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0)
+    {
+        // Write the current synthesized count as the profile data
+        //
+        weight_t blockWeight = block->bbWeight;
+
+        if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount)
+        {
+            *((uint32_t*)addrOfCurrentExecutionCount) = (uint32_t)blockWeight;
+        }
+        else
+        {
+            *((uint64_t*)addrOfCurrentExecutionCount) = (uint64_t)blockWeight;
+        }
+
+        return;
+    }
+#endif
 
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
-    // Read Basic-Block count value
-    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
-    // Increment value by 1
-    GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
-
-    // Write new Basic-Block count value
-    GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-    GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
+    GenTree* incCount = CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
 
     if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
     {
@@ -616,16 +649,16 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
             JITDUMP("Placing copy of block probe for " FMT_BB " in pred " FMT_BB "\n", block->bbNum, pred->bbNum);
             if (!first)
             {
-                asgNode = m_comp->gtCloneExpr(asgNode);
+                incCount = m_comp->gtCloneExpr(incCount);
             }
-            m_comp->fgNewStmtAtBeg(pred, asgNode);
+            m_comp->fgNewStmtAtBeg(pred, incCount);
             pred->bbFlags &= ~BBF_MARKED;
             first = false;
         }
     }
     else
     {
-        m_comp->fgNewStmtAtBeg(block, asgNode);
+        m_comp->fgNewStmtAtBeg(block, incCount);
     }
 
     m_instrCount++;
@@ -712,6 +745,47 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* prof
     //
     m_comp->fgEnsureFirstBBisScratch();
     m_comp->fgInsertStmtAtEnd(m_comp->fgFirstBB, stmt);
+}
+
+//------------------------------------------------------------------------
+// BlockCountInstrumentor::CreateCounterIncrement: create a tree that increments a profile counter.
+//
+// Arguments:
+//   comp        - compiler instance
+//   counterAddr - address of counter to increment
+//   countType   - type of counter
+//
+// Returns:
+//   A node that increments the specified count.
+//
+GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType)
+{
+    if (JitConfig.JitInterlockedProfiling() > 0)
+    {
+        // Form counter address
+        GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+
+        // Interlocked increment
+        GenTree* xAddNode = comp->gtNewOperNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
+
+        return xAddNode;
+    }
+    else
+    {
+        // Read Basic-Block count value
+        GenTree* valueNode =
+            comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
+
+        // Increment value by 1
+        GenTree* rhsNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
+
+        // Write new Basic-Block count value
+        GenTree* lhsNode =
+            comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
+        GenTree* asgNode = comp->gtNewAssignNode(lhsNode, rhsNode);
+
+        return asgNode;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1448,34 +1522,12 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         JITDUMP("Could not find " FMT_BB " -> " FMT_BB " edge to instrument\n", block->bbNum,
                                 target->bbNum);
 
-                        // If we're optimizing, assume this edge got folded away
-                        //
-                        if (m_comp->opts.IsInstrumentedOptimized())
-                        {
-                            JITDUMP(" -- assuming this edge was folded away by the importer\n");
+                        JITDUMP(" -- assuming this edge was folded away by the importer\n");
 
-                            // Placate the asserts below
-                            //
-                            instrumentedBlock = source;
-                            edgesIgnored++;
-                        }
-                        // If the source block is a partial compilation patchpoint
-                        // then the edge will have been removed.
+                        // Placate the asserts below
                         //
-                        else if ((block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT) ==
-                                 BBF_PARTIAL_COMPILATION_PATCHPOINT)
-                        {
-                            JITDUMP(" -- source block is partial compilation patchpoint\n");
-
-                            // Placate the asserts below
-                            //
-                            instrumentedBlock = source;
-                            edgesIgnored++;
-                        }
-                        else
-                        {
-                            assert(found);
-                        }
+                        instrumentedBlock = source;
+                        edgesIgnored++;
                     }
 
                     // Delete the critical edge probe
@@ -1720,7 +1772,33 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount) ||
                (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount));
 
-        size_t addrOfCurrentExecutionCount = (size_t)(entry.Offset + profileMemory);
+        uint8_t* addrOfCurrentExecutionCount = profileMemory + entry.Offset;
+
+#ifdef DEBUG
+        if (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0)
+        {
+            // Write the current synthesized count as the profile data
+            //
+            // Todo: handle pseudo edges!
+            FlowEdge* const edge = m_comp->fgGetPredForBlock(source, target);
+
+            if (edge != nullptr)
+            {
+                weight_t edgeWeight = edge->getLikelyWeight();
+
+                if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount)
+                {
+                    *((uint32_t*)addrOfCurrentExecutionCount) = (uint32_t)edgeWeight;
+                }
+                else
+                {
+                    *((uint64_t*)addrOfCurrentExecutionCount) = (uint64_t)edgeWeight;
+                }
+            }
+
+            return;
+        }
+#endif
 
         // Determine where to place the probe.
         //
@@ -1754,33 +1832,8 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         var_types typ =
             entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
 
-        if (JitConfig.JitInterlockedProfiling() > 0)
-        {
-            // Form counter address
-            GenTree* addressNode = m_comp->gtNewIconHandleNode(addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR);
-
-            // Interlocked increment
-            GenTree* xAddNode = m_comp->gtNewOperNode(GT_XADD, typ, addressNode, m_comp->gtNewIconNode(1, typ));
-
-            // Ignore result.
-            m_comp->fgNewStmtAtBeg(instrumentedBlock, xAddNode);
-        }
-        else
-        {
-            // Read Basic-Block count value
-            GenTree* valueNode =
-                m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-
-            // Increment value by 1
-            GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
-
-            // Write new Basic-Block count value
-            GenTree* lhsNode =
-                m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-            GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
-
-            m_comp->fgNewStmtAtBeg(instrumentedBlock, asgNode);
-        }
+        GenTree* incCount = BlockCountInstrumentor::CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
+        m_comp->fgNewStmtAtBeg(instrumentedBlock, incCount);
 
         if (probe->kind != EdgeKind::Duplicate)
         {
@@ -2432,6 +2485,30 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
+#ifdef DEBUG
+    // Optionally run synthesis
+    //
+    if ((JitConfig.JitSynthesizeCounts() > 0) && !compIsForInlining())
+    {
+        if ((JitConfig.JitSynthesizeCounts() == 1) || ((JitConfig.JitSynthesizeCounts() == 2) && !fgHaveProfileData()))
+        {
+            JITDUMP("Synthesizing profile data\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+            return PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+
+    // Or run synthesis and save the data out as the actual profile data
+    //
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) &&
+        (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !compIsForInlining())
+    {
+        JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+#endif
+
     // Do we have profile data?
     //
     if (!fgHaveProfileData())
@@ -2456,8 +2533,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Summarize profile data
     //
-    JITDUMP("Have %s profile data: %d schema records (schema at %p, data at %p)\n", pgoSourceToString(fgPgoSource),
-            fgPgoSchemaCount, dspPtr(fgPgoSchema), dspPtr(fgPgoData));
+    JITDUMP("Have %s: %d schema records (schema at %p, data at %p)\n", compGetPgoSourceName(), fgPgoSchemaCount,
+            dspPtr(fgPgoSchema), dspPtr(fgPgoData));
 
     fgNumProfileRuns      = 0;
     unsigned otherRecords = 0;
@@ -3365,15 +3442,29 @@ void EfficientEdgeCountReconstructor::Propagate()
     //
     if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
-        JITDUMP("... discarding profile data because of %s\n",
-                m_badcode ? "badcode" : m_mismatch ? "mismatch" : m_allWeightsZero ? "zero counts"
-                                                                                   : "failed to converge");
-
         // Make sure nothing else in the jit looks at the profile data.
         //
-        m_comp->fgPgoSchema     = nullptr;
-        m_comp->fgPgoFailReason = "PGO data available, but there was a reconstruction problem";
+        m_comp->fgPgoHaveWeights = false;
+        m_comp->fgPgoSchema      = nullptr;
 
+        if (m_badcode)
+        {
+            m_comp->fgPgoFailReason = "PGO data available, but IL was malformed";
+        }
+        else if (m_mismatch)
+        {
+            m_comp->fgPgoFailReason = "PGO data available, but IL did not match";
+        }
+        else if (m_failedToConverge)
+        {
+            m_comp->fgPgoFailReason = "PGO data available, but solver did not converge";
+        }
+        else
+        {
+            m_comp->fgPgoFailReason = "PGO data available, profile data was all zero";
+        }
+
+        JITDUMP("... discarding profile data: %s\n", m_comp->fgPgoFailReason);
         return;
     }
 
@@ -4836,15 +4927,8 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //   (or nearly so)
 //
 // Notes:
-//   For each profiled block, check that the flow of counts into
-//   the block matches the flow of counts out of the block.
-//
-//   We ignore EH flow as we don't have explicit edges and generally
-//   we expect EH edge counts to be small, so errors from ignoring
-//   them should be rare.
-//
-//   There's no point checking until we've built pred lists, as
-//   we can't easily reason about consistency without them.
+//   Does nothing, if profile checks are disabled, or there are
+//   no profile weights or pred lists.
 //
 void Compiler::fgDebugCheckProfileWeights()
 {
@@ -4856,13 +4940,37 @@ void Compiler::fgDebugCheckProfileWeights()
         return;
     }
 
+    fgDebugCheckProfileWeights((ProfileChecks)JitConfig.JitProfileChecks());
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckProfileWeights: verify profile weights are self-consistent
+//   (or nearly so)
+//
+// Arguments:
+//   checks - checker options
+//
+// Notes:
+//   For each profiled block, check that the flow of counts into
+//   the block matches the flow of counts out of the block.
+//
+//   We ignore EH flow as we don't have explicit edges and generally
+//   we expect EH edge counts to be small, so errors from ignoring
+//   them should be rare.
+//
+//   There's no point checking until we've built pred lists, as
+//   we can't easily reason about consistency without them.
+//
+void Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
+{
     // We can check classic (min/max, late computed) weights
     //   and/or
     // new likelyhood based weights.
     //
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && (JitConfig.JitProfileChecks() & 0x1) == 0x1;
-    const bool verifyLikelyWeights  = (JitConfig.JitProfileChecks() & 0x2) == 0x2;
-    const bool assertOnFailure      = (JitConfig.JitProfileChecks() & 0x4) == 0x4;
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
+    const bool assertOnFailure      = hasFlag(checks, ProfileChecks::RAISE_ASSERT);
+    const bool checkAllBlocks       = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
@@ -4882,7 +4990,7 @@ void Compiler::fgDebugCheckProfileWeights()
     //
     for (BasicBlock* const block : Blocks())
     {
-        if (!block->hasProfileWeight())
+        if (!block->hasProfileWeight() && !checkAllBlocks)
         {
             unprofiledBlocks++;
             continue;
@@ -4920,8 +5028,11 @@ void Compiler::fgDebugCheckProfileWeights()
         //
         if (block->KindIs(BBJ_RETURN, BBJ_THROW))
         {
-            exitWeight += blockWeight;
-            exitProfiled   = !opts.IsOSR();
+            if (BasicBlock::sameHndRegion(block, fgFirstBB))
+            {
+                exitWeight += blockWeight;
+                exitProfiled = !opts.IsOSR();
+            }
             verifyOutgoing = false;
         }
 
@@ -4960,12 +5071,12 @@ void Compiler::fgDebugCheckProfileWeights()
 
         if (verifyIncoming)
         {
-            incomingConsistent = fgDebugCheckIncomingProfileData(block);
+            incomingConsistent = fgDebugCheckIncomingProfileData(block, checks);
         }
 
         if (verifyOutgoing)
         {
-            outgoingConsistent = fgDebugCheckOutgoingProfileData(block);
+            outgoingConsistent = fgDebugCheckOutgoingProfileData(block, checks);
         }
 
         if (!incomingConsistent || !outgoingConsistent)
@@ -4978,7 +5089,13 @@ void Compiler::fgDebugCheckProfileWeights()
     //
     if (entryProfiled && exitProfiled)
     {
-        if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
+        // Note these may not agree, if fgEntryBB is a loop header.
+        //
+        if (fgFirstBB->bbRefs > 1)
+        {
+            JITDUMP("  Method entry " FMT_BB " is loop head, can't check entry/exit balance\n");
+        }
+        else if (!fgProfileWeightsConsistent(entryWeight, exitWeight))
         {
             problemBlocks++;
             JITDUMP("  Method entry " FMT_WT " method exit " FMT_WT " weight mismatch\n", entryWeight, exitWeight);
@@ -5016,7 +5133,8 @@ void Compiler::fgDebugCheckProfileWeights()
 //   block matches the profile weight of the block.
 //
 // Arguments:
-//   block - block to check
+//   block  - block to check
+//   checks - checker options
 //
 // Returns:
 //   true if counts consistent or checking disabled, false otherwise.
@@ -5024,10 +5142,10 @@ void Compiler::fgDebugCheckProfileWeights()
 // Notes:
 //   Only useful to call on blocks with predecessors.
 //
-bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
+bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && (JitConfig.JitProfileChecks() & 0x1) == 0x1;
-    const bool verifyLikelyWeights  = (JitConfig.JitProfileChecks() & 0x2) == 0x2;
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
@@ -5047,7 +5165,10 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
         incomingWeightMax += predEdge->edgeWeightMax();
         if (predEdge->hasLikelihood())
         {
-            incomingLikelyWeight += predEdge->getLikelyWeight();
+            if (BasicBlock::sameHndRegion(block, predEdge->getSourceBlock()))
+            {
+                incomingLikelyWeight += predEdge->getLikelyWeight();
+            }
         }
         else
         {
@@ -5113,6 +5234,7 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
 //
 // Arguments:
 //   block - block to check
+//   checks - checker options
 //
 // Returns:
 //   true if counts consistent or checking disabled, false otherwise.
@@ -5120,10 +5242,10 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
 // Notes:
 //   Only useful to call on blocks with successors.
 //
-bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
+bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks)
 {
-    const bool verifyClassicWeights = fgEdgeWeightsComputed && (JitConfig.JitProfileChecks() & 0x1) == 0x1;
-    const bool verifyLikelyWeights  = (JitConfig.JitProfileChecks() & 0x2) == 0x2;
+    const bool verifyClassicWeights = fgEdgeWeightsComputed && hasFlag(checks, ProfileChecks::CHECK_CLASSIC);
+    const bool verifyLikelyWeights  = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
 
     if (!(verifyClassicWeights || verifyLikelyWeights))
     {
@@ -5234,45 +5356,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
     }
 
     return classicWeightsValid && likelyWeightsValid;
-}
-
-//------------------------------------------------------------------------------
-// pgoSourceToString: describe source of pgo data
-//
-// Arguments:
-//    r - source enum to describe
-//
-// Returns:
-//    descriptive string
-//
-const char* Compiler::pgoSourceToString(ICorJitInfo::PgoSource p)
-{
-    const char* pgoSource = "unknown";
-    switch (fgPgoSource)
-    {
-        case ICorJitInfo::PgoSource::Dynamic:
-            pgoSource = "dynamic";
-            break;
-        case ICorJitInfo::PgoSource::Static:
-            pgoSource = "static";
-            break;
-        case ICorJitInfo::PgoSource::Text:
-            pgoSource = "text";
-            break;
-        case ICorJitInfo::PgoSource::Blend:
-            pgoSource = "static+dynamic";
-            break;
-        case ICorJitInfo::PgoSource::IBC:
-            pgoSource = "IBC";
-            break;
-        case ICorJitInfo::PgoSource::Sampling:
-            pgoSource = "Sampling";
-            break;
-        default:
-            break;
-    }
-
-    return pgoSource;
 }
 
 #endif // DEBUG

@@ -1393,6 +1393,16 @@ RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, reg
     return defRefPosition;
 }
 
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+RefPosition* LinearScan::buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
+{
+    // The candidate set should contain only float registers.
+    assert((internalCands & ~availableMaskRegs) == RBM_NONE);
+
+    return defineNewInternalTemp(tree, MaskRegisterType, internalCands);
+}
+#endif
+
 //------------------------------------------------------------------------
 // buildInternalRegisterUses - adds use positions for internal
 // registers required for tree node.
@@ -4108,8 +4118,10 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 //
 int LinearScan::BuildCmp(GenTree* tree)
 {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_BT));
+#elif defined(TARGET_ARM64)
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_CCMP));
 #else
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP));
 #endif

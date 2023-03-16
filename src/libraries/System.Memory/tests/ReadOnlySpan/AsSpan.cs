@@ -55,36 +55,46 @@ namespace System.SpanTests
             Assert.Throws<ArgumentOutOfRangeException>(() => str.AsSpan(1, 0).DontBox());
             Assert.Throws<ArgumentOutOfRangeException>(() => str.AsSpan(1, 1).DontBox());
             Assert.Throws<ArgumentOutOfRangeException>(() => str.AsSpan(-1, -1).DontBox());
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsSpan(new Index(1)).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsSpan(new Index(0, fromEnd: true)).DontBox());
+
+            Assert.Throws<ArgumentNullException>(() => str.AsSpan(0..1).DontBox());
+            Assert.Throws<ArgumentNullException>(() => str.AsSpan(new Range(new Index(0), new Index(0, fromEnd: true))).DontBox());
+            Assert.Throws<ArgumentNullException>(() => str.AsSpan(new Range(new Index(0, fromEnd: true), new Index(0))).DontBox());
+            Assert.Throws<ArgumentNullException>(() => str.AsSpan(new Range(new Index(0, fromEnd: true), new Index(0, fromEnd: true))).DontBox());
         }
 
         [Theory]
         [MemberData(nameof(TestHelpers.StringSliceTestData), MemberType = typeof(TestHelpers))]
-        public static unsafe void AsSpan_StartAndLength(string text, int start, int length)
+        public static void AsSpan_StartAndLength(string text, int start, int length)
         {
-            ReadOnlySpan<char> span;
             if (start == -1)
             {
-                start = 0;
-                length = text.Length;
-                span = text.AsSpan();
+                Validate(text, 0, text.Length, text.AsSpan());
+                Validate(text, 0, text.Length, text.AsSpan(0));
+                Validate(text, 0, text.Length, text.AsSpan(0..^0));
             }
             else if (length == -1)
             {
-                length = text.Length - start;
-                span = text.AsSpan(start);
+                Validate(text, start, text.Length - start, text.AsSpan(start));
+                Validate(text, start, text.Length - start, text.AsSpan(start..));
             }
             else
             {
-                span = text.AsSpan(start, length);
+                Validate(text, start, length, text.AsSpan(start, length));
+                Validate(text, start, length, text.AsSpan(start..(start+length)));
             }
 
-            Assert.Equal(length, span.Length);
-
-            fixed (char* pText = text)
+            static unsafe void Validate(string text, int start, int length, ReadOnlySpan<char> span)
             {
-                char* expected = pText + start;
-                void* actual = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
-                Assert.Equal((IntPtr)expected, (IntPtr)actual);
+                Assert.Equal(length, span.Length);
+                fixed (char* pText = text)
+                {
+                    char* expected = pText + start;
+                    void* actual = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+                    Assert.Equal((IntPtr)expected, (IntPtr)actual);
+                }
             }
         }
 
@@ -93,6 +103,10 @@ namespace System.SpanTests
         public static unsafe void AsSpan_2Arg_OutOfRange(string text, int start)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsSpan(start).DontBox());
+            if (start >= 0)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => text.AsSpan(new Index(start)).DontBox());
+            }
         }
 
         [Theory]
@@ -100,6 +114,10 @@ namespace System.SpanTests
         public static unsafe void AsSpan_3Arg_OutOfRange(string text, int start, int length)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsSpan(start, length).DontBox());
+            if (start >= 0 && length >= 0 && start + length >= 0)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => text.AsSpan(start..(start + length)).DontBox());
+            }
         }
     }
 }

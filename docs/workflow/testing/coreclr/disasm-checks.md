@@ -85,10 +85,10 @@ Functionality that has been added or moved to SuperFileCheck:
 - `<check-prefix>-FULL-LINE-NEXT:` - same as using FileCheck's `<check-prefix>-NEXT:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
 # Test Run Limitations
 1. Disasm checks will not run if these environment variables are set:
-- `COMPlus_JitStress`
-- `COMPlus_JitStressRegs`
-- `COMPlus_TailcallStress`
-- `COMPlus_TieredPGO`
+- `DOTNET_JitStress`
+- `DOTNET_JitStressRegs`
+- `DOTNET_TailcallStress`
+- `DOTNET_TieredPGO`
 2. Disasm checks will not run under GCStress test modes.
 3. Disasm checks will not run under heap-verify test modes.
 4. Disasm checks will not run under cross-gen2 test modes.
@@ -139,5 +139,5 @@ The reason for these limitations are that SuperFileCheck only relies on the C# s
 ; Total bytes of code 6, prolog size 0, PerfScore 2.10, instruction count 3, allocated bytes for code 6 (MethodHash=e2c7b489) for method Program:PerformMod_1(uint):uint     <-- end anchor
 ```
 - SuperFileCheck does not use a command line library today due to it being so minimal and most of the heavy lifting is done passing the arguments to FileCheck itself. As SuperFileCheck continues to grow, we will need to use a command line library, such as System.CommandLine.
-- Support various JIT test modes to allow testing codegen under specific scenarios. (Note: these can already be partially done by setting environment variables (like `COMPlus_JITMinOpts`) in the test itself.)
+- Support various JIT test modes to allow testing codegen under specific scenarios. (Note: these can already be partially done by setting environment variables (like `DOTNET_JITMinOpts`) in the test itself.)
 - JIT IR Testing - we may want to allow testing against certain phases of a method by looking at the IR. There are a lot of unknowns surrounding this, but it would be useful to have a prototype.

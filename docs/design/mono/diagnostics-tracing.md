@@ -345,7 +345,7 @@ NOTE, iOS only support use of loopback interface when running DiagnosticServer i
 
 ### Application running single file based EventPipe session
 
-If application supports controlled runtime shutdown, `mono_jit_cleanup` gets called before terminating process, it is possible to run a single file based EventPipe session using environment variables as described in https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables. In .net6 an additional variable has been added, `COMPlus_EventPipeOutputStreaming`, making sure data is periodically flushed into the output file.
+If application supports controlled runtime shutdown, `mono_jit_cleanup` gets called before terminating process, it is possible to run a single file based EventPipe session using environment variables as described in https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables. In .net6 an additional variable has been added, `DOTNET_EventPipeOutputStreaming`, making sure data is periodically flushed into the output file.
 
 If application doesn't support controlled runtime shutdown, this mode won't work, since it requires rundown events, only emitted when closing session and flushing memory manager. If application doesn't call `mono_jit_cleanup` before terminating, generated nettrace file will lack rundown events needed to produce callstacks including symbols.
 

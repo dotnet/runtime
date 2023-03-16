@@ -27,7 +27,6 @@
       - $(WasmDedup)         - Whenever to dedup generic instances when using AOT. Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use
-      - $(AOTMode)           - Defaults to `LLVMOnlyInterp`
       - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
       - $(InvariantGlobalization)       - Whenever to disable ICU. Defaults to false.
 
@@ -319,27 +318,28 @@
 
   <Target Name="_GetWasiGenerateAppBundleDependencies">
     <PropertyGroup>
-      <WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
-
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
     </PropertyGroup>
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
-
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <WasmIcuDataFileNames Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
+      <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
   </Target>
 
   <Target Name="_WasiGenerateAppBundle"
-          Inputs="@(_WasmAssembliesInternal);$(WasmIcuDataFileName);@(WasmNativeAsset)"
+          Inputs="@(_WasmAssembliesInternal);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
-          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript" />
+          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript">
+  </Target>
+
 
   <Target Name="_WasiDefaultGenerateAppBundle">
 
@@ -353,7 +353,8 @@
       DefaultHostConfig="$(DefaultWasmHostConfig)"
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
-      IcuDataFileName="$(WasmIcuDataFileName)"
+      IcuDataFileNames="@(WasmIcuDataFileNames)"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"

@@ -9,7 +9,6 @@ namespace System.Runtime.InteropServices.Marshalling
     [AttributeUsage(AttributeTargets.Interface)]
     public class IUnknownDerivedAttribute<T, TImpl> : Attribute, IUnknownDerivedDetails
         where T : IIUnknownInterfaceType
-        where TImpl : T
     {
         public IUnknownDerivedAttribute()
         {
@@ -22,6 +21,6 @@ namespace System.Runtime.InteropServices.Marshalling
         public Type Implementation => typeof(TImpl);
 
         /// <inheritdoc />
-        public unsafe void* VirtualMethodTableManagedImplementation => T.VirtualMethodTableManagedImplementation;
+        public unsafe void* VirtualMethodTableManagedImplementation => T.ManagedVirtualMethodTable;
     }
 }

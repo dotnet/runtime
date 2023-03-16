@@ -23,7 +23,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.AccountManagement\src\System.DirectoryServices.AccountManagement.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Packaging\src\System.IO.Packaging.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Ports\src\System.IO.Ports.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Management\src\System.Management.csproj" />
@@ -45,6 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />  
     <PackageReference Include="System.ServiceModel.Primitives;
                                      System.ServiceModel.Duplex;
