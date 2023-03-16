@@ -22,7 +22,7 @@ public class SevenZip
           WorkingDirectory = directory
         };
 
-        BuildDriver.RunProcess(psi);
+        Utils.RunProcess(psi);
 
         return new NPath(outputFile);
     }

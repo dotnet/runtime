@@ -11,5 +11,5 @@ dependencies:
   - path: .yamato/build_linux_x64_debug.yml
 
 commands:
-  - ./.yamato/scripts/test_linux.sh Debug
+  - ./.yamato/scripts/build_yamato.sh --config=Debug --test
 

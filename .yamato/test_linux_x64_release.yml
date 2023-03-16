@@ -11,5 +11,5 @@ dependencies:
   - path: .yamato/build_linux_x64_release.yml
 
 commands:
-  - ./.yamato/scripts/test_linux.sh Release
+  - ./.yamato/scripts/build_yamato.sh --config=Release --test
 

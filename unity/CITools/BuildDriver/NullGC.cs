@@ -7,9 +7,11 @@ using NiceIO;
 
 namespace BuildDriver;
 
-public class BuildNullGC : BuildDriver
+public class NullGC
 {
-    public static void Run(GlobalConfig gConfig)
+
+
+    public static void Build(GlobalConfig gConfig)
     {
         Console.WriteLine("***********************");
         Console.WriteLine("Unity: Building Null GC");
@@ -22,7 +24,7 @@ public class BuildNullGC : BuildDriver
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && gConfig.Architecture.Equals("arm64"))
             extraArchDefine = "-DCMAKE_OSX_ARCHITECTURES=arm64 ";
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            extraArchDefine = gConfig.Architecture.Equals("x86") ? "Win32" : "x64";
+            extraArchDefine = Utils.WinArchitecture(gConfig.Architecture);
 
         ProcessStartInfo sInfo = new();
         sInfo.FileName = "cmake";
@@ -31,12 +33,12 @@ public class BuildNullGC : BuildDriver
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             sInfo.Arguments = $"{extraArchDefine}-DCMAKE_BUILD_TYPE={gConfig.Configuration} ..";
 
-        RunProcess(sInfo, gConfig);
+        Utils.RunProcess(sInfo, gConfig);
 
         sInfo.Arguments = "--build .";
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             sInfo.Arguments = $"--build . --config {gConfig.Configuration}";
 
-        RunProcess(sInfo, gConfig);
+        Utils.RunProcess(sInfo, gConfig);
     }
 }

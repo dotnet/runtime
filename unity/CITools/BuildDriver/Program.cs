@@ -11,23 +11,29 @@ public class Program
         string architecture = GetArchitectures()[0]; // Get default arch for current system
         string configuration = "Release";
         bool silent = false;
-        bool zip = RunningOnYamato();
         bool skipBuild = false;
+        bool test = false;
+        bool zip = RunningOnYamato();
         Task<NPath>? zipTask = null;
         foreach (string arg in args)
         {
             if ((arg.StartsWith("--arch") || arg.StartsWith("--architecture="))
                 && !TryParseArgument(GetArchitectures(true), arg, out architecture))
                 return 1;
-            if ((arg.StartsWith("--config=") || arg.StartsWith("--configuration="))
+            else if ((arg.StartsWith("--config=") || arg.StartsWith("--configuration="))
                      && !TryParseArgument(new[] {"Release", "Debug"}, arg, out configuration))
                 return 1;
-            if (arg.Equals("--silent") || arg.Equals("--s"))
+            else if (arg.Equals("--silent") || arg.Equals("--s"))
                 silent = true;
-            if (arg.Equals("--zip") || arg.Equals("--z"))
+            else if (arg.Equals("--zip") || arg.Equals("--z"))
                 zip = true;
-            if (arg.Equals("--skip-build"))
+            else if (arg.Equals("--skip-build"))
                 skipBuild = true;
+            else if (arg.Equals("--test"))
+            {
+                skipBuild = true; // Assume we've already built
+                test = true;
+            }
         }
 
         if (RunningOnYamato())
@@ -43,25 +49,35 @@ public class Program
         Console.WriteLine("*****************************");
 
         GlobalConfig gConfig = new (){ Architecture = architecture, Configuration = configuration, Silent = silent};
+        EmbeddingHost.Build(gConfig);
         if (!skipBuild)
         {
-            BuildEmbeddingHost.Run(gConfig);
-            BuildNullGC.Run(gConfig);
-            BuildCoreCLR.Run(gConfig);
+            NullGC.Build(gConfig);
+            CoreCLR.Build(gConfig);
+
+            // TODO: Switch to using Embedding Host build to perform the copy instead of this once that lands.
+            NPath artifacts = ConsolidateArtifacts(gConfig);
+
+            NPath zipExe = new("7z");
+            if (zipTask != null)
+            {
+                zipExe = await zipTask;
+                if (zipTask.Exception != null)
+                    throw zipTask.Exception;
+            }
+
+            if (zip)
+                SevenZip.Zip(zipExe, artifacts, gConfig);
         }
 
-        NPath artifacts = ConsolidateArtifacts(gConfig);
-
-        NPath zipExe = new("7z");
-        if (zipTask != null)
+        if (test)
         {
-            zipExe = await zipTask;
-            if (zipTask.Exception != null)
-                throw zipTask.Exception;
+            EmbeddingHost.Test(gConfig);
+            CoreCLR.Test(gConfig);
+            Console.WriteLine("******************************");
+            Console.WriteLine("Unity: Tested CoreCLR successfully");
+            Console.WriteLine("******************************");
         }
-
-        if (zip)
-            SevenZip.Zip(zipExe, artifacts, gConfig);
 
         return 0;
     }

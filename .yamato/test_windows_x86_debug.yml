@@ -4,11 +4,11 @@ name: Test Windows x86 Debug
 
 agent:
   type: Unity::VM
-  image: burst/burst-base:1.0.8-1195360
+  image: platform-foundation/coreclr-windows:v0.0.1-1276296
   flavor: b1.xlarge
 
 dependencies:
   - path: .yamato/build_windows_x86_debug.yml
 
 commands:
-  - .yamato/scripts/test_windows.cmd x86 Debug
+  - .yamato/scripts/build_yamato.cmd --arch=x86 --config=Debug --test
