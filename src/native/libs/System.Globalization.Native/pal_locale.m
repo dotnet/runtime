@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include "pal_locale_internal.h"
+#include "pal_localeStringData.h"
 
 #import <Foundation/Foundation.h>
 #import <Foundation/NSFormatter.h>
@@ -140,6 +141,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             value = [numberFormatter.perMillSymbol UTF8String];
             break;
         // TODO find mapping for below cases
+        // https://github.com/dotnet/runtime/issues/83514
         case LocaleString_Digits:
         case LocaleString_MonetaryDecimalSeparator:
         case LocaleString_MonetaryThousandSeparator:

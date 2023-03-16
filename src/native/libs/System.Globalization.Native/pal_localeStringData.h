@@ -6,7 +6,6 @@
 
 #include "pal_locale.h"
 #include "pal_compiler.h"
-#include "pal_localeStringData.h"
 
 // Enum that corresponds to managed enum CultureData.LocaleStringData.
 // The numeric values of the enum members match their Win32 counterparts.

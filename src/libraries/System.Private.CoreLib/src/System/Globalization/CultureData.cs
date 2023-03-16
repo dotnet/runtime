@@ -2318,7 +2318,7 @@ namespace System.Globalization
 #if TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type, uiCultureName) : IcuGetLocaleInfo(type, uiCultureName);
 #else
-        return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
 #endif
         }
 
