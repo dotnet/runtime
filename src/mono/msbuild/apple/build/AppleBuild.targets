@@ -91,7 +91,7 @@
 
   <Target Name="_AppleResolveReferences">
     <PropertyGroup>
-      <_FullPublishDir>$([MSBuild]::NormalizeDirectory($(PublishDir)))</_FullPublishDir>
+      <_FullPublishDir Condition="'$(PublishDir)' != ''">$([MSBuild]::NormalizeDirectory($(PublishDir)))</_FullPublishDir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(EnableDefaultAssembliesToBundle)' == 'true'">
