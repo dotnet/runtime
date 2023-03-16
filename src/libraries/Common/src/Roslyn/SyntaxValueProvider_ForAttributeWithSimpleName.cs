@@ -336,8 +336,9 @@ internal static partial class SyntaxValueProviderExtensions
                         // means having to dive deep into statements and expressions.
                         var childNodesAndTokens = node.ChildNodesAndTokens();
 
-                        // Avoid performance issue (in .NET 7 and earlier) iterating the child list in reverse
-                        // by iterating forward first, to populate the cache.
+                        // Avoid performance issue in ChildSyntaxList when iterating the child list in reverse
+                        // (see https://github.com/dotnet/roslyn/issues/66475) by iterating forward first to
+                        // ensure child nodes are realized.
                         foreach (var childNode in childNodesAndTokens)
                         {
                         }
