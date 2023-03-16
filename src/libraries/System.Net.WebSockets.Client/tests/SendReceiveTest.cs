@@ -251,6 +251,11 @@ namespace System.Net.WebSockets.Client.Tests
         // This will also pass when no exception is thrown. Current implementation doesn't throw.
         public async Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
+            if (PlatformDetection.IsNodeJS)
+            {
+                //[ActiveIssue] https://github.com/dotnet/runtime/issues/83517
+                return;
+            }
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
