@@ -190,10 +190,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 
-    <![CDATA[
+    <!--
       Testing if gold linker is available:
         ! echo "" | cc -xc -fuse-ld=gold - 2>&1 | grep -qE "fuse-ld=gold|'ld'"
-    ]]>
+    -->
     <Exec Command="! echo &quot;&quot; | &quot;$(CppLinker)&quot; -xc -fuse-ld=gold - 2&gt;&amp;1 | grep -qE &quot;fuse-ld=gold|'ld'&quot;"
           Condition="'$(UseLlvmLinker)' != 'true' and '$(_targetOS)' == 'linux'"
           IgnoreExitCode="true"
