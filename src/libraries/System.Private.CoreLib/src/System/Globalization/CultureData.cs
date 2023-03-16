@@ -2303,6 +2303,7 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
+
 #if TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
 #else
@@ -2315,6 +2316,7 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
+
 #if TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type, uiCultureName) : IcuGetLocaleInfo(type, uiCultureName);
 #else
@@ -2327,6 +2329,7 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
+
 #if TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(localeName, type, uiCultureName) : IcuGetLocaleInfo(localeName, type, uiCultureName);
 #else
