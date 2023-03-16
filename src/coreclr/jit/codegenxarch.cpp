@@ -3349,31 +3349,30 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                ? YMM_REGSIZE_BYTES
                                : XMM_REGSIZE_BYTES;
 
-        while (size >= regSize)
+        do
         {
-            for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+            if (srcLclNum != BAD_VAR_NUM)
             {
-                if (srcLclNum != BAD_VAR_NUM)
-                {
-                    emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-                }
-                else
-                {
-                    emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                        srcAddrIndexScale, srcOffset);
-                }
-
-                if (dstLclNum != BAD_VAR_NUM)
-                {
-                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-                }
-                else
-                {
-                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                        dstAddrIndexScale, dstOffset);
-                }
+                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
             }
-        }
+            else
+            {
+                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+            dstOffset += regSize;
+            size -= regSize;
+        } while (size >= regSize);
 
         // Handle the remainder by overlapping with previosly processed data
         if ((size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
