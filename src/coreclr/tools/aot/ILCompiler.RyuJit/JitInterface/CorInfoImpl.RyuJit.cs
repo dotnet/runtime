@@ -276,17 +276,17 @@ namespace Internal.JitInterface
                         lookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_RUNTIMEHANDLE_CLASS;
                     }
 
+                    // There might be one more zero indirection if IndirectLastOffset is true.
                     lookup.runtimeLookup.indirections = (ushort)(genericLookup.NumberOfIndirections + (genericLookup.IndirectLastOffset ? 1 : 0));
-                    lookup.runtimeLookup.offset0 = (IntPtr)genericLookup[0];
+                    if (genericLookup.NumberOfIndirections > 0)
+                    {
+                        lookup.runtimeLookup.offset0 = genericLookup[0];
+                        lookup.runtimeLookup.offset1 = IntPtr.Zero; // might be looked at if IndirectLastOffset and this is last
+                    }
                     if (genericLookup.NumberOfIndirections > 1)
                     {
-                        lookup.runtimeLookup.offset1 = (IntPtr)genericLookup[1];
-                        if (genericLookup.IndirectLastOffset)
-                            lookup.runtimeLookup.offset2 = IntPtr.Zero;
-                    }
-                    else if (genericLookup.IndirectLastOffset)
-                    {
-                        lookup.runtimeLookup.offset1 = IntPtr.Zero;
+                        lookup.runtimeLookup.offset1 = genericLookup[1];
+                        lookup.runtimeLookup.offset2 = IntPtr.Zero; // might be looked at if IndirectLastOffset and this is last
                     }
                     lookup.runtimeLookup.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
                     lookup.runtimeLookup.testForFixup = false; // TODO: this will be needed in true multifile

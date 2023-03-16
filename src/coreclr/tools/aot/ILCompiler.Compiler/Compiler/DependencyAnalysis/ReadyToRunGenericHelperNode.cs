@@ -18,6 +18,9 @@ namespace ILCompiler.DependencyAnalysis
         private readonly ReadyToRunHelperId _id;
         private readonly object _target;
         protected readonly TypeSystemEntity _dictionaryOwner;
+
+        // The signature we need to look up. This can be null.
+        // See the comments in the constructor.
         protected readonly GenericLookupResult _lookupSignature;
 
         // True if any of slots in dictionaries associated with this layout could not be filled
@@ -43,7 +46,30 @@ namespace ILCompiler.DependencyAnalysis
             _dictionaryOwner = dictionaryOwner;
             _target = target;
 
-            _lookupSignature = GetLookupSignature(factory, helperId, target);
+            // If the thing we want to look up is the same thing that defines the current context,
+            // skip the lookup and use the generic context as-is. For example:
+            //
+            // class Gen<T>
+            // {
+            //     static void Method1(...) => Method2(...);
+            //     static void Method2(...) => ...
+            // }
+            //
+            // Since Method1 is calling Method2, we need to pass the generic context so that
+            // we know what the T is. We could either generate it as a dictionary lookup for
+            // TypeHandle of Gen<!0>, or we can realize that the current generic context is already
+            // the TypeHandle of Gen<!0> and we can use it as-is.
+            // We set a null lookupSignature to indicate this is the "not actually a lookup" lookup.
+            if (helperId == ReadyToRunHelperId.TypeHandle
+                && dictionaryOwner is DefType defType
+                && defType.ConvertToSharedRuntimeDeterminedForm() == (TypeDesc)target)
+            {
+                _lookupSignature = null;
+            }
+            else
+            {
+                _lookupSignature = GetLookupSignature(factory, helperId, target);
+            }
         }
 
         public static GenericLookupResult GetLookupSignature(NodeFactory factory, ReadyToRunHelperId id, object target)
@@ -98,6 +124,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected sealed override void OnMarked(NodeFactory factory)
         {
+            if (_lookupSignature == null)
+                return;
+
             DictionaryLayoutNode layout = factory.GenericDictionaryLayout(_dictionaryOwner);
 
             if (layout.HasUnfixedSlots)
@@ -167,10 +196,13 @@ namespace ILCompiler.DependencyAnalysis
 
             try
             {
-                // All generic lookups depend on the thing they point to
-                result.Add(new DependencyListEntry(
-                            _lookupSignature.GetTarget(factory, lookupContext),
-                            "Dictionary dependency"));
+                if (_lookupSignature != null)
+                {
+                    // All generic lookups depend on the thing they point to
+                    result.Add(new DependencyListEntry(
+                                _lookupSignature.GetTarget(factory, lookupContext),
+                                "Dictionary dependency"));
+                }
             }
             catch (TypeSystemException)
             {
@@ -191,7 +223,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected void AppendLookupSignatureMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            if (_id != ReadyToRunHelperId.DelegateCtor)
+            if (_lookupSignature == null)
+            {
+                sb.Append("ThisLookup");
+            }
+            else if (_id != ReadyToRunHelperId.DelegateCtor)
             {
                 _lookupSignature.AppendMangledName(nameMangler, sb);
             }
@@ -204,6 +240,9 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
+
+            if (_lookupSignature == null)
+                return dependencies;
 
             if (_dictionaryOwner is TypeDesc type)
             {
@@ -232,6 +271,10 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
+
+            if (_lookupSignature == null)
+                return conditionalDependencies;
+
             NativeLayoutSavedVertexNode templateLayout;
             if (_dictionaryOwner is MethodDesc)
             {

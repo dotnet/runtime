@@ -25,6 +25,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             // INVARIANT: must not trash context register
 
+            // If this is the "not actually a lookup" lookup (see the constructor for details), just return context.
+            if (lookup == null)
+            {
+                if (result != context)
+                    encoder.EmitMOV(result, context);
+                return;
+            }
+
             // Find the generic dictionary slot
             int dictionarySlot = 0;
             if (!relocsOnly)

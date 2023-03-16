@@ -386,9 +386,34 @@ namespace ILCompiler
             {
                 DictionaryLayoutNode dictionaryLayout;
                 if (contextSource == GenericContextSource.MethodParameter)
+                {
                     dictionaryLayout = _nodeFactory.GenericDictionaryLayout(contextMethod);
+                }
                 else
-                    dictionaryLayout = _nodeFactory.GenericDictionaryLayout(contextMethod.OwningType);
+                {
+                    var dictionaryOwner = contextMethod.OwningType;
+
+                    // If the thing we want to look up is the same thing that defines the current context,
+                    // skip the lookup and use the generic context as-is. For example:
+                    //
+                    // class Gen<T>
+                    // {
+                    //     static void Method1(...) => Method2(...);
+                    //     static void Method2(...) => ...
+                    // }
+                    //
+                    // Since Method1 is calling Method2, we need to pass the generic context so that
+                    // we know what the T is. We could either generate it as a dictionary lookup for
+                    // TypeHandle of Gen<!0>, or we can realize that the current generic context is already
+                    // the TypeHandle of Gen<!0> and we can use it as-is.
+                    if (lookupKind == ReadyToRunHelperId.TypeHandle
+                        && ((DefType)dictionaryOwner).ConvertToSharedRuntimeDeterminedForm() == (TypeDesc)targetOfLookup)
+                    {
+                        return GenericDictionaryLookup.CreateIdentityLookup(contextSource);
+                    }
+
+                    dictionaryLayout = _nodeFactory.GenericDictionaryLayout(dictionaryOwner);
+                }
 
                 // If the dictionary layout has fixed slots, we can compute the lookup now. Otherwise defer to helper.
                 if (dictionaryLayout.HasFixedSlots)

@@ -17,6 +17,7 @@ namespace ILCompiler
     {
         private const short UseHelperOffset = -1;
         private const short UseNullOffset = -2;
+        private const short UseIdentityOffset = -3;
 
         private readonly object _helperObject;
 
@@ -83,6 +84,10 @@ namespace ILCompiler
             get
             {
                 Debug.Assert(!UseHelper && !UseNull);
+
+                if (_offset1 == UseIdentityOffset)
+                    return 0;
+
                 return ContextSource == GenericContextSource.MethodParameter ? 1 : 2;
             }
         }
@@ -138,6 +143,11 @@ namespace ILCompiler
         public static GenericDictionaryLookup CreateNullLookup(GenericContextSource contextSource)
         {
             return new GenericDictionaryLookup(contextSource, UseNullOffset, 0, null, false);
+        }
+
+        public static GenericDictionaryLookup CreateIdentityLookup(GenericContextSource contextSource)
+        {
+            return new GenericDictionaryLookup(contextSource, UseIdentityOffset, 0, null, false);
         }
     }
 
