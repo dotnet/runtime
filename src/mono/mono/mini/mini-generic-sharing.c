@@ -2270,6 +2270,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		int ioffset, slot;
 		gpointer addr;
 
+		mono_class_init_internal (info->klass);
 		mono_class_setup_vtable (info->klass);
 		// FIXME: Check type load
 		if (mono_class_is_interface (iface_class)) {
@@ -2286,8 +2287,12 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 			slot = mono_method_get_vtable_slot (info->method);
 		}
 		g_assert (slot != -1);
-		g_assert (m_class_get_vtable (info->klass));
-		method = m_class_get_vtable (info->klass) [ioffset + slot];
+		if (mono_class_is_interface (iface_class) && !m_class_get_vtable (info->klass))	{
+			method = m_class_get_methods (info->klass) [slot];
+		} else {
+			g_assert (m_class_get_vtable (info->klass));
+			method = m_class_get_vtable (info->klass) [ioffset + slot];			
+		}
 
 		if (info->method->is_inflated) {
 			MonoGenericContext *method_ctx = mono_method_get_context (info->method);
