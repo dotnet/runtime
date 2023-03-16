@@ -58,8 +58,8 @@ extends:
       #
       # Evaluate paths
       #
-      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-        - template: /eng/pipelines/common/evaluate-default-paths.yml
+      # - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+      #   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
       #
       # # Build CoreCLR checked
@@ -543,12 +543,12 @@ extends:
             nameSuffix: AllSubsets_Mono
             buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
             timeoutInMinutes: 180
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+            # condition: >-
+            #   or(
+            #     eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+            #     eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+            #     eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+            #     eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             extraStepsTemplate: /eng/pipelines/libraries/helix.yml
             extraStepsParameters:
