@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string TypeNotSupported = "Unable to bind to type '{0}': '{1}'";
         }
 
-        private static class Literal
+        private static class Identifier
         {
             public const string configuration = nameof(configuration);
             public const string element = nameof(element);
@@ -50,20 +50,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public const string Add = nameof(Add);
             public const string Any = nameof(Any);
+            public const string ArgumentNullException = nameof(ArgumentNullException);
+            public const string Array = nameof(Array);
             public const string Bind = nameof(Bind);
             public const string BindCore = nameof(BindCore);
             public const string Configure = nameof(Configure);
             public const string CopyTo = nameof(CopyTo);
             public const string ContainsKey = nameof(ContainsKey);
             public const string Count = nameof(Count);
+            public const string Enum = nameof(Enum);
             public const string GeneratedConfigurationBinder = nameof(GeneratedConfigurationBinder);
             public const string Get = nameof(Get);
             public const string GetChildren = nameof(GetChildren);
             public const string GetSection = nameof(GetSection);
             public const string HasChildren = nameof(HasChildren);
+            public const string HasValueOrChildren = nameof(HasValueOrChildren);
             public const string HasValue = nameof(HasValue);
+            public const string Helpers = nameof(Helpers);
             public const string IConfiguration = nameof(IConfiguration);
             public const string IConfigurationSection = nameof(IConfigurationSection);
+            public const string Int32 = "int";
             public const string Length = nameof(Length);
             public const string Parse = nameof(Parse);
             public const string Resize = nameof(Resize);
@@ -87,29 +93,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         private static class TypeFullName
         {
-            public const string Array = "System.Array";
             public const string ConfigurationKeyNameAttribute = "Microsoft.Extensions.Configuration.ConfigurationKeyNameAttribute";
             public const string Dictionary = "System.Collections.Generic.Dictionary`2";
             public const string GenericIDictionary = "System.Collections.Generic.IDictionary`2";
             public const string HashSet = "System.Collections.Generic.HashSet`1";
-            public const string ISet = "System.Collections.Generic.ISet`1";
-            public const string IConfigurationSection = "Microsoft.Extensions.Configuration.IConfigurationSection";
             public const string IConfiguration = "Microsoft.Extensions.Configuration.IConfiguration";
+            public const string IConfigurationSection = "Microsoft.Extensions.Configuration.IConfigurationSection";
             public const string IDictionary = "System.Collections.Generic.IDictionary";
+            public const string ISet = "System.Collections.Generic.ISet`1";
             public const string IServiceCollection = "Microsoft.Extensions.DependencyInjection.IServiceCollection";
             public const string List = "System.Collections.Generic.List`1";
         }
 
         private static bool TypesAreEqual(ITypeSymbol first, ITypeSymbol second)
                 => first.Equals(second, SymbolEqualityComparer.Default);
-
-        private enum InitializationKind
-        {
-            None = 0,
-            SimpleAssignment = 1,
-            AssignmentWithNullCheck = 2,
-            Declaration = 3,
-        }
 
         private sealed class SourceWriter
         {
@@ -119,9 +116,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public int Length => _sb.Length;
             public int IndentationLevel => _indentationLevel;
 
-            public void WriteBlockStart(string declaration)
+            public void WriteBlockStart(string? declaration = null)
             {
-                WriteLine(declaration);
+                if (declaration is not null)
+                {
+                    WriteLine(declaration);
+                }
                 WriteLine("{");
                 _indentationLevel++;
             }
@@ -139,7 +139,45 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _sb.AppendLine(source);
             }
 
+            public void WriteBlock(string source)
+            {
+                foreach (string value in source.Split('\n'))
+                {
+                    string line = value.Trim();
+                    switch (line)
+                    {
+                        case "{":
+                            {
+                                WriteBlockStart();
+                            }
+                            break;
+                        case "}":
+                            {
+                                WriteBlockEnd();
+                            }
+                            break;
+                        case "":
+                            {
+                                WriteBlankLine();
+                            }
+                            break;
+                        default:
+                            {
+                                WriteLine(line);
+                            }
+                            break;
+                    }
+                }
+            }
+
             public void WriteBlankLine() => _sb.AppendLine();
+
+            public void RemoveBlankLine()
+            {
+                int newLineLength = Environment.NewLine.Length;
+                int lastNewLineStartIndex = Length - newLineLength;
+                _sb.Remove(lastNewLineStartIndex, newLineLength);
+            }
 
             public string GetSource() => _sb.ToString();
         }
