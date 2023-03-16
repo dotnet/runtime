@@ -4,14 +4,14 @@
 
 #include <mono/metadata/assembly.h>
 
-#include "shared_library_log.h"
+#include "library-builder.h"
 
 static void
 preload_assembly (const char* filename)
 {
     MonoAssembly *assembly = mono_assembly_load_with_partial_name (filename, NULL);
     if (!assembly)
-        LOG_ERROR ("Could not open assembly '%s'. Unable to properly initialize GOT slots.\n", filename);
+        LOG_ERROR ("Could not open assembly '%s'.\n", filename);
 }
 
 void

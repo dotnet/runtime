@@ -29,7 +29,8 @@
       RuntimeIdentifier="$(RuntimeIdentifier)"
       RuntimeLibraries="@(_RuntimeLibraries)"
       TargetOS="$(TargetOS)"
-      UsesCustomRuntimeInitCallback="$(_UsesCustomRuntimeInitCallback)">
+      UsesCustomRuntimeInitCallback="$(_UsesCustomRuntimeInitCallback)"
+      UsesRuntimeInitCallback="$(_UsesRuntimeInitCallback)">
       <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
     </LibraryBuilderTask>
   </Target>

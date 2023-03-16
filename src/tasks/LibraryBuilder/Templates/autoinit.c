@@ -11,14 +11,9 @@
 #include <mono/jit/mono-private-unstable.h>
 #include <mono/metadata/assembly.h>
 
-#include "shared_library_log.h"
+#include "library-builder.h"
 
 static const char *bundle_path;
-
-void register_aot_modules (void);
-void preload_assemblies_with_exported_symbols ();
-typedef void (*MonoRuntimeInitCallback) (void);
-void mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)

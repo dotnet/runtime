@@ -11,8 +11,8 @@ set(DOTNET_AOT_OBJECTS
 %AotObjects%
 )
 set(DOTNET_EXTRA_SOURCES
-    shared_library_log.h
-    preloaded_assemblies.c
+    library-builder.h
+    preloaded-assemblies.c
 %ExtraSources%)
 
 include_directories("%MonoInclude%")

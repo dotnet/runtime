@@ -69,9 +69,14 @@ public class LibraryBuilderTask : AppBuilderTask
 
     /// <summary>
     /// Determines whether or not the mono runtime auto initialization
-    /// tremplate, autoinit.c, is used.
+    /// template, autoinit.c, is used.
     /// </summary>
     public bool UsesCustomRuntimeInitCallback { get; set; }
+
+    /// <summary>
+    /// Determines if there is a mono runtime init callback
+    /// </summary>
+    public bool UsesRuntimeInitCallback { get; set; }
 
     /// <summary>
     /// The environment variable name that will point to where assemblies
@@ -126,12 +131,12 @@ public class LibraryBuilderTask : AppBuilderTask
         GatherAotSourcesObjects(aotSources, aotObjects, extraSources, linkerArgs);
         GatherLinkerArgs(linkerArgs);
 
-        File.WriteAllText(Path.Combine(OutputDirectory, "shared_library_log.h"),
-            Utils.GetEmbeddedResource("shared_library_log.h"));
+        File.WriteAllText(Path.Combine(OutputDirectory, "library-builder.h"),
+            Utils.GetEmbeddedResource("library-builder.h"));
 
         GenerateAssembliesLoader();
 
-        if (!UsesCustomRuntimeInitCallback)
+        if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
         {
             WriteAutoInitializationFromTemplate();
             extraSources.AppendLine("    autoinit.c");
@@ -172,7 +177,7 @@ public class LibraryBuilderTask : AppBuilderTask
                 }
             }
         }
-        if (exportedAssemblies.Count == 0)
+        if (IsSharedLibrary && exportedAssemblies.Count == 0)
         {
             throw new LogAsErrorException($"None of the compiled assemblies contain exported symbols. Resulting shared library would be unusable.");
         }
@@ -267,8 +272,8 @@ public class LibraryBuilderTask : AppBuilderTask
             assemblyPreloaders.Add($"preload_assembly(\"{exportedAssembly}\");");
         }
 
-        File.WriteAllText(Path.Combine(OutputDirectory, "preloaded_assemblies.c"),
-            Utils.GetEmbeddedResource("preloaded_assemblies.c")
+        File.WriteAllText(Path.Combine(OutputDirectory, "preloaded-assemblies.c"),
+            Utils.GetEmbeddedResource("preloaded-assemblies.c")
                 .Replace("%ASSEMBLIES_PRELOADER%", string.Join("\n    ", assemblyPreloaders)));
     }
 
