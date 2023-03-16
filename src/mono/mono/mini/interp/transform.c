@@ -3448,10 +3448,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	 */
 	if (op == -1 && td->inlined_method && !td->aggressive_inlining) {
 		if (td->has_inlined_one_call) {
-			g_print("Prohibiting second inlined call in %s (target %s)\n", td->method->name, target_method->name);
+			if (td->verbose_level > 0)
+				g_print("Prohibiting second inlined call in %s (target %s)\n", td->method->name, target_method->name);
 			return FALSE;
 		} else {
-			g_print("Allowing single inlined call in %s (target %s)\n", td->method->name, target_method->name);
+			if (td->verbose_level > 2)
+				g_print("Allowing single inlined call in %s (target %s)\n", td->method->name, target_method->name);
 			td->has_inlined_one_call = TRUE;
 		}
 	}
