@@ -94,7 +94,7 @@
     <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_EnableUnmanagedCallersOnlyMethodsExport>true</_EnableUnmanagedCallersOnlyMethodsExport>
       <_UseAotDataFile>$(UseAotDataFile)<_UseAotDataFile>
-      <_UseAotDataFile Condition="'_UseAotDataFile' == ''">false</_UseAotDataFile>
+      <_UseAotDataFile Condition="'$(_UseAotDataFile)' == ''">false</_UseAotDataFile>
       <_UsesRuntimeInitCallback>$(UsesRuntimeInitCallback)</_UsesRuntimeInitCallback>
       <_UsesRuntimeInitCallback Condition="'$(_UsesRuntimeInitCallback)' == ''">true</_UsesRuntimeInitCallback>
     </PropertyGroup>

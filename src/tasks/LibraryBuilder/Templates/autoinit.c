@@ -13,8 +13,6 @@
 
 #include "library-builder.h"
 
-static const char *bundle_path;
-
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
@@ -24,7 +22,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 static void
-initialize_runtimeconfig ()
+initialize_runtimeconfig (const char *bundle_path)
 {
     char *file_name = "runtimeconfig.bin";
     size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
@@ -33,7 +31,7 @@ initialize_runtimeconfig ()
         LOG_ERROR ("Out of memory.\n");
 
     int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
-    if (num_char < 0)
+    if (num_char <= 0 || num_char >= str_len)
         LOG_ERROR ("Encoding error while formatting '%s' and '%s' into \"%%s/%%s\".\n", bundle_path, file_name);
 
     struct stat buffer;
@@ -47,13 +45,12 @@ initialize_runtimeconfig ()
         arg->runtimeconfig.name.path = file_path;
         monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
     } else {
-        LOG_INFO ("Could not find file '%s'. Runtime configuration properties not initialized.\n", file_path);
         free (file_path);
     }
 }
 
 static void
-initialize_appctx_env_variables ()
+initialize_appctx_env_variables (const char *bundle_path)
 {
     const char *appctx_keys[2], *appctx_values[2];
 
@@ -69,13 +66,13 @@ initialize_appctx_env_variables ()
 static void
 runtime_init_callback ()
 {
-    bundle_path = getenv("%ASSEMBLIES_LOCATION%");
+    const char *bundle_path = getenv("%ASSEMBLIES_LOCATION%");
     if (!bundle_path || bundle_path[0] == '\0')
         bundle_path = "./";
 
-    initialize_runtimeconfig ();
+    initialize_runtimeconfig (bundle_path);
 
-    initialize_appctx_env_variables ();
+    initialize_appctx_env_variables (bundle_path);
 
     register_aot_modules ();
 

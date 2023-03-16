@@ -76,7 +76,7 @@
       <_AOTMode Condition="'$(ForceFullAOT)' == 'true'">Full</_AOTMode>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'($_IsLibraryMode)' == 'true'">
+    <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_UsesRuntimeInitCallback>$(UsesRuntimeInitCallback)</_UsesRuntimeInitCallback>
       <_UsesRuntimeInitCallback Condition="'$(_UsesRuntimeInitCallback)' == ''">true</_UsesRuntimeInitCallback>
     </PropertyGroup>
@@ -142,8 +142,8 @@
 
     <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_EnableUnmanagedCallersOnlyMethodsExport>true</_EnableUnmanagedCallersOnlyMethodsExport>
-      <_UseAotDataFile>$(UseAotDataFile)<_UseAotDataFile>
-      <_UseAotDataFile Condition="'_UseAotDataFile' == ''">false</_UseAotDataFile>
+      <_UseAotDataFile>$(UseAotDataFile)</_UseAotDataFile>
+      <_UseAotDataFile Condition="'$(_UseAotDataFile)' == ''">false</_UseAotDataFile>
     </PropertyGroup>
 
     <ItemGroup>
