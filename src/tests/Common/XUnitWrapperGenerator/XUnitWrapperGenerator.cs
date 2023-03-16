@@ -171,6 +171,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
         builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
         builder.AppendLine("statsCsvSw.WriteLine($\"{TestCount.Count},0,0,0\");");
+        // CAUTION NOTE: If this ever changes and the 'assembly' tag is no longer
+        // the topmost one in the temp log, XUnitLogChecker must be updated accordingly.
+        // Otherwise, it's going to fail when attempting to find dumps.
         builder.AppendLine($@"summary.WriteHeaderToTempLog(""{assemblyName}"", tempLogSw);");
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");

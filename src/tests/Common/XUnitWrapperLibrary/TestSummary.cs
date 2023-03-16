@@ -107,11 +107,12 @@ public class TestSummary
 
     public void WriteHeaderToTempLog(string assemblyName, StreamWriter tempLogSw)
     {
+        // We are writing down both, date and time, in the same field here because
+        // it's much simpler to parse later on in the XUnitLogChecker.
         tempLogSw.WriteLine("<assembly\n"
                         + $"    name=\"{assemblyName}\"\n"
                         + $"    test-framework=\"XUnitWrapperGenerator-generated-runner\"\n"
-                        + $"    run-date=\"{_testRunStart.ToString("yyy-mm-dd")}\"\n"
-                        + $"    run-time=\"{_testRunStart.ToString("hh:mm:ss")}\">");
+                        + $"    run-date-time=\"{_testRunStart.ToString("yyyy-MM-dd hh:mm:ss")}\">");
     }
 
     public void ReportPassedTest(string name,
@@ -183,7 +184,7 @@ public class TestSummary
 <assembly
     name=""{assemblyName}""
     test-framework=""XUnitWrapperGenerator-generated-runner""
-    run-date=""{_testRunStart.ToString("yyy-mm-dd")}""
+    run-date=""{_testRunStart.ToString("yyyy-MM-dd")}""
     run-time=""{_testRunStart.ToString("hh:mm:ss")}""
     time=""{totalRunSeconds}""
     total=""{_testResults.Count}""

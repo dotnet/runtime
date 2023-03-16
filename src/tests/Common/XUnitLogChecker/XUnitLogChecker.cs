@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml;
+using System.Xml.Linq;
 
 using CoreclrTestWrapperLib = CoreclrTestLib.CoreclrTestWrapperLib;
 
@@ -143,9 +144,62 @@ public class XUnitLogChecker
 
         PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
 
+        // The third command-line argument is an optional path where dumps would
+        // be located. If passed, then search that path accordingly. Otherwise,
+        // just skip and finish running.
+
+        if (args.Length > 2)
+        {
+            string dumpsPath = args[3];
+            Console.WriteLine("[XUnitLogChecker]: Checking for dumps...");
+
+            // Read our newly fixed log to retrieve the time and date when the
+            // test was run. This is to exclude potentially existing older dumps
+            // that are not related to this test run.
+            XElement fixedLogTree = XElement.Load(tempLogPath);
+
+            // We know from the XUnitWrapperGenerator that the top element
+            // is the 'assembly' tag we're looking for.
+            var testRunDateTime = DateTime.ParseExact
+            (
+                fixedLogTree.Attribute("run-date-time").Value,
+                "yyyy-MM-dd hh:mm:ss",
+                System.Globalization.CultureInfo.InvariantCulture
+            );
+
+            IEnumerable<string> dumpsFound =
+                Directory.GetFiles(dumpsPath, "*coredump*.dmp")
+                         .Where(dmp => DateTime.Compare(File.GetCreationTime(dmp), testRunDateTime) >= 0);
+
+            foreach (string dumpPath in dumpsFound)
+            {
+                // Here's where it's slightly different between Linux/MacOS and Windows.
+                if (true)
+                {
+                    string crashReportPath = $"{dumpPath}.crashreport.json";
+
+                    if (!File.Exists(crashReportPath))
+                    {
+                        Console.WriteLine("[XUnitLogChecker]: There was no crash"
+                                        + $" report for dump '{dumpPath}'. Skipping...");
+                        continue;
+                    }
+
+                    Console.WriteLine("[XUnitLogChecker]: Reading crash report"
+                                    + $" '{crashReportPath}'...");
+                    Console.WriteLine("[XUnitLogChecker]: Stack Trace Found:");
+
+                    CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport(crashReportPath,
+                                                                            Console.Out);
+                }
+                else continue;
+            }
+        }
+
         // Rename the temp log to the final log, so that Helix can use it without
         // knowing what transpired here.
         File.Move(tempLogPath, finalLogPath);
+
         return SUCCESS;
     }
 
@@ -185,14 +239,6 @@ public class XUnitLogChecker
         return fileContents;
     }
 
-    static void PrintWorkItemSummary(int numExpectedTests, int[] workItemEndStatus)
-    {
-        Console.WriteLine($"\n{workItemEndStatus[0]}/{numExpectedTests} tests run.");
-        Console.WriteLine($"* {workItemEndStatus[1]} tests passed.");
-        Console.WriteLine($"* {workItemEndStatus[2]} tests failed.");
-        Console.WriteLine($"* {workItemEndStatus[3]} tests skipped.\n");
-    }
-
     static void PrintMissingCrashPath(string wrapperName,
                                       string crashFileType,
                                       string crashFilePath)
@@ -203,6 +249,14 @@ public class XUnitLogChecker
 
         Console.WriteLine($"[XUnitLogChecker]: Expected {crashFileType} path"
                         + $" was '{crashFilePath}'");
+    }
+
+    static void PrintWorkItemSummary(int numExpectedTests, int[] workItemEndStatus)
+    {
+        Console.WriteLine($"\n{workItemEndStatus[0]}/{numExpectedTests} tests run.");
+        Console.WriteLine($"* {workItemEndStatus[1]} tests passed.");
+        Console.WriteLine($"* {workItemEndStatus[2]} tests failed.");
+        Console.WriteLine($"* {workItemEndStatus[3]} tests skipped.\n");
     }
 
     static bool FixTheXml(string xFile)
@@ -246,10 +300,6 @@ public class XUnitLogChecker
                         inOutput = true;
                     else if (tagText.Equals("CDATA") && !inCData)
                         inCData = true;
-
-                    // XUNITLOGCHECKER: Add a special case for the initial tag,
-                    // containing the initial metrics. Then, save the start date/time
-                    // to be used later when searching for the core dumps.
 
                     tags.Push(tagText);
                     continue;
