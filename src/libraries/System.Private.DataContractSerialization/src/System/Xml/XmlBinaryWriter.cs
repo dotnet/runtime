@@ -727,27 +727,70 @@ namespace System.Xml
             }
             else
             {
-                WriteTextNodeRaw(XmlBinaryNodeType.FloatText, f);
+                if (BitConverter.IsLittleEndian)
+                {
+                    WriteTextNodeRaw(XmlBinaryNodeType.FloatText, f);
+                }
+                else
+                {
+                    Span<byte> span = GetTextNodeBuffer(1 + sizeof(float), out int offset).AsSpan(offset, 1 + sizeof(float));
+                    span[0] = (byte)XmlBinaryNodeType.FloatText;
+                    BinaryPrimitives.WriteSingleLittleEndian(span.Slice(1), f);
+                    Advance(1 + sizeof(float));
+                }
             }
         }
 
         public override void WriteDoubleText(double d)
         {
             float f;
+            int i;
 
             // Same as WriteFloatText. If we can save space by writing as a 32-bit float or integer, do that.
             if ((f = (float)d) == d)
             {
                 WriteFloatText(f);
             }
+            else if (d >= int.MinValue && d <= int.MaxValue && (i = (int)d) == d)
+            {
+                WriteInt32Text(i);
+            }
             else
             {
-                WriteTextNodeRaw(XmlBinaryNodeType.DoubleText, d);
+                if (BitConverter.IsLittleEndian)
+                {
+                    WriteTextNodeRaw(XmlBinaryNodeType.DoubleText, d);
+                }
+                else
+                {
+                    Span<byte> span = GetTextNodeBuffer(1 + sizeof(double), out int offset).AsSpan(offset, 1 + sizeof(double));
+                    span[0] = (byte)XmlBinaryNodeType.FloatText;
+                    BinaryPrimitives.WriteSingleLittleEndian(span.Slice(1), f);
+                    Advance(1 + sizeof(double));
+                }
             }
         }
 
         public override void WriteDecimalText(decimal d)
-            => WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, d);
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                WriteTextNodeRaw(XmlBinaryNodeType.DecimalText, d);
+            }
+            else
+            {
+                Span<int> bits = stackalloc int[4];
+                decimal.TryGetBits(d, bits, out int intsWritten);
+                Debug.Assert(intsWritten == 4);
+
+                Span<byte> span = GetTextNodeBuffer(1 + sizeof(decimal), out int offset).AsSpan(offset, 1 + sizeof(decimal));
+                span[0] = (byte)XmlBinaryNodeType.DecimalText;
+                BinaryPrimitives.WriteInt32LittleEndian(span, bits[3]);
+                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), bits[2]);
+                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(8), bits[0]);
+                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(12), bits[1]);
+            }
+        }
 
         public override void WriteDateTimeText(DateTime dt)
             => WriteTextNodeWithInt64(XmlBinaryNodeType.DateTimeText, dt.ToBinary());
@@ -1289,8 +1332,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteBoolArray(array, offset, count);
+                    }
                 }
             }
         }
@@ -1306,8 +1357,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.BoolTextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteBoolArray(array, offset, count);
+                    }
                 }
             }
         }
@@ -1323,8 +1382,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteInt16Array(array, offset, count);
+                    }
                 }
             }
         }
@@ -1340,8 +1407,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteInt16Array(array, offset, count);
+                    }
                 }
             }
         }
@@ -1357,8 +1432,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteInt32Array(array, offset, count);
+                    }
                 }
             }
         }
@@ -1374,8 +1457,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteInt32Array(array, offset, count);
+                    }
                 }
             }
         }
@@ -1391,8 +1482,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteInt64Array(array, offset, count);
+                    }
                 }
             }
         }
@@ -1408,8 +1507,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteInt64Array(array, offset, count);
+                    }
                 }
             }
         }
@@ -1425,8 +1532,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteFloatArray(array, offset, count);
+                    }
                 }
             }
         }
@@ -1442,8 +1557,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteFloatArray(array, offset, count);
+                    }
                 }
             }
         }
@@ -1459,8 +1582,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteDoubleArray(array, offset, count);
+                    }
                 }
             }
         }
@@ -1476,8 +1607,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteDoubleArray(array, offset, count);
+                    }
                 }
             }
         }
@@ -1493,8 +1632,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteDecimalArray(array, offset, count);
+                    }
                 }
             }
         }
@@ -1510,8 +1657,16 @@ namespace System.Xml
                 CheckArray(array, offset, count);
                 if (count > 0)
                 {
-                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
-                    WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                        WriteArray(prefix, localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement, count, bytes);
+                    }
+                    else
+                    {
+                        WriteStartArray(prefix, localName, namespaceUri, count);
+                        _writer.UnsafeWriteDecimalArray(array, offset, count);
+                    }
                 }
             }
         }
@@ -1564,6 +1719,7 @@ namespace System.Xml
                 if (count > 0)
                 {
                     WriteStartArray(prefix, localName, namespaceUri, count);
+                    // TODO smolloy - See how this uses the new Write*Array style without unsafe? Do this for all types.
                     _writer.WriteGuidArray(array.AsSpan(offset, count));
                 }
             }
