@@ -5,6 +5,9 @@
     <NoWarn>$(NoWarn);CA1847</NoWarn>
     <Nullable>annotations</Nullable>
     <IsPackable>true</IsPackable>
+    <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>0</ServicingVersion>
     <PackageDescription>Provides the System.Diagnostics.PerformanceCounter class, which allows access to Windows performance counters.
 
 Commonly Used Types:

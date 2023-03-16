@@ -9,6 +9,9 @@
     <NoWarn>$(NoWarn);CA1845;CA1846</NoWarn>
     <Nullable>annotations</Nullable>
     <IsPackable>true</IsPackable>
+    <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>0</ServicingVersion>
     <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.
 
 Commonly Used Types:
