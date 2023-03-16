@@ -3467,7 +3467,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	 * X.get_Item that just calls Y.get_Item (profitable to inline)
 	 */
 	if (op == -1 && td->inlined_method && !td->aggressive_inlining) {
-		if (has_doesnotreturn_attribute(target_method)) {
+		if (!target_method) {
+			if (td->verbose_level > 1)
+				g_print("Disabling inlining because we have no target_method for call in %s\n", td->method->name);
+			return FALSE;
+		} else if (has_doesnotreturn_attribute(target_method)) {
 			/*
 			 * Since the method does not return, it's probably a throw helper and will not be called.
 			 * As such we don't want it to prevent inlining of the method that calls it.
