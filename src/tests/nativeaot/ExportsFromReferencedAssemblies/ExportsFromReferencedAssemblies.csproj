@@ -13,7 +13,7 @@
 
   <!-- Only expose methods from ReferencedAssembly1 -->
   <ItemGroup>
-    <IlcRootedAssembliesExports Include="ReferencedAssembly1" />
+    <UnmanagedEntryPointsAssembly Include="ReferencedAssembly1" />
   </ItemGroup>
 
   <ItemGroup>

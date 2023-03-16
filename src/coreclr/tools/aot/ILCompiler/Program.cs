@@ -238,9 +238,9 @@ namespace ILCompiler
                     }
                 }
 
-                foreach (var rootedAssemblyExports in Get(_command.RootedAssembliesExports))
+                foreach (var unmanagedEntryPointsAssembly in Get(_command.UnmanagedEntryPointsAssemblies))
                 {
-                    EcmaModule module = typeSystemContext.GetModuleForSimpleName(rootedAssemblyExports);
+                    EcmaModule module = typeSystemContext.GetModuleForSimpleName(unmanagedEntryPointsAssembly);
                     compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
