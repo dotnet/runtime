@@ -150,13 +150,11 @@ namespace Wasm.Build.Tests
                                            string? extraXHarnessMonoArgs = null,
                                            string? extraXHarnessArgs = null,
                                            string jsRelativePath = "test-main.js",
-                                           string environmentLocale = DefaultEnvironmentLocale,
-                                           string? safeProjectNameRegex = null)
+                                           string environmentLocale = DefaultEnvironmentLocale)
         {
             buildDir ??= _projectDir;
             envVars ??= new();
             envVars["XHARNESS_DISABLE_COLORED_OUTPUT"] = "true";
-            safeProjectNameRegex ??= buildArgs.ProjectName;
             if (buildArgs.AOT)
             {
                 envVars["MONO_LOG_LEVEL"] = "debug";
@@ -198,7 +196,7 @@ namespace Wasm.Build.Tests
                                 );
 
             AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
-            AssertSubstringByRegex($"AOT: image '{safeProjectNameRegex}' found.", output, contains: buildArgs.AOT);
+            AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
 
             if (test != null)
                 test(output);
@@ -1205,15 +1203,6 @@ namespace Wasm.Build.Tests
                 Assert.Contains(substring, full);
             else
                 Assert.DoesNotContain(substring, full);
-        }
-
-        protected void AssertSubstringByRegex(string regex, string full, bool contains)
-        {
-            bool isSubstring = System.Text.RegularExpressions.Regex.IsMatch(full, regex);
-            if (contains)
-                Assert.True(isSubstring);
-            else
-                Assert.False(isSubstring);
         }
     }
 
