@@ -3373,11 +3373,48 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                         dstAddrIndexScale, dstOffset);
                 }
             }
+        }
 
-            // Size is too large for YMM moves, try stepping down to XMM size to finish SIMD copies.
-            if (regSize == YMM_REGSIZE_BYTES)
+        // Handle the remainder by overlapping with previosly processed data
+        if ((size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
+        {
+            if (isPow2(size) && (size <= REGSIZE_BYTES))
             {
-                regSize = XMM_REGSIZE_BYTES;
+                // For sizes like 1,2,4 and 8 we delegate handling to normal load/stores
+            }
+            else
+            {
+                // if reminder is <=16 then switch to XMM
+                if ((regSize == YMM_REGSIZE_BYTES) && (size <= XMM_REGSIZE_BYTES))
+                {
+                    regSize = XMM_REGSIZE_BYTES;
+                }
+
+                assert(dstOffset >= (int)regSize);
+
+                // Rewind dstOffset so we can fit a vector for the while remainder
+                dstOffset -= (regSize - size);
+
+                if (srcLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+                }
+                else
+                {
+                    emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                        srcAddrIndexScale, srcOffset);
+                }
+
+                if (dstLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+                }
+                else
+                {
+                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                        dstAddrIndexScale, dstOffset);
+                }
+                size = 0;
             }
         }
     }
