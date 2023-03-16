@@ -9883,6 +9883,39 @@ interp_super_instructions (TransformData *td)
 						dump_interp_inst (new_inst);
 					}
 				}
+			} else if (opcode == MINT_DIV_UN_I4 || opcode == MINT_DIV_UN_I8) {
+				// ldc + div.un -> shr.imm
+				int sreg_imm = ins->sregs [1];
+				InterpInst *def = td->locals [sreg_imm].def;
+				if (def != NULL && td->local_ref_count [sreg_imm] == 1) {
+					int power2 = -1;
+					if (MINT_IS_LDC_I4 (def->opcode)) {
+						guint32 ct = interp_get_const_from_ldc_i4 (def);
+						power2 = mono_is_power_of_two ((guint32)ct);
+					} else if (MINT_IS_LDC_I8 (def->opcode)) {
+						guint64 ct = interp_get_const_from_ldc_i8 (def);
+						if (ct < G_MAXUINT32)
+							power2 = mono_is_power_of_two ((guint32)ct);
+					}
+					if (power2 > 0) {
+						InterpInst *new_inst;
+						if (opcode == MINT_DIV_UN_I4)
+							new_inst = interp_insert_ins (td, ins, MINT_SHR_UN_I4_IMM);
+						else
+							new_inst = interp_insert_ins (td, ins, MINT_SHR_UN_I8_IMM);
+						new_inst->dreg = ins->dreg;
+						new_inst->sregs [0] = ins->sregs [0];
+						new_inst->data [0] = power2;
+
+						interp_clear_ins (def);
+						interp_clear_ins (ins);
+						local_ref_count [sreg_imm]--;
+						if (td->verbose_level) {
+							g_print ("lower div.un: ");
+							dump_interp_inst (new_inst);
+						}
+					}
+				}
 			} else if (MINT_IS_LDIND_INT (opcode)) {
 				int sreg_base = ins->sregs [0];
 				InterpInst *def = td->locals [sreg_base].def;
