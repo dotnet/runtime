@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="*/**/*_do.??proj" />
