@@ -224,8 +224,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
                         currentTestExecutor++;
                         testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(System.IO.StreamWriter tempLogSw, System.IO.StreamWriter statsCsvSw)");
-                        testExecutorBuilder.AppendLine($"{{");
+                        testExecutorBuilder.AppendLine("{");
                         testExecutorBuilder.PushIndent();
+
                         builder.AppendLine($"TestExecutor{currentTestExecutor}(tempLogSw, statsCsvSw);");
                         testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
                     }
@@ -267,82 +268,109 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     private static string GenerateXHarnessTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName)
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
-        StringBuilder builder = new();
-        CodeBuilder codeBuilder = new();
-        AppendAliasMap(codeBuilder, aliasMap);
-        builder.Append(codeBuilder.GetCode());
+        CodeBuilder builder = new();
+        AppendAliasMap(builder, aliasMap);
 
-        builder.AppendLine(string.Join(Environment.NewLine, aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
         builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+        builder.AppendLine();
 
-        builder.AppendLine("try {");
-        builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null, testExclusionList);");
-        builder.AppendLine("} catch(System.Exception ex) { System.Console.WriteLine(ex.ToString()); return 101; }");
+        builder.AppendLine("try");
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null, testExclusionList);");
+        }
+        builder.AppendLine("catch(System.Exception ex)");
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine("System.Console.WriteLine(ex.ToString());");
+            builder.AppendLine("return 101;");
+        }
+        builder.AppendLine();
 
         builder.AppendLine("static XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
-        builder.AppendLine("{");
-        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
-        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
-        builder.AppendLine("System.Console.SetOut(outputRecorder);");
-
-        builder.Append("\n");
-        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
-        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
-        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
-        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
-        builder.Append("\n");
-
-        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
-
-        StringBuilder testExecutorBuilder = new();
-        int testsLeftInCurrentTestExecutor = 0;
-        int currentTestExecutor = 0;
-
-        // Open the stream writer for the temp log.
-        builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml""))");
-        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
-        builder.AppendLine($"statsCsvSw.WriteLine(\"{testInfos.Length},0,0,0\");");
-
-        if (testInfos.Length > 0)
+        using (builder.NewBracesScope())
         {
-            // Break tests into groups of 50 so that we don't create an unreasonably large main method
-            // Excessively large methods are known to take a long time to compile, and use excessive stack
-            // leading to test failures.
-            foreach (ITestInfo test in testInfos)
+            builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
+            builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
+            builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
+            builder.AppendLine("System.Console.SetOut(outputRecorder);");
+            builder.AppendLine();
+
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+            using (builder.NewBracesScope())
             {
-                if (testsLeftInCurrentTestExecutor == 0)
-                {
-                    if (currentTestExecutor != 0)
-                        testExecutorBuilder.AppendLine("}");
-
-                    currentTestExecutor++;
-                    testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}("
-                                                   + "XUnitWrapperLibrary.TestSummary summary, "
-                                                   + "XUnitWrapperLibrary.TestFilter filter, "
-                                                   + "XUnitWrapperLibrary.TestOutputRecorder outputRecorder, "
-                                                   + "System.Diagnostics.Stopwatch stopwatch, "
-                                                   + "System.IO.StreamWriter tempLogSw, "
-                                                   + "System.IO.StreamWriter statsCsvSw){");
-
-                    builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch, tempLogSw, statsCsvSw);");
-                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
-                }
-
-                testExecutorBuilder.Append(test.GenerateTestExecution(reporter));
-                testsLeftInCurrentTestExecutor--;
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
             }
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+            }
+            builder.AppendLine();
 
-            testExecutorBuilder.AppendLine("}");
-            builder.AppendLine("}");
+            ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
+
+            CodeBuilder testExecutorBuilder = new();
+            int testsLeftInCurrentTestExecutor = 0;
+            int currentTestExecutor = 0;
+
+            // Open the stream writer for the temp log.
+            builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml""))");
+            builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($"statsCsvSw.WriteLine(\"{testInfos.Length},0,0,0\");");
+
+                if (testInfos.Length > 0)
+                {
+                    // Break tests into groups of 50 so that we don't create an unreasonably large main method
+                    // Excessively large methods are known to take a long time to compile, and use excessive stack
+                    // leading to test failures.
+                    foreach (ITestInfo test in testInfos)
+                    {
+                        if (testsLeftInCurrentTestExecutor == 0)
+                        {
+                            if (currentTestExecutor != 0)
+                            {
+                                testExecutorBuilder.PopIndent();
+                                testExecutorBuilder.AppendLine("}");
+                                testExecutorBuilder.AppendLine();
+                            }
+
+                            currentTestExecutor++;
+                            testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}("
+                                                           + "XUnitWrapperLibrary.TestSummary summary, "
+                                                           + "XUnitWrapperLibrary.TestFilter filter, "
+                                                           + "XUnitWrapperLibrary.TestOutputRecorder outputRecorder, "
+                                                           + "System.Diagnostics.Stopwatch stopwatch, "
+                                                           + "System.IO.StreamWriter tempLogSw, "
+                                                           + "System.IO.StreamWriter statsCsvSw)");
+                            testExecutorBuilder.AppendLine("{");
+                            testExecutorBuilder.PushIndent();
+
+                            builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch, tempLogSw, statsCsvSw);");
+                            testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
+                        }
+                        else
+                        {
+                            testExecutorBuilder.AppendLine();
+                        }
+
+                        testExecutorBuilder.Append(test.GenerateTestExecution(reporter));
+                        testsLeftInCurrentTestExecutor--;
+                    }
+
+                    testExecutorBuilder.PopIndent();
+                    testExecutorBuilder.AppendLine("}");
+                    testExecutorBuilder.AppendLine();
+                }
+            }
+            builder.AppendLine("return summary;");
+
+            builder.Append(testExecutorBuilder);
         }
 
-        builder.AppendLine("return summary;");
-        builder.AppendLine("}");
-
-        builder.Append(testExecutorBuilder);
-
-        return builder.ToString();
+        return builder.GetCode();
     }
 
     private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string consoleType)
