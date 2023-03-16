@@ -3352,20 +3352,18 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 }
 
 static guint8*
-emit_idiom_xextrmask_i8 (guint8* code, int mode, int dreg, int sreg1)
+emit_xextract (guint8* code, int mode, int dreg, int sreg1)
 {
 	switch (mode) {
-	case SIMD_EXTRMASKL_FAST16:
-		arm_neon_shrn (code, TYPE_I8, FP_TEMP_REG, sreg1, 0);
-		arm_neon_umov_d (code, dreg, FP_TEMP_REG, 0);
+	case SIMD_EXTR_MAX8:
+		arm_neon_umaxv (code, VREG_FULL, TYPE_I8, FP_TEMP_REG, sreg1);
+		arm_neon_umov_b (code, dreg, FP_TEMP_REG, 0);
 		break;
-	case SIMD_EXTRMASKL_FAST8:
-		arm_neon_shrn (code, TYPE_I8, FP_TEMP_REG, sreg1, 8);
-		arm_neon_shrn (code, TYPE_I8, FP_TEMP_REG2, sreg1, 0);
-		arm_neon_sli (code, VREG_LOW, TYPE_I8, FP_TEMP_REG2, FP_TEMP_REG, 4);
-		arm_neon_umov_d (code, dreg,  FP_TEMP_REG, 0);
+	case SIMD_EXTR_MIN8:
+		arm_neon_uminv (code, VREG_FULL, TYPE_I8, FP_TEMP_REG, sreg1);
+		arm_neon_umov_b (code, dreg, FP_TEMP_REG, 0);
 		break;
-	default;
+	default:
 		g_assert_not_reached ();
 	}
 
@@ -3508,7 +3506,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			const int _t = get_type_size_macro (ins->inst_c1);
 			const gboolean _f = is_type_float_macro (ins->inst_c1);
 			const int _w = get_vector_size_macro (ins);
-			const int _i = ins->backend.shift_amount;
 
 			#undef SIMD_OP
 			#define SIMD_OP(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
@@ -3525,8 +3522,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			goto after_instruction_emit;
 		}
-		
-	here:
+
 		switch (ins->opcode) {
 		case OP_ICONST:
 			code = emit_imm (code, dreg, ins->inst_c0);
@@ -3791,8 +3787,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_EXTRACT_I8:
 			arm_neon_umov_d (code, dreg, sreg1, ins->inst_c0);
 			break;
-		case OP_XETRMASK_I8: 
-			code = emit_idiom_xextrmask_i8 (code, ins->inst_c0, dreg, sreg1);
+		case OP_XEXTRACT: 
+			code = emit_xextract (code, ins->inst_c0, dreg, sreg1);
 			break;
 
 			/* ALU */

@@ -2926,6 +2926,11 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
+enum {
+	SIMD_EXTR_MAX8,				// extract unsigned maximum of all bytes in XREG into an IREG, good for "is any byte nonzero"
+	SIMD_EXTR_MIN8				// extract unsigned minumum of all bytes in XREG into an IREG, good for "are all bytes nonzero"
+};
+
 int mini_primitive_type_size (MonoTypeEnum type);
 MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
 

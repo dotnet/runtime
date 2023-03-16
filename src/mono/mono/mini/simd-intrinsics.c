@@ -19,7 +19,7 @@
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-hwcap.h>
 
-#if TRUE//defined (MONO_ARCH_SIMD_INTRINSICS)
+#if defined (MONO_ARCH_SIMD_INTRINSICS)
 
 #if defined(DISABLE_JIT)
 
@@ -1201,7 +1201,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 	}
 
-	if (!strcmp (m_class_get_name (cfg->method->klass), "Vector256"))
+	if (!strcmp (m_class_get_name (cfg->method->klass), "Vector256") || !strcmp (m_class_get_name (cfg->method->klass), "Vector512"))
 		return NULL; // TODO: Fix Vector256.WithUpper/WithLower
 
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
@@ -1216,7 +1216,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_LessThanOrEqual:
 		case SN_Negate:
 		case SN_OnesComplement:
+		case SN_EqualsAny:
 		case SN_GreaterThanAny:
+		case SN_GreaterThanOrEqualAny:
+		case SN_LessThanAny:
+		case SN_LessThanOrEqualAny:
+		case SN_EqualsAll:
+		case SN_GreaterThanAll:
+		case SN_GreaterThanOrEqualAll:
+		case SN_LessThanAll:
+		case SN_LessThanOrEqualAll:
 			break;
 		default: 
 			return NULL;
@@ -1472,18 +1481,26 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		switch (id) {
-			case SN_Equals:
-				return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
-			case SN_EqualsAll:
-				return emit_xequal (cfg, arg_class, args [0], args [1]);
-			case SN_EqualsAny: {
-				MonoInst *cmp_eq = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
-				MonoInst *zero = emit_xzero (cfg, arg_class);
-				return emit_not_xequal (cfg, arg_class, cmp_eq, zero);
+		if (id == SN_Equals)
+			return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
+
+		if (COMPILE_LLVM (cfg)) {
+			switch (id) {
+				case SN_EqualsAll:
+					return emit_xequal (cfg, arg_class, args [0], args [1]);
+				case SN_EqualsAny: {
+					MonoInst *cmp_eq = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
+					MonoInst *zero = emit_xzero (cfg, arg_class);
+					return emit_not_xequal (cfg, arg_class, cmp_eq, zero);
+				}
 			}
-			default: g_assert_not_reached ();
+		} else {
+			MonoInst* cmp = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
+			MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
+			ret->inst_c0 = (id == SN_EqualsAll) ? SIMD_EXTR_MIN8 : SIMD_EXTR_MAX8;
+			return ret;
 		}
+		g_assert_not_reached ();
 	}
 	case SN_ExtractMostSignificantBits: {
 		if (!is_element_type_primitive (fsig->params [0]) || type_enum_is_float (arg0_type))
@@ -1551,34 +1568,39 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			fsig->ret->type == MONO_TYPE_BOOLEAN &&
 			mono_metadata_type_equal (fsig->params [0], fsig->params [1]));
 
-		MonoInst *cmp = emit_xcompare_for_intrinsic (cfg, klass, id, arg0_type, args [0], args [1]);
-		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-
+		gboolean is_all = FALSE;
 		switch (id) {
 		case SN_GreaterThanAll:
 		case SN_GreaterThanOrEqualAll:
 		case SN_LessThanAll:
-		case SN_LessThanOrEqualAll: {
-			// for floating point numbers all ones is NaN and so
-			// they must be treated differently than integer types
-			if (type_enum_is_float (arg0_type)) {
-				MonoInst *zero = emit_xzero (cfg, arg_class);
-				MonoInst *inverted_cmp = emit_xcompare (cfg, klass, arg0_type, cmp, zero);
-				return emit_xequal (cfg, arg_class, inverted_cmp, zero);
-			}
+		case SN_LessThanOrEqualAll: 
+			is_all = TRUE;
+			break;
+		}
 
-			MonoInst *ones = emit_xones (cfg, arg_class);
-			return emit_xequal (cfg, arg_class, cmp, ones);
-		}
-		case SN_GreaterThanAny:
-		case SN_GreaterThanOrEqualAny:
-		case SN_LessThanAny:
-		case SN_LessThanOrEqualAny: {
-			MonoInst *zero = emit_xzero (cfg, arg_class);
-			return emit_not_xequal (cfg, arg_class, cmp, zero);
-		}
-		default:
-			g_assert_not_reached ();
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		if (COMPILE_LLVM (cfg)) {
+			MonoInst *cmp = emit_xcompare_for_intrinsic (cfg, klass, id, arg0_type, args [0], args [1]);
+			if (is_all) {
+				// for floating point numbers all ones is NaN and so
+				// they must be treated differently than integer types
+				if (type_enum_is_float (arg0_type)) {
+					MonoInst *zero = emit_xzero (cfg, arg_class);
+					MonoInst *inverted_cmp = emit_xcompare (cfg, klass, arg0_type, cmp, zero);
+					return emit_xequal (cfg, arg_class, inverted_cmp, zero);
+				}
+
+				MonoInst *ones = emit_xones (cfg, arg_class);
+				return emit_xequal (cfg, arg_class, cmp, ones);
+			} else {
+				MonoInst *zero = emit_xzero (cfg, arg_class);
+				return emit_not_xequal (cfg, arg_class, cmp, zero);
+			}
+		} else {
+			MonoInst *cmp = emit_xcompare_for_intrinsic (cfg, arg_class, id, arg0_type, args [0], args [1]);
+			MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
+			ret->inst_c0 = is_all ? SIMD_EXTR_MIN8 : SIMD_EXTR_MAX8;
+			return ret;
 		}
 	}
 	case SN_Narrow: {
@@ -1873,7 +1895,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #if defined(TARGET_AMD64) || defined(TARGET_WASM)
 	if (!COMPILE_LLVM (cfg))
-		return NULL;
+			return NULL;
+	}
 #endif
 
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64

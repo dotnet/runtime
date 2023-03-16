@@ -1479,9 +1479,9 @@ MINI_OP(OP_XCOMPARE_SCALAR, "xcompare_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP_SCALAR, "xcompare_fp_scalar", XREG, XREG, XREG)
 
-/* Extract mask from XREG into LREG.
- *   inst_c0 - specific instruction, one of SIMD_EXTRMASKL_... */
-MINI_OP(OP_XEXTRMASK_I8, "xextrmask_i8", LREG, XREG, NONE)
+/* Extract from XREG into IREG.
+ *   inst_c0 - specific instruction, one of SIMD_EXTR_... */
+MINI_OP(OP_XEXTRACT, "xextract", IREG, XREG, NONE)
 
 /*
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
