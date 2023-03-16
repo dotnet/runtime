@@ -46,6 +46,7 @@ public class BuildPublishTests : BuildTestBase
     public void DefaultTemplate_NoAOT_WithWorkload(string config)
     {
         // disable relinking tests for Unicode: github.com/emscripten-core/emscripten/issues/17817
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
         string id = config == "Release" ?
             $"blz_no_aot_{config}_{Path.GetRandomFileName()}" :
             $"blz_no_aot_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
