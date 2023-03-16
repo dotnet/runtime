@@ -296,7 +296,7 @@ namespace System.Management
             string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue(RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ?
                 "InstallRootArm64" :
                 "InstallRoot");
-            
+
             if (netFrameworkInstallRoot == null)
             {
                 // In some Windows versions, like Nano Server, the .NET Framework is not installed by default.
