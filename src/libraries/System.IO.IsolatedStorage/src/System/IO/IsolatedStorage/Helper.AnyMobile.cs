@@ -8,7 +8,7 @@ namespace System.IO.IsolatedStorage
         // we're using a different directory name for compatibility with legacy Xamarin
         public const string IsolatedStorageDirectoryName = ".isolated-storage";
 
-        internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
+        internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope _)
         {
             // In legacy Xamarin we didn't have a random directory inside of the isolated storage root for each app,
             // we tried to preserve that in https://github.com/dotnet/runtime/pull/75541 but the fix wasn't complete enough
