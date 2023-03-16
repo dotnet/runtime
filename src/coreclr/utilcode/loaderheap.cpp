@@ -1106,7 +1106,7 @@ BOOL UnlockedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
             return FALSE;
         }
 
-        ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, GetOsPageSize(), ExectuableAllocator::DoNotCache);
+        ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, GetOsPageSize(), ExecutableAllocator::DoNotAddToCache);
         m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData);
         FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
     }

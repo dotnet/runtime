@@ -355,7 +355,7 @@ void* ExecutableAllocator::FindRWBlock(void* baseRX, size_t size, CacheableMappi
     return NULL;
 }
 
-bool ExecutableAllocator::AddRWBlock(void* baseRW, void* baseRX, size_t size)
+bool ExecutableAllocator::AddRWBlock(void* baseRW, void* baseRX, size_t size, CacheableMapping cacheMapping)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -520,7 +520,7 @@ void ExecutableAllocator::Release(void* pRX)
             g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RX block to release was not found"));
         }
 
-        _ASSERTE(FindRWBlock(pRX, 1) == NULL);
+        _ASSERTE(FindRWBlock(pRX, 1, CacheableMapping::DoNotAddToCache) == NULL);
     }
     else
     {

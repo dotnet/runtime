@@ -20,6 +20,16 @@
 // This class is responsible for allocation of all the executable memory in the runtime.
 class ExecutableAllocator
 {
+public:
+
+    enum CacheableMapping
+    {
+        AddToCache,
+        DoNotAddToCache,
+    };
+
+private:
+
     // RX address range block descriptor
     struct BlockRX
     {
@@ -177,12 +187,6 @@ class ExecutableAllocator
 #endif
 
 public:
-
-    enum CacheableMapping
-    {
-        AddToCache
-        DoNotAddToCache,
-    }
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     static void LogUsage(const char* source, int line, const char* function);
