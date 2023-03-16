@@ -202,6 +202,21 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
 
     instruction ins = id->idIns();
 
+    if (IsRexW0Instruction(ins))
+    {
+        return false;
+    }
+    else if (IsRexW1Instruction(ins))
+    {
+        return true;
+    }
+
+    if (IsRexWXInstruction(ins))
+    {
+        // TODO: Make this a simple assert once all instructions are annotated
+        unreached();
+    }
+
     switch (ins)
     {
         case INS_movq:
@@ -291,9 +306,7 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vfnmsub231sd:
         case INS_unpcklpd:
         case INS_vpermilpdvar:
-        case INS_movdqa64:
         case INS_movdqu16:
-        case INS_movdqu64:
         case INS_vinsertf64x4:
         case INS_vinserti64x4:
         {
@@ -409,9 +422,7 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vpdpbusds:
         case INS_vpdpwssds:
         case INS_vpermilpsvar:
-        case INS_movdqa32:
         case INS_movdqu8:
-        case INS_movdqu32:
         case INS_vinsertf32x8:
         case INS_vinserti32x8:
         {
@@ -648,6 +659,9 @@ static bool DoesWriteZeroFlag(instruction ins);
 bool DoesWriteSignFlag(instruction ins);
 bool DoesResetOverflowAndCarryFlags(instruction ins);
 bool IsFlagsAlwaysModified(instrDesc* id);
+static bool IsRexW0Instruction(instruction ins);
+static bool IsRexW1Instruction(instruction ins);
+static bool IsRexWXInstruction(instruction ins);
 
 bool IsThreeOperandAVXInstruction(instruction ins)
 {
