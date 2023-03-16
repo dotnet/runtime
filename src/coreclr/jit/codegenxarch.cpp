@@ -3068,6 +3068,18 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         instruction simdMov      = simdUnalignedMovIns();
         unsigned    bytesWritten = 0;
 
+        auto emitSimdMovs = [&]() {
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        };
+
         while (bytesWritten < size)
         {
 #ifdef TARGET_X86
@@ -3082,16 +3094,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 break;
             }
 
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
-
+            emitSimdMovs();
             dstOffset += regSize;
             bytesWritten += regSize;
 
@@ -3114,24 +3117,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             else
             {
                 // if reminder is <=16 then switch to XMM
-                if ((regSize == YMM_REGSIZE_BYTES) && (size <= XMM_REGSIZE_BYTES))
-                {
-                    regSize = XMM_REGSIZE_BYTES;
-                }
-
-                assert(dstOffset >= (int)regSize);
+                regSize = size <= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : regSize;
 
                 // Rewind dstOffset so we can fit a vector for the while remainder
                 dstOffset -= (regSize - size);
-                if (dstLclNum != BAD_VAR_NUM)
-                {
-                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
-                }
-                else
-                {
-                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
-                                        dstAddrIndexScale, dstOffset);
-                }
+                emitSimdMovs();
                 size = 0;
             }
         }
@@ -3349,8 +3339,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                ? YMM_REGSIZE_BYTES
                                : XMM_REGSIZE_BYTES;
 
-        do
-        {
+        auto emitSimdMovs = [&]() {
             if (srcLclNum != BAD_VAR_NUM)
             {
                 emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
@@ -3370,52 +3359,36 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                 emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
+        };
+
+        while (size >= regSize)
+        {
+            emitSimdMovs();
             srcOffset += regSize;
             dstOffset += regSize;
             size -= regSize;
-        } while (size >= regSize);
+        }
+
+        assert((size >= 0) && (size < regSize));
 
         // Handle the remainder by overlapping with previosly processed data
-        if ((size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
+        if ((size > 0) && (size < regSize))
         {
+            assert(regSize >= XMM_REGSIZE_BYTES);
+
             if (isPow2(size) && (size <= REGSIZE_BYTES))
             {
-                // For sizes like 1,2,4 and 8 we delegate handling to normal load/stores
+                // For sizes like 1,2,4 and 8 (on AMD64) we delegate handling to normal load/stores
             }
             else
             {
                 // if reminder is <=16 then switch to XMM
-                if ((regSize == YMM_REGSIZE_BYTES) && (size <= XMM_REGSIZE_BYTES))
-                {
-                    regSize = XMM_REGSIZE_BYTES;
-                }
-
-                assert(srcOffset >= (int)regSize);
-                assert(dstOffset >= (int)regSize);
+                regSize = size <= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : regSize;
 
                 // Rewind dstOffset so we can fit a vector for the while remainder
                 srcOffset -= (regSize - size);
                 dstOffset -= (regSize - size);
-
-                if (srcLclNum != BAD_VAR_NUM)
-                {
-                    emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-                }
-                else
-                {
-                    emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                        srcAddrIndexScale, srcOffset);
-                }
-
-                if (dstLclNum != BAD_VAR_NUM)
-                {
-                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-                }
-                else
-                {
-                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                        dstAddrIndexScale, dstOffset);
-                }
+                emitSimdMovs();
                 size = 0;
             }
         }
