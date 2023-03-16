@@ -307,7 +307,6 @@ namespace System.Diagnostics
         public void Remove(System.Diagnostics.PerformanceCounterPermissionEntry value) { }
     }
 }
-#if !NETSTANDARD2_0
 namespace System.DirectoryServices
 {
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
@@ -359,7 +358,6 @@ namespace System.DirectoryServices
         public void Remove(System.DirectoryServices.DirectoryServicesPermissionEntry value) { }
     }
 }
-#endif
 namespace System.Drawing.Printing
 {
 #if NETCOREAPP

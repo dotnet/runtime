@@ -1,6 +1,0 @@
-<Project>
-  <ItemGroup>
-    <!-- intentional dangling ref from referencing System.DirectoryServices -->
-    <IgnoredReference Include="System.Security.Permissions" />
-  </ItemGroup>
-</Project>
