@@ -3440,9 +3440,21 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	/* Don't inline methods that do calls */
-	if (op == -1 && td->inlined_method && !td->aggressive_inlining)
-		return FALSE;
+	/*
+	 * When inlining a method, only allow it to perform one call.
+	 * We previously prohibited calls entirely, this is a conservative rule that allows
+	 * Things like ThrowHelper.ThrowIfNull to theoretically inline, along with a hypothetical
+	 * X.get_Item that just calls Y.get_Item (profitable to inline)
+	 */
+	if (op == -1 && td->inlined_method && !td->aggressive_inlining) {
+		if (td->has_inlined_one_call) {
+			g_print("Prohibiting second inlined call in %s (target %s)\n", td->method->name, target_method->name);
+			return FALSE;
+		} else {
+			g_print("Allowing single inlined call in %s (target %s)\n", td->method->name, target_method->name);
+			td->has_inlined_one_call = TRUE;
+		}
+	}
 
 	/* We need to convert delegate invoke to a indirect call on the interp_invoke_impl field */
 	if (target_method && m_class_get_parent (target_method->klass) == mono_defaults.multicastdelegate_class) {
