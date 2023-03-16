@@ -190,19 +190,19 @@ namespace System.IO.MemoryMappedFiles
         /// Creates a memory-mapped file from an existing file using a SafeFileHandle,
         /// and the specified access mode, name, inheritability, and capacity.
         /// </summary>
-        /// <paramref name="fileHandle">The SafeFileHandle to the existing file. Caller is
+        /// <param name="fileHandle">The SafeFileHandle to the existing file. Caller is
         /// responsible for disposing <paramref name="fileHandle"/> when <paramref name="leaveOpen"/> is <see langword="true" /> (otherwise,
-        /// automatically disposed by the <see cref="MemoryMappedFile"/>). </paramref>
-        /// <paramref name="mapName">A name to assign to the memory-mapped file, or <see langword="null" /> for a
-        /// <see cref="MemoryMappedFile"/> that you do not intend to share across processes.</paramref>
-        /// <paramref name="capacity">The maximum size, in bytes, to allocate to the memory-mapped file.
-        /// Specify 0 to set the capacity to the size of the file.</paramref>
-        /// <paramref name="access">One of the enumeration values that specifies the type of access allowed
-        /// to the memory-mapped file.<para>This parameter can't be set to <c>Write</c>.</para></paramref>
-        /// <paramref name="inheritability">One of the enumeration values that specifies whether a handle
-        /// to the memory-mapped file can be inherited by a child process. The default is <c>None</c>.</paramref>
-        /// <paramref name="leaveOpen">A value that indicates whether to close the source file handle when
-        /// the <see cref="MemoryMappedFile"/> is disposed.</paramref>
+        /// automatically disposed by the <see cref="MemoryMappedFile"/>). </param>
+        /// <param name="mapName">A name to assign to the memory-mapped file, or <see langword="null" /> for a
+        /// <see cref="MemoryMappedFile"/> that you do not intend to share across processes.</param>
+        /// <param name="capacity">The maximum size, in bytes, to allocate to the memory-mapped file.
+        /// Specify 0 to set the capacity to the size of the file.</param>
+        /// <param name="access">One of the enumeration values that specifies the type of access allowed
+        /// to the memory-mapped file.<para>This parameter can't be set to <c>Write</c>.</para></param>
+        /// <param name="inheritability">One of the enumeration values that specifies whether a handle
+        /// to the memory-mapped file can be inherited by a child process. The default is <c>None</c>.</param>
+        /// <param name="leaveOpen">A value that indicates whether to close the source file handle when
+        /// the <see cref="MemoryMappedFile"/> is disposed.</param>
         /// <returns>A memory-mapped file that has the specified characteristics.</returns>
         /// <exception cref="ArgumentException">
         /// <para><paramref name="mapName"/> is <see langword="null" /> or an empty string.</para>
