@@ -47,7 +47,7 @@ elseif(TARGETS_APPLE_MOBILE)
         "-lc++"
         "-liconv"
     )
-    add_definitiions(-DHOST_APPLE_MOBILE=1)
+    add_definitions(-DHOST_APPLE_MOBILE=1)
 else()
     message(FATAL_ERROR "Unsupported Platform. Ensure the TargetOS is supported by the LibraryBuilder and the platform specific libs are added here.")
 endif()
