@@ -177,7 +177,7 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module));
                 }
 
                 bool nativeLib = Get(_command.NativeLib);
@@ -235,7 +235,7 @@ namespace ILCompiler
                 foreach (var unmanagedEntryPointsAssembly in Get(_command.UnmanagedEntryPointsAssemblies))
                 {
                     EcmaModule module = typeSystemContext.GetModuleForSimpleName(unmanagedEntryPointsAssembly);
-                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module));
                 }
 
                 foreach (var rdXmlFilePath in Get(_command.RdXmlFilePaths))
@@ -531,7 +531,7 @@ namespace ILCompiler
                 ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, exportsFile);
                 foreach (var compilationRoot in compilationRoots)
                 {
-                    if (compilationRoot is ExportedMethodsRootProvider provider)
+                    if (compilationRoot is UnmanagedEntryPointsRootProvider provider)
                         defFileWriter.AddExportedMethods(provider.ExportedMethods);
                 }
 
