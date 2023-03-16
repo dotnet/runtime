@@ -2086,7 +2086,7 @@ free_signature_pointer_pair (SignaturePointerPair *pair)
 MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method)
 {
-	MonoMethodSignature *sig, *invoke_sig, *target_method_sig;
+	MonoMethodSignature *sig, *invoke_sig, *target_method_sig = NULL;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
