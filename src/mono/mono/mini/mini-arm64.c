@@ -871,7 +871,7 @@ emit_ldrfpq (guint8 *code, int rt, int rn, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_smax_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
 {
-	// It is guaranteed that rd == rn
+	g_assert (rd == rn);
 	if (rn != rm) {
 		arm_neon_cmgt (code, width, type, NEON_TMP_REG, rn, rm);
 		arm_neon_bif (code, width, rd, rm, NEON_TMP_REG);
@@ -882,7 +882,7 @@ emit_smax_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
 static WARN_UNUSED_RESULT guint8*
 emit_umax_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
 {
-	// It is guaranteed that rd == rn
+	g_assert (rd == rn);
 	if (rn != rm) {
 		arm_neon_cmhi (code, width, type, NEON_TMP_REG, rn, rm);
 		arm_neon_bif (code, width, rd, rm, NEON_TMP_REG);
@@ -893,7 +893,7 @@ emit_umax_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
 static WARN_UNUSED_RESULT guint8*
 emit_smin_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
 {
-	// It is guaranteed that rd == rn
+	g_assert (rd == rn);
 	if (rn != rm) {
 		arm_neon_cmgt (code, width, type, NEON_TMP_REG, rm, rn);
 		arm_neon_bif (code, width, rd, rm, NEON_TMP_REG);
@@ -904,7 +904,7 @@ emit_smin_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
 static WARN_UNUSED_RESULT guint8*
 emit_umin_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
 {
-	// It is guaranteed that rd == rn
+	g_assert (rd == rn);
 	if (rn != rm) {
 		arm_neon_cmhi (code, width, type, NEON_TMP_REG, rm, rn);
 		arm_neon_bif (code, width, rd, rm, NEON_TMP_REG);
