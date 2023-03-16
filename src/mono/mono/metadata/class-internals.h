@@ -1260,6 +1260,9 @@ mono_class_from_mono_type_internal (MonoType *type);
 MONO_COMPONENT_API MonoClassField*
 mono_field_from_token_checked (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context, MonoError *error);
 
+MonoMethod *
+mono_find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error);
+
 MONO_COMPONENT_API gpointer
 mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 

@@ -2266,12 +2266,13 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE: {
 		MonoJumpInfoVirtMethod *info = (MonoJumpInfoVirtMethod *)data;
 		MonoClass *iface_class = info->method->klass;
-		MonoMethod *method;
+		MonoMethod *method = NULL;
 		int ioffset, slot;
 		gpointer addr;
 
 		mono_class_init_internal (info->klass);
 		mono_class_setup_vtable (info->klass);
+		
 		// FIXME: Check type load
 		if (mono_class_is_interface (iface_class)) {
 			gboolean variance_used;
@@ -2287,11 +2288,13 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 			slot = mono_method_get_vtable_slot (info->method);
 		}
 		g_assert (slot != -1);
-		if (mono_class_is_interface (iface_class) && !m_class_get_vtable (info->klass))	{
-			method = m_class_get_methods (info->klass) [slot];
-		} else {
+		if (!m_class_get_vtable (info->klass) && MONO_CLASS_IS_INTERFACE_INTERNAL (info->klass) && MONO_CLASS_IS_INTERFACE_INTERNAL(info->method->klass)) {
+			method = mono_find_method (info->klass, info->method->klass, info->method->name, mono_method_signature_internal (info->method), info->klass, error);
+		}
+		if (!method)
+		{
 			g_assert (m_class_get_vtable (info->klass));
-			method = m_class_get_vtable (info->klass) [ioffset + slot];			
+			method = m_class_get_vtable (info->klass) [ioffset + slot];
 		}
 
 		if (info->method->is_inflated) {

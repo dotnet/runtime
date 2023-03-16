@@ -520,8 +520,8 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 	return NULL;
 }
 
-static MonoMethod *
-find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
+MonoMethod *
+mono_find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
 {
 	int i;
 	char *qname, *fqname, *class_name;
@@ -915,7 +915,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	switch (class_index) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
-		method = find_method (klass, NULL, mname, sig, klass, error);
+		method = mono_find_method (klass, NULL, mname, sig, klass, error);
 		break;
 
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
@@ -925,7 +925,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
 			MonoClass *in_class = mono_class_is_ginst (klass) ? mono_class_get_generic_class (klass)->container_class : klass;
-			method = find_method (in_class, NULL, mname, sig, klass, error);
+			method = mono_find_method (in_class, NULL, mname, sig, klass, error);
 			break;
 		}
 
@@ -1241,12 +1241,6 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 		return NULL;
 	}
 
-	/* If the constraining class is actually an interface, we don't learn
-	 * anything new by constraining.
-	 */
-	if (MONO_CLASS_IS_INTERFACE_INTERNAL (constrained_class))
-		return method;
-
 	mono_class_setup_vtable (base_class);
 	if (mono_class_has_failure (base_class)) {
 		mono_error_set_for_class_failure (error, base_class);
@@ -1308,7 +1302,19 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 	}
 	g_assert (vtable_slot >= 0);
 
-	MonoMethod *res = mono_class_get_vtable_entry (constrained_class, vtable_slot);
+	MonoMethod *res = NULL;
+	if (!m_class_get_vtable (constrained_class) && MONO_CLASS_IS_INTERFACE_INTERNAL (constrained_class) && MONO_CLASS_IS_INTERFACE_INTERNAL(method->klass)) {
+		res = mono_find_method (constrained_class, method->klass, method->name, mono_method_signature_internal (method), constrained_class, error);
+		if (res != NULL)
+			return res;
+	}
+
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (constrained_class))
+		return method;
+
+	res = mono_class_get_vtable_entry (constrained_class, vtable_slot);
+
+	
 	if (res == NULL && mono_class_is_abstract (constrained_class) ) {
 		/* Constraining class is abstract, there may not be a refined method. */
 		return method;
