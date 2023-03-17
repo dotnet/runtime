@@ -9111,7 +9111,7 @@ private:
     GenTree* optIsBoolComp(OptTestInfo* pOptTest);
     bool        optOptimizeBoolsChkTypeCostCond();
     void        optOptimizeBoolsUpdateTrees();
-    inline bool FindCompareChain(GenTree* condition, bool* isTestCondition);
+    bool FindCompareChain(GenTree* condition, bool* isTestCondition);
 };
 
 //-----------------------------------------------------------------------------
@@ -9351,7 +9351,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 //      m_b1 and m_b2 are set on entry.
 //
 
-inline bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
+bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 {
     GenTree* condOp1 = condition->gtGetOp1();
     GenTree* condOp2 = condition->gtGetOp2();
@@ -9543,8 +9543,6 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         }
     }
 
-    GenTree* testcondition = nullptr;
-
     // Remove the first JTRUE statement.
     constexpr bool isUnlink = true;
     m_comp->fgRemoveStmt(m_b1, s1 DEBUGARG(isUnlink));
@@ -9559,14 +9557,12 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     // Join the two conditions together
     genTreeOps chainedOper       = foundEndOfOrConditions ? GT_AND : GT_OR;
     GenTree*   chainedConditions = m_comp->gtNewOperNode(chainedOper, TYP_INT, cond1, cond2);
-    chainedConditions->AsOp()->gtFlags |= (cond1->gtFlags & GTF_ALL_EFFECT);
-    chainedConditions->AsOp()->gtFlags |= (cond2->gtFlags & GTF_ALL_EFFECT);
     cond1->gtFlags &= ~GTF_RELOP_JMP_USED;
     cond2->gtFlags &= ~GTF_RELOP_JMP_USED;
     chainedConditions->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
     // Add a test condition onto the front of the chain
-    testcondition = m_comp->gtNewOperNode(GT_NE, TYP_INT, chainedConditions, m_comp->gtNewZeroConNode(TYP_INT));
+    GenTree* testcondition = m_comp->gtNewOperNode(GT_NE, TYP_INT, chainedConditions, m_comp->gtNewZeroConNode(TYP_INT));
 
     // Wire the chain into the second block
     m_testInfo2.testTree->AsOp()->gtOp1 = testcondition;
