@@ -8748,6 +8748,10 @@ const char* LinearScan::getStatName(unsigned stat)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) #stat,
 #include "lsra_score.h"
 #undef REG_SEL_DEF
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) #stat,
+#include "lsra_busy_score.h"
+#undef BUSY_REG_SEL_DEF
+
     };
 
     assert(stat < ArrLen(lsraStatNames));
@@ -8758,11 +8762,17 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 {
     switch (registerScore)
     {
-#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
-    case RegisterScore::stat:                                                                                          \
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                     \
+    case RegisterScore::stat:                                                               \
         return LsraStat::STAT_##stat;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                \
+    case RegisterScore::stat:                                                               \
+        return LsraStat::STAT_##stat;
+#include "lsra_busy_score.h"
+#undef BUSY_REG_SEL_DEF
+
         default:
             return LsraStat::STAT_FREE;
     }
@@ -9066,6 +9076,12 @@ const char* LinearScan::getScoreName(RegisterScore score)
         return shortname;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
+    case stat:                                                                                                         \
+        return shortname;
+#include "lsra_busy_score.h"
+#undef BUSY_REG_SEL_DEF
+
         default:
             return "  -  ";
     }
@@ -11058,10 +11074,15 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 #ifdef DEBUG
     mappingTable = new ScoreMappingTable(linearScan->compiler->getAllocator(CMK_LSRA));
 
-#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                               \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
 #include "lsra_score.h"
 #undef REG_SEL_DEF
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                          \
+    mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
+#include "lsra_busy_score.h"
+#undef BUSY_REG_SEL_DEF
+
 
     LPCWSTR ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
@@ -11076,12 +11097,18 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 
         switch (ordering[orderId])
         {
-#define REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                                                           \
-    case orderSeqId:                                                                                                   \
-        RegSelectionOrder[orderId] = enum_name;                                                                        \
+#define REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                          \
+    case orderSeqId:                                                                  \
+        RegSelectionOrder[orderId] = enum_name;                                       \
         break;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
+#define BUSY_REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                     \
+    case orderSeqId:                                                                  \
+        RegSelectionOrder[orderId] = enum_name;                                       \
+        break;
+#include "lsra_busy_score.h"
+#undef BUSY_REG_SEL_DEF
             default:
                 assert(!"Invalid lsraOrdering value.");
         }
@@ -12070,13 +12097,23 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         }
     }
 #else // RELEASE
-// In release, just invoke the default order
 
+// In release, just invoke the default order
+    if (freeCandidates != RBM_NONE)
+    {
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
-    try_##stat();                                                                                                      \
-    IF_FOUND_GOTO_DONE
+        try_##stat();                                                                                                  \
+        IF_FOUND_GOTO_DONE
 #include "lsra_score.h"
 #undef REG_SEL_DEF
+    }
+
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
+    try_##stat();                                                                                                      \
+    IF_FOUND_GOTO_DONE
+#include "lsra_busy_score.h"
+#undef BUSY_REG_SEL_DEF
+
 #endif // DEBUG
 #undef IF_FOUND_GOTO_DONE
 

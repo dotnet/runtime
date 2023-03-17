@@ -370,6 +370,9 @@ enum LsraStat
 #define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) STAT_##enum_name,
 #include "lsra_score.h"
 #undef REG_SEL_DEF
+#define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) STAT_##enum_name,
+#include "lsra_busy_score.h"
+#undef BUSY_REG_SEL_DEF
     COUNT
 };
 #endif // TRACK_LSRA_STATS
@@ -397,6 +400,9 @@ enum RegisterScore
 #define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) enum_name = value,
 #include "lsra_score.h"
 #undef REG_SEL_DEF
+#define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) enum_name = value,
+#include "lsra_busy_score.h"
+#undef BUSY_REG_SEL_DEF
     NONE = 0
 };
 
@@ -1315,6 +1321,10 @@ private:
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
 #include "lsra_score.h"
 #undef REG_SEL_DEF
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
+#include "lsra_busy_score.h"
+#undef BUSY_REG_SEL_DEF
+
     };
 
     RegisterSelection* regSelector;
