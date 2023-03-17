@@ -97,8 +97,8 @@ namespace Wasm.Build.Tests
             Assert.False(firstBuildStat["pinvoke.o"].Exists);
             Assert.False(firstBuildStat[$"{mainDll}.bc"].Exists);
 
-            string projectName = GetUnicodeProjectNameInSafeForm(buildArgs.ProjectName);
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: relinked, projectName, output);
+            string safeProjectName = GetUnicodeProjectNameInSafeForm(buildArgs.ProjectName);
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: relinked, safeProjectName, output);
 
             Run(expectAOT: false);
 
@@ -122,7 +122,7 @@ namespace Wasm.Build.Tests
             var publishStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
             Assert.True(publishStat["pinvoke.o"].Exists);
             Assert.True(publishStat[$"{mainDll}.bc"].Exists);
-            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, projectName, output);
+            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, safeProjectName, output);
             CompareStat(firstBuildStat, publishStat, pathsDict.Values);
 
             Run(expectAOT: true);
@@ -139,7 +139,7 @@ namespace Wasm.Build.Tests
             var secondBuildStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // no relinking, or AOT
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: false, projectName, output);
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: false, safeProjectName, output);
 
             // no native files changed
             pathsDict.UpdateTo(unchanged: true);
