@@ -8,17 +8,19 @@ namespace BuildDriver;
 public class Utils
 {
     public static string WinArchitecture(string arch) => arch.Equals("x86") ? "Win32" : "x64";
-    public static void RunProcess(ProcessStartInfo psi) => RunProcess(psi,
-        new GlobalConfig() { Configuration = "Release", Architecture = "x64", Silent = false });
-    public static void RunProcess(ProcessStartInfo psi, GlobalConfig gConfig)
+
+    public static void RunProcess(ProcessStartInfo psi, GlobalConfig config)
+        => RunProcess(psi, config.Silent);
+
+    public static void RunProcess(ProcessStartInfo psi, bool silent = false)
     {
-        if (!gConfig.Silent)
+        if (!silent)
             Console.WriteLine($"Running: {psi.FileName} {psi.Arguments}");
         using (Process proc = new())
         {
             proc.StartInfo = psi;
             proc.StartInfo.UseShellExecute = false;
-            if (gConfig.Silent)
+            if (silent)
             {
                 proc.StartInfo.RedirectStandardOutput = true;
                 proc.StartInfo.RedirectStandardError = true;
@@ -29,7 +31,7 @@ public class Utils
             proc.WaitForExit();
             if (proc.ExitCode != 0)
             {
-                if (gConfig.Silent)
+                if (silent)
                 {
                     Console.WriteLine(proc.StandardOutput.ReadToEnd());
                     Console.WriteLine(proc.StandardError.ReadToEnd());

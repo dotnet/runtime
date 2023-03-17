@@ -22,7 +22,7 @@ public class EmbeddingHost
 
         ProcessStartInfo psi = new();
         psi.FileName = Paths.RepoRoot.Combine(DotNet);
-        psi.Arguments = $"{type} unity/managed.sln -c {gConfig.Configuration}";
+        psi.Arguments = $"{type} unity/managed.sln -c {gConfig.Configuration} -v:{gConfig.DotNetVerbosity}";
         psi.WorkingDirectory = Paths.RepoRoot;
 
         Utils.RunProcess(psi, gConfig);

@@ -17,6 +17,8 @@ public class NullGC
         Console.WriteLine("Unity: Building Null GC");
         Console.WriteLine("***********************");
 
+        var hideOutput = gConfig.Silent || gConfig.DotNetVerbosity == "quiet";
+
         NPath workingDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
             Paths.UnityGC : Paths.UnityGC.CreateDirectory(gConfig.Configuration);
 
@@ -33,12 +35,12 @@ public class NullGC
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             sInfo.Arguments = $"{extraArchDefine}-DCMAKE_BUILD_TYPE={gConfig.Configuration} ..";
 
-        Utils.RunProcess(sInfo, gConfig);
+        Utils.RunProcess(sInfo, silent: hideOutput);
 
         sInfo.Arguments = "--build .";
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             sInfo.Arguments = $"--build . --config {gConfig.Configuration}";
 
-        Utils.RunProcess(sInfo, gConfig);
+        Utils.RunProcess(sInfo, silent: hideOutput);
     }
 }

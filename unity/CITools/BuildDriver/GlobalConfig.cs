@@ -8,4 +8,5 @@ public class GlobalConfig
     public required string Architecture;
     public required string Configuration;
     public required bool Silent;
+    public required string DotNetVerbosity;
 }
