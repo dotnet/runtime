@@ -2625,6 +2625,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgIncorporateEdgeCounts();
     }
 
+#ifdef DEBUG
     // Optionally synthesize & blend
     //
     if ((JitConfig.JitSynthesizeCounts() == 3) && !compIsForInlining())
@@ -2632,6 +2633,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         JITDUMP("Synthesizing profile data and blending it with the actual profile data\n");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
     }
+#endif
 
     // Scale data as appropriate
     //

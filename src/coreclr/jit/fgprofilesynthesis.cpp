@@ -691,6 +691,7 @@ void ProfileSynthesis::ClearLikelihoods()
 //
 void ProfileSynthesis::ReverseLikelihoods()
 {
+#ifdef DEBUG
     JITDUMP("Reversing likelihoods\n");
     WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
     for (BasicBlock* const block : m_comp->Blocks())
@@ -713,6 +714,7 @@ void ProfileSynthesis::ReverseLikelihoods()
             }
         }
     }
+#endif // DEBUG
 }
 
 //------------------------------------------------------------------------
@@ -724,6 +726,7 @@ void ProfileSynthesis::ReverseLikelihoods()
 //
 void ProfileSynthesis::RandomizeLikelihoods()
 {
+#ifdef DEBUG
     // todo: external seed
     JITDUMP("Randomizing likelihoods\n");
     WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
@@ -762,6 +765,7 @@ void ProfileSynthesis::RandomizeLikelihoods()
             edge->setLikelihood(likelihoods[i++] / sum);
         }
     }
+#endif // DEBUG
 }
 
 //------------------------------------------------------------------------
