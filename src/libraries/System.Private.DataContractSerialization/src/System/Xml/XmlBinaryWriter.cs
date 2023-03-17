@@ -789,6 +789,7 @@ namespace System.Xml
                 BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), bits[2]);
                 BinaryPrimitives.WriteInt32LittleEndian(span.Slice(8), bits[0]);
                 BinaryPrimitives.WriteInt32LittleEndian(span.Slice(12), bits[1]);
+                Advance(1 + sizeof(decimal));
             }
         }
 
