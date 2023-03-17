@@ -3519,24 +3519,8 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
                 pLoaderHeap = pVcsMgr->indcell_heap;
                 break;
 
-            case LookupHeap:
-                pLoaderHeap = pVcsMgr->lookup_heap;
-                break;
-
-            case ResolveHeap:
-                pLoaderHeap = pVcsMgr->resolve_heap;
-                break;
-
-            case DispatchHeap:
-                pLoaderHeap = pVcsMgr->dispatch_heap;
-                break;
-
             case CacheEntryHeap:
                 pLoaderHeap = pVcsMgr->cache_entry_heap;
-                break;
-
-            case VtableHeap:
-                pLoaderHeap = pVcsMgr->vtable_heap;
                 break;
 
             default:
@@ -3585,11 +3569,7 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "FixupPrecodeHeap",
     "NewStubPrecodeHeap",
     "IndcellHeap",
-    "LookupHeap",
-    "ResolveHeap",
-    "DispatchHeap",
     "CacheEntryHeap",
-    "VtableHeap",
 };
 
 
@@ -3632,11 +3612,7 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             else
             {
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->indcell_heap);
-                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->lookup_heap);
-                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->resolve_heap);
-                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->dispatch_heap);
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->cache_entry_heap);
-                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->vtable_heap);
             }
             
             // All of the above are "LoaderHeap" and not the ExplicitControl version.

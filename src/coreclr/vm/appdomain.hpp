@@ -1217,12 +1217,9 @@ public:
     friend class LoadLockHolder;
 public:
     void InitVSD();
-    RangeList *GetCollectibleVSDRanges() { return &m_collVSDRanges; }
 
 private:
     TypeIDMap m_typeIDMap;
-    // Range list for collectible types. Maps VSD PCODEs back to the VirtualCallStubManager they belong to
-    LockedRangeList m_collVSDRanges;
 
 public:
     UINT32 GetTypeID(PTR_MethodTable pMT);

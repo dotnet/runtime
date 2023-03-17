@@ -6314,14 +6314,13 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 
-    VirtualCallStubManager::StubKind sk;
-    VirtualCallStubManager::FindStubManager(f_IP, &sk, FALSE /* usePredictStubKind */);
+    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         return TRUE;
     }
-    else if (sk == VirtualCallStubManager::SK_RESOLVE)
+    else if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
     {
         return TRUE;
     }

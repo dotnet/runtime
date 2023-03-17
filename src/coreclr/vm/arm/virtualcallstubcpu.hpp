@@ -483,67 +483,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 
 #endif // DACCESS_COMPILE
 
-VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE stubStartAddress)
-{
-    SUPPORTS_DAC;
-#ifdef DACCESS_COMPILE
-
-    return SK_BREAKPOINT;  // Dac always uses the slower lookup
-
-#else
-
-    StubKind stubKind = SK_UNKNOWN;
-    TADDR pInstr = PCODEToPINSTR(stubStartAddress);
-
-    EX_TRY
-    {
-        // If stubStartAddress is completely bogus, then this might AV,
-        // so we protect it with SEH. An AV here is OK.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        WORD firstWord = *((WORD*) pInstr);
-
-        if (*((UINT32*)pInstr) == 0xc000f8d0)
-        {
-            // Confirm the thrid word belongs to the vtable stub pattern
-            WORD thirdWord = ((WORD*)pInstr)[2];
-            if (thirdWord == 0xf84d /* Part of str r0, [sp, #-4] */  ||
-                thirdWord == 0xf8dc /* Part of ldr r12, [r12 + offset] */)
-                stubKind = SK_VTABLECALL;
-        }
-
-        if (stubKind == SK_UNKNOWN)
-        {
-            //Assuming that RESOLVE_STUB_FIRST_WORD & DISPATCH_STUB_FIRST_WORD have same values
-            if (firstWord == DISPATCH_STUB_FIRST_WORD)
-            {
-                WORD thirdWord = ((WORD*)pInstr)[2];
-                if (thirdWord == 0xf84d)
-                {
-                    stubKind = SK_DISPATCH;
-                }
-                else if (thirdWord == 0xb460)
-                {
-                    stubKind = SK_RESOLVE;
-                }
-            }
-            else if (firstWord == 0xf8df)
-            {
-                stubKind = SK_LOOKUP;
-            }
-        }
-    }
-    EX_CATCH
-    {
-        stubKind = SK_UNKNOWN;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return stubKind;
-
-#endif // DACCESS_COMPILE
-}
-
 #endif //DECLARE_DATA
 
 #endif // _VIRTUAL_CALL_STUB_ARM_H

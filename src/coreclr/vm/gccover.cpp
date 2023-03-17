@@ -52,17 +52,23 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         return targetMD;
     }
 
-    VirtualCallStubManager::StubKind vsdStubKind = VirtualCallStubManager::SK_UNKNOWN;
-    VirtualCallStubManager *pVSDStubManager = VirtualCallStubManager::FindStubManager(target, &vsdStubKind);
-    if (vsdStubKind != VirtualCallStubManager::SK_BREAKPOINT && vsdStubKind != VirtualCallStubManager::SK_UNKNOWN)
+    auto stubKind = RangeSectionStubManager::GetStubKind(target);
+
+    if ((stubKind == STUB_CODE_BLOCK_VSD_DISPATCH_STUB) ||
+        (stubKind == STUB_CODE_BLOCK_VSD_RESOLVE_STUB) ||
+        (stubKind == STUB_CODE_BLOCK_VSD_LOOKUP_STUB) ||
+        (stubKind == STUB_CODE_BLOCK_VSD_VTABLE_STUB))
     {
-        // It is a VSD stub manager.
-        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, vsdStubKind));
-        _ASSERTE(token.IsValid());
-        return VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
+        VirtualCallStubManager *pVSDStubManager = VirtualCallStubManager::FindStubManager(target, &stubKind);
+        if (pVSDStubManager != NULL)
+        {
+            // It is a VSD stub manager.
+            DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, stubKind));
+            _ASSERTE(token.IsValid());
+            return VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
+        }
     }
 
-    auto stubKind = RangeSectionStubManager::GetStubKind(target);
     if (stubKind == STUB_CODE_BLOCK_PRECODE)
     {
         // The address looks like a value stub, try to get the method descriptor.
