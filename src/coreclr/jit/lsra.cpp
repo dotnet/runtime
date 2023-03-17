@@ -3118,7 +3118,7 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     refPosition->copyReg = true;
 
     RegisterScore registerScore = NONE;
-    regNumber allocatedReg = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
+    regNumber allocatedReg      = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
     assert(allocatedReg != REG_NA);
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg, nullptr, registerScore));
@@ -11175,10 +11175,12 @@ bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, 
 void LinearScan::RegisterSelection::try_FREE()
 {
     assert(!found);
+#ifdef DEBUG
     if (freeCandidates == RBM_NONE)
     {
         return;
     }
+#endif
 
     found = applySelection(FREE, freeCandidates);
 }
@@ -11191,10 +11193,12 @@ void LinearScan::RegisterSelection::try_FREE()
 void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 {
     assert(!found);
+#ifdef DEBUG
     if (freeCandidates == RBM_NONE)
     {
         return;
     }
+#endif
 
     if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
     {
@@ -11214,10 +11218,12 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
 {
     assert(!found);
+#ifdef DEBUG
     if (freeCandidates == RBM_NONE)
     {
         return;
     }
+#endif
 
     if (currentInterval->assignedReg != nullptr)
     {
@@ -11328,10 +11334,12 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
 {
     assert(!found);
 
+#ifdef DEBUG
     if (freeCandidates == RBM_NONE)
     {
         return;
     }
+#endif
 
     regMaskTP bestFitSet = RBM_NONE;
     // If the best score includes COVERS_FULL, pick the one that's killed soonest.
@@ -11417,10 +11425,12 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
 {
     assert(!found);
 
+#ifdef DEBUG
     if (freeCandidates == RBM_NONE)
     {
         return;
     }
+#endif
 
     // This will always result in a single candidate. That is, it is the tie-breaker
     // for free candidates, and doesn't make sense as anything other than the last
@@ -11670,7 +11680,14 @@ void LinearScan::RegisterSelection::try_REG_NUM()
 //
 void LinearScan::RegisterSelection::calculateCoversSets()
 {
-    if (freeCandidates == RBM_NONE || coversSetsCalculated)
+#ifdef DEBUG
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
+#endif
+
+    if (coversSetsCalculated)
     {
         return;
     }
