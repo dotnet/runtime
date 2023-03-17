@@ -2934,8 +2934,8 @@ enum {
 };
 
 enum {
-	SIMD_EXTR_MAX8,				// extract unsigned maximum of all bytes in XREG into an IREG, good for "is any byte nonzero"
-	SIMD_EXTR_MIN8				// extract unsigned minumum of all bytes in XREG into an IREG, good for "are all bytes nonzero"
+	SIMD_EXTR_IS_ANY_SET,
+	SIMD_EXTR_ARE_ALL_SET
 };
 
 int mini_primitive_type_size (MonoTypeEnum type);

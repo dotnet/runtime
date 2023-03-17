@@ -509,11 +509,17 @@ static MonoInst*
 emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 {
 #ifdef TARGET_ARM64
-	int size = mono_class_value_size (klass, NULL);
-	if (size == 16)
+	if (!COMPILE_LLVM (cfg)) {
+		MonoInst* cmp = emit_xcompare (cfg, arg1->klass, arg1->type, arg1, arg2);
+		MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
+		ret->inst_c0 = SIMD_EXTR_ARE_ALL_SET;
+		ret->inst_c1 = mono_class_value_size (klass, NULL);
+		return ret;
+	} else if (mono_class_value_size (klass, NULL) == 16) {
 		return emit_simd_ins (cfg, klass, OP_XEQUAL_ARM64_V128_FAST, arg1->dreg, arg2->dreg);
-	else
+	} else {
 		return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
+	}
 #else	
 	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
 	if (!COMPILE_LLVM (cfg))
@@ -1202,8 +1208,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 
 	if (!strcmp (m_class_get_name (cfg->method->klass), "Vector256") || !strcmp (m_class_get_name (cfg->method->klass), "Vector512"))
-		return NULL; // TODO: Fix Vector256.WithUpper/WithLower
-
+		return NULL; 
+		
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
@@ -1501,7 +1507,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		} else {
 			MonoInst* cmp = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
 			MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
-			ret->inst_c0 = (id == SN_EqualsAll) ? SIMD_EXTR_MIN8 : SIMD_EXTR_MAX8;
+			ret->inst_c0 = (id == SN_EqualsAll) ? SIMD_EXTR_ARE_ALL_SET : SIMD_EXTR_IS_ANY_SET;
+			ret->inst_c1 = mono_class_value_size (klass, NULL);
 			return ret;
 		}
 		g_assert_not_reached ();
@@ -1601,9 +1608,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return emit_not_xequal (cfg, arg_class, cmp, zero);
 			}
 		} else {
-			MonoInst *cmp = emit_xcompare_for_intrinsic (cfg, arg_class, id, arg0_type, args [0], args [1]);
+			MonoInst* cmp = emit_xcompare_for_intrinsic (cfg, arg_class, id, arg0_type, args [0], args [1]);
 			MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
-			ret->inst_c0 = is_all ? SIMD_EXTR_MIN8 : SIMD_EXTR_MAX8;
+			ret->inst_c0 = is_all ? SIMD_EXTR_ARE_ALL_SET : SIMD_EXTR_IS_ANY_SET;
+			ret->inst_c1 = mono_class_value_size (klass, NULL);
 			return ret;
 		}
 	}
@@ -1918,6 +1926,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		case SN_op_BitwiseAnd:
 		case SN_op_BitwiseOr:
 		case SN_op_ExclusiveOr:
+		case SN_op_Equality:
+		case SN_op_Inequality:
 			break;
 		default:
 			return NULL;
