@@ -82,61 +82,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Hello World");
         }
 
-        // https://github.com/dotnet/runtime/issues/3654
-        [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so this no longer fails.")]
-        public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_With_AdditionalProbingPath_Succeeds()
-        {
-            var fixture = sharedTestState.PortableAppFixture_Built
-                .Copy();
-
-            var runtimeConfig = MoveRuntimeConfigToSubdirectory(fixture);
-
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-            var additionalProbingPath = sharedTestState.RepoDirectories.NugetPackages;
-
-            dotnet.Exec(
-                    "exec",
-                    "--runtimeconfig", runtimeConfig,
-                    "--additionalprobingpath", additionalProbingPath,
-                    appDll)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World");
-        }
-
-        // https://github.com/dotnet/runtime/issues/3654
-        [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so the additional probing path is no longer needed.")]
-        public void Muxer_Activation_With_Templated_AdditionalProbingPath_Succeeds()
-        {
-            var fixture = sharedTestState.PortableAppFixture_Built
-                .Copy();
-
-            var store_path = CreateAStore(fixture);
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            var destRuntimeDevConfig = fixture.TestProject.RuntimeDevConfigJson;
-            if (File.Exists(destRuntimeDevConfig))
-            {
-                File.Delete(destRuntimeDevConfig);
-            }
-
-            var additionalProbingPath = store_path + "/|arch|/|tfm|";
-
-            dotnet.Exec(
-                    "exec",
-                    "--additionalprobingpath", additionalProbingPath,
-                    appDll)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"Adding tpa entry: {Path.Combine(store_path, fixture.RepoDirProvider.BuildArchitecture, fixture.Framework)}");
-        }
-
         [Fact]
         public void Muxer_activation_of_Publish_Output_Portable_DLL_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
         {
@@ -591,19 +536,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             File.Move(testProjectFixture.TestProject.RuntimeConfigJson, destRuntimeConfig);
 
             return destRuntimeConfig;
-        }
-
-        private string CreateAStore(TestProjectFixture testProjectFixture)
-        {
-            var storeoutputDirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "store");
-            if (!Directory.Exists(storeoutputDirectory))
-            {
-                Directory.CreateDirectory(storeoutputDirectory);
-            }
-
-            testProjectFixture.StoreProject(outputDirectory: storeoutputDirectory);
-
-            return storeoutputDirectory;
         }
 
         public class SharedTestState : IDisposable
