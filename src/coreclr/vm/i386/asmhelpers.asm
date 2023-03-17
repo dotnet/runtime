@@ -251,7 +251,7 @@ COMPlusFrameHandlerRevCom proto c
 .safeseh COMPlusFrameHandlerRevCom
 endif
 
-ifdef HAS_ASAN
+ifdef HAS_ADDRESS_SANITIZER
 EXTERN ___asan_handle_no_return:PROC
 endif
 
@@ -273,7 +273,7 @@ CallRtlUnwind ENDP
 
 _ResumeAtJitEHHelper@4 PROC public
         ; Call ___asan_handle_no_return here as we are not going to return.
-ifdef HAS_ASAN
+ifdef HAS_ADDRESS_SANITIZER
         call    ___asan_handle_no_return
 endif
         mov     edx, [esp+4]     ; edx = pContext (EHContext*)
@@ -302,7 +302,7 @@ _ResumeAtJitEHHelper@4 ENDP
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFilterHelper@8 PROC public
         ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
-ifdef HAS_ASAN
+ifdef HAS_ADDRESS_SANITIZER
         call    ___asan_handle_no_return
 endif
         push    ebp
@@ -347,7 +347,7 @@ _CallJitEHFilterHelper@8 ENDP
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFinallyHelper@8 PROC public
         ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
-ifdef HAS_ASAN
+ifdef HAS_ADDRESS_SANITIZER
         call    ___asan_handle_no_return
 endif
         push    ebp

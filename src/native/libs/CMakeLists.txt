@@ -20,9 +20,6 @@ project(CoreFX C)
 include(../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
-# Set up build flags for sanitizers
-add_sanitizers_to_all_targets()
-
 include_directories(${CLR_SRC_NATIVE_DIR})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

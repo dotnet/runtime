@@ -225,11 +225,6 @@ add_library(coreclrpal
   ${LIBUNWIND_OBJECTS}
 )
 
-if (CLR_CMAKE_ENABLE_ASAN)
-    # Enable ASAN integration in our PAL if we are building with ASAN support
-    target_compile_definitions(coreclrpal PRIVATE HAS_ASAN)
-endif()
-
 # Build separate pal library for DAC (addition to regular pal library)
 if(CLR_CMAKE_TARGET_OSX)
   set(LIBUNWIND_DAC_OBJECTS $<TARGET_OBJECTS:libunwind_dac>)

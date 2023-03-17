@@ -89,7 +89,6 @@ function Get-Help() {
   Write-Host "  -pgoinstrument            Build the CLR with PGO instrumentation."
   Write-Host "  -fsanitize (address)      Build the native components with the specified sanitizers."
   Write-Host "                            Sanitizers can be specified with a comma-separated list."
-  Write-Host "                            If the value 'true' is specified, the default (AddressSanitizer) will be enabled."
   Write-Host ""
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
@@ -223,7 +222,7 @@ if ($vs) {
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
-  
+
   # Disable .NET runtime signature validation errors which errors for local builds
   $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 

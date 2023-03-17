@@ -165,6 +165,9 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
         address)
       list(APPEND CLR_CMAKE_SANITIZER_RUNTIMES
         address)
+      # We can't use preprocessor defines to determine if we're building with ASAN in assembly, so we'll
+      # define the preprocessor define ourselves.
+      add_compile_definitions($<$<COMPILE_LANGUAGE:ASM,ASM_MASM>:HAS_ADDRESS_SANITIZER>)
     endif()
   endif()
 
@@ -218,6 +221,12 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
   endif()
   if (CLR_CMAKE_SANITIZER_RUNTIMES)
     list(APPEND CLR_CMAKE_LINK_SANITIZE_OPTIONS "-fsanitize=${CLR_CMAKE_SANITIZER_RUNTIMES}")
+  endif()
+  if (MSVC)
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
+  else()
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
+    add_linker_flag("${CLR_CMAKE_LINK_SANITIZE_OPTIONS}")
   endif()
 endif()
 

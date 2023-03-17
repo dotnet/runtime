@@ -8,7 +8,6 @@ project(corehost)
 
 include(../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
-add_sanitizers_to_all_targets()
 
 if (MSVC)
     # Host components don't try to handle asynchronous exceptions

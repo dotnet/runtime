@@ -89,9 +89,11 @@ function(get_compile_definitions DefinitionName)
     set(LastGeneratorExpression "")
     foreach(DEFINITION IN LISTS COMPILE_DEFINITIONS_LIST)
       # If there is a definition that uses the $<TARGET_PROPERTY:prop> generator expression
+      # or the $<COMPILE_LANGUAGE:lang> generator expression,
       # we need to remove it since that generator expression is only valid on binary targets.
       # Assume that the value is 0.
       string(REGEX REPLACE "\\$<TARGET_PROPERTY:[^,>]+>" "0" DEFINITION "${DEFINITION}")
+      string(REGEX REPLACE "\\$<COMPILE_LANGUAGE:[^>]+(,[^>]+)*>" "0" DEFINITION "${DEFINITION}")
 
       if (${DEFINITION} MATCHES "^\\$<(.+):([^>]+)(>?)$")
         if("${CMAKE_MATCH_3}" STREQUAL "")
@@ -621,15 +623,6 @@ function(link_natvis_sources_for_target targetName linkKind)
         endif()
     endforeach()
 endfunction()
-
-macro(add_sanitizers_to_all_targets)
-  if (MSVC)
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
-  else()
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
-    add_linker_flag("${CLR_CMAKE_LINK_SANITIZE_OPTIONS}")
-  endif()
-endmacro()
 
 # Add sanitizer runtime support code to the target.
 function(add_sanitizer_runtime_support targetName)
