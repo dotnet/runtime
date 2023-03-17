@@ -1851,6 +1851,13 @@ const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_ROL_I8_IMM]:     [WasmOpcode.i64_rotl,      WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_ROR_I4_IMM]:     [WasmOpcode.i32_rotr,      WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_ROR_I8_IMM]:     [WasmOpcode.i64_rotr,      WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_CLZ_I4]:         [WasmOpcode.i32_clz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CTZ_I4]:         [WasmOpcode.i32_ctz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_POPCNT_I4]:      [WasmOpcode.i32_popcnt,    WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLZ_I8]:         [WasmOpcode.i64_clz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_CTZ_I8]:         [WasmOpcode.i64_ctz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_POPCNT_I8]:      [WasmOpcode.i64_popcnt,    WasmOpcode.i32_load, WasmOpcode.i32_store],
 };
 
 // HACK: Generating correct wasm for these is non-trivial so we hand them off to C.
