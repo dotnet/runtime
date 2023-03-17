@@ -542,6 +542,7 @@ jobs:
             - fullpgo_random_gdv_edge
             - fullpgo_methodprofiling_always_optimized
             - syntheticpgo
+            - syntheticpgo_blend
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:

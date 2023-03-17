@@ -4840,26 +4840,45 @@ public:
         WRAPPER_NO_CONTRACT;
     }
 
+    void Find(FieldDesc* pFD, SIZE_T baseOffset)
+    {
+        if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            if (pFieldMT->IsByRefLike())
+            {
+                Find(pFieldMT, baseOffset + pFD->GetOffset());
+            }
+        }
+        else if (pFD->IsByRef())
+        {
+            Report(baseOffset + pFD->GetOffset());
+        }
+    }
+
     void Find(PTR_MethodTable pMT, SIZE_T baseOffset)
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(pMT != nullptr);
         _ASSERTE(pMT->IsByRefLike());
 
+        bool isValArray = pMT->GetClass()->IsInlineArray();
         ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
         for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {
-            if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+            if (isValArray)
             {
-                PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-                if (pFieldMT->IsByRefLike())
+                _ASSERTE(pFD->GetOffset() == 0);
+                DWORD elementSize = pFD->GetSize();
+                DWORD totalSize = pMT->GetNumInstanceFieldBytes();
+                for (DWORD offset = 0; offset < totalSize; offset += elementSize)
                 {
-                    Find(pFieldMT, baseOffset + pFD->GetOffset());
+                    Find(pFD, baseOffset + offset);
                 }
             }
-            else if (pFD->IsByRef())
+            else
             {
-                Report(baseOffset + pFD->GetOffset());
+                Find(pFD, baseOffset);
             }
         }
     }

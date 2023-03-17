@@ -12,10 +12,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
         public abstract class SharedTestStateBase : TestArtifact
         {
-            protected string BuiltDotnetPath { get; }
-
-            public RepoDirectoriesProvider RepoDirectories { get; }
-
             private static string GetBaseDir(string name)
             {
                 string baseDir = Path.Combine(TestArtifactsPath, name);
@@ -25,20 +21,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             public SharedTestStateBase()
                 : base(GetBaseDir("dependencyResolution"))
             {
-                BuiltDotnetPath = Path.Combine(TestArtifactsPath, "sharedFrameworkPublish");
-                RepoDirectories = new RepoDirectoriesProvider(builtDotnet: BuiltDotnetPath);
             }
 
             public DotNetBuilder DotNet(string name)
             {
-                return new DotNetBuilder(Location, BuiltDotnetPath, name);
+                return new DotNetBuilder(Location, RepoDirectoriesProvider.Default.BuiltDotnet, name);
             }
 
-            public TestApp CreateFrameworkReferenceApp(string fxName, string fxVersion)
+            public TestApp CreateFrameworkReferenceApp(string fxName, string fxVersion, Action<NetCoreAppBuilder> customizer = null)
             {
                 // Prepare the app mock - we're not going to run anything really, so we just need the basic files
                 TestApp testApp = CreateTestApp(Location, "FrameworkReferenceApp");
-                testApp.PopulateFrameworkDependent(fxName, fxVersion);
+                testApp.PopulateFrameworkDependent(fxName, fxVersion, customizer);
                 return testApp;
             }
 

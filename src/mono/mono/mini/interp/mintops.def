@@ -824,7 +824,6 @@ OPDEF(MINT_INTRINS_GET_HASHCODE, "intrins_get_hashcode", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_TRY_GET_HASHCODE, "intrins_try_get_hashcode", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_GET_TYPE, "intrins_get_type", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_SPAN_CTOR, "intrins_span_ctor", 4, 1, 2, MintOpNoArgs)
-OPDEF(MINT_INTRINS_UNSAFE_BYTE_OFFSET, "intrins_unsafe_byte_offset", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE, "intrins_runtimehelpers_object_has_component_size", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_CLEAR_WITH_REFERENCES, "intrin_clear_with_references", 3, 0, 2, MintOpNoArgs)
 OPDEF(MINT_INTRINS_MARVIN_BLOCK, "intrins_marvin_block", 3, 0, 2, MintOpNoArgs)
@@ -841,7 +840,6 @@ OPDEF(MINT_METADATA_UPDATE_LDFLDA, "metadata_update.ldflda", 5, 1, 1, MintOpTwoS
 OPDEF(MINT_TIER_PREPARE_JITERPRETER, "tier_prepare_jiterpreter", 3, 0, 0, MintOpInt)
 OPDEF(MINT_TIER_NOP_JITERPRETER, "tier_nop_jiterpreter", 3, 0, 0, MintOpInt)
 OPDEF(MINT_TIER_ENTER_JITERPRETER, "tier_enter_jiterpreter", 3, 0, 0, MintOpInt)
-OPDEF(MINT_TIER_MONITOR_JITERPRETER, "tier_monitor_jiterpreter", 3, 0, 0, MintOpInt)
 #endif // HOST_BROWSER
 
 IROPDEF(MINT_NOP, "nop", 1, 0, 0, MintOpNoArgs)

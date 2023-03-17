@@ -865,7 +865,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // Estimate cache size based on CPU count
         // Assume lower core count are lighter weight parts which are likely to have smaller caches
         // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
-        DWORD logicalCPUs = g_totalCpuCount;
+        DWORD logicalCPUs = g_processAffinitySet.Count();
 
         cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
     }
@@ -903,7 +903,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // 5 ~ 16  :  8 MB
         // 17 ~ 64 : 16 MB
         // 65+     : 32 MB
-        DWORD logicalCPUs = g_totalCpuCount;
+        DWORD logicalCPUs = g_processAffinitySet.Count();
         if (logicalCPUs < 5)
         {
             cacheSize = 4;
