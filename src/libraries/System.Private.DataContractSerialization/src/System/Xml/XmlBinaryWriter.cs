@@ -783,14 +783,12 @@ namespace System.Xml
                 decimal.TryGetBits(d, bits, out int intsWritten);
                 Debug.Assert(intsWritten == 4);
 
-                byte[] buffer = GetTextNodeBuffer(1 + sizeof(decimal), out int offset);
-                buffer[0] = (byte)XmlBinaryNodeType.DecimalText;
-
-                Span<byte> span = buffer.AsSpan(offset + 1, sizeof(decimal));
-                BinaryPrimitives.WriteInt32LittleEndian(span, bits[3]);
-                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4), bits[2]);
-                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(8), bits[0]);
-                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(12), bits[1]);
+                Span<byte> span = GetTextNodeBuffer(1 + sizeof(decimal), out int offset).AsSpan(offset, 1 + sizeof(decimal));
+                span[0] = (byte)XmlBinaryNodeType.DecimalText;
+                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(0 + 1), bits[3]);
+                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(4 + 1), bits[2]);
+                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(8 + 1), bits[0]);
+                BinaryPrimitives.WriteInt32LittleEndian(span.Slice(12 + 1), bits[1]);
                 Advance(1 + sizeof(decimal));
             }
         }
