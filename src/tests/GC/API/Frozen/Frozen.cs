@@ -136,6 +136,13 @@ namespace HelloFrozenSegment
     {
         private static unsafe int Main()
         {
+            // Regression testing for dotnet/runtime #83027
+            Node[] firstArray = new Node[30000000]; 
+            for (int index = 0; index < firstArray.Length; index++)
+            {
+                firstArray[index] = new Node();
+            }
+
             IntPtr methodTable = typeof(Node).TypeHandle.Value;
 
             FrozenSegmentBuilder frozenSegmentBuilder = new FrozenSegmentBuilder(1000);

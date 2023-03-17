@@ -2284,7 +2284,7 @@ private:
 
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_METHOD void seg_set_mark_array_bits_soh (heap_segment* seg);
-    PER_HEAP_METHOD void clear_mark_array (uint8_t* from, uint8_t* end, BOOL read_only=FALSE);
+    PER_HEAP_METHOD void clear_mark_array (uint8_t* from, uint8_t* end);
     PER_HEAP_METHOD void seg_clear_mark_array_bits_soh (heap_segment* seg);
 #endif // FEATURE_BASICFREEZE
 
