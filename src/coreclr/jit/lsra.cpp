@@ -3118,7 +3118,7 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     refPosition->copyReg = true;
 
     RegisterScore registerScore = NONE;
-    regNumber allocatedReg      = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
+    regNumber allocatedReg = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
     assert(allocatedReg != REG_NA);
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg, nullptr, registerScore));
@@ -8748,10 +8748,6 @@ const char* LinearScan::getStatName(unsigned stat)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) #stat,
 #include "lsra_score.h"
 #undef REG_SEL_DEF
-#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) #stat,
-#include "lsra_busy_score.h"
-#undef BUSY_REG_SEL_DEF
-
     };
 
     assert(stat < ArrLen(lsraStatNames));
@@ -8767,12 +8763,6 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
         return LsraStat::STAT_##stat;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
-#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
-    case RegisterScore::stat:                                                                                          \
-        return LsraStat::STAT_##stat;
-#include "lsra_busy_score.h"
-#undef BUSY_REG_SEL_DEF
-
         default:
             return LsraStat::STAT_FREE;
     }
@@ -9076,12 +9066,6 @@ const char* LinearScan::getScoreName(RegisterScore score)
         return shortname;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
-#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
-    case stat:                                                                                                         \
-        return shortname;
-#include "lsra_busy_score.h"
-#undef BUSY_REG_SEL_DEF
-
         default:
             return "  -  ";
     }
@@ -11078,10 +11062,6 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
 #include "lsra_score.h"
 #undef REG_SEL_DEF
-#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
-    mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
-#include "lsra_busy_score.h"
-#undef BUSY_REG_SEL_DEF
 
     LPCWSTR ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
@@ -11102,12 +11082,6 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
         break;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
-#define BUSY_REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                                                      \
-    case orderSeqId:                                                                                                   \
-        RegSelectionOrder[orderId] = enum_name;                                                                        \
-        break;
-#include "lsra_busy_score.h"
-#undef BUSY_REG_SEL_DEF
             default:
                 assert(!"Invalid lsraOrdering value.");
         }
