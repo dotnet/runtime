@@ -639,20 +639,115 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #ifdef FEATURE_HIJACK
 TADDR ResumableFrame::GetReturnAddressPtr(void)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(T_CONTEXT, Pc);
 }
 
 void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACT_END;
+
+    CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
+
+    pRD->ControlPC = m_Regs->Pc;
+    pRD->SP = m_Regs->Sp;
+
+    pRD->pCurrentContextPointers->S1 = &m_Regs->S1;
+    pRD->pCurrentContextPointers->S2 = &m_Regs->S2;
+    pRD->pCurrentContextPointers->S3 = &m_Regs->S3;
+    pRD->pCurrentContextPointers->S4 = &m_Regs->S4;
+    pRD->pCurrentContextPointers->S5 = &m_Regs->S5;
+    pRD->pCurrentContextPointers->S6 = &m_Regs->S6;
+    pRD->pCurrentContextPointers->S7 = &m_Regs->S7;
+    pRD->pCurrentContextPointers->S8 = &m_Regs->S8;
+    pRD->pCurrentContextPointers->S9 = &m_Regs->S9;
+    pRD->pCurrentContextPointers->S10 = &m_Regs->S10;
+    pRD->pCurrentContextPointers->S11 = &m_Regs->S11;
+    pRD->pCurrentContextPointers->Tp = &m_Regs->Tp;
+    pRD->pCurrentContextPointers->Gp = &m_Regs->Gp;
+    pRD->pCurrentContextPointers->Fp = &m_Regs->Fp;
+    pRD->pCurrentContextPointers->Ra = &m_Regs->Ra;
+
+    pRD->volatileCurrContextPointers.R0 = &m_Regs->R0;
+    pRD->volatileCurrContextPointers.A0 = &m_Regs->A0;
+    pRD->volatileCurrContextPointers.A1 = &m_Regs->A1;
+    pRD->volatileCurrContextPointers.A2 = &m_Regs->A2;
+    pRD->volatileCurrContextPointers.A3 = &m_Regs->A3;
+    pRD->volatileCurrContextPointers.A4 = &m_Regs->A4;
+    pRD->volatileCurrContextPointers.A5 = &m_Regs->A5;
+    pRD->volatileCurrContextPointers.A6 = &m_Regs->A6;
+    pRD->volatileCurrContextPointers.A7 = &m_Regs->A7;
+    pRD->volatileCurrContextPointers.T0 = &m_Regs->T0;
+    pRD->volatileCurrContextPointers.T1 = &m_Regs->T1;
+    pRD->volatileCurrContextPointers.T2 = &m_Regs->T2;
+    pRD->volatileCurrContextPointers.T3 = &m_Regs->T3;
+    pRD->volatileCurrContextPointers.T4 = &m_Regs->T4;
+    pRD->volatileCurrContextPointers.T5 = &m_Regs->T5;
+    pRD->volatileCurrContextPointers.T6 = &m_Regs->T6;
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+
     RETURN;
 }
 
 void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    LIMITED_METHOD_CONTRACT;
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;
+
+    pRD->pCurrentContext->Pc = m_ReturnAddress;
+    size_t s = sizeof(struct HijackArgs);
+    _ASSERTE(s%8 == 0); // HijackArgs contains register values and hence will be a multiple of 8
+    // stack must be multiple of 16. So if s is not multiple of 16 then there must be padding of 8 bytes
+    s = s + s%16;
+    pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
+
+    pRD->pCurrentContext->S1 = m_Args->S1;
+    pRD->pCurrentContext->S2 = m_Args->S2;
+    pRD->pCurrentContext->S3 = m_Args->S3;
+    pRD->pCurrentContext->S4 = m_Args->S4;
+    pRD->pCurrentContext->S5 = m_Args->S5;
+    pRD->pCurrentContext->S6 = m_Args->S6;
+    pRD->pCurrentContext->S7 = m_Args->S7;
+    pRD->pCurrentContext->S8 = m_Args->S8;
+    pRD->pCurrentContext->S9 = m_Args->S9;
+    pRD->pCurrentContext->S10 = m_Args->S10;
+    pRD->pCurrentContext->S11 = m_Args->S11;
+    pRD->pCurrentContext->Gp = m_Args->Gp;
+    pRD->pCurrentContext->Tp = m_Args->Tp;
+    pRD->pCurrentContext->Fp = m_Args->Fp;
+    pRD->pCurrentContext->Ra = m_Args->Ra;
+
+    pRD->pCurrentContextPointers->S1 = &m_Args->S1;
+    pRD->pCurrentContextPointers->S2 = &m_Args->S2;
+    pRD->pCurrentContextPointers->S3 = &m_Args->S3;
+    pRD->pCurrentContextPointers->S4 = &m_Args->S4;
+    pRD->pCurrentContextPointers->S5 = &m_Args->S5;
+    pRD->pCurrentContextPointers->S6 = &m_Args->S6;
+    pRD->pCurrentContextPointers->S7 = &m_Args->S7;
+    pRD->pCurrentContextPointers->S8 = &m_Args->S8;
+    pRD->pCurrentContextPointers->S9 = &m_Args->S9;
+    pRD->pCurrentContextPointers->S10 = &m_Args->S10;
+    pRD->pCurrentContextPointers->S11 = &m_Args->S11;
+    pRD->pCurrentContextPointers->Gp = &m_Args->Gp;
+    pRD->pCurrentContextPointers->Tp = &m_Args->Tp;
+    pRD->pCurrentContextPointers->Fp = &m_Args->Fp;
+    pRD->pCurrentContextPointers->Ra = NULL;
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_HIJACK
 
