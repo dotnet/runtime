@@ -9109,8 +9109,8 @@ public:
 private:
     Statement* optOptimizeBoolsChkBlkCond();
     GenTree* optIsBoolComp(OptTestInfo* pOptTest);
-    bool        optOptimizeBoolsChkTypeCostCond();
-    void        optOptimizeBoolsUpdateTrees();
+    bool optOptimizeBoolsChkTypeCostCond();
+    void optOptimizeBoolsUpdateTrees();
     bool FindCompareChain(GenTree* condition, bool* isTestCondition);
 };
 
@@ -9529,8 +9529,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     // Put a limit on the max size that can be combined.
     if (!m_comp->compStressCompile(Compiler::STRESS_OPT_BOOLS_COMPARE_CHAIN_COST, 25))
     {
-        int op1Cost    = cond1->GetCostEx();
-        int op2Cost    = cond2->GetCostEx();
+        int op1Cost = cond1->GetCostEx();
+        int op2Cost = cond2->GetCostEx();
         // The cost of combing three simple conditions is 32.
         int maxOp1Cost = op1IsCondChain ? 31 : 7;
         int maxOp2Cost = op2IsCondChain ? 31 : 7;
@@ -9563,7 +9563,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     chainedConditions->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
     // Add a test condition onto the front of the chain
-    GenTree* testcondition = m_comp->gtNewOperNode(GT_NE, TYP_INT, chainedConditions, m_comp->gtNewZeroConNode(TYP_INT));
+    GenTree* testcondition =
+        m_comp->gtNewOperNode(GT_NE, TYP_INT, chainedConditions, m_comp->gtNewZeroConNode(TYP_INT));
 
     // Wire the chain into the second block
     m_testInfo2.testTree->AsOp()->gtOp1 = testcondition;
