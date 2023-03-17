@@ -7,9 +7,49 @@ using System.Runtime.InteropServices;
 
 namespace GenerateUnmanagedEntryPoints
 {
-    public class ClassLibrary
+    unsafe class Program
     {
-        [UnmanagedCallersOnly(EntryPoint = "SharedLibraryAssemblyMethod", CallConvs = new Type[] { typeof(CallConvStdcall) })]
-        static void SharedLibraryAssemblyMethod() => Console.WriteLine($"Hello from {nameof(SharedLibraryAssemblyMethod)}");
+        [UnmanagedCallersOnly(EntryPoint = "MainAssemblyMethod")]
+        static void MainAssemblyMethod() => Console.WriteLine($"Hello from {nameof(MainAssemblyMethod)}");
+
+        static int Main()
+        {
+            IntPtr methodAddress = IntPtr.Zero;
+            IntPtr programHandle = IntPtr.Zero;
+            
+            programHandle = NativeLibrary.GetMainProgramHandle();
+            if (programHandle == IntPtr.Zero)
+            {
+                return 1;
+            }
+
+            if (NativeLibrary.TryGetExport(programHandle, "MainAssemblyMethod", out methodAddress))
+            {
+                var MainAssemblyMethodPtr = (delegate* unmanaged <void>) methodAddress;
+                MainAssemblyMethodPtr();
+            }
+            else
+            {
+                return 2;
+            }
+
+            if (NativeLibrary.TryGetExport(programHandle, "ReferencedAssembly1Method", out methodAddress))
+            {
+                var ReferencedAssembly1MethodPtr = (delegate* unmanaged <void>) methodAddress;
+                ReferencedAssembly1MethodPtr();
+            }
+            else
+            {
+                return 3;
+            }
+
+            if (NativeLibrary.TryGetExport(programHandle, "ReferencedAssembly2Method", out methodAddress))
+            {
+                // must not be exposed from ReferencedAssembly2 assembly
+                return 4;
+            }
+
+            return 100;
+        }
     }
 }

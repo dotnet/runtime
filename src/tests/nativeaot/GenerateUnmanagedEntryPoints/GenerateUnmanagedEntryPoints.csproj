@@ -1,22 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <NativeLib>Shared</NativeLib>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-mkdir native 2>nul
-copy /y GenerateUnmanagedEntryPointsDriver.exe native\GenerateUnmanagedEntryPoints.exe
-]]></CLRTestBatchPreCommands>
-
-    <CLRTestBashPreCommands><![CDATA[
-$(CLRTestBashPreCommands)
-mkdir -p native
-cp GenerateUnmanagedEntryPointsDriver native/GenerateUnmanagedEntryPoints
-]]></CLRTestBashPreCommands>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,7 +16,4 @@ cp GenerateUnmanagedEntryPointsDriver native/GenerateUnmanagedEntryPoints
     <UnmanagedEntryPointsAssembly Include="ReferencedAssembly1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <CMakeProjectReference Include="CMakeLists.txt" />
-  </ItemGroup>
 </Project>

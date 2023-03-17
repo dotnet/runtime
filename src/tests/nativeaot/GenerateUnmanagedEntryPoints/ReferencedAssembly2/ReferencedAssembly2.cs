@@ -9,7 +9,7 @@ namespace ReferencedAssembly2
 {
     public class ClassLibrary
     {
-        [UnmanagedCallersOnly(EntryPoint = "ReferencedAssembly2Method", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(EntryPoint = "ReferencedAssembly2Method")]
         public static void ReferencedAssembly2Method() => Console.WriteLine($"Hello from {nameof(ReferencedAssembly2Method)}");
     }
 }
