@@ -18,15 +18,6 @@ static class Extensions
     public static nint TypeHandleIntPtr(this Type type)
         => RuntimeTypeHandle.ToIntPtr(type.TypeHandle);
 
-    public static T UnsafeAs<T>(this nint intPtr)
-        => Unsafe.As<nint, T>(ref intPtr);
-
-    public static nint UnsafeAsIntPtr(this object obj)
-        => obj.UnsafeAs<nint>();
-
-    public static T UnsafeAs<T>(this object obj)
-        => Unsafe.As<object, T>(ref obj);
-
     public static GCHandle ToGCHandle(this nint intPtr)
         => GCHandle.FromIntPtr(intPtr);
 }
