@@ -1178,6 +1178,13 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 // Returns true if this instruction, for the given EA_SIZE(attr), will require a REX.W prefix
 bool emitter::TakesRexWPrefix(const instrDesc* id) const
 {
+#if defined(TARGET_X86)
+    if (!UseVEXEncoding())
+    {
+        return false;
+    }
+#endif // TARGET_X86
+
     instruction ins  = id->idIns();
     emitAttr    attr = id->idOpSize();
 
