@@ -78,10 +78,10 @@ bool Compiler::fgHaveSufficientProfileWeights()
     {
         case ICorJitInfo::PgoSource::Dynamic:
         case ICorJitInfo::PgoSource::Text:
+        case ICorJitInfo::PgoSource::Blend:
             return true;
 
         case ICorJitInfo::PgoSource::Static:
-        case ICorJitInfo::PgoSource::Blend:
         {
             // We sometimes call this very early, eg evaluating the prejit root.
             //
@@ -123,6 +123,7 @@ bool Compiler::fgHaveTrustedProfileWeights()
     switch (fgPgoSource)
     {
         case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Blend:
         case ICorJitInfo::PgoSource::Text:
             return true;
         default:
@@ -2624,6 +2625,16 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgIncorporateEdgeCounts();
     }
 
+#ifdef DEBUG
+    // Optionally synthesize & blend
+    //
+    if ((JitConfig.JitSynthesizeCounts() == 3) && !compIsForInlining())
+    {
+        JITDUMP("Synthesizing profile data and blending it with the actual profile data\n");
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
+    }
+#endif
+
     // Scale data as appropriate
     //
     fgApplyProfileScale();
@@ -4890,14 +4901,15 @@ EARLY_EXIT:;
 // Arguments:
 //   weight1 -- first weight
 //   weight2 -- second weight
+//   epsilon -- maximum absolute difference for weights to be considered equal
 //
 // Notes:
 //   In most cases you should probably call fgProfileWeightsConsistent instead
 //   of this method.
 //
-bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2)
+bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_t epsilon)
 {
-    return fabs(weight1 - weight2) < 0.01;
+    return fabs(weight1 - weight2) <= epsilon;
 }
 
 //------------------------------------------------------------------------
