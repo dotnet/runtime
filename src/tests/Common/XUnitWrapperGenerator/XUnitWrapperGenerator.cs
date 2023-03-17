@@ -150,7 +150,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     private static void AppendAliasMap(CodeBuilder builder, ImmutableDictionary<string, string> aliasMap)
     {
         bool didOutput = false;
-        foreach (string alias in aliasMap.Values.Where(alias => alias != "global"))
+        foreach (string alias in aliasMap.Values.Where(alias => alias != "global").OrderBy(a => a))
         {
             builder.AppendLine($"extern alias {alias};");
             didOutput = true;
