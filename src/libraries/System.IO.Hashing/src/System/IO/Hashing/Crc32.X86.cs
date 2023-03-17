@@ -3,9 +3,10 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.InteropServices;
+using Aes = System.Runtime.Intrinsics.Arm.Aes;
 
 namespace System.IO.Hashing
 {
@@ -14,17 +15,69 @@ namespace System.IO.Hashing
         // Minimum length to use UpdateX86
         private const int X86MinimumLength = 64;
 
-        private const byte CarrylessMultiplyLower = 0x00;
-        private const byte CarrylessMultiplyUpper = 0x11;
-        private const byte CarrylessMultiplyLeftLowerRightUpper = 0x10;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> CarrylessMultiplyLower(Vector128<ulong> left, Vector128<ulong> right)
+        {
+            if (Pclmulqdq.IsSupported)
+            {
+                return Pclmulqdq.CarrylessMultiply(left, right, 0x00);
+            }
+
+            if (Aes.IsSupported)
+            {
+                return Aes.PolynomialMultiplyWideningLower(left.GetLower(), right.GetLower());
+            }
+
+            Debug.Fail("This path should be unreachable.");
+            return default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> CarrylessMultiplyUpper(Vector128<ulong> left, Vector128<ulong> right)
+        {
+            if (Pclmulqdq.IsSupported)
+            {
+                return Pclmulqdq.CarrylessMultiply(left, right, 0x11);
+            }
+
+            if (Aes.IsSupported)
+            {
+                return Aes.PolynomialMultiplyWideningUpper(left, right);
+            }
+
+            Debug.Fail("This path should be unreachable.");
+            return default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> CarrylessMultiplyLeftLowerRightUpper(Vector128<ulong> left, Vector128<ulong> right)
+        {
+            if (Pclmulqdq.IsSupported)
+            {
+                return Pclmulqdq.CarrylessMultiply(left, right, 0x10);
+            }
+
+            if (Aes.IsSupported)
+            {
+                return Aes.PolynomialMultiplyWideningLower(left.GetLower(), right.GetUpper());
+            }
+
+            Debug.Fail("This path should be unreachable.");
+            return default;
+        }
 
         // Processes the bytes in source in X86BlockSize chunks using x86 intrinsics, followed by processing 16
-        // byte chunks, and then processing remaining bytes individually. Requires support for Sse2 and Pclmulqdq intrinsics.
+        // byte chunks, and then processing remaining bytes individually. Requires little endian byte order and
+        // support for PCLMULUQDQ intrinsics on Intel architecture or AES intrinsics on ARM architecture.
         // Based on the algorithm put forth in the Intel paper "Fast CRC Computation for Generic Polynomials Using
         // PCLMULQDQ Instruction" in December, 2009.
-        private static uint UpdateX86(uint crc, ReadOnlySpan<byte> source)
+        private static uint UpdateWithCarrylessMultiply(uint crc, ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length >= X86MinimumLength);
+            Debug.Assert(Pclmulqdq.IsSupported || Aes.IsSupported,
+                "Either Intel PCLMULUQDQ or ARM AES support is required.");
+            Debug.Assert(BitConverter.IsLittleEndian,
+                "Only little endian byte order is supported.");
 
             // Work with a reference to where we're at in the ReadOnlySpan and a local length
             // to avoid extraneous range checks.
@@ -46,15 +99,15 @@ namespace System.IO.Hashing
             // Parallel fold blocks of 64, if any.
             while (length >= Vector128<byte>.Count * 4)
             {
-                x5 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyLower);
-                Vector128<ulong> x6 = Pclmulqdq.CarrylessMultiply(x2, x0, CarrylessMultiplyLower);
-                Vector128<ulong> x7 = Pclmulqdq.CarrylessMultiply(x3, x0, CarrylessMultiplyLower);
-                Vector128<ulong> x8 = Pclmulqdq.CarrylessMultiply(x4, x0, CarrylessMultiplyLower);
+                x5 = CarrylessMultiplyLower(x1, x0);
+                Vector128<ulong> x6 = CarrylessMultiplyLower(x2, x0);
+                Vector128<ulong> x7 = CarrylessMultiplyLower(x3, x0);
+                Vector128<ulong> x8 = CarrylessMultiplyLower(x4, x0);
 
-                x1 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyUpper);
-                x2 = Pclmulqdq.CarrylessMultiply(x2, x0, CarrylessMultiplyUpper);
-                x3 = Pclmulqdq.CarrylessMultiply(x3, x0, CarrylessMultiplyUpper);
-                x4 = Pclmulqdq.CarrylessMultiply(x4, x0, CarrylessMultiplyUpper);
+                x1 = CarrylessMultiplyUpper(x1, x0);
+                x2 = CarrylessMultiplyUpper(x2, x0);
+                x3 = CarrylessMultiplyUpper(x3, x0);
+                x4 = CarrylessMultiplyUpper(x4, x0);
 
                 Vector128<ulong> y5 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
                 Vector128<ulong> y6 = Vector128.LoadUnsafe(ref srcRef, 16).AsUInt64();
@@ -78,18 +131,18 @@ namespace System.IO.Hashing
             // Fold into 128-bits.
             x0 = Vector128.Create(0x01751997d0, 0x00ccaa009e).AsUInt64(); // k3, k4
 
-            x5 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyLower);
-            x1 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyUpper);
+            x5 = CarrylessMultiplyLower(x1, x0);
+            x1 = CarrylessMultiplyUpper(x1, x0);
             x1 ^= x2;
             x1 ^= x5;
 
-            x5 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyLower);
-            x1 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyUpper);
+            x5 = CarrylessMultiplyLower(x1, x0);
+            x1 = CarrylessMultiplyUpper(x1, x0);
             x1 ^= x3;
             x1 ^= x5;
 
-            x5 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyLower);
-            x1 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyUpper);
+            x5 = CarrylessMultiplyLower(x1, x0);
+            x1 = CarrylessMultiplyUpper(x1, x0);
             x1 ^= x4;
             x1 ^= x5;
 
@@ -98,8 +151,8 @@ namespace System.IO.Hashing
             {
                 x2 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
 
-                x5 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyLower);
-                x1 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyUpper);
+                x5 = CarrylessMultiplyLower(x1, x0);
+                x1 = CarrylessMultiplyUpper(x1, x0);
                 x1 ^= x2;
                 x1 ^= x5;
 
@@ -108,25 +161,37 @@ namespace System.IO.Hashing
             }
 
             // Fold 128 bits to 64 bits.
-            x2 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyLeftLowerRightUpper);
-            x3 = Vector128.Create(~0, 0, ~0, 0).AsUInt64();
-            x1 = Sse2.ShiftRightLogical128BitLane(x1, 8);
+            x2 = CarrylessMultiplyLeftLowerRightUpper(x1, x0);
+            x3 = Vector128.Create(0xffffffffL, 0xffffffffL).AsUInt64();
+            x1 = Sse2.IsSupported
+                ? Sse2.ShiftRightLogical128BitLane(x1, 8)
+                : Vector128.Create(x1.GetUpper(), Vector64<ulong>.Zero); // Fallback for ARM
             x1 ^= x2;
 
             x0 = Vector128.CreateScalar(0x0163cd6124).AsUInt64(); // k5, k0
 
-            x2 = Sse2.ShiftRightLogical128BitLane(x1, 4);
+            if (Sse2.IsSupported)
+            {
+                x2 = Sse2.ShiftRightLogical128BitLane(x1, 4);
+            }
+            else
+            {
+                // Fallback for ARM
+                var intVector = x1.AsUInt32();
+                x2 = Vector128.Create(intVector.GetElement(1), intVector.GetElement(2), intVector.GetElement(3), 0u).AsUInt64();
+            }
+
             x1 &= x3;
-            x1 = Pclmulqdq.CarrylessMultiply(x1, x0, CarrylessMultiplyLower);
+            x1 = CarrylessMultiplyLower(x1, x0);
             x1 ^= x2;
 
             // Reduce to 32 bits.
             x0 = Vector128.Create(0x01db710641, 0x01f7011641).AsUInt64(); // polynomial
 
             x2 = x1 & x3;
-            x2 = Pclmulqdq.CarrylessMultiply(x2, x0, CarrylessMultiplyLeftLowerRightUpper);
+            x2 = CarrylessMultiplyLeftLowerRightUpper(x2, x0);
             x2 &= x3;
-            x2 = Pclmulqdq.CarrylessMultiply(x2, x0, CarrylessMultiplyLower);
+            x2 = CarrylessMultiplyLower(x2, x0);
             x1 ^= x2;
 
             // Process the remaining bytes, if any
