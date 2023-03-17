@@ -59,11 +59,18 @@
       <TestDirectoriesWithDup Include="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').Substring(0, %(LegacyRunnableTestPaths.Separator)))" />
     </ItemGroup>
 
-    <RemoveDuplicates Inputs="@(TestDirectoriesWithDup)">
+    <RemoveDuplicates Inputs="@(TestDirectoriesWithDup)" Condition="'$(TargetOS)' != 'iOS'">
       <Output
           TaskParameter="Filtered"
           ItemName="TestDirectories"/>
     </RemoveDuplicates>
+
+  <!-- Include only baseservices on iOS to have basic E2E flow. FIXME: Enable parallel AOT compilation and include other groups. -->
+  <ItemGroup Condition="'$(TargetOS)' == 'iOS'">
+    <TestDirectories Include="$(XunitTestBinBase)/baseservices" />
+  </ItemGroup>
+
+    <Message Text="Test directories are %(TestDirectories.Identity)" Importance="High" />
 
   </Target>
 
