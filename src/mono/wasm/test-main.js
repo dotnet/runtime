@@ -92,6 +92,7 @@ function initRunArgs(runArgs) {
     runArgs.configSrc = runArgs.configSrc === undefined ? './mono-config.json' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
+    runArgs.memorySnapshot = runArgs.memorySnapshot === undefined ? true : runArgs.memorySnapshot;
 
     return runArgs;
 }
@@ -123,6 +124,8 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.debugging = true;
         } else if (currentArg == "--no-forward-console") {
             runArgs.forwardConsole = false;
+        } else if (currentArg == "--no-memory-snapshot") {
+            runArgs.memorySnapshot = false;
         } else if (currentArg.startsWith("--fetch-random-delay=")) {
             const arg = currentArg.substring("--fetch-random-delay=".length);
             if (is_browser) {
@@ -266,9 +269,10 @@ function configureRuntime(dotnet, runArgs, INTERNAL) {
         }
     }
     if (is_browser) {
-        dotnet
-            .withStartupMemoryCache(true)
-            .withEnvironmentVariable("IsWebSocketSupported", "true");
+        if (runArgs.memorySnapshot) {
+            dotnet.withStartupMemoryCache(true);
+        }
+        dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
     }
     if (runArgs.runtimeArgs.length > 0) {
         dotnet.withRuntimeOptions(runArgs.runtimeArgs);
@@ -314,7 +318,7 @@ async function run() {
         const runArgs = await getArgs();
         console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
-        if (is_browser) {
+        if (is_browser && runArgs.memorySnapshot) {
             const dryOk = await dry_run(runArgs);
             if (!dryOk) {
                 mono_exit(1, "Failed during dry run");
