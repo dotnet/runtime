@@ -3778,7 +3778,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 tmp1 =
                     comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
-                BlockRange().InsertBefore(tmp2, tmp1);
+                BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
 
                 idx = comp->gtNewIconNode(0x01, TYP_INT);
@@ -4307,7 +4307,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         BlockRange().InsertAfter(tmp1, tmp2);
 
         tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
-        BlockRange().InsertBefore(tmp2, tmp1);
+        BlockRange().InsertAfter(tmp2, tmp1);
         LowerNode(tmp1);
 
         idx = comp->gtNewIconNode(0x01, TYP_INT);
