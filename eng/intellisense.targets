@@ -5,22 +5,20 @@
   </PropertyGroup>
 
   <Target Name="VerifyAssemblySupportsDocsXmlGeneration"
-    Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true'">
-    <Error
-      Condition="'$(IsPartialFacadeAssembly)' == 'true'"
-      Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for partial facade assemblies: $(AssemblyName)" />
-    <Error
-      Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''"
-      Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for assemblies that throw PlatformNotSupportedException: $(AssemblyName)" />
+          Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true'">
+    <Error Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for partial facade assemblies: $(AssemblyName)"
+           Condition="'$(IsPartialFacadeAssembly)' == 'true'" />
+    <Error Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for assemblies that throw PlatformNotSupportedException: $(AssemblyName)"
+           Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''" />
   </Target>
 
-  <PropertyGroup>
-    <NoWarn Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">$(NoWarn);1591</NoWarn>
+  <PropertyGroup Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">
+    <NoWarn>$(NoWarn);1591</NoWarn>
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
     <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
     <IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>
-    <IntellisensePackageXmlFilePath Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
-    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and '$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,18 +28,19 @@
   <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
   <!-- Replace the default xml file generated in the obj folder with the one that comes from the docs feed. -->
   <Target Name="ChangeDocumentationFileForPackaging"
-          AfterTargets="DocumentationProjectOutputGroup"
-          Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">
+          BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup"
+          Condition="'$(IntellisensePackageXmlFilePath)' != ''">
     <ItemGroup>
       <DocFileItem Remove="@(DocFileItem)" />
       <DocFileItem Include="$(IntellisensePackageXmlFilePath)" />
     </ItemGroup>
   </Target>
 
+  <!-- Copy the intellisense file to the folder we use to produce the targeting pack.
+       The condition is for the RID agnostic build of source assemblies that are part of the .NET Core shared framework. -->
   <Target Name="CopyDocumentationFileToXmlDocDir"
           AfterTargets="CopyFilesToOutputDirectory"
-          Condition="'$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
-          DependsOnTargets="ChangeDocumentationFileForPackaging">
+          Condition="'$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Copy SourceFiles="@(DocFileItem)"
           DestinationFolder="$(XmlDocDir)"
           SkipUnchangedFiles="true"

@@ -2010,6 +2010,9 @@ namespace Internal.JitInterface
 
                 if (metadataType.IsUnsafeValueType)
                     result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
+
+                if (metadataType.IsInlineArray)
+                    result |= CorInfoFlag.CORINFO_FLG_INDEXABLE_FIELDS;
             }
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -2240,9 +2243,10 @@ namespace Internal.JitInterface
             }
         }
 
-        private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
+        private int GatherClassGCLayout(MetadataType type, byte* gcPtrs)
         {
             int result = 0;
+            bool isInlineArray = type.IsInlineArray;
 
             foreach (var field in type.GetFields())
             {
@@ -2278,11 +2282,30 @@ namespace Internal.JitInterface
 
                 if (gcType == CorInfoGCType.TYPE_GC_OTHER)
                 {
-                    result += GatherClassGCLayout(fieldType, fieldGcPtrs);
+                    result += GatherClassGCLayout((MetadataType)fieldType, fieldGcPtrs);
                 }
                 else
                 {
                     result += MarkGcField(fieldGcPtrs, gcType);
+                }
+
+                if (isInlineArray)
+                {
+                    if (result > 0)
+                    {
+                        Debug.Assert(field.Offset.AsInt == 0);
+                        int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;
+                        int elementLayoutSize = fieldType.GetElementSize().AsInt / PointerSize;
+                        int gcPointersInElement = result;
+                        for (int offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                        {
+                            Buffer.MemoryCopy(gcPtrs, gcPtrs + offset, elementLayoutSize, elementLayoutSize);
+                            result += gcPointersInElement;
+                        }
+                    }
+
+                    // inline array has only one element field
+                    break;
                 }
             }
             return result;
@@ -2292,7 +2315,7 @@ namespace Internal.JitInterface
         {
             uint result = 0;
 
-            DefType type = (DefType)HandleToObject(cls);
+            MetadataType type = (MetadataType)HandleToObject(cls);
 
             int pointerSize = PointerSize;
 

@@ -209,8 +209,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			new DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<TestType> ();
 		}
 
-		// https://github.com/dotnet/runtime/issues/81158
-		[ExpectedWarning ("IL2109", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>), ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+		[ExpectedWarning ("IL2109", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>))]
 		[ExpectedWarning ("IL2091", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>))]
 		class DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T> : BaseTypeWithOpenGenericDAMTAndRUC<T>
 		{
