@@ -41,7 +41,7 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
 
-        protected static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
         // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
         // on Linux sharding does not work because we rely on LANG env var to check locale and emcc is overwriting it

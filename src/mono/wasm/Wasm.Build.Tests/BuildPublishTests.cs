@@ -155,10 +155,10 @@ namespace Wasm.Build.Tests
 
         void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, BuildArgs buildArgs, string buildOutput)
         {
-            AssertSubstring($"{buildArgs.ProjectName}.dll -> {buildArgs.ProjectName}.dll.bc", buildOutput, expectAOT);
-            AssertSubstring($"{buildArgs.ProjectName}.dll.bc -> {buildArgs.ProjectName}.dll.o", buildOutput, expectAOT);
+            AssertSubstring($"{buildArgs.ProjectName}.dll -> {buildArgs.ProjectName}.dll.bc", buildOutput, contains: expectAOT);
+            AssertSubstring($"{buildArgs.ProjectName}.dll.bc -> {buildArgs.ProjectName}.dll.o", buildOutput, contains: expectAOT);
 
-            AssertSubstring("pinvoke.c -> pinvoke.o", buildOutput, expectRelinking || expectAOT);
+            AssertSubstring("pinvoke.c -> pinvoke.o", buildOutput, contains: expectRelinking || expectAOT);
         }
     }
 }
