@@ -2720,6 +2720,11 @@ void CodeGen::genLclHeap(GenTree* tree)
             stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
             locAllocStackOffset = stackAdjustment;
         }
+        else
+        {
+            stackAdjustment = 0;
+            locAllocStackOffset = (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+        }
     }
 #endif
 
