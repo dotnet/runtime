@@ -1483,6 +1483,7 @@ MINI_OP(OP_XCOMPARE_FP_SCALAR, "xcompare_fp_scalar", XREG, XREG, XREG)
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
  */
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
+MINI_OP(OP_XUNOP, "xunop", XREG, XREG, NONE)
 MINI_OP(OP_XBINOP_FORCEINT, "xbinop_forceint", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_BYSCALAR, "xbinop_byscalar", XREG, XREG, XREG)
