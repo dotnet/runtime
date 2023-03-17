@@ -1867,6 +1867,12 @@ public:
         m_likelihood = likelihood;
     }
 
+    void clearLikelihood()
+    {
+        m_likelihood = 0.0;
+        INDEBUG(m_likelihoodSet = false);
+    }
+
 #ifdef DEBUG
     bool hasLikelihood() const
     {
@@ -1945,28 +1951,6 @@ inline PredBlockList::iterator& PredBlockList::iterator::operator++()
     m_pred = next;
     return *this;
 }
-
-// This enum represents a pre/post-visit action state to emulate a depth-first
-// spanning tree traversal of a tree or graph.
-enum DfsStackState
-{
-    DSS_Invalid, // The initialized, invalid error state
-    DSS_Pre,     // The DFS pre-order (first visit) traversal state
-    DSS_Post     // The DFS post-order (last visit) traversal state
-};
-
-// These structs represents an entry in a stack used to emulate a non-recursive
-// depth-first spanning tree traversal of a graph. The entry contains either a
-// block pointer or a block number depending on which is more useful.
-struct DfsBlockEntry
-{
-    DfsStackState dfsStackState; // The pre/post traversal action for this entry
-    BasicBlock*   dfsBlock;      // The corresponding block for the action
-
-    DfsBlockEntry(DfsStackState state, BasicBlock* basicBlock) : dfsStackState(state), dfsBlock(basicBlock)
-    {
-    }
-};
 
 /*****************************************************************************
  *

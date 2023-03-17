@@ -883,8 +883,7 @@ protected:
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
-    void genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond);
-    void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
+    void genCodeForCCMP(GenTreeCCMP* ccmp);
 #endif
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
@@ -947,7 +946,7 @@ protected:
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
-    void genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node);
+    void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node);
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node);
@@ -1559,7 +1558,6 @@ public:
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
-    static insCflags InsCflagsForCcmp(GenCondition cond);
     static insCond JumpKindToInsCond(emitJumpKind condition);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
@@ -1612,6 +1610,7 @@ public:
 
     void genCodeForJcc(GenTreeCC* tree);
     void genCodeForSetcc(GenTreeCC* setcc);
+    void genCodeForJTrue(GenTreeOp* jtrue);
 #endif // !TARGET_LOONGARCH64
 };
 

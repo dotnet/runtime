@@ -113,6 +113,9 @@ GTSTRUCT_1(RuntimeLookup, GT_RUNTIMELOOKUP)
 GTSTRUCT_1(ArrAddr     , GT_ARR_ADDR)
 GTSTRUCT_2(CC          , GT_JCC, GT_SETCC)
 GTSTRUCT_1(OpCC        , GT_SELECTCC)
+#ifdef TARGET_ARM64
+GTSTRUCT_1(CCMP        , GT_CCMP)
+#endif
 #if defined(TARGET_X86)
 GTSTRUCT_1(MultiRegOp  , GT_MUL_LONG)
 #elif defined (TARGET_ARM)

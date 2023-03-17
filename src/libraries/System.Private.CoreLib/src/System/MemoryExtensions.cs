@@ -127,6 +127,58 @@ namespace System
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), text.Length - start);
         }
 
+        /// <summary>Creates a new <see cref="ReadOnlySpan{Char}"/> over a portion of the target string from a specified position to the end of the string.</summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="startIndex">The index at which to begin this slice.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than 0 or greater than <paramref name="text"/>.Length.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> AsSpan(this string? text, Index startIndex)
+        {
+            if (text is null)
+            {
+                if (!startIndex.Equals(Index.Start))
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex);
+                }
+
+                return default;
+            }
+
+            int actualIndex = startIndex.GetOffset(text.Length);
+            if ((uint)actualIndex > (uint)text.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex);
+            }
+
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)actualIndex /* force zero-extension */), text.Length - actualIndex);
+        }
+
+        /// <summary>Creates a new <see cref="ReadOnlySpan{Char}"/> over a portion of a target string using the range start and end indexes.</summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="range">The range which has start and end indexes to use for slicing the string.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="range"/>'s start or end index is not within the bounds of the string.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="range"/>'s start index is greater than its end index.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> AsSpan(this string? text, Range range)
+        {
+            if (text is null)
+            {
+                Index startIndex = range.Start;
+                Index endIndex = range.End;
+
+                if (!startIndex.Equals(Index.Start) || !endIndex.Equals(Index.Start))
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+                }
+
+                return default;
+            }
+
+            (int start, int length) = range.GetOffsetAndLength(text.Length);
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), length);
+        }
+
         /// <summary>
         /// Creates a new readonly span over the portion of the target string.
         /// </summary>
@@ -3680,7 +3732,7 @@ namespace System
         /// <param name="handler">The interpolated string.</param>
         /// <param name="charsWritten">The number of characters written to the span.</param>
         /// <returns>true if the entire interpolated string could be formatted successfully; otherwise, false.</returns>
-        public static bool TryWrite(this Span<char> destination, IFormatProvider? provider, [InterpolatedStringHandlerArgument("destination", "provider")] ref TryWriteInterpolatedStringHandler handler, out int charsWritten) =>
+        public static bool TryWrite(this Span<char> destination, IFormatProvider? provider, [InterpolatedStringHandlerArgument(nameof(destination), nameof(provider))] ref TryWriteInterpolatedStringHandler handler, out int charsWritten) =>
             // The provider is passed to the handler by the compiler, so the actual implementation of the method
             // is the same as the non-provider overload.
             TryWrite(destination, ref handler, out charsWritten);

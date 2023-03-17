@@ -1,4 +1,5 @@
 set(MONO_COMPONENT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../component")
+set(SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers/")
 set(SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe/")
 set(MONO_EVENTPIPE_SHIM_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../eventpipe/")
 set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
@@ -24,6 +25,8 @@ list(APPEND components
 set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/debugger.c
   ${MONO_COMPONENT_PATH}/debugger.h
+  ${MONO_COMPONENT_PATH}/debugger-networking.c
+  ${MONO_COMPONENT_PATH}/debugger-networking.h
   ${MONO_COMPONENT_PATH}/debugger-agent.c
   ${MONO_COMPONENT_PATH}/debugger-agent.h
   ${MONO_COMPONENT_PATH}/debugger-engine.c
@@ -57,7 +60,7 @@ list(APPEND components
   ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}
 )
 
-include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/CMakeLists.txt)
+include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/eventpipe.cmake)
 
 include_directories(
   ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}
@@ -65,6 +68,7 @@ include_directories(
 )
 
 set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
+  ${container_sources}
   ${eventpipe_sources}
   ${diagnostic_server_sources}
   ${MONO_COMPONENT_PATH}/event_pipe.c

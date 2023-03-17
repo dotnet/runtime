@@ -237,10 +237,11 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private struct HebrewValue
+        private readonly struct HebrewValue
         {
-            internal HebrewToken token;
-            internal short value;
+            internal readonly HebrewToken token;
+            internal readonly short value;
+
             internal HebrewValue(HebrewToken token, short value)
             {
                 this.token = token;

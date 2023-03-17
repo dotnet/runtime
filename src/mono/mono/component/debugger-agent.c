@@ -81,7 +81,6 @@
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/networking.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -89,6 +88,7 @@
 
 #include <mono/component/debugger-state-machine.h>
 #include "debugger-agent.h"
+#include "debugger-networking.h"
 #include <mono/mini/mini.h>
 #include <mono/mini/seq-points.h>
 #include <mono/mini/aot-runtime.h>
@@ -1047,7 +1047,7 @@ socket_transport_connect (const char *address)
 	listen_fd = INVALID_SOCKET;
 
 	MONO_ENTER_GC_UNSAFE;
-	mono_networking_init();
+	mono_debugger_networking_init ();
 	MONO_EXIT_GC_UNSAFE;
 
 	if (host) {
@@ -1060,7 +1060,7 @@ socket_transport_connect (const char *address)
 		for (size_t i = 0; i < sizeof(hints) / sizeof(int); i++) {
 			/* Obtain address(es) matching host/port */
 			MONO_ENTER_GC_UNSAFE;
-			s = mono_get_address_info (host, port, hints[i], &result);
+			s = mono_debugger_get_address_info (host, port, hints[i], &result);
 			MONO_EXIT_GC_UNSAFE;
 			if (s == 0)
 				break;
@@ -1111,7 +1111,7 @@ socket_transport_connect (const char *address)
 				int n = 1;
 
 				MONO_ENTER_GC_UNSAFE;
-				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				mono_debugger_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype, rp->protocol);
@@ -1133,7 +1133,7 @@ socket_transport_connect (const char *address)
 			}
 
 			MONO_ENTER_GC_UNSAFE;
-			mono_free_address_info (result);
+			mono_debugger_free_address_info (result);
 			MONO_EXIT_GC_UNSAFE;
 		}
 
@@ -1176,7 +1176,7 @@ socket_transport_connect (const char *address)
 				socklen_t sock_len;
 
 				MONO_ENTER_GC_UNSAFE;
-				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				mono_debugger_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype,
@@ -1213,7 +1213,7 @@ socket_transport_connect (const char *address)
 		conn_fd = sfd;
 
 		MONO_ENTER_GC_UNSAFE;
-		mono_free_address_info (result);
+		mono_debugger_free_address_info (result);
 		MONO_EXIT_GC_UNSAFE;
 	}
 
@@ -8850,7 +8850,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 
 		/* Emit parameter names */
 		names = g_new (char *, sig->param_count);
-		mono_method_get_param_names (method, (const char **) names);
+		mono_method_get_param_names_internal (method, (const char **) names);
 		for (guint16 i = 0; i < sig->param_count; ++i)
 			buffer_add_string (buf, names [i]);
 		g_free (names);

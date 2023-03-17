@@ -18,6 +18,7 @@ export interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
     withApplicationArgumentsFromQuery(): DotnetHostBuilder
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
 }
@@ -137,6 +138,19 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder {
+        try {
+            const configInternal: MonoConfigInternal = {
+                startupMemoryCache: value
+            };
+            Object.assign(this.moduleConfig.config!, configInternal);
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     withConfig(config: MonoConfig): DotnetHostBuilder {
         try {
             const providedConfig = { ...config };
@@ -229,7 +243,8 @@ class HostBuilder implements DotnetHostBuilder {
     withRuntimeOptions(runtimeOptions: string[]): DotnetHostBuilder {
         try {
             mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
-            Object.assign(this.moduleConfig, { runtimeOptions });
+            const configInternal = this.moduleConfig.config as MonoConfigInternal;
+            configInternal.runtimeOptions = [...(configInternal.runtimeOptions || []), ...(runtimeOptions|| [])];
             return this;
         } catch (err) {
             mono_exit(1, err);

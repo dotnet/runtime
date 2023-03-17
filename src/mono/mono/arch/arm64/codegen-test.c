@@ -440,6 +440,8 @@ main (int argc, char *argv [])
 	arm_neon_cmgt (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 	arm_neon_cmge (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 	arm_neon_cmeq (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_cmhi (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_cmhs (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 
 	// neon float 3-reg same type
 	arm_neon_fadd (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);

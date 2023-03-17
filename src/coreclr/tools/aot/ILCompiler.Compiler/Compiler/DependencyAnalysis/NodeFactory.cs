@@ -439,17 +439,11 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _typeGenericDictionaries = new NodeCache<TypeDesc, ISortableSymbolNode>(type =>
+            _typeGenericDictionaries = new NodeCache<TypeDesc, TypeGenericDictionaryNode>(type =>
             {
-                if (CompilationModuleGroup.ContainsTypeDictionary(type))
-                {
-                    Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
-                    return new TypeGenericDictionaryNode(type, this);
-                }
-                else
-                {
-                    return _importedNodeProvider.ImportedTypeDictionaryNode(this, type);
-                }
+                Debug.Assert(CompilationModuleGroup.ContainsTypeDictionary(type));
+                Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
+                return new TypeGenericDictionaryNode(type, this);
             });
 
             _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
@@ -847,8 +841,8 @@ namespace ILCompiler.DependencyAnalysis
             return _methodGenericDictionaries.GetOrAdd(method);
         }
 
-        private NodeCache<TypeDesc, ISortableSymbolNode> _typeGenericDictionaries;
-        public ISortableSymbolNode TypeGenericDictionary(TypeDesc type)
+        private NodeCache<TypeDesc, TypeGenericDictionaryNode> _typeGenericDictionaries;
+        public TypeGenericDictionaryNode TypeGenericDictionary(TypeDesc type)
         {
             return _typeGenericDictionaries.GetOrAdd(type);
         }
@@ -1047,8 +1041,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                _systemArrayOfTClass ??= _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
-                return _systemArrayOfTClass;
+                return _systemArrayOfTClass ??= _context.SystemModule.GetKnownType("System", "Array`1");
             }
         }
 
@@ -1057,8 +1050,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                _systemArrayOfTEnumeratorType ??= _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
-                return _systemArrayOfTEnumeratorType;
+                // This type is optional, but it's fine for this cache to be ineffective if that happens.
+                // Those scenarios are rare and typically deal with small compilations.
+                return _systemArrayOfTEnumeratorType ??= _context.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
             }
         }
 
@@ -1069,9 +1063,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // This helper is optional, but it's fine for this cache to be ineffective if that happens.
                 // Those scenarios are rare and typically deal with small compilations.
-                _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
-
-                return _instanceMethodRemovedHelper;
+                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
             }
         }
 

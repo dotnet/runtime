@@ -24,6 +24,29 @@ internal static partial class Interop
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct STARTUPINFO
+    {
+        public int cb;
+        public IntPtr lpReserved;
+        public IntPtr lpDesktop;
+        public IntPtr lpTitle;
+        public int dwX;
+        public int dwY;
+        public int dwXSize;
+        public int dwYSize;
+        public int dwXCountChars;
+        public int dwYCountChars;
+        public int dwFillAttribute;
+        public int dwFlags;
+        public short wShowWindow;
+        public short cbReserved2;
+        public IntPtr lpReserved2;
+        public IntPtr hStdInput;
+        public IntPtr hStdOutput;
+        public IntPtr hStdError;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct USER_INFO_1
     {
         public string usri1_name;
@@ -57,6 +80,9 @@ internal static partial class Interop
 
     [DllImport("kernel32.dll")]
     public static extern int GetProcessId(SafeProcessHandle nativeHandle);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    public static extern void GetStartupInfoW(out STARTUPINFO lpStartupInfo);
 
     [DllImport("kernel32.dll")]
     internal static extern int GetConsoleCP();

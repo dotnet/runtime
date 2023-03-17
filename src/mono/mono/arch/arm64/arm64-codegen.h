@@ -456,11 +456,20 @@ arm_encode_imm7 (int imm, int size)
 #define arm_format_ldrfp_imm(p, size, opc, rt, rn, pimm, scale) arm_emit ((p), ((size) << 30) | (0xf << 26) | (0x1 << 24) | ((opc) << 22) | (arm_encode_pimm12 ((pimm), (scale)) << 10) | ((rn) << 5) | ((rt) << 0))
 
 /* Load double */
-#define arm_ldrfpx(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_X, 0x1, dt, xn, simm, 8)
+#define arm_ldrfpx(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_X, 0x1, (dt), (xn), (simm), 8)
 /* Load single */
-#define arm_ldrfpw(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_W, 0x1, dt, xn, simm, 4)
+#define arm_ldrfpw(p, dt, xn, simm) arm_format_ldrfp_imm ((p), ARMSIZE_W, 0x1, (dt), (xn), (simm), 4)
 /* Load 128 bit */
-#define arm_ldrfpq(p, qt, xn, simm) arm_format_ldrfp_imm ((p), 0, 0x3, qt, xn, simm, 16)
+#define arm_ldrfpq(p, qt, xn, simm) arm_format_ldrfp_imm ((p), 0x0, 0x3, (qt), (xn), (simm), 16)
+
+/* LDR (literal, SIMD&FP) PC-relative*/
+/* Load single */
+#define arm_neon_ldrs_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b00 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+/* Load double */
+#define arm_neon_ldrd_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b01 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+/* Load 128 bit */
+#define arm_neon_ldrq_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b10 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+#define arm_neon_ldrq_lit_fixup(p, target) *((guint32*)p) = (*((guint32*)p) & 0xff00001f) | (arm_get_disp19 ((p), (target)) << 5)
 
 /* Arithmetic (immediate) */
 static G_GNUC_UNUSED inline guint32
@@ -999,6 +1008,9 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define TYPE_I64 SIZE_8
 #define TYPE_F32 0
 #define TYPE_F64 1
+
+/* NEON :: move SIMD register*/
+#define arm_neon_mov(p, rd, rn) arm_neon_orr ((p), VREG_FULL, (rd), (rn), (rn))
 
 /* NEON :: AES */ 
 #define arm_neon_aes_opcode(p, size, opcode, rd, rn) arm_neon_opcode_2reg ((p), VREG_FULL, 0b00001110001010000000100000000000 | (size) << 22 | (opcode) << 12, (rd), (rn))
@@ -1564,8 +1576,6 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 /* NEON :: across lanes */
 #define arm_neon_xln_opcode(p, q, u, size, opcode, rd, rn) arm_neon_opcode_2reg ((p), (q), 0b00001110001100000000100000000000 | (u) << 29 | (size) << 22 | (opcode) << 12, (rd), (rn))
 
-
-
 // contrary to most other opcodes, the suffix is the type of source
 #define arm_neon_saddlv_8b(p, rd, rn) arm_neon_xln_opcode ((p), VREG_LOW, 0b0, SIZE_1, 0b00011, (rd), (rn))
 #define arm_neon_saddlv_16b(p, rd, rn) arm_neon_xln_opcode ((p), VREG_FULL, 0b0, SIZE_1, 0b00011, (rd), (rn))
@@ -1809,6 +1819,8 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_cmgt(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b0, (type), 0b00110, (rd), (rn), (rm))
 #define arm_neon_cmge(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b0, (type), 0b00111, (rd), (rn), (rm))
 #define arm_neon_cmeq(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, (type), 0b10001, (rd), (rn), (rm))
+#define arm_neon_cmhi(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, (type), 0b00110, (rd), (rn), (rm))
+#define arm_neon_cmhs(p, width, type, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, (type), 0b00111, (rd), (rn), (rm))
 
 // Generalized macros for float ops:
 //   width - determines if full register or its lower half is used one of {VREG_LOW, VREG_FULL}
@@ -1828,6 +1840,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_and(p, width, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b0, 0b00, 0b00011, (rd), (rn), (rm))
 #define arm_neon_orr(p, width, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b0, 0b10, 0b00011, (rd), (rn), (rm))
 #define arm_neon_eor(p, width, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, 0b00, 0b00011, (rd), (rn), (rm))
+#define arm_neon_bif(p, width, rd, rn, rm) arm_neon_3svec_opcode ((p), (width), 0b1, 0b11, 0b00011, (rd), (rn), (rm))
 
 // Specific macros:
 #define arm_neon_shadd_8b(p, rd, rn, rm) arm_neon_3svec_opcode ((p), VREG_LOW, 0b0, SIZE_1, 0b00000, (rd), (rn), (rm))
@@ -2286,12 +2299,11 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_bit_8b(p, rd, rn, rm) arm_neon_3svec_opcode ((p), VREG_LOW, 0b1, 0b10, 0b00011, (rd), (rn), (rm))
 #define arm_neon_bit_16b(p, rd, rn, rm) arm_neon_3svec_opcode ((p), VREG_FULL, 0b1, 0b10, 0b00011, (rd), (rn), (rm))
 
-#define arm_neon_bif_8b(p, rd, rn, rm) arm_neon_3svec_opcode ((p), VREG_LOW, 0b1, 0b11, 0b00011, (rd), (rn), (rm))
-#define arm_neon_bif_16b(p, rd, rn, rm) arm_neon_3svec_opcode ((p), VREG_FULL, 0b1, 0b11, 0b00011, (rd), (rn), (rm))
-
-
 /* NEON :: modified immediate */
-// TODO
+#define arm_neon_mimm_opcode(p, q, op, cmode, o2, imm, rd) arm_neon_opcode_1reg ((p), (q), 0b00001111000000000000010000000000 | (op) << 29 | (cmode) << 12 | (o2) << 11 | (imm & 0b11100000) << 11 | (imm & 0b11111) << 5, (rd))
+
+#define ARM_IMM_FONE (0b01110000)
+#define arm_neon_fmov_imm(p, width, type, rd, imm) arm_neon_mimm_opcode ((p), (width), (type), 0b1111, 0b0, (imm), (rd))
 
 /* NEON :: shift by immediate */
 #define arm_neon_shimm_opcode(p, q, u, immh, immb, opcode, rd, rn) arm_neon_opcode_2reg ((p), (q), 0b00001111000000000000010000000000 | (u) << 29 | (immh) << 19 | (immb) << 16 | (opcode) << 11, (rd), (rn))
