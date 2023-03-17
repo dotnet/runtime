@@ -266,7 +266,7 @@ namespace SourceGenerators.Tests
                 for (int i = 0; i < count; i++)
                 {
                     SourceText s = await proj.FindDocument(l[i]).GetTextAsync().ConfigureAwait(false);
-                    results.Add(s.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+                    results.Add(Replace(s.ToString(), "\r\n", "\n"));
                 }
             }
             else
@@ -274,17 +274,41 @@ namespace SourceGenerators.Tests
                 for (int i = 0; i < count; i++)
                 {
                     SourceText s = await proj.FindDocument($"src-{i}.cs").GetTextAsync().ConfigureAwait(false);
-                    results.Add(s.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+                    results.Add(Replace(s.ToString(), "\r\n", "\n"));
                 }
             }
 
             if (extraFile != null)
             {
                 SourceText s = await proj.FindDocument(extraFile).GetTextAsync().ConfigureAwait(false);
-                results.Add(s.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+                results.Add(Replace(s.ToString(), "\r\n", "\n"));
             }
 
             return results;
+        }
+
+        public static bool CompareLines(string[] expectedLines, SourceText sourceText, out string message)
+        {
+            if (expectedLines.Length != sourceText.Lines.Count)
+            {
+                message = string.Format("Line numbers do not match. Expected: {0} lines, but generated {1}",
+                    expectedLines.Length, sourceText.Lines.Count);
+                return false;
+            }
+            int index = 0;
+            foreach (TextLine textLine in sourceText.Lines)
+            {
+                string expectedLine = expectedLines[index];
+                if (!expectedLine.Equals(textLine.ToString(), StringComparison.Ordinal))
+                {
+                    message = string.Format("Line {0} does not match.{1}Expected Line:{1}{2}{1}Actual Line:{1}{3}",
+                        textLine.LineNumber + 1, Environment.NewLine, expectedLine, textLine);
+                    return false;
+                }
+                index++;
+            }
+            message = string.Empty;
+            return true;
         }
 
         private static async Task<Project> RecreateProjectDocumentsAsync(Project project)
@@ -304,5 +328,13 @@ namespace SourceGenerators.Tests
             SourceText newText = await document.GetTextAsync().ConfigureAwait(false);
             return document.WithText(SourceText.From(newText.ToString(), newText.Encoding, newText.ChecksumAlgorithm));
         }
+
+        private static string Replace(string text, string oldText, string newText) =>
+            text.Replace(
+                oldText, newText
+#if NETCOREAPP
+                , StringComparison.Ordinal
+#endif
+                );
     }
 }
