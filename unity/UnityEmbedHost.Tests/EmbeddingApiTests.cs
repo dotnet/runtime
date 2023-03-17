@@ -176,4 +176,76 @@ public class EmbeddingApiTests
     {
         Assert.That(CoreCLRHostTestingWrappers.object_get_class(Activator.CreateInstance(type)!), Is.EqualTo(type));
     }
+
+    [TestCase(typeof(int), 0)]
+    [TestCase(typeof(int), 3)]
+    [TestCase(typeof(string), 10)]
+    [TestCase(typeof(ValueAnimal), 5)]
+    [TestCase(typeof(int[]), 2)]
+    [TestCase(typeof(int), 1000000)]
+    public void ArrayNew(Type arrayType, int length)
+    {
+        Assert.That(CoreCLRHostTestingWrappers.array_new(arrayType, length), Is.EquivalentTo(Array.CreateInstance(arrayType, length)));
+    }
+
+    [TestCase(typeof(int), 0, 0)]
+    [TestCase(typeof(int), 3, 10)]
+    [TestCase(typeof(string), 10, 5)]
+    [TestCase(typeof(ValueAnimal), 5, 5)]
+    [TestCase(typeof(int[]), 2, 1)]
+    [TestCase(typeof(int), 1000, 1000)]
+    public void ArrayNew2d(Type arrayType, int size0, int size1)
+    {
+        var result = CoreCLRHostTestingWrappers.unity_array_new_2d(arrayType, size0, size1);
+        var expected = Array.CreateInstance(arrayType, size0, size1);
+        AssertMultiDimensionalArraysAreEquivalent(expected, result);
+    }
+
+    [TestCase(typeof(int), 0, 0, 0)]
+    [TestCase(typeof(int), 3, 10, 1)]
+    [TestCase(typeof(string), 10, 5, 3)]
+    [TestCase(typeof(ValueAnimal), 5, 5, 5)]
+    [TestCase(typeof(int[]), 2, 1, 2)]
+    [TestCase(typeof(int), 100, 100, 100)]
+    public void ArrayNew3d(Type arrayType, int size0, int size1, int size2)
+    {
+        var result = CoreCLRHostTestingWrappers.unity_array_new_3d(arrayType, size0, size1, size2);
+        var expected = Array.CreateInstance(arrayType, size0, size1, size2);
+        AssertMultiDimensionalArraysAreEquivalent(expected, result);
+    }
+
+    /// <summary>
+    /// NUnit's `Is.EquivalentTo` cannot handle multi-dimensional arrays.  It crashes on GetValue calls.
+    /// </summary>
+    /// <param name="expected"></param>
+    /// <param name="actual"></param>
+    static void AssertMultiDimensionalArraysAreEquivalent(Array expected, Array actual)
+    {
+        Assert.AreEqual(expected.Rank, actual.Rank);
+        if (expected.Rank == 1)
+        {
+            Assert.That(actual, Is.EquivalentTo(expected));
+            return;
+        }
+
+        Assert.AreEqual(expected.Length, actual.Length);
+        for (int i = 0; i < expected.Rank; i++)
+        {
+            Assert.AreEqual(expected.GetLowerBound(i), actual.GetLowerBound(i));
+            Assert.AreEqual(expected.GetUpperBound(i), actual.GetUpperBound(i));
+        }
+
+        // This seemed like the easiest way to compare all the values in the arrays
+        var expectedFlat = FlattenedArray(expected);
+        var actualFlat = FlattenedArray(actual);
+        Assert.That(actualFlat, Is.EquivalentTo(expectedFlat));
+    }
+
+    static List<object?> FlattenedArray(Array arr)
+    {
+        var result = new List<object?>();
+        foreach(var value in arr)
+            result.Add(value);
+        return result;
+    }
 }
