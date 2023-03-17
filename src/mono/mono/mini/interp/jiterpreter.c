@@ -513,12 +513,11 @@ mono_jiterp_type_get_raw_value_size (MonoType *type) {
 }
 
 // we use these helpers to record when a trace bails out (in countBailouts mode)
-EMSCRIPTEN_KEEPALIVE void*
-mono_jiterp_trace_bailout (void* rip, int reason)
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_trace_bailout (int reason)
 {
 	if (reason < 256)
 		jiterp_trace_bailout_counts[reason]++;
-	return rip;
 }
 
 EMSCRIPTEN_KEEPALIVE double
@@ -712,6 +711,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_BR_S:
 		case MINT_LEAVE:
 		case MINT_LEAVE_S:
+		case MINT_CALL_HANDLER:
+		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches
 			if (ins->info.target_bb->il_offset <= ins->il_offset) {
 				if (*inside_branch_block)
@@ -723,6 +724,12 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			*inside_branch_block = TRUE;
 			return TRACE_CONTINUE;
 
+		case MINT_ICALL_V_P:
+		case MINT_ICALL_V_V:
+		case MINT_ICALL_P_P:
+		case MINT_ICALL_P_V:
+		case MINT_ICALL_PP_V:
+		case MINT_ICALL_PP_P:
 		case MINT_MONO_RETHROW:
 		case MINT_THROW:
 			if (*inside_branch_block)
@@ -734,8 +741,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LEAVE_S_CHECK:
 			return TRACE_ABORT;
 
-		case MINT_CALL_HANDLER:
-		case MINT_CALL_HANDLER_S:
 		case MINT_ENDFINALLY:
 		case MINT_RETHROW:
 		case MINT_PROF_EXIT:
@@ -1259,6 +1264,7 @@ mono_jiterp_trace_transfer (
 #define JITERP_MEMBER_ARRAY_LENGTH 9
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS 10
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT 11
+#define JITERP_MEMBER_CLAUSE_DATA_OFFSETS 12
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -1282,6 +1288,8 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (InterpMethod, backward_branch_offsets);
 		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT:
 			return offsetof (InterpMethod, backward_branch_offsets_count);
+		case JITERP_MEMBER_CLAUSE_DATA_OFFSETS:
+			return offsetof (InterpMethod, clause_data_offsets);
 		case JITERP_MEMBER_RMETHOD:
 			return offsetof (JiterpEntryDataHeader, rmethod);
 		case JITERP_MEMBER_SPAN_LENGTH:
