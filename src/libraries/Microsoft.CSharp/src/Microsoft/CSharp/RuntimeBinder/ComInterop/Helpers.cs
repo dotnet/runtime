@@ -34,7 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     internal static class Requires
     {
         [System.Diagnostics.Conditional("DEBUG")]
-        internal static void NotNull(object value, [CallerArgumentExpression("value")] string? paramName = null)
+        internal static void NotNull(object value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
         {
             ArgumentNullException.ThrowIfNull(value, paramName);
         }
