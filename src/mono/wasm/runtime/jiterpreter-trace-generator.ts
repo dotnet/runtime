@@ -613,13 +613,6 @@ export function generate_wasm_body (
                 builder.callImport("ldtsflda");
                 break;
             }
-            case MintOpcode.MINT_INTRINS_UNSAFE_BYTE_OFFSET:
-                builder.local("pLocals");
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                builder.appendU8(WasmOpcode.i32_sub);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
-                break;
             case MintOpcode.MINT_INTRINS_GET_TYPE:
                 builder.block();
                 // dest, src
@@ -1853,6 +1846,18 @@ const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_SHR_I8_IMM]:     [WasmOpcode.i64_shr_s,     WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_SHR_UN_I4_IMM]:  [WasmOpcode.i32_shr_u,     WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_SHR_UN_I8_IMM]:  [WasmOpcode.i64_shr_u,     WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_ROL_I4_IMM]:     [WasmOpcode.i32_rotl,      WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ROL_I8_IMM]:     [WasmOpcode.i64_rotl,      WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_ROR_I4_IMM]:     [WasmOpcode.i32_rotr,      WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ROR_I8_IMM]:     [WasmOpcode.i64_rotr,      WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_CLZ_I4]:         [WasmOpcode.i32_clz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CTZ_I4]:         [WasmOpcode.i32_ctz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_POPCNT_I4]:      [WasmOpcode.i32_popcnt,    WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLZ_I8]:         [WasmOpcode.i64_clz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_CTZ_I8]:         [WasmOpcode.i64_ctz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_POPCNT_I8]:      [WasmOpcode.i64_popcnt,    WasmOpcode.i32_load, WasmOpcode.i32_store],
 };
 
 // HACK: Generating correct wasm for these is non-trivial so we hand them off to C.
@@ -2276,6 +2281,8 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
         case MintOpcode.MINT_SHL_I4_IMM:
         case MintOpcode.MINT_SHR_I4_IMM:
         case MintOpcode.MINT_SHR_UN_I4_IMM:
+        case MintOpcode.MINT_ROL_I4_IMM:
+        case MintOpcode.MINT_ROR_I4_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i32_const(getArgI16(ip, 3));
             break;
@@ -2285,6 +2292,8 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
         case MintOpcode.MINT_SHL_I8_IMM:
         case MintOpcode.MINT_SHR_I8_IMM:
         case MintOpcode.MINT_SHR_UN_I8_IMM:
+        case MintOpcode.MINT_ROL_I8_IMM:
+        case MintOpcode.MINT_ROR_I8_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i52_const(getArgI16(ip, 3));
             break;

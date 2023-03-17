@@ -287,12 +287,12 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
             // Since we are not using k registers yet, this will have no impact on correctness but will affect things
             // once
             // k registers are used (as that is the point of the "break out operand type" of these instructions)
-            // case INS_movdqa:         // INS_movdqa32, INS_movdqa64.
-            // case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_movdqu32, INS_movdqu64.
-            // case INS_pand:           // INS_pandd, INS_pandq.
-            // case INS_pandn:          // INS_pandnd, INS_pandnq.
-            // case INS_por:            // INS_pord, INS_porq.
-            // case INS_pxor:           // INS_pxord, INS_pxorq
+            // case INS_movdqa:         // INS_vmovdqa32, INS_vmovdqa64.
+            // case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_vmovdqu32, INS_vmovdqu64.
+            // case INS_pand:           // INS_vpandd, INS_vpandq.
+            // case INS_pandn:          // INS_vpandnd, INS_vpandnq.
+            // case INS_por:            // INS_vpord, INS_vporq.
+            // case INS_pxor:           // INS_vpxord, INS_vpxorq
             // case INS_vextractf128:   // INS_vextractf32x4, INS_vextractf64x2.
             // case INS_vextracti128:   // INS_vextracti32x4, INS_vextracti64x2.
             // case INS_vinsertf128:    // INS_vinsertf32x4, INS_vinsertf64x2.
@@ -490,6 +490,72 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// IsRexW0Instruction: check if the instruction always encodes REX.W as 0
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    true if the instruction always encodes REX.W as 0; othwerwise, false
+//
+bool emitter::IsRexW0Instruction(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+
+    if ((flags & REX_W0) != 0)
+    {
+        assert((flags & (REX_W1 | REX_WX)) == 0);
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsRexW1Instruction: check if the instruction always encodes REX.W as 1
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    true if the instruction always encodes REX.W as 1; othwerwise, false
+//
+bool emitter::IsRexW1Instruction(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+
+    if ((flags & REX_W1) != 0)
+    {
+        assert((flags & (REX_W0 | REX_WX)) == 0);
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsRexWXInstruction: check if the instruction requires special REX.W encoding
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    true if the instruction requires special REX.W encoding; othwerwise, false
+//
+bool emitter::IsRexWXInstruction(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+
+    if ((flags & REX_WX) != 0)
+    {
+        assert((flags & (REX_W0 | REX_W1)) == 0);
+        return true;
+    }
+
+    return false;
 }
 
 #ifdef TARGET_64BIT
@@ -5868,13 +5934,13 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movaps:
         case INS_movd:
         case INS_movdqa:
-        case INS_movdqa32:
-        case INS_movdqa64:
+        case INS_vmovdqa32:
+        case INS_vmovdqa64:
         case INS_movdqu:
         case INS_movdqu8:
         case INS_movdqu16:
-        case INS_movdqu32:
-        case INS_movdqu64:
+        case INS_vmovdqu32:
+        case INS_vmovdqu64:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movsx:
@@ -6017,12 +6083,12 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-        case INS_movdqa32:
-        case INS_movdqa64:
+        case INS_vmovdqa32:
+        case INS_vmovdqa64:
         case INS_movdqu8:
         case INS_movdqu16:
-        case INS_movdqu32:
-        case INS_movdqu64:
+        case INS_vmovdqu32:
+        case INS_vmovdqu64:
         {
             // These EVEX instructions merges/masks based on k-register
             // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
@@ -6233,13 +6299,13 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         case INS_movapd:
         case INS_movaps:
         case INS_movdqa:
-        case INS_movdqa32:
-        case INS_movdqa64:
+        case INS_vmovdqa32:
+        case INS_vmovdqa64:
         case INS_movdqu:
         case INS_movdqu8:
         case INS_movdqu16:
-        case INS_movdqu32:
-        case INS_movdqu64:
+        case INS_vmovdqu32:
+        case INS_vmovdqu64:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movupd:
@@ -17472,13 +17538,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movdqa:
-        case INS_movdqa32:
-        case INS_movdqa64:
+        case INS_vmovdqa32:
+        case INS_vmovdqa64:
         case INS_movdqu:
         case INS_movdqu8:
         case INS_movdqu16:
-        case INS_movdqu32:
-        case INS_movdqu64:
+        case INS_vmovdqu32:
+        case INS_vmovdqu64:
         case INS_movaps:
         case INS_movups:
         case INS_movapd:
@@ -17691,9 +17757,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_paddusw:
         case INS_psubusw:
         case INS_pand:
+        case INS_vpandd:
+        case INS_vpandq:
         case INS_pandn:
+        case INS_vpandnd:
+        case INS_vpandnq:
         case INS_por:
+        case INS_vpord:
+        case INS_vporq:
         case INS_pxor:
+        case INS_vpxord:
+        case INS_vpxorq:
         case INS_andpd:
         case INS_andps:
         case INS_andnpd:

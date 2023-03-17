@@ -10,6 +10,7 @@
 // Flowgraph Profile Synthesis
 
 typedef jitstd::vector<FlowEdge*> EdgeVector;
+typedef jitstd::vector<weight_t>  WeightVector;
 
 struct SimpleLoop
 {
@@ -44,6 +45,7 @@ enum class ProfileSynthesisOption
 {
     AssignLikelihoods,
     RetainLikelihoods,
+    RepairLikelihoods,
     BlendLikelihoods,
     ResetAndSynthesize,
     ReverseLikelihoods,
@@ -72,6 +74,16 @@ private:
     {
     }
 
+    static constexpr weight_t exceptionScale = 0.001;
+    static constexpr weight_t blendFactor    = 0.99;
+    static constexpr weight_t epsilon        = 0.001;
+
+    static constexpr weight_t cappedLikelihood   = 0.999;
+    static constexpr weight_t returnLikelihood   = 0.2;
+    static constexpr weight_t ilNextLikelihood   = 0.52;
+    static constexpr weight_t loopBackLikelihood = 0.9;
+    static constexpr weight_t loopExitLikelihood = 0.9;
+
     void Run(ProfileSynthesisOption option);
 
     void        BuildReversePostorder();
@@ -82,11 +94,14 @@ private:
     void        FindLoops();
     SimpleLoop* GetLoopFromHeader(BasicBlock* block);
 
+    weight_t SumOutgoingLikelihoods(BasicBlock* block, WeightVector* likelihoods = nullptr);
+
     void AssignLikelihoods();
     void AssignLikelihoodNext(BasicBlock* block);
     void AssignLikelihoodJump(BasicBlock* block);
     void AssignLikelihoodCond(BasicBlock* block);
     void AssignLikelihoodSwitch(BasicBlock* block);
+    void RepairLikelihoods();
     void BlendLikelihoods();
     void ClearLikelihoods();
     void ReverseLikelihoods();
@@ -95,7 +110,7 @@ private:
     void ComputeCyclicProbabilities();
     void ComputeCyclicProbabilities(SimpleLoop* loop);
 
-    void AssignInputWeights();
+    void AssignInputWeights(ProfileSynthesisOption option);
 
     void ComputeBlockWeights();
     void ComputeBlockWeightsSubgraph(BasicBlock* block);
