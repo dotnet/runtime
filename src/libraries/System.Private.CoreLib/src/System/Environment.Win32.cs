@@ -221,7 +221,8 @@ namespace System
             switch (folder)
             {
                 // Special-cased values to not use SHGetFolderPath when we have a more direct option available.
-                case SpecialFolder.System when option == SpecialFolderOption.None:
+                case SpecialFolder.System:
+                    // This assumes the system directory always exists and thus we don't need to do anything special for any SpecialFolderOption.
                     return SystemDirectory;
                 default:
                     return string.Empty;
@@ -277,9 +278,6 @@ namespace System
                     break;
                 case SpecialFolder.Startup:
                     folderGuid = Interop.Shell32.KnownFolders.Startup;
-                    break;
-                case SpecialFolder.System when option != SpecialFolderOption.None:
-                    folderGuid = Interop.Shell32.KnownFolders.System;
                     break;
                 case SpecialFolder.Templates:
                     folderGuid = Interop.Shell32.KnownFolders.Templates;
