@@ -77,7 +77,6 @@ namespace System.Net
             }
         }
 
-        #region Parsing (public)
         public static IPNetwork Parse(string s)
         {
             ArgumentNullException.ThrowIfNull(s);
@@ -122,9 +121,7 @@ namespace System.Net
             result = default;
             return false;
         }
-        #endregion
 
-        #region Private methods
 
         private static bool TryParseCore(ReadOnlySpan<char> s, [NotNullWhen(true)] out IPAddress? address, out int prefixLength)
         {
@@ -223,9 +220,7 @@ namespace System.Net
             }
         }
 
-        #endregion
 
-        #region Formatting (public)
         public override string ToString()
         {
             return $"{BaseAddress}/{PrefixLength}";
@@ -235,9 +230,7 @@ namespace System.Net
         {
             return destination.TryWrite($"{BaseAddress}/{PrefixLength}", out charsWritten);
         }
-        #endregion
 
-        #region Equality and GetHashCode
         public bool Equals(IPNetwork other)
         {
             return BaseAddress.Equals(other.BaseAddress) && PrefixLength == other.PrefixLength;
@@ -266,9 +259,7 @@ namespace System.Net
         {
             return HashCode.Combine(BaseAddress, PrefixLength);
         }
-        #endregion
 
-        #region Explicit ISpanFormattable, ISpanParsable
         string IFormattable.ToString(string? format, IFormatProvider? provider)
         {
             return ToString();
@@ -294,6 +285,5 @@ namespace System.Net
         {
             return TryParse(s, out result);
         }
-        #endregion
     }
 }
