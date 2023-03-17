@@ -881,7 +881,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83197", TestPlatforms.Browser)]
-        public void LeaveOpenRespected_OutstandingViews(bool leaveOpen)
+        public void LeaveOpenRespectedWithFileStream_OutstandingViews(bool leaveOpen)
         {
             const int Capacity = 4096;
             using (TempFile file = new TempFile(GetTestFilePath()))
@@ -914,6 +914,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83197", TestPlatforms.Browser)]
         public void LeaveOpenRespectedWithSafeFileHandle_OutstandingViews(bool leaveOpen)
         {
             const int Capacity = 4096;
