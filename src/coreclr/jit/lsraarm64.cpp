@@ -36,6 +36,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 {
+    assert(compiler->info.needsConsecutiveRegisters);
     RefPosition* nextRefPosition;
     assert(refPosition->needsConsecutive);
     nextConsecutiveRefPositionMap->Lookup(refPosition, &nextRefPosition);
@@ -132,6 +133,7 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
 //
 bool LinearScan::areNextConsecutiveRegistersFree(regNumber regToAssign, int registersCount, var_types registerType)
 {
+    assert(compiler->info.needsConsecutiveRegisters);
     for (int i = 0; i < registersCount; i++)
     {
         if (isRegInUse(regToAssign, registerType))
@@ -159,6 +161,7 @@ bool LinearScan::areNextConsecutiveRegistersFree(regNumber regToAssign, int regi
 //
 regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
 {
+    assert(compiler->info.needsConsecutiveRegisters);
     regMaskTP result = candidates & m_AvailableRegs;
     if (!refPosition->isFirstRefPositionOfConsecutiveRegisters())
     {
@@ -220,7 +223,7 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
         currAvailableRegs &= ~endMask;
     } while (currAvailableRegs != RBM_NONE);
 
-    if (compiler->opts.OptimizationEnabled())
+    if (compiler->opts.OptimizationEnabled() && (overallResult != RBM_NONE))
     {
         // One last time, check if subsequent refpositions (all refpositions except the first for which
         // we assigned above) already have consecutive registers assigned. If yes, and if one of the
@@ -1406,6 +1409,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 //
 int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
 {
+    assert(compiler->info.needsConsecutiveRegisters);
     int srcCount = 0;
     if (treeNode->OperIsFieldList())
     {
@@ -1445,8 +1449,9 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
                 restoreRefPos->regCount         = 0;
                 if (firstRefPos == nullptr)
                 {
-                    // Always set the non UpperVectorRestore. UpperVectorRestore can be assigned
-                    // different independent register.
+                    // Always set the non UpperVectorRestore as the firstRefPos.
+                    // UpperVectorRestore can be assigned to a different independent
+                    // register.
                     // See TODO-CQ in setNextConsecutiveRegisterAssignment().
                     firstRefPos = currRefPos;
                 }

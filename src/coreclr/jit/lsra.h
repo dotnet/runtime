@@ -1158,11 +1158,11 @@ private:
     const char* getScoreName(RegisterScore score);
 #endif
 #ifdef TARGET_ARM64
-    template <bool hasConsecutiveRegister = false>
+    template <bool needsConsecutiveRegisters = false>
 #endif
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 #ifdef TARGET_ARM64
-    template <bool hasConsecutiveRegister = false>
+    template <bool needsConsecutiveRegisters = false>
 #endif
     regNumber assignCopyReg(RefPosition* refPosition);
 

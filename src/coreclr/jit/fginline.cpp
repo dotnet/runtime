@@ -1453,6 +1453,10 @@ _Done:
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
+#ifdef TARGET_ARM64
+    info.needsConsecutiveRegisters |= InlineeCompiler->info.needsConsecutiveRegisters;
+#endif
+
     // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
     // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
     if (InlineeCompiler->fgHasSwitch && opts.compProcedureSplitting)

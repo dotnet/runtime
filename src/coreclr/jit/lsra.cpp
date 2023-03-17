@@ -1305,6 +1305,10 @@ PhaseStatus LinearScan::doLinearScan()
     compiler->codeGen->regSet.rsClearRegsModified();
 
     initMaxSpill();
+
+#ifdef TARGET_ARM64
+    nextConsecutiveRefPositionMap = nullptr;
+#endif
     buildIntervals();
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_REFPOS));
     compiler->EndPhase(PHASE_LINEAR_SCAN_BUILD);
@@ -1314,7 +1318,6 @@ PhaseStatus LinearScan::doLinearScan()
     initVarRegMaps();
 
 #ifdef TARGET_ARM64
-    nextConsecutiveRefPositionMap = nullptr;
     if (compiler->info.needsConsecutiveRegisters)
     {
         allocateRegisters<true>();
@@ -2845,7 +2848,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 //        no such ref position, no register will be allocated.
 //
 #ifdef TARGET_ARM64
-template <bool hasConsecutiveRegister>
+template <bool needsConsecutiveRegisters>
 #endif
 regNumber LinearScan::allocateReg(Interval*    currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
@@ -2853,7 +2856,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
     regMaskTP foundRegBit;
 
 #ifdef TARGET_ARM64
-    if (hasConsecutiveRegister)
+    if (needsConsecutiveRegisters)
     {
         foundRegBit = regSelector->select<true>(currentInterval, refPosition DEBUG_ARG(registerScore));
     }
@@ -3135,7 +3138,7 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
 // Otherwise, spill something with the farthest next use
 //
 #ifdef TARGET_ARM64
-template <bool hasConsecutiveRegister>
+template <bool needsConsecutiveRegisters>
 #endif
 regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 {
@@ -3161,8 +3164,9 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     RegisterScore registerScore = NONE;
     regNumber     allocatedReg;
 #ifdef TARGET_ARM64
-    if (hasConsecutiveRegister)
+    if (needsConsecutiveRegisters)
     {
+        assert(refPosition->needsConsecutive);
         allocatedReg = allocateReg<true>(currentInterval, refPosition DEBUG_ARG(&registerScore));
     }
     else
@@ -5472,7 +5476,7 @@ void LinearScan::allocateRegisters()
                 {
                     regNumber copyReg;
 #ifdef TARGET_ARM64
-                    if (hasConsecutiveRegister)
+                    if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
                     {
                         copyReg = assignCopyReg<true>(&currentRefPosition);
                     }
@@ -5670,7 +5674,7 @@ void LinearScan::allocateRegisters()
                 }
 
 #ifdef TARGET_ARM64
-                if (hasConsecutiveRegister)
+                if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
                 {
                     assignedRegister =
                         allocateReg<true>(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
@@ -11978,7 +11982,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
 //      Register bit selected (a single register) and REG_NA if no register was selected.
 //
 #ifdef TARGET_ARM64
-template <bool hasConsecutiveRegister>
+template <bool needsConsecutiveRegisters>
 #endif
 regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
                                                 RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
@@ -12229,7 +12233,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 #ifdef TARGET_ARM64
             // If this is allocating for consecutive register, we need to make sure that
             // we allocate register, whose consecutive registers are also free.
-            if (!hasConsecutiveRegister || !refPosition->needsConsecutive)
+            if (!needsConsecutiveRegisters)
 #endif
             {
                 candidates = prevRegBit;
@@ -12261,7 +12265,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 #endif // DEBUG
 
 #ifdef TARGET_ARM64
-    if (hasConsecutiveRegister)
+    if (needsConsecutiveRegisters)
     {
         freeCandidates = linearScan->getFreeCandidates(candidates, refPosition);
     }
