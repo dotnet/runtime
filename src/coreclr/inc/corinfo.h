@@ -1268,9 +1268,6 @@ struct CORINFO_RUNTIME_LOOKUP
     // If set, test for null and branch to helper if null
     bool                    testForNull;
 
-    // If set, test the lowest bit and dereference if set (see code:FixupPointer)
-    bool                    testForFixup;
-
     uint16_t                sizeOffset;
     size_t                  offsets[CORINFO_MAXINDIRECTIONS];
 

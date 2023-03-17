@@ -307,7 +307,7 @@ namespace System.Formats.Tar
         }
 
         // Throws if the specified entry type is not supported for the specified format.
-        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat, [CallerArgumentExpression("entryType")] string? paramName = null)
+        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat, [CallerArgumentExpression(nameof(entryType))] string? paramName = null)
         {
             switch (archiveFormat)
             {

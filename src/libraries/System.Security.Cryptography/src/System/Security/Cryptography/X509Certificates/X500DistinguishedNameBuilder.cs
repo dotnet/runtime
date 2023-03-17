@@ -363,7 +363,7 @@ namespace System.Security.Cryptography.X509Certificates
             string oid,
             ReadOnlySpan<char> value,
             UniversalTagNumber stringEncodingType,
-            [CallerArgumentExpression("value")] string? paramName = null)
+            [CallerArgumentExpression(nameof(value))] string? paramName = null)
         {
             _writer.Reset();
 
