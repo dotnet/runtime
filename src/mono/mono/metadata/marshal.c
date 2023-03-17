@@ -5488,10 +5488,10 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 }
 
 void*
-mono_get_addr_compiled_method (MonoObject *object, MonoMethod *method)
+mono_get_addr_compiled_method (MonoObject *object, MonoDelegate *del)
 {
 	ERROR_DECL (error);
-	MonoMethod *res;
+	MonoMethod *res, *method = del->method;
 	gpointer addr;
 
 	if (object == NULL) {

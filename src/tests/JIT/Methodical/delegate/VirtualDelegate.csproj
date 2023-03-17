@@ -7,6 +7,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Tests.cs" />
+    <Compile Include="VirtualDelegate.cs" />
   </ItemGroup>
 </Project>

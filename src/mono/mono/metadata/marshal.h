@@ -626,7 +626,7 @@ mono_struct_delete_old (MonoClass *klass, char *ptr);
 
 ICALL_EXPORT
 void*
-mono_get_addr_compiled_method (MonoObject *object, MonoMethod *method);
+mono_get_addr_compiled_method (MonoObject *object, MonoDelegate *del);
 
 int
 mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
