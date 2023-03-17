@@ -130,7 +130,6 @@ jobs:
 
     - subset: installer
       include:
-      - docs/manpages/*
       exclude:
       - eng/Version.Details.xml
       - docs/*

@@ -636,16 +636,20 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+#if defined(TARGET_XARCH)
+    availableRegCount = ACTUAL_REG_COUNT;
+
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-    availableRegCount = ACTUAL_REG_COUNT;
+#endif
 
     if (!compiler->DoJitStressEvexEncoding())
     {
         availableRegCount -= CNT_HIGHFLOAT;
+        availableRegCount -= CNT_MASK_REGS;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 
     regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
@@ -698,6 +702,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
+#if defined(TARGET_XARCH)
+    availableMaskRegs = RBM_ALLMASK;
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
@@ -721,28 +728,13 @@ LinearScan::LinearScan(Compiler* theCompiler)
     }
 #endif
 
-    for (unsigned int i = 0; i < TYP_COUNT; i++)
-    {
-        var_types thisType = (var_types)genActualTypes[i];
-        if (thisType == TYP_FLOAT)
-        {
-            availableRegs[i] = &availableFloatRegs;
-        }
-        else if (thisType == TYP_DOUBLE)
-        {
-            availableRegs[i] = &availableDoubleRegs;
-        }
-#ifdef FEATURE_SIMD
-        else if (varTypeIsSIMD(thisType))
-        {
-            availableRegs[i] = &availableDoubleRegs;
-        }
-#endif // FEATURE_SIMD
-        else
-        {
-            availableRegs[i] = &availableIntRegs;
-        }
-    }
+    // Initialize the availableRegs to use for each TYP_*
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf)                                              \
+    availableRegs[static_cast<int>(TYP_##tn)] = &lsra;
+#include "typelist.h"
+#undef DEF_TP
 
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;

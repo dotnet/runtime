@@ -733,18 +733,12 @@ namespace System.Runtime.Serialization.Json
             if (IsAttributeValue)
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (offset < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(offset);
                 if (offset > buffer.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, buffer.Length));
                 }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (count > buffer.Length - offset)
                 {
                     throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset));
@@ -761,18 +755,12 @@ namespace System.Runtime.Serialization.Json
             if (IsAttributeValue)
             {
                 ArgumentNullException.ThrowIfNull(chars);
-                if (offset < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(offset);
                 if (offset > chars.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, chars.Length));
                 }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (count > chars.Length - offset)
                 {
                     throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - offset));
@@ -804,18 +792,12 @@ namespace System.Runtime.Serialization.Json
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (offset > buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.JsonOffsetExceedsBufferSize, buffer.Length));
             }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - offset)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - offset));
@@ -851,18 +833,12 @@ namespace System.Runtime.Serialization.Json
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (offset > array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length));
             }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > array.Length - offset)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset));
@@ -1615,7 +1591,7 @@ namespace System.Runtime.Serialization.Json
                     i++;
                     sb ??= new StringBuilder();
                     sb.Append(val, startIndex, count);
-                    Fx.Assert(i < val.Length, "Found that an '\' was the last character in a string. ReadServerTypeAttriute validates that the escape sequence is valid when it calls ReadQuotedText and ReadEscapedCharacter");
+                    Debug.Assert(i < val.Length, "Found that an '\' was the last character in a string. ReadServerTypeAttriute validates that the escape sequence is valid when it calls ReadQuotedText and ReadEscapedCharacter");
                     if (i >= val.Length)
                     {
                         XmlExceptionHelper.ThrowXmlException(this, new XmlException(SR.Format(SR.JsonEncounteredUnexpectedCharacter, val[i])));
@@ -1675,7 +1651,7 @@ namespace System.Runtime.Serialization.Json
 
         protected override XmlSigningNodeWriter CreateSigningNodeWriter()
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "CreateSigningNodeWriter")));
+            throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "CreateSigningNodeWriter"));
         }
 
         private static class CharType

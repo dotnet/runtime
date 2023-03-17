@@ -54,11 +54,6 @@ bool Compiler::fgHaveProfileData()
 //
 bool Compiler::fgHaveProfileWeights()
 {
-    if (!fgHaveProfileData())
-    {
-        return false;
-    }
-
     return fgPgoHaveWeights;
 }
 
@@ -79,12 +74,29 @@ bool Compiler::fgHaveSufficientProfileWeights()
         return false;
     }
 
-    if ((fgFirstBB != nullptr) && (fgPgoSource == ICorJitInfo::PgoSource::Static))
+    switch (fgPgoSource)
     {
-        const weight_t sufficientSamples = 1000;
-        return fgFirstBB->bbWeight > sufficientSamples;
+        case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Text:
+        case ICorJitInfo::PgoSource::Blend:
+            return true;
+
+        case ICorJitInfo::PgoSource::Static:
+        {
+            // We sometimes call this very early, eg evaluating the prejit root.
+            //
+            if (fgFirstBB != nullptr)
+            {
+                const weight_t sufficientSamples = 1000;
+                return fgFirstBB->bbWeight > sufficientSamples;
+            }
+
+            return true;
+        }
+
+        default:
+            return false;
     }
-    return true;
 }
 
 //------------------------------------------------------------------------
@@ -111,6 +123,7 @@ bool Compiler::fgHaveTrustedProfileWeights()
     switch (fgPgoSource)
     {
         case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Blend:
         case ICorJitInfo::PgoSource::Text:
             return true;
         default:
@@ -2493,7 +2506,6 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
-        fgPgoHaveWeights = false;
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 #endif
@@ -2522,8 +2534,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Summarize profile data
     //
-    JITDUMP("Have %s profile data: %d schema records (schema at %p, data at %p)\n", pgoSourceToString(fgPgoSource),
-            fgPgoSchemaCount, dspPtr(fgPgoSchema), dspPtr(fgPgoData));
+    JITDUMP("Have %s: %d schema records (schema at %p, data at %p)\n", compGetPgoSourceName(), fgPgoSchemaCount,
+            dspPtr(fgPgoSchema), dspPtr(fgPgoData));
 
     fgNumProfileRuns      = 0;
     unsigned otherRecords = 0;
@@ -2612,6 +2624,16 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         fgIncorporateEdgeCounts();
     }
+
+#ifdef DEBUG
+    // Optionally synthesize & blend
+    //
+    if ((JitConfig.JitSynthesizeCounts() == 3) && !compIsForInlining())
+    {
+        JITDUMP("Synthesizing profile data and blending it with the actual profile data\n");
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
+    }
+#endif
 
     // Scale data as appropriate
     //
@@ -3431,15 +3453,29 @@ void EfficientEdgeCountReconstructor::Propagate()
     //
     if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
-        JITDUMP("... discarding profile data because of %s\n",
-                m_badcode ? "badcode" : m_mismatch ? "mismatch" : m_allWeightsZero ? "zero counts"
-                                                                                   : "failed to converge");
-
         // Make sure nothing else in the jit looks at the profile data.
         //
-        m_comp->fgPgoSchema     = nullptr;
-        m_comp->fgPgoFailReason = "PGO data available, but there was a reconstruction problem";
+        m_comp->fgPgoHaveWeights = false;
+        m_comp->fgPgoSchema      = nullptr;
 
+        if (m_badcode)
+        {
+            m_comp->fgPgoFailReason = "PGO data available, but IL was malformed";
+        }
+        else if (m_mismatch)
+        {
+            m_comp->fgPgoFailReason = "PGO data available, but IL did not match";
+        }
+        else if (m_failedToConverge)
+        {
+            m_comp->fgPgoFailReason = "PGO data available, but solver did not converge";
+        }
+        else
+        {
+            m_comp->fgPgoFailReason = "PGO data available, profile data was all zero";
+        }
+
+        JITDUMP("... discarding profile data: %s\n", m_comp->fgPgoFailReason);
         return;
     }
 
@@ -4865,14 +4901,15 @@ EARLY_EXIT:;
 // Arguments:
 //   weight1 -- first weight
 //   weight2 -- second weight
+//   epsilon -- maximum absolute difference for weights to be considered equal
 //
 // Notes:
 //   In most cases you should probably call fgProfileWeightsConsistent instead
 //   of this method.
 //
-bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2)
+bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_t epsilon)
 {
-    return fabs(weight1 - weight2) < 0.01;
+    return fabs(weight1 - weight2) <= epsilon;
 }
 
 //------------------------------------------------------------------------
@@ -5331,45 +5368,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     }
 
     return classicWeightsValid && likelyWeightsValid;
-}
-
-//------------------------------------------------------------------------------
-// pgoSourceToString: describe source of pgo data
-//
-// Arguments:
-//    r - source enum to describe
-//
-// Returns:
-//    descriptive string
-//
-const char* Compiler::pgoSourceToString(ICorJitInfo::PgoSource p)
-{
-    const char* pgoSource = "unknown";
-    switch (fgPgoSource)
-    {
-        case ICorJitInfo::PgoSource::Dynamic:
-            pgoSource = "dynamic";
-            break;
-        case ICorJitInfo::PgoSource::Static:
-            pgoSource = "static";
-            break;
-        case ICorJitInfo::PgoSource::Text:
-            pgoSource = "text";
-            break;
-        case ICorJitInfo::PgoSource::Blend:
-            pgoSource = "static+dynamic";
-            break;
-        case ICorJitInfo::PgoSource::IBC:
-            pgoSource = "IBC";
-            break;
-        case ICorJitInfo::PgoSource::Sampling:
-            pgoSource = "Sampling";
-            break;
-        default:
-            break;
-    }
-
-    return pgoSource;
 }
 
 #endif // DEBUG

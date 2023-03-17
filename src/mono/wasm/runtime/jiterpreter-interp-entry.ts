@@ -5,7 +5,7 @@ import { mono_assert, MonoMethod, MonoType } from "./types";
 import { NativePointer } from "./types/emscripten";
 import { Module } from "./imports";
 import {
-    getU32, _zero_region
+    getU32_unaligned, _zero_region
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
@@ -106,7 +106,7 @@ class TrampolineInfo {
         this.name = name;
         this.paramTypes = new Array(argumentCount);
         for (let i = 0; i < argumentCount; i++)
-            this.paramTypes[i] = <any>getU32(<any>pParamTypes + (i * 4));
+            this.paramTypes[i] = <any>getU32_unaligned(<any>pParamTypes + (i * 4));
         this.defaultImplementation = defaultImplementation;
         this.result = 0;
         let subName = name;

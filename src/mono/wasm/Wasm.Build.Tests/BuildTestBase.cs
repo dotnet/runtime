@@ -31,6 +31,7 @@ namespace Wasm.Build.Tests
         public const string DefaultTargetFramework = "net8.0";
         public const string DefaultTargetFrameworkForBlazor = "net8.0";
         private const string DefaultEnvironmentLocale = "en-US";
+        protected static readonly char s_unicodeChar = '煉';
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -109,25 +110,28 @@ namespace Wasm.Build.Tests
             - aot but no wrapper - check that AppBundle wasn't generated
         */
 
-        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config=null)
+        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config=null, string? extraArgs=null)
         {
+            if (extraArgs == null)
+                extraArgs = string.Empty;
+
             if (config == null)
             {
                 return new IEnumerable<object?>[]
                     {
     #if TEST_DEBUG_CONFIG_ALSO
                         // list of each member data - for Debug+@aot
-                        new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", string.Empty) }.AsEnumerable(),
+                        new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", extraArgs) }.AsEnumerable(),
     #endif
                         // list of each member data - for Release+@aot
-                        new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", string.Empty) }.AsEnumerable()
+                        new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", extraArgs) }.AsEnumerable()
                     }.AsEnumerable();
             }
             else
             {
                 return new IEnumerable<object?>[]
                 {
-                    new object?[] { new BuildArgs("placeholder", config, aot, "placeholder", string.Empty) }.AsEnumerable()
+                    new object?[] { new BuildArgs("placeholder", config, aot, "placeholder", extraArgs) }.AsEnumerable()
                 };
             }
         }

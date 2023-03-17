@@ -340,10 +340,9 @@ INST3(pmulhw,           "pmulhw",           IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(pmulhuw,          "pmulhuw",          IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xE4),                            INS_TT_FULL_MEM,         Input_16Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Multiply high the packed 16-bit unsigned integers
 INST3(pmuludq,          "pmuludq",          IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xF4),                            INS_TT_FULL_MEM,         Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // packed multiply 32-bit unsigned integers and store 64-bit result
 INST3(pmullw,           "pmullw",           IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xD5),                            INS_TT_FULL_MEM,         Input_16Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed multiply 16 bit unsigned integers and store lower 16 bits of each result
-// TODO-XArch-AVX512: pand, pandn, por, and pxor have AVX512 instructions under different names, pandd, pandq etc
-INST3(pand,             "pand",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xDB),                            INS_TT_FULL,         Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise AND of two xmm regs                // TODO-XARCH-AVX512 TT and IP encoded is pand32
-INST3(pandn,            "pandn",            IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xDF),                            INS_TT_FULL,         Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise AND NOT of two xmm regs            // TODO-XARCH-AVX512 TT and IP encoded is pand32
-INST3(por,              "por",              IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xEB),                            INS_TT_FULL,         Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise OR of two xmm regs                 // TODO-XARCH-AVX512 TT and IP encoded is pand32
+INST3(pand,             "pand",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xDB),                            INS_TT_FULL,         Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise AND of two xmm regs
+INST3(pandn,            "pandn",            IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xDF),                            INS_TT_FULL,         Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise AND NOT of two xmm regs
+INST3(por,              "por",              IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xEB),                            INS_TT_FULL,         Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise OR of two xmm regs
 INST3(pxor,             "pxor",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xEF),                            INS_TT_FULL,         Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise XOR of two xmm regs
 INST3(psadbw,           "psadbw",           IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xF6),                            INS_TT_FULL_MEM,     Input_8Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Compute the sum of absolute differences of packed unsigned 8-bit integers
 INST3(psubsb,           "psubsb",           IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xE8),                            INS_TT_FULL_MEM,     Input_8Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Subtract packed 8-bit integers in b from packed 8-bit integers in a using saturation
@@ -627,26 +626,58 @@ INST3(shrx,             "shrx",             IUM_WR, BAD_CODE,     BAD_CODE,     
 
 INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 
+INST3(FIRST_K_INSTRUCTION, "FIRST_K_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None )
+
+INST3(kmovb_msk,         "kmovb",            IUM_WR, PACK3(0x66, 0x0F, 0x91), BAD_CODE,     PACK3(0x66, 0x0F, 0x90), INS_TT_NONE,    INS_FLAGS_None )
+INST3(kmovw_msk,         "kmovw",            IUM_WR, PACK2(0x0F, 0x91),       BAD_CODE,     PACK2(0x0F, 0x90),       INS_TT_NONE,    INS_FLAGS_None )
+INST3(kmovd_msk,         "kmovd",            IUM_WR, PACK3(0xF2, 0x0F, 0x91), BAD_CODE,     PACK3(0xF2, 0x0F, 0x90), INS_TT_NONE,    INS_FLAGS_None )
+INST3(kmovq_msk,         "kmovq",            IUM_WR, PACK3(0xF2, 0x0F, 0x91), BAD_CODE,     PACK3(0xF2, 0x0F, 0x90), INS_TT_NONE,    INS_FLAGS_None )
+
+
+INST3(kmovb_gpr,         "kmovb",            IUM_WR, BAD_CODE, BAD_CODE,     PACK3(0x66, 0x0F, 0x92), INS_TT_NONE,    INS_FLAGS_None )
+INST3(kmovw_gpr,         "kmovw",            IUM_WR, BAD_CODE, BAD_CODE,     PACK2(0x0F, 0x92),       INS_TT_NONE,    INS_FLAGS_None )
+INST3(kmovd_gpr,         "kmovd",            IUM_WR, BAD_CODE, BAD_CODE,     PACK3(0xF2, 0x0F, 0x92), INS_TT_NONE,    INS_FLAGS_None )
+INST3(kmovq_gpr,         "kmovq",            IUM_WR, BAD_CODE, BAD_CODE,     PACK3(0xF2, 0x0F, 0x92), INS_TT_NONE,    INS_FLAGS_None )
+
+INST3(LAST_K_INSTRUCTION, "LAST_K_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None )
+
+
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 
 INST3(FIRST_AVX512_INSTRUCTION, "FIRST_AVX512_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 
 INST3(FIRST_AVX512F_INSTRUCTION, "FIRST_AVX512F_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
-INST3(movdqu32,          "movdqu32",          IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    INS_FLAGS_None)
-INST3(movdqu64,          "movdqu64",          IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    INS_FLAGS_None)
-INST3(vinsertf64x4,      "insertf64x4",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x1A),                             INS_TT_TUPLE4,    INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed double-precision floating point values
-INST3(vinserti64x4,      "inserti64x4",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x3A),                             INS_TT_TUPLE4,    INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed quadword integer values
+INST3(vinsertf64x4,      "insertf64x4",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x1A),                             INS_TT_TUPLE4,      Input_64Bit | INS_Flags_IsDstDstSrcAVXInstruction)           // Insert 256-bit packed double-precision floating point values
+INST3(vinserti64x4,      "inserti64x4",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x3A),                             INS_TT_TUPLE4,      Input_64Bit | INS_Flags_IsDstDstSrcAVXInstruction)           // Insert 256-bit packed quadword integer values
+INST3(vmovdqa32,         "movdqa32",          IUM_WR, PCKDBL(0x7F), BAD_CODE,     PCKDBL(0x6F),                            INS_TT_FULL_MEM,    Input_32Bit | REX_W0)
+INST3(vmovdqa64,         "movdqa64",          IUM_WR, PCKDBL(0x7F), BAD_CODE,     PCKDBL(0x6F),                            INS_TT_FULL_MEM,    Input_64Bit | REX_W1)
+INST3(vmovdqu32,         "movdqu32",          IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    Input_32Bit | REX_W0)
+INST3(vmovdqu64,         "movdqu64",          IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    Input_64Bit | REX_W1)
+INST3(vpandd,            "pandd",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xDB),                            INS_TT_FULL,        Input_32Bit | REX_W0 | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise AND of two xmm regs
+INST3(vpandq,            "pandq",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xDB),                            INS_TT_FULL,        Input_64Bit | REX_W1 | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise AND of two xmm regs
+INST3(vpandnd,           "pandnd",            IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xDF),                            INS_TT_FULL,        Input_32Bit | REX_W0 | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise AND NOT of two xmm regs
+INST3(vpandnq,           "pandnq",            IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xDF),                            INS_TT_FULL,        Input_64Bit | REX_W1 | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise AND NOT of two xmm regs
+INST3(vpord,             "pord",              IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xEB),                            INS_TT_FULL,        Input_32Bit | REX_W0 | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise OR of two xmm regs
+INST3(vporq,             "porq",              IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xEB),                            INS_TT_FULL,        Input_64Bit | REX_W1 | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise OR of two xmm regs
+INST3(vpternlogd,        "pternlogd",         IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x25),                             INS_TT_FULL,        Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)
+INST3(vpxord,            "pxord",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xEF),                            INS_TT_FULL,        Input_32Bit | REX_W0 | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise XOR of two xmm regs
+INST3(vpxorq,            "pxorq",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xEF),                            INS_TT_FULL,        Input_64Bit | REX_W1 | INS_Flags_IsDstDstSrcAVXInstruction)    // Packed bit-wise XOR of two xmm regs
 INST3(LAST_AVX512F_INSTRUCTION, "LAST_AVX512F_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 
 INST3(FIRST_AVX512BW_INSTRUCTION, "FIRST_AVX512BW_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
-INST3(movdqu8,           "movdqu8",           IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    INS_FLAGS_None)
-INST3(movdqu16,          "movdqu16",          IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    INS_FLAGS_None)
+INST3(movdqu8,           "movdqu8",           IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    Input_8Bit | INS_FLAGS_None)
+INST3(movdqu16,          "movdqu16",          IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    Input_16Bit | INS_FLAGS_None)
 INST3(LAST_AVX512BW_INSTRUCTION, "LAST_AVX512BW_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 
 INST3(FIRST_AVX512DQ_INSTRUCTION, "FIRST_AVX512DQ_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
-INST3(vinsertf32x8,      "insertf32x8",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x1A),                             INS_TT_TUPLE8,    INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed double-precision floating point values
-INST3(vinserti32x8,      "inserti32x8",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x3A),                             INS_TT_TUPLE8,    INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed quadword integer values
+INST3(vinsertf32x8,      "insertf32x8",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x1A),                             INS_TT_TUPLE8,      Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed double-precision floating point values
+INST3(vinserti32x8,      "inserti32x8",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x3A),                             INS_TT_TUPLE8,      Input_32Bit | INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed quadword integer values
 INST3(LAST_AVX512DQ_INSTRUCTION, "LAST_AVX512DQ_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
+
+INST3(vpmovb2m,         "vpmovb2m",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x29),          INS_TT_NONE,    Input_8Bit)
+INST3(vpmovw2m,         "vpmovw2m",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x29),          INS_TT_NONE,    Input_16Bit)
+INST3(vpmovd2m,         "vpmovd2m",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x39),          INS_TT_NONE,    Input_32Bit)
+INST3(vpmovq2m,         "vpmovq2m",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x39),          INS_TT_NONE,    Input_64Bit)
 
 INST3(LAST_AVX512_INSTRUCTION, "LAST_AVX512_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 
@@ -679,9 +710,9 @@ INST2(ror_N,            "ror",              IUM_RW, 0x0008C0,     0x0008C0,     
 
 INST2(rcl,              "rcl",              IUM_RW, 0x0010D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
 INST2(rcl_1,            "rcl",              IUM_RW, 0x0010D0,     0x0010D0,                                              INS_TT_NONE,    Writes_OF                                                                      | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
-INST2(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit ) 
+INST2(rcl_N,            "rcl",              IUM_RW, 0x0010C0,     0x0010C0,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
 INST2(rcr,              "rcr",              IUM_RW, 0x0018D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
-INST2(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,                                              INS_TT_NONE,    Writes_OF                                                                      | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )   
+INST2(rcr_1,            "rcr",              IUM_RW, 0x0018D0,     0x0018D0,                                              INS_TT_NONE,    Writes_OF                                                                      | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
 INST2(rcr_N,            "rcr",              IUM_RW, 0x0018C0,     0x0018C0,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF | Reads_CF  | INS_FLAGS_Has_Wbit )
 INST2(shl,              "shl",              IUM_RW, 0x0020D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )
 INST2(shl_1,            "shl",              IUM_RW, 0x0020D0,     0x0020D0,                                              INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_Has_Wbit )

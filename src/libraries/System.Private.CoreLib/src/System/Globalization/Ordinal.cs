@@ -88,8 +88,8 @@ namespace System.Globalization
             Vector128<ushort> vec2;
             do
             {
-                vec1 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
-                vec2 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+                vec1 = Vector128.LoadUnsafe(ref charA, i);
+                vec2 = Vector128.LoadUnsafe(ref charB, i);
 
                 if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2))
                 {

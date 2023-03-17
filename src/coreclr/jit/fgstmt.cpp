@@ -18,7 +18,7 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block,
                                                Statement*  stmt,
                                                bool        answerOnBoundExceeded /*= true*/)
 {
-    const __int64 maxLinks = 1000000000;
+    const __int64 maxLinks = 100000000;
 
     __int64* numTraversed = &JitTls::GetCompiler()->compNumStatementLinksTraversed;
 

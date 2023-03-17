@@ -1790,6 +1790,9 @@ void Lowering::LowerCall(GenTree* node)
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
 
+    // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
+    assert(!call->IsExpRuntimeLookup());
+
     call->ClearOtherRegs();
     LowerArgsForCall(call);
 
@@ -2359,7 +2362,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 
             if (tmpTyp == TYP_STRUCT)
             {
-                comp->lvaSetStruct(tmpLclNum, comp->lvaGetStruct(lclNum), false);
+                comp->lvaSetStruct(tmpLclNum, comp->lvaGetDesc(lclNum)->GetLayout(), false);
             }
             GenTreeLclVar* storeLclVar = comp->gtNewStoreLclVar(tmpLclNum, value);
             BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeLclVar));
@@ -3267,7 +3270,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
     // Optimize EQ/NE(relop/SETCC, 0) into (maybe reversed) cond.
-    if (op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))
+    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))
     {
         LIR::Use use;
         if (BlockRange().TryGetUse(cmp, &use))
@@ -3277,6 +3280,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 GenTree* reversed = comp->gtReverseCond(op1);
                 assert(reversed == op1);
             }
+
+            // Relops and SETCC can be either TYP_INT or TYP_LONG typed, so we
+            // may need to retype it.
+            op1->gtType = cmp->TypeGet();
 
             GenTree* next = cmp->gtNext;
             use.ReplaceWith(op1);
@@ -3374,6 +3381,14 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             // Codegen will use cbz or cbnz in codegen which do not affect the flag register
             flags   = cond->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
             useJCMP = true;
+        }
+        else if (cond->OperIs(GT_LT, GT_GE) && !cond->IsUnsigned() && relopOp2->IsIntegralConst(0))
+        {
+            // Codegen will use tbnz or tbz in codegen which do not affect the flag register
+            flags   = GTF_JCMP_TST | (cond->OperIs(GT_LT) ? GTF_EMPTY : GTF_JCMP_EQ);
+            useJCMP = true;
+            relopOp2->AsIntConCommon()->SetIntegralValue(
+                (static_cast<INT64>(1) << (8 * genTypeSize(genActualType(relopOp1)) - 1)));
         }
         else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {

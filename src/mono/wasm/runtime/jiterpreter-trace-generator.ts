@@ -5,17 +5,17 @@ import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
 import {
     getU16, getI16,
-    getU32, getI32, getF32, getF64,
+    getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned,
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
-    copyIntoScratchBuffer, append_memset_dest,
+    append_memset_dest, append_bailout,
     append_memmove_dest_src, try_append_memset_fast,
     try_append_memmove_fast, counters,
-    getMemberOffset, JiterpMember
+    getMemberOffset, JiterpMember, BailoutReason,
 } from "./jiterpreter-support";
 import {
     sizeOfDataItem,
@@ -29,8 +29,6 @@ import {
     nullCheckCaching, traceBackBranches,
 
     mostRecentOptions,
-
-    BailoutReason,
 
     record_abort,
 } from "./jiterpreter";
@@ -89,31 +87,31 @@ function getArgI16 (ip: MintOpcodePtr, indexPlusOne: number) {
 }
 
 function getArgI32 (ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 4);
-    return getI32(src);
+    const src = <any>ip + (2 * indexPlusOne);
+    return getI32_unaligned(src);
 }
 
 function getArgU32 (ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 4);
-    return getU32(src);
+    const src = <any>ip + (2 * indexPlusOne);
+    return getU32_unaligned(src);
 }
 
 function getArgF32 (ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 4);
-    return getF32(src);
+    const src = <any>ip + (2 * indexPlusOne);
+    return getF32_unaligned(src);
 }
 
 function getArgF64 (ip: MintOpcodePtr, indexPlusOne: number) {
-    const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 8);
-    return getF64(src);
+    const src = <any>ip + (2 * indexPlusOne);
+    return getF64_unaligned(src);
 }
 
 function get_imethod_data (frame: NativePointer, index: number) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
-    const iMethod = getU32(<any>frame + getMemberOffset(JiterpMember.Imethod));
-    const pData = getU32(iMethod + getMemberOffset(JiterpMember.DataItems));
+    const iMethod = getU32_unaligned(<any>frame + getMemberOffset(JiterpMember.Imethod));
+    const pData = getU32_unaligned(iMethod + getMemberOffset(JiterpMember.DataItems));
     const dataOffset = pData + (index * sizeOfDataItem);
-    return getU32(dataOffset);
+    return getU32_unaligned(dataOffset);
 }
 
 function is_backward_branch_target (
@@ -151,29 +149,11 @@ export function generate_wasm_body (
     ip += <any>(OpcodeInfo[MintOpcode.MINT_TIER_ENTER_JITERPRETER][1] * 2);
     let rip = ip;
 
-    // Initialize eip, so that we will never return a 0 displacement
-    // Otherwise we could return 0 in the scenario where none of our blocks executed
-    // (This shouldn't happen though!)
-    builder.ip_const(ip);
-    builder.local("eip", WasmOpcode.set_local);
-
-    // If a method contains backward branches we also need to wrap the whole trace in a loop
-    //  that we can jump to the top of in order to begin executing the trace again
-    // FIXME: It would be much more efficient to use br_table to dispatch to the appropriate
-    //  branch block somehow but the code generation is tough due to WASM's IR
-    if (backwardBranchTable) {
-        builder.block(WasmValtype.void, WasmOpcode.loop);
-    }
-
-    // We wrap all instructions in a 'branch block' that is used
-    //  when performing a branch and will be skipped over if the
-    //  current instruction pointer does not match. This means
-    //  that if ip points to a branch target we don't handle,
-    //  the trace will automatically bail out at the end after
-    //  skipping past all the branch targets
-    builder.block();
+    builder.cfg.entry(ip);
 
     while (ip) {
+        builder.cfg.ip = ip;
+
         if (ip >= endOfBody) {
             record_abort(traceIp, ip, traceName, "end-of-body");
             break;
@@ -182,8 +162,9 @@ export function generate_wasm_body (
         // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
         //  might generate a ton of code and we generate a bit of an epilogue after
         //  we finish
-        const maxModuleSize = 3850;
-        if (builder.size >= maxModuleSize - builder.bytesGeneratedSoFar) {
+        const maxModuleSize = 3850,
+            spaceLeft = maxModuleSize - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
+        if (builder.size >= spaceLeft) {
             // console.log(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
             record_abort(traceIp, ip, traceName, "trace-too-big");
             break;
@@ -204,11 +185,10 @@ export function generate_wasm_body (
         const isBackBranchTarget = builder.options.noExitBackwardBranches &&
             is_backward_branch_target(ip, startOfBody, backwardBranchTable),
             isForwardBranchTarget = builder.branchTargets.has(ip),
-            needsEipCheck = isBackBranchTarget || isForwardBranchTarget ||
+            startBranchBlock = isBackBranchTarget || isForwardBranchTarget ||
                 // If a method contains backward branches, we also need to check eip at the first insn
                 //  because a backward branch might target a point in the middle of the trace
-                (isFirstInstruction && backwardBranchTable),
-            needsFallthroughEipUpdate = needsEipCheck && !isFirstInstruction;
+                (isFirstInstruction && backwardBranchTable);
         let isLowValueOpcode = false,
             skipDregInvalidation = false;
 
@@ -220,7 +200,7 @@ export function generate_wasm_body (
             builder.backBranchOffsets.push(ip);
         }
 
-        if (needsEipCheck) {
+        if (startBranchBlock) {
             // If execution runs past the end of the current branch block, ensure
             //  that the instruction pointer is updated appropriately. This will
             //  also guarantee that the branch target block's comparison will
@@ -228,11 +208,7 @@ export function generate_wasm_body (
             // We make sure above that this isn't done for the start of the trace,
             //  otherwise loops will run forever and never terminate since after
             //  branching to the top of the loop we would blow away eip
-            if (needsFallthroughEipUpdate) {
-                builder.ip_const(rip);
-                builder.local("eip", WasmOpcode.set_local);
-            }
-            append_branch_target_block(builder, ip);
+            append_branch_target_block(builder, ip, isBackBranchTarget);
             inBranchBlock = true;
             firstOpcodeInBlock = true;
             eraseInferredState();
@@ -361,7 +337,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_TIER_PATCHPOINT: {
                 // We need to make sure to notify the interpreter about tiering opcodes
                 //  so that tiering up will still happen
-                const iMethod = getU32(<any>frame + getMemberOffset(JiterpMember.Imethod));
+                const iMethod = getU32_unaligned(<any>frame + getMemberOffset(JiterpMember.Imethod));
                 builder.ptr_const(iMethod);
                 // increase_entry_count will return 1 if we can continue, otherwise
                 //  we need to bail out into the interpreter so it can perform tiering
@@ -637,13 +613,6 @@ export function generate_wasm_body (
                 builder.callImport("ldtsflda");
                 break;
             }
-            case MintOpcode.MINT_INTRINS_UNSAFE_BYTE_OFFSET:
-                builder.local("pLocals");
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                builder.appendU8(WasmOpcode.i32_sub);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
-                break;
             case MintOpcode.MINT_INTRINS_GET_TYPE:
                 builder.block();
                 // dest, src
@@ -836,7 +805,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CALL: {
                 if (countCallTargets) {
                     const targetImethod = get_imethod_data(frame, getArgU16(ip, 3));
-                    const targetMethod = <MonoMethod><any>getU32(targetImethod);
+                    const targetMethod = <MonoMethod><any>getU32_unaligned(targetImethod);
                     const count = callTargetCounts[<any>targetMethod];
                     if (typeof (count) === "number")
                         callTargetCounts[<any>targetMethod] = count + 1;
@@ -1062,19 +1031,11 @@ export function generate_wasm_body (
 
                 // LOCAL_VAR (ip [1], double) = fma (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], double), LOCAL_VAR (ip [4], double));
                 append_ldloc(builder, getArgU16(ip, 2), loadOp);
-                if (isF32)
-                    builder.appendU8(WasmOpcode.f64_promote_f32);
                 append_ldloc(builder, getArgU16(ip, 3), loadOp);
-                if (isF32)
-                    builder.appendU8(WasmOpcode.f64_promote_f32);
                 append_ldloc(builder, getArgU16(ip, 4), loadOp);
-                if (isF32)
-                    builder.appendU8(WasmOpcode.f64_promote_f32);
 
-                builder.callImport("fma");
+                builder.callImport(isF32 ? "fmaf" : "fma");
 
-                if (isF32)
-                    builder.appendU8(WasmOpcode.f32_demote_f64);
                 append_stloc_tail(builder, getArgU16(ip, 1), storeOp);
                 break;
             }
@@ -1227,24 +1188,14 @@ export function generate_wasm_body (
     if (emitPadding)
         builder.appendU8(WasmOpcode.nop);
 
-    // Ensure that if execution runs past the end of our last branch block, we
-    //  update eip appropriately so that we will return the right ip
-    builder.ip_const(rip);
-    builder.local("eip", WasmOpcode.set_local);
-
     // We need to close any open blocks before generating our closing ret,
     //  because wasm would allow branching past the ret otherwise
     while (builder.activeBlocks > 0)
         builder.endBlock();
 
-    // Now we generate a ret at the end of the function body so it's Valid(tm)
-    // When branching is enabled, we will have potentially updated eip due to a
-    //  branch and then executed forward without ever finding it, so we want to
-    //  return the branch target and ensure that the interpreter starts running
-    //  from there.
-    builder.local("eip");
-    builder.appendU8(WasmOpcode.return_);
-    builder.appendU8(WasmOpcode.end);
+    builder.cfg.exitIp = rip;
+
+    // console.log(`estimated size: ${builder.size + builder.cfg.overheadBytes + builder.bytesGeneratedSoFar}`);
 
     return result;
 }
@@ -1269,17 +1220,8 @@ function invalidate_local_range (start: number, bytes: number) {
         invalidate_local(start + i);
 }
 
-function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr) {
-    builder.endBlock();
-    // Create a new branch block that conditionally executes depending on the eip local
-    // FIXME: For methods containing backward branches, we will have one of these compares
-    //  at the top of the trace and pay the cost of it on every entry even though it will
-    //  always pass. If we never generate any backward branches during compilation, we should
-    //  patch it out
-    builder.local("eip");
-    builder.ip_const(ip);
-    builder.appendU8(WasmOpcode.i32_eq);
-    builder.block(WasmValtype.void, WasmOpcode.if_);
+function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr, isBackBranchTarget: boolean) {
+    builder.cfg.startBranchBlock(ip, isBackBranchTarget);
 }
 
 function append_ldloc (builder: WasmBuilder, offset: number, opcode: WasmOpcode) {
@@ -1904,6 +1846,18 @@ const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_SHR_I8_IMM]:     [WasmOpcode.i64_shr_s,     WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_SHR_UN_I4_IMM]:  [WasmOpcode.i32_shr_u,     WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_SHR_UN_I8_IMM]:  [WasmOpcode.i64_shr_u,     WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_ROL_I4_IMM]:     [WasmOpcode.i32_rotl,      WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ROL_I8_IMM]:     [WasmOpcode.i64_rotl,      WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_ROR_I4_IMM]:     [WasmOpcode.i32_rotr,      WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ROR_I8_IMM]:     [WasmOpcode.i64_rotr,      WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_CLZ_I4]:         [WasmOpcode.i32_clz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CTZ_I4]:         [WasmOpcode.i32_ctz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_POPCNT_I4]:      [WasmOpcode.i32_popcnt,    WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLZ_I8]:         [WasmOpcode.i64_clz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_CTZ_I8]:         [WasmOpcode.i64_ctz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_POPCNT_I8]:      [WasmOpcode.i64_popcnt,    WasmOpcode.i32_load, WasmOpcode.i32_store],
 };
 
 // HACK: Generating correct wasm for these is non-trivial so we hand them off to C.
@@ -2327,6 +2281,8 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
         case MintOpcode.MINT_SHL_I4_IMM:
         case MintOpcode.MINT_SHR_I4_IMM:
         case MintOpcode.MINT_SHR_UN_I4_IMM:
+        case MintOpcode.MINT_ROL_I4_IMM:
+        case MintOpcode.MINT_ROR_I4_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i32_const(getArgI16(ip, 3));
             break;
@@ -2336,6 +2292,8 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
         case MintOpcode.MINT_SHL_I8_IMM:
         case MintOpcode.MINT_SHR_I8_IMM:
         case MintOpcode.MINT_SHR_UN_I8_IMM:
+        case MintOpcode.MINT_ROL_I8_IMM:
+        case MintOpcode.MINT_ROR_I8_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i52_const(getArgI16(ip, 3));
             break;
@@ -2387,10 +2345,7 @@ function emit_branch (
                     // append_safepoint(builder, ip);
                     if (traceBackBranches)
                         console.log(`performing backward branch to 0x${destination.toString(16)}`);
-                    builder.ip_const(destination);
-                    builder.local("eip", WasmOpcode.set_local);
-                    builder.appendU8(WasmOpcode.br);
-                    builder.appendULeb(1);
+                    builder.cfg.branch(destination, true, false);
                     counters.backBranchesEmitted++;
                     return true;
                 } else {
@@ -2405,10 +2360,8 @@ function emit_branch (
                 // Simple branches are enabled and this is a forward branch. We
                 //  don't need to wrap things in a block here, we can just exit
                 //  the current branch block after updating eip
-                builder.ip_const(destination);
-                builder.local("eip", WasmOpcode.set_local);
-                builder.appendU8(WasmOpcode.br);
-                builder.appendULeb(0);
+                builder.branchTargets.add(destination);
+                builder.cfg.branch(destination, false, false);
                 return true;
             }
         }
@@ -2478,15 +2431,7 @@ function emit_branch (
             //  we update eip and branch out to the top of the loop block
             if (traceBackBranches)
                 console.log(`performing conditional backward branch to 0x${destination.toString(16)}`);
-            builder.ip_const(destination);
-            builder.local("eip", WasmOpcode.set_local);
-            builder.appendU8(WasmOpcode.br);
-            // break out 3 levels, because the current stack layout is
-            // loop {
-            //   branch target block {
-            //     branch dispatch block {
-            // and we want to target the loop in order to jump to the top of it
-            builder.appendULeb(2);
+            builder.cfg.branch(destination, true, true);
             counters.backBranchesEmitted++;
         } else {
             if (traceBackBranches)
@@ -2501,12 +2446,7 @@ function emit_branch (
             append_safepoint(builder, ip);
         // Branching is enabled, so set eip and exit the current branch block
         builder.branchTargets.add(destination);
-        builder.ip_const(destination);
-        builder.local("eip", WasmOpcode.set_local);
-        builder.appendU8(WasmOpcode.br);
-        // The branch block encloses this tiny branch dispatch block, so break
-        //  out two levels
-        builder.appendULeb(1);
+        builder.cfg.branch(destination, false, true);
     }
 
     builder.endBlock();
@@ -2584,25 +2524,33 @@ const mathIntrinsicTable : { [opcode: number] : [isUnary: boolean, isF32: boolea
     [MintOpcode.MINT_ABSF]:     [true, true,   WasmOpcode.f32_abs],
 
     [MintOpcode.MINT_ACOS]:     [true, false,  "acos"],
-    [MintOpcode.MINT_ACOSF]:    [true, true,   "acos"],
+    [MintOpcode.MINT_ACOSF]:    [true, true,   "acosf"],
+    [MintOpcode.MINT_ACOSH]:    [true, false,  "acosh"],
+    [MintOpcode.MINT_ACOSHF]:   [true, true,   "acoshf"],
     [MintOpcode.MINT_COS]:      [true, false,  "cos"],
-    [MintOpcode.MINT_COSF]:     [true, true,   "cos"],
+    [MintOpcode.MINT_COSF]:     [true, true,   "cosf"],
     [MintOpcode.MINT_ASIN]:     [true, false,  "asin"],
-    [MintOpcode.MINT_ASINF]:    [true, true,   "asin"],
+    [MintOpcode.MINT_ASINF]:    [true, true,   "asinf"],
+    [MintOpcode.MINT_ASINH]:    [true, false,  "asinh"],
+    [MintOpcode.MINT_ASINHF]:   [true, true,   "asinhf"],
     [MintOpcode.MINT_SIN]:      [true, false,  "sin"],
-    [MintOpcode.MINT_SINF]:     [true, true,   "sin"],
+    [MintOpcode.MINT_SINF]:     [true, true,   "sinf"],
     [MintOpcode.MINT_ATAN]:     [true, false,  "atan"],
-    [MintOpcode.MINT_ATANF]:    [true, true,   "atan"],
+    [MintOpcode.MINT_ATANF]:    [true, true,   "atanf"],
+    [MintOpcode.MINT_ATANH]:    [true, false,  "atanh"],
+    [MintOpcode.MINT_ATANHF]:   [true, true,   "atanhf"],
     [MintOpcode.MINT_TAN]:      [true, false,  "tan"],
-    [MintOpcode.MINT_TANF]:     [true, true,   "tan"],
+    [MintOpcode.MINT_TANF]:     [true, true,   "tanf"],
+    [MintOpcode.MINT_CBRT]:     [true, false,  "cbrt"],
+    [MintOpcode.MINT_CBRTF]:    [true, true,   "cbrtf"],
     [MintOpcode.MINT_EXP]:      [true, false,  "exp"],
-    [MintOpcode.MINT_EXPF]:     [true, true,   "exp"],
+    [MintOpcode.MINT_EXPF]:     [true, true,   "expf"],
     [MintOpcode.MINT_LOG]:      [true, false,  "log"],
-    [MintOpcode.MINT_LOGF]:     [true, true,   "log"],
+    [MintOpcode.MINT_LOGF]:     [true, true,   "logf"],
     [MintOpcode.MINT_LOG2]:     [true, false,  "log2"],
-    [MintOpcode.MINT_LOG2F]:    [true, true,   "log2"],
+    [MintOpcode.MINT_LOG2F]:    [true, true,   "log2f"],
     [MintOpcode.MINT_LOG10]:    [true, false,  "log10"],
-    [MintOpcode.MINT_LOG10F]:   [true, true,   "log10"],
+    [MintOpcode.MINT_LOG10F]:   [true, true,   "log10f"],
 
     [MintOpcode.MINT_MIN]:      [false, false,  WasmOpcode.f64_min],
     [MintOpcode.MINT_MINF]:     [false, true,   WasmOpcode.f32_min],
@@ -2610,11 +2558,11 @@ const mathIntrinsicTable : { [opcode: number] : [isUnary: boolean, isF32: boolea
     [MintOpcode.MINT_MAXF]:     [false, true,   WasmOpcode.f32_max],
 
     [MintOpcode.MINT_ATAN2]:    [false, false, "atan2"],
-    [MintOpcode.MINT_ATAN2F]:   [false, true,  "atan2"],
+    [MintOpcode.MINT_ATAN2F]:   [false, true,  "atan2f"],
     [MintOpcode.MINT_POW]:      [false, false, "pow"],
-    [MintOpcode.MINT_POWF]:     [false, true,  "pow"],
-    [MintOpcode.MINT_REM_R4]:   [false, true,  "rem"],
-    [MintOpcode.MINT_REM_R8]:   [false, false, "rem"],
+    [MintOpcode.MINT_POWF]:     [false, true,  "powf"],
+    [MintOpcode.MINT_REM_R8]:   [false, false, "fmod"],
+    [MintOpcode.MINT_REM_R4]:   [false, true,  "fmodf"],
 };
 
 function emit_math_intrinsic (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
@@ -2644,29 +2592,19 @@ function emit_math_intrinsic (builder: WasmBuilder, ip: MintOpcodePtr, opcode: M
         if (wasmOp) {
             builder.appendU8(wasmOp);
         } else if (name) {
-            if (isF32)
-                builder.appendU8(WasmOpcode.f64_promote_f32);
             builder.callImport(name);
-            if (isF32)
-                builder.appendU8(WasmOpcode.f32_demote_f64);
         } else
             throw new Error("internal error");
         append_stloc_tail(builder, destOffset, isF32 ? WasmOpcode.f32_store : WasmOpcode.f64_store);
         return true;
     } else {
         append_ldloc(builder, srcOffset, isF32 ? WasmOpcode.f32_load : WasmOpcode.f64_load);
-        if (isF32 && name)
-            builder.appendU8(WasmOpcode.f64_promote_f32);
         append_ldloc(builder, rhsOffset, isF32 ? WasmOpcode.f32_load : WasmOpcode.f64_load);
-        if (isF32 && name)
-            builder.appendU8(WasmOpcode.f64_promote_f32);
 
         if (wasmOp) {
             builder.appendU8(wasmOp);
         } else if (name) {
             builder.callImport(name);
-            if (isF32)
-                builder.appendU8(WasmOpcode.f32_demote_f64);
         } else
             throw new Error("internal error");
 
@@ -3060,15 +2998,6 @@ function emit_arrayop (builder: WasmBuilder, frame: NativePointer, ip: MintOpcod
         builder.appendMemarg(0, 0);
     }
     return true;
-}
-
-function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
-    builder.ip_const(ip);
-    if (builder.options.countBailouts) {
-        builder.i32_const(reason);
-        builder.callImport("bailout");
-    }
-    builder.appendU8(WasmOpcode.return_);
 }
 
 function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {

@@ -6,8 +6,9 @@
 
 namespace System.Runtime.InteropServices.Marshalling
 {
-    public interface IIUnknownInterfaceType : IUnmanagedInterfaceType
+    public unsafe interface IIUnknownInterfaceType
     {
         public abstract static Guid Iid { get; }
+        public abstract static void** ManagedVirtualMethodTable { get; }
     }
 }

@@ -507,13 +507,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) asze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -8293,12 +8293,13 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 i += j;
                                 break;
 
+                            case 64:
                             case 32:
                             case 16:
                             case 8:
                                 assert((data->dsSize % 8) == 0);
                                 printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
-                                for (j = 8; j < 32; j += 8)
+                                for (j = 8; j < 64; j += 8)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;

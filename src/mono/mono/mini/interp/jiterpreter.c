@@ -666,7 +666,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_GETITEM_SPAN:
 		case MINT_GETITEM_LOCALSPAN:
 		case MINT_INTRINS_SPAN_CTOR:
-		case MINT_INTRINS_UNSAFE_BYTE_OFFSET:
 		case MINT_INTRINS_GET_TYPE:
 		case MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF:
 		case MINT_CASTCLASS:
@@ -697,6 +696,16 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_MONO_CMPXCHG_I8:
 		case MINT_CPBLK:
 		case MINT_INITBLK:
+		case MINT_ROL_I4_IMM:
+		case MINT_ROL_I8_IMM:
+		case MINT_ROR_I4_IMM:
+		case MINT_ROR_I8_IMM:
+		case MINT_CLZ_I4:
+		case MINT_CTZ_I4:
+		case MINT_POPCNT_I4:
+		case MINT_CLZ_I8:
+		case MINT_CTZ_I8:
+		case MINT_POPCNT_I8:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
@@ -988,7 +997,8 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 			// We failed to start a trace at a backwards branch target, but that might just mean
 			//  that the loop body starts with one or two unsupported opcodes, so it may be
 			//  worthwhile to try again later
-			enter_at_next = TRUE;
+			// FIXME: This caused a bunch of regressions
+			// enter_at_next = TRUE;
 		}
 
 		// Increase the instruction counter. If we inserted an entry point at the top of this bb,
@@ -1074,6 +1084,9 @@ mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher)
 	//  blocked the use of Module.addFunction
 	if (!dispatcher)
 		dispatcher = (WasmDoJitCall)mono_llvm_cpp_catch_exception;
+	else if (((int)(void*)dispatcher)==-1)
+		dispatcher = mono_jiterp_do_jit_call_indirect;
+
 	jiterpreter_do_jit_call = dispatcher;
 }
 
@@ -1193,87 +1206,6 @@ mono_jiterp_debug_count ()
 	return mono_debug_count();
 }
 
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_rem (double lhs, double rhs) {
-	return fmod(lhs, rhs);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_atan2 (double lhs, double rhs) {
-	return atan2(lhs, rhs);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_pow (double lhs, double rhs) {
-	return pow(lhs, rhs);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_acos (double value)
-{
-	return acos(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_cos (double value)
-{
-	return cos(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_asin (double value)
-{
-	return asin(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_sin (double value)
-{
-	return sin(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_atan (double value)
-{
-	return atan(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_tan (double value)
-{
-	return tan(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_exp (double value)
-{
-	return exp(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_log (double value)
-{
-	return log(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_log2 (double value)
-{
-	return log2(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_log10 (double value)
-{
-	return log10(value);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_math_fma (double x, double y, double z)
-{
-	return fma(x, y, z);
-}
-
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_stelem_ref (
 	MonoArray *o, gint32 aindex, MonoObject *ref
@@ -1356,6 +1288,31 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (MonoSpanOfVoid, _length);
 		case JITERP_MEMBER_SPAN_DATA:
 			return offsetof (MonoSpanOfVoid, _reference);
+		default:
+			g_assert_not_reached();
+	}
+}
+
+#define JITERP_NUMBER_MODE_U32 0
+#define JITERP_NUMBER_MODE_I32 1
+#define JITERP_NUMBER_MODE_F32 2
+#define JITERP_NUMBER_MODE_F64 3
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
+	switch (mode) {
+		case JITERP_NUMBER_MODE_U32:
+			*((uint32_t *)dest) = (uint32_t)value;
+			return;
+		case JITERP_NUMBER_MODE_I32:
+			*((int32_t *)dest) = (int32_t)value;
+			return;
+		case JITERP_NUMBER_MODE_F32:
+			*((float *)dest) = (float)value;
+			return;
+		case JITERP_NUMBER_MODE_F64:
+			*((double *)dest) = value;
+			return;
 		default:
 			g_assert_not_reached();
 	}

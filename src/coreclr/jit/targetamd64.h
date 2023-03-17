@@ -13,8 +13,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
-  #define INITBLK_UNROLL_LIMIT     128     // Upper bound to let the code generator to loop unroll InitBlk.
   #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the threshold of the number
                                            // of contiguous non-gc slots that trigger generating rep movsq instead of
                                            // sequences of movsq instructions
@@ -90,6 +88,13 @@
   #define REG_FP_FIRST             REG_XMM0
   #define REG_FP_LAST              REG_XMM31
   #define FIRST_FP_ARGREG          REG_XMM0
+
+  #define REG_MASK_FIRST           REG_K0
+  #define REG_MASK_LAST            REG_K7
+
+  #define RBM_ALLMASK              RBM_K1
+
+  #define CNT_MASK_REGS            8
 
 #ifdef    UNIX_AMD64_ABI
   #define LAST_FP_ARGREG        REG_XMM7

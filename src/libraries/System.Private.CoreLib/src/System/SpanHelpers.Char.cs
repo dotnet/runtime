@@ -68,7 +68,6 @@ namespace System
             // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Mula
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
-            ref ushort ushortSearchSpace = ref Unsafe.As<char, ushort>(ref searchSpace);
             if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector256<ushort>.Count >= 0)
             {
                 // Find the last unique (which is not equal to ch1) character
@@ -89,8 +88,8 @@ namespace System
                     // Make sure we don't go out of bounds
                     Debug.Assert(offset + ch1ch2Distance + Vector256<ushort>.Count <= searchSpaceLength);
 
-                    Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)(offset + ch1ch2Distance)));
-                    Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)offset));
+                    Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
                     // Early out: cmpAnd is all zeros
@@ -156,8 +155,8 @@ namespace System
                     // Make sure we don't go out of bounds
                     Debug.Assert(offset + ch1ch2Distance + Vector128<ushort>.Count <= searchSpaceLength);
 
-                    Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)(offset + ch1ch2Distance)));
-                    Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)offset));
+                    Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)offset));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
                     // Early out: cmpAnd is all zeros
@@ -254,7 +253,6 @@ namespace System
             // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Mula
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
-            ref ushort ushortSearchSpace = ref Unsafe.As<char, ushort>(ref searchSpace);
             if (Vector256.IsHardwareAccelerated && searchSpaceMinusValueTailLength >= Vector256<ushort>.Count)
             {
                 offset = searchSpaceMinusValueTailLength - Vector256<ushort>.Count;
@@ -272,8 +270,8 @@ namespace System
                 do
                 {
 
-                    Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)offset));
-                    Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
                     // Early out: cmpAnd is all zeros
@@ -321,8 +319,8 @@ namespace System
 
                 do
                 {
-                    Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)offset));
-                    Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)(offset + ch1ch2Distance)));
+                    Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
                     // Early out: cmpAnd is all zeros

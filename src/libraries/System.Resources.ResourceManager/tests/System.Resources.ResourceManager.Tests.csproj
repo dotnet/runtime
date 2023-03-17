@@ -58,7 +58,7 @@
     <Content Include="Resources\icon.ico" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
     <!--Reference to System.Resources.Extensions is required in order to be able to embed a resource that requires a custom reader-->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Resources.Extensions\src\System.Resources.Extensions.csproj" />
   </ItemGroup>
