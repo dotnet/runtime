@@ -721,7 +721,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 					return mono_opt_jiterpreter_backward_branches_enabled ? TRACE_CONTINUE : TRACE_ABORT;
 			}
 
-			*inside_branch_block = TRUE;
 			return TRACE_CONTINUE;
 
 		case MINT_ICALL_V_P:

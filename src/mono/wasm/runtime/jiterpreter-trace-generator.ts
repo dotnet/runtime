@@ -145,7 +145,7 @@ export function generate_wasm_body (
     backwardBranchTable: Uint16Array | null
 ) : number {
     const abort = <MintOpcodePtr><any>0;
-    let isFirstInstruction = true, inBranchBlock = false,
+    let isFirstInstruction = true, isConditionallyExecuted = false,
         firstOpcodeInBlock = true;
     let result = 0,
         prologueOpcodeCounter = 0,
@@ -226,7 +226,7 @@ export function generate_wasm_body (
             //  otherwise loops will run forever and never terminate since after
             //  branching to the top of the loop we would blow away eip
             append_branch_target_block(builder, ip, isBackBranchTarget);
-            inBranchBlock = true;
+            isConditionallyExecuted = true;
             firstOpcodeInBlock = true;
             eraseInferredState();
             // Monitoring wants an opcode count that is a measurement of how many opcodes
@@ -326,6 +326,13 @@ export function generate_wasm_body (
             case MintOpcode.MINT_BRTRUE_I4_SP:
             case MintOpcode.MINT_BRFALSE_I8_S:
             case MintOpcode.MINT_BRTRUE_I8_S:
+                if (!emit_branch(builder, ip, frame, opcode))
+                    ip = abort;
+                else
+                    isConditionallyExecuted = true;
+                break;
+
+            // Non-conditional branch doesn't set isConditionallyExecuted
             case MintOpcode.MINT_LEAVE_S:
             case MintOpcode.MINT_BR_S:
             case MintOpcode.MINT_CALL_HANDLER:
@@ -390,7 +397,7 @@ export function generate_wasm_body (
                     // This is an unproductive heuristic if backward branches are on
                     !builder.options.noExitBackwardBranches
                 ) {
-                    if (!inBranchBlock || firstOpcodeInBlock) {
+                    if (!isConditionallyExecuted || firstOpcodeInBlock) {
                         // Use mono_jiterp_trace_transfer to call the target trace recursively
                         // Ideally we would import the trace function to do a direct call instead
                         //  of an indirect one, but right now the import section is generated
@@ -1128,6 +1135,8 @@ export function generate_wasm_body (
                 } else if (relopbranchTable[opcode]) {
                     if (!emit_relop_branch(builder, ip, frame, opcode))
                         ip = abort;
+                    else
+                        isConditionallyExecuted = true;
                 } else if (
                     // instance ldfld/stfld
                     (opcode >= MintOpcode.MINT_LDFLD_I1) &&
