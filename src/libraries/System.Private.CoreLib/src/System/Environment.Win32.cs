@@ -220,6 +220,13 @@ namespace System
 
             switch (folder)
             {
+                // Special-cased values to not use SHGetFolderPath when we have a more direct option available.
+                case SpecialFolder.System when option == SpecialFolderOption.None:
+                    return SystemDirectory;
+                default:
+                    return string.Empty;
+
+                // Map the SpecialFolder to the appropriate Guid
                 case SpecialFolder.ApplicationData:
                     folderGuid = Interop.Shell32.KnownFolders.RoamingAppData;
                     break;
@@ -271,7 +278,7 @@ namespace System
                 case SpecialFolder.Startup:
                     folderGuid = Interop.Shell32.KnownFolders.Startup;
                     break;
-                case SpecialFolder.System:
+                case SpecialFolder.System when option != SpecialFolderOption.None:
                     folderGuid = Interop.Shell32.KnownFolders.System;
                     break;
                 case SpecialFolder.Templates:
@@ -360,15 +367,8 @@ namespace System
                 case SpecialFolder.Windows:
                     folderGuid = Interop.Shell32.KnownFolders.Windows;
                     break;
-                default:
-                    return string.Empty;
             }
 
-            return GetKnownFolderPath(folderGuid, option);
-        }
-
-        private static string GetKnownFolderPath(string folderGuid, SpecialFolderOption option)
-        {
             Guid folderId = new Guid(folderGuid);
 
             int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out string path);
