@@ -568,8 +568,7 @@ void emitter::emitIns_R_R(
     }
     else if ((INS_fcvt_w_s <= ins && INS_fmv_x_w >= ins) || (INS_fclass_s == ins || INS_fclass_d == ins) ||
              (INS_fcvt_w_d == ins || INS_fcvt_wu_d == ins) || (INS_fcvt_l_s == ins || INS_fcvt_lu_s == ins) ||
-             (INS_fmv_x_d == ins) ||
-             (INS_fcvt_l_d == ins || INS_fcvt_lu_d == ins))
+             (INS_fmv_x_d == ins) || (INS_fcvt_l_d == ins || INS_fcvt_lu_d == ins))
     {
         // TODO-RISCV64-CQ: Check rounding mode
         assert(isGeneralRegisterOrR0(reg1));

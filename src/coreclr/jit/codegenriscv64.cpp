@@ -3301,9 +3301,9 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 {
     assert(treeNode->OperGet() == GT_CKFINITE);
 
-    GenTree*  op1         = treeNode->AsOp()->gtOp1;
-    var_types targetType  = treeNode->TypeGet();
-    int       expMask     = 0x381; // 0b1110000001;
+    GenTree*  op1        = treeNode->AsOp()->gtOp1;
+    var_types targetType = treeNode->TypeGet();
+    int       expMask    = 0x381; // 0b1110000001;
 
     emitter* emit = GetEmitter();
     emitAttr attr = emitActualTypeSize(treeNode);
@@ -3312,7 +3312,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     regNumber intReg = treeNode->GetSingleTempReg();
     regNumber fpReg  = genConsumeReg(op1);
 
-    emit->emitIns_R_R(attr== EA_4BYTE ? INS_fclass_s : INS_fclass_d, attr, intReg, fpReg);
+    emit->emitIns_R_R(attr == EA_4BYTE ? INS_fclass_s : INS_fclass_d, attr, intReg, fpReg);
     // Mask of exponent with all 1's and check if the exponent is all 1's
     emit->emitIns_R_R_I(INS_andi, EA_PTRSIZE, intReg, intReg, expMask);
     // If exponent is all 1's, throw ArithmeticException
@@ -3353,73 +3353,85 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     if (varTypeIsFloating(op1Type))
     {
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
-        bool IsUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
-        regNumber regOp1     = op1->GetRegNum();
-        regNumber regOp2     = op2->GetRegNum();
+        bool      IsUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
+        regNumber regOp1      = op1->GetRegNum();
+        regNumber regOp2      = op2->GetRegNum();
         if (IsUnordered)
         {
+            BasicBlock* skipLabel = nullptr;
             if (tree->OperIs(GT_LT))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2,
-                                    regOp1);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
             }
             else if (tree->OperIs(GT_LE))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2,
-                                    regOp1);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
             }
             else if (tree->OperIs(GT_EQ))
             {
-                NYI_RISCV64("not yet implemented GT_EQ unordered!");
+                skipLabel = genCreateTempLabel();
+                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
+                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, rsGetRsvdReg(), regOp2);
+                emit->emitIns_R_R_R(INS_or, EA_8BYTE, rsGetRsvdReg(), targetReg, rsGetRsvdReg());
+                emit->emitIns_R_R_I(INS_andi, EA_8BYTE, rsGetRsvdReg(), rsGetRsvdReg(), 0x300);
+                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, REG_R0, 1);
+                emit->emitIns_J(INS_bnez, skipLabel, rsGetRsvdReg());
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
+                genDefineTempLabel(skipLabel);
             }
             else if (tree->OperIs(GT_NE))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1,
-                                    regOp2);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
             }
             else if (tree->OperIs(GT_GT))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp1,
-                                    regOp2);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp1, regOp2);
             }
             else if (tree->OperIs(GT_GE))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp1,
-                                    regOp2);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp1, regOp2);
             }
-            emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
-            emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
+            if (skipLabel == nullptr)
+            {
+                emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
+                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
+            }
         }
         else
         {
             if (tree->OperIs(GT_LT))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s: INS_flt_d, cmpSize, targetReg, regOp1,
-                                    regOp2);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp1, regOp2);
             }
             else if (tree->OperIs(GT_LE))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp1,
-                                    regOp2);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp1, regOp2);
             }
             else if (tree->OperIs(GT_EQ))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1,
-                                    regOp2);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
             }
             else if (tree->OperIs(GT_NE))
             {
-                NYI_RISCV64("not yet implemented GT_NE ordered!");
+                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
+                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, rsGetRsvdReg(), regOp2);
+                emit->emitIns_R_R_R(INS_or, EA_8BYTE, rsGetRsvdReg(), targetReg, rsGetRsvdReg());
+                emit->emitIns_R_R_I(INS_andi, EA_8BYTE, rsGetRsvdReg(), rsGetRsvdReg(), 0x300);
+                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, REG_R0, 0);
+                BasicBlock* skipLabel = genCreateTempLabel();
+                emit->emitIns_J(INS_bnez, skipLabel, rsGetRsvdReg());
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
+                emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
+                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
+                genDefineTempLabel(skipLabel);
             }
             else if (tree->OperIs(GT_GT))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2,
-                                    regOp1);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
             }
             else if (tree->OperIs(GT_GE))
             {
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2,
-                                    regOp1);
+                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
             }
         }
     }
