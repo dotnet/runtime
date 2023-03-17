@@ -17,7 +17,11 @@ namespace System.Runtime.InteropServices.JavaScript
         public DataView(ArrayBuffer buffer)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer }))
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             LegacyHostImplementation.RegisterCSOwnedObject(this);
+#endif
         }
 
         /// <summary>
@@ -28,7 +32,11 @@ namespace System.Runtime.InteropServices.JavaScript
         public DataView(ArrayBuffer buffer, int byteOffset)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer, byteOffset }))
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             LegacyHostImplementation.RegisterCSOwnedObject(this);
+#endif
         }
 
         /// <summary>
@@ -40,7 +48,11 @@ namespace System.Runtime.InteropServices.JavaScript
         public DataView(ArrayBuffer buffer, int byteOffset, int byteLength)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer, byteOffset, byteLength }))
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             LegacyHostImplementation.RegisterCSOwnedObject(this);
+#endif
         }
 
         /// <summary>

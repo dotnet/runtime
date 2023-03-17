@@ -34,6 +34,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </returns>
         public static object Invoke(this JSObject self, string method, params object?[] args)
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             ArgumentNullException.ThrowIfNull(self);
             ObjectDisposedException.ThrowIf(self.IsDisposed, self);
             Interop.Runtime.InvokeJSWithArgsRef(self.JSHandle, method, args, out int exception, out object res);
@@ -41,6 +44,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw new JSException((string)res);
             LegacyHostImplementation.ReleaseInFlight(res);
             return res;
+#endif
         }
 
         /// <summary>
@@ -68,6 +72,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </returns>
         public static object GetObjectProperty(this JSObject self, string name)
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             ArgumentNullException.ThrowIfNull(self);
             ObjectDisposedException.ThrowIf(self.IsDisposed, self);
 
@@ -76,6 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw new JSException((string)propertyValue);
             LegacyHostImplementation.ReleaseInFlight(propertyValue);
             return propertyValue;
+#endif
         }
 
         /// <summary>
@@ -92,12 +100,16 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="hasOwnProperty"></param>
         public static void SetObjectProperty(this JSObject self, string name, object? value, bool createIfNotExists = true, bool hasOwnProperty = false)
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             ArgumentNullException.ThrowIfNull(self);
             ObjectDisposedException.ThrowIf(self.IsDisposed, self);
 
             Interop.Runtime.SetObjectPropertyRef(self.JSHandle, name, in value, createIfNotExists, hasOwnProperty, out int exception, out object res);
             if (exception != 0)
                 throw new JSException(SR.Format(SR.ErrorLegacySettingProperty, name, self.JSHandle, res));
+#endif
         }
 
         public static void AssertNotDisposed(this JSObject self)

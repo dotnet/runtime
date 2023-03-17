@@ -66,6 +66,26 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 #endif
 
+#if FEATURE_WASM_THREADS
+        public static void AssertThreadAffinity(object value)
+        {
+            if (value == null)
+            {
+                return;
+            }
+            if (value is JSObject jsObject)
+            {
+                InvalidOperationException.ThrowIf(jsObject.OwnerThreadId != Thread.CurrentThread.ManagedThreadId, "The JavaScript object can be used only on the thread where it was created.");
+            }
+            if (value is JSException jsException)
+            {
+                // perhaps later, we could do better and only marshal the message without the link to JS stack trace on the original thread.
+                InvalidOperationException.ThrowIf(jsException.jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId, "The JavaScript object can be used only on the thread where it was created.");
+            }
+            // TODO functions, tasks
+        }
+#endif
+
         /// <inheritdoc />
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 

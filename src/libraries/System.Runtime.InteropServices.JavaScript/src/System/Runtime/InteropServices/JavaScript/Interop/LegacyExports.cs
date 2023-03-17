@@ -53,6 +53,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void CreateCSOwnedProxyRef(nint jsHandle, LegacyHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             JSObject? res = null;
 
             lock (JSHostImplementation.s_csOwnedObjects)
@@ -81,6 +84,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 res.AddInFlight();
             }
             jsObject = res;
+#endif
         }
 
         public static void GetJSOwnedObjectByGCHandleRef(int gcHandle, out object result)
@@ -126,6 +130,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void SetupJSContinuationRef(in Task _task, JSObject continuationObj)
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             // HACK: Attempting to use the in-param will produce CS1628, so we make a temporary copy
             //  on the stack that can be captured by our local functions below
             var task = _task;
@@ -168,6 +175,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     continuationObj.Dispose();
                 }
             }
+#endif
         }
 
         public static string ObjectToStringRef(ref object o)
@@ -207,6 +215,9 @@ namespace System.Runtime.InteropServices.JavaScript
         [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2057", Justification = "Done on purpose, see comment above.")]
         public static void CreateUriRef(string uri, out object? result)
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             if (uriType == null)
             {
                 // StringBuilder to confuse ILLink, which is too smart otherwise
@@ -223,6 +234,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 throw new MissingMethodException(SR.UriConstructorMissing, ex);
             }
+#endif
         }
 
         public static bool IsSimpleArrayRef(ref object a)

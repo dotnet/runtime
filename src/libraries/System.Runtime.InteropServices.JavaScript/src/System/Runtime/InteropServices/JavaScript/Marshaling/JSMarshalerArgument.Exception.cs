@@ -65,6 +65,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 var jse = cpy as JSException;
                 if (jse != null && jse.jsException != null)
                 {
+#if FEATURE_WASM_THREADS
+                    JSObject.AssertThreadAffinity(value);
+#endif
                     // this is JSException roundtrip
                     ObjectDisposedException.ThrowIf(jse.jsException.IsDisposed, value);
                     slot.Type = MarshalerType.JSException;

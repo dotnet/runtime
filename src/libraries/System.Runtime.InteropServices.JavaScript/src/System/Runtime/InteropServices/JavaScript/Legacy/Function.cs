@@ -18,7 +18,11 @@ namespace System.Runtime.InteropServices.JavaScript
         public Function(params object[] args)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Function), args))
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             LegacyHostImplementation.RegisterCSOwnedObject(this);
+#endif
         }
 
         internal Function(IntPtr jsHandle) : base(jsHandle)

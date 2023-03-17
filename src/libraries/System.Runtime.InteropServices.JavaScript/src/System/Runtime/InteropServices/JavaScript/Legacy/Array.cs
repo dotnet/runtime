@@ -18,7 +18,11 @@ namespace System.Runtime.InteropServices.JavaScript
         public Array(params object[] _params)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Array), _params))
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             LegacyHostImplementation.RegisterCSOwnedObject(this);
+#endif
         }
 
         /// <summary>

@@ -13,7 +13,11 @@ namespace System.Runtime.InteropServices.JavaScript
         public ArrayBuffer(int length)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(ArrayBuffer), new object[] { length }))
         {
+#if FEATURE_WASM_THREADS
+            throw new PlatformNotSupportedException("Legacy interop in not supported with WebAssembly threads.");
+#else
             LegacyHostImplementation.RegisterCSOwnedObject(this);
+#endif
         }
 
         /// <summary>
