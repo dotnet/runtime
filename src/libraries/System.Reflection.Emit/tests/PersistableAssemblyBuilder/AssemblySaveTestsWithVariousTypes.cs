@@ -23,9 +23,8 @@ namespace System.Reflection.Emit.Experiment.Tests
         public AssemblySaveTestsWithVariousTypes()
         {
             const bool keepFiles = true;
-            TempFileCollection tfc;
             Directory.CreateDirectory("testDir");
-            tfc = new TempFileCollection("testDir", false);
+            TempFileCollection tfc = new TempFileCollection("testDir", false);
             _fileLocation = tfc.AddExtension("dll", keepFiles);
         }
 

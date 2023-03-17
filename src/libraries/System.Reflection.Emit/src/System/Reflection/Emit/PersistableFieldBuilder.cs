@@ -17,14 +17,9 @@ namespace System.Reflection.Emit.Experiment
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
-
             ArgumentNullException.ThrowIfNull(type);
 
-            if (type == typeof(void))
-                throw new ArgumentException("Bad field type");
-
             _fieldName = fieldName;
-
             _typeBuilder = typeBuilder;
             _fieldType = type;
             _attributes = attributes & ~FieldAttributes.ReservedMask;
@@ -46,21 +41,9 @@ namespace System.Reflection.Emit.Experiment
 
         public override string Name => _fieldName;
 
-        public override Type? DeclaringType
-        {
-            get
-            {
-                return _typeBuilder;
-            }
-        }
+        public override Type? DeclaringType => _typeBuilder;
 
-        public override Type? ReflectedType
-        {
-            get
-            {
-                return _typeBuilder;
-            }
-        }
+        public override Type? ReflectedType => _typeBuilder;
 
         #endregion
 

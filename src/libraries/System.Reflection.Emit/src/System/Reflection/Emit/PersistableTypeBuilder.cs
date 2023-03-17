@@ -15,6 +15,7 @@ namespace System.Reflection.Emit.Experiment
         internal List<PersistableFieldBuilder> _fieldDefStore = new();
         private readonly PersistableModuleBuilder _module;
         private readonly string _name;
+        private readonly string? _namespace;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private TypeAttributes _attributes;
@@ -31,7 +32,7 @@ namespace System.Reflection.Emit.Experiment
 
             if (idx != -1)
             {
-                Namespace = _name[..idx];
+                _namespace = _name[..idx];
                 _name = _name[(idx + 1)..];
             }
         }
@@ -103,7 +104,7 @@ namespace System.Reflection.Emit.Experiment
         public override Type GetElementType() => throw new NotSupportedException();
         public override string? AssemblyQualifiedName => throw new NotSupportedException();
         public override string? FullName => throw new NotSupportedException();
-        public override string? Namespace { get; }
+        public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Type UnderlyingSystemType => throw new NotSupportedException();
         public override Guid GUID => throw new NotSupportedException();

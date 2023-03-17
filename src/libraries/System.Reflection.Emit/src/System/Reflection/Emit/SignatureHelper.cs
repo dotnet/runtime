@@ -14,7 +14,7 @@ namespace System.Reflection.Emit.Experiment
         {
             var fieldSignature = new BlobBuilder();
 
-            MapReflectionTypeToSignatureType(new BlobEncoder(fieldSignature).FieldSignature(), fieldType);
+            WriteSignatureTypeForReflectionType(new BlobEncoder(fieldSignature).FieldSignature(), fieldType);
 
             return fieldSignature;
         }
@@ -48,26 +48,26 @@ namespace System.Reflection.Emit.Experiment
                 MethodSignature(isInstanceMethod: isInstance).
                 Parameters((parameters == null) ? 0 : parameters.Length, out _retEncoder, out _parEncoder);
 
-            if (returnType != null && returnType != typeof(void))
+            if (returnType != null && returnType.FullName != "System.Void")
             {
-                MapReflectionTypeToSignatureType(_retEncoder.Type(), returnType);
+                WriteSignatureTypeForReflectionType(_retEncoder.Type(), returnType);
             }
             else // If null mark ReturnTypeEncoder as void
             {
                 _retEncoder.Void();
             }
 
-            if (parameters != null) // If parameters null, just keep empty ParametersEncoder empty
+            if (parameters != null) // If parameters null, just keep the ParametersEncoder empty
             {
-                foreach (var parameter in parameters)
+                foreach (Type parameter in parameters)
                 {
-                    MapReflectionTypeToSignatureType(_parEncoder.AddParameter().Type(), parameter);
+                    WriteSignatureTypeForReflectionType(_parEncoder.AddParameter().Type(), parameter);
                 }
             }
             return methodSignature;
         }
 
-        private static void MapReflectionTypeToSignatureType(SignatureTypeEncoder signature, Type type)
+        private static void WriteSignatureTypeForReflectionType(SignatureTypeEncoder signature, Type type)
         {
             // We need to translate from Reflection.Type to SignatureTypeEncoder. Most common types for proof of concept. More types will be added.
             switch (type.FullName)
