@@ -36,6 +36,7 @@
 #define EXPAND_FUN(m, ...) EXPAND(m PARENTHESIZE(__VA_ARGS__))
 #define OPFMT_WDSS _w, dreg, sreg1, sreg2
 #define OPFMT_WTDSS _w, _t, dreg, sreg1, sreg2
+#define OPFMT_WTDS _w, _t, dreg, sreg1
 #define OPFMT_WTDSS_REV _w, _t, dreg, sreg2, sreg1
 #define _UNDEF(...) g_assert_not_reached ()
 #define SIMD_OP_CODE(reg_w, op, c) ((reg_w << 31) | (op) << 16 | (c))
