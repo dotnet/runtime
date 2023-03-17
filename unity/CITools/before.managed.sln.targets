@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <ImportDirectorySolutionProps>false</ImportDirectorySolutionProps>
+    <ImportDirectorySolutionTargets>false</ImportDirectorySolutionTargets>
+  </PropertyGroup>
+</Project>

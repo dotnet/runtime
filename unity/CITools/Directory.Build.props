@@ -1,0 +1,3 @@
+<Project>
+    <!-- Only here so that the default Directory.Build.props will not be used. -->
+</Project>

@@ -4,17 +4,14 @@ name: Build Windows x86 Release
 
 agent:
   type: Unity::VM
-  image: burst/burst-base:1.0.8-1195360
+  image: platform-foundation/coreclr-windows:v0.0.1-1276296
   flavor: b1.xlarge
 
 variables:
   ARTIFACT_FILENAME: {{globals.artifact_base_name}}-win-x86.7z
 
 commands:
-  - .yamato/scripts/build_windows.cmd x86 Release
-  - powershell .yamato\scripts\download_7z.ps1
-  - copy LICENSE.md artifacts\bin\microsoft.netcore.app.runtime.win-x86\Release\runtimes\win-x86
-  - artifacts\7za-win-x64\7za.exe a artifacts\unity\%ARTIFACT_FILENAME% .\artifacts\bin\microsoft.netcore.app.runtime.win-x86\Release\runtimes\win-x86\*
+  - .yamato/scripts/build_yamato.cmd --arch=x86 --config=Release
 
 artifacts:
   7z-archives:

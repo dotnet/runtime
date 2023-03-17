@@ -4,7 +4,7 @@ name: Test Windows x64 Debug
 
 agent:
   type: Unity::VM
-  image: burst/burst-base:1.0.8-1195360
+  image: platform-foundation/coreclr-windows:v0.0.1-1276296
   flavor: b1.xlarge
 
 dependencies:
@@ -12,5 +12,5 @@ dependencies:
 
 commands:
 # build/run tests
-  - .yamato/scripts/test_windows.cmd x64 Debug
+  - .yamato/scripts/build_yamato.cmd --arch=x64 --config=Debug --test
 

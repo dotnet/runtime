@@ -12,4 +12,4 @@ dependencies:
 
 commands:
 # build/run tests
-  - ./.yamato/scripts/test_osx.sh arm64 Release
+  - ./.yamato/scripts/build_yamato.sh --arch=arm64 --config=Release --test
