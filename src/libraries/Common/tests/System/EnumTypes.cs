@@ -76,4 +76,26 @@ namespace System
         Two = 2,
         Max = long.MaxValue,
     }
+
+    [Flags]
+    public enum FlagsSByteEnumWithNegativeValues : sbyte
+    {
+        A = 0b00000000,
+        B = 0b00000001,
+        C = 0b00000010,
+        D = 0b00000100,
+        E = 0b00001000,
+        F = 0b00010000,
+        G = 0b00100000,
+        H = 0b01000000,
+        I = unchecked((sbyte)0b10000000),
+    }
+
+    [Flags]
+    public enum FlagsInt32EnumWithOverlappingNegativeValues : int
+    {
+        A = 0x000F0000,
+        B = 0x0000FFFF,
+        C = unchecked((int)0xFFFF0000),
+    }
 }

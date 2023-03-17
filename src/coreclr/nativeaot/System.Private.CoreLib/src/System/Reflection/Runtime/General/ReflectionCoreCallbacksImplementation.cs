@@ -413,20 +413,20 @@ namespace System.Reflection.Runtime.General
             return info;
         }
 
-        private class EnumUnderlyingTypeComparer : IComparer<object>
+        private sealed class EnumUnderlyingTypeComparer : IComparer<object>
         {
             public static readonly EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
 
             public int Compare(object? x, object? y)
                 => x switch
                 {
-                    int i => i.CompareTo((int)y!),
-                    uint ui => ui.CompareTo((uint)y!),
+                    sbyte sb => ((byte)sb).CompareTo((byte)(sbyte)y!),
                     byte b => b.CompareTo((byte)y!),
+                    short s => ((ushort)s).CompareTo((ushort)(short)y!),
                     ushort us => us.CompareTo((ushort)y!),
-                    short s => s.CompareTo((short)y!),
-                    sbyte sb => sb.CompareTo((sbyte)y!),
-                    long l => l.CompareTo((long)y!),
+                    int i => ((uint)i).CompareTo((uint)(int)y!),
+                    uint ui => ui.CompareTo((uint)y!),
+                    long l => ((ulong)l).CompareTo((ulong)(long)y!),
                     _ => ((ulong)x!).CompareTo((ulong)y!),
                 };
         }

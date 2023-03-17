@@ -1251,7 +1251,7 @@ namespace System.Tests
         [Fact]
         public void GetNames_InvokeSByteEnum_ReturnsExpected()
         {
-            var expected = new string[] { "Min", "One", "Two", "Max" };
+            var expected = new string[] { "One", "Two", "Max", "Min" };
             Assert.Equal(expected, Enum.GetNames(typeof(SByteEnum)));
             Assert.NotSame(Enum.GetNames(typeof(SByteEnum)), Enum.GetNames(typeof(SByteEnum)));
             Assert.Equal(expected, Enum.GetNames<SByteEnum>());
@@ -1269,7 +1269,7 @@ namespace System.Tests
         [Fact]
         public void GetNames_InvokeInt16Enum_ReturnsExpected()
         {
-            var expected = new string[] { "Min", "One", "Two", "Max" };
+            var expected = new string[] { "One", "Two", "Max", "Min" };
             Assert.Equal(expected, Enum.GetNames(typeof(Int16Enum)));
             Assert.NotSame(Enum.GetNames(typeof(Int16Enum)), Enum.GetNames(typeof(Int16Enum)));
             Assert.Equal(expected, Enum.GetNames<Int16Enum>());
@@ -1287,7 +1287,7 @@ namespace System.Tests
         [Fact]
         public void GetNames_InvokeInt32Enum_ReturnsExpected()
         {
-            var expected = new string[] { "Min", "One", "Two", "Max" };
+            var expected = new string[] { "One", "Two", "Max", "Min" };
             Assert.Equal(expected, Enum.GetNames(typeof(Int32Enum)));
             Assert.NotSame(Enum.GetNames(typeof(Int32Enum)), Enum.GetNames(typeof(Int32Enum)));
             Assert.Equal(expected, Enum.GetNames<Int32Enum>());
@@ -1305,7 +1305,7 @@ namespace System.Tests
         [Fact]
         public void GetNames_InvokeInt64Enum_ReturnsExpected()
         {
-            var expected = new string[] { "Min", "One", "Two", "Max" };
+            var expected = new string[] { "One", "Two", "Max", "Min" };
             Assert.Equal(expected, Enum.GetNames(typeof(Int64Enum)));
             Assert.NotSame(Enum.GetNames(typeof(Int64Enum)), Enum.GetNames(typeof(Int64Enum)));
             Assert.Equal(expected, Enum.GetNames<Int64Enum>());
@@ -1388,7 +1388,7 @@ namespace System.Tests
         [Fact]
         public void GetValues_InvokeSByteEnum_ReturnsExpected()
         {
-            var expected = new SByteEnum[] { SByteEnum.Min, SByteEnum.One, SByteEnum.Two, SByteEnum.Max };
+            var expected = new SByteEnum[] { SByteEnum.One, SByteEnum.Two, SByteEnum.Max, SByteEnum.Min };
             Assert.Equal(expected, Enum.GetValues(typeof(SByteEnum)));
             Assert.NotSame(Enum.GetValues(typeof(SByteEnum)), Enum.GetValues(typeof(SByteEnum)));
             Assert.Equal(expected, Enum.GetValues<SByteEnum>());
@@ -1406,7 +1406,7 @@ namespace System.Tests
         [Fact]
         public void GetValues_InvokeInt16Enum_ReturnsExpected()
         {
-            var expected = new Int16Enum[] { Int16Enum.Min, Int16Enum.One, Int16Enum.Two, Int16Enum.Max };
+            var expected = new Int16Enum[] { Int16Enum.One, Int16Enum.Two, Int16Enum.Max, Int16Enum.Min };
             Assert.Equal(expected, Enum.GetValues(typeof(Int16Enum)));
             Assert.NotSame(Enum.GetValues(typeof(Int16Enum)), Enum.GetValues(typeof(Int16Enum)));
             Assert.Equal(expected, Enum.GetValues<Int16Enum>());
@@ -1424,7 +1424,7 @@ namespace System.Tests
         [Fact]
         public void GetValues_InvokeInt32Enum_ReturnsExpected()
         {
-            var expected = new Int32Enum[] { Int32Enum.Min, Int32Enum.One, Int32Enum.Two, Int32Enum.Max };
+            var expected = new Int32Enum[] { Int32Enum.One, Int32Enum.Two, Int32Enum.Max, Int32Enum.Min };
             Assert.Equal(expected, Enum.GetValues(typeof(Int32Enum)));
             Assert.NotSame(Enum.GetValues(typeof(Int32Enum)), Enum.GetValues(typeof(Int32Enum)));
             Assert.Equal(expected, Enum.GetValues<Int32Enum>());
@@ -1442,7 +1442,7 @@ namespace System.Tests
         [Fact]
         public void GetValues_InvokeInt64Enum_ReturnsExpected()
         {
-            var expected = new Int64Enum[] { Int64Enum.Min, Int64Enum.One, Int64Enum.Two, Int64Enum.Max };
+            var expected = new Int64Enum[] { Int64Enum.One, Int64Enum.Two, Int64Enum.Max, Int64Enum.Min };
             Assert.Equal(expected, Enum.GetValues(typeof(Int64Enum)));
             Assert.NotSame(Enum.GetValues(typeof(Int64Enum)), Enum.GetValues(typeof(Int64Enum)));
             Assert.Equal(expected, Enum.GetValues<Int64Enum>());
@@ -1506,7 +1506,7 @@ namespace System.Tests
         [Fact]
         public void GetValuesAsUnderlyingType_InvokeSByteEnum_ReturnsExpected()
         {
-            Array expected = new sbyte[] { sbyte.MinValue, 1, 2, sbyte.MaxValue };
+            Array expected = new sbyte[] { 1, 2, sbyte.MaxValue, sbyte.MinValue};
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(SByteEnum)));
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<SByteEnum>());
         }
@@ -1522,7 +1522,7 @@ namespace System.Tests
         [Fact]
         public void GetValuesAsUnderlyingType_InvokeInt16Enum_ReturnsExpected()
         {
-            Array expected = new short[] { short.MinValue, 1, 2, short.MaxValue };
+            Array expected = new short[] { 1, 2, short.MaxValue, short.MinValue };
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(Int16Enum)));
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<Int16Enum>());
         }
@@ -1538,7 +1538,7 @@ namespace System.Tests
         [Fact]
         public void GetValuesAsUnderlyingType_InvokeInt32Enum_ReturnsExpected()
         {
-            Array expected = new int[] { int.MinValue, 1, 2, int.MaxValue };
+            Array expected = new int[] { 1, 2, int.MaxValue, int.MinValue };
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(Int32Enum)));
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<Int32Enum>());
         }
@@ -1554,7 +1554,7 @@ namespace System.Tests
         [Fact]
         public void GetValuesAsUnderlyingType_InvokeInt64Enum_ReturnsExpected()
         {
-            Array expected = new long[] { long.MinValue, 1, 2, long.MaxValue };
+            Array expected = new long[] { 1, 2, long.MaxValue, long.MinValue };
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(Int64Enum)));
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<Int64Enum>());
         }
@@ -1883,6 +1883,18 @@ namespace System.Tests
 
             // "G": Flags Attribute
             yield return new object[] { AttributeTargets.Class | AttributeTargets.Delegate, "G", "Class, Delegate" };
+
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.A, "G", "A" };
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.C, "G", "C" };
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.I, "G", "I" };
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.C | FlagsSByteEnumWithNegativeValues.D, "G", "C, D" };
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.A | FlagsSByteEnumWithNegativeValues.C | FlagsSByteEnumWithNegativeValues.D, "G", "C, D" };
+
+            yield return new object[] { FlagsInt32EnumWithOverlappingNegativeValues.A, "G", "A" };
+            yield return new object[] { FlagsInt32EnumWithOverlappingNegativeValues.B, "G", "B" };
+            yield return new object[] { FlagsInt32EnumWithOverlappingNegativeValues.C, "G", "C" };
+            yield return new object[] { FlagsInt32EnumWithOverlappingNegativeValues.A | FlagsInt32EnumWithOverlappingNegativeValues.B, "G", "B, A" };
+            yield return new object[] { (FlagsInt32EnumWithOverlappingNegativeValues)(-1), "G", "B, C" };
         }
 
         [Theory]

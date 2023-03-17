@@ -22,10 +22,13 @@ namespace System
                 Values = values;
                 Names = names;
 
-                if (!AreSorted(values))
-                {
-                    Array.Sort(keys: values, items: names);
-                }
+                // Sort unsigned to maintain invariants for formatting
+                if (typeof(TUnderlyingValue) == typeof(sbyte)) Sort<byte>(values, names);
+                else if (typeof(TUnderlyingValue) == typeof(short)) Sort<ushort>(values, names);
+                else if (typeof(TUnderlyingValue) == typeof(int)) Sort<uint>(values, names);
+                else if (typeof(TUnderlyingValue) == typeof(long)) Sort<ulong>(values, names);
+                else if (typeof(TUnderlyingValue) == typeof(nint)) Sort<nuint>(values, names);
+                else Sort<TUnderlyingValue>(values, names);
 
                 ValuesAreSequentialFromZero = AreSequentialFromZero(values);
             }
@@ -33,6 +36,17 @@ namespace System
             /// <summary>Create a copy of <see cref="Values"/>.</summary>
             public TUnderlyingValue[] CloneValues() =>
                 new ReadOnlySpan<TUnderlyingValue>(Values).ToArray();
+
+            private static void Sort<TUnsignedValue>(TUnderlyingValue[] keys, string[] values)
+                where TUnsignedValue : struct, INumber<TUnsignedValue>
+            {
+                // Rely on the runtime's ability to cast between primitive integer signed/unsigned counterparts
+                TUnsignedValue[] unsignedKeys = (TUnsignedValue[])(object)keys;
+                if (!AreSorted(unsignedKeys))
+                {
+                    Array.Sort(unsignedKeys, values);
+                }
+            }
         }
     }
 }
