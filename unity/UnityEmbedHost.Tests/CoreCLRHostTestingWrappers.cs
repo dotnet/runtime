@@ -11,14 +11,14 @@ namespace UnityEmbedHost.Tests;
 static class CoreCLRHostTestingWrappers
 {
     public static nint gchandle_new_v2(object obj, bool pinned)
-        => CoreCLRHost.gchandle_new_v2(obj.UnsafeAsIntPtr(), pinned);
+        => CoreCLRHost.gchandle_new_v2(obj.ToNativeRepresentation(), pinned);
 
     public static object? gchandle_get_target_v2(nint handleIn)
-        => CoreCLRHost.gchandle_get_target_v2(handleIn).UnsafeAs<object>();
+        => CoreCLRHost.gchandle_get_target_v2(handleIn).ToManagedRepresentation();
 
     public static object? object_isinst(object obj, Type klass)
-        => CoreCLRHost.object_isinst(obj.UnsafeAsIntPtr(), klass.TypeHandleIntPtr()).UnsafeAs<object>();
+        => CoreCLRHost.object_isinst(obj.ToNativeRepresentation(), klass.TypeHandleIntPtr()).ToManagedRepresentation();
 
     public static Type object_get_class(object obj)
-        => CoreCLRHost.object_get_class(obj.UnsafeAsIntPtr()).TypeFromHandleIntPtr();
+        => CoreCLRHost.object_get_class(obj.ToNativeRepresentation()).TypeFromHandleIntPtr();
 }

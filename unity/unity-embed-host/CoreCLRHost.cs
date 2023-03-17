@@ -76,28 +76,28 @@ static unsafe partial class CoreCLRHost
     [return: NativeCallbackType("uintptr_t")]
     public static IntPtr gchandle_new_v2([NativeCallbackType("MonoObject*")] IntPtr obj, bool pinned)
     {
-        GCHandle handle = GCHandle.Alloc(obj.UnsafeAs<object>(), pinned ? GCHandleType.Pinned : GCHandleType.Normal);
+        GCHandle handle = GCHandle.Alloc(obj.ToManagedRepresentation(), pinned ? GCHandleType.Pinned : GCHandleType.Normal);
         return GCHandle.ToIntPtr(handle);
     }
 
     [return: NativeCallbackType("uintptr_t")]
     public static IntPtr gchandle_new_weakref_v2([NativeCallbackType("MonoObject*")] IntPtr obj, bool track_resurrection)
     {
-        GCHandle handle = GCHandle.Alloc(obj.UnsafeAs<object>(), track_resurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+        GCHandle handle = GCHandle.Alloc(obj.ToManagedRepresentation(), track_resurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
         return GCHandle.ToIntPtr(handle);
     }
 
     [return: NativeWrapperType("MonoObject*")]
     public static IntPtr gchandle_get_target_v2([NativeWrapperType("uintptr_t")] IntPtr handleIn)
-        => handleIn.ToGCHandle().Target.UnsafeAsIntPtr();
+        => handleIn.ToGCHandle().Target.ToNativeRepresentation();
 
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr object_isinst([NativeCallbackType("MonoObject*")] IntPtr obj, [NativeCallbackType("MonoClass*")] IntPtr klass)
-        => obj.UnsafeAs<object>().GetType().IsAssignableTo(klass.TypeFromHandleIntPtr()) ? obj : nint.Zero;
+        => obj.ToManagedRepresentation().GetType().IsAssignableTo(klass.TypeFromHandleIntPtr()) ? obj : nint.Zero;
 
     [return: NativeCallbackType("MonoClass*")]
     public static IntPtr object_get_class([NativeCallbackType("MonoObject*")] IntPtr obj)
-        => obj.UnsafeAs<object>().TypeHandleIntPtr();
+        => obj.ToManagedRepresentation().TypeHandleIntPtr();
 
     static StringPtr StringToPtr(string s)
     {
