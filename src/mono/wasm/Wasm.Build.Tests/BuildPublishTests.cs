@@ -97,7 +97,8 @@ namespace Wasm.Build.Tests
             Assert.False(firstBuildStat["pinvoke.o"].Exists);
             Assert.False(firstBuildStat[$"{mainDll}.bc"].Exists);
 
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: relinked, buildArgs, output);
+            string projectName = GetUnicodeProjectNameInSafeForm(buildArgs.ProjectName);
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: relinked, projectName, output);
 
             Run(expectAOT: false);
 
@@ -121,7 +122,7 @@ namespace Wasm.Build.Tests
             var publishStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
             Assert.True(publishStat["pinvoke.o"].Exists);
             Assert.True(publishStat[$"{mainDll}.bc"].Exists);
-            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
+            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, projectName, output);
             CompareStat(firstBuildStat, publishStat, pathsDict.Values);
 
             Run(expectAOT: true);
@@ -138,7 +139,7 @@ namespace Wasm.Build.Tests
             var secondBuildStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // no relinking, or AOT
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: false, buildArgs, output);
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: false, projectName, output);
 
             // no native files changed
             pathsDict.UpdateTo(unchanged: true);
@@ -150,10 +151,10 @@ namespace Wasm.Build.Tests
                                 host: host, id: id);
         }
 
-        void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, BuildArgs buildArgs, string buildOutput)
+        void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, string projectName, string buildOutput)
         {
-            AssertSubstring($"{buildArgs.ProjectName}.dll -> {buildArgs.ProjectName}.dll.bc", buildOutput, expectAOT);
-            AssertSubstring($"{buildArgs.ProjectName}.dll.bc -> {buildArgs.ProjectName}.dll.o", buildOutput, expectAOT);
+            AssertSubstring($"{projectName}.dll -> {projectName}.dll.bc", buildOutput, expectAOT);
+            AssertSubstring($"{projectName}.dll.bc -> {projectName}.dll.o", buildOutput, expectAOT);
 
             AssertSubstring("pinvoke.c -> pinvoke.o", buildOutput, expectRelinking || expectAOT);
         }

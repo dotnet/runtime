@@ -32,6 +32,7 @@ namespace Wasm.Build.Tests
         public const string DefaultTargetFrameworkForBlazor = "net8.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly char s_unicodeChar = '煉';
+        protected static readonly string s_windowsEquivalentForUnicodeChar = "šůë";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -41,7 +42,7 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
 
-        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        protected static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
         // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
         // on Linux sharding does not work because we rely on LANG env var to check locale and emcc is overwriting it
@@ -195,8 +196,9 @@ namespace Wasm.Build.Tests
                                 useWasmConsoleOutput: useWasmConsoleOutput
                                 );
 
+            string safeProjectName = GetUnicodeProjectNameInSafeForm(buildArgs.ProjectName);
             AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
-            AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
+            AssertSubstring($"AOT: image '{safeProjectName}' found.", output, contains: buildArgs.AOT);
 
             if (test != null)
                 test(output);
@@ -1203,6 +1205,13 @@ namespace Wasm.Build.Tests
                 Assert.Contains(substring, full);
             else
                 Assert.DoesNotContain(substring, full);
+        }
+
+        protected string GetUnicodeProjectNameInSafeForm(string unicodeProjectName)
+        {
+            if (!s_isWindows || !unicodeProjectName.Contains(s_unicodeChar))
+                return unicodeProjectName;
+            return unicodeProjectName.Replace($"{s_unicodeChar}", s_windowsEquivalentForUnicodeChar);
         }
     }
 
