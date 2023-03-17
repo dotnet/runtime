@@ -9531,8 +9531,9 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     {
         int op1Cost    = cond1->GetCostEx();
         int op2Cost    = cond2->GetCostEx();
-        int maxOp1Cost = op1IsCondChain ? 35 : 7;
-        int maxOp2Cost = op2IsCondChain ? 35 : 7;
+        // The cost of combing three simple conditions is 32.
+        int maxOp1Cost = op1IsCondChain ? 31 : 7;
+        int maxOp2Cost = op2IsCondChain ? 31 : 7;
 
         // Cost to allow for chain size of three.
         if (op1Cost > maxOp1Cost || op2Cost > maxOp2Cost)
