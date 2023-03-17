@@ -72,8 +72,8 @@ namespace Tests.System
 
         public static IEnumerable<object[]> TimersProvidersData()
         {
-            yield return new object[] { TimeProvider.System, 3000 };
-            yield return new object[] { new FastClock(),     1500 };
+            yield return new object[] { TimeProvider.System, 4000 };
+            yield return new object[] { new FastClock(),     2000 };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -110,7 +110,7 @@ namespace Tests.System
                             state,
                             TimeSpan.FromMilliseconds(state.Period), TimeSpan.FromMilliseconds(state.Period));
 
-            mres.Wait(TimeSpan.FromMilliseconds(5000));
+            mres.Wait(TimeSpan.FromMilliseconds(15000));
 
             Assert.Equal(4, state.Counter);
             Assert.Equal(400, state.Period);
