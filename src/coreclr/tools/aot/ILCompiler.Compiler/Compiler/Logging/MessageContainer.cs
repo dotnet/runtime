@@ -300,11 +300,7 @@ namespace ILCompiler.Logging
 
             if (Origin?.MemberDefinition != null)
             {
-                if (Origin?.MemberDefinition is MethodDesc method)
-                    sb.Append(method.GetDisplayName());
-                else
-                    sb.Append(Origin?.MemberDefinition.ToString());
-
+                sb.Append(Origin?.MemberDefinition?.GetDisplayName() ?? Origin?.MemberDefinition?.ToString());
                 sb.Append(": ");
             }
 
