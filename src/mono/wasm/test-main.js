@@ -266,7 +266,9 @@ function configureRuntime(dotnet, runArgs, INTERNAL) {
         }
     }
     if (is_browser) {
-        dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
+        dotnet
+            .withStartupMemoryCache(true)
+            .withEnvironmentVariable("IsWebSocketSupported", "true");
     }
     if (runArgs.runtimeArgs.length > 0) {
         dotnet.withRuntimeOptions(runArgs.runtimeArgs);

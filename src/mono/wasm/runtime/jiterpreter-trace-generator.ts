@@ -613,13 +613,6 @@ export function generate_wasm_body (
                 builder.callImport("ldtsflda");
                 break;
             }
-            case MintOpcode.MINT_INTRINS_UNSAFE_BYTE_OFFSET:
-                builder.local("pLocals");
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                builder.appendU8(WasmOpcode.i32_sub);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
-                break;
             case MintOpcode.MINT_INTRINS_GET_TYPE:
                 builder.block();
                 // dest, src

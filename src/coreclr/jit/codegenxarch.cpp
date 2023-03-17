@@ -491,14 +491,38 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             if (vecCon->IsAllBitsSet())
             {
-                if ((attr != EA_32BYTE) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                switch (attr)
                 {
+                    case EA_8BYTE:
+                    case EA_16BYTE:
+                    {
+                        emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
+                        return;
+                    }
 #if defined(FEATURE_SIMD)
-                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
-#else
-                    emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
+                    case EA_32BYTE:
+                    {
+                        if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                        {
+                            emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+                            return;
+                        }
+                        break;
+                    }
+
+                    case EA_64BYTE:
+                    {
+                        assert(compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+                        emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
+                                                   static_cast<int8_t>(0xFF));
+                        return;
+                    }
 #endif // FEATURE_SIMD
-                    break;
+
+                    default:
+                    {
+                        unreached();
+                    }
                 }
             }
 
