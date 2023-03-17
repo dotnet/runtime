@@ -53,26 +53,31 @@ public class SevenZip
         filename = $"{url.Split('/').Single(s => s.StartsWith("7za"))}.zip";
     }
 
-    public static async Task<NPath> DownloadAndUnzip7Zip()
+    public static Task<NPath> DownloadAndUnzip7Zip()
     {
-        WebClient wc = new();
-        string url, filename;
-        Get7ZipUrl(out url, out filename);
-        NPath zipDest = Paths.Artifacts.Combine(filename);
-        zipDest.Parent.EnsureDirectoryExists();
-        if (!zipDest.FileExists())
+        return Task.Run(() =>
         {
-            Console.WriteLine($"Starting download of 7zip: {filename}");
-            wc.DownloadFile(url, zipDest);
-        }
+#pragma warning disable SYSLIB0014
+            WebClient wc = new();
+#pragma warning restore SYSLIB0014
+            string url, filename;
+            Get7ZipUrl(out url, out filename);
+            NPath zipDest = Paths.Artifacts.Combine(filename);
+            zipDest.Parent.EnsureDirectoryExists();
+            if (!zipDest.FileExists())
+            {
+                Console.WriteLine($"Starting download of 7zip: {filename}");
+                wc.DownloadFile(url, zipDest);
+            }
 
-        NPath destDir = zipDest.Parent.Combine(zipDest.FileNameWithoutExtension);
-        if (!destDir.DirectoryExists())
-        {
-            Console.WriteLine($"Extracting 7zip to: {destDir}");
-            ZipFile.ExtractToDirectory(zipDest, destDir);
-        }
+            NPath destDir = zipDest.Parent.Combine(zipDest.FileNameWithoutExtension);
+            if (!destDir.DirectoryExists())
+            {
+                Console.WriteLine($"Extracting 7zip to: {destDir}");
+                ZipFile.ExtractToDirectory(zipDest, destDir);
+            }
 
-        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? destDir.Combine("7za.exe") : destDir.Combine("7za");
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? destDir.Combine("7za.exe") : destDir.Combine("7za");
+        });
     }
 }

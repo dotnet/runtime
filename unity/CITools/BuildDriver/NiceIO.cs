@@ -24,6 +24,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+#nullable disable
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -482,7 +484,7 @@ namespace NiceIO
 		public NPath CreateDirectory()
 		{
 			ThrowIfRelative();
-			
+
 			if (IsRoot)
 				throw new NotSupportedException("CreateDirectory is not supported on a root level directory because it would be dangerous:" + ToString());
 
@@ -534,7 +536,7 @@ namespace NiceIO
 		{
 			if (!IsRelative)
 				return this;
-			
+
 			return NPath.CurrentDirectory.Combine (this);
 		}
 
@@ -542,7 +544,7 @@ namespace NiceIO
 		{
 			if (absoluteDestination.IsRelative)
 				throw new ArgumentException ("absoluteDestination must be absolute");
-			
+
 			if (FileExists())
 			{
 				if (!fileFilter(absoluteDestination))
@@ -840,7 +842,7 @@ namespace NiceIO
 			destination.EnsureDirectoryExists();
 			return Files(recurse).Where(fileFilter ?? AlwaysTrue).Select(file => file.Copy(destination.Combine(file.RelativeTo(this)))).ToArray();
 		}
-		
+
 		public IEnumerable<NPath> MoveFiles(NPath destination, bool recurse, Func<NPath, bool> fileFilter = null)
 		{
 			if (IsRoot)
@@ -920,3 +922,5 @@ namespace NiceIO
 		Soft
 	}
 }
+
+#nullable enable
