@@ -117,7 +117,7 @@ namespace ILCompiler
                 _emitter.SerializeToStream(fs);
         }
 
-        private class MstatEmitter : TypeSystemMetadataEmitter
+        private sealed class MstatEmitter : TypeSystemMetadataEmitter
         {
             private readonly List<(string Name, BlobBuilder Content)> _customSections = new();
 
@@ -136,7 +136,7 @@ namespace ILCompiler
                 return new MstatPEBuilder(this, ilBuilder);
             }
 
-            private class MstatPEBuilder : ManagedPEBuilder
+            private sealed class MstatPEBuilder : ManagedPEBuilder
             {
                 private readonly MstatEmitter _emitter;
 
