@@ -25,7 +25,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"build_publish_{buildArgs.Config}";
+            string projectName = $"build_publish_{buildArgs.Config}_{s_unicodeChar}";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs);

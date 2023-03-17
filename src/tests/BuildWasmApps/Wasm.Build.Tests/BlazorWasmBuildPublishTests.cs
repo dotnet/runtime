@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release")]
         public void DefaultTemplate_WithoutWorkload(string config)
         {
-            string id = $"blz_no_workload_{config}";
+            string id = $"blz_no_workload_{config}{s_unicodeChar}";
             CreateBlazorWasmTemplateProject(id);
 
             // Build
