@@ -2714,9 +2714,12 @@ void CodeGen::genLclHeap(GenTree* tree)
             goto ALLOC_DONE;
         }
 
-        inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
-        stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
-        locAllocStackOffset = stackAdjustment;
+        if (!zeroedViaBlk)
+        {
+            inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
+            stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+            locAllocStackOffset = stackAdjustment;
+        }
     }
 #endif
 
@@ -2736,9 +2739,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             if (largePage || (TARGET_POINTER_SIZE == 4))
             {
                 regCnt = tree->GetSingleTempReg();
-                instGen_Set_Reg_To_Imm(EA_8BYTE, regCnt, amount);
-                // Negate this value before calling the function to adjust the stack (which adds to ESP).
-                inst_RV(INS_NEG, regCnt, TYP_I_IMPL);
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, regCnt, -(ssize_t)amount);
                 genStackPointerDynamicAdjustmentWithProbe(regCnt);
                 // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
                 // we're going to assume the worst and probe.
