@@ -207,6 +207,37 @@ namespace System.Net.Primitives.Functional.Tests
             {
                 Assert.False(network.Equals(rangeWithDifferentPrefix));
                 Assert.False(network.Equals(rangeWithDifferentPrefixLength));
+
+                Assert.False(network.Equals((object)rangeWithDifferentPrefix));
+                Assert.False(network.Equals((object)rangeWithDifferentPrefixLength));
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Equals_CompareValidInstanceToDefault_ThrowsInvalidOperationException(bool testOperator)
+        {
+            var valid = IPNetwork.Parse("127.0.0.0/24");
+            IPNetwork invalid1 = default;
+            IPNetwork invalid2 = default;
+
+            if (testOperator)
+            {
+                Assert.Throws<InvalidOperationException>(() => valid == invalid1);
+                Assert.Throws<InvalidOperationException>(() => valid != invalid1);
+
+                Assert.Throws<InvalidOperationException>(() => invalid2 == invalid1);
+                Assert.Throws<InvalidOperationException>(() => invalid2 != invalid1);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => valid.Equals(invalid1));
+                Assert.Throws<InvalidOperationException>(() => valid.Equals((object)invalid1));
+                Assert.Throws<InvalidOperationException>(() => invalid2.Equals(invalid1));
+                Assert.Throws<InvalidOperationException>(() => invalid2.Equals((object)invalid1));
+                Assert.Throws<InvalidOperationException>(() => invalid1.Equals(valid));
+                Assert.Throws<InvalidOperationException>(() => invalid1.Equals((object)valid));
             }
         }
 
@@ -219,6 +250,7 @@ namespace System.Net.Primitives.Functional.Tests
             var b = IPNetwork.Parse(input);
 
             Assert.True(a.Equals(b));
+            Assert.True(a.Equals((object)b));
             Assert.True(a == b);
             Assert.False(a != b);
             Assert.Equal(a.GetHashCode(), b.GetHashCode());
