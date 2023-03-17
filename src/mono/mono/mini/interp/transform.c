@@ -59,6 +59,7 @@ static int stack_type [] = {
 };
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (intrinsic_klass, "System.Runtime.CompilerServices", "IntrinsicAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (doesnotreturn_klass, "System.Diagnostics.CodeAnalysis", "DoesNotReturnAttribute")
 
 static gboolean generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error);
 
@@ -72,6 +73,21 @@ has_intrinsic_attribute (MonoMethod *method)
 	mono_error_cleanup (aerror); /* FIXME don't swallow the error? */
 	if (ainfo) {
 		result = intrinsic_klass && mono_custom_attrs_has_attr (ainfo, intrinsic_klass);
+		mono_custom_attrs_free (ainfo);
+	}
+	return result;
+}
+
+static gboolean
+has_doesnotreturn_attribute (MonoMethod *method)
+{
+	gboolean result = FALSE;
+	ERROR_DECL (aerror);
+	MonoClass *doesnotreturn_klass = mono_class_try_get_doesnotreturn_klass_class ();
+	MonoCustomAttrInfo *ainfo = mono_custom_attrs_from_method_checked (method, aerror);
+	mono_error_cleanup (aerror); /* FIXME don't swallow the error? */
+	if (ainfo) {
+		result = doesnotreturn_klass && mono_custom_attrs_has_attr (ainfo, doesnotreturn_klass);
 		mono_custom_attrs_free (ainfo);
 	}
 	return result;
@@ -2873,6 +2889,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	int i;
 	int prev_sp_offset;
 	int prev_aggressive_inlining;
+	int prev_has_inlined_one_call;
 	MonoGenericContext *generic_context = NULL;
 	StackInfo *prev_param_area;
 	InterpBasicBlock **prev_offset_to_bb;
@@ -2902,6 +2919,8 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	prev_entry_bb = td->entry_bb;
 	prev_aggressive_inlining = td->aggressive_inlining;
 	prev_imethod_items = td->imethod_items;
+	prev_has_inlined_one_call = td->has_inlined_one_call;
+	td->has_inlined_one_call = FALSE;
 	td->inlined_method = target_method;
 
 	prev_max_stack_height = td->max_stack_height;
@@ -2983,6 +3002,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	td->code_size = prev_code_size;
 	td->entry_bb = prev_entry_bb;
 	td->aggressive_inlining = prev_aggressive_inlining;
+	td->has_inlined_one_call = prev_has_inlined_one_call;
 
 	g_free (td->in_offsets);
 	td->in_offsets = prev_in_offsets;
@@ -3450,9 +3470,34 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	/* Don't inline methods that do calls */
-	if (op == -1 && td->inlined_method && !td->aggressive_inlining)
-		return FALSE;
+	/*
+	 * When inlining a method, only allow it to perform one call.
+	 * We previously prohibited calls entirely, this is a conservative rule that allows
+	 * Things like ThrowHelper.ThrowIfNull to theoretically inline, along with a hypothetical
+	 * X.get_Item that just calls Y.get_Item (profitable to inline)
+	 */
+	if (op == -1 && td->inlined_method && !td->aggressive_inlining) {
+		if (!target_method) {
+			if (td->verbose_level > 1)
+				g_print("Disabling inlining because we have no target_method for call in %s\n", td->method->name);
+			return FALSE;
+		} else if (has_doesnotreturn_attribute(target_method)) {
+			/*
+			 * Since the method does not return, it's probably a throw helper and will not be called.
+			 * As such we don't want it to prevent inlining of the method that calls it.
+			 */
+			if (td->verbose_level > 2)
+				g_print("Overlooking inlined doesnotreturn call in %s (target %s)\n", td->method->name, target_method->name);
+		} else if (td->has_inlined_one_call) {
+			if (td->verbose_level > 1)
+				g_print("Prohibiting second inlined call in %s (target %s)\n", td->method->name, target_method->name);
+			return FALSE;
+		} else {
+			if (td->verbose_level > 2)
+				g_print("Allowing single inlined call in %s (target %s)\n", td->method->name, target_method->name);
+			td->has_inlined_one_call = TRUE;
+		}
+	}
 
 	/* We need to convert delegate invoke to a indirect call on the interp_invoke_impl field */
 	if (target_method && m_class_get_parent (target_method->klass) == mono_defaults.multicastdelegate_class) {
