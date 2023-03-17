@@ -228,7 +228,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
         assert(block != nullptr);
 
         // Can all the nodes within the block be made to conditionally execute?
-        for (Statement* const stmt : block->Statements())
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             GenTree* tree = stmt->GetRootNode();
             switch (tree->gtOper)
@@ -262,12 +262,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
                         (op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-                    {
-                        return false;
-                    }
-
-                    // Ensure the source isn't a phi.
-                    if (op2->OperIs(GT_PHI))
                     {
                         return false;
                     }
