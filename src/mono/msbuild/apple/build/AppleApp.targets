@@ -91,8 +91,12 @@
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(_IsLibraryMode)' == 'true'">true</_EnableUnmanagedCallersOnlyMethodsExport>
+    <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <_EnableUnmanagedCallersOnlyMethodsExport>true</_EnableUnmanagedCallersOnlyMethodsExport>
+      <_UseAotDataFile>$(UseAotDataFile)</_UseAotDataFile>
+      <_UseAotDataFile Condition="'$(_UseAotDataFile)' == ''">false</_UseAotDataFile>
+      <_UsesRuntimeInitCallback>$(UsesRuntimeInitCallback)</_UsesRuntimeInitCallback>
+      <_UsesRuntimeInitCallback Condition="'$(_UsesRuntimeInitCallback)' == ''">true</_UsesRuntimeInitCallback>
     </PropertyGroup>
 
     <ItemGroup>
@@ -104,6 +108,8 @@
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(_UsesRuntimeInitCallback)' == 'true' and $(CustomRuntimeInitCallback) == ''" Include="runtime-init-callback" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(_UsesRuntimeInitCallback)' == 'true' and $(CustomRuntimeInitCallback) != ''" Include="runtime-init-callback=$(CustomRuntimeInitCallback)" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
       <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=40000" />
@@ -166,6 +172,7 @@
         Mode="$(_AOTMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="AsmOnly"
+        UseAotDataFile="$(_UseAotDataFile)"
         UseLLVM="$(MonoEnableLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="AppAssembliesInternal" />
     </MonoAOTCompiler>

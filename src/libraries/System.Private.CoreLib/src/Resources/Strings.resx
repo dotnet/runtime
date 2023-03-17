@@ -3893,6 +3893,15 @@
   <data name="ClassLoad_RankTooLarge" xml:space="preserve">
     <value>'{0}' from assembly '{1}' has too many dimensions.</value>
   </data>
+  <data name="ClassLoad_InlineArrayFieldCount" xml:space="preserve">
+    <value>InlineArrayAttribute requires that the target type has a single instance field. Type: '{0}'.  Assembly: '{1}'.</value>
+  </data>
+  <data name="ClassLoad_InlineArrayLength" xml:space="preserve">
+    <value>InlineArrayAttribute requires that the length argument is greater than 0. Type: '{0}'.  Assembly: '{1}'.</value>
+  </data>
+  <data name="ClassLoad_InlineArrayExplicit" xml:space="preserve">
+    <value>InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '{0}'.  Assembly: '{1}'.</value>
+  </data>
   <data name="ClassLoad_ExplicitGeneric" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}' because generic types cannot have explicit layout.</value>
   </data>
