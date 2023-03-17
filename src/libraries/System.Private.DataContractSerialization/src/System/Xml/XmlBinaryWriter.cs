@@ -765,7 +765,7 @@ namespace System.Xml
                 {
                     Span<byte> span = GetTextNodeBuffer(1 + sizeof(double), out int offset).AsSpan(offset, 1 + sizeof(double));
                     span[0] = (byte)XmlBinaryNodeType.FloatText;
-                    BinaryPrimitives.WriteSingleLittleEndian(span.Slice(1), f);
+                    BinaryPrimitives.WriteDoubleLittleEndian(span.Slice(1), d);
                     Advance(1 + sizeof(double));
                 }
             }
