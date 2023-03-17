@@ -341,8 +341,9 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
  */
 inline EHblkDsc* Compiler::ehGetDsc(unsigned regionIndex)
 {
-    assert(regionIndex < compHndBBtabCount);
-    return &compHndBBtab[regionIndex];
+    Compiler* const comp = impInlineRoot();
+    assert(regionIndex < comp->compHndBBtabCount);
+    return &comp->compHndBBtab[regionIndex];
 }
 
 /******************************************************************************************
@@ -366,8 +367,9 @@ inline unsigned Compiler::ehGetEnclosingHndIndex(unsigned regionIndex)
  */
 inline unsigned Compiler::ehGetIndex(EHblkDsc* ehDsc)
 {
-    assert(compHndBBtab <= ehDsc && ehDsc < compHndBBtab + compHndBBtabCount);
-    return (unsigned)(ehDsc - compHndBBtab);
+    Compiler* const comp = impInlineRoot();
+    assert(comp->compHndBBtab <= ehDsc && ehDsc < comp->compHndBBtab + comp->compHndBBtabCount);
+    return (unsigned)(ehDsc - comp->compHndBBtab);
 }
 
 /******************************************************************************************
