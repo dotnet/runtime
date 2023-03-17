@@ -6,12 +6,8 @@
 #include <errno.h>
 #include <string.h>
 #include <jni.h>
-#include <android/log.h>
 #include <assert.h>
 #include <unistd.h>
-
-#define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
 
 static void
 strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
@@ -57,7 +53,5 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     setenv ("TMPDIR", cache_dir, true);
     setenv ("TEST_RESULTS_DIR", testresults_dir, true);
 
-    int res = invoke_netlibrary_entrypoints ();
-
-    return res;
+    return invoke_netlibrary_entrypoints ();
 }
