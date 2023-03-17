@@ -1432,7 +1432,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior is different on Unix
+        [PlatformSpecific(TestPlatforms.Windows)] // // Expected behavior is different on Apple platforms and Linux
         public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1605,7 +1605,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Expected behavior is different on Apple platforms and Linux")]
+        [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior is different on Apple platforms and Linux
         public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
