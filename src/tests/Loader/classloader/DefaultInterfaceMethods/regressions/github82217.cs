@@ -14,14 +14,14 @@ class Program
         if (ret != 100) return ret;
         return ret;
     }
-    private static void CallMethod<T>() where T : IHaveStaticMethod
+    private static int CallMethod<T>() where T : IHaveStaticMethod
     {
-        T.Method();
+        return T.Method();
     }
 }
 public interface IHaveStaticMethod
 {
-    static abstract void Method();
+    static abstract int Method();
 }
 
 public interface IInterface : IHaveStaticMethod
