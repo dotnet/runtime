@@ -132,6 +132,8 @@ DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-e
 DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
 #endif // HOST_BROWSER
 
+DEFINE_BOOL(experimental_jit_simd, "experimental-jit-simd", FALSE, "")
+
 /* Cleanup */
 #undef DEFINE_OPTION_FULL
 #undef DEFINE_OPTION_READONLY
