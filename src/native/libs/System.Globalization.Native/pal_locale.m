@@ -30,7 +30,7 @@ char* DetectDefaultAppleLocaleName()
     return strdup([localeName UTF8String]);
 }
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName,
                                          int32_t valueLength)
@@ -156,8 +156,9 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
     NSLog(@"Globalization GlobalizationNative_GetLocaleInfoStringNative value: %s", value);
     return strdup(value);
 }
+#endif
 
-
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 const char* GlobalizationNative_GetICUDataPathFallback(void)
 {
     NSString *bundlePath = [[NSBundle mainBundle] pathForResource:@"icudt" ofType:@"dat"];

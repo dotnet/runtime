@@ -1269,7 +1269,7 @@
     <Compile Include="$(CommonPath)Interop\Interop.ICU.cs">
       <Link>Common\Interop\Interop.ICU.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.ICU.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Interop.ICU.iOS.cs" Condition="'$(IsOSXLike)' == 'true'">
       <Link>Common\Interop\Interop.ICU.iOS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Idna.cs">
@@ -1278,7 +1278,7 @@
     <Compile Include="$(CommonPath)Interop\Interop.Locale.cs">
       <Link>Common\Interop\Interop.Locale.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Interop.Locale.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Interop.Locale.iOS.cs" Condition="'$(IsOSXLike)' == 'true'">
       <Link>Common\Interop\Interop.Locale.iOS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Normalization.cs">
