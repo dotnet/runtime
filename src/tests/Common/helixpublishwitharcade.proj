@@ -725,7 +725,7 @@
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
     <!-- Browser-Wasm follows a very different workflow, which is currently out of scope of the Log Checker. -->
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true'" />
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetOS)' != 'iOS'" />
     <HelixCorrelationPayload Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet-sos">
       <Destination>sos</Destination>
       <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
