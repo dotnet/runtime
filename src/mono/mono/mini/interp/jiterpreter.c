@@ -696,6 +696,16 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_MONO_CMPXCHG_I8:
 		case MINT_CPBLK:
 		case MINT_INITBLK:
+		case MINT_ROL_I4_IMM:
+		case MINT_ROL_I8_IMM:
+		case MINT_ROR_I4_IMM:
+		case MINT_ROR_I8_IMM:
+		case MINT_CLZ_I4:
+		case MINT_CTZ_I4:
+		case MINT_POPCNT_I4:
+		case MINT_CLZ_I8:
+		case MINT_CTZ_I8:
+		case MINT_POPCNT_I8:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
