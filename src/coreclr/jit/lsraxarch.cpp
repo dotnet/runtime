@@ -2020,6 +2020,7 @@ static GenTree* SkipContainedCreateScalarUnsafe(GenTree* node)
     {
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
         {
             return hwintrinsic->Op(1);
         }
@@ -2128,6 +2129,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector128_ToScalar:
             case NI_Vector256_CreateScalarUnsafe:
             case NI_Vector256_ToScalar:
+            case NI_Vector512_CreateScalarUnsafe:
             {
                 assert(numArgs == 1);
 
