@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
 using Unity.CoreCLRHelpers;
 
 namespace UnityEmbedHost.Tests;
@@ -12,11 +11,14 @@ namespace UnityEmbedHost.Tests;
 static class CoreCLRHostTestingWrappers
 {
     public static nint gchandle_new_v2(object obj, bool pinned)
-        => CoreCLRHost.gchandle_new_v2(Unsafe.As<object, IntPtr>(ref obj), pinned);
+        => CoreCLRHost.gchandle_new_v2(obj.UnsafeAsIntPtr(), pinned);
 
     public static object? gchandle_get_target_v2(nint handleIn)
-    {
-        var result = CoreCLRHost.gchandle_get_target_v2(handleIn);
-        return Unsafe.As<IntPtr, object>(ref result);
-    }
+        => CoreCLRHost.gchandle_get_target_v2(handleIn).UnsafeAs<object>();
+
+    public static object? object_isinst(object obj, Type klass)
+        => CoreCLRHost.object_isinst(obj.UnsafeAsIntPtr(), klass.TypeHandleIntPtr()).UnsafeAs<object>();
+
+    public static Type object_get_class(object obj)
+        => CoreCLRHost.object_get_class(obj.UnsafeAsIntPtr()).TypeFromHandleIntPtr();
 }
