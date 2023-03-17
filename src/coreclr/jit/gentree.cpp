@@ -8443,7 +8443,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 return nullptr;
             }
 
-            if (tree->gtOper == GT_FIELD)
+            if (tree->OperIs(GT_FIELD))
             {
                 GenTree* objp = nullptr;
 
