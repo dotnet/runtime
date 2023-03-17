@@ -31,8 +31,7 @@ namespace Wasm.Build.Tests
         public const string DefaultTargetFramework = "net8.0";
         public const string DefaultTargetFrameworkForBlazor = "net8.0";
         private const string DefaultEnvironmentLocale = "en-US";
-        protected static readonly char s_unicodeChar = '煉';
-        protected static readonly string s_windowsEquivalentForUnicodeChar = "šůë";
+        protected static readonly char s_unicodeChar = '\u7149';
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -196,9 +195,8 @@ namespace Wasm.Build.Tests
                                 useWasmConsoleOutput: useWasmConsoleOutput
                                 );
 
-            string safeProjectName = GetUnicodeProjectNameInSafeForm(buildArgs.ProjectName);
             AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
-            AssertSubstring($"AOT: image '{safeProjectName}' found.", output, contains: buildArgs.AOT);
+            AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
 
             if (test != null)
                 test(output);
@@ -1205,13 +1203,6 @@ namespace Wasm.Build.Tests
                 Assert.Contains(substring, full);
             else
                 Assert.DoesNotContain(substring, full);
-        }
-
-        protected string GetUnicodeProjectNameInSafeForm(string unicodeProjectName)
-        {
-            if (!s_isWindows || !unicodeProjectName.Contains(s_unicodeChar))
-                return unicodeProjectName;
-            return unicodeProjectName.Replace($"{s_unicodeChar}", s_windowsEquivalentForUnicodeChar);
         }
     }
 
