@@ -2446,8 +2446,6 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 	// There might be several threads that passed the first check
 	// Adding another check to ensure single load of a container assembly due to race condition 
 	if (!container_amodule) {
-        char *local_ref = container_assm_name;
-        container_assm_name = NULL;
 		ERROR_DECL (error);
 
 		// Create a fake MonoAssembly/MonoImage to retrieve its AOT module.
@@ -2456,7 +2454,7 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 		assm->image = g_new0 (MonoImage, 1);
 		assm->image->dynamic = 0;
 		assm->image->alc = alc;
-		assm->aname.name = local_ref;
+		assm->aname.name = container_assm_name;
 
 		mono_image_init (assm->image);
 		MonoAotFileInfo* info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assm->aname.name);
@@ -2465,6 +2463,7 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 
 		load_aot_module(alc, assm, NULL, error);
 		g_assert (assm->image->aot_module);
+		mono_memory_barrier ();
 		container_amodule = assm->image->aot_module;
 	}
 
