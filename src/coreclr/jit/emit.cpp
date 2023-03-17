@@ -5721,15 +5721,19 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader,
                 written += sprintf_s(buffer + written, 100, "igInLoop: IG%02u\n", igInLoop->igNum);
                 written +=
                     sprintf_s(buffer + written, 100, "igInLoop->backEdge: IG%02u\n", igInLoop->igLoopBackEdge->igNum);
+
+#ifdef EMIT_BACKWARDS_NAVIGATION
                 if (igInLoop->endsWithAlignInstr())
                 {
-#if EMIT_BACKWARDS_NAVIGATION
+
                     instrDescAlign* alignInstr = (instrDescAlign*)igInLoop->igLastIns;
                     assert(alignInstr->idaIG == igInLoop);
                     written += sprintf_s(buffer + written, 100, "igInLoop has align instruction for : IG%02u\n",
                                          alignInstr->idaLoopHeadPredIG->igNext->igNum);
-#endif // EMIT_BACKWARDS_NAVIGATION
+
                 }
+#endif // EMIT_BACKWARDS_NAVIGATION
+
                 written += sprintf_s(buffer + written, 35, "Loop:\n");
                 for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
                 {
