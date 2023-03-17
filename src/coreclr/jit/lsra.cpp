@@ -8762,13 +8762,13 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 {
     switch (registerScore)
     {
-#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                     \
-    case RegisterScore::stat:                                                               \
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
+    case RegisterScore::stat:                                                                                          \
         return LsraStat::STAT_##stat;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
-#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                \
-    case RegisterScore::stat:                                                               \
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
+    case RegisterScore::stat:                                                                                          \
         return LsraStat::STAT_##stat;
 #include "lsra_busy_score.h"
 #undef BUSY_REG_SEL_DEF
@@ -11074,15 +11074,14 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 #ifdef DEBUG
     mappingTable = new ScoreMappingTable(linearScan->compiler->getAllocator(CMK_LSRA));
 
-#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                               \
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
 #include "lsra_score.h"
 #undef REG_SEL_DEF
-#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                          \
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
 #include "lsra_busy_score.h"
 #undef BUSY_REG_SEL_DEF
-
 
     LPCWSTR ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
@@ -11097,15 +11096,15 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 
         switch (ordering[orderId])
         {
-#define REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                          \
-    case orderSeqId:                                                                  \
-        RegSelectionOrder[orderId] = enum_name;                                       \
+#define REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                                                           \
+    case orderSeqId:                                                                                                   \
+        RegSelectionOrder[orderId] = enum_name;                                                                        \
         break;
 #include "lsra_score.h"
 #undef REG_SEL_DEF
-#define BUSY_REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                     \
-    case orderSeqId:                                                                  \
-        RegSelectionOrder[orderId] = enum_name;                                       \
+#define BUSY_REG_SEL_DEF(enum_name, value, shortname, orderSeqId)                                                      \
+    case orderSeqId:                                                                                                   \
+        RegSelectionOrder[orderId] = enum_name;                                                                        \
         break;
 #include "lsra_busy_score.h"
 #undef BUSY_REG_SEL_DEF
@@ -12098,12 +12097,12 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
 #else // RELEASE
 
-// In release, just invoke the default order
+    // In release, just invoke the default order
     if (freeCandidates != RBM_NONE)
     {
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
-        try_##stat();                                                                                                  \
-        IF_FOUND_GOTO_DONE
+    try_##stat();                                                                                                      \
+    IF_FOUND_GOTO_DONE
 #include "lsra_score.h"
 #undef REG_SEL_DEF
     }

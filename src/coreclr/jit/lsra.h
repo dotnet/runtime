@@ -1324,7 +1324,6 @@ private:
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
 #include "lsra_busy_score.h"
 #undef BUSY_REG_SEL_DEF
-
     };
 
     RegisterSelection* regSelector;
