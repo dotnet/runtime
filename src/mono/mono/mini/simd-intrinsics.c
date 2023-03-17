@@ -1220,6 +1220,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_BitwiseAnd:
 		case SN_BitwiseOr:
 		case SN_Xor:
+		case SN_Floor:
+		case SN_Ceiling:
 			break;
 		default: 
 			return NULL;
