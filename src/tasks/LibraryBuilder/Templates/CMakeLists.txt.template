@@ -37,8 +37,11 @@ if(TARGETS_ANDROID)
         libz.so
         log
     )
-    set(CMAKE_C_FLAGS, "${CMAKE_C_FLAGS} -fPIC")
     add_definitions(-DHOST_ANDROID=1)
+    add_definitions(-g)
+    add_definitions(-fPIC)
+    add_definitions(-fvisibility=hidden)
+    set(USE_GCC_ATOMIC_OPS 1)
 elseif(TARGETS_APPLE_MOBILE)
     set(MOBILE_SYSTEM_LIBS
         "-framework Foundation"

@@ -100,11 +100,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AssembliesToBundleInternal Remove="@(AssembliesToBundleInternal)" />
-      <AssembliesToBundleInternal Include="@(AppleAssembliesToBundle)">
+      <_AssembliesToBundleInternal Remove="@(_AssembliesToBundleInternal)" />
+      <_AssembliesToBundleInternal Include="@(AppleAssembliesToBundle)">
         <_InternalForceInterpret>%(AppleAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
         <_IsNative>%(AppleAssembliesToBundle._IsNative)</_IsNative>
-      </AssembliesToBundleInternal>
+      </_AssembliesToBundleInternal>
     </ItemGroup>
   </Target>
 
@@ -154,14 +154,14 @@
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
 
-      <_AotInputAssemblies Include="@(AssembliesToBundleInternal)" 
-                           Condition="'%(AssembliesToBundleInternal._InternalForceInterpret)' != 'true'">
+      <_AotInputAssemblies Include="@(_AssembliesToBundleInternal)" 
+                           Condition="'%(_AssembliesToBundleInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
       </_AotInputAssemblies>
 
-      <_AOT_InternalForceInterpretAssemblies Include="@(AssembliesToBundleInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
-      <AssembliesToBundleInternal Remove="@(AssembliesToBundleInternal)" />
+      <_AOT_InternalForceInterpretAssemblies Include="@(_AssembliesToBundleInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+      <_AssembliesToBundleInternal Remove="@(_AssembliesToBundleInternal)" />
     </ItemGroup>
     
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
@@ -185,12 +185,25 @@
       </_AotInputAssemblies>
     </ItemGroup>
 
+    <!-- 
+      In order for the runtime to work when static linking, we must supply 
+      a list of direct pinvokes otherwise the runtime will crash
+    -->
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <DirectPInvokes Include="libSystem.Native" />
+      <DirectPInvokes Include="libSystem.IO.Compression.Native" />
+      <DirectPInvokes Include="libSystem.Net.Security.Native" />
+      <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Apple" />
+    </ItemGroup>
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
         Assemblies="@(_AotInputAssemblies)"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         DedupAssembly="$(_iOSLikeDedupAssembly)"
+        DirectPInvokes="@(DirectPInvokes)"
+        DirectPInvokeLists="@(DirectPInvokeLists)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         LLVMPath="$(MonoAotCrossDir)"
@@ -199,13 +212,13 @@
         OutputType="AsmOnly"
         UseAotDataFile="$(_UseAotDataFile)"
         UseLLVM="$(MonoEnableLLVM)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="AssembliesToBundleInternal" />
+        <Output TaskParameter="CompiledAssemblies" ItemName="_AssembliesToBundleInternal" />
     </MonoAOTCompiler>
 
-    <ILStrip Condition="'$(ShouldILStrip)' == 'true'" Assemblies="@(AssembliesToBundleInternal)" />
+    <ILStrip Condition="'$(ShouldILStrip)' == 'true'" Assemblies="@(_AssembliesToBundleInternal)" />
 
     <ItemGroup>
-      <AssembliesToBundleInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+      <_AssembliesToBundleInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
   </Target>
 
@@ -225,7 +238,7 @@
     <AppleAppBuilderTask
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
-      Assemblies="@(AssembliesToBundleInternal)"
+      Assemblies="@(_AssembliesToBundleInternal)"
       BuildAppBundle="$(GenerateXcodeProject)"
       DevTeamProvisioning="$(DevTeamProvisioning)"
       DiagnosticPorts="$(DiagnosticPorts)"

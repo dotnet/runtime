@@ -81,11 +81,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AssembliesToBundleInternal Remove="@(AssembliesToBundleInternal)" />
-      <AssembliesToBundleInternal Include="@(AndroidAssembliesToBundle)">
+      <_AssembliesToBundleInternal Remove="@(_AssembliesToBundleInternal)" />
+      <_AssembliesToBundleInternal Include="@(AndroidAssembliesToBundle)">
         <_InternalForceInterpret>%(AndroidAssembliesToBundle._InternalForceInterpret)</_InternalForceInterpret>
         <_IsNative>%(AndroidAssembliesToBundle._IsNative)</_IsNative>
-      </AssembliesToBundleInternal>
+      </_AssembliesToBundleInternal>
     </ItemGroup>
   </Target>
 
@@ -127,14 +127,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_AotInputAssemblies Include="@(AssembliesToBundleInternal)"
-                           Condition="'%(AssembliesToBundleInternal._InternalForceInterpret)' != 'true'">
+      <_AotInputAssemblies Include="@(_AssembliesToBundleInternal)"
+                           Condition="'%(_AssembliesToBundleInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
       </_AotInputAssemblies>
 
-      <_AOT_InternalForceInterpretAssemblies Include="@(AssembliesToBundleInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
-      <AssembliesToBundleInternal Remove="@(AssembliesToBundleInternal)" />
+      <_AOT_InternalForceInterpretAssemblies Include="@(_AssembliesToBundleInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+      <_AssembliesToBundleInternal Remove="@(_AssembliesToBundleInternal)" />
     </ItemGroup>
 
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
@@ -195,11 +195,11 @@
         OutputType="AsmOnly"
         UseAotDataFile="$(_UseAotDataFile)"
         UseLLVM="$(MonoEnableLLVM)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="AssembliesToBundleInternal" />
+        <Output TaskParameter="CompiledAssemblies" ItemName="_AssembliesToBundleInternal" />
     </MonoAOTCompiler>
 
     <ItemGroup>
-      <AssembliesToBundleInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+      <_AssembliesToBundleInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
   </Target>
 
@@ -215,7 +215,7 @@
 
     <AndroidAppBuilderTask
         AppDir="$(AndroidBuildDir)"
-        Assemblies="@(AssembliesToBundleInternal)"
+        Assemblies="@(_AssembliesToBundleInternal)"
         DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
         ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
