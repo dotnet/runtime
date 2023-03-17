@@ -2438,30 +2438,35 @@ mono_aot_init (void)
 static void
 load_container_amodule (MonoAssemblyLoadContext *alc)
 {
-	ERROR_DECL (error);
-
-	if (!container_assm_name || container_amodule)
+	// If container_amodule loaded, don't lock the runtime
+	if (container_amodule)
 		return;
 
-	char *local_ref = container_assm_name;
-	container_assm_name = NULL;
+	mono_loader_lock ();
+	// There might be several threads that passed the first check
+	// Adding another check to ensure single load of a container assembly due to race condition 
+	if (!container_amodule) {
+		ERROR_DECL (error);
 
-	// Create a fake MonoAssembly/MonoImage to retrieve its AOT module.
-	// Container MonoAssembly/MonoImage shouldn't be used during the runtime.
-	MonoAssembly *assm = g_new0 (MonoAssembly, 1);
-	assm->image = g_new0 (MonoImage, 1);
-	assm->image->dynamic = 0;
-	assm->image->alc = alc;
-	assm->aname.name = local_ref;
+		// Create a fake MonoAssembly/MonoImage to retrieve its AOT module.
+		// Container MonoAssembly/MonoImage shouldn't be used during the runtime.
+		MonoAssembly *assm = g_new0 (MonoAssembly, 1);
+		assm->image = g_new0 (MonoImage, 1);
+		assm->image->dynamic = 0;
+		assm->image->alc = alc;
+		assm->aname.name = container_assm_name;
 
-	mono_image_init (assm->image);
-	MonoAotFileInfo* info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assm->aname.name);
-	assm->image->guid = (char*)info->assembly_guid;
-	mono_assembly_addref (assm);
+		mono_image_init (assm->image);
+		MonoAotFileInfo* info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assm->aname.name);
+		assm->image->guid = (char*)info->assembly_guid;
+		mono_assembly_addref (assm);
 
-	load_aot_module(alc, assm, NULL, error);
-	g_assert (assm->image->aot_module);
-	container_amodule = assm->image->aot_module;
+		load_aot_module(alc, assm, NULL, error);
+		g_assert (assm->image->aot_module);
+		container_amodule = assm->image->aot_module;
+	}
+
+	mono_loader_unlock ();
 }
 
 static gboolean
