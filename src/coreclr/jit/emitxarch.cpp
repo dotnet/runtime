@@ -403,7 +403,7 @@ bool emitter::IsRexW0Instruction(instruction ins)
 
     if ((flags & REX_W0) != 0)
     {
-        assert((flags & (REX_W1 | REX_WX)) == 0);
+        assert((flags & (REX_W1 | REX_WX | REX_W1_EVEX)) == 0);
         return true;
     }
 
@@ -425,7 +425,7 @@ bool emitter::IsRexW1Instruction(instruction ins)
 
     if ((flags & REX_W1) != 0)
     {
-        assert((flags & (REX_W0 | REX_WX)) == 0);
+        assert((flags & (REX_W0 | REX_WX | REX_W1_EVEX)) == 0);
         return true;
     }
 
@@ -447,12 +447,35 @@ bool emitter::IsRexWXInstruction(instruction ins)
 
     if ((flags & REX_WX) != 0)
     {
-        assert((flags & (REX_W0 | REX_W1)) == 0);
+        assert((flags & (REX_W0 | REX_W1 | REX_W1_EVEX)) == 0);
         return true;
     }
 
     return false;
 }
+
+//------------------------------------------------------------------------
+// IsRexW1EvexInstruction: check if the instruction always encodes REX.W as 1 for EVEX
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    true if the instruction always encodes REX.W as 1 for EVEX; othwerwise, false
+//
+bool emitter::IsRexW1EvexInstruction(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+
+    if ((flags & REX_W1_EVEX) != 0)
+    {
+        assert((flags & (REX_W0 | REX_W1 | REX_WX)) == 0);
+        return true;
+    }
+
+    return false;
+}
+
 
 #ifdef TARGET_64BIT
 //------------------------------------------------------------------------
@@ -1196,6 +1219,10 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
     {
         return true;
     }
+    else if (IsRexW1EvexInstruction(ins))
+    {
+        return TakesEvexPrefix(id);
+    }
 
     if (IsRexWXInstruction(ins))
     {
@@ -1206,6 +1233,7 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
             case INS_cvtsd2si:
             case INS_cvttsd2si:
             case INS_movd:
+            case INS_movnti:
             case INS_andn:
             case INS_bextr:
             case INS_blsi:

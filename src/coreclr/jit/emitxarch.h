@@ -410,6 +410,7 @@ bool IsFlagsAlwaysModified(instrDesc* id);
 static bool IsRexW0Instruction(instruction ins);
 static bool IsRexW1Instruction(instruction ins);
 static bool IsRexWXInstruction(instruction ins);
+static bool IsRexW1EvexInstruction(instruction ins);
 
 bool IsThreeOperandAVXInstruction(instruction ins)
 {
