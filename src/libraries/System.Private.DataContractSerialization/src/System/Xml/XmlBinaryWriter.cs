@@ -924,10 +924,10 @@ namespace System.Xml
             else
             {
                 WriteArrayInfo(XmlBinaryNodeType.FloatTextWithEndElement, items.Length);
-                foreach (float d in items)
+                foreach (float f in items)
                 {
                     Span<byte> span = GetBuffer(sizeof(float), out int bufferOffset).AsSpan(bufferOffset, sizeof(float));
-                    BinaryPrimitives.WriteDoubleLittleEndian(span, d);
+                    BinaryPrimitives.WriteSingleLittleEndian(span, f);
                     Advance(sizeof(float));
                 }
             }
