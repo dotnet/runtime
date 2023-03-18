@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.IO.MemoryMappedFiles;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.IO.Hashing
 {
@@ -173,13 +170,16 @@ namespace System.IO.Hashing
         private static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
 #if NET7_0_OR_GREATER
+            // Prefer the vectorized implementation, if available
+
             // We check for little endian byte order here in case we're ever on ARM in big endian mode
             // All of these checks except the length check are elided by JIT.
             if (BitConverter.IsLittleEndian
-                && (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported || System.Runtime.Intrinsics.Arm.Aes.IsSupported)
+                && (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported
+                    || (System.Runtime.Intrinsics.Arm.Aes.IsSupported && System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported))
                 && source.Length >= X86MinimumLength)
             {
-                return UpdateWithCarrylessMultiply(crc, source);
+                return UpdateVectorized(crc, source);
             }
 #endif
 
@@ -188,6 +188,20 @@ namespace System.IO.Hashing
 
         private static uint UpdateScalar(uint crc, ReadOnlySpan<byte> source)
         {
+#if NET6_0_OR_GREATER
+            // Use ARM intrinsics for CRC if available. This is used for the trailing bytes on the vectorized path
+            // and is the primary method if the vectorized path is unavailable.
+            if (System.Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported)
+            {
+                return UpdateScalarArm64(crc, source);
+            }
+
+            if (System.Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            {
+                return UpdateScalarArm32(crc, source);
+            }
+#endif
+
             ReadOnlySpan<uint> crcLookup = CrcLookup;
             for (int i = 0; i < source.Length; i++)
             {

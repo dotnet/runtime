@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using Aes = System.Runtime.Intrinsics.Arm.Aes;
 
 namespace System.IO.Hashing
@@ -68,14 +69,14 @@ namespace System.IO.Hashing
 
         // Processes the bytes in source in X86BlockSize chunks using x86 intrinsics, followed by processing 16
         // byte chunks, and then processing remaining bytes individually. Requires little endian byte order and
-        // support for PCLMULUQDQ intrinsics on Intel architecture or AES intrinsics on ARM architecture.
+        // support for PCLMULUQDQ intrinsics on Intel architecture or AES and AdvSimd intrinsics on ARM architecture.
         // Based on the algorithm put forth in the Intel paper "Fast CRC Computation for Generic Polynomials Using
         // PCLMULQDQ Instruction" in December, 2009.
-        private static uint UpdateWithCarrylessMultiply(uint crc, ReadOnlySpan<byte> source)
+        private static uint UpdateVectorized(uint crc, ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length >= X86MinimumLength);
-            Debug.Assert(Pclmulqdq.IsSupported || Aes.IsSupported,
-                "Either Intel PCLMULUQDQ or ARM AES support is required.");
+            Debug.Assert(Pclmulqdq.IsSupported || (Aes.IsSupported && AdvSimd.IsSupported),
+                "Either Intel PCLMULUQDQ or ARM AES+AdvSimd support is required.");
             Debug.Assert(BitConverter.IsLittleEndian,
                 "Only little endian byte order is supported.");
 
@@ -90,7 +91,7 @@ namespace System.IO.Hashing
             Vector128<ulong> x4 = Vector128.LoadUnsafe(ref srcRef, 48).AsUInt64();
             Vector128<ulong> x5;
 
-            x1 ^= Vector128.CreateScalar((ulong)crc);
+            x1 ^= Vector128.CreateScalar(crc).AsUInt64();
             Vector128<ulong> x0 = Vector128.Create(0x0154442bd4, 0x01c6e41596).AsUInt64(); // k1, k2
 
             srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
@@ -162,25 +163,17 @@ namespace System.IO.Hashing
 
             // Fold 128 bits to 64 bits.
             x2 = CarrylessMultiplyLeftLowerRightUpper(x1, x0);
-            x3 = Vector128.Create(0xffffffffL, 0xffffffffL).AsUInt64();
+            x3 = Vector128.Create(~0, 0, ~0, 0).AsUInt64();
             x1 = Sse2.IsSupported
                 ? Sse2.ShiftRightLogical128BitLane(x1, 8)
-                : Vector128.Create(x1.GetUpper(), Vector64<ulong>.Zero); // Fallback for ARM
+                : AdvSimd.ExtractVector128(x1.AsByte(), Vector128<byte>.Zero, 8).AsUInt64();
             x1 ^= x2;
 
             x0 = Vector128.CreateScalar(0x0163cd6124).AsUInt64(); // k5, k0
 
-            if (Sse2.IsSupported)
-            {
-                x2 = Sse2.ShiftRightLogical128BitLane(x1, 4);
-            }
-            else
-            {
-                // Fallback for ARM
-                var intVector = x1.AsUInt32();
-                x2 = Vector128.Create(intVector.GetElement(1), intVector.GetElement(2), intVector.GetElement(3), 0u).AsUInt64();
-            }
-
+            x2 = Sse2.IsSupported
+                ? Sse2.ShiftRightLogical128BitLane(x1, 4)
+                : AdvSimd.ExtractVector128(x1.AsByte(), Vector128<byte>.Zero, 4).AsUInt64();
             x1 &= x3;
             x1 = CarrylessMultiplyLower(x1, x0);
             x1 ^= x2;
