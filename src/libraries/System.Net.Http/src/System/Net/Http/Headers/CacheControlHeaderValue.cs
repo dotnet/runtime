@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -27,103 +26,128 @@ namespace System.Net.Http.Headers
 
         private static readonly GenericHeaderParser s_nameValueListParser = GenericHeaderParser.MultipleValueNameValueParser;
 
-        private bool _noCache;
+        [Flags]
+        private enum Flags : int
+        {
+            None = 0,
+            MaxAgeHasValue = 1 << 0,
+            SharedMaxAgeHasValue = 1 << 1,
+            MaxStaleLimitHasValue = 1 << 2,
+            MinFreshHasValue = 1 << 3,
+            NoCache = 1 << 4,
+            NoStore = 1 << 5,
+            MaxStale = 1 << 6,
+            NoTransform = 1 << 7,
+            OnlyIfCached = 1 << 8,
+            Public = 1 << 9,
+            Private = 1 << 10,
+            MustRevalidate = 1 << 11,
+            ProxyRevalidate = 1 << 12,
+        }
+
+        private Flags _flags;
         private TokenObjectCollection? _noCacheHeaders;
-        private bool _noStore;
-        private TimeSpan? _maxAge;
-        private TimeSpan? _sharedMaxAge;
-        private bool _maxStale;
-        private TimeSpan? _maxStaleLimit;
-        private TimeSpan? _minFresh;
-        private bool _noTransform;
-        private bool _onlyIfCached;
-        private bool _publicField;
-        private bool _privateField;
+        private TimeSpan _maxAge;
+        private TimeSpan _sharedMaxAge;
+        private TimeSpan _maxStaleLimit;
+        private TimeSpan _minFresh;
         private TokenObjectCollection? _privateHeaders;
-        private bool _mustRevalidate;
-        private bool _proxyRevalidate;
         private UnvalidatedObjectCollection<NameValueHeaderValue>? _extensions;
+
+        private void SetTimeSpan(ref TimeSpan fieldRef, Flags flag, TimeSpan? value)
+        {
+            if (value is null)
+            {
+                fieldRef = default;
+                _flags &= ~flag;
+            }
+            else
+            {
+                fieldRef = value.Value;
+                _flags |= flag;
+            }
+        }
 
         public bool NoCache
         {
-            get { return _noCache; }
-            set { _noCache = value; }
+            get => (_flags & Flags.NoCache) != 0;
+            set => _flags = value ? (_flags | Flags.NoCache) : (_flags & ~Flags.NoCache);
         }
 
         public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new TokenObjectCollection();
 
         public bool NoStore
         {
-            get { return _noStore; }
-            set { _noStore = value; }
+            get => (_flags & Flags.NoStore) != 0;
+            set => _flags = value ? (_flags | Flags.NoStore) : (_flags & ~Flags.NoStore);
         }
 
         public TimeSpan? MaxAge
         {
-            get { return _maxAge; }
-            set { _maxAge = value; }
+            get => (_flags & Flags.MaxAgeHasValue) == 0 ? null : _maxAge;
+            set => SetTimeSpan(ref _maxAge, Flags.MaxAgeHasValue, value);
         }
 
         public TimeSpan? SharedMaxAge
         {
-            get { return _sharedMaxAge; }
-            set { _sharedMaxAge = value; }
+            get => (_flags & Flags.SharedMaxAgeHasValue) == 0 ? null : _sharedMaxAge;
+            set => SetTimeSpan(ref _sharedMaxAge, Flags.SharedMaxAgeHasValue, value);
         }
 
         public bool MaxStale
         {
-            get { return _maxStale; }
-            set { _maxStale = value; }
+            get => (_flags & Flags.MaxStale) != 0;
+            set => _flags = value ? (_flags | Flags.MaxStale) : (_flags & ~Flags.MaxStale);
         }
 
         public TimeSpan? MaxStaleLimit
         {
-            get { return _maxStaleLimit; }
-            set { _maxStaleLimit = value; }
+            get => (_flags & Flags.MaxStaleLimitHasValue) == 0 ? null : _maxStaleLimit;
+            set => SetTimeSpan(ref _maxStaleLimit, Flags.MaxStaleLimitHasValue, value);
         }
 
         public TimeSpan? MinFresh
         {
-            get { return _minFresh; }
-            set { _minFresh = value; }
+            get => (_flags & Flags.MinFreshHasValue) == 0 ? null : _minFresh;
+            set => SetTimeSpan(ref _minFresh, Flags.MinFreshHasValue, value);
         }
 
         public bool NoTransform
         {
-            get { return _noTransform; }
-            set { _noTransform = value; }
+            get => (_flags & Flags.NoTransform) != 0;
+            set => _flags = value ? (_flags | Flags.NoTransform) : (_flags & ~Flags.NoTransform);
         }
 
         public bool OnlyIfCached
         {
-            get { return _onlyIfCached; }
-            set { _onlyIfCached = value; }
+            get => (_flags & Flags.OnlyIfCached) != 0;
+            set => _flags = value ? (_flags | Flags.OnlyIfCached) : (_flags & ~Flags.OnlyIfCached);
         }
 
         public bool Public
         {
-            get { return _publicField; }
-            set { _publicField = value; }
+            get => (_flags & Flags.Public) != 0;
+            set => _flags = value ? (_flags | Flags.Public) : (_flags & ~Flags.Public);
         }
 
         public bool Private
         {
-            get { return _privateField; }
-            set { _privateField = value; }
+            get => (_flags & Flags.Private) != 0;
+            set => _flags = value ? (_flags | Flags.Private) : (_flags & ~Flags.Private);
         }
 
         public ICollection<string> PrivateHeaders => _privateHeaders ??= new TokenObjectCollection();
 
         public bool MustRevalidate
         {
-            get { return _mustRevalidate; }
-            set { _mustRevalidate = value; }
+            get => (_flags & Flags.MustRevalidate) != 0;
+            set => _flags = value ? (_flags | Flags.MustRevalidate) : (_flags & ~Flags.MustRevalidate);
         }
 
         public bool ProxyRevalidate
         {
-            get { return _proxyRevalidate; }
-            set { _proxyRevalidate = value; }
+            get => (_flags & Flags.ProxyRevalidate) != 0;
+            set => _flags = value ? (_flags | Flags.ProxyRevalidate) : (_flags & ~Flags.ProxyRevalidate);
         }
 
         public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
@@ -136,23 +160,15 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(source != null);
 
-            _noCache = source._noCache;
-            _noStore = source._noStore;
+            _flags = source._flags;
             _maxAge = source._maxAge;
             _sharedMaxAge = source._sharedMaxAge;
-            _maxStale = source._maxStale;
             _maxStaleLimit = source._maxStaleLimit;
             _minFresh = source._minFresh;
-            _noTransform = source._noTransform;
-            _onlyIfCached = source._onlyIfCached;
-            _publicField = source._publicField;
-            _privateField = source._privateField;
-            _mustRevalidate = source._mustRevalidate;
-            _proxyRevalidate = source._proxyRevalidate;
 
             if (source._noCacheHeaders != null)
             {
-                foreach (var noCacheHeader in source._noCacheHeaders)
+                foreach (string noCacheHeader in source._noCacheHeaders)
                 {
                     NoCacheHeaders.Add(noCacheHeader);
                 }
@@ -160,7 +176,7 @@ namespace System.Net.Http.Headers
 
             if (source._privateHeaders != null)
             {
-                foreach (var privateHeader in source._privateHeaders)
+                foreach (string privateHeader in source._privateHeaders)
                 {
                     PrivateHeaders.Add(privateHeader);
                 }
@@ -173,14 +189,14 @@ namespace System.Net.Http.Headers
         {
             StringBuilder sb = StringBuilderCache.Acquire();
 
-            AppendValueIfRequired(sb, _noStore, noStoreString);
-            AppendValueIfRequired(sb, _noTransform, noTransformString);
-            AppendValueIfRequired(sb, _onlyIfCached, onlyIfCachedString);
-            AppendValueIfRequired(sb, _publicField, publicString);
-            AppendValueIfRequired(sb, _mustRevalidate, mustRevalidateString);
-            AppendValueIfRequired(sb, _proxyRevalidate, proxyRevalidateString);
+            AppendValueIfRequired(sb, NoStore, noStoreString);
+            AppendValueIfRequired(sb, NoTransform, noTransformString);
+            AppendValueIfRequired(sb, OnlyIfCached, onlyIfCachedString);
+            AppendValueIfRequired(sb, Public, publicString);
+            AppendValueIfRequired(sb, MustRevalidate, mustRevalidateString);
+            AppendValueIfRequired(sb, ProxyRevalidate, proxyRevalidateString);
 
-            if (_noCache)
+            if (NoCache)
             {
                 AppendValueWithSeparatorIfRequired(sb, noCacheString);
                 if ((_noCacheHeaders != null) && (_noCacheHeaders.Count > 0))
@@ -191,11 +207,11 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if (_maxAge.HasValue)
+            if ((_flags & Flags.MaxAgeHasValue) != 0)
             {
                 AppendValueWithSeparatorIfRequired(sb, maxAgeString);
                 sb.Append('=');
-                int maxAge = (int)_maxAge.GetValueOrDefault().TotalSeconds;
+                int maxAge = (int)_maxAge.TotalSeconds;
                 if (maxAge >= 0)
                 {
                     sb.Append(maxAge);
@@ -208,11 +224,11 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if (_sharedMaxAge.HasValue)
+            if ((_flags & Flags.SharedMaxAgeHasValue) != 0)
             {
                 AppendValueWithSeparatorIfRequired(sb, sharedMaxAgeString);
                 sb.Append('=');
-                int sharedMaxAge = (int)_sharedMaxAge.GetValueOrDefault().TotalSeconds;
+                int sharedMaxAge = (int)_sharedMaxAge.TotalSeconds;
                 if (sharedMaxAge >= 0)
                 {
                     sb.Append(sharedMaxAge);
@@ -225,13 +241,13 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if (_maxStale)
+            if (MaxStale)
             {
                 AppendValueWithSeparatorIfRequired(sb, maxStaleString);
-                if (_maxStaleLimit.HasValue)
+                if ((_flags & Flags.MaxStaleLimitHasValue) != 0)
                 {
                     sb.Append('=');
-                    int maxStaleLimit = (int)_maxStaleLimit.GetValueOrDefault().TotalSeconds;
+                    int maxStaleLimit = (int)_maxStaleLimit.TotalSeconds;
                     if (maxStaleLimit >= 0)
                     {
                         sb.Append(maxStaleLimit);
@@ -245,11 +261,11 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if (_minFresh.HasValue)
+            if ((_flags & Flags.MinFreshHasValue) != 0)
             {
                 AppendValueWithSeparatorIfRequired(sb, minFreshString);
                 sb.Append('=');
-                int minFresh = (int)_minFresh.GetValueOrDefault().TotalSeconds;
+                int minFresh = (int)_minFresh.TotalSeconds;
                 if (minFresh >= 0)
                 {
                     sb.Append(minFresh);
@@ -262,7 +278,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if (_privateField)
+            if (Private)
             {
                 AppendValueWithSeparatorIfRequired(sb, privateString);
                 if ((_privateHeaders != null) && (_privateHeaders.Count > 0))
@@ -278,87 +294,49 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            CacheControlHeaderValue? other = obj as CacheControlHeaderValue;
-
-            if (other == null)
-            {
-                return false;
-            }
-
-            if ((_noCache != other._noCache) || (_noStore != other._noStore) || (_maxAge != other._maxAge) ||
-                (_sharedMaxAge != other._sharedMaxAge) || (_maxStale != other._maxStale) ||
-                (_maxStaleLimit != other._maxStaleLimit) || (_minFresh != other._minFresh) ||
-                (_noTransform != other._noTransform) || (_onlyIfCached != other._onlyIfCached) ||
-                (_publicField != other._publicField) || (_privateField != other._privateField) ||
-                (_mustRevalidate != other._mustRevalidate) || (_proxyRevalidate != other._proxyRevalidate))
-            {
-                return false;
-            }
-
-            if (!HeaderUtilities.AreEqualCollections(_noCacheHeaders, other._noCacheHeaders,
-                StringComparer.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            if (!HeaderUtilities.AreEqualCollections(_privateHeaders, other._privateHeaders,
-                StringComparer.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            if (!HeaderUtilities.AreEqualCollections(_extensions, other._extensions))
-            {
-                return false;
-            }
-
-            return true;
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is CacheControlHeaderValue other &&
+            _flags == other._flags &&
+            _maxAge == other._maxAge &&
+            _sharedMaxAge == other._sharedMaxAge &&
+            _minFresh == other._minFresh &&
+            HeaderUtilities.AreEqualCollections(_noCacheHeaders, other._noCacheHeaders, StringComparer.OrdinalIgnoreCase) &&
+            HeaderUtilities.AreEqualCollections(_privateHeaders, other._privateHeaders, StringComparer.OrdinalIgnoreCase) &&
+            HeaderUtilities.AreEqualCollections(_extensions, other._extensions);
 
         public override int GetHashCode()
         {
-            // Use a different bit for bool fields: bool.GetHashCode() will return 0 (false) or 1 (true). So we would
-            // end up having the same hash code for e.g. two instances where one has only noCache set and the other
-            // only noStore.
-            int result = _noCache.GetHashCode() ^ (_noStore.GetHashCode() << 1) ^ (_maxStale.GetHashCode() << 2) ^
-                (_noTransform.GetHashCode() << 3) ^ (_onlyIfCached.GetHashCode() << 4) ^
-                (_publicField.GetHashCode() << 5) ^ (_privateField.GetHashCode() << 6) ^
-                (_mustRevalidate.GetHashCode() << 7) ^ (_proxyRevalidate.GetHashCode() << 8);
+            HashCode hashcode = default;
 
-            // XOR the hashcode of timespan values with different numbers to make sure two instances with the same
-            // timespan set on different fields result in different hashcodes.
-            result = result ^ (_maxAge.HasValue ? _maxAge.Value.GetHashCode() ^ 1 : 0) ^
-                (_sharedMaxAge.HasValue ? _sharedMaxAge.Value.GetHashCode() ^ 2 : 0) ^
-                (_maxStaleLimit.HasValue ? _maxStaleLimit.Value.GetHashCode() ^ 4 : 0) ^
-                (_minFresh.HasValue ? _minFresh.Value.GetHashCode() ^ 8 : 0);
+            hashcode.Add(_flags);
+            hashcode.Add(_maxAge);
+            hashcode.Add(_sharedMaxAge);
+            hashcode.Add(_maxStaleLimit);
+            hashcode.Add(_minFresh);
 
             if ((_noCacheHeaders != null) && (_noCacheHeaders.Count > 0))
             {
-                foreach (var noCacheHeader in _noCacheHeaders)
+                int unorderedHash = 0;
+                foreach (string noCacheHeader in _noCacheHeaders)
                 {
-                    result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
+                    unorderedHash ^= StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
                 }
+                hashcode.Add(unorderedHash);
             }
 
             if ((_privateHeaders != null) && (_privateHeaders.Count > 0))
             {
-                foreach (var privateHeader in _privateHeaders)
+                int unorderedHash = 0;
+                foreach (string privateHeader in _privateHeaders)
                 {
-                    result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
+                    unorderedHash ^= StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
                 }
+                hashcode.Add(unorderedHash);
             }
 
-            if ((_extensions != null) && (_extensions.Count > 0))
-            {
-                foreach (var extension in _extensions)
-                {
-                    result ^= extension.GetHashCode();
-                }
-            }
+            hashcode.Add(NameValueHeaderValue.GetHashCode(_extensions));
 
-            return result;
+            return hashcode.ToHashCode();
         }
 
         public static CacheControlHeaderValue Parse(string? input)
@@ -395,11 +373,10 @@ namespace System.Net.Http.Headers
             // Cache-Control header consists of a list of name/value pairs, where the value is optional. So use an
             // instance of NameValueHeaderParser to parse the string.
             int current = startIndex;
-            object? nameValue;
             List<NameValueHeaderValue> nameValueList = new List<NameValueHeaderValue>();
             while (current < input.Length)
             {
-                if (!s_nameValueListParser.TryParseValue(input, null, ref current, out nameValue))
+                if (!s_nameValueListParser.TryParseValue(input, null, ref current, out object? nameValue))
                 {
                     return 0;
                 }
@@ -433,74 +410,87 @@ namespace System.Net.Http.Headers
             return input.Length - startIndex;
         }
 
-        private static bool TrySetCacheControlValues(CacheControlHeaderValue cc,
-            List<NameValueHeaderValue> nameValueList)
+        private static bool TrySetCacheControlValues(CacheControlHeaderValue cc, List<NameValueHeaderValue> nameValueList)
         {
             foreach (NameValueHeaderValue nameValue in nameValueList)
             {
-                bool success = true;
                 string name = nameValue.Name.ToLowerInvariant();
+                string? value = nameValue.Value;
+
+                Flags flagsToSet = Flags.None;
+                bool success = value is null;
 
                 switch (name)
                 {
                     case noCacheString:
-                        success = TrySetOptionalTokenList(nameValue, ref cc._noCache, ref cc._noCacheHeaders);
+                        flagsToSet = Flags.NoCache;
+                        success = TrySetOptionalTokenList(nameValue, ref cc._noCacheHeaders);
                         break;
 
                     case noStoreString:
-                        success = TrySetTokenOnlyValue(nameValue, ref cc._noStore);
+                        flagsToSet = Flags.NoStore;
                         break;
 
                     case maxAgeString:
-                        success = TrySetTimeSpan(nameValue, ref cc._maxAge);
+                        flagsToSet = Flags.MaxAgeHasValue;
+                        success = TrySetTimeSpan(value, ref cc._maxAge);
                         break;
 
                     case maxStaleString:
-                        success = ((nameValue.Value == null) || TrySetTimeSpan(nameValue, ref cc._maxStaleLimit));
-                        if (success)
+                        flagsToSet = Flags.MaxStale;
+                        if (TrySetTimeSpan(value, ref cc._maxStaleLimit))
                         {
-                            cc._maxStale = true;
+                            success = true;
+                            flagsToSet = Flags.MaxStale | Flags.MaxStaleLimitHasValue;
                         }
                         break;
 
                     case minFreshString:
-                        success = TrySetTimeSpan(nameValue, ref cc._minFresh);
+                        flagsToSet = Flags.MinFreshHasValue;
+                        success = TrySetTimeSpan(value, ref cc._minFresh);
                         break;
 
                     case noTransformString:
-                        success = TrySetTokenOnlyValue(nameValue, ref cc._noTransform);
+                        flagsToSet = Flags.NoTransform;
                         break;
 
                     case onlyIfCachedString:
-                        success = TrySetTokenOnlyValue(nameValue, ref cc._onlyIfCached);
+                        flagsToSet = Flags.OnlyIfCached;
                         break;
 
                     case publicString:
-                        success = TrySetTokenOnlyValue(nameValue, ref cc._publicField);
+                        flagsToSet = Flags.Public;
                         break;
 
                     case privateString:
-                        success = TrySetOptionalTokenList(nameValue, ref cc._privateField, ref cc._privateHeaders);
+                        flagsToSet = Flags.Private;
+                        success = TrySetOptionalTokenList(nameValue, ref cc._privateHeaders);
                         break;
 
                     case mustRevalidateString:
-                        success = TrySetTokenOnlyValue(nameValue, ref cc._mustRevalidate);
+                        flagsToSet = Flags.MustRevalidate;
                         break;
 
                     case proxyRevalidateString:
-                        success = TrySetTokenOnlyValue(nameValue, ref cc._proxyRevalidate);
+                        flagsToSet = Flags.ProxyRevalidate;
                         break;
 
                     case sharedMaxAgeString:
-                        success = TrySetTimeSpan(nameValue, ref cc._sharedMaxAge);
+                        flagsToSet = Flags.SharedMaxAgeHasValue;
+                        success = TrySetTimeSpan(value, ref cc._sharedMaxAge);
                         break;
 
                     default:
-                        cc.Extensions.Add(nameValue); // success is always true
+                        success = true;
+                        cc.Extensions.Add(nameValue);
                         break;
                 }
 
-                if (!success)
+                if (success)
+                {
+                    cc._flags |= flagsToSet;
+                }
+                else
                 {
                     return false;
                 }
@@ -509,25 +499,12 @@ namespace System.Net.Http.Headers
             return true;
         }
 
-        private static bool TrySetTokenOnlyValue(NameValueHeaderValue nameValue, ref bool boolField)
-        {
-            if (nameValue.Value != null)
-            {
-                return false;
-            }
-
-            boolField = true;
-            return true;
-        }
-
-        private static bool TrySetOptionalTokenList(NameValueHeaderValue nameValue, ref bool boolField,
-            ref TokenObjectCollection? destination)
+        private static bool TrySetOptionalTokenList(NameValueHeaderValue nameValue, ref TokenObjectCollection? destination)
         {
             Debug.Assert(nameValue != null);
 
             if (nameValue.Value == null)
             {
-                boolField = true;
                 return true;
             }
 
@@ -571,30 +548,20 @@ namespace System.Net.Http.Headers
             // After parsing a valid token list, we expect to have at least one value
             if ((destination != null) && (destination.Count > originalValueCount))
             {
-                boolField = true;
                 return true;
             }
 
             return false;
         }
 
-        private static bool TrySetTimeSpan(NameValueHeaderValue nameValue, ref TimeSpan? timeSpan)
+        private static bool TrySetTimeSpan(string? value, ref TimeSpan timeSpan)
         {
-            Debug.Assert(nameValue != null);
-
-            if (nameValue.Value == null)
-            {
-                return false;
-            }
-
-            int seconds;
-            if (!HeaderUtilities.TryParseInt32(nameValue.Value, out seconds))
+            if (value is null || !HeaderUtilities.TryParseInt32(value, out int seconds))
             {
                 return false;
             }
 
             timeSpan = new TimeSpan(0, 0, seconds);
-
             return true;
         }
 
