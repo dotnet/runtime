@@ -225,7 +225,7 @@ ep_sample_event_pipe_callback(
         while (offset < filter_data_size) {
             candidateKey = filter_data_char + offset;
             if (strcmp(candidateKey, sampleProfilerIntervalMSKey) == 0) {
-                ep_sample_profiler_set_sampling_rate(_strtoui64(candidateKey + 25, 0L, 10) * 1000000);
+                ep_sample_profiler_set_sampling_rate(strtol(candidateKey + 25, 0L, 10) * 1000000);
                 break;
             }
             else {
