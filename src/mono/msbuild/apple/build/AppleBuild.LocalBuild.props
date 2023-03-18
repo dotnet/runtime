@@ -1,5 +1,5 @@
 <!--
-    AppleApp.LocalBuild* files are meant for projects that want to use
+    AppleBuild.LocalBuild* files are meant for projects that want to use
     a local build of `dotnet/runtime` repo.
 
     Two ways to use this:
@@ -19,7 +19,7 @@
         $(AppleBuildSupportDir) - directory which has all the tasks, targets, and runtimepack
 -->
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)AppleApp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)AppleBuild.props" />
 
   <PropertyGroup>
     <_NetCoreAppCurrent>net8.0</_NetCoreAppCurrent>

@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <Import Project="..\..\common\LibraryBuilder.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)AppleApp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)AppleBuild.targets" />
 
   <!-- Use local runtime pack -->
   <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences">
