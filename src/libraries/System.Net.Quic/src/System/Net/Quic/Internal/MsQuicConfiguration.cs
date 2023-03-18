@@ -69,7 +69,7 @@ internal static class MsQuicConfiguration
             }
         }
 
-        return Create(options, flags, certificate, intermediates: null, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
+        return Create(options, flags, certificate, ReadOnlySpan<X509Certificate2>.Empty, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
     }
 
     public static MsQuicSafeHandle Create(QuicServerConnectionOptions options, string? targetHost)
@@ -85,7 +85,7 @@ internal static class MsQuicConfiguration
         }
 
         X509Certificate? certificate = null;
-        ReadOnlySpan<X509Certificate2> intermediates = ReadOnlySpan<X509Certificate2>.Empty;
+        ReadOnlySpan<X509Certificate2> intermediates = default;
         if (authenticationOptions.ServerCertificateContext is not null)
         {
             certificate = authenticationOptions.ServerCertificateContext.Certificate;
@@ -175,9 +175,9 @@ internal static class MsQuicConfiguration
                 {
                     X509Certificate2Collection collection = new X509Certificate2Collection();
                     collection.Add(certificate);
-                    foreach (X509Certificate2 ca in intermediates)
+                    foreach (X509Certificate2 intermediate in intermediates)
                     {
-                        collection.Add(ca);
+                        collection.Add(intermediate);
                     }
                     certificateData = collection.Export(X509ContentType.Pkcs12)!;
                 }
