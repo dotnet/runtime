@@ -228,7 +228,7 @@ ep_sample_event_pipe_callback(
     void* callback_data)
 {
     if (filter_data) {
-        ep_char8_t *filter_data_char = reinterpret_cast<ep_char8_t*>(filter_data->ptr);
+        ep_char8_t *filter_data_char = (ep_char8_t *)((void *)(filter_data->ptr));
         const uint32_t filter_data_size = filter_data->size;
         ep_char8_t *candidateKey = NULL;
         size_t offset = 0;
