@@ -2797,7 +2797,7 @@ namespace System
                 for (nuint idx = 0; idx < length; ++idx)
                 {
                     T original = Unsafe.Add(ref src, idx);
-                    Unsafe.Add(ref dst, idx) = original is null ? newValue : default!;
+                    Unsafe.Add(ref dst, idx) = original is null ? newValue : original;
                 }
             }
         }

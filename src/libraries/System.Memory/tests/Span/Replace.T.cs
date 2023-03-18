@@ -12,9 +12,40 @@ namespace System.SpanTests
     public class ReplaceTests_Int64 : ReplaceTests<long> { protected override long Create(int value) => value; }
     public class ReplaceTests_Char : ReplaceTests<char> { protected override char Create(int value) => (char)value; }
     public class ReplaceTests_Double : ReplaceTests<double> { protected override double Create(int value) => (double)value; }
-    public class ReplaceTests_String : ReplaceTests<string> { protected override string Create(int value) => value.ToString(); }
     public class ReplaceTests_Record : ReplaceTests<SimpleRecord> { protected override SimpleRecord Create(int value) => new SimpleRecord(value); }
     public class ReplaceTests_CustomEquatable : ReplaceTests<CustomEquatable> { protected override CustomEquatable Create(int value) => new CustomEquatable((byte)value); }
+
+    public class ReplaceTests_String : ReplaceTests<string>
+    {
+        protected override string Create(int value) => value.ToString();
+
+        [Fact]
+        public void NullOld_NonNullOriginal_CopiedCorrectly()
+        {
+            string[] orig = new string[] { "a", "b", "c" };
+            string[] actual = new string[orig.Length];
+            ((ReadOnlySpan<string>)orig).Replace(actual, null, "d");
+            Assert.Equal(orig, actual);
+        }
+
+        [Fact]
+        public void NullOld_NullOriginal_CopiedCorrectly()
+        {
+            string[] orig = new string[] { "a", null, "c" };
+            string[] actual = new string[orig.Length];
+            ((ReadOnlySpan<string>)orig).Replace(actual, null, "b");
+            Assert.Equal(new string[] { "a", "b", "c" }, actual);
+        }
+
+        [Fact]
+        public void NonNullOld_NullOriginal_CopiedCorrectly()
+        {
+            string[] orig = new string[] { "a", null, "c" };
+            string[] actual = new string[orig.Length];
+            ((ReadOnlySpan<string>)orig).Replace(actual, "d", "b");
+            Assert.Equal(orig, actual);
+        }
+    }
 
     public readonly struct CustomEquatable : IEquatable<CustomEquatable>
     {
