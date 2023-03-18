@@ -513,12 +513,11 @@ mono_jiterp_type_get_raw_value_size (MonoType *type) {
 }
 
 // we use these helpers to record when a trace bails out (in countBailouts mode)
-EMSCRIPTEN_KEEPALIVE void*
-mono_jiterp_trace_bailout (void* rip, int reason)
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_trace_bailout (int reason)
 {
 	if (reason < 256)
 		jiterp_trace_bailout_counts[reason]++;
-	return rip;
 }
 
 EMSCRIPTEN_KEEPALIVE double
@@ -666,7 +665,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_GETITEM_SPAN:
 		case MINT_GETITEM_LOCALSPAN:
 		case MINT_INTRINS_SPAN_CTOR:
-		case MINT_INTRINS_UNSAFE_BYTE_OFFSET:
 		case MINT_INTRINS_GET_TYPE:
 		case MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF:
 		case MINT_CASTCLASS:
@@ -697,12 +695,24 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_MONO_CMPXCHG_I8:
 		case MINT_CPBLK:
 		case MINT_INITBLK:
+		case MINT_ROL_I4_IMM:
+		case MINT_ROL_I8_IMM:
+		case MINT_ROR_I4_IMM:
+		case MINT_ROR_I8_IMM:
+		case MINT_CLZ_I4:
+		case MINT_CTZ_I4:
+		case MINT_POPCNT_I4:
+		case MINT_CLZ_I8:
+		case MINT_CTZ_I8:
+		case MINT_POPCNT_I8:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
 		case MINT_BR_S:
 		case MINT_LEAVE:
 		case MINT_LEAVE_S:
+		case MINT_CALL_HANDLER:
+		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches
 			if (ins->info.target_bb->il_offset <= ins->il_offset) {
 				if (*inside_branch_block)
@@ -714,6 +724,12 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			*inside_branch_block = TRUE;
 			return TRACE_CONTINUE;
 
+		case MINT_ICALL_V_P:
+		case MINT_ICALL_V_V:
+		case MINT_ICALL_P_P:
+		case MINT_ICALL_P_V:
+		case MINT_ICALL_PP_V:
+		case MINT_ICALL_PP_P:
 		case MINT_MONO_RETHROW:
 		case MINT_THROW:
 			if (*inside_branch_block)
@@ -725,8 +741,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LEAVE_S_CHECK:
 			return TRACE_ABORT;
 
-		case MINT_CALL_HANDLER:
-		case MINT_CALL_HANDLER_S:
 		case MINT_ENDFINALLY:
 		case MINT_RETHROW:
 		case MINT_PROF_EXIT:
@@ -1075,6 +1089,9 @@ mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher)
 	//  blocked the use of Module.addFunction
 	if (!dispatcher)
 		dispatcher = (WasmDoJitCall)mono_llvm_cpp_catch_exception;
+	else if (((int)(void*)dispatcher)==-1)
+		dispatcher = mono_jiterp_do_jit_call_indirect;
+
 	jiterpreter_do_jit_call = dispatcher;
 }
 
@@ -1247,6 +1264,7 @@ mono_jiterp_trace_transfer (
 #define JITERP_MEMBER_ARRAY_LENGTH 9
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS 10
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT 11
+#define JITERP_MEMBER_CLAUSE_DATA_OFFSETS 12
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -1270,6 +1288,8 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (InterpMethod, backward_branch_offsets);
 		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT:
 			return offsetof (InterpMethod, backward_branch_offsets_count);
+		case JITERP_MEMBER_CLAUSE_DATA_OFFSETS:
+			return offsetof (InterpMethod, clause_data_offsets);
 		case JITERP_MEMBER_RMETHOD:
 			return offsetof (JiterpEntryDataHeader, rmethod);
 		case JITERP_MEMBER_SPAN_LENGTH:

@@ -1163,7 +1163,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (logger.IsVerbose)
                         logger.LogMessage($"Freeing up memory");
 
-                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive);
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
                 }
 
                 if (logger.IsVerbose)

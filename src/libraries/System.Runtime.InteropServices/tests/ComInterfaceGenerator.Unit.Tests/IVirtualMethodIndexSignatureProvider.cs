@@ -125,8 +125,10 @@ partial interface INativeAPI
     {AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}
     [return:MarshalUsing(ConstantElementCount=10)]
     {collectionType} Method(
-        {collectionType} p,
-        in {collectionType} pIn,
+        [MarshalUsing(CountElementName = ""pSize"")] {collectionType} p,
+        int pSize,
+        [MarshalUsing(CountElementName = ""pInSize"")] in {collectionType} pIn,
+        in int pInSize,
         int pRefSize,
         [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
@@ -146,8 +148,10 @@ partial interface INativeAPI
     {AttributeProvider.VirtualMethodIndex(0, ImplicitThisParameter: ImplicitThisParameter, Direction: Direction)}
     [return:MarshalUsing(typeof({marshallerType}), ConstantElementCount=10)]
     {collectionType} Method(
-        [MarshalUsing(typeof({marshallerType}))] {collectionType} p,
-        [MarshalUsing(typeof({marshallerType}))] in {collectionType} pIn,
+        [MarshalUsing(typeof({marshallerType}), CountElementName = ""pSize"")] {collectionType} p,
+        [MarshalUsing(typeof({marshallerType}), CountElementName = ""pInSize"")] in {collectionType} pIn,
+        int pSize,
+        in int pInSize,
         int pRefSize,
         [MarshalUsing(typeof({marshallerType}), CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(typeof({marshallerType}), CountElementName = ""pOutSize"")] out {collectionType} pOut,
@@ -222,8 +226,10 @@ partial interface INativeAPI
     [return:MarshalUsing(ConstantElementCount=10)]
     [return:MarshalUsing(typeof({elementMarshaller}), ElementIndirectionDepth = 1)]
     TestCollection<int> Method(
-        [MarshalUsing(typeof({elementMarshaller}), ElementIndirectionDepth = 1)] {collectionType} p,
-        [MarshalUsing(typeof({elementMarshaller}), ElementIndirectionDepth = 1)] in {collectionType} pIn,
+        [MarshalUsing(CountElementName = ""pSize""), MarshalUsing(typeof({elementMarshaller}), ElementIndirectionDepth = 1)] {collectionType} p,
+        [MarshalUsing(CountElementName = ""pInSize""), MarshalUsing(typeof({elementMarshaller}), ElementIndirectionDepth = 1)] in {collectionType} pIn,
+        int pSize,
+        in int pInSize,
         int pRefSize,
         [MarshalUsing(CountElementName = ""pRefSize""), MarshalUsing(typeof({elementMarshaller}), ElementIndirectionDepth = 1)] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")][MarshalUsing(typeof({elementMarshaller}), ElementIndirectionDepth = 1)] out {collectionType} pOut,

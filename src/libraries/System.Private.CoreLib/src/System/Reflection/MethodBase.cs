@@ -274,6 +274,27 @@ namespace System.Reflection
 
         internal const int MaxStackAllocArgCount = 4;
 
+#if CORECLR
+        [InlineArray(MaxStackAllocArgCount)]
+#endif
+        private protected struct ArgumentData<T>
+        {
+            private T _arg0;
+#if !CORECLR
+#pragma warning disable CA1823, CS0169, IDE0051, IDE0044 // accessed via 'CheckArguments' ref arithmetic
+            private T _arg1;
+            private T _arg2;
+            private T _arg3;
+#pragma warning restore CA1823, CS0169, IDE0051, IDE0044
+#endif
+            [UnscopedRef]
+            public Span<T> AsSpan(int length)
+            {
+                Debug.Assert((uint)length <= (uint) MaxStackAllocArgCount);
+                return new Span<T>(ref _arg0, length);
+            }
+        }
+
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
         // When argument count <= MaxStackAllocArgCount, define a local of type default(StackAllocatedByRefs)
         // and pass it to CheckArguments().
@@ -282,31 +303,25 @@ namespace System.Reflection
         [StructLayout(LayoutKind.Sequential)]
         private protected ref struct StackAllocedArguments
         {
-            internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051, IDE0044 // accessed via 'CheckArguments' ref arithmetic
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051, IDE0044
-            internal ParameterCopyBackAction _copyBack0;
-#pragma warning disable CA1823, CS0169, IDE0051, IDE0044 // accessed via 'CheckArguments' ref arithmetic
-            private ParameterCopyBackAction _copyBack1;
-            private ParameterCopyBackAction _copyBack2;
-            private ParameterCopyBackAction _copyBack3;
-#pragma warning restore CA1823, CS0169, IDE0051, IDE0044
+            internal ArgumentData<object?> _args;
+            internal ArgumentData<ParameterCopyBackAction> _copyBacks;
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
-        [StructLayout(LayoutKind.Sequential)]
+#if CORECLR
+        [InlineArray(MaxStackAllocArgCount)]
+#endif
         private protected ref struct StackAllocatedByRefs
         {
             internal ref byte _arg0;
+#if !CORECLR
 #pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
             private ref byte _arg1;
             private ref byte _arg2;
             private ref byte _arg3;
 #pragma warning restore CA1823, CS0169, IDE0051
+#endif
         }
 #endif
-    }
+        }
 }

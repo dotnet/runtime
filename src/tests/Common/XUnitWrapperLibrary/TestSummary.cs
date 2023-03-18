@@ -174,7 +174,7 @@ public class TestSummary
 <assembly
     name=""{assemblyName}""
     test-framework=""XUnitWrapperGenerator-generated-runner""
-    run-date=""{_testRunStart.ToString("yyy-mm-dd")}""
+    run-date=""{_testRunStart.ToString("yyyy-MM-dd")}""
     run-time=""{_testRunStart.ToString("hh:mm:ss")}""
     time=""{totalRunSeconds}""
     total=""{_testResults.Count}""

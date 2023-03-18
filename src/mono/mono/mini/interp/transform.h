@@ -265,6 +265,7 @@ typedef struct
 	int aggressive_inlining : 1;
 	int optimized : 1;
 	int has_invalid_code : 1;
+	int has_inlined_one_call : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

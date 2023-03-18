@@ -114,25 +114,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sz,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) al,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) st,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) jitType,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -1951,6 +1951,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     vnStore                    = nullptr;
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
+    m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaChecksEnabled         = false;
     fgVNPassesCompleted        = 0;
@@ -2286,7 +2287,28 @@ void Compiler::compSetProcessor()
         instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW) &&
         instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ))
     {
-        if (!DoJitStressEvexEncoding())
+        // Using JitStressEVEXEncoding flag will force instructions which would
+        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
+        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
+        // causing failure if not running on compatible hardware.
+
+        // We can't use !DoJitStressEvexEncoding() yet because opts.compSupportsISA hasn't
+        // been set yet as that's what we're trying to set here
+
+        bool enableAvx512 = false;
+
+#if defined(DEBUG)
+        if (JitConfig.JitForceEVEXEncoding())
+        {
+            enableAvx512 = true;
+        }
+        else if (JitConfig.JitStressEvexEncoding() && instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL))
+        {
+            enableAvx512 = true;
+        }
+#endif // DEBUG
+
+        if (!enableAvx512)
         {
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
@@ -4827,14 +4849,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // However, ref counts are not kept incrementally up to date.
     assert(lvaLocalVarRefCounted());
 
-    if (opts.OptimizationEnabled())
-    {
-        // Introduce copies for some single-def locals to make them more
-        // amenable to optimization
-        //
-        DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
-    }
-
     // Figure out the order in which operators are to be evaluated
     //
     DoPhase(this, PHASE_FIND_OPER_ORDER, &Compiler::fgFindOperOrder);
@@ -4999,6 +5013,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
 #endif
+
+    // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
+    DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
