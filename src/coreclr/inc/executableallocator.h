@@ -115,7 +115,12 @@ private:
     // Last RW mappings cached so that it can be reused for the next mapping
     // request if it goes into the same range.
     // This is handled as a 6 element cache with an LRU replacement policy
+#ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
+    // If variable sized mappings enabled, make the cache physically big enough to cover all interesting sizes
+    BlockRW* m_cachedMapping[16] = { 0 };
+#else
     BlockRW* m_cachedMapping[6] = { 0 };
+#endif
 
     // Synchronization of the public allocator methods
     CRITSEC_COOKIE m_CriticalSection;

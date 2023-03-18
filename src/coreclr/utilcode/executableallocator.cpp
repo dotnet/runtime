@@ -4,6 +4,15 @@
 #include "pedecoder.h"
 #include "executableallocator.h"
 
+#ifdef ENABLE_MAPRW_STATISTICS
+static int ExecutableAllocator_MapRW_Calls = 0;
+static int ExecutableAllocator_MapRW_CallsWithCacheMiss = 0;
+#endif
+
+#ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
+static int ExecutableAllocator_CachedMappingSize = 1;
+#endif
+
 #if USE_LAZY_PREFERRED_RANGE
 // Preferred region to allocate the code in.
 BYTE * ExecutableAllocator::g_lazyPreferredRangeStart;
@@ -19,7 +28,11 @@ bool ExecutableAllocator::g_isWXorXEnabled = false;
 ExecutableAllocator::FatalErrorHandler ExecutableAllocator::g_fatalErrorHandler = NULL;
 ExecutableAllocator* ExecutableAllocator::g_instance = NULL;
 
+#ifndef VARIABLE_SIZED_CACHEDMAPPING_SIZE
 #define EXECUTABLE_ALLOCATOR_CACHE_SIZE ARRAY_SIZE(m_cachedMapping)
+#else
+#define EXECUTABLE_ALLOCATOR_CACHE_SIZE ExecutableAllocator_CachedMappingSize
+#endif
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 int64_t ExecutableAllocator::g_mapTimeSum = 0;
@@ -220,9 +233,40 @@ ExecutableAllocator::~ExecutableAllocator()
     }
 }
 
+#ifdef ENABLE_MAPRW_STATISTICS
+void DumpMapRWStatistics()
+{
+    printf("ExecutableAllocator_MapRW_Calls: %d\n", ExecutableAllocator_MapRW_Calls);
+    printf("ExecutableAllocator_MapRW_CallsWithCacheMiss: %d\n", ExecutableAllocator_MapRW_CallsWithCacheMiss);
+}
+#endif
+
 HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandler)
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef ENABLE_MAPRW_STATISTICS
+    atexit(DumpMapRWStatistics);
+#endif
+
+#ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
+    ExecutableAllocator_CachedMappingSize = ARRAY_SIZE(m_cachedMapping);
+    auto envString = getenv("EXECUTABLE_ALLOCATOR_CACHE_SIZE");
+    if (envString != NULL)
+    {
+        int customCacheSize = atoi(envString);
+        if(customCacheSize != 0)
+        {
+            if ((customCacheSize > ARRAY_SIZE(m_cachedMapping)) || (customCacheSize <= 0))
+            {
+                printf("Invalid value in 'EXECUTABLE_ALLOCATOR_CACHE_SIZE' environment variable'\n");
+                return E_FAIL;
+            }
+            
+            ExecutableAllocator_CachedMappingSize = customCacheSize;
+        }
+    }
+#endif
 
     g_fatalErrorHandler = fatalErrorHandler;
     g_isWXorXEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWriteXorExecute) != 0;
@@ -815,6 +859,9 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
 #endif
 
     CRITSEC_Holder csh(m_CriticalSection);
+#ifdef ENABLE_MAPRW_STATISTICS
+    ExecutableAllocator_MapRW_Calls++;
+#endif
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     StopWatch sw(&g_mapTimeSum);
@@ -827,6 +874,9 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
     }
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     StopWatch sw2(&g_mapFindRXTimeSum);
+#endif
+#ifdef ENABLE_MAPRW_STATISTICS
+    ExecutableAllocator_MapRW_CallsWithCacheMiss++;
 #endif
 
     for (BlockRX* pBlock = m_pFirstBlockRX; pBlock != NULL; pBlock = pBlock->next)
