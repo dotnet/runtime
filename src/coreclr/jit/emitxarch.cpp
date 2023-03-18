@@ -1033,23 +1033,27 @@ bool emitter::TakesSimdPrefix(const instrDesc* id) const
 //
 bool emitter::TakesEvexPrefix(const instrDesc* id) const
 {
+    instruction ins = id->idIns();
+
+    if (!IsEvexEncodedInstruction(ins))
+    {
+        return false;
+    }
+
     if (!emitComp->DoJitStressEvexEncoding())
     {
         return false;
     }
 
-    instruction ins = id->idIns();
-
     if (HasHighSIMDReg(id))
     {
-        assert(IsEvexEncodedInstruction(ins));
         // TODO-XARCH-AVX512 remove this check once k registers have been implemented
         assert(!HasKMaskRegisterDest(ins));
         return true;
     }
 
     // TODO-XArch-AVX512: Revisit 'HasKMaskRegisterDest()' check once KMask support is added.
-    return IsEvexEncodedInstruction(ins) && !HasKMaskRegisterDest(ins);
+    return !HasKMaskRegisterDest(ins);
 }
 
 // Intel AVX-512 encoding is defined in "Intel 64 and ia-32 architectures software developer's manual volume 2", Section
