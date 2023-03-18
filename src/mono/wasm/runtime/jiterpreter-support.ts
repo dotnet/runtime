@@ -1611,6 +1611,7 @@ export type JiterpreterOptions = {
     monitoringShortDistance: number;
     monitoringLongDistance: number;
     monitoringMaxAveragePenalty: number;
+    backBranchBoost: number;
     jitCallHitCount: number;
     jitCallFlushThreshold: number;
     interpEntryHitCount: number;
@@ -1641,6 +1642,7 @@ const optionNames : { [jsName: string] : string } = {
     "monitoringShortDistance": "jiterpreter-trace-monitoring-short-distance",
     "monitoringLongDistance": "jiterpreter-trace-monitoring-long-distance",
     "monitoringMaxAveragePenalty": "jiterpreter-trace-monitoring-max-average-penalty",
+    "backBranchBoost": "jiterpreter-back-branch-boost",
     "jitCallHitCount": "jiterpreter-jit-call-hit-count",
     "jitCallFlushThreshold": "jiterpreter-jit-call-queue-flush-threshold",
     "interpEntryHitCount": "jiterpreter-interp-entry-hit-count",
