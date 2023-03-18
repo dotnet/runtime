@@ -206,12 +206,42 @@ sample_profiler_enable (void)
 }
 
 void
+ep_sample_event_pipe_callback(
+    const uint8_t* source_id,
+    unsigned long is_enabled,
+    uint8_t level,
+    uint64_t match_any_keywords,
+    uint64_t match_all_keywords,
+    EventFilterDescriptor* filter_data,
+    void* callback_data)
+{
+    if (filter_data) {
+        ep_char8_t *filter_data_char = (ep_char8_t*)(filter_data->ptr);
+        const uint32_t filter_data_size = filter_data->size;
+        ep_char8_t *candidateKey = NULL;
+        size_t offset = 0;
+        const ep_char8_t *sampleProfilerIntervalMSKey = "SampleProfilerIntervalMS";
+
+        while (offset < filter_data_size) {
+            candidateKey = filter_data_char + offset;
+            if (strcmp(candidateKey, sampleProfilerIntervalMSKey) == 0) {
+                ep_sample_profiler_set_sampling_rate(_strtoui64(candidateKey + 25, 0L, 10) * 1000000);
+                break;
+            }
+            else {
+                offset += strlen(candidateKey) + 1;
+            }
+        }
+    }
+}
+
+void
 ep_sample_profiler_init (EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	ep_requires_lock_held ();
 
 	if (!_sampling_provider) {
-		_sampling_provider = provider_create_register (ep_config_get_sample_profiler_provider_name_utf8 (), NULL, NULL, provider_callback_data_queue);
+		_sampling_provider = provider_create_register (ep_config_get_sample_profiler_provider_name_utf8 (), ep_sample_event_pipe_callback, NULL, provider_callback_data_queue);
 		ep_raise_error_if_nok (_sampling_provider != NULL);
 		_thread_time_event = provider_add_event (
 			_sampling_provider,
