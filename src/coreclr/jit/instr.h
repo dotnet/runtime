@@ -119,7 +119,7 @@ enum insFlags : uint64_t
     // Resets
     Resets_OF = 1ULL << 12,
     Resets_SF = 1ULL << 13,
-    Resets_ZF = 1ULL << 41,
+    Resets_ZF = 1ULL << 39,
     Resets_AF = 1ULL << 14,
     Resets_PF = 1ULL << 15,
     Resets_CF = 1ULL << 16,
@@ -171,12 +171,8 @@ enum insFlags : uint64_t
     Encoding_VEX   = 1ULL << 37,
     Encoding_EVEX  = 1ULL << 38,
 
-    // whether VEX or EVEX encodings are indirectly supported
-    Translate_VEX  = 1ULL << 39,
-    Translate_EVEX = 1ULL << 40,
-
     // Listed above so it is "inline" with the other Resets_* flags
-    // Resets_ZF = 1ULL << 41,
+    // Resets_ZF = 1ULL << 39,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,

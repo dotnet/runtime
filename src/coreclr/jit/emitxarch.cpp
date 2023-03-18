@@ -5847,12 +5847,10 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movaps:
         case INS_movd:
         case INS_movdqa:
-        case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_movdqu:
         case INS_vmovdqu8:
         case INS_vmovdqu16:
-        case INS_vmovdqu32:
         case INS_vmovdqu64:
         case INS_movsd_simd:
         case INS_movss:
@@ -5996,11 +5994,9 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-        case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_vmovdqu8:
         case INS_vmovdqu16:
-        case INS_vmovdqu32:
         case INS_vmovdqu64:
         {
             // These EVEX instructions merges/masks based on k-register
@@ -6212,12 +6208,10 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         case INS_movapd:
         case INS_movaps:
         case INS_movdqa:
-        case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_movdqu:
         case INS_vmovdqu8:
         case INS_vmovdqu16:
-        case INS_vmovdqu32:
         case INS_vmovdqu64:
         case INS_movsd_simd:
         case INS_movss:
@@ -17439,12 +17433,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movdqa:
-        case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_movdqu:
         case INS_vmovdqu8:
         case INS_vmovdqu16:
-        case INS_vmovdqu32:
         case INS_vmovdqu64:
         case INS_movaps:
         case INS_movups:
@@ -17658,16 +17650,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_paddusw:
         case INS_psubusw:
         case INS_pand:
-        case INS_vpandd:
         case INS_vpandq:
         case INS_pandn:
-        case INS_vpandnd:
         case INS_vpandnq:
         case INS_por:
-        case INS_vpord:
         case INS_vporq:
         case INS_pxor:
-        case INS_vpxord:
         case INS_vpxorq:
         case INS_andpd:
         case INS_andps:
