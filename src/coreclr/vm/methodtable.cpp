@@ -1761,6 +1761,21 @@ BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurr
     return pTargetMT->GetLoaderModule() == pCurrentLoaderModule;
 }
 
+BOOL MethodTable::IsAllGCPointers()
+{
+    if (this->ContainsPointers())
+    {
+        // check for canonical GC encoding for all-pointer types
+        CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(this)->GetHighestSeries();
+        return pSeries->GetSeriesCount() == 1 &&
+            pSeries->GetSeriesOffset() == this->GetBaseSize() - sizeof(size_t) &&
+            pSeries->GetSeriesSize() - this->GetBaseSize() == 0;
+    }
+
+    return false;
+}
+
+
 #ifdef _DEBUG
 
 void

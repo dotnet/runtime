@@ -584,16 +584,14 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     // Set up GC information
-    if (CorTypeInfo::IsObjRef(elemType))
+    if (CorTypeInfo::IsObjRef(elemType) || pMT->IsAllGCPointers())
     {
-        CGCDescSeries  *pSeries;
-
         pMT->SetContainsPointers();
 
         // This array is all GC Pointers
         CGCDesc::GetCGCDescFromMT(pMT)->Init( pMT, 1 );
 
-        pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
+        CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
 
         pSeries->SetSeriesOffset(ArrayBase::GetDataPtrOffset(pMT));
         // For arrays, the size is the negative of the BaseSize (the GC always adds the total
