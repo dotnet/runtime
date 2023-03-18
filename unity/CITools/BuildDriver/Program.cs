@@ -115,7 +115,7 @@ public class Program
         string[] args = arg.Split('=');
         if (string.IsNullOrEmpty(args[1]) || !validArgs.Contains(args[1]))
         {
-            value = null;
+            value = string.Empty;
             Console.WriteLine($"Invalid option: {arg}  Example : `--{args[0]}={validArgs[0]}`");
             return false;
         }
