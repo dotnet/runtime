@@ -137,9 +137,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(IEnumerable<int>))]
         [JsonSerializable(typeof(IAsyncEnumerable<int>))]
         [JsonSerializable(typeof(Envelope<object>))]
-        [JsonSerializable(typeof(Envelope<BasePoco>))]
-        [JsonSerializable(typeof(Envelope<IEnumerable<int>>))]
-        [JsonSerializable(typeof(Envelope<IAsyncEnumerable<int>>))]
         [JsonSerializable(typeof(List<object>))]
         [JsonSerializable(typeof(Dictionary<string, object>))]
         public partial class UnspeakableTypeContext : JsonSerializerContext
