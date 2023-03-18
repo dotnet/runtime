@@ -79,9 +79,7 @@ public class XUnitLogChecker
         }
 
         // If the final results log file is present, then we can assume everything
-        // went fine, and it's ready to go without any further processing. We just
-        // check the stats csv file to know how many tests were run, and display a
-        // brief summary of the work item.
+        // went fine, and it's ready to go without any further processing.
 
         if (File.Exists(finalLogPath))
         {
@@ -102,9 +100,7 @@ public class XUnitLogChecker
             return FAILURE;
         }
 
-        // Declaring the enumerable to contain the log lines first because we
-        // might not be able to read on the first try due to locked resources
-        // on Windows. We will retry for up to one minute when this case happens.
+        // Read the tests run stats csv.
         IEnumerable<string>? workItemStats = TryReadFile(statsCsvPath);
 
         if (workItemStats is null)
@@ -150,9 +146,18 @@ public class XUnitLogChecker
 
         if (args.Length > 2)
         {
-            string dumpsPath = args[3];
-            // Add check here to ensure the given path exists.
-            PrintStackTracesFromDumps(dumpsPath, tempLogPath);
+            string dumpsPath = args[2];
+
+            if (Directory.Exists(dumpsPath))
+            {
+                PrintStackTracesFromDumps(dumpsPath, tempLogPath);
+            }
+            else
+            {
+                Console.WriteLine("[XUnitLogChecker]: The provided dumps path"
+                                + $" '{dumpsPath}' was not able to be read or"
+                                + " found. Skipping stack traces search...");
+            }
         }
 
         // Rename the temp log to the final log, so that Helix can use it without
@@ -173,6 +178,9 @@ public class XUnitLogChecker
 
     static IEnumerable<string> TryReadFile(string filePath)
     {
+        // Declaring the enumerable to contain the log lines first because we
+        // might not be able to read on the first try due to locked resources
+        // on Windows. We will retry for up to one minute when this case happens.
         IEnumerable<string>? fileContents = null;
         Stopwatch fileReadStopwatch = Stopwatch.StartNew();
 
@@ -397,7 +405,7 @@ public class XUnitLogChecker
         var testRunDateTime = DateTime.ParseExact
         (
             fixedLogTree.Attribute("run-date-time").Value,
-            "yyyy-MM-dd hh:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
             System.Globalization.CultureInfo.InvariantCulture
         );
 
@@ -409,7 +417,12 @@ public class XUnitLogChecker
         {
             if (OperatingSystem.IsWindows())
             {
-                // Here goes Windows' implementation.
+                Console.WriteLine("[XUnitLogChecker]: Reading crash dump"
+                                + $" '{dumpPath}'...");
+                Console.WriteLine("[XUnitLogChecker]: Stack Trace Found:");
+
+                CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath,
+                                                                Console.Out);
             }
             else
             {

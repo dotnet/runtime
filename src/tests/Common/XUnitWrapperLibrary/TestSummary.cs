@@ -112,7 +112,7 @@ public class TestSummary
         tempLogSw.WriteLine("<assembly\n"
                         + $"    name=\"{assemblyName}\"\n"
                         + $"    test-framework=\"XUnitWrapperGenerator-generated-runner\"\n"
-                        + $"    run-date-time=\"{_testRunStart.ToString("yyyy-MM-dd hh:mm:ss")}\">");
+                        + $"    run-date-time=\"{_testRunStart.ToString("yyyy-MM-dd HH:mm:ss")}\">");
     }
 
     public void ReportPassedTest(string name,
@@ -185,7 +185,7 @@ public class TestSummary
     name=""{assemblyName}""
     test-framework=""XUnitWrapperGenerator-generated-runner""
     run-date=""{_testRunStart.ToString("yyyy-MM-dd")}""
-    run-time=""{_testRunStart.ToString("hh:mm:ss")}""
+    run-time=""{_testRunStart.ToString("HH:mm:ss")}""
     time=""{totalRunSeconds}""
     total=""{_testResults.Count}""
     passed=""{PassedTests}""
