@@ -5398,8 +5398,7 @@ void LinearScan::allocateRegisters()
                         lastAllocatedRefPosition  = &currentRefPosition;
                         regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
                         regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
-                        bool consecutiveAssigned  = setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
-                        assert(consecutiveAssigned);
+                        setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
 
                         // For consecutive register, it doesn't matter what the assigned register was.
                         // We have just assigned it `copyRegMask` and that's the one in-use, and not the
@@ -5498,9 +5497,7 @@ void LinearScan::allocateRegisters()
                             // If the first RefPosition was not assigned to the register we wanted and we added
                             // a copyReg for it, then allocate the subsequent RefPositions with the consecutive
                             // registers.
-                            bool consecutiveAssigned =
-                                setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
-                            assert(consecutiveAssigned);
+                            setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
                         }
                         else
                         {
@@ -5586,7 +5583,7 @@ void LinearScan::allocateRegisters()
                     // subsequent registers to the remaining position and skip the allocation for the
                     // 1st refPosition altogether.
 
-                    if (!setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister))
+                    if (!areNextConsecutiveRegistersFree(&currentRefPosition, assignedRegister))
                     {
                         // The consecutive registers are busy. Force to allocate even for the 1st
                         // refPosition
@@ -5680,9 +5677,7 @@ void LinearScan::allocateRegisters()
                         allocateReg<true>(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
                     if (currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
                     {
-                        bool consecutiveAssigned =
-                            setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
-                        assert(consecutiveAssigned);
+                        setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
                     }
                 }
                 else

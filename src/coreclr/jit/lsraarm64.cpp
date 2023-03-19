@@ -56,26 +56,18 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 //    firstRefPosition  - First refPosition of the series of consecutive registers.
 //    firstRegAssigned  - Register assigned to the first refposition.
 //
-//  Returns:
-//      True if all the consecutive registers starting from `firstRegAssigned` were free. Even if one
-//      of them is busy, returns false and does not change the registerAssignment of any refPositions.
+//  Note:
+//      This method will set the registerAssignment of subsequent RefPositions with consecutive registers.
+//      Some of the registers could be busy, and they will be spilled. We would end up with busy registers if
+//      we did not find free consecutive registers.
 //
-bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned)
+void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned)
 {
+    assert(compiler->info.needsConsecutiveRegisters);
     assert(firstRefPosition->assignedReg() == firstRegAssigned);
     assert(isSingleRegister(genRegMask(firstRegAssigned)));
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
     assert(emitter::isVectorRegister(firstRegAssigned));
-
-    // Verify that all the consecutive registers needed are free, if not, return false.
-    // Need to do this before we set registerAssignment of any of the refPositions that
-    // are part of the range.
-
-    if (!areNextConsecutiveRegistersFree(firstRegAssigned, firstRefPosition->regCount,
-                                         firstRefPosition->getInterval()->registerType))
-    {
-        return false;
-    }
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
     regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
@@ -114,8 +106,6 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     }
 
     assert(refPosCount == firstRefPosition->regCount);
-
-    return true;
 }
 
 //------------------------------------------------------------------------
