@@ -5583,7 +5583,8 @@ void LinearScan::allocateRegisters()
                     // subsequent registers to the remaining position and skip the allocation for the
                     // 1st refPosition altogether.
 
-                    if (!areNextConsecutiveRegistersFree(&currentRefPosition, assignedRegister))
+                    if (!areNextConsecutiveRegistersFree(assignedRegister, currentRefPosition.regCount,
+                                                         currentRefPosition.getInterval()->registerType))
                     {
                         // The consecutive registers are busy. Force to allocate even for the 1st
                         // refPosition
