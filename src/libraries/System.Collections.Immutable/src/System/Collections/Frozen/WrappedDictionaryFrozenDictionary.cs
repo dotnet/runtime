@@ -23,7 +23,7 @@ namespace System.Collections.Frozen
         private TValue[]? _values;
 
         internal WrappedDictionaryFrozenDictionary(Dictionary<TKey, TValue> source, bool sourceIsCopy) : base(source.Comparer) =>
-            _source = sourceIsCopy ? source : new Dictionary<TKey, TValue>(source);
+            _source = sourceIsCopy ? source : new Dictionary<TKey, TValue>(source, source.Comparer);
 
         /// <inheritdoc />
         private protected sealed override TKey[] KeysCore =>
