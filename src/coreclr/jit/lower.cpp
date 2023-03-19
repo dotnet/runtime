@@ -473,8 +473,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerSwitch(node);
 
         case GT_CALL:
-            LowerCall(node);
-            break;
+        {
+            GenTree* newNode = LowerCall(node);
+            if (newNode != nullptr)
+            {
+                return newNode;
+            }
+        }
+        break;
 
         case GT_LT:
         case GT_LE:
@@ -1782,13 +1788,16 @@ GenTree* Lowering::AddrGen(void* addr)
 //   - adding nodes for other operations that occur after the call sequence starts and before
 //        control transfer occurs (profiling and tail call helpers, pinvoke incantations)
 //
-void Lowering::LowerCall(GenTree* node)
+GenTree* Lowering::LowerCall(GenTree* node)
 {
     GenTreeCall* call = node->AsCall();
 
     JITDUMP("lowering call (before):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
+
+    // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
+    assert(!call->IsExpRuntimeLookup());
 
 #ifdef TARGET_AMD64
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
@@ -1814,15 +1823,14 @@ void Lowering::LowerCall(GenTree* node)
                     BlockRange().InsertBefore(node, memmove);
                     BlockRange().Remove(lengthArg);
                     BlockRange().Remove(node);
-                    return;
+                    DEBUG_DESTROY_NODE(node);
+                    DEBUG_DESTROY_NODE(lengthArg);
+                    return memmove;
                 }
             }
         }
     }
 #endif
-
-    // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
-    assert(!call->IsExpRuntimeLookup());
 
     call->ClearOtherRegs();
     LowerArgsForCall(call);
@@ -1942,6 +1950,7 @@ void Lowering::LowerCall(GenTree* node)
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
+    return nullptr;
 }
 
 // Inserts profiler hook, GT_PROF_HOOK for a tail call node.
