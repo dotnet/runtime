@@ -26,7 +26,6 @@ namespace System.IO.Hashing
             }
 
             // Compute remaining bytes
-            Debug.Assert(source.Length < 8);
             for (int i = 0; i < source.Length; i++)
             {
                 crc = ArmCrc.ComputeCrc32(crc, source[i]);
@@ -52,7 +51,6 @@ namespace System.IO.Hashing
             }
 
             // Compute remaining bytes
-            Debug.Assert(source.Length < 4);
             for (int i = 0; i < source.Length; i++)
             {
                 crc = ArmCrc.ComputeCrc32(crc, source[i]);

@@ -73,7 +73,7 @@ namespace System.IO.Hashing
             && (Pclmulqdq.IsSupported || (Aes.IsSupported && AdvSimd.IsSupported))
             && source.Length >= Vector128<byte>.Count * 4;
 
-        // Processes the bytes in source in X86BlockSize chunks using x86 intrinsics, followed by processing 16
+        // Processes the bytes in source in 64 byte chunks using x86 intrinsics, followed by processing 16
         // byte chunks, and then processing remaining bytes individually. Requires little endian byte order and
         // support for PCLMULUQDQ intrinsics on Intel architecture or AES and AdvSimd intrinsics on ARM architecture.
         // Based on the algorithm put forth in the Intel paper "Fast CRC Computation for Generic Polynomials Using
