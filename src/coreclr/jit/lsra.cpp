@@ -5386,6 +5386,8 @@ void LinearScan::allocateRegisters()
                         // Current assignedRegister satisfies the consecutive registers requirements
                         currentRefPosition.registerAssignment = assignedRegBit;
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, currentInterval, assignedRegister));
+
+                        setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
                     }
                     else
                     {
@@ -5491,7 +5493,7 @@ void LinearScan::allocateRegisters()
 #ifdef TARGET_ARM64
                     if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
                     {
-                        if (currentRefPosition.regCount != 0)
+                        if (currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
                         {
                             // If the first RefPosition was not assigned to the register we wanted and we added
                             // a copyReg for it, then allocate the subsequent RefPositions with the consecutive
@@ -5590,6 +5592,10 @@ void LinearScan::allocateRegisters()
                         RegRecord* physRegRecord              = getRegisterRecord(currentInterval->physReg);
                         currentRefPosition.registerAssignment = allRegs(currentInterval->registerType);
                         unassignPhysRegNoSpill(physRegRecord);
+                    }
+                    else
+                    {
+                        setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
                     }
                 }
             }
