@@ -1036,17 +1036,19 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return false;
     }
 
-    if (HasHighSIMDReg(id) || (id->idOpSize() == EA_64BYTE) || HasKMaskRegisterDest(ins))
+    if (HasHighSIMDReg(id) || (id->idOpSize() == EA_64BYTE) || HasMaskReg(id))
     {
         // Requires the EVEX encoding due to used registers
         return true;
     }
 
-    // TODO-XArch-AVX512: This needs to return true when the id includes EVEX specific functionality:
-    // * masking
-    // * embedded broadcast
-    // * embedded rounding control
-    // * etc
+    if (HasEmbeddedBroadcast(id))
+    {
+        // TODO-XArch-AVX512: This needs to return true when the id includes:
+        // * embedded rounding control
+        // * other EVEX specific functionality
+        return true;
+    }
 
     // Only supports the EVEX encoding or in stress mode to always use EVEX encoding
     return !IsVexEncodableInstruction(ins) || emitComp->DoJitStressEvexEncoding();
@@ -1302,7 +1304,7 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
 }
 
 //------------------------------------------------------------------------
-// HasHighSIMReg: Checks if an instruction uses a high SIMD registers (mm16-mm31)
+// HasHighSIMDReg: Checks if an instruction uses a high SIMD registers (mm16-mm31)
 // and will require one of the EVEX high SIMD bits (EVEX.R', EVEX.V', EVEX.X)
 //
 // Arguments:
@@ -1343,6 +1345,42 @@ bool emitter::IsHighSIMDReg(regNumber reg) const
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
 #endif
+}
+
+//------------------------------------------------------------------------
+// HasMaskReg: Checks if an instruction uses a KMask registers (k0-k7)
+//
+// Arguments:
+// id -- instruction descriptor for encoding
+//
+// Return Value:
+// true if instruction will require EVEX encoding for its register operands.
+bool emitter::HasMaskReg(const instrDesc* id) const
+{
+    if (isMaskReg(id->idReg1()))
+    {
+        assert(HasKMaskRegisterDest(id->idIns()));
+        return true;
+    }
+
+#if defined(DEBUG)
+    assert(!isMaskReg(id->idReg2()));
+
+    if (!id->idIsSmallDsc())
+    {
+        if (id->idHasReg3())
+        {
+            assert(!isMaskReg(id->idReg3()));
+        }
+
+        if (id->idHasReg4())
+        {
+            assert(!isMaskReg(id->idReg4()));
+        }
+    }
+#endif // DEBUG
+
+    return false;
 }
 
 // Returns true if using this register will require a REX.* prefix.
