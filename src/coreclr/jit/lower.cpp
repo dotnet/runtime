@@ -1782,7 +1782,7 @@ GenTree* Lowering::AddrGen(void* addr)
 }
 
 //------------------------------------------------------------------------
-// LowerMemmove: Replace Buffer.Memmove(DST, SRC, CNS) with a GT_STORE_BLK:
+// LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS) with a GT_STORE_BLK:
 //
 //    *  STORE_BLK struct<Size> (copy) (Unroll)
 //    +--*  LCL_VAR   byref  dst
@@ -1792,7 +1792,7 @@ GenTree* Lowering::AddrGen(void* addr)
 // Arguments:
 //    tree - GenTreeCall node to replace with STORE_BLK
 //
-GenTree* Lowering::LowerMemmove(GenTreeCall* call)
+GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
 {
     assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove);
     assert(call->gtArgs.CountArgs() == 3);
@@ -1802,7 +1802,7 @@ GenTree* Lowering::LowerMemmove(GenTreeCall* call)
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
         // TODO-CQ: drop the whole thing in case of 0
-        if (ISMETHOD("Test") && (cnsSize > 0) && (cnsSize <= comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
+        if ((cnsSize > 0) && (cnsSize <= comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
         {
             GenTree* dstOp = call->gtArgs.GetArgByIndex(0)->GetNode();
             GenTree* srcOp = call->gtArgs.GetArgByIndex(1)->GetNode();
@@ -1858,7 +1858,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
 #ifdef TARGET_AMD64
         if (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove)
         {
-            GenTree* newNode = LowerMemmove(call);
+            GenTree* newNode = LowerCallMemmove(call);
             if (newNode != nullptr)
             {
                 return newNode;
