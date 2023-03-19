@@ -2558,6 +2558,23 @@ void CodeGen::genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta)
     inst_Mov(TYP_I_IMPL, REG_SPBASE, regSpDelta, /* canSkip */ false);
 }
 
+//------------------------------------------------------------------------
+// genCodeForMemmove: Perform an unrolled memmove. The idea that we can
+//    ignore the fact that dst and src might overlap if we save the whole
+//    dst to temp regs in advance, e.g. for memmove(rax, rcx, 120):
+//
+//       vmovdqu  ymm0, ymmword ptr[rax +  0]
+//       vmovdqu  ymm1, ymmword ptr[rax + 32]
+//       vmovdqu  ymm2, ymmword ptr[rax + 64]
+//       vmovdqu  ymm3, ymmword ptr[rax + 88]
+//       vmovdqu  ymmword ptr[rcx +  0], ymm0
+//       vmovdqu  ymmword ptr[rcx + 32], ymm1
+//       vmovdqu  ymmword ptr[rcx + 64], ymm2
+//       vmovdqu  ymmword ptr[rcx + 88], ymm3
+//
+// Arguments:
+//    tree - GenTreeMemmove node storing src, dst and the size
+//
 void CodeGen::genCodeForMemmove(GenTreeMemmove* tree)
 {
     assert(tree->OperIs(GT_MEMMOVE));
@@ -2576,7 +2593,10 @@ void CodeGen::genCodeForMemmove(GenTreeMemmove* tree)
 
     if (size >= simdSize)
     {
-        unsigned  numberOfSimdRegs                       = (size / simdSize) + ((size % simdSize) == 0 ? 0 : 1);
+        // Number of SIMD regs needed to save the whole src to regs.
+        unsigned numberOfSimdRegs = (size / simdSize) + ((size % simdSize) == 0 ? 0 : 1);
+
+        // Pop all temp regs to a local array, currently, this impl is limitted with LSRA's MaxInternalCount
         regNumber tempRegs[LinearScan::MaxInternalCount] = {};
         for (unsigned i = 0; i < numberOfSimdRegs; i++)
         {
@@ -2591,10 +2611,12 @@ void CodeGen::genCodeForMemmove(GenTreeMemmove* tree)
             {
                 if (load)
                 {
+                    // vmovdqu  ymm, ymmword ptr[src + offset]
                     GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], src, offset);
                 }
                 else
                 {
+                    // vmovdqu  ymmword ptr[dst + offset], ymm
                     GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], dst, offset);
                 }
                 offset += simdSize;
@@ -2606,20 +2628,24 @@ void CodeGen::genCodeForMemmove(GenTreeMemmove* tree)
                 assert(size > offset);
                 if ((size - offset) < simdSize)
                 {
-                    // Overlap with the previosly processed data. We'll always use SIMD for that see
-                    // LinearScan::BuildMemmove
+                    // Overlap with the previosly processed data. We'll always use SIMD for that for simplicity
+                    // TODO-CQ: Consider using smaller SIMD reg or GPR for the remainder.
                     offset = size - simdSize;
                 }
             } while (true);
         };
+
+        // load everything from SRC to temp regs
         emitSimdLoadStore(true);
+        // store them to DST
         emitSimdLoadStore(false);
     }
     else
     {
+        // Here we work with size 1..15 (x64)
         assert((size > 0) && (size < XMM_REGSIZE_BYTES));
 
-        auto emitScalarLoadStore = [&](bool load, int size, regNumber tempReg, regNumber srcOrDstReg, int offset) {
+        auto emitScalarLoadStore = [&](bool load, int size, regNumber tempReg, int offset) {
             var_types memType;
             switch (size)
             {
@@ -2638,22 +2664,26 @@ void CodeGen::genCodeForMemmove(GenTreeMemmove* tree)
                 default:
                     unreached();
             }
+
             if (load)
             {
-                GetEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), tempReg, srcOrDstReg, offset);
+                // mov  reg, qword ptr [src + offset]
+                GetEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), tempReg, src, offset);
             }
             else
             {
-                GetEmitter()->emitIns_AR_R(ins_Store(memType), emitTypeSize(memType), tempReg, srcOrDstReg, offset);
+                // mov  qword ptr [dst + offset], reg
+                GetEmitter()->emitIns_AR_R(ins_Store(memType), emitTypeSize(memType), tempReg, dst, offset);
             }
         };
 
         if (isPow2(size))
         {
+            // For size 1, 2, 4 and 8 we can perform single moves
             assert(size <= REGSIZE_BYTES);
             regNumber tmpReg = tree->ExtractTempReg(RBM_ALLINT);
-            emitScalarLoadStore(true, size, tmpReg, src, 0);
-            emitScalarLoadStore(false, size, tmpReg, dst, 0);
+            emitScalarLoadStore(true, size, tmpReg, 0);
+            emitScalarLoadStore(false, size, tmpReg, 0);
         }
         else
         {
@@ -2661,30 +2691,32 @@ void CodeGen::genCodeForMemmove(GenTreeMemmove* tree)
             regNumber tmpReg1 = tree->ExtractTempReg(RBM_ALLINT);
             regNumber tmpReg2 = tree->ExtractTempReg(RBM_ALLINT);
 
-            // 3
-            // 5,6,7
-            // 9,10,11,12,13,14,15
             unsigned offset = 0;
             if (size == 3)
             {
+                // 3 --> 2+2
                 offset = 1;
                 size   = 2;
             }
             else if ((size > 4) && (size < 8))
             {
+                // 5,6,7 --> 4+4
                 offset = size - 4;
                 size   = 4;
             }
             else
             {
+                // 9,10,11,12,13,14,15 --> 8+8
                 assert((size > 8) && (size < XMM_REGSIZE_BYTES));
                 offset = size - 8;
                 size   = 8;
             }
-            emitScalarLoadStore(true, size, tmpReg1, src, 0);
-            emitScalarLoadStore(true, size, tmpReg2, src, offset);
-            emitScalarLoadStore(false, size, tmpReg1, dst, 0);
-            emitScalarLoadStore(false, size, tmpReg2, dst, offset);
+
+            // TODO-CQ: there is some minor CQ potential here, e.g. 10 is better to be done via 8 + 2, etc.
+            emitScalarLoadStore(true, size, tmpReg1, 0);
+            emitScalarLoadStore(true, size, tmpReg2, offset);
+            emitScalarLoadStore(false, size, tmpReg1, 0);
+            emitScalarLoadStore(false, size, tmpReg2, offset);
         }
     }
 }

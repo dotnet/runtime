@@ -1801,7 +1801,7 @@ int LinearScan::BuildMemmove(GenTreeMemmove* tree)
     GenTree* src  = tree->Source();
     unsigned size = tree->Size();
 
-    // Lower was expected to get rid of memmove in case of zero
+    // Lowering was expected to get rid of memmove in case of zero
     assert(size > 0);
 
     // TODO-XARCH-AVX512: Consider enabling it here
@@ -1821,7 +1821,7 @@ int LinearScan::BuildMemmove(GenTreeMemmove* tree)
         for (unsigned i = 0; i < simdRegs; i++)
         {
             // It's too late to revert the unrolling so we hope we'll have enough SIMD regs
-            // no more than MaxInternalCount
+            // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
             buildInternalFloatRegisterDefForNode(tree, internalFloatRegCandidates());
         }
         SetContainsAVXFlags();
@@ -1844,7 +1844,7 @@ int LinearScan::BuildMemmove(GenTreeMemmove* tree)
     BuildUse(dst);
     BuildUse(src);
     buildInternalRegisterUses();
-    return 2;
+    return 2; // src + dst
 }
 
 //------------------------------------------------------------------------
