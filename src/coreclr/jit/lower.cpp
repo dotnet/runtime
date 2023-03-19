@@ -1827,7 +1827,6 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
             BlockRange().Remove(call);
             DEBUG_DESTROY_NODE(call);
             DEBUG_DESTROY_NODE(lengthArg);
-            comp->gtDispTree(dstBlk);
             return dstBlk->gtNext;
         }
     }
