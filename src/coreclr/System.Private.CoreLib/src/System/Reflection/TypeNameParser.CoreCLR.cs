@@ -54,8 +54,7 @@ namespace System.Reflection
             {
                 if (throwOnError)
                     throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
-                else
-                    return null;
+                return null;
             }
 
             return new TypeNameParser(typeName)
