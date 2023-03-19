@@ -9202,6 +9202,13 @@ private:
 #ifdef TARGET_XARCH
     bool canUseVexEncoding() const
     {
+#ifdef DEBUG
+        if (JitConfig.JitForceEVEXEncoding())
+        {
+            return true;
+        }
+#endif // DEBUG
+
         return compOpportunisticallyDependsOn(InstructionSet_AVX);
     }
 
