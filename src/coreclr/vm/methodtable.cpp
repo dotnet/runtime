@@ -1766,10 +1766,14 @@ BOOL MethodTable::IsAllGCPointers()
     if (this->ContainsPointers())
     {
         // check for canonical GC encoding for all-pointer types
-        CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(this)->GetHighestSeries();
-        return pSeries->GetSeriesCount() == 1 &&
-            pSeries->GetSeriesOffset() == this->GetBaseSize() - sizeof(size_t) &&
-            pSeries->GetSeriesSize() - this->GetBaseSize() == 0;
+        CGCDesc* pDesc = CGCDesc::GetCGCDescFromMT(this);
+        if (pDesc->GetNumSeries() != 1)
+            return false;
+
+        int offsetToData = IsArray() ? ArrayBase::GetDataPtrOffset(this) : sizeof(size_t);
+        CGCDescSeries* pSeries = pDesc->GetHighestSeries();
+        return pSeries->GetSeriesOffset() == offsetToData &&
+            (SSIZE_T)pSeries->GetSeriesSize() == -(SSIZE_T)(offsetToData + sizeof(size_t));
     }
 
     return false;

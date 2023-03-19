@@ -584,7 +584,8 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     // Set up GC information
-    if (CorTypeInfo::IsObjRef(elemType) || pMT->IsAllGCPointers())
+    if (CorTypeInfo::IsObjRef(elemType) ||
+        (elemType == ELEMENT_TYPE_VALUETYPE) && pElemMT->IsAllGCPointers())
     {
         pMT->SetContainsPointers();
 
@@ -593,10 +594,11 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
         CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
 
-        pSeries->SetSeriesOffset(ArrayBase::GetDataPtrOffset(pMT));
+        int offsetToData = ArrayBase::GetDataPtrOffset(pMT);
         // For arrays, the size is the negative of the BaseSize (the GC always adds the total
         // size of the object, so what you end up with is the size of the data portion of the array)
-        pSeries->SetSeriesSize(-(SSIZE_T)(pMT->GetBaseSize()));
+        pSeries->SetSeriesSize(-(SSIZE_T)(offsetToData + sizeof(size_t)));
+        pSeries->SetSeriesOffset(offsetToData);
     }
     else if (elemType == ELEMENT_TYPE_VALUETYPE)
     {
