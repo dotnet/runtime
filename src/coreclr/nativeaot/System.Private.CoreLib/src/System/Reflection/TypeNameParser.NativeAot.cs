@@ -27,7 +27,6 @@ namespace System.Reflection
         private Assembly _topLevelAssembly;
         private IList<string> _defaultAssemblyNames;
 
-        // [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
             string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver = null,
@@ -46,8 +45,7 @@ namespace System.Reflection
             {
                 if (throwOnError)
                     throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
-                else
-                    return null;
+                return null;
             }
 
             return new TypeNameParser(typeName)
@@ -94,9 +92,9 @@ namespace System.Reflection
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
+            Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
+            Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
         private Type? GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string? assemblyNameIfAny)
         {
             Assembly? assembly;
