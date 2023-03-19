@@ -1745,6 +1745,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // PROFILING_SUPPORTED
             break;
 
+        case GT_MEMMOVE:
+            genMemmove(treeNode->AsMemmove());
+            break;
+
         case GT_LCLHEAP:
             genLclHeap(treeNode);
             break;
@@ -2552,6 +2556,137 @@ void CodeGen::genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta)
 
     // Move the final value to ESP
     inst_Mov(TYP_I_IMPL, REG_SPBASE, regSpDelta, /* canSkip */ false);
+}
+
+void CodeGen::genMemmove(GenTreeMemmove* tree)
+{
+    assert(tree->OperIs(GT_MEMMOVE));
+
+    // Not yet finished for x86
+    assert(TARGET_POINTER_SIZE == 8);
+
+    unsigned  size = tree->Size();
+    regNumber dst  = genConsumeReg(tree->Destination());
+    regNumber src  = genConsumeReg(tree->Source());
+
+    // TODO-XARCH-AVX512: Consider enabling it here
+    unsigned simdSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                            ? YMM_REGSIZE_BYTES
+                            : XMM_REGSIZE_BYTES;
+
+    if (size >= simdSize)
+    {
+        unsigned  numberOfSimdRegs                       = (size / simdSize) + ((size % simdSize) == 0 ? 0 : 1);
+        regNumber tempRegs[LinearScan::MaxInternalCount] = {};
+        for (unsigned i = 0; i < numberOfSimdRegs; i++)
+        {
+            tempRegs[i] = tree->ExtractTempReg(RBM_ALLFLOAT);
+        }
+
+        auto emitSimdLoadStore = [&](bool load) {
+            unsigned    offset   = 0;
+            int         regIndex = 0;
+            instruction simdMov  = simdUnalignedMovIns();
+            do
+            {
+                if (load)
+                {
+                    GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], src, offset);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], dst, offset);
+                }
+                offset += simdSize;
+                if (size == offset)
+                {
+                    break;
+                }
+
+                assert(size > offset);
+                if ((size - offset) < simdSize)
+                {
+                    // Overlap with the previosly processed data. We'll always use SIMD for that see
+                    // LinearScan::BuildMemmove
+                    offset = size - simdSize;
+                }
+            } while (true);
+        };
+        emitSimdLoadStore(true);
+        emitSimdLoadStore(false);
+    }
+    else
+    {
+        assert((size > 0) && (size < XMM_REGSIZE_BYTES));
+
+        auto emitScalarLoadStore = [&](bool load, int size, regNumber tempReg, regNumber srcOrDstReg, int offset) {
+            var_types memType;
+            switch (size)
+            {
+                case 1:
+                    memType = TYP_UBYTE;
+                    break;
+                case 2:
+                    memType = TYP_USHORT;
+                    break;
+                case 4:
+                    memType = TYP_UINT;
+                    break;
+                case 8:
+                    memType = TYP_ULONG;
+                    break;
+                default:
+                    unreached();
+            }
+            if (load)
+            {
+                GetEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), tempReg, srcOrDstReg, offset);
+            }
+            else
+            {
+                GetEmitter()->emitIns_AR_R(ins_Store(memType), emitTypeSize(memType), tempReg, srcOrDstReg, offset);
+            }
+        };
+
+        if (isPow2(size))
+        {
+            assert(size <= REGSIZE_BYTES);
+            regNumber tmpReg = tree->ExtractTempReg(RBM_ALLINT);
+            emitScalarLoadStore(true, size, tmpReg, dst, 0);
+            emitScalarLoadStore(false, size, tmpReg, src, 0);
+        }
+        else
+        {
+            // Any size from 3 to 15 can be handled via two GPRs
+            regNumber tmpReg1 = tree->ExtractTempReg(RBM_ALLINT);
+            regNumber tmpReg2 = tree->ExtractTempReg(RBM_ALLINT);
+
+            // 3
+            // 5,6,7
+            // 9,10,11,12,13,14,15
+            unsigned offset = 0;
+            if (size == 3)
+            {
+                offset = 1;
+                size   = 2;
+            }
+            else if ((size > 4) && (size < 8))
+            {
+                offset = size - 4;
+                size   = 4;
+            }
+            else
+            {
+                assert((size > 8) && (size < XMM_REGSIZE_BYTES));
+                offset = size - 8;
+                size   = 8;
+            }
+            emitScalarLoadStore(true, size, tmpReg1, dst, 0);
+            emitScalarLoadStore(true, size, tmpReg2, dst, offset);
+            emitScalarLoadStore(false, size, tmpReg1, src, 0);
+            emitScalarLoadStore(false, size, tmpReg2, src, offset);
+        }
+    }
 }
 
 //------------------------------------------------------------------------

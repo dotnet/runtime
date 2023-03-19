@@ -6905,6 +6905,40 @@ public:
 #endif
 };
 
+struct GenTreeMemmove : public GenTreeOp
+{
+private:
+    unsigned gtSize;
+
+public:
+    GenTreeMemmove(GenTree* dest, GenTree* src, unsigned size)
+        : GenTreeOp(GT_MEMMOVE, TYP_VOID, dest, src), gtSize(size)
+    {
+        gtFlags |= GTF_EXCEPT;
+    }
+
+    GenTree* Destination() const
+    {
+        return gtOp1;
+    }
+
+    GenTree* Source() const
+    {
+        return gtOp2;
+    }
+
+    unsigned Size() const
+    {
+        return gtSize;
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeMemmove() : GenTreeOp()
+    {
+    }
+#endif
+};
+
 // This takes:
 // - a length value
 // - an index value, and

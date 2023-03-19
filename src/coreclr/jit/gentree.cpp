@@ -260,6 +260,7 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_BOX]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INDEX_ADDR]    = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOUNDS_CHECK]  = TREE_NODE_SZ_SMALL;
+    GenTree::s_gtNodeSizes[GT_MEMMOVE]       = TREE_NODE_SZ_SMALL;
     GenTree::s_gtNodeSizes[GT_ARR_ELEM]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_ARR_INDEX]     = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_ARR_OFFSET]    = TREE_NODE_SZ_LARGE;
@@ -331,6 +332,7 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeMDArr)        <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeBoundsChk)    <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeMemmove)      <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeArrElem)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeArrIndex)     <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeArrOffs)      <= TREE_NODE_SZ_LARGE); // *** large node
@@ -2727,6 +2729,12 @@ AGAIN:
                         return false;
                     }
                     break;
+                case GT_MEMMOVE:
+                    if (op1->AsMemmove()->Size() != op2->AsMemmove()->Size())
+                    {
+                        return false;
+                    }
+                    break;
                 case GT_INDEX_ADDR:
                     if (op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize)
                     {
@@ -3210,6 +3218,10 @@ AGAIN:
 
                 case GT_BOUNDS_CHECK:
                     hash = genTreeHashAdd(hash, tree->AsBoundsChk()->gtThrowKind);
+                    break;
+
+                case GT_MEMMOVE:
+                    hash = genTreeHashAdd(hash, tree->AsMemmove()->Size());
                     break;
 
                 case GT_STORE_BLK:
@@ -6043,7 +6055,7 @@ bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
         {
             return false;
         }
-        if (OperIs(GT_COMMA, GT_BOUNDS_CHECK))
+        if (OperIs(GT_COMMA, GT_BOUNDS_CHECK, GT_MEMMOVE))
         {
             return false;
         }
@@ -8833,6 +8845,11 @@ GenTree* Compiler::gtCloneExpr(
 #ifdef FEATURE_READYTORUN
                 copy->AsIntrinsic()->gtEntryPoint = tree->AsIntrinsic()->gtEntryPoint;
 #endif
+                break;
+
+            case GT_MEMMOVE:
+                copy = new (this, GT_MEMMOVE) GenTreeMemmove(tree->AsMemmove()->Destination(),
+                                                             tree->AsMemmove()->Source(), tree->AsMemmove()->Size());
                 break;
 
             case GT_BOUNDS_CHECK:

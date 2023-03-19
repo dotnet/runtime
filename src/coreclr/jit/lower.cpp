@@ -1790,6 +1790,37 @@ void Lowering::LowerCall(GenTree* node)
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
 
+#ifdef TARGET_AMD64
+    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    {
+        if (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove)
+        {
+            assert(call->gtArgs.CountArgs() == 3);
+
+            GenTree* lengthArg = call->gtArgs.GetArgByIndex(2)->GetNode();
+            if (lengthArg->IsIntegralConst())
+            {
+                ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
+                // TODO-CQ: drop the whole thing in case of 0
+                if ((cnsSize > 0) && (cnsSize <= comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
+                {
+                    GenTree* dstOp = call->gtArgs.GetArgByIndex(0)->GetNode();
+                    GenTree* srcOp = call->gtArgs.GetArgByIndex(1)->GetNode();
+
+                    // NOTE: if we can prove that dst and src don't overlap we can emit here ASG(BLK, BLK)
+                    // to perform a pure memcpy - it needs less temp registers
+
+                    GenTree* memmove = new (comp, GT_MEMMOVE) GenTreeMemmove(dstOp, srcOp, (unsigned)cnsSize);
+                    BlockRange().InsertBefore(node, memmove);
+                    BlockRange().Remove(lengthArg);
+                    BlockRange().Remove(node);
+                    return;
+                }
+            }
+        }
+    }
+#endif
+
     // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
     assert(!call->IsExpRuntimeLookup());
 
