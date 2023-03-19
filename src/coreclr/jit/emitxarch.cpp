@@ -1036,7 +1036,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return false;
     }
 
-    if (HasHighSIMDReg(id) || (id->idOpSize() == OPSZ64) || HasKMaskRegisterDest(ins))
+    if (HasHighSIMDReg(id) || (id->idOpSize() == EA_64BYTE) || HasKMaskRegisterDest(ins))
     {
         // Requires the EVEX encoding due to used registers
         return true;
@@ -2151,8 +2151,8 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         // Therefore, to estimate the size adding VEX/EVEX prefix size and size of instruction opcode bytes will always
         // overstimate.
         //
-        // Instead this routine will adjust the size of VEX/EVEX prefix based on the number of bytes of opcode it encodes so
-        // that instruction size estimate will be accurate.
+        // Instead this routine will adjust the size of VEX/EVEX prefix based on the number of bytes of opcode it
+        // encodes so that instruction size estimate will be accurate.
         //
         // Basically this  will decrease the prefixSize, so that opcodeSize + prefixAdjustedSize will be the
         // right size.
