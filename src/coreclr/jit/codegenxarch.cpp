@@ -1745,10 +1745,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // PROFILING_SUPPORTED
             break;
 
-        case GT_MEMMOVE:
-            genCodeForMemmove(treeNode->AsMemmove());
-            break;
-
         case GT_LCLHEAP:
             genLclHeap(treeNode);
             break;
@@ -2573,18 +2569,22 @@ void CodeGen::genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta)
 //       vmovdqu  ymmword ptr[rcx + 88], ymm3
 //
 // Arguments:
-//    tree - GenTreeMemmove node storing src, dst and the size
+//    tree - GenTreeBlk node
 //
-void CodeGen::genCodeForMemmove(GenTreeMemmove* tree)
+void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
 {
-    assert(tree->OperIs(GT_MEMMOVE));
-
     // Not yet finished for x86
     assert(TARGET_POINTER_SIZE == 8);
 
+    // TODO-CQ: Support addressing modes, for now we don't use them
+    GenTreeIndir* srcIndir = tree->Data()->AsIndir();
+    assert(srcIndir->isContained());
+    assert(!srcIndir->HasIndex());
+    assert(srcIndir->Offset() == 0);
+
+    regNumber dst  = genConsumeReg(tree->Addr());
+    regNumber src  = genConsumeReg(srcIndir->Base());
     unsigned  size = tree->Size();
-    regNumber dst  = genConsumeReg(tree->Destination());
-    regNumber src  = genConsumeReg(tree->Source());
 
     // TODO-XARCH-AVX512: Consider enabling it here
     unsigned simdSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
@@ -3088,6 +3088,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
                 genCodeForInitBlkRepStos(storeBlkNode);
             }
             break;
+        case GenTreeBlk::BlkOpKindUnrollMemmove:
         case GenTreeBlk::BlkOpKindUnroll:
             if (isCopyBlk)
             {
@@ -3097,7 +3098,15 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
                     GetEmitter()->emitDisableGC();
                 }
 #endif
-                genCodeForCpBlkUnroll(storeBlkNode);
+                if (storeBlkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
+                {
+                    genCodeForCpBlkUnroll(storeBlkNode);
+                }
+                else
+                {
+                    assert(storeBlkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnrollMemmove);
+                    genCodeForMemmove(storeBlkNode);
+                }
 #ifndef JIT32_GCENCODER
                 if (storeBlkNode->gtBlkOpGcUnsafe)
                 {

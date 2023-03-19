@@ -1953,7 +1953,6 @@ private:
     int BuildPutArgSplit(GenTreePutArgSplit* tree);
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
-    int BuildMemmove(GenTreeMemmove* tree);
 
 #if defined(TARGET_XARCH)
 

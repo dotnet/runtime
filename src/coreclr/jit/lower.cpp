@@ -1781,6 +1781,59 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+//------------------------------------------------------------------------
+// LowerMemmove: Replace Buffer.Memmove(DST, SRC, CNS) with a GT_STORE_BLK:
+//
+//    *  STORE_BLK struct<Size> (copy) (Unroll)
+//    +--*  LCL_VAR   byref  dst
+//    \--*  BLK       struct
+//       \--*  LCL_VAR   byref  src
+//
+// Arguments:
+//    tree - GenTreeCall node to replace with STORE_BLK
+//
+GenTree* Lowering::LowerMemmove(GenTreeCall* call)
+{
+    assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove);
+    assert(call->gtArgs.CountArgs() == 3);
+
+    GenTree* lengthArg = call->gtArgs.GetArgByIndex(2)->GetNode();
+    if (lengthArg->IsIntegralConst())
+    {
+        ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
+        // TODO-CQ: drop the whole thing in case of 0
+        if (ISMETHOD("Test") && (cnsSize > 0) && (cnsSize <= comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
+        {
+            GenTree* dstOp = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* srcOp = call->gtArgs.GetArgByIndex(1)->GetNode();
+
+            // TODO-CQ: Try to create an addressing mode
+            GenTreeBlk* srcBlk = comp->gtNewBlockVal(srcOp, (unsigned)cnsSize)->AsBlk();
+            srcBlk->ChangeOper(GT_IND);
+            srcBlk->SetContained();
+
+            GenTreeBlk* dstBlk = comp->gtNewBlockVal(dstOp, (unsigned)cnsSize)->AsBlk();
+            dstBlk->SetOperRaw(GT_STORE_BLK);
+            dstBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_IND_ASG_LHS | GTF_ASG | GTF_GLOB_REF);
+            dstBlk->AsBlk()->Data() = srcBlk;
+
+            // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcOp and dstOp don't overlap, thus, we can
+            // unroll this memmove as memcpy - it doesn't require lots of temp registers
+            dstBlk->gtBlkOpKind = GenTreeObj::BlkOpKindUnrollMemmove;
+
+            BlockRange().InsertAfter(srcOp, srcBlk);
+            BlockRange().InsertBefore(call, dstBlk);
+            BlockRange().Remove(lengthArg);
+            BlockRange().Remove(call);
+            DEBUG_DESTROY_NODE(call);
+            DEBUG_DESTROY_NODE(lengthArg);
+            comp->gtDispTree(dstBlk);
+            return dstBlk->gtNext;
+        }
+    }
+    return nullptr;
+}
+
 // do lowering steps for a call
 // this includes:
 //   - adding the placement nodes (either stack or register variety) for arguments
@@ -1799,38 +1852,20 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
     assert(!call->IsExpRuntimeLookup());
 
-#ifdef TARGET_AMD64
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
+// Implemented only for AMD64 at the moment
+#ifdef TARGET_AMD64
         if (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove)
         {
-            assert(call->gtArgs.CountArgs() == 3);
-
-            GenTree* lengthArg = call->gtArgs.GetArgByIndex(2)->GetNode();
-            if (lengthArg->IsIntegralConst())
+            GenTree* newNode = LowerMemmove(call);
+            if (newNode != nullptr)
             {
-                ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
-                // TODO-CQ: drop the whole thing in case of 0
-                if ((cnsSize > 0) && (cnsSize <= comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
-                {
-                    GenTree* dstOp = call->gtArgs.GetArgByIndex(0)->GetNode();
-                    GenTree* srcOp = call->gtArgs.GetArgByIndex(1)->GetNode();
-
-                    // NOTE: if we can prove that dst and src don't overlap we can emit here ASG(BLK, BLK)
-                    // to perform a pure memcpy - it needs less temp registers
-
-                    GenTree* memmove = new (comp, GT_MEMMOVE) GenTreeMemmove(dstOp, srcOp, (unsigned)cnsSize);
-                    BlockRange().InsertBefore(node, memmove);
-                    BlockRange().Remove(lengthArg);
-                    BlockRange().Remove(node);
-                    DEBUG_DESTROY_NODE(node);
-                    DEBUG_DESTROY_NODE(lengthArg);
-                    return memmove;
-                }
+                return newNode;
             }
         }
-    }
 #endif
+    }
 
     call->ClearOtherRegs();
     LowerArgsForCall(call);

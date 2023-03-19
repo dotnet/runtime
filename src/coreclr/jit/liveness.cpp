@@ -2117,7 +2117,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_JMP:
             case GT_STOREIND:
             case GT_BOUNDS_CHECK:
-            case GT_MEMMOVE:
             case GT_STORE_OBJ:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:

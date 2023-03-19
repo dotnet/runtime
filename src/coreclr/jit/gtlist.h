@@ -80,7 +80,6 @@ GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // alloc
 GTNODE(ADDR             , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)    // address of
 
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
-GTNODE(MEMMOVE          , GenTreeMemmove     ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE)
 
 GTNODE(IND              , GenTreeIndir       ,0,GTK_UNOP)                       // Load indirection
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,GTK_BINOP|GTK_NOVALUE)          // Store indirection
