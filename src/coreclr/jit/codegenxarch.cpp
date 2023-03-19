@@ -1746,7 +1746,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_MEMMOVE:
-            genMemmove(treeNode->AsMemmove());
+            genCodeForMemmove(treeNode->AsMemmove());
             break;
 
         case GT_LCLHEAP:
@@ -2558,7 +2558,7 @@ void CodeGen::genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta)
     inst_Mov(TYP_I_IMPL, REG_SPBASE, regSpDelta, /* canSkip */ false);
 }
 
-void CodeGen::genMemmove(GenTreeMemmove* tree)
+void CodeGen::genCodeForMemmove(GenTreeMemmove* tree)
 {
     assert(tree->OperIs(GT_MEMMOVE));
 
@@ -2652,8 +2652,8 @@ void CodeGen::genMemmove(GenTreeMemmove* tree)
         {
             assert(size <= REGSIZE_BYTES);
             regNumber tmpReg = tree->ExtractTempReg(RBM_ALLINT);
-            emitScalarLoadStore(true, size, tmpReg, dst, 0);
-            emitScalarLoadStore(false, size, tmpReg, src, 0);
+            emitScalarLoadStore(true, size, tmpReg, src, 0);
+            emitScalarLoadStore(false, size, tmpReg, dst, 0);
         }
         else
         {
@@ -2681,10 +2681,10 @@ void CodeGen::genMemmove(GenTreeMemmove* tree)
                 offset = size - 8;
                 size   = 8;
             }
-            emitScalarLoadStore(true, size, tmpReg1, dst, 0);
-            emitScalarLoadStore(true, size, tmpReg2, dst, offset);
-            emitScalarLoadStore(false, size, tmpReg1, src, 0);
-            emitScalarLoadStore(false, size, tmpReg2, src, offset);
+            emitScalarLoadStore(true, size, tmpReg1, src, 0);
+            emitScalarLoadStore(true, size, tmpReg2, src, offset);
+            emitScalarLoadStore(false, size, tmpReg1, dst, 0);
+            emitScalarLoadStore(false, size, tmpReg2, dst, offset);
         }
     }
 }
