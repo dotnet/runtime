@@ -476,7 +476,6 @@ bool emitter::IsRexW1EvexInstruction(instruction ins)
     return false;
 }
 
-
 #ifdef TARGET_64BIT
 //------------------------------------------------------------------------
 // AreUpper32BitsZero: check if some previously emitted
