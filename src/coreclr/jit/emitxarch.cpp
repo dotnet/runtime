@@ -1267,14 +1267,14 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
             case INS_vpbroadcastq:
             {
                 // TODO-XARCH-AVX512: These use W1 if a kmask is involved
-                return false;
+                return TakesEvexPrefix(id);
             }
 
             case INS_vpermilpd:
             case INS_vpermilpdvar:
             {
                 // TODO-XARCH-AVX512: These use W1 if a kmask or broaadcast from memory is involved
-                return false;
+                return TakesEvexPrefix(id);
             }
 
             default:
