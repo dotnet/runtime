@@ -105,9 +105,9 @@ static bool IsKInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool IsVexEncodedInstruction(instruction ins) const;
-bool IsEvexEncodedInstruction(instruction ins) const;
-bool IsVexOrEvexEncodedInstruction(instruction ins) const;
+bool IsVexEncodableInstruction(instruction ins) const;
+bool IsEvexEncodableInstruction(instruction ins) const;
+bool IsVexOrEvexEncodableInstruction(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
