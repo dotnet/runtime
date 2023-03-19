@@ -1013,16 +1013,6 @@ bool emitter::TakesSimdPrefix(const instrDesc* id) const
 
 //------------------------------------------------------------------------
 // TakesEvexPrefix: Checks if the instruction should be EVEX encoded.
-// TODO-XArch-AVX512: This check needs to be updated once AVX512 instructions are added.
-// Eventually, this should evolve to return `true` for the following cases:
-// - JitConfig.JitStressEvexEncoding flag is set.
-// - Is an new AVX512 instruction.
-// - Uses ZMM vector registers.
-// - Uses upper 128-bit or 256-bit registers for an AVX512VL ins.
-// - Uses Operand mask encoding: 64-bit opmask registers k0-k7 for conditional execution and merging of destination
-// operands.
-// - Need to encode functionality specific to Instruction classes(e.g.,embedded broadcast, embedded rounding control
-// etc.)
 //
 // Arguments:
 //    instruction -- processor instruction to check
@@ -1036,23 +1026,24 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 
     if (!IsEvexEncodableInstruction(ins))
     {
+        // Can't be EVEX encoded ever
         return false;
     }
 
-    if (!emitComp->DoJitStressEvexEncoding())
+    if (HasHighSIMDReg(id) || (id->idOpSize() == OPSZ64) || HasKMaskRegisterDest(ins))
     {
-        return false;
-    }
-
-    if (HasHighSIMDReg(id))
-    {
-        // TODO-XARCH-AVX512 remove this check once k registers have been implemented
-        assert(!HasKMaskRegisterDest(ins));
+        // Requires the EVEX encoding due to used registers
         return true;
     }
 
-    // TODO-XArch-AVX512: Revisit 'HasKMaskRegisterDest()' check once KMask support is added.
-    return !HasKMaskRegisterDest(ins);
+    // TODO-XArch-AVX512: This needs to return true when the id includes EVEX specific functionality:
+    // * masking
+    // * embedded broadcast
+    // * embedded rounding control
+    // * etc
+
+    // Only supports the EVEX encoding or in stress mode to always use EVEX encoding
+    return !IsVexEncodableInstruction(ins) || emitComp->DoJitStressEvexEncoding();
 }
 
 // Intel AVX-512 encoding is defined in "Intel 64 and ia-32 architectures software developer's manual volume 2", Section

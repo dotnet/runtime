@@ -644,7 +644,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
 #endif
 
-    if (!compiler->DoJitStressEvexEncoding())
+    if (!compiler->canUseEvexEncoding())
     {
         availableRegCount -= CNT_HIGHFLOAT;
         availableRegCount -= CNT_MASK_REGS;
@@ -718,10 +718,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_AMD64 || TARGET_ARM64
 
 #if defined(TARGET_AMD64)
-    // TODO-XARCH-AVX512 switch this to canUseEvexEncoding() once we independently
-    // allow EVEX use from the stress flag (currently, if EVEX stress is turned off,
-    // we cannot use EVEX at all)
-    if (compiler->DoJitStressEvexEncoding())
+    if (compiler->canUseEvexEncoding())
     {
         availableFloatRegs |= RBM_HIGHFLOAT;
         availableDoubleRegs |= RBM_HIGHFLOAT;

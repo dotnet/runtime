@@ -9222,10 +9222,19 @@ private:
 #ifdef DEBUG
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512VL support.
+        // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
 
-        if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupported())
         {
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW_VL));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512CD));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512CD_VL));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
+
             return true;
         }
 #endif // DEBUG
