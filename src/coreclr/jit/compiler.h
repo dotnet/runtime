@@ -9197,13 +9197,6 @@ private:
 #ifdef TARGET_XARCH
     bool canUseVexEncoding() const
     {
-#ifdef DEBUG
-        if (JitConfig.JitForceEVEXEncoding())
-        {
-            return true;
-        }
-#endif // DEBUG
-
         return compOpportunisticallyDependsOn(InstructionSet_AVX);
     }
 
@@ -9215,13 +9208,6 @@ private:
     //
     bool canUseEvexEncoding() const
     {
-#ifdef DEBUG
-        if (JitConfig.JitForceEVEXEncoding())
-        {
-            return true;
-        }
-#endif // DEBUG
-
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
     }
 
@@ -9236,13 +9222,7 @@ private:
 #ifdef DEBUG
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
-        // causing failure if not running on compatible hardware.
-
-        if (JitConfig.JitForceEVEXEncoding())
-        {
-            return true;
-        }
+        // This requires AVX512VL support.
 
         if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {

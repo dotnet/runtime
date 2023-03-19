@@ -2289,8 +2289,7 @@ void Compiler::compSetProcessor()
     {
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
-        // causing failure if not running on compatible hardware.
+        // This requires AVX512VL support.
 
         // We can't use !DoJitStressEvexEncoding() yet because opts.compSupportsISA hasn't
         // been set yet as that's what we're trying to set here
@@ -2298,11 +2297,7 @@ void Compiler::compSetProcessor()
         bool enableAvx512 = false;
 
 #if defined(DEBUG)
-        if (JitConfig.JitForceEVEXEncoding())
-        {
-            enableAvx512 = true;
-        }
-        else if (JitConfig.JitStressEvexEncoding() && instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL))
+        if (JitConfig.JitStressEvexEncoding() && instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL))
         {
             enableAvx512 = true;
         }
@@ -6027,6 +6022,46 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableAVXVNNI() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
+        }
+
+        if (JitConfig.EnableAVX512F() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F);
+        }
+
+        if (JitConfig.EnableAVX512F_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F_VL);
+        }
+
+        if (JitConfig.EnableAVX512BW() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW);
+        }
+
+        if (JitConfig.EnableAVX512BW_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW_VL);
+        }
+
+        if (JitConfig.EnableAVX512CD() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD);
+        }
+
+        if (JitConfig.EnableAVX512CD_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD_VL);
+        }
+
+        if (JitConfig.EnableAVX512DQ() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ);
+        }
+
+        if (JitConfig.EnableAVX512DQ_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ_VL);
         }
 #endif
 

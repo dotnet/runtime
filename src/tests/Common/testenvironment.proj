@@ -36,7 +36,7 @@
       DOTNET_EnableSSE41;
       DOTNET_EnableSSE42;
       DOTNET_EnableSSSE3;
-      DOTNET_JitForceEVEXEncoding;
+      DOTNET_JitStressEvexEncoding;
       DOTNET_ForceRelocs;
       DOTNET_GCStress;
       DOTNET_GCName;
@@ -156,8 +156,8 @@
     <TestEnvironment Include="jitstress_isas_2_x86_nosse41" JitStress="2" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nosse42" JitStress="2" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nossse3" JitStress="2" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
-    <TestEnvironment Include="jitstress_isas_avx512_forceevex" JitForceEVEXEncoding="1" EnableIncompleteISAClass="1" /> <!-- Depends on AVX512 -->
-    <TestEnvironment Include="jitstress_isas_avx512_forceevex_stresshighregs" JitForceEVEXEncoding="1" JitStressRegs="0x2000" EnableIncompleteISAClass="1" /> <!-- Depends on AVX512 -->
+    <TestEnvironment Include="jitstress_isas_avx512" JitStressEvexEncoding="1" EnableIncompleteISAClass="1" /> <!-- Depends on AVX512 -->
+    <TestEnvironment Include="jitstress_isas_avx512_stresshighregs" JitStressEvexEncoding="1" JitStressRegs="0x2000" EnableIncompleteISAClass="1" /> <!-- Depends on AVX512 -->
     <TestEnvironment Include="jitstressregs1_x86_noavx" JitStressRegs="1" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs2_x86_noavx" JitStressRegs="2" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs3_x86_noavx" JitStressRegs="3" EnableAVX="0" />
@@ -260,7 +260,7 @@
 
        2) Otherwise, the test scenario defines such DOTNET_* environment variable and the specified value
           of this variable can be extracted by using Metadata() item function.
-      
+
        3) This is where we process a pseudo-value of "random" in the DOTNET table into an actual random number.
       -->
 
