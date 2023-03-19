@@ -1231,6 +1231,7 @@ License for Fast CRC Computation
 --------------------------------------
 
 https://github.com/intel/isa-l/blob/33a2d9484595c2d6516c920ce39a694c144ddf69/crc/crc32_ieee_by4.asm
+https://github.com/intel/isa-l/blob/33a2d9484595c2d6516c920ce39a694c144ddf69/crc/crc64_ecma_norm_by8.asm
 
 Copyright(c) 2011-2015 Intel Corporation All rights reserved.
 
