@@ -5,7 +5,7 @@ if (CLR_CMAKE_TARGET_OSX)
     list(APPEND LINK_LIBRARIES_ADDITIONAL
         "-undefined dynamic_lookup"
     )
-else (CLR_CMAKE_TARGET_WIN32)
+elseif (CLR_CMAKE_TARGET_WIN32)
     list(APPEND LINK_LIBRARIES_ADDITIONAL
         "/FORCE:UNRESOLVED"
     )
