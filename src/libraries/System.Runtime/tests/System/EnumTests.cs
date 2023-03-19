@@ -728,6 +728,19 @@ namespace System.Tests
             Assert.Throws<InvalidOperationException>(() => Enum.IsDefined(typeof(SimpleEnum), value));
         }
 
+        [Fact]
+        public void IsDefined_LargeEnum_AllValuesFound()
+        {
+            for (int i = 0; i < 256; i++)
+            {
+                Assert.True(Enum.IsDefined(typeof(CompleteSByteEnum), (CompleteSByteEnum)i));
+                Assert.True(Enum.IsDefined((CompleteSByteEnum)i));
+
+                Assert.True(Enum.IsDefined(typeof(CompleteSByteRandomOrderEnum), (CompleteSByteRandomOrderEnum)i));
+                Assert.True(Enum.IsDefined((CompleteSByteRandomOrderEnum)i));
+            }
+        }
+
         public static IEnumerable<object[]> HasFlag_TestData()
         {
             // SByte

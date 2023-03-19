@@ -418,17 +418,16 @@ namespace System.Reflection.Runtime.General
             public static readonly EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
 
             public int Compare(object? x, object? y)
-                => x switch
+            {
+                Debug.Assert(x is byte or ushort or uint or ulong);
+                return x switch
                 {
-                    sbyte sb => ((byte)sb).CompareTo((byte)(sbyte)y!),
                     byte b => b.CompareTo((byte)y!),
-                    short s => ((ushort)s).CompareTo((ushort)(short)y!),
                     ushort us => us.CompareTo((ushort)y!),
-                    int i => ((uint)i).CompareTo((uint)(int)y!),
                     uint ui => ui.CompareTo((uint)y!),
-                    long l => ((ulong)l).CompareTo((ulong)(long)y!),
                     _ => ((ulong)x!).CompareTo((ulong)y!),
                 };
+            }
         }
 
         public sealed override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
