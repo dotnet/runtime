@@ -137,19 +137,20 @@ bool LinearScan::areNextConsecutiveRegistersFree(regNumber regToAssign, int regi
 }
 
 //------------------------------------------------------------------------
-// getFreeCandidates: Returns the mask of all the free candidates for given refPosition.
-//   If refPosition is the first RefPosition of a series of refpositions that needs
+// getConsecutiveCandidates: Returns the mask of all the consecutive candidates
+//   for given refPosition. For first RefPosition of a series of refpositions that needs
 //   consecutive registers, then returns only the mask such that it satisfies the need
-//   of having free consecutive registers.
+//   of having free consecutive registers. If free consecutive registers are not available
+//   it finds such a series that needs fewer registers spilling.
 //
 // Arguments:
 //    candidates   - Register assigned to the first refposition.
 //    refPosition  - Number of registers to check.
 //
 //  Returns:
-//      Register mask of all the free registers
+//      Register mask of consecutive registers.
 //
-regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
+regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition)
 {
     assert(compiler->info.needsConsecutiveRegisters);
     regMaskTP result = candidates & m_AvailableRegs;

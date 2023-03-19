@@ -12262,7 +12262,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 #ifdef TARGET_ARM64
     if (needsConsecutiveRegisters)
     {
-        freeCandidates = linearScan->getFreeCandidates(candidates, refPosition);
+        freeCandidates = linearScan->getConsecutiveCandidates(candidates, refPosition);
     }
     else
 #endif // TARGET_ARM64
