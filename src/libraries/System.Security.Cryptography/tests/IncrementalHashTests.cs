@@ -25,6 +25,13 @@ namespace System.Security.Cryptography.Tests
             yield return new object[] { SHA256.Create(), HashAlgorithmName.SHA256 };
             yield return new object[] { SHA384.Create(), HashAlgorithmName.SHA384 };
             yield return new object[] { SHA512.Create(), HashAlgorithmName.SHA512 };
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                yield return new object[] { SHA3_256.Create(), HashAlgorithmName.SHA3_256 };
+                yield return new object[] { SHA3_384.Create(), HashAlgorithmName.SHA3_384 };
+                yield return new object[] { SHA3_512.Create(), HashAlgorithmName.SHA3_512 };
+            }
         }
 
         public static IEnumerable<object[]> GetHMACs()
@@ -33,10 +40,18 @@ namespace System.Security.Cryptography.Tests
             {
                 yield return new object[] { new HMACMD5(), HashAlgorithmName.MD5 };
             }
+
             yield return new object[] { new HMACSHA1(), HashAlgorithmName.SHA1 };
             yield return new object[] { new HMACSHA256(), HashAlgorithmName.SHA256 };
             yield return new object[] { new HMACSHA384(), HashAlgorithmName.SHA384 };
             yield return new object[] { new HMACSHA512(), HashAlgorithmName.SHA512 };
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                yield return new object[] { new HMACSHA3_256(), HashAlgorithmName.SHA3_256 };
+                yield return new object[] { new HMACSHA3_384(), HashAlgorithmName.SHA3_384 };
+                yield return new object[] { new HMACSHA3_512(), HashAlgorithmName.SHA3_512 };
+            }
         }
 
         [Fact]

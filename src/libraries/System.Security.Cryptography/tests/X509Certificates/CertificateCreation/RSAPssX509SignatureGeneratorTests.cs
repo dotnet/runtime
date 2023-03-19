@@ -83,6 +83,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("MD5")]
         [InlineData("SHA1")]
         [InlineData("Potato")]
+        [InlineData("SHA3_256")] // There are no OIDs assigned for RSA-PSS-withSHA3 family.
+        [InlineData("SHA3_384")]
+        [InlineData("SHA3_512")]
         public static void SignatureAlgorithm_NotSupported(string hashAlgorithmName)
         {
             using (RSA rsa = RSA.Create())

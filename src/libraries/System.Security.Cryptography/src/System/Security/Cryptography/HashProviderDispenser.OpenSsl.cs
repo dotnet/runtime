@@ -22,6 +22,11 @@ namespace System.Security.Cryptography
             return new HmacHashProvider(hashAlgorithmId, key);
         }
 
+        internal static bool HashSupported(string hashAlgorithmId)
+        {
+            return Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId) != IntPtr.Zero;
+        }
+
         internal static class OneShotHashProvider
         {
             public static int MacData(

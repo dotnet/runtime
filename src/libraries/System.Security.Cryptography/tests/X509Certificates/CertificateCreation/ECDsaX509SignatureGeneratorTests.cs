@@ -57,21 +57,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Theory]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        public static void SignatureAlgorithm_StableNotSame(string hashAlgorithmName)
+        [MemberData(nameof(SignatureDigestAlgorithms))]
+        public static void SignatureAlgorithm_StableNotSame(HashAlgorithmName hashAlgorithm, bool isSupported)
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp256r1Data.KeyParameters))
             {
-                HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
                 var generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
 
-                byte[] sigAlg = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
-                byte[] sigAlg2 = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+                if (isSupported)
+                {
+                    byte[] sigAlg = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+                    byte[] sigAlg2 = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
 
-                Assert.NotSame(sigAlg, sigAlg2);
-                Assert.Equal(sigAlg, sigAlg2);
+                    Assert.NotSame(sigAlg, sigAlg2);
+                    Assert.Equal(sigAlg, sigAlg2);
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() =>
+                        generator.GetSignatureAlgorithmIdentifier(hashAlgorithm));
+                }
             }
         }
 
@@ -93,18 +98,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Theory]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        public static void SignatureAlgorithm_Encoding(string hashAlgorithmName)
+        [MemberData(nameof(SignatureDigestAlgorithms))]
+        public static void SignatureAlgorithm_Encoding(HashAlgorithmName hashAlgorithm, bool isSupported)
         {
+            _ = isSupported;
             string expectedAlgOid;
 
-            switch (hashAlgorithmName)
+            switch (hashAlgorithm.Name)
             {
-                case "SHA1":
-                    expectedAlgOid = "06072A8648CE3D0401";
-                    break;
                 case "SHA256":
                     expectedAlgOid = "06082A8648CE3D040302";
                     break;
@@ -114,8 +115,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 case "SHA512":
                     expectedAlgOid = "06082A8648CE3D040304";
                     break;
+                case "SHA3_256":
+                    expectedAlgOid = "060960864801650304030A";
+                    break;
+                case "SHA3_384":
+                    expectedAlgOid = "060960864801650304030B";
+                    break;
+                case "SHA3_512":
+                    expectedAlgOid = "060960864801650304030C";
+                    break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(hashAlgorithmName));
+                    throw new ArgumentOutOfRangeException(nameof(hashAlgorithm));
             }
 
             EccTestData testData = EccTestData.Secp521r1Data;
@@ -125,7 +135,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             using (ECDsa ecdsa = ECDsa.Create(testData.KeyParameters))
             {
                 var generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
-                byte[] sigAlg = generator.GetSignatureAlgorithmIdentifier(new HashAlgorithmName(hashAlgorithmName));
+                byte[] sigAlg = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
 
                 Assert.Equal(expectedHex, sigAlg.ByteArrayToHex());
             }
@@ -134,6 +144,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static IEnumerable<object[]> GetApplicableTestData()
         {
             return EccTestData.EnumerateApplicableTests().Select(x => new object[] { x });
+        }
+
+        public static IEnumerable<object[]> SignatureDigestAlgorithms
+        {
+            get
+            {
+                // hashAlgorithm, isSupported
+                yield return new object[] { HashAlgorithmName.SHA256, true };
+                yield return new object[] { HashAlgorithmName.SHA384, true };
+                yield return new object[] { HashAlgorithmName.SHA512, true };
+
+                yield return new object[] { HashAlgorithmName.SHA3_256, PlatformDetection.SupportsSha3 };
+                yield return new object[] { HashAlgorithmName.SHA3_384, PlatformDetection.SupportsSha3 };
+                yield return new object[] { HashAlgorithmName.SHA3_512, PlatformDetection.SupportsSha3 };
+            }
         }
     }
 }

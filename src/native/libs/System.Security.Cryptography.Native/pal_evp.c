@@ -175,6 +175,45 @@ const EVP_MD* CryptoNative_EvpSha512(void)
     return EVP_sha512();
 }
 
+const EVP_MD* CryptoNative_EvpSha3_256(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_sha3_256))
+    {
+        return EVP_sha3_256();
+    }
+#endif
+
+    return NULL;
+}
+
+const EVP_MD* CryptoNative_EvpSha3_384(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_sha3_384))
+    {
+        return EVP_sha3_384();
+    }
+#endif
+
+    return NULL;
+}
+
+const EVP_MD* CryptoNative_EvpSha3_512(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_sha3_512))
+    {
+        return EVP_sha3_512();
+    }
+#endif
+
+    return NULL;
+}
+
 int32_t CryptoNative_GetMaxMdSize(void)
 {
     // No error queue impact.

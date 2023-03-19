@@ -400,7 +400,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void OneShot_TryExistingBuffer_Exact()
         {
-            for (int caseId = 1; caseId <= 7; caseId++)
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
                 byte[] buffer = new byte[MacSize];
                 byte[] key = _testKeys[caseId];
@@ -418,7 +418,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void OneShot_TryExistingBuffer_Larger()
         {
-            for (int caseId = 1; caseId <= 7; caseId++)
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
                 Span<byte> buffer = new byte[MacSize + 20];
                 byte[] key = _testKeys[caseId];
@@ -445,7 +445,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(10, 20)]
         public void OneShot_TryExistingBuffer_OverlapsKey(int keyOffset, int bufferOffset)
         {
-            for (int caseId = 1; caseId <= 7; caseId++)
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
                 byte[] key = _testKeys[caseId];
                 byte[] data = _testData[caseId];
@@ -471,7 +471,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(10, 20)]
         public void OneShot_TryExistingBuffer_OverlapsSource(int sourceOffset, int bufferOffset)
         {
-            for (int caseId = 1; caseId <= 7; caseId++)
+            for (int caseId = 1; caseId < _testKeys.Length; caseId++)
             {
                 byte[] key = _testKeys[caseId];
                 byte[] data = _testData[caseId];

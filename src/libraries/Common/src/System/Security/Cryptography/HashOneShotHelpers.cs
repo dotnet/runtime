@@ -28,6 +28,18 @@ namespace System.Security.Cryptography
             {
                 return SHA384.HashData(source);
             }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_256 && SHA3_256.IsSupported)
+            {
+                return SHA3_256.HashData(source);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
+            {
+                return SHA3_384.HashData(source);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
+            {
+                return SHA3_512.HashData(source);
+            }
             else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
             {
                 return MD5.HashData(source);
@@ -58,6 +70,18 @@ namespace System.Security.Cryptography
             {
                 return SHA384.TryHashData(source, destination, out bytesWritten);
             }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_256 && SHA3_256.IsSupported)
+            {
+                return SHA3_256.TryHashData(source, destination, out bytesWritten);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
+            {
+                return SHA3_384.TryHashData(source, destination, out bytesWritten);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
+            {
+                return SHA3_512.TryHashData(source, destination, out bytesWritten);
+            }
             else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
             {
                 return MD5.TryHashData(source, destination, out bytesWritten);
@@ -83,6 +107,18 @@ namespace System.Security.Cryptography
             else if (hashAlgorithm == HashAlgorithmName.SHA384)
             {
                 return SHA384.HashData(source);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_256 && SHA3_256.IsSupported)
+            {
+                return SHA3_256.HashData(source);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
+            {
+                return SHA3_384.HashData(source);
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
+            {
+                return SHA3_512.HashData(source);
             }
             else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
             {
