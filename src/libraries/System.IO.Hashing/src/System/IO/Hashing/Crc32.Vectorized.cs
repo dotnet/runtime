@@ -13,9 +13,6 @@ namespace System.IO.Hashing
 {
     public partial class Crc32
     {
-        // Minimum length to use UpdateX86
-        private const int X86MinimumLength = 64;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<ulong> CarrylessMultiplyLower(Vector128<ulong> left, Vector128<ulong> right)
         {
@@ -67,6 +64,15 @@ namespace System.IO.Hashing
             return default;
         }
 
+        // We check for little endian byte order here in case we're ever on ARM in big endian mode.
+        // All of these checks except the length check are elided by JIT, so the JITted implementation
+        // will be either a return false or a length check against a constant. This means this method
+        // should be inlined into the caller.
+        private static bool CanBeVectorized(ReadOnlySpan<byte> source) =>
+            BitConverter.IsLittleEndian
+            && (Pclmulqdq.IsSupported || (Aes.IsSupported && AdvSimd.IsSupported))
+            && source.Length >= Vector128<byte>.Count * 4;
+
         // Processes the bytes in source in X86BlockSize chunks using x86 intrinsics, followed by processing 16
         // byte chunks, and then processing remaining bytes individually. Requires little endian byte order and
         // support for PCLMULUQDQ intrinsics on Intel architecture or AES and AdvSimd intrinsics on ARM architecture.
@@ -74,11 +80,7 @@ namespace System.IO.Hashing
         // PCLMULQDQ Instruction" in December, 2009.
         private static uint UpdateVectorized(uint crc, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(source.Length >= X86MinimumLength);
-            Debug.Assert(Pclmulqdq.IsSupported || (Aes.IsSupported && AdvSimd.IsSupported),
-                "Either Intel PCLMULUQDQ or ARM AES+AdvSimd support is required.");
-            Debug.Assert(BitConverter.IsLittleEndian,
-                "Only little endian byte order is supported.");
+            Debug.Assert(CanBeVectorized(source), "source cannot be vectorized.");
 
             // Work with a reference to where we're at in the ReadOnlySpan and a local length
             // to avoid extraneous range checks.

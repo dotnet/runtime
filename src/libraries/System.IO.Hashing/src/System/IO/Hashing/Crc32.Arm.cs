@@ -11,8 +11,7 @@ namespace System.IO.Hashing
     {
         private static uint UpdateScalarArm64(uint crc, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(ArmCrc.Arm64.IsSupported,
-                "ARM CRC support is required.");
+            Debug.Assert(ArmCrc.Arm64.IsSupported, "ARM CRC support is required.");
 
             // Compute in 8 byte chunks
             if (source.Length >= sizeof(ulong))
@@ -27,6 +26,7 @@ namespace System.IO.Hashing
             }
 
             // Compute remaining bytes
+            Debug.Assert(source.Length < 8);
             for (int i = 0; i < source.Length; i++)
             {
                 crc = ArmCrc.ComputeCrc32(crc, source[i]);
@@ -37,8 +37,7 @@ namespace System.IO.Hashing
 
         private static uint UpdateScalarArm32(uint crc, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(ArmCrc.IsSupported,
-                "ARM CRC support is required.");
+            Debug.Assert(ArmCrc.IsSupported, "ARM CRC support is required.");
 
             // Compute in 4 byte chunks
             if (source.Length >= sizeof(uint))
@@ -53,6 +52,7 @@ namespace System.IO.Hashing
             }
 
             // Compute remaining bytes
+            Debug.Assert(source.Length < 4);
             for (int i = 0; i < source.Length; i++)
             {
                 crc = ArmCrc.ComputeCrc32(crc, source[i]);

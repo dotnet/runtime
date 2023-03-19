@@ -170,14 +170,7 @@ namespace System.IO.Hashing
         private static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
 #if NET7_0_OR_GREATER
-            // Prefer the vectorized implementation, if available
-
-            // We check for little endian byte order here in case we're ever on ARM in big endian mode
-            // All of these checks except the length check are elided by JIT.
-            if (BitConverter.IsLittleEndian
-                && (System.Runtime.Intrinsics.X86.Pclmulqdq.IsSupported
-                    || (System.Runtime.Intrinsics.Arm.Aes.IsSupported && System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported))
-                && source.Length >= X86MinimumLength)
+            if (CanBeVectorized(source))
             {
                 return UpdateVectorized(crc, source);
             }
