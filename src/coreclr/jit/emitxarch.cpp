@@ -161,7 +161,16 @@ regNumber emitter::getSseShiftRegNumber(instruction ins)
 
 bool emitter::IsVexEncodedInstruction(instruction ins) const
 {
-    return UseVEXEncoding() && IsSSEOrAVXInstruction(ins);
+    if (!UseVEXEncoding())
+    {
+        return false;
+    }
+
+    // There is also Translate_VEX, however we expect codegen to have handled
+    // this difference and given us the VEX exclusive version of the instruction
+
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Encoding_VEX) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -180,133 +189,11 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
         return false;
     }
 
-    // TODO-XArch-AVX512: Explore adding this as a flag to instr table.
-    switch (ins)
-    {
-        // No EVEX Encoding exists at all.
-        case INS_pmovmskb:
-        case INS_movmskpd:
-        case INS_movmskps:
-        case INS_dppd:
-        case INS_dpps:
-        case INS_maskmovdqu:
-        case INS_haddps:
-        case INS_haddpd:
-        case INS_hsubps:
-        case INS_hsubpd:
-        case INS_addsubps:
-        case INS_addsubpd:
-        case INS_rcpps:
-        case INS_rcpss:
-        case INS_rsqrtps:
-        case INS_rsqrtss:
-        case INS_psignb:
-        case INS_psignd:
-        case INS_psignw:
-        case INS_roundps:
-        case INS_roundss:
-        case INS_roundpd:
-        case INS_roundsd:
-        case INS_blendps:
-        case INS_blendpd:
-        case INS_blendvps:
-        case INS_pblendw:
-        case INS_pblendvb:
-        case INS_blendvpd:
-        case INS_ptest:
-        case INS_phaddw:
-        case INS_phsubw:
-        case INS_phaddd:
-        case INS_phsubd:
-        case INS_phaddsw:
-        case INS_phsubsw:
-        case INS_lddqu:
-        case INS_phminposuw:
-        case INS_mpsadbw:
-        case INS_pclmulqdq:
-        case INS_aesenc:
-        case INS_aesenclast:
-        case INS_aesdec:
-        case INS_aesdeclast:
-        case INS_aesimc:
-        case INS_aeskeygenassist:
-        case INS_vzeroupper:
-        case INS_vperm2i128:
-        case INS_vperm2f128:
-        case INS_vpblendd:
-        case INS_vblendvps:
-        case INS_vblendvpd:
-        case INS_vpblendvb:
-        case INS_vtestps:
-        case INS_vtestpd:
-        case INS_vmaskmovps:
-        case INS_vmaskmovpd:
-        case INS_vpmaskmovd:
-        case INS_vpmaskmovq:
-        case INS_andn:
-        case INS_blsi:
-        case INS_blsmsk:
-        case INS_blsr:
-        case INS_bextr:
-        case INS_rorx:
-        case INS_pdep:
-        case INS_pext:
-        case INS_bzhi:
-        case INS_mulx:
-#ifdef TARGET_AMD64
-        case INS_shlx:
-        case INS_sarx:
-        case INS_shrx:
-#endif
-        case INS_lfence:
-        case INS_mfence:
-        case INS_movnti:
-        case INS_prefetchnta:
-        case INS_prefetcht0:
-        case INS_prefetcht1:
-        case INS_prefetcht2:
-        case INS_sfence:
-        // Might need new INS_<INS_NAME>*suffix* instructions for these.
-        case INS_vbroadcastf128: // INS_vbroadcastf32x4, INS_vbroadcastf64x2.
-        case INS_vbroadcasti128: // INS_vbroadcasti32x4, INS_vbroadcasti64x2.
+    // There is also Translate_EVEX, however we expect codegen to have handled
+    // this difference and given us the EVEX exclusive version of the instruction
 
-        case INS_kmovb_msk:
-        case INS_kmovw_msk:
-        case INS_kmovd_msk:
-        case INS_kmovq_msk:
-        case INS_kmovb_gpr:
-        case INS_kmovw_gpr:
-        case INS_kmovd_gpr:
-        case INS_kmovq_gpr:
-
-            // TODO-XARCH-AVX512 these need to be encoded with the proper individual EVEX instructions (movdqu8,
-            // movdqu16 etc)
-            // For implementation speed, I have set it up so the standing instruction will default to the 32-bit operand
-            // type
-            // i.e., movdqu => movdqu32 etc
-            // Since we are not using k registers yet, this will have no impact on correctness but will affect things
-            // once
-            // k registers are used (as that is the point of the "break out operand type" of these instructions)
-            // case INS_movdqa:         // INS_vmovdqa32, INS_vmovdqa64.
-            // case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_vmovdqu32, INS_vmovdqu64.
-            // case INS_pand:           // INS_vpandd, INS_vpandq.
-            // case INS_pandn:          // INS_vpandnd, INS_vpandnq.
-            // case INS_por:            // INS_vpord, INS_vporq.
-            // case INS_pxor:           // INS_vpxord, INS_vpxorq
-            // case INS_vextractf128:   // INS_vextractf32x4, INS_vextractf64x2.
-            // case INS_vextracti128:   // INS_vextracti32x4, INS_vextracti64x2.
-            // case INS_vinsertf128:    // INS_vinsertf32x4, INS_vinsertf64x2.
-            // case INS_vinserti128:    // INS_vinserti32x4, INS_vinserti64x2.
-            {
-                return false;
-            }
-        default:
-        {
-            break;
-        }
-    }
-
-    return IsAvx512OrPriorInstruction(ins);
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Encoding_EVEX) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -320,30 +207,34 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
 //
 bool emitter::IsVexOrEvexEncodedInstruction(instruction ins) const
 {
-    return IsEvexEncodedInstruction(ins) || IsVexEncodedInstruction(ins);
+    return IsVexEncodedInstruction(ins) || IsEvexEncodedInstruction(ins);
 }
 
 // Returns true if the AVX instruction is a binary operator that requires 3 operands.
 // When we emit an instruction with only two operands, we will duplicate the destination
 // as a source.
-// TODO-XArch-Cleanup: This is a temporary solution for now. Eventually this needs to
-// be formalized by adding an additional field to instruction table to
-// to indicate whether a 3-operand instruction.
-bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
+bool emitter::IsDstDstSrcAVXInstruction(instruction ins) const
 {
-    return ((CodeGenInterface::instInfo[ins] & INS_Flags_IsDstDstSrcAVXInstruction) != 0) &&
-           IsVexOrEvexEncodedInstruction(ins);
+    if (!UseVEXEncoding())
+    {
+        return false;
+    }
+
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_IsDstDstSrcAVXInstruction) != 0;
 }
 
 // Returns true if the AVX instruction requires 3 operands that duplicate the source
 // register in the vvvv field.
-// TODO-XArch-Cleanup: This is a temporary solution for now. Eventually this needs to
-// be formalized by adding an additional field to instruction table to
-// to indicate whether a 3-operand instruction.
-bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
+bool emitter::IsDstSrcSrcAVXInstruction(instruction ins) const
 {
-    return ((CodeGenInterface::instInfo[ins] & INS_Flags_IsDstSrcSrcAVXInstruction) != 0) &&
-           IsVexOrEvexEncodedInstruction(ins);
+    if (!UseVEXEncoding())
+    {
+        return false;
+    }
+
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_IsDstSrcSrcAVXInstruction) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -363,7 +254,8 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 //    true if instruction has a regular form where the 'w' bit needs to be set.
 bool emitter::HasRegularWideForm(instruction ins)
 {
-    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Wbit) != 0);
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_FLAGS_Has_Wbit) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -382,7 +274,8 @@ bool emitter::HasRegularWideForm(instruction ins)
 //    true if instruction has a regular wide immediate form where the 's' bit needs to set.
 bool emitter::HasRegularWideImmediateForm(instruction ins)
 {
-    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Sbit) != 0);
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_FLAGS_Has_Sbit) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -397,7 +290,8 @@ bool emitter::HasRegularWideImmediateForm(instruction ins)
 //
 bool emitter::DoesWriteZeroFlag(instruction ins)
 {
-    return (CodeGenInterface::instInfo[ins] & Writes_ZF) != 0;
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Writes_ZF) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -412,7 +306,8 @@ bool emitter::DoesWriteZeroFlag(instruction ins)
 //
 bool emitter::DoesWriteSignFlag(instruction ins)
 {
-    return (CodeGenInterface::instInfo[ins] & Writes_SF) != 0;
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Writes_SF) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -427,7 +322,8 @@ bool emitter::DoesWriteSignFlag(instruction ins)
 //
 bool emitter::DoesResetOverflowAndCarryFlags(instruction ins)
 {
-    return (CodeGenInterface::instInfo[ins] & (Resets_OF | Resets_CF)) == (Resets_OF | Resets_CF);
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & (Resets_OF | Resets_CF)) == (Resets_OF | Resets_CF);
 }
 
 //------------------------------------------------------------------------
@@ -507,7 +403,7 @@ bool emitter::IsRexW0Instruction(instruction ins)
 
     if ((flags & REX_W0) != 0)
     {
-        assert((flags & (REX_W1 | REX_WX)) == 0);
+        assert((flags & (REX_W1 | REX_WX | REX_W1_EVEX)) == 0);
         return true;
     }
 
@@ -529,7 +425,7 @@ bool emitter::IsRexW1Instruction(instruction ins)
 
     if ((flags & REX_W1) != 0)
     {
-        assert((flags & (REX_W0 | REX_WX)) == 0);
+        assert((flags & (REX_W0 | REX_WX | REX_W1_EVEX)) == 0);
         return true;
     }
 
@@ -551,7 +447,29 @@ bool emitter::IsRexWXInstruction(instruction ins)
 
     if ((flags & REX_WX) != 0)
     {
-        assert((flags & (REX_W0 | REX_W1)) == 0);
+        assert((flags & (REX_W0 | REX_W1 | REX_W1_EVEX)) == 0);
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsRexW1EvexInstruction: check if the instruction always encodes REX.W as 1 for EVEX
+//
+// Arguments:
+//    id - instruction to test
+//
+// Return Value:
+//    true if the instruction always encodes REX.W as 1 for EVEX; othwerwise, false
+//
+bool emitter::IsRexW1EvexInstruction(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+
+    if ((flags & REX_W1_EVEX) != 0)
+    {
+        assert((flags & (REX_W0 | REX_W1 | REX_WX)) == 0);
         return true;
     }
 
@@ -1090,8 +1008,7 @@ bool emitter::Is4ByteSSEInstruction(instruction ins) const
 bool emitter::TakesSimdPrefix(const instrDesc* id) const
 {
     instruction ins = id->idIns();
-
-    return TakesEvexPrefix(id) || TakesVexPrefix(ins);
+    return TakesVexPrefix(ins) || TakesEvexPrefix(id);
 }
 
 //------------------------------------------------------------------------
@@ -1115,23 +1032,27 @@ bool emitter::TakesSimdPrefix(const instrDesc* id) const
 //
 bool emitter::TakesEvexPrefix(const instrDesc* id) const
 {
+    instruction ins = id->idIns();
+
+    if (!IsEvexEncodedInstruction(ins))
+    {
+        return false;
+    }
+
     if (!emitComp->DoJitStressEvexEncoding())
     {
         return false;
     }
 
-    instruction ins = id->idIns();
-
     if (HasHighSIMDReg(id))
     {
-        assert(IsEvexEncodedInstruction(ins));
         // TODO-XARCH-AVX512 remove this check once k registers have been implemented
         assert(!HasKMaskRegisterDest(ins));
         return true;
     }
 
     // TODO-XArch-AVX512: Revisit 'HasKMaskRegisterDest()' check once KMask support is added.
-    return IsEvexEncodedInstruction(ins) && !HasKMaskRegisterDest(ins);
+    return !HasKMaskRegisterDest(ins);
 }
 
 // Intel AVX-512 encoding is defined in "Intel 64 and ia-32 architectures software developer's manual volume 2", Section
@@ -1281,61 +1202,89 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 }
 
 // Returns true if this instruction, for the given EA_SIZE(attr), will require a REX.W prefix
-bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
+bool emitter::TakesRexWPrefix(const instrDesc* id) const
 {
-    // Because the current implementation of AVX does not have a way to distinguish between the register
-    // size specification (128 vs. 256 bits) and the operand size specification (32 vs. 64 bits), where both are
-    // required, the instruction must be created with the register size attribute (EA_16BYTE or EA_32BYTE),
-    // and here we must special case these by the opcode.
-    switch (ins)
+#if defined(TARGET_X86)
+    if (!UseVEXEncoding())
     {
-        case INS_vpermpd:
-        case INS_vpermq:
-        case INS_vpsrlvq:
-        case INS_vpsllvq:
-        case INS_pinsrq:
-        case INS_pextrq:
-        case INS_vfmadd132pd:
-        case INS_vfmadd213pd:
-        case INS_vfmadd231pd:
-        case INS_vfmadd132sd:
-        case INS_vfmadd213sd:
-        case INS_vfmadd231sd:
-        case INS_vfmaddsub132pd:
-        case INS_vfmaddsub213pd:
-        case INS_vfmaddsub231pd:
-        case INS_vfmsubadd132pd:
-        case INS_vfmsubadd213pd:
-        case INS_vfmsubadd231pd:
-        case INS_vfmsub132pd:
-        case INS_vfmsub213pd:
-        case INS_vfmsub231pd:
-        case INS_vfmsub132sd:
-        case INS_vfmsub213sd:
-        case INS_vfmsub231sd:
-        case INS_vfnmadd132pd:
-        case INS_vfnmadd213pd:
-        case INS_vfnmadd231pd:
-        case INS_vfnmadd132sd:
-        case INS_vfnmadd213sd:
-        case INS_vfnmadd231sd:
-        case INS_vfnmsub132pd:
-        case INS_vfnmsub213pd:
-        case INS_vfnmsub231pd:
-        case INS_vfnmsub132sd:
-        case INS_vfnmsub213sd:
-        case INS_vfnmsub231sd:
-        case INS_vpmaskmovq:
-        case INS_vpgatherdq:
-        case INS_vpgatherqq:
-        case INS_vgatherdpd:
-        case INS_vgatherqpd:
-        case INS_vpmovw2m:
-        case INS_vpmovq2m:
-            return true;
-        default:
-            break;
+        return false;
     }
+#endif // TARGET_X86
+
+    instruction ins  = id->idIns();
+    emitAttr    attr = id->idOpSize();
+
+    if (IsRexW0Instruction(ins))
+    {
+        return false;
+    }
+    else if (IsRexW1Instruction(ins))
+    {
+        return true;
+    }
+    else if (IsRexW1EvexInstruction(ins))
+    {
+        return TakesEvexPrefix(id);
+    }
+
+    if (IsRexWXInstruction(ins))
+    {
+        switch (ins)
+        {
+            case INS_cvtss2si:
+            case INS_cvttss2si:
+            case INS_cvtsd2si:
+            case INS_cvttsd2si:
+            case INS_movd:
+            case INS_movnti:
+            case INS_andn:
+            case INS_bextr:
+            case INS_blsi:
+            case INS_blsmsk:
+            case INS_blsr:
+            case INS_bzhi:
+            case INS_mulx:
+            case INS_pdep:
+            case INS_pext:
+            case INS_rorx:
+#if defined(TARGET_AMD64)
+            case INS_sarx:
+            case INS_shlx:
+            case INS_shrx:
+#endif // TARGET_AMD64
+            {
+                if (attr == EA_8BYTE)
+                {
+                    return true;
+                }
+
+                // TODO-Cleanup: This should really only ever be EA_4BYTE
+                assert((attr == EA_4BYTE) || (attr == EA_16BYTE));
+                return false;
+            }
+
+            case INS_vbroadcastsd:
+            case INS_vpbroadcastq:
+            {
+                // TODO-XARCH-AVX512: These use W1 if a kmask is involved
+                return TakesEvexPrefix(id);
+            }
+
+            case INS_vpermilpd:
+            case INS_vpermilpdvar:
+            {
+                // TODO-XARCH-AVX512: These use W1 if a kmask or broaadcast from memory is involved
+                return TakesEvexPrefix(id);
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    assert(!IsAvx512OrPriorInstruction(ins));
 
 #ifdef TARGET_AMD64
     // movsx should always sign extend out to 8 bytes just because we don't track
@@ -1351,40 +1300,6 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
     if (EA_SIZE(attr) != EA_8BYTE)
     {
         return false;
-    }
-
-    if (IsSSEOrAVXInstruction(ins))
-    {
-        switch (ins)
-        {
-            case INS_movd: // TODO-Cleanup: replace with movq, https://github.com/dotnet/runtime/issues/47943.
-            case INS_andn:
-            case INS_bextr:
-            case INS_blsi:
-            case INS_blsmsk:
-            case INS_blsr:
-            case INS_bzhi:
-            case INS_cvttsd2si:
-            case INS_cvttss2si:
-            case INS_cvtsd2si:
-            case INS_cvtss2si:
-            case INS_cvtsi2sd64:
-            case INS_cvtsi2ss64:
-            case INS_movnti:
-            case INS_mulx:
-            case INS_pdep:
-            case INS_pext:
-            case INS_rorx:
-            case INS_shlx:
-            case INS_sarx:
-            case INS_shrx:
-            case INS_kmovq_msk:
-            case INS_kmovq_gpr:
-            case INS_kmovd_msk:
-                return true;
-            default:
-                return false;
-        }
     }
 
     // TODO-XArch-Cleanup: Better way to not emit REX.W when we don't need it, than just testing all these
@@ -2818,7 +2733,7 @@ unsigned emitter::emitGetVexPrefixSize(instrDesc* id) const
 
     emitAttr size = id->idOpSize();
 
-    if (TakesRexWPrefix(ins, size))
+    if (TakesRexWPrefix(id))
     {
         // When the REX.W bit is present, we must use the 3-byte encoding
         return 3;
@@ -3493,7 +3408,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code)
 
     bool includeRexPrefixSize = true;
     // REX prefix
-    if (TakesRexWPrefix(ins, attr) || IsExtendedReg(id->idReg1(), attr) || IsExtendedReg(id->idReg2(), attr) ||
+    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attr) || IsExtendedReg(id->idReg2(), attr) ||
         (!id->idIsSmallDsc() && (IsExtendedReg(id->idReg3(), attr) || IsExtendedReg(id->idReg4(), attr))))
     {
         sz += emitGetRexPrefixSize(ins);
@@ -3581,7 +3496,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
         emitAttr  attr = id->idOpSize();
         emitAttr  size = EA_SIZE(attr);
 
-        if ((TakesRexWPrefix(ins, size) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
+        if ((TakesRexWPrefix(id) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
             IsExtendedReg(reg2, attr))
         {
             sz += emitGetRexPrefixSize(ins);
@@ -3800,8 +3715,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     UNATIVE_OFFSET prefix   = emitGetAdjustedSize(id, code);
 
     // REX prefix
-    if (TakesRexWPrefix(ins, attrSize) || IsExtendedReg(id->idReg1(), attrSize) ||
-        IsExtendedReg(id->idReg2(), attrSize))
+    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
     {
         prefix += emitGetRexPrefixSize(ins);
     }
@@ -3845,8 +3759,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     }
 
     // 64-bit operand instructions will need a REX.W prefix
-    if (TakesRexWPrefix(ins, attrSize) || IsExtendedReg(id->idReg1(), attrSize) ||
-        IsExtendedReg(id->idReg2(), attrSize))
+    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
     {
         prefix += emitGetRexPrefixSize(ins);
     }
@@ -3955,7 +3868,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         // REX prefix
         size += emitGetRexPrefixSize(ins);
     }
-    else if (TakesRexWPrefix(ins, attrSize))
+    else if (TakesRexWPrefix(id))
     {
         // REX.W prefix
         size += emitGetRexPrefixSize(ins);
@@ -4171,8 +4084,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
     bool includeRexPrefixSize = true;
 
     // 64-bit operand instructions will need a REX.W prefix
-    if (TakesRexWPrefix(ins, attrSize) || IsExtendedReg(id->idReg1(), attrSize) ||
-        IsExtendedReg(id->idReg2(), attrSize))
+    if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
     {
         size += emitGetRexPrefixSize(ins);
         includeRexPrefixSize = false;
@@ -4412,7 +4324,7 @@ void emitter::emitIns(instruction ins, emitAttr attr)
     id->idInsFmt(fmt);
 
     sz += emitGetAdjustedSize(id, code);
-    if (TakesRexWPrefix(ins, attr))
+    if (TakesRexWPrefix(id))
     {
         sz += emitGetRexPrefixSize(ins);
     }
@@ -5554,7 +5466,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     sz += emitGetAdjustedSize(id, insEncodeMRreg(id, reg, attr, insCodeMR(ins)));
 
     // REX byte
-    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, attr))
+    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(id))
     {
         sz += emitGetRexPrefixSize(ins);
     }
@@ -5706,7 +5618,7 @@ void emitter::emitIns_R_I(instruction ins,
 
         // Do not get the RexSize() but just decide if it will be included down further and if yes,
         // do not include it again.
-        if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, size) || instrIsExtendedReg3opImul(ins))
+        if (IsExtendedReg(reg, attr) || TakesRexWPrefix(id) || instrIsExtendedReg3opImul(ins))
         {
             includeRexPrefixSize = false;
         }
@@ -5719,7 +5631,7 @@ void emitter::emitIns_R_I(instruction ins,
     // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
     // 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
     // register. So we also need to check if that built-in register is an extended register.
-    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, size) || instrIsExtendedReg3opImul(ins))
+    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(id) || instrIsExtendedReg3opImul(ins))
     {
         sz += emitGetRexPrefixSize(ins);
     }
@@ -5863,7 +5775,7 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
         sz = emitInsSizeCV(id, insCodeMR(ins));
     }
 
-    if (TakesRexWPrefix(ins, attr))
+    if (TakesRexWPrefix(id))
     {
         // REX.W prefix
         sz += emitGetRexPrefixSize(ins);
@@ -5934,14 +5846,12 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movaps:
         case INS_movd:
         case INS_movdqa:
-        case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_movdqu:
-        case INS_movdqu8:
-        case INS_movdqu16:
-        case INS_vmovdqu32:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
         case INS_vmovdqu64:
-        case INS_movsdsse2:
+        case INS_movsd_simd:
         case INS_movss:
         case INS_movsx:
         case INS_movupd:
@@ -6059,7 +5969,7 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-        case INS_movsdsse2:
+        case INS_movsd_simd:
         case INS_movss:
         {
             // Clears the upper bits under VEX encoding
@@ -6083,11 +5993,9 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-        case INS_vmovdqa32:
         case INS_vmovdqa64:
-        case INS_movdqu8:
-        case INS_movdqu16:
-        case INS_vmovdqu32:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
         case INS_vmovdqu64:
         {
             // These EVEX instructions merges/masks based on k-register
@@ -6299,14 +6207,12 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         case INS_movapd:
         case INS_movaps:
         case INS_movdqa:
-        case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_movdqu:
-        case INS_movdqu8:
-        case INS_movdqu16:
-        case INS_vmovdqu32:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
         case INS_vmovdqu64:
-        case INS_movsdsse2:
+        case INS_movsd_simd:
         case INS_movss:
         case INS_movupd:
         case INS_movups:
@@ -7320,7 +7226,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
             sz += 1;
 
         // REX prefix
-        if (TakesRexWPrefix(ins, attr) || IsExtendedReg(reg, attr))
+        if (TakesRexWPrefix(id) || IsExtendedReg(reg, attr))
         {
             sz += emitGetRexPrefixSize(ins);
         }
@@ -12021,10 +11927,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Emit the REX prefix if required
-    // TODO-XARCH-AVX512 : Update this check once all paths have EVEX support.
-    // Explore moving IsWEvexOpcodeExtension() logic inside TakesRexWPrefix(). Not doing so currently
-    // since we cannot differentiate EVEX vs VEX without 'code' until all paths have EVEX support.
-    if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+    if (TakesRexWPrefix(id))
     {
         code = AddRexWPrefix(id, code);
     }
@@ -12857,11 +12760,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     code = AddSimdPrefixIfNeededAndNotPresent(id, code, size);
 
     // Compute the REX prefix
-    // TODO-XARCH-AVX512 : Update this check once all paths have EVEX support.
-    // Explore moving IsWEvexOpcodeExtension() logic inside TakesRexWPrefix().
-    // Not doing so currently since we cannot differentiate EVEX vs VEX without
-    // 'code' until all paths have EVEX support.
-    if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+    if (TakesRexWPrefix(id))
     {
         code = AddRexWPrefix(id, code);
     }
@@ -13306,7 +13205,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     code = AddSimdPrefixIfNeededAndNotPresent(id, code, size);
 
     // Compute the REX prefix
-    if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+    if (TakesRexWPrefix(id))
     {
         code = AddRexWPrefix(id, code);
     }
@@ -13769,7 +13668,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                     code |= 0x1;
                 }
 
-                if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+                if (TakesRexWPrefix(id))
                 {
                     code = AddRexWPrefix(id, code);
                 }
@@ -13802,7 +13701,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             code = insEncodeOpreg(id, reg, size);
 
             assert(!TakesSimdPrefix(id));
-            assert(!TakesRexWPrefix(ins, size));
+            assert(!TakesRexWPrefix(id));
 
             // Output the REX prefix
             dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
@@ -13821,7 +13720,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 
             code = insCodeRR(ins);
 
-            if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+            if (TakesRexWPrefix(id))
             {
                 code = AddRexWPrefix(id, code);
             }
@@ -13898,7 +13797,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 
             code = AddSimdPrefixIfNeeded(id, code, size);
 
-            if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+            if (TakesRexWPrefix(id))
             {
                 code = AddRexWPrefix(id, code);
             }
@@ -14001,9 +13900,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         code = AddSimdPrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code);
 
-        // TODO-XARCH-AVX512 : Update this check once all paths have EVEX support.
-        // Explore moving IsWEvexOpcodeExtension() logic to instruction table as flag.
-        if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+        if (TakesRexWPrefix(id))
         {
             code = AddRexWPrefix(id, code);
         }
@@ -14392,9 +14289,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     code = insEncodeRMreg(id, code);
 
-    // TODO-XARCH-AVX512 : Update this check once all paths have EVEX support.
-    // Explore moving IsWEvexOpcodeExtension() logic to instruction table as flag.
-    if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+    if (TakesRexWPrefix(id))
     {
         code = AddRexWPrefix(id, code);
     }
@@ -14540,7 +14435,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         // This is INS_mov and will not take VEX prefix
         assert(!TakesVexPrefix(ins));
 
-        if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+        if (TakesRexWPrefix(id))
         {
             code = AddRexWPrefix(id, code);
         }
@@ -14873,7 +14768,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
             }
             else
             {
-                if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+                if (TakesRexWPrefix(id))
                 {
                     code = AddRexWPrefix(id, code);
                     dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
@@ -15512,8 +15407,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // Support only scalar AVX instructions and hence size is hard coded to 4-byte.
             code = AddSimdPrefixIfNeeded(id, code, EA_4BYTE);
 
-            if (((ins == INS_cdq) || (ins == INS_cwde)) &&
-                (TakesRexWPrefix(ins, id->idOpSize()) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id))))
+            if (((ins == INS_cdq) || (ins == INS_cwde)) && TakesRexWPrefix(id))
             {
                 code = AddRexWPrefix(id, code);
             }
@@ -15799,7 +15693,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
             // Emit the REX prefix if it exists
-            if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+            if (TakesRexWPrefix(id))
             {
                 code = AddRexWPrefix(id, code);
             }
@@ -15888,7 +15782,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             assert(code & 0x00FF0000);
 
-            if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
+            if (TakesRexWPrefix(id))
             {
                 code = AddRexWPrefix(id, code);
             }
@@ -17538,12 +17432,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movdqa:
-        case INS_vmovdqa32:
         case INS_vmovdqa64:
         case INS_movdqu:
-        case INS_movdqu8:
-        case INS_movdqu16:
-        case INS_vmovdqu32:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
         case INS_vmovdqu64:
         case INS_movaps:
         case INS_movups:
@@ -17618,7 +17510,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movss:
-        case INS_movsdsse2:
+        case INS_movsd_simd:
         case INS_movddup:
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
@@ -17757,16 +17649,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_paddusw:
         case INS_psubusw:
         case INS_pand:
-        case INS_vpandd:
         case INS_vpandq:
         case INS_pandn:
-        case INS_vpandnd:
         case INS_vpandnq:
         case INS_por:
-        case INS_vpord:
         case INS_vporq:
         case INS_pxor:
-        case INS_vpxord:
         case INS_vpxorq:
         case INS_andpd:
         case INS_andps:

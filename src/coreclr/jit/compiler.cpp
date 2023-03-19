@@ -2348,17 +2348,17 @@ void Compiler::compSetProcessor()
 #ifdef TARGET_XARCH
     if (!compIsForInlining())
     {
-        if (canUseEvexEncoding())
-        {
-            codeGen->GetEmitter()->SetUseEvexEncoding(true);
-            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
-        }
         if (canUseVexEncoding())
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+        }
+        if (canUseEvexEncoding())
+        {
+            codeGen->GetEmitter()->SetUseEvexEncoding(true);
+            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
         }
     }
 #endif // TARGET_XARCH
