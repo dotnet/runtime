@@ -2287,15 +2287,15 @@ void Compiler::compSetProcessor()
     // the overall JIT implementation, we currently require the entire set of ISAs to be
     // supported and disable AVX512 support otherwise.
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL))
     {
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
     }
