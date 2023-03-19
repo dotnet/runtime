@@ -207,7 +207,13 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 //
 bool emitter::IsVexOrEvexEncodableInstruction(instruction ins) const
 {
-    return IsVexEncodableInstruction(ins) || IsEvexEncodableInstruction(ins);
+    if (!UseVEXEncoding())
+    {
+        return false;
+    }
+
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & (Encoding_VEX | Encoding_EVEX)) != 0;
 }
 
 // Returns true if the AVX instruction is a binary operator that requires 3 operands.
@@ -1091,7 +1097,6 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 //
 emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr attr)
 {
-
     // Only AVX512 instructions require EVEX prefix
     assert(IsEvexEncodableInstruction(ins));
 
@@ -1120,24 +1125,7 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
 bool emitter::TakesVexPrefix(instruction ins) const
 {
     // special case vzeroupper as it requires 2-byte VEX prefix
-    // special case the fencing, movnti and the prefetch instructions as they never take a VEX prefix
-    switch (ins)
-    {
-        case INS_lfence:
-        case INS_mfence:
-        case INS_movnti:
-        case INS_prefetchnta:
-        case INS_prefetcht0:
-        case INS_prefetcht1:
-        case INS_prefetcht2:
-        case INS_sfence:
-        case INS_vzeroupper:
-            return false;
-        default:
-            break;
-    }
-
-    return IsVexEncodableInstruction(ins);
+    return IsVexEncodableInstruction(ins) && (ins != INS_vzeroupper);
 }
 
 // Add base VEX prefix without setting W, R, X, or B bits
@@ -1454,9 +1442,9 @@ emitter::code_t emitter::AddRexWPrefix(const instrDesc* id, code_t code)
 {
     instruction ins = id->idIns();
 
-    if (UseEvexEncoding() && IsEvexEncodableInstruction(ins))
+    if (IsVexOrEvexEncodableInstruction(ins))
     {
-        if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code)) // TODO-XArch-AVX512: Remove codeEvexMigrationCheck().
+        if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code))
         {
             // W-bit is available in 4-byte EVEX prefix that starts with byte 62.
             assert(hasEvexPrefix(code));
@@ -1464,11 +1452,10 @@ emitter::code_t emitter::AddRexWPrefix(const instrDesc* id, code_t code)
             // W-bit is the only bit that is added in non bit-inverted form.
             return emitter::code_t(code | 0x0000800000000000ULL);
         }
-    }
-    if (UseVEXEncoding() && IsVexEncodableInstruction(ins))
-    {
-        if (TakesVexPrefix(ins))
+        else
         {
+            assert(IsVexEncodableInstruction(ins));
+
             // W-bit is available only in 3-byte VEX prefix that starts with byte C4.
             assert(hasVexPrefix(code));
 
@@ -1490,7 +1477,7 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
 {
     instruction ins = id->idIns();
 
-    if (UseEvexEncoding() && IsEvexEncodableInstruction(ins))
+    if (IsVexOrEvexEncodableInstruction(ins))
     {
         if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code)) // TODO-XArch-AVX512: Remove codeEvexMigrationCheck().
         {
@@ -1500,11 +1487,10 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
             // R-bit is added in bit-inverted form.
             return code & 0xFF7FFFFFFFFFFFFFULL;
         }
-    }
-    if (UseVEXEncoding() && IsVexEncodableInstruction(ins))
-    {
-        if (TakesVexPrefix(ins))
+        else
         {
+            assert(IsVexEncodableInstruction(ins));
+
             // R-bit is supported by both 2-byte and 3-byte VEX prefix
             assert(hasVexPrefix(code));
 
@@ -1520,20 +1506,20 @@ emitter::code_t emitter::AddRexXPrefix(const instrDesc* id, code_t code)
 {
     instruction ins = id->idIns();
 
-    if (UseEvexEncoding() && IsEvexEncodableInstruction(ins))
+    if (IsVexOrEvexEncodableInstruction(ins))
     {
-        if (TakesEvexPrefix(id))
+        if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code)) // TODO-XArch-AVX512: Remove codeEvexMigrationCheck().
         {
             // X-bit is available in 4-byte EVEX prefix that starts with byte 62.
             assert(hasEvexPrefix(code));
+
             // X-bit is added in bit-inverted form.
             return code & 0xFFBFFFFFFFFFFFFFULL;
         }
-    }
-    if (UseVEXEncoding() && IsVexEncodableInstruction(ins))
-    {
-        if (TakesVexPrefix(ins))
+        else
         {
+            assert(IsVexEncodableInstruction(ins));
+
             // X-bit is available only in 3-byte VEX prefix that starts with byte C4.
             assert(hasVexPrefix(code));
 
@@ -1549,7 +1535,7 @@ emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
 {
     instruction ins = id->idIns();
 
-    if (UseEvexEncoding() && IsEvexEncodableInstruction(ins))
+    if (IsVexOrEvexEncodableInstruction(ins))
     {
         if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code)) // TODO-XArch-AVX512: Remove codeEvexMigrationCheck().
         {
@@ -1559,11 +1545,10 @@ emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
             // B-bit is added in bit-inverted form.
             return code & 0xFFDFFFFFFFFFFFFFULL;
         }
-    }
-    if (UseVEXEncoding() && IsVexEncodableInstruction(ins))
-    {
-        if (TakesVexPrefix(ins))
+        else
         {
+            assert(IsVexEncodableInstruction(ins));
+
             // B-bit is available only in 3-byte VEX prefix that starts with byte C4.
             assert(hasVexPrefix(code));
 
@@ -1578,8 +1563,7 @@ emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
 // Adds REX prefix (0x40) without W, R, X or B bits set
 emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
 {
-    assert(!UseVEXEncoding() || !IsVexEncodableInstruction(ins));
-    assert(!UseEvexEncoding() || !IsEvexEncodableInstruction(ins));
+    assert(!IsVexEncodableInstruction(ins));
     return code | 0x4000000000ULL;
 }
 
@@ -2159,103 +2143,69 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
     instruction ins          = id->idIns();
     unsigned    adjustedSize = 0;
 
-    // TODO-XArch-AVX512: Remove redundant code and possiblly collapse EVEX and VEX into a single pathway
-    // IsEvexEncodableInstruction(ins) is `true` for AVX/SSE instructions also which needs to be VEX encoded unless
-    // explicitly
-    // asked for EVEX.
-    if (IsEvexEncodableInstruction(ins) && TakesEvexPrefix(id))
+    if (IsVexOrEvexEncodableInstruction(ins))
     {
-        // EVEX prefix encodes some bytes of the opcode and as a result, overall size of the instruction reduces.
-        // Therefore, to estimate the size adding EVEX prefix size and size of instruction opcode bytes will always
+        unsigned prefixAdjustedSize = 0;
+
+        // VEX/EVEX prefix encodes some bytes of the opcode and as a result, overall size of the instruction reduces.
+        // Therefore, to estimate the size adding VEX/EVEX prefix size and size of instruction opcode bytes will always
         // overstimate.
-        // Instead this routine will adjust the size of EVEX prefix based on the number of bytes of opcode it encodes so
-        // that
-        // instruction size estimate will be accurate.
-        // Basically this  will decrease the evexPrefixSize, so that opcodeSize + evexPrefixAdjustedSize will be the
+        //
+        // Instead this routine will adjust the size of VEX/EVEX prefix based on the number of bytes of opcode it encodes so
+        // that instruction size estimate will be accurate.
+        //
+        // Basically this  will decrease the prefixSize, so that opcodeSize + prefixAdjustedSize will be the
         // right size.
         //
-        // rightOpcodeSize + evexPrefixSize
-        //  = (opcodeSize - ExtrabytesSize) + evexPrefixSize
-        //  = opcodeSize + (evexPrefixSize - ExtrabytesSize)
-        //  = opcodeSize + evexPrefixAdjustedSize
+        // rightOpcodeSize + prefixSize
+        //  = (opcodeSize - extraBytesSize) + prefixSize
+        //  = opcodeSize + (prefixSize - extraBytesSize)
+        //  = opcodeSize + prefixAdjustedSize
 
-        unsigned evexPrefixAdjustedSize = emitGetEvexPrefixSize(id);
-        assert(evexPrefixAdjustedSize == 4);
+        if (TakesEvexPrefix(id))
+        {
+            prefixAdjustedSize = emitGetEvexPrefixSize(id);
+            assert(prefixAdjustedSize == 4);
+        }
+        else
+        {
+            assert(IsVexEncodableInstruction(ins));
+
+            prefixAdjustedSize = emitGetVexPrefixSize(id);
+            assert((prefixAdjustedSize == 2) || (prefixAdjustedSize == 3));
+        }
+
+        assert(prefixAdjustedSize != 0);
 
         // In this case, opcode will contains escape prefix at least one byte,
-        // simdPrefixAdjustedSize should be minus one.
-        evexPrefixAdjustedSize -= 1;
+        // prefixAdjustedSize should be minus one.
+        prefixAdjustedSize -= 1;
 
         // Get the fourth byte in Opcode.
         // If this byte is non-zero, then we should check whether the opcode contains SIMD prefix or not.
         BYTE check = (code >> 24) & 0xFF;
+
         if (check != 0)
         {
             // 3-byte opcode: with the bytes ordered as 0x2211RM33 or
             // 4-byte opcode: with the bytes ordered as 0x22114433
             // Simd prefix is at the first byte.
             BYTE sizePrefix = (code >> 16) & 0xFF;
+
             if (sizePrefix != 0 && isPrefix(sizePrefix))
             {
-                evexPrefixAdjustedSize -= 1;
+                prefixAdjustedSize -= 1;
             }
 
             // If the opcode size is 4 bytes, then the second escape prefix is at fourth byte in opcode.
             // But in this case the opcode has not counted R\M part.
-            // opcodeSize + evexPrefixAdjustedSize - ExtraEscapePrefixSize + ModR\MSize
-            //=opcodeSize + evexPrefixAdjustedSize -1 + 1
-            //=opcodeSize + evexPrefixAdjustedSize
-            // So although we may have second byte escape prefix, we won't decrease evexPrefixAdjustedSize.
+            // opcodeSize + prefixAdjustedSize - extraEscapePrefixSize + modRMSize
+            //  = opcodeSize + prefixAdjustedSize -1 + 1
+            //  = opcodeSize + prefixAdjustedSize
+            // So although we may have second byte escape prefix, we won't decrease prefixAdjustedSize.
         }
 
-        adjustedSize = evexPrefixAdjustedSize;
-    }
-    else if (IsVexEncodableInstruction(ins))
-    {
-        // VEX prefix encodes some bytes of the opcode and as a result, overall size of the instruction reduces.
-        // Therefore, to estimate the size adding VEX prefix size and size of instruction opcode bytes will always
-        // overstimate.
-        // Instead this routine will adjust the size of VEX prefix based on the number of bytes of opcode it encodes so
-        // that
-        // instruction size estimate will be accurate.
-        // Basically this  will decrease the vexPrefixSize, so that opcodeSize + vexPrefixAdjustedSize will be the right
-        // size.
-        //
-        // rightOpcodeSize + vexPrefixSize
-        //  = (opcodeSize - ExtrabytesSize) + vexPrefixSize
-        //  = opcodeSize + (vexPrefixSize - ExtrabytesSize)
-        //  = opcodeSize + vexPrefixAdjustedSize
-
-        unsigned simdPrefixAdjustedSize = emitGetVexPrefixSize(id);
-        assert((simdPrefixAdjustedSize == 2) || (simdPrefixAdjustedSize == 3));
-
-        // In this case, opcode will contains escape prefix at least one byte,
-        // vexPrefixAdjustedSize should be minus one.
-        simdPrefixAdjustedSize -= 1;
-
-        // Get the fourth byte in Opcode.
-        // If this byte is non-zero, then we should check whether the opcode contains SIMD prefix or not.
-        BYTE check = (code >> 24) & 0xFF;
-        if (check != 0)
-        {
-            // 3-byte opcode: with the bytes ordered as 0x2211RM33 or
-            // 4-byte opcode: with the bytes ordered as 0x22114433
-            // Simd prefix is at the first byte.
-            BYTE sizePrefix = (code >> 16) & 0xFF;
-            if (sizePrefix != 0 && isPrefix(sizePrefix))
-            {
-                simdPrefixAdjustedSize -= 1;
-            }
-
-            // If the opcode size is 4 bytes, then the second escape prefix is at fourth byte in opcode.
-            // But in this case the opcode has not counted R\M part.
-            // opcodeSize + VexPrefixAdjustedSize - ExtraEscapePrefixSize + ModR\MSize
-            //=opcodeSize + VexPrefixAdjustedSize -1 + 1
-            //=opcodeSize + VexPrefixAdjustedSize
-            // So although we may have second byte escape prefix, we won't decrease vexPrefixAdjustedSize.
-        }
-
-        adjustedSize = simdPrefixAdjustedSize;
+        adjustedSize = prefixAdjustedSize;
     }
     else if (Is4ByteSSEInstruction(ins))
     {
@@ -3041,15 +2991,16 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
 
     // Both prefix encodes register operand in 1's complement form
     assert(regBits <= 0xF);
-    if (UseEvexEncoding() && IsEvexEncodableInstruction(ins))
-    {
-        if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code))
-        {
-            assert(hasEvexPrefix(code) && TakesEvexPrefix(id));
 
-// TODO-XARCH-AVX512 I don't like that we redefine regBits on the EVEX case.
-// Rather see these paths cleaned up.
+    if (IsVexOrEvexEncodableInstruction(ins))
+    {
+        if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code)) // TODO-XArch-AVX512: Remove codeEvexMigrationCheck().
+        {
+            assert(hasEvexPrefix(code));
+
 #if defined(TARGET_AMD64)
+            // TODO-XARCH-AVX512 I don't like that we redefine regBits on the EVEX case.
+            // Rather see these paths cleaned up.
             regBits = HighAwareRegEncoding(reg);
 
             if (IsHighSIMDReg(reg))
@@ -3058,19 +3009,14 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
                 code = AddEvexVPrimePrefix(code);
             }
 #endif
+
             // Shift count = 5-bytes of opcode + 0-2 bits for EVEX
             regBits <<= 43;
             return code ^ regBits;
         }
-    }
-    if (UseVEXEncoding() && IsVexEncodableInstruction(ins))
-    {
-
-        // Both prefix encodes register operand in 1's complement form
-        assert(regBits <= 0xF);
-
-        if (TakesVexPrefix(ins))
+        else
         {
+            assert(IsVexEncodableInstruction(ins));
             assert(hasVexPrefix(code));
 
             // Shift count = 4-bytes of opcode + 0-2 bits for VEX
@@ -3078,6 +3024,7 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
             return code ^ regBits;
         }
     }
+
     return code ^ regBits;
 }
 
