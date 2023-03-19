@@ -5381,8 +5381,7 @@ void LinearScan::allocateRegisters()
                     // For consecutive registers, if the first RefPosition is already assigned to a register,
                     // check if consecutive registers are free so they can be assigned to the subsequent
                     // RefPositions.
-                    if (areNextConsecutiveRegistersFree(assignedRegister, currentRefPosition.regCount,
-                                                        currentRefPosition.getInterval()->registerType))
+                    if (canAssignNextConsecutiveRegisters(&currentRefPosition, assignedRegister))
                     {
                         // Current assignedRegister satisfies the consecutive registers requirements
                         currentRefPosition.registerAssignment = assignedRegBit;
@@ -5583,8 +5582,7 @@ void LinearScan::allocateRegisters()
                     // subsequent registers to the remaining position and skip the allocation for the
                     // 1st refPosition altogether.
 
-                    if (!areNextConsecutiveRegistersFree(assignedRegister, currentRefPosition.regCount,
-                                                         currentRefPosition.getInterval()->registerType))
+                    if (!canAssignNextConsecutiveRegisters(&currentRefPosition, assignedRegister))
                     {
                         // The consecutive registers are busy. Force to allocate even for the 1st
                         // refPosition

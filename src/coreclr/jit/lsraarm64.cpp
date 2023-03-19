@@ -109,29 +109,41 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
 }
 
 //------------------------------------------------------------------------
-// areNextConsecutiveRegistersFree: Starting with `regToAssign`, check if next
-//   consecutive `registersToCheck` are free or not.
+// canAssignNextConsecutiveRegisters: Starting with `firstRegAssigned`, check if next
+//   consecutive registers are free or are already assigned to the subsequent RefPositions.
 //
 // Arguments:
+//    firstRefPosition  - First refPosition of the series of consecutive registers.
 //    regToAssign     - Register assigned to the first refposition.
-//    registersCount  - Number of registers to check.
-//    registerType    - Type of register.
 //
 //  Returns:
-//      True if all the consecutive registers starting from `regToAssign` were free. Even if one
-//      of them is busy, returns false.
+//      True if all the consecutive registers starting from `firstRegAssigned` are assignable.
+//      Even if one of them is busy, returns false.
 //
-bool LinearScan::areNextConsecutiveRegistersFree(regNumber regToAssign, int registersCount, var_types registerType)
+bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned)
 {
-    assert(compiler->info.needsConsecutiveRegisters);
-    for (int i = 0; i < registersCount; i++)
+    int          registersCount  = firstRefPosition->regCount;
+    RefPosition* nextRefPosition = firstRefPosition;
+    regNumber    regToAssign     = firstRegAssigned;
+    assert(compiler->info.needsConsecutiveRegisters && registersCount > 1);
+
+    int i = 1;
+    do
     {
-        if (isRegInUse(regToAssign, registerType))
+        nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
+        regToAssign     = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+        if (!isFree(getRegisterRecord(regToAssign)))
         {
-            return false;
+            // If regToAssign is not free, check if it is already assigned to the interval corresponding
+            // to the subsequent nextRefPosition. If yes, it would just use regToAssign for that nextRefPosition.
+            if ((nextRefPosition->getInterval() != nullptr) &&
+                (nextRefPosition->getInterval()->assignedReg != nullptr) &&
+                ((nextRefPosition->getInterval()->assignedReg->regNum != regToAssign)))
+            {
+                return false;
+            }
         }
-        regToAssign = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
-    }
+    } while (++i != registersCount);
 
     return true;
 }
