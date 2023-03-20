@@ -292,8 +292,9 @@ namespace System.Text.Json
                             else
                             {
                                 // We have found two possible ancestors that are not in subtype relationship.
-                                // This indicates we have encountered a diamond ambiguity -- abort and return null.
-                                candidate = null;
+                                // This indicates we have encountered a diamond ambiguity -- abort search and record an exception.
+                                NotSupportedException nse = ThrowHelper.GetNotSupportedException_AmbiguousMetadataForType(type, candidateType, interfaceType);
+                                candidate = new CacheEntry(ExceptionDispatchInfo.Capture(nse));
                                 break;
                             }
                         }

@@ -85,8 +85,16 @@ namespace System.Text.Json.SourceGeneration.Tests
         public async Task TypeWithDiamondAmbiguityThrowsNotSupportedException()
         {
             object value = new TypeWithDiamondAmbiguity();
-            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value, UnspeakableTypeContext.Default.Options));
-            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value.GetType(), UnspeakableTypeContext.Default.Options));
+
+            NotSupportedException exn = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value, UnspeakableTypeContext.Default.Options));
+            Assert.Contains("TypeWithDiamondAmbiguity", exn.Message);
+            Assert.Contains("BasePoco", exn.Message);
+            Assert.Contains("IEnumerable`1[System.Int32]", exn.Message);
+
+            exn = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value, value.GetType(), UnspeakableTypeContext.Default.Options));
+            Assert.Contains("TypeWithDiamondAmbiguity", exn.Message);
+            Assert.Contains("BasePoco", exn.Message);
+            Assert.Contains("IEnumerable`1[System.Int32]", exn.Message);
         }
 
         public static IEnumerable<object[]> GetUnspeakableTypes()
