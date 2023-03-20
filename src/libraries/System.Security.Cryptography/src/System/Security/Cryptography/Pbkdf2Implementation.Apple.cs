@@ -33,10 +33,6 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA512:
                     prfAlgorithm = PAL_HashAlgorithm.Sha512;
                     break;
-                case HashAlgorithmNames.SHA3_256:
-                case HashAlgorithmNames.SHA3_384:
-                case HashAlgorithmNames.SHA3_512:
-                    throw new PlatformNotSupportedException();
                 default:
                     Debug.Fail($"Unexpected hash algorithm '{hashAlgorithmName.Name}'");
                     throw new CryptographicException();

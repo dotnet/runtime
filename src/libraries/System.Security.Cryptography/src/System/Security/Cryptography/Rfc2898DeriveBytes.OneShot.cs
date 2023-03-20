@@ -323,16 +323,45 @@ namespace System.Security.Cryptography
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithmName, nameof(hashAlgorithm));
 
             // MD5 intentionally left out.
-            if (hashAlgorithmName != HashAlgorithmName.SHA1.Name &&
-                hashAlgorithmName != HashAlgorithmName.SHA256.Name &&
-                hashAlgorithmName != HashAlgorithmName.SHA384.Name &&
-                hashAlgorithmName != HashAlgorithmName.SHA512.Name &&
-                hashAlgorithmName != HashAlgorithmName.SHA3_256.Name &&
-                hashAlgorithmName != HashAlgorithmName.SHA3_384.Name &&
-                hashAlgorithmName != HashAlgorithmName.SHA3_512.Name)
+            if (hashAlgorithmName == HashAlgorithmName.SHA1.Name ||
+                hashAlgorithmName == HashAlgorithmName.SHA256.Name ||
+                hashAlgorithmName == HashAlgorithmName.SHA384.Name ||
+                hashAlgorithmName == HashAlgorithmName.SHA512.Name)
             {
-                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName));
+                return;
             }
+
+            if (hashAlgorithmName == HashAlgorithmName.SHA3_256.Name)
+            {
+                if (HMACSHA3_256.IsSupported)
+                {
+                    return;
+                }
+
+                throw new PlatformNotSupportedException();
+            }
+
+            if (hashAlgorithmName == HashAlgorithmName.SHA3_384.Name)
+            {
+                if (HMACSHA3_384.IsSupported)
+                {
+                    return;
+                }
+
+                throw new PlatformNotSupportedException();
+            }
+
+            if (hashAlgorithmName == HashAlgorithmName.SHA3_512.Name)
+            {
+                if (HMACSHA3_512.IsSupported)
+                {
+                    return;
+                }
+
+                throw new PlatformNotSupportedException();
+            }
+
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName));
         }
     }
 }

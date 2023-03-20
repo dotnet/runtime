@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
     public class HMACSHA3_384 : HMAC
     {
         private HMACCommon _hMacCommon;
-        private const int BlockSize = 104; // FIPS 202 Table 3.
+        internal const int BlockSize = 104; // FIPS 202 Table 3.
 
         /// <summary>
         /// The hash size produced by the HMAC SHA3-384 algorithm, in bits.

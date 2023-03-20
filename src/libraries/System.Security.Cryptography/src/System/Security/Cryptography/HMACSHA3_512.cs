@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
     public class HMACSHA3_512 : HMAC
     {
         private HMACCommon _hMacCommon;
-        private const int BlockSize = 72; // FIPS 202 Table 3.
+        internal const int BlockSize = 72; // FIPS 202 Table 3.
 
         /// <summary>
         /// The hash size produced by the HMAC SHA3-512 algorithm, in bits.
