@@ -351,7 +351,6 @@ g_Framework_Assemblies = [
     'System.DirectoryServices.dll',
     'System.DirectoryServices.Protocols.dll',
     'System.dll',
-    'System.Drawing.Common.dll',
     'System.Drawing.dll',
     'System.Drawing.Primitives.dll',
     'System.Dynamic.Runtime.dll',

@@ -381,17 +381,6 @@ namespace System.Tests
         [Fact]
         public void GetSystemDirectory()
         {
-            if (PlatformDetection.IsWindowsNanoServer)
-            {
-                // https://github.com/dotnet/runtime/issues/21430
-                // On Windows Nano, ShGetKnownFolderPath currently doesn't give
-                // the correct result for SystemDirectory.
-                // Assert that it's wrong, so that if it's fixed, we don't forget to
-                // enable this test for Nano.
-                Assert.NotEqual(Environment.GetFolderPath(Environment.SpecialFolder.System), Environment.SystemDirectory);
-                return;
-            }
-
             Assert.Equal(Environment.GetFolderPath(Environment.SpecialFolder.System), Environment.SystemDirectory);
         }
 

@@ -281,33 +281,9 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                 size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
             if runtimeFlavor.mono:
-                pack_list.append("#if BIGENDIAN")
-                pack_list.append("    const uint8_t *valuePtr = %s;" % paramName)
-                pack_list.append("    for (uint32_t i = 0; i < %s; ++i) {" % template.structs[paramName])
-                types = [winTypeToFixedWidthType(t) for t in template.structTypes[paramName]]
-                for t in set(types) - {"UTF8String", "UTF16String"}:
-                    pack_list.append("        %(type)s value_%(type)s;" % {'type': t})
-                if "UTF8String" in types or "UTF16String" in types:
-                    pack_list.append("        size_t value_len;")
-                for t in types:
-                    if t == "UTF8String":
-                        pack_list.append("        value_len = strlen((const char *)valuePtr);")
-                        pack_list.append("        success &= write_buffer_string_utf8_t((const ep_char8_t *)valuePtr, value_len, &buffer, &offset, &size, &fixedBuffer);")
-                        pack_list.append("        valuePtr += value_len + 1;")
-                    elif t == "UTF16String":
-                        pack_list.append("        value_len = strlen((const char *)valuePtr);")
-                        pack_list.append("        success &= write_buffer_string_utf8_to_utf16_t((const ep_char8_t *)valuePtr, value_len, &buffer, &offset, &size, &fixedBuffer);")
-                        pack_list.append("        valuePtr += value_len + 1;")
-                    else:
-                        pack_list.append("        memcpy (&value_%(type)s, valuePtr, sizeof (value_%(type)s));" % {'type': t})
-                        pack_list.append("        valuePtr += sizeof (%s);" % t)
-                        pack_list.append("        success &= write_buffer_%(type)s (value_%(type)s, &buffer, &offset, &size, &fixedBuffer);" % {'type': t})
-                pack_list.append("    }")
-                pack_list.append("#else")
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
-                pack_list.append("#endif // BIGENDIAN")
                 emittedWriteToBuffer = True
             elif runtimeFlavor.coreclr:
                 pack_list.append(
@@ -321,16 +297,9 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                 size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
             if runtimeFlavor.mono:
-                t = winTypeToFixedWidthType(parameter.winType)
-                pack_list.append("#if BIGENDIAN")
-                pack_list.append("    for (uint32_t i = 0; i < %s; ++i) {" % template.arrays[paramName])
-                pack_list.append("        success &= write_buffer_%(type)s (%(name)s[i], &buffer, &offset, &size, &fixedBuffer);" % {'name': paramName, 'type': t})
-                pack_list.append("    }")
-                pack_list.append("#else")
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
                     (paramName, size))
-                pack_list.append("#endif // BIGENDIAN")
                 emittedWriteToBuffer = True
             elif runtimeFlavor.coreclr:
                 pack_list.append(

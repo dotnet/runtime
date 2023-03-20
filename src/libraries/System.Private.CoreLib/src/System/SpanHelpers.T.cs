@@ -2999,7 +2999,7 @@ namespace System
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
+            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3007,7 +3007,7 @@ namespace System
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
+            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
