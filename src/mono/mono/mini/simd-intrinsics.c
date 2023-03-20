@@ -369,10 +369,10 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_op_Division:
 				return NULL;
 			case SN_Max:
-				instc0 = OP_IMAX;
+				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMAX_UN : OP_IMAX;
 				break;
 			case SN_Min:
-				instc0 = OP_IMIN;
+				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMIN_UN : OP_IMIN;
 				break;
 			case SN_Multiply:
 			case SN_op_Multiply:
@@ -1207,8 +1207,36 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		if (id != SN_Add)
+		switch (id) {
+		case SN_Add:
+		case SN_Equals:
+		case SN_GreaterThan:
+		case SN_GreaterThanOrEqual:
+		case SN_LessThan:
+		case SN_LessThanOrEqual:
+		case SN_Negate:
+		case SN_OnesComplement:
+		case SN_Subtract:
+		case SN_BitwiseAnd:
+		case SN_BitwiseOr:
+		case SN_Xor:
+		case SN_As:
+		case SN_AsByte:
+		case SN_AsDouble:
+		case SN_AsInt16:
+		case SN_AsInt32:
+		case SN_AsInt64:
+		case SN_AsSByte:
+		case SN_AsSingle:
+		case SN_AsUInt16:
+		case SN_AsUInt32:
+		case SN_AsUInt64:
+		case SN_Max:
+		case SN_Min:
+			break;
+		default: 
 			return NULL;
+		}
 		MonoClass *arg0_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int class_size = mono_class_value_size (arg0_class, NULL);
 		if (class_size != 16)
@@ -1869,8 +1897,21 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!COMPILE_LLVM (cfg)) {
 		if (size != 16)
 			return NULL;
-		if (!(id == SN_get_One || id == SN_get_Zero))
+		switch (id) {
+		case SN_get_One:
+		case SN_get_Zero:
+		case SN_op_OnesComplement:
+		case SN_op_UnaryNegation:
+		case SN_op_UnaryPlus:
+		case SN_op_Addition:
+		case SN_op_Subtraction:
+		case SN_op_BitwiseAnd:
+		case SN_op_BitwiseOr:
+		case SN_op_ExclusiveOr:
+			break;
+		default:
 			return NULL;
+		}
 	}
 #endif
 

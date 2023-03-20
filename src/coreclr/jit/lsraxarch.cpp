@@ -2019,6 +2019,7 @@ static GenTree* SkipContainedCreateScalarUnsafe(GenTree* node)
     {
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
         {
             return hwintrinsic->Op(1);
         }
@@ -2127,6 +2128,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector128_ToScalar:
             case NI_Vector256_CreateScalarUnsafe:
             case NI_Vector256_ToScalar:
+            case NI_Vector512_CreateScalarUnsafe:
             {
                 assert(numArgs == 1);
 
@@ -2489,6 +2491,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 // get a tmp register for mask that will be cleared by gather instructions
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+                setInternalRegsDelayFree = true;
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_AVX512F_MoveMaskSpecial:
+            {
+                srcCount += BuildOperandUses(op1);
+                buildInternalMaskRegisterDefForNode(intrinsicTree);
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;

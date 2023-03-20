@@ -184,8 +184,10 @@ partial interface INativeAPI
     {VirtualMethodIndex(0)}
     [return:MarshalUsing(ConstantElementCount=10)]
     {collectionType} Method(
-        {collectionType} p,
-        in {collectionType} pIn,
+        [MarshalUsing(CountElementName = ""pSize"")] {collectionType} p,
+        int pSize,
+        [MarshalUsing(CountElementName = ""pInSize"")] in {collectionType} pIn,
+        in int pInSize,
         int pRefSize,
         [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,

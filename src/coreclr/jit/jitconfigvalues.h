@@ -594,6 +594,7 @@ CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts")
                                                                                      // for some methods.
 // 1: profile synthesis for root methods
 // 2: profile synthesis for root methods w/o pgo data
+// 3: profile synthesis for root methods, blend with existing PGO data
 CONFIG_INTEGER(JitSynthesizeCounts, W("JitSynthesizeCounts"), 0)
 // Check if synthesis left consistent counts
 CONFIG_INTEGER(JitCheckSynthesizedCounts, W("JitCheckSynthesizedCounts"), 0)

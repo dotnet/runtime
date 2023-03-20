@@ -52,6 +52,13 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.SingleFile), MemberType = typeof (TestDatabase))]
+		public void SingleFile (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.Warnings), MemberType = typeof (TestDatabase))]
 		public void Warnings (string t)
 		{

@@ -115,21 +115,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
 
                 Application = TestApp.CreateEmpty("App");
-                RuntimeConfig.Path(Application.RuntimeConfigJson)
-                    .WithFramework(Constants.MicrosoftNETCoreApp, RepoDirectories.MicrosoftNETCoreAppVersion)
-                    .Save();
-                Application = NetCoreAppBuilder.PortableForNETCoreApp(Application)
-                    .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
-                    .Build(Application);
+                Application.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, RepoDirectories.MicrosoftNETCoreAppVersion);
 
                 SelfContainedApplication = TestApp.CreateEmpty("SelfContainedApp");
-                File.WriteAllText(SelfContainedApplication.AppDll, string.Empty);
-                var toCopy = Directory.GetFiles(dotNet.GreatestVersionSharedFxPath)
-                    .Concat(Directory.GetFiles(dotNet.GreatestVersionHostFxrPath));
-                foreach (string file in toCopy)
-                {
-                    File.Copy(file, Path.Combine(SelfContainedApplication.Location, Path.GetFileName(file)));
-                }
+                SelfContainedApplication.PopulateSelfContained(TestApp.MockedComponent.None);
 
                 ComponentWithNoDependenciesFixture = new TestProjectFixture("ComponentWithNoDependencies", RepoDirectories)
                     .EnsureRestored()
