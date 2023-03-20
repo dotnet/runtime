@@ -176,4 +176,12 @@
     BeforeTargets="Build">
     <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreads or WasmEnablePerfTracing to true, but not both." />
   </Target>
+
+  <Target Name="_DropIntermediaryFilesFromOuput" AfterTargets="ResolveRuntimePackAssets">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" 
+       Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.c' or '%(ReferenceCopyLocalPaths.Extension)' == '.h' or '%(ReferenceCopyLocalPaths.Extension)' == '.a' or '%(ReferenceCopyLocalPaths.Extension)' == '.rsp' or '%(ReferenceCopyLocalPaths.Extension)' == '.json' or '%(ReferenceCopyLocalPaths.Extension)' == '.symbols' or '%(ReferenceCopyLocalPaths.Extension)' == '.ts' or $([System.String]::Copy(%(FileName)).Contains('.es6')) or $([System.String]::Copy(%(FileName)).Contains('.lib'))" />
+    </ItemGroup>
+    <Message Text="@(ReferenceCopyLocalPaths->'%(FileName) -- %(Extension)')" Importance="High" />
+  </Target>
 </Project>
