@@ -141,7 +141,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             get
             {
-                // hashAlgorithm, isSupported
                 yield return new object[] { HashAlgorithmName.SHA256 };
                 yield return new object[] { HashAlgorithmName.SHA384 };
                 yield return new object[] { HashAlgorithmName.SHA512 };
