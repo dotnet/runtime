@@ -1117,6 +1117,10 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
         {
             emitIns_R_R_I(INS_addi, size, reg, REG_R0, high & 0xFFF);
         }
+        else
+        {
+            emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
+        }
         UINT32 low = imm & 0xffffffff;
         emitIns_R_R_I(INS_slli, size, reg, reg, 11);
         emitIns_R_R_I(INS_addi, size, reg, reg, (low >> 21) & 0x7FF);
