@@ -5654,6 +5654,12 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         return false;
     }
 
+    // Array length can never be negative.
+    if (IsVNArrLen(vn))
+    {
+        return true;
+    }
+
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp))
     {
