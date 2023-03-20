@@ -180,6 +180,9 @@ enum insFlags : uint64_t
 
     KInstruction = 1ULL << 41,
 
+    // EVEX feature: embedded broadcast
+    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 42,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };

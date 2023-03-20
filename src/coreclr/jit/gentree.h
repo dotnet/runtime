@@ -555,6 +555,11 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
+    GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
+                                              //                   rather than from gtGetStructHandleForHWSIMD.
+    GTF_SIMD_ADD_EB             = 0x80000000,  // GT_HWINTRINSIC -- Indicate if this node will enable the embedded broadcast feature.
+    GTF_VECCON_FROMSCALAR       = 0x80000000   // GT_VECCON -- Indicate the vector constant is created from the same scalar.
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -2015,6 +2020,40 @@ public:
         assert(IsValue());
         gtFlags &= ~GTF_CONTAINED;
         ClearRegOptional();
+    }
+
+    bool WithEmbeddedBroadcast()
+    {
+        return ((gtFlags & GTF_SIMD_ADD_EB) != 0);
+    }
+
+    void SetEmbeddedBroadcast()
+    {
+        gtFlags |= GTF_SIMD_ADD_EB;
+        assert(WithEmbeddedBroadcast());
+    }
+
+    void ClearEmbeddedBroadcast()
+    {
+        gtFlags &= ~GTF_SIMD_ADD_EB;
+        assert(!WithEmbeddedBroadcast());
+    }
+
+    bool IsCreatedFromScalar()
+    {
+        return ((gtFlags & GTF_VECCON_FROMSCALAR) != 0);
+    }
+
+    void SetCreatedFromScalar()
+    {
+        gtFlags |= GTF_VECCON_FROMSCALAR;
+        assert(IsCreatedFromScalar());
+    }
+
+    void ClearCreatedFromScalar()
+    {
+        gtFlags &= ~GTF_VECCON_FROMSCALAR;
+        assert(!IsCreatedFromScalar());
     }
 
     bool CanCSE() const
@@ -6317,6 +6356,7 @@ private:
 //
 struct GenTreeVecCon : public GenTree
 {
+
     union {
         simd8_t  gtSimd8Val;
         simd12_t gtSimd12Val;

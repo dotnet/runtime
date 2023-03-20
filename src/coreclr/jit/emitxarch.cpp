@@ -1231,6 +1231,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #define DEFAULT_BYTE_EVEX_PREFIX_MASK 0xFFFFFFFF00000000ULL
 #define LBIT_IN_BYTE_EVEX_PREFIX 0x0000002000000000ULL
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
+#define EMBEDDED_BROADCAST_BIT 0x0000001000000000ULL
 
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX perfix with only LL' bits set.
@@ -1264,6 +1265,17 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
     {
         // Set L' bits to 11 in case of instructions that operate on 512-bits.
         code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
+    }
+    return code;
+}
+
+emitter::code_t emitter::AddEmbeddedBroadcast(const instrDesc* id, code_t code)
+{
+    if (id->idIsEmbBroadcast())
+    {
+        // Shouldn have already added EVEX prefix
+        assert(hasEvexPrefix(code));
+        code |= EMBEDDED_BROADCAST_BIT;
     }
     return code;
 }
@@ -6778,8 +6790,13 @@ void emitter::emitIns_R_AR_R(instruction ins,
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_C(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs)
+void emitter::emitIns_R_R_C(instruction          ins,
+                            emitAttr             attr,
+                            regNumber            reg1,
+                            regNumber            reg2,
+                            CORINFO_FIELD_HANDLE fldHnd,
+                            int                  offs,
+                            bool                 isEmbBroadcast)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -6797,6 +6814,12 @@ void emitter::emitIns_R_R_C(
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
+#if defined(TARGET_XARCH)
+    if (isEmbBroadcast)
+    {
+        id->idSetEmbBroadcast();
+    }
+#endif //  TARGET_XARCH
 
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6829,7 +6852,8 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs)
+void emitter::emitIns_R_R_S(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs, bool isEmbBroadcast)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -6842,6 +6866,12 @@ void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regN
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
+#if defined(TARGET_XARCH)
+    if (isEmbBroadcast)
+    {
+        id->idSetEmbBroadcast();
+    }
+#endif //  TARGET_XARCH
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
@@ -8151,12 +8181,17 @@ void emitter::emitIns_SIMD_R_R_A(
 //    fldHnd    -- The CORINFO_FIELD_HANDLE used for the memory address
 //    offs      -- The offset added to the memory address from fldHnd
 //
-void emitter::emitIns_SIMD_R_R_C(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, CORINFO_FIELD_HANDLE fldHnd, int offs)
+void emitter::emitIns_SIMD_R_R_C(instruction          ins,
+                                 emitAttr             attr,
+                                 regNumber            targetReg,
+                                 regNumber            op1Reg,
+                                 CORINFO_FIELD_HANDLE fldHnd,
+                                 int                  offs,
+                                 bool                 isEmbBroadcast)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_C(ins, attr, targetReg, op1Reg, fldHnd, offs);
+        emitIns_R_R_C(ins, attr, targetReg, op1Reg, fldHnd, offs, isEmbBroadcast);
     }
     else
     {
@@ -8214,11 +8249,11 @@ void emitter::emitIns_SIMD_R_R_R(
 //    offs      -- The offset added to the memory address from varx
 //
 void emitter::emitIns_SIMD_R_R_S(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs)
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs, bool isEmbBroadcast)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_S(ins, attr, targetReg, op1Reg, varx, offs);
+        emitIns_R_R_S(ins, attr, targetReg, op1Reg, varx, offs, isEmbBroadcast);
     }
     else
     {
@@ -8395,7 +8430,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
     assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
     emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-    emitIns_R_R_C(ins, attr, targetReg, op2Reg, fldHnd, offs);
+    emitIns_R_R_C(ins, attr, targetReg, op2Reg, fldHnd, offs, /*isEB*/ false);
 }
 
 //------------------------------------------------------------------------
@@ -8488,7 +8523,7 @@ void emitter::emitIns_SIMD_R_R_R_S(
     assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
     emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-    emitIns_R_R_S(ins, attr, targetReg, op2Reg, varx, offs);
+    emitIns_R_R_S(ins, attr, targetReg, op2Reg, varx, offs, false);
 }
 
 //------------------------------------------------------------------------
@@ -16905,6 +16940,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
+            code = AddEmbeddedBroadcast(id, code);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
@@ -17147,6 +17183,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
+            code = AddEmbeddedBroadcast(id, code);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 

@@ -1096,6 +1096,20 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
     }
 }
 
+#if defined(TARGET_XARCH)
+bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
+{
+    bool IsEmbBroadcast = false;
+    if ((op->IsCnsFltOrDbl() || op->IsCnsIntOrI() || (op->OperIs(GT_LCL_VAR) && op->TypeGet() == TYP_FLOAT)) &&
+        op->isContained() && GetEmitter()->UseEvexEncoding())
+    {
+        insFlags flags = instInfo[ins];
+        IsEmbBroadcast = (flags & INS_Flags_EmbeddedBroadcastSupported) != 0;
+    }
+    return IsEmbBroadcast;
+}
+#endif //  TARGET_XARCH
+
 //------------------------------------------------------------------------
 // inst_RV_RV_TT: Generates an instruction that takes 2 operands:
 //                a register operand and an operand that may be in memory or register
@@ -1118,15 +1132,21 @@ void CodeGen::inst_RV_RV_TT(
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    OperandDesc op2Desc = genOperandDesc(op2);
+    OperandDesc op2Desc        = genOperandDesc(op2);
+    bool        IsEmbBroadcast = false;
+#if defined(TARGET_XARCH)
+    IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
+#endif //  TARGET_XARCH
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
-            emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0);
+        {
+            emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, IsEmbBroadcast);
             break;
-
+        }
         case OperandKind::Local:
-            emit->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset());
+            emit->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(),
+                                     IsEmbBroadcast);
             break;
 
         case OperandKind::Indir:

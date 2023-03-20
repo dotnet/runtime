@@ -764,6 +764,10 @@ public:
 
     virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs) = 0;
 #endif // LATE_DISASM
+
+#if defined(TARGET_XARCH)
+    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
+#endif
 };
 
 #endif // _CODEGEN_INTERFACE_H_

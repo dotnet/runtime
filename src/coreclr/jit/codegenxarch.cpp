@@ -7769,7 +7769,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 #endif
     }
 
-    GetEmitter()->emitIns_SIMD_R_R_C(ins, EA_16BYTE, targetReg, operandReg, *maskFld, 0);
+    GetEmitter()->emitIns_SIMD_R_R_C(ins, EA_16BYTE, targetReg, operandReg, *maskFld, 0, /*isEB*/ false);
 }
 
 //-----------------------------------------------------------------------------------------

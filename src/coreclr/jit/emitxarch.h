@@ -294,6 +294,7 @@ bool hasEvexPrefix(code_t code)
     return (code & EVEX_PREFIX_MASK) == EVEX_PREFIX_CODE;
 }
 code_t AddEvexPrefix(instruction ins, code_t code, emitAttr attr);
+code_t AddEmbeddedBroadcast(const instrDesc* id, code_t code);
 
 //------------------------------------------------------------------------
 // AddSimdPrefixIfNeeded: Add the correct SIMD prefix if required.
@@ -585,10 +586,16 @@ void emitIns_R_AR_R(instruction ins,
                     int         scale,
                     int         offs);
 
-void emitIns_R_R_C(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs);
+void emitIns_R_R_C(instruction          ins,
+                   emitAttr             attr,
+                   regNumber            reg1,
+                   regNumber            reg2,
+                   CORINFO_FIELD_HANDLE fldHnd,
+                   int                  offs,
+                   bool                 isEmbBroadcast);
 
-void emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs);
+void emitIns_R_R_S(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs, bool isEmbBroadcast);
 
 void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3);
 
@@ -689,10 +696,18 @@ void emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 void emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int ival);
 
 void emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTreeIndir* indir);
-void emitIns_SIMD_R_R_C(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, CORINFO_FIELD_HANDLE fldHnd, int offs);
+void emitIns_SIMD_R_R_AR(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber base, int offset);
+void emitIns_SIMD_R_R_C(instruction          ins,
+                        emitAttr             attr,
+                        regNumber            targetReg,
+                        regNumber            op1Reg,
+                        CORINFO_FIELD_HANDLE fldHnd,
+                        int                  offs,
+                        bool                 isEmbBroadcast);
 void emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg);
-void emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs);
+void emitIns_SIMD_R_R_S(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs, bool isEmbBroadcast);
 
 void emitIns_SIMD_R_R_A_I(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTreeIndir* indir, int ival);
@@ -847,7 +862,7 @@ inline bool emitIsUncondJump(instrDesc* jmp)
 //
 inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 {
-    return false;
+    return id->idIsEmbBroadcast();
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;
