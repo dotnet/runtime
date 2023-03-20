@@ -4536,7 +4536,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             regNumber op1Reg = op1->GetRegNum();
 
             if (compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && (targetReg != REG_NA) &&
-                tree->OperIs(GT_LT) && intConst->IsIntegralConst(0) && ((cmpSize == EA_4BYTE) || (cmpSize == EA_8BYTE)))
+                tree->OperIs(GT_LT) && !tree->IsUnsigned() && intConst->IsIntegralConst(0) &&
+                ((cmpSize == EA_4BYTE) || (cmpSize == EA_8BYTE)))
             {
                 emit->emitIns_R_R_I(INS_lsr, cmpSize, targetReg, op1Reg, (int)cmpSize * 8 - 1);
                 genProduceReg(tree);
