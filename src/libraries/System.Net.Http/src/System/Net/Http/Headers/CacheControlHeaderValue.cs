@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 namespace System.Net.Http.Headers
 {
@@ -56,22 +58,30 @@ namespace System.Net.Http.Headers
 
         private void SetTimeSpan(ref TimeSpan fieldRef, Flags flag, TimeSpan? value)
         {
-            if (value is null)
+            fieldRef = value.GetValueOrDefault();
+            SetFlag(flag, value.HasValue);
+        }
+
+        private void SetFlag(Flags flag, bool value)
+        {
+            Debug.Assert(sizeof(Flags) == sizeof(int));
+
+            // This type is not thread-safe, but we do a minimal amount of synchronization to ensure
+            // that concurrent modifications of different properties don't interfere with each other.
+            if (value)
             {
-                fieldRef = default;
-                _flags &= ~flag;
+                Interlocked.Or(ref Unsafe.As<Flags, int>(ref _flags), (int)flag);
             }
             else
             {
-                fieldRef = value.Value;
-                _flags |= flag;
+                Interlocked.And(ref Unsafe.As<Flags, int>(ref _flags), (int)~flag);
             }
         }
 
         public bool NoCache
         {
             get => (_flags & Flags.NoCache) != 0;
-            set => _flags = value ? (_flags | Flags.NoCache) : (_flags & ~Flags.NoCache);
+            set => SetFlag(Flags.NoCache, value);
         }
 
         public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new TokenObjectCollection();
@@ -79,7 +89,7 @@ namespace System.Net.Http.Headers
         public bool NoStore
         {
             get => (_flags & Flags.NoStore) != 0;
-            set => _flags = value ? (_flags | Flags.NoStore) : (_flags & ~Flags.NoStore);
+            set => SetFlag(Flags.NoStore, value);
         }
 
         public TimeSpan? MaxAge
@@ -97,7 +107,7 @@ namespace System.Net.Http.Headers
         public bool MaxStale
         {
             get => (_flags & Flags.MaxStale) != 0;
-            set => _flags = value ? (_flags | Flags.MaxStale) : (_flags & ~Flags.MaxStale);
+            set => SetFlag(Flags.MaxStale, value);
         }
 
         public TimeSpan? MaxStaleLimit
@@ -115,25 +125,25 @@ namespace System.Net.Http.Headers
         public bool NoTransform
         {
             get => (_flags & Flags.NoTransform) != 0;
-            set => _flags = value ? (_flags | Flags.NoTransform) : (_flags & ~Flags.NoTransform);
+            set => SetFlag(Flags.NoTransform, value);
         }
 
         public bool OnlyIfCached
         {
             get => (_flags & Flags.OnlyIfCached) != 0;
-            set => _flags = value ? (_flags | Flags.OnlyIfCached) : (_flags & ~Flags.OnlyIfCached);
+            set => SetFlag(Flags.OnlyIfCached, value);
         }
 
         public bool Public
         {
             get => (_flags & Flags.Public) != 0;
-            set => _flags = value ? (_flags | Flags.Public) : (_flags & ~Flags.Public);
+            set => SetFlag(Flags.Public, value);
         }
 
         public bool Private
         {
             get => (_flags & Flags.Private) != 0;
-            set => _flags = value ? (_flags | Flags.Private) : (_flags & ~Flags.Private);
+            set => SetFlag(Flags.Private, value);
         }
 
         public ICollection<string> PrivateHeaders => _privateHeaders ??= new TokenObjectCollection();
@@ -141,13 +151,13 @@ namespace System.Net.Http.Headers
         public bool MustRevalidate
         {
             get => (_flags & Flags.MustRevalidate) != 0;
-            set => _flags = value ? (_flags | Flags.MustRevalidate) : (_flags & ~Flags.MustRevalidate);
+            set => SetFlag(Flags.MustRevalidate, value);
         }
 
         public bool ProxyRevalidate
         {
             get => (_flags & Flags.ProxyRevalidate) != 0;
-            set => _flags = value ? (_flags | Flags.ProxyRevalidate) : (_flags & ~Flags.ProxyRevalidate);
+            set => SetFlag(Flags.ProxyRevalidate, value);
         }
 
         public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
@@ -299,45 +309,22 @@ namespace System.Net.Http.Headers
             _flags == other._flags &&
             _maxAge == other._maxAge &&
             _sharedMaxAge == other._sharedMaxAge &&
+            _maxStaleLimit == other._maxStaleLimit &&
             _minFresh == other._minFresh &&
             HeaderUtilities.AreEqualCollections(_noCacheHeaders, other._noCacheHeaders, StringComparer.OrdinalIgnoreCase) &&
             HeaderUtilities.AreEqualCollections(_privateHeaders, other._privateHeaders, StringComparer.OrdinalIgnoreCase) &&
             HeaderUtilities.AreEqualCollections(_extensions, other._extensions);
 
-        public override int GetHashCode()
-        {
-            HashCode hashcode = default;
-
-            hashcode.Add(_flags);
-            hashcode.Add(_maxAge);
-            hashcode.Add(_sharedMaxAge);
-            hashcode.Add(_maxStaleLimit);
-            hashcode.Add(_minFresh);
-
-            if ((_noCacheHeaders != null) && (_noCacheHeaders.Count > 0))
-            {
-                int unorderedHash = 0;
-                foreach (string noCacheHeader in _noCacheHeaders)
-                {
-                    unorderedHash ^= StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
-                }
-                hashcode.Add(unorderedHash);
-            }
-
-            if ((_privateHeaders != null) && (_privateHeaders.Count > 0))
-            {
-                int unorderedHash = 0;
-                foreach (string privateHeader in _privateHeaders)
-                {
-                    unorderedHash ^= StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
-                }
-                hashcode.Add(unorderedHash);
-            }
-
-            hashcode.Add(NameValueHeaderValue.GetHashCode(_extensions));
-
-            return hashcode.ToHashCode();
-        }
+        public override int GetHashCode() =>
+            HashCode.Combine(
+                _flags,
+                _maxAge,
+                _sharedMaxAge,
+                _maxStaleLimit,
+                _minFresh,
+                (_noCacheHeaders is null ? 0 : _noCacheHeaders.GetHashCode(StringComparer.OrdinalIgnoreCase)),
+                (_privateHeaders is null ? 0 : _privateHeaders.GetHashCode(StringComparer.OrdinalIgnoreCase)),
+                NameValueHeaderValue.GetHashCode(_extensions));
 
         public static CacheControlHeaderValue Parse(string? input)
         {
@@ -608,6 +595,18 @@ namespace System.Net.Http.Headers
         private sealed class TokenObjectCollection : ObjectCollection<string>
         {
             public override void Validate(string item) => HeaderUtilities.CheckValidToken(item, nameof(item));
+
+            public int GetHashCode(StringComparer comparer)
+            {
+                int hashcode = 0;
+
+                foreach (string value in this)
+                {
+                    hashcode ^= comparer.GetHashCode(value);
+                }
+
+                return hashcode;
+            }
         }
     }
 }

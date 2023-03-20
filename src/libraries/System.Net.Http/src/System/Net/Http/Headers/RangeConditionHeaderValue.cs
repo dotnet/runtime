@@ -8,6 +8,7 @@ namespace System.Net.Http.Headers
 {
     public class RangeConditionHeaderValue : ICloneable
     {
+        // Exactly one of date and entityTag will be set.
         private readonly DateTimeOffset _date;
         private readonly EntityTagHeaderValue? _entityTag;
 
