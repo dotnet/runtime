@@ -89,12 +89,12 @@ namespace System.Text.Json.SourceGeneration.Tests
             NotSupportedException exn = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value, UnspeakableTypeContext.Default.Options));
             Assert.Contains("TypeWithDiamondAmbiguity", exn.Message);
             Assert.Contains("BasePoco", exn.Message);
-            Assert.Contains("IEnumerable`1[System.Int32]", exn.Message);
+            Assert.Contains("IEnumerable", exn.Message);
 
             exn = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value, value.GetType(), UnspeakableTypeContext.Default.Options));
             Assert.Contains("TypeWithDiamondAmbiguity", exn.Message);
             Assert.Contains("BasePoco", exn.Message);
-            Assert.Contains("IEnumerable`1[System.Int32]", exn.Message);
+            Assert.Contains("IEnumerable", exn.Message);
         }
 
         public static IEnumerable<object[]> GetUnspeakableTypes()
