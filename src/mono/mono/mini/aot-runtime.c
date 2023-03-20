@@ -2448,13 +2448,18 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 	if (!container_amodule) {
 		ERROR_DECL (error);
 
+		// This method is recursively invoked within the same thread during AOT module loads
+		// It avoids recursive invocation by setting container_assm_name to NULL
+		char *local_ref = container_assm_name;
+		container_assm_name = NULL;
+
 		// Create a fake MonoAssembly/MonoImage to retrieve its AOT module.
 		// Container MonoAssembly/MonoImage shouldn't be used during the runtime.
 		MonoAssembly *assm = g_new0 (MonoAssembly, 1);
 		assm->image = g_new0 (MonoImage, 1);
 		assm->image->dynamic = 0;
 		assm->image->alc = alc;
-		assm->aname.name = container_assm_name;
+		assm->aname.name = local_ref;
 
 		mono_image_init (assm->image);
 		MonoAotFileInfo* info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assm->aname.name);
@@ -2462,8 +2467,8 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 		mono_assembly_addref (assm);
 
 		load_aot_module(alc, assm, NULL, error);
-		g_assert (assm->image->aot_module);
 		mono_memory_barrier ();
+		g_assert (assm->image->aot_module);
 		container_amodule = assm->image->aot_module;
 	}
 
