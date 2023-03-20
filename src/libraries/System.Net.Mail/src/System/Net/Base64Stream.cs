@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Mime;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -33,7 +35,7 @@ namespace System.Net
 
         private readonly Base64WriteStateInfo _writeState;
         private ReadStateInfo? _readState;
-        private readonly IByteEncoder _encoder;
+        private readonly Base64Encoder _encoder;
 
         //bytes with this value in the decode map are invalid
         private const byte InvalidBase64Value = 255;
@@ -61,24 +63,11 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-        {
-            ValidateBufferArguments(buffer, offset, count);
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
-            var result = new ReadAsyncResult(this, buffer, offset, count, callback, state);
-            result.Read();
-            return result;
-        }
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-        {
-            ValidateBufferArguments(buffer, offset, count);
-
-            var result = new WriteAsyncResult(this, buffer, offset, count, callback, state);
-            result.Write();
-            return result;
-        }
-
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override void Close()
         {
@@ -156,19 +145,11 @@ namespace System.Net
 
         public string GetEncodedString() => _encoder.GetEncodedString();
 
-        public override int EndRead(IAsyncResult asyncResult)
-        {
-            ArgumentNullException.ThrowIfNull(asyncResult);
+        public override int EndRead(IAsyncResult asyncResult) =>
+            TaskToAsyncResult.End<int>(asyncResult);
 
-            return ReadAsyncResult.End(asyncResult);
-        }
-
-        public override void EndWrite(IAsyncResult asyncResult)
-        {
-            ArgumentNullException.ThrowIfNull(asyncResult);
-
-            WriteAsyncResult.End(asyncResult);
-        }
+        public override void EndWrite(IAsyncResult asyncResult) =>
+            TaskToAsyncResult.End(asyncResult);
 
         public override void Flush()
         {
@@ -178,6 +159,17 @@ namespace System.Net
             }
 
             base.Flush();
+        }
+
+        public override async Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (_writeState != null && WriteState.Length > 0)
+            {
+                await base.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
+                WriteState.Reset();
+            }
+
+            await base.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private void FlushInternal()
@@ -212,6 +204,36 @@ namespace System.Net
                 }
             }
         }
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return ReadAsyncCore(buffer, offset, count, cancellationToken);
+
+            async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                while (true)
+                {
+                    // read data from the underlying stream
+                    int read = await base.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
+
+                    // if the underlying stream returns 0 then there
+                    // is no more data - ust return 0.
+                    if (read == 0)
+                    {
+                        return 0;
+                    }
+
+                    // while decoding, we may end up not having
+                    // any bytes to return pending additional data
+                    // from the underlying stream.
+                    read = DecodeBytes(buffer, offset, read);
+                    if (read > 0)
+                    {
+                        return read;
+                    }
+                }
+            }
+        }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -235,166 +257,29 @@ namespace System.Net
             }
         }
 
-        private sealed class ReadAsyncResult : LazyAsyncResult
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            private readonly Base64Stream _parent;
-            private readonly byte[] _buffer;
-            private readonly int _offset;
-            private readonly int _count;
-            private int _read;
+            ValidateBufferArguments(buffer, offset, count);
+            return WriteAsyncCore(buffer, offset, count, cancellationToken);
 
-            private static readonly AsyncCallback s_onRead = OnRead;
-
-            internal ReadAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) : base(null, state, callback)
+            async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                _parent = parent;
-                _buffer = buffer;
-                _offset = offset;
-                _count = count;
-            }
+                int written = 0;
 
-            private bool CompleteRead(IAsyncResult result)
-            {
-                _read = _parent.BaseStream.EndRead(result);
-
-                // if the underlying stream returns 0 then there
-                // is no more data - ust return 0.
-                if (_read == 0)
-                {
-                    InvokeCallback();
-                    return true;
-                }
-
-                // while decoding, we may end up not having
-                // any bytes to return pending additional data
-                // from the underlying stream.
-                _read = _parent.DecodeBytes(_buffer, _offset, _read);
-                if (_read > 0)
-                {
-                    InvokeCallback();
-                    return true;
-                }
-
-                return false;
-            }
-
-            internal void Read()
-            {
+                // do not append a space when writing from a stream since this means
+                // it's writing the email body
                 while (true)
                 {
-                    IAsyncResult result = _parent.BaseStream.BeginRead(_buffer, _offset, _count, s_onRead, this);
-                    if (!result.CompletedSynchronously || CompleteRead(result))
+                    written += EncodeBytes(buffer, offset + written, count - written, false, false);
+                    if (written < count)
                     {
-                        break;
-                    }
-                }
-            }
-
-            private static void OnRead(IAsyncResult result)
-            {
-                if (!result.CompletedSynchronously)
-                {
-                    ReadAsyncResult thisPtr = (ReadAsyncResult)result.AsyncState!;
-                    try
-                    {
-                        if (!thisPtr.CompleteRead(result))
-                        {
-                            thisPtr.Read();
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        if (thisPtr.IsCompleted)
-                        {
-                            throw;
-                        }
-                        thisPtr.InvokeCallback(e);
-                    }
-                }
-            }
-
-            internal static int End(IAsyncResult result)
-            {
-                ReadAsyncResult thisPtr = (ReadAsyncResult)result;
-                thisPtr.InternalWaitForCompletion();
-                return thisPtr._read;
-            }
-        }
-
-        private sealed class WriteAsyncResult : LazyAsyncResult
-        {
-            private static readonly AsyncCallback s_onWrite = OnWrite;
-
-            private readonly Base64Stream _parent;
-            private readonly byte[] _buffer;
-            private readonly int _offset;
-            private readonly int _count;
-            private int _written;
-
-            internal WriteAsyncResult(Base64Stream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) : base(null, state, callback)
-            {
-                _parent = parent;
-                _buffer = buffer;
-                _offset = offset;
-                _count = count;
-            }
-
-            internal void Write()
-            {
-                while (true)
-                {
-                    // do not append a space when writing from a stream since this means
-                    // it's writing the email body
-                    _written += _parent.EncodeBytes(_buffer, _offset + _written, _count - _written, false, false);
-                    if (_written < _count)
-                    {
-                        IAsyncResult result = _parent.BaseStream.BeginWrite(_parent.WriteState.Buffer, 0, _parent.WriteState.Length, s_onWrite, this);
-                        if (!result.CompletedSynchronously)
-                        {
-                            break;
-                        }
-                        CompleteWrite(result);
+                        await FlushAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        InvokeCallback();
                         break;
                     }
                 }
-            }
-
-            private void CompleteWrite(IAsyncResult result)
-            {
-                _parent.BaseStream.EndWrite(result);
-                _parent.WriteState.Reset();
-            }
-
-            private static void OnWrite(IAsyncResult result)
-            {
-                if (!result.CompletedSynchronously)
-                {
-                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState!;
-                    try
-                    {
-                        thisPtr.CompleteWrite(result);
-                        thisPtr.Write();
-                    }
-                    catch (Exception e)
-                    {
-                        if (thisPtr.IsCompleted)
-                        {
-                            throw;
-                        }
-                        thisPtr.InvokeCallback(e);
-                    }
-                }
-            }
-
-            internal static void End(IAsyncResult result)
-            {
-                WriteAsyncResult thisPtr = (WriteAsyncResult)result;
-                thisPtr.InternalWaitForCompletion();
-                Debug.Assert(thisPtr._written == thisPtr._count);
             }
         }
 

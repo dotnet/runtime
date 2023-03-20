@@ -5,9 +5,8 @@ namespace Mono.Linker
 {
 	public enum AssemblyRootMode
 	{
-		Default = 0,
+		AllMembers = 0,
 		EntryPoint,
-		AllMembers,
 		VisibleMembers,
 		Library
 	}

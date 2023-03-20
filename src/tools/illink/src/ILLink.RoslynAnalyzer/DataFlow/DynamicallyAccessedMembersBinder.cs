@@ -113,7 +113,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			foreach (var method in type.GetMembers ().OfType<IMethodSymbol> ()) {
 
-				if (method.MethodKind != MethodKind.Constructor)
+				if (!method.IsConstructor ())
 					continue;
 
 				if (filter != null && !filter (method))
@@ -142,7 +142,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			while (type != null) {
 				foreach (var method in type.GetMembers ().OfType<IMethodSymbol> ()) {
 					// Ignore constructors as those are not considered methods from a reflection's point of view
-					if (method.MethodKind == MethodKind.Constructor)
+					if (method.IsConstructor ())
 						continue;
 
 					// Ignore private methods on a base type - those are completely ignored by reflection

@@ -20,7 +20,7 @@
 .corflags 0x0000001
 
 
-.class private explicit ansi sealed $ArrayType$2$6
+.class public explicit ansi sealed $ArrayType$2$6
        extends [mscorlib]System.ValueType
 {
   .pack 1

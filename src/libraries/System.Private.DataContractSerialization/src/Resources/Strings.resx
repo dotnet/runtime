@@ -492,9 +492,6 @@
   <data name="AttributedTypesCannotInheritFromNonAttributedSerializableTypes" xml:space="preserve">
     <value>Type '{0}' cannot inherit from a type that is not marked with DataContractAttribute or SerializableAttribute.  Consider marking the base type '{1}' with DataContractAttribute or SerializableAttribute, or removing them from the derived type.</value>
   </data>
-  <data name="QuotaMustBePositive" xml:space="preserve">
-    <value>Quota must be a positive value.</value>
-  </data>
   <data name="QuotaIsReadOnly" xml:space="preserve">
     <value>The '{0}' quota is readonly.</value>
   </data>
@@ -542,9 +539,6 @@
   </data>
   <data name="UnknownConstantType" xml:space="preserve">
     <value>Internal Error: Unrecognized constant type {0}.</value>
-  </data>
-  <data name="ValueMustBeNonNegative" xml:space="preserve">
-    <value>The value of this argument must be non-negative.</value>
   </data>
   <data name="ValueTypeCannotBeNull" xml:space="preserve">
     <value>ValueType '{0}' cannot be null.</value>

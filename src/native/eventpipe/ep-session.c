@@ -202,6 +202,7 @@ ep_session_alloc (
 	instance->session_start_time = ep_system_timestamp_get ();
 	instance->session_start_timestamp = ep_perf_timestamp_get ();
 	instance->paused = false;
+	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk ();
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -250,7 +251,7 @@ ep_session_get_session_provider (
 	if (catch_all)
 		return catch_all;
 
-	EventPipeSessionProvider *session_provider = ep_rt_session_provider_list_find_by_name (ep_session_provider_list_get_providers_ref (providers), ep_provider_get_provider_name (provider));
+	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (providers), ep_provider_get_provider_name (provider));
 
 	ep_requires_lock_held ();
 	return session_provider;
@@ -267,13 +268,14 @@ ep_session_enable_rundown (EventPipeSession *session)
 
 	//! This is CoreCLR specific keywords for native ETW events (ending up in event pipe).
 	//! The keywords below seems to correspond to:
+	//!  GCKeyword                          (0x00000001)
 	//!  LoaderKeyword                      (0x00000008)
 	//!  JitKeyword                         (0x00000010)
 	//!  NgenKeyword                        (0x00000020)
 	//!  unused_keyword                     (0x00000100)
 	//!  JittedMethodILToNativeMapKeyword   (0x00020000)
 	//!  ThreadTransferKeyword              (0x80000000)
-	const uint64_t keywords = 0x80020138;
+	const uint64_t keywords = 0x80020139;
 	const EventPipeEventLevel verbose_logging_level = EP_EVENT_LEVEL_VERBOSE;
 
 	EventPipeProviderConfiguration rundown_providers [2];
@@ -310,7 +312,7 @@ ep_on_error:
 void
 ep_session_execute_rundown (
 	EventPipeSession *session,
-	ep_rt_execution_checkpoint_array_t *execution_checkpoints)
+	dn_vector_ptr_t *execution_checkpoints)
 {
 	EP_ASSERT (session != NULL);
 
@@ -330,26 +332,29 @@ ep_session_suspend_write_event (EventPipeSession *session)
 	// Need to disable the session before calling this method.
 	EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 
-	EP_RT_DECLARE_LOCAL_THREAD_ARRAY (threads);
-	ep_rt_thread_array_init (&threads);
+	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
-	ep_thread_get_threads (&threads);
+	dn_vector_ptr_custom_init_params_t params = {0, };
+	params.allocator = (dn_allocator_t *)&allocator;
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
 
-	ep_rt_thread_array_iterator_t threads_iterator = ep_rt_thread_array_iterator_begin (&threads);
-	while (!ep_rt_thread_array_iterator_end (&threads, &threads_iterator)) {
-		EventPipeThread *thread = ep_rt_thread_array_iterator_value (&threads_iterator);
-		if (thread) {
-			// Wait for the thread to finish any writes to this session
-			EP_YIELD_WHILE (ep_thread_get_session_write_in_progress (thread) == session->index);
+	dn_vector_ptr_t threads;
 
-			// Since we've already disabled the session, the thread won't call back in to this
-			// session once its done with the current write
-			ep_thread_release (thread);
-		}
-		ep_rt_thread_array_iterator_next (&threads_iterator);
+	if (dn_vector_ptr_custom_init (&threads, &params)) {
+		ep_thread_get_threads (&threads);
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
+			if (thread) {
+				// Wait for the thread to finish any writes to this session
+				EP_YIELD_WHILE (ep_thread_get_session_write_in_progress (thread) == session->index);
+
+				// Since we've already disabled the session, the thread won't call back in to this
+				// session once its done with the current write
+				ep_thread_release (thread);
+			}
+		} DN_VECTOR_PTR_FOREACH_END;
+
+		dn_vector_ptr_dispose (&threads);
 	}
-
-	ep_rt_thread_array_fini (&threads);
 
 	if (session->buffer_manager)
 		// Convert all buffers to read only to ensure they get flushed

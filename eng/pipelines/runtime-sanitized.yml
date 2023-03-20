@@ -1,0 +1,14 @@
+# This pipeline provides an easy mechanism for us to run runtime and libaries tests with native sanitizers enabled
+# without having to compilcate the runtime.yml pipeline. This pipeline is intended to be run on a rolling basis
+# but a schedule is yet to be determined.
+trigger: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:

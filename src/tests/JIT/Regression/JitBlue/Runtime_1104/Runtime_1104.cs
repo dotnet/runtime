@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-class Runtime_1104
+public class Runtime_1104
 {
     static int TestOutOfBoundProxy(Func<int> actualTest)
     {

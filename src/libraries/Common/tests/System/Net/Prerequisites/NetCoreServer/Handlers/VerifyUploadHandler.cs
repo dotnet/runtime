@@ -14,19 +14,19 @@ namespace NetCoreServer
         public static async Task InvokeAsync(HttpContext context)
         {
             // Report back original request method verb.
-            context.Response.Headers.Add("X-HttpRequest-Method", context.Request.Method);
+            context.Response.Headers["X-HttpRequest-Method"] = context.Request.Method;
 
             // Report back original entity-body related request headers.
             string contentLength = context.Request.Headers["Content-Length"];
             if (!string.IsNullOrEmpty(contentLength))
             {
-                context.Response.Headers.Add("X-HttpRequest-Headers-ContentLength", contentLength);
+                context.Response.Headers["X-HttpRequest-Headers-ContentLength"] = contentLength;
             }
 
             string transferEncoding = context.Request.Headers["Transfer-Encoding"];
             if (!string.IsNullOrEmpty(transferEncoding))
             {
-                context.Response.Headers.Add("X-HttpRequest-Headers-TransferEncoding", transferEncoding);
+                context.Response.Headers["X-HttpRequest-Headers-TransferEncoding"] = transferEncoding;
             }
 
             // Get request body.

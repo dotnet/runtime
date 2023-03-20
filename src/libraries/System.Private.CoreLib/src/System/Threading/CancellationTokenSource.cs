@@ -250,6 +250,77 @@ namespace System.Threading
             NotifyCancellation(throwOnFirstException);
         }
 
+        /// <summary>Communicates a request for cancellation asynchronously.</summary>
+        /// <remarks>
+        /// <para>
+        /// The associated <see cref="CancellationToken" /> will be notified of the cancellation
+        /// and will synchronously transition to a state where <see cref="CancellationToken.IsCancellationRequested"/> returns true.
+        /// Any callbacks or cancelable operations registered with the <see cref="CancellationToken"/>  will be executed asynchronously,
+        /// with the returned <see cref="Task"/> representing their eventual completion.
+        /// </para>
+        /// <para>
+        /// Callbacks registered with the token should not throw exceptions.
+        /// However, any such exceptions that are thrown will be aggregated into an <see cref="AggregateException"/>,
+        /// such that one callback throwing an exception will not prevent other registered callbacks from being executed.
+        /// </para>
+        /// <para>
+        /// The <see cref="ExecutionContext"/> that was captured when each callback was registered
+        /// will be reestablished when the callback is invoked.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">This <see cref="CancellationTokenSource"/> has been disposed.</exception>
+        public Task CancelAsync()
+        {
+            if (_disposed)
+            {
+                return Task.FromException(new ObjectDisposedException(GetType().FullName, SR.CancellationTokenSource_Disposed));
+            }
+
+            // Ensure IsCancellationRequested is synchronously transitioned as part of the synchronous call to CancelAsync.
+            if (TransitionToCancellationRequested())
+            {
+                // IsCancellationRequested is now true, and it's used to coordinate with concurrent registrations.
+                // Register checks IsCancellationRequested both before and after it adds a node to the registrations
+                // list.  If it's true before, it doesn't add the node at all.  If it's true after, it then tries
+                // to remove the node from the list; if it's successful in doing so, it invokes the callback itself,
+                // and if it's not successful in doing so due to it concurrently being executed, it returns a CTR
+                // that enables that concurrently executing callback to be waited on.  As a result of this, now that
+                // IsCancellationRequested is true, we can check (under lock) that the callbacks list is null. If it
+                // is, there's no work to be done and we can avoid spinning up a task to invoke the callbacks.  It's
+                // possible a registration is concurrently happening, but because we're checking the registrations list
+                // after setting IsCancellationRequested, either we see a registration that's already registered (in
+                // which case we won't short-circuit) or the concurrent registration sees IsCancellationRequested as
+                // true after it's registered, in which case it'll go down the unregistering path.
+                Debug.Assert(IsCancellationRequested);
+
+                Registrations? registrations = Volatile.Read(ref _registrations);
+                if (registrations is not null)
+                {
+                    registrations.EnterLock();
+                    bool callbacksExisted = registrations.Callbacks is not null;
+                    registrations.ExitLock();
+
+                    if (callbacksExisted)
+                    {
+                        // At least at the time we checked, callback existed, so we queue a work item to invoke
+                        // the handlers. It's possible those callbacks will have been unregistered by the time
+                        // the work item is invoked... that's fine, it just means we spent a bit of energy we
+                        // ultimately didn't have to.  Note we explicitly don't schedule each registration individually
+                        // to run concurrently, as there's no guarantee they're independent and safe to do so.
+                        return Task.Factory.StartNew(s =>
+                        {
+                            ((CancellationTokenSource)s!).ExecuteCallbackHandlers(throwOnFirstException: false);
+                            Debug.Assert(IsCancellationCompleted, "Expected cancellation to have finished");
+                        }, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                    }
+                }
+            }
+
+            // As with Cancel, CancelAsync returns immediately if cancellation has already been requested
+            // even if cancellation isn't already completed.
+            return Task.CompletedTask;
+        }
+
         /// <summary>Schedules a Cancel operation on this <see cref="CancellationTokenSource"/>.</summary>
         /// <param name="delay">The time span to wait before canceling this <see cref="CancellationTokenSource"/>.
         /// </param>
@@ -589,8 +660,21 @@ namespace System.Threading
 
         private void NotifyCancellation(bool throwOnFirstException)
         {
-            // If we're the first to signal cancellation, do the main extra work.
-            if (!IsCancellationRequested && Interlocked.CompareExchange(ref _state, NotifyingState, NotCanceledState) == NotCanceledState)
+            if (TransitionToCancellationRequested())
+            {
+                // If we're the first to signal cancellation, do the main extra work.
+                ExecuteCallbackHandlers(throwOnFirstException);
+                Debug.Assert(IsCancellationCompleted, "Expected cancellation to have finished");
+            }
+        }
+
+        /// <summary>Transitions from <see cref="NotCanceledState"/> to <see cref="NotifyingState"/>.</summary>
+        /// <returns>true if it successfully transitioned; otherwise, false.</returns>
+        /// <remarks>If it successfully transitions, it will also have disposed of <see cref="_timer"/> and set <see cref="_kernelEvent"/>.</remarks>
+        private bool TransitionToCancellationRequested()
+        {
+            if (!IsCancellationRequested &&
+                Interlocked.CompareExchange(ref _state, NotifyingState, NotCanceledState) == NotCanceledState)
             {
                 // Dispose of the timer, if any.  Dispose may be running concurrently here, but TimerQueueTimer.Close is thread-safe.
                 TimerQueueTimer? timer = _timer;
@@ -604,15 +688,12 @@ namespace System.Threading
                 // be running concurrently, in which case either it'll have set m_kernelEvent back to null and
                 // we won't see it here, or it'll see that we've transitioned to NOTIFYING and will skip disposing it,
                 // leaving cleanup to finalization.
-                _kernelEvent?.Set(); // update the MRE value.
+                _kernelEvent?.Set();
 
-                // - late enlisters to the Canceled event will have their callbacks called immediately in the Register() methods.
-                // - Callbacks are not called inside a lock.
-                // - After transition, no more delegates will be added to the
-                // - list of handlers, and hence it can be consumed and cleared at leisure by ExecuteCallbackHandlers.
-                ExecuteCallbackHandlers(throwOnFirstException);
-                Debug.Assert(IsCancellationCompleted, "Expected cancellation to have finished");
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>Invoke all registered callbacks.</summary>

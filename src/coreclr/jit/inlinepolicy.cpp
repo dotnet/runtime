@@ -502,7 +502,7 @@ bool DefaultPolicy::BudgetCheck() const
         //
         assert(m_IsForceInlineKnown);
         assert(m_CallsiteDepth > 0);
-        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth == 1);
+        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth <= strategy->GetMaxForceInlineDepth());
 
         if (allowOverBudget)
         {

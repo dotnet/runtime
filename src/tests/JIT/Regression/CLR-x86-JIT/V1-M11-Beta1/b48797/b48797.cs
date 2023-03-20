@@ -6,13 +6,13 @@ namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         static object m_xForward2;
 
         static void Method1(float param1, double[] ad) { }
 
-        static int Main()
+        public static int Main()
         {
             float[] local3 = new float[2];
             try

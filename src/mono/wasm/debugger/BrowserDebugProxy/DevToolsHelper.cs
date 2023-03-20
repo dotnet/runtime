@@ -63,7 +63,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed class DotnetObjectId
     {
-        private int? _intValue;
+        private readonly int? _intValue;
 
         public string Scheme { get; }
         public int Value
@@ -136,8 +136,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private Result(JObject resultOrError, bool isError, JObject fullContent = null)
         {
-            if (resultOrError == null)
-                throw new ArgumentNullException(nameof(resultOrError));
+            ArgumentNullException.ThrowIfNull(resultOrError);
 
             bool resultHasError = isError || string.Equals((resultOrError["result"] as JObject)?["subtype"]?.Value<string>(), "error");
             resultHasError |= resultOrError["exceptionDetails"] != null;
@@ -331,8 +330,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal static class MonoConstants
     {
-        public const string RUNTIME_IS_READY = "mono_wasm_runtime_ready";
-        public const string RUNTIME_IS_READY_ID = "fe00e07a-5519-4dfe-b35a-f867dbaf2e28";
         public const string EVENT_RAISED = "mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae";
     }
 
@@ -408,7 +405,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             SdbAgent = sdbAgent;
             PauseOnExceptions = pauseOnExceptions;
         }
-
+        public ExecutionContext CreateChildAsyncExecutionContext(SessionId sessionId)
+            => new ExecutionContext(null, Id, AuxData, PauseOnExceptions)
+            {
+                ParentContext = this,
+                SessionId = sessionId
+            };
+        public bool CopyDataFromParentContext()
+        {
+            if (SdbAgent != null)
+                return false;
+            ready = ParentContext.ready;
+            store = ParentContext.store;
+            Source = ParentContext.Source;
+            SdbAgent = ParentContext.SdbAgent.Clone(SessionId);
+            return true;
+        }
         public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
         public int breakpointId;
@@ -419,6 +431,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsResumedAfterBp { get; set; }
         public int ThreadId { get; set; }
         public int Id { get; set; }
+        public ExecutionContext ParentContext { get; private set; }
+        public SessionId SessionId { get; private set; }
 
         public bool PausedOnWasm { get; set; }
 
@@ -426,14 +440,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public object AuxData { get; set; }
 
+        public bool AutoEvaluateProperties { get; set; }
+
         public PauseOnExceptionsKind PauseOnExceptions { get; set; }
 
         public List<Frame> CallStack { get; set; }
 
         public string[] LoadedFiles { get; set; }
         internal DebugStore store;
-        internal MonoSDBHelper SdbAgent { get; init; }
-        public TaskCompletionSource<DebugStore> Source { get; } = new TaskCompletionSource<DebugStore>();
+        internal MonoSDBHelper SdbAgent { get; private set; }
+        public TaskCompletionSource<DebugStore> Source { get; private set; } = new TaskCompletionSource<DebugStore>();
 
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 

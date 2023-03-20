@@ -56,7 +56,7 @@
 
 } 
 
-.class auto ansi _vbProject extends [mscorlib]System.Object
+.class public auto ansi _vbProject extends [mscorlib]System.Object
 {
   .field static assembly class [mscorlib]System.Collections.Dictionary _vbEventCollection
   .method public static int32 _main() il managed forwardref

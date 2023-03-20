@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Internal;
 
@@ -127,6 +128,15 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes)
         {
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // Create a reflection-based factory when dynamic code isn't supported, e.g. app is published with NativeAOT.
+                // Reflection-based factory is faster than interpreted expressions and doesn't pull in System.Linq.Expressions dependency.
+                return CreateFactoryReflection(instanceType, argumentTypes);
+            }
+#endif
+
             CreateFactoryInternal(instanceType, argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
             var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
@@ -152,6 +162,16 @@ namespace Microsoft.Extensions.DependencyInjection
             CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
                 Type[] argumentTypes)
         {
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // Create a reflection-based factory when dynamic code isn't supported, e.g. app is published with NativeAOT.
+                // Reflection-based factory is faster than interpreted expressions and doesn't pull in System.Linq.Expressions dependency.
+                var factory = CreateFactoryReflection(typeof(T), argumentTypes);
+                return (serviceProvider, arguments) => (T)factory(serviceProvider, arguments);
+            }
+#endif
+
             CreateFactoryInternal(typeof(T), argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
             var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
@@ -222,7 +242,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return service;
         }
 
-        private static Expression BuildFactoryExpression(
+        private static BlockExpression BuildFactoryExpression(
             ConstructorInfo constructor,
             int?[] parameterMap,
             Expression serviceProvider,
@@ -261,8 +281,70 @@ namespace Microsoft.Extensions.DependencyInjection
                 constructorArguments[i] = Expression.Convert(constructorArguments[i], parameterType);
             }
 
-            return Expression.New(constructor, constructorArguments);
+            return Expression.Block(Expression.IfThen(Expression.Equal(serviceProvider, Expression.Constant(null)), Expression.Throw(Expression.Constant(new ArgumentNullException(nameof(serviceProvider))))),
+                Expression.New(constructor, constructorArguments));
         }
+
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+        private static ObjectFactory CreateFactoryReflection(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
+            Type?[] argumentTypes)
+        {
+            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+
+            ParameterInfo[] constructorParameters = constructor.GetParameters();
+            if (constructorParameters.Length == 0)
+            {
+                return (IServiceProvider serviceProvider, object?[]? arguments) =>
+                    constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: null, culture: null);
+            }
+
+            FactoryParameterContext[] parameters = new FactoryParameterContext[constructorParameters.Length];
+            for (int i = 0; i < constructorParameters.Length; i++)
+            {
+                ParameterInfo constructorParameter = constructorParameters[i];
+                bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
+
+                parameters[i] = new FactoryParameterContext(constructorParameter.ParameterType, hasDefaultValue, defaultValue, parameterMap[i] ?? -1);
+            }
+            Type declaringType = constructor.DeclaringType!;
+
+            return (IServiceProvider serviceProvider, object?[]? arguments) =>
+            {
+                object?[] constructorArguments = new object?[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    ref FactoryParameterContext parameter = ref parameters[i];
+                    constructorArguments[i] = ((parameter.ArgumentIndex != -1)
+                        // Throws an NullReferenceException if arguments is null. Consistent with expression-based factory.
+                        ? arguments![parameter.ArgumentIndex]
+                        : GetService(
+                            serviceProvider,
+                            parameter.ParameterType,
+                            declaringType,
+                            parameter.HasDefaultValue)) ?? parameter.DefaultValue;
+                }
+
+                return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
+            };
+        }
+
+        private readonly struct FactoryParameterContext
+        {
+            public FactoryParameterContext(Type parameterType, bool hasDefaultValue, object? defaultValue, int argumentIndex)
+            {
+                ParameterType = parameterType;
+                HasDefaultValue = hasDefaultValue;
+                DefaultValue = defaultValue;
+                ArgumentIndex = argumentIndex;
+            }
+
+            public Type ParameterType { get; }
+            public bool HasDefaultValue { get; }
+            public object? DefaultValue { get; }
+            public int ArgumentIndex { get; }
+        }
+#endif
 
         private static void FindApplicableConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
@@ -386,7 +468,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
-        private struct ConstructorMatcher
+        private readonly struct ConstructorMatcher
         {
             private readonly ConstructorInfo _constructor;
             private readonly ParameterInfo[] _parameters;

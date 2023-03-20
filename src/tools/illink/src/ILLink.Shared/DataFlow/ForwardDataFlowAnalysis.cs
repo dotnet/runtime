@@ -25,10 +25,10 @@ namespace ILLink.Shared.DataFlow
 
 		// Data structure to store dataflow states for every basic block in the control flow graph,
 		// keeping the exception states shared across different basic blocks owned by the same try or catch region.
-		struct ControlFlowGraphState
+		private struct ControlFlowGraphState
 		{
 			// Dataflow states for each basic block
-			readonly Dictionary<TBlock, TState> blockOutput;
+			private readonly Dictionary<TBlock, TState> blockOutput;
 
 			// The control flow graph doesn't contain edges for exceptional control flow:
 			// - From any point in a try region to the start of any catch or finally
@@ -38,7 +38,7 @@ namespace ILLink.Shared.DataFlow
 			// when visiting operations inside of a try or catch region.
 
 			// Dataflow states for exceptions propagating out of try or catch regions
-			readonly Dictionary<TRegion, Box<TValue>> exceptionState;
+			private readonly Dictionary<TRegion, Box<TValue>> exceptionState;
 
 			// Control may flow through a finally region when an exception is thrown from anywhere in the corresponding
 			// try or catch regions, or as part of non-exceptional control flow out of a try or catch.
@@ -46,15 +46,14 @@ namespace ILLink.Shared.DataFlow
 			// propagated out of the finally.
 
 			// Dataflow states for finally blocks when exception propagate through the finally region
-			readonly Dictionary<TBlock, TValue> exceptionFinallyState;
+			private readonly Dictionary<TBlock, TValue> exceptionFinallyState;
 
 			// Finally regions may be reached (along non-exceptional paths)
 			// from multiple branches. This gets updated to track the normal finally input
 			// states from all of these branches (which aren't represented explicitly in the CFG).
-			readonly Dictionary<TRegion, TValue> finallyInputState;
-
-			readonly TControlFlowGraph cfg;
-			readonly TLattice lattice;
+			private readonly Dictionary<TRegion, TValue> finallyInputState;
+			private readonly TControlFlowGraph cfg;
+			private readonly TLattice lattice;
 
 			public ControlFlowGraphState (TControlFlowGraph cfg, TLattice lattice)
 			{

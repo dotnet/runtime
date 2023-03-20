@@ -1713,66 +1713,6 @@ void SString::Printf(const CHAR *format, ...)
     va_end(args);
 }
 
-#ifdef _DEBUG
-//
-// Check the Printf use for potential globalization bugs. %S formatting
-// specifier does Unicode->Ansi or Ansi->Unicode conversion using current
-// C-locale. This almost always means globalization bug in the CLR codebase.
-//
-// Ideally, we would elimitate %S from all format strings. Unfortunately,
-// %S is too widespread in non-shipping code that such cleanup is not feasible.
-//
-static void CheckForFormatStringGlobalizationIssues(const SString &format, const SString &result)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        DEBUG_ONLY;
-    }
-    CONTRACTL_END;
-
-    BOOL fDangerousFormat = FALSE;
-
-    // Check whether the format string contains the %S formatting specifier
-    SString::CIterator itrFormat = format.Begin();
-    while (*itrFormat)
-    {
-        if (*itrFormat++ == '%')
-        {
-            // <TODO>Handle the complex format strings like %blahS</TODO>
-            if (*itrFormat++ == 'S')
-            {
-                fDangerousFormat = TRUE;
-                break;
-            }
-        }
-    }
-
-    if (fDangerousFormat)
-    {
-        BOOL fNonAsciiUsed = FALSE;
-
-        // Now check whether there are any non-ASCII characters in the output.
-
-        // Check whether the result contains non-Ascii characters
-        SString::CIterator itrResult = format.Begin();
-        while (*itrResult)
-        {
-            if (*itrResult++ > 127)
-            {
-                fNonAsciiUsed = TRUE;
-                break;
-            }
-        }
-
-        CONSISTENCY_CHECK_MSGF(!fNonAsciiUsed,
-            ("Non-ASCII string was produced by %%S format specifier. This is likely globalization bug."
-            "To fix this, change the format string to %%s and do the correct encoding at the Printf callsite"));
-    }
-}
-#endif
-
 #ifndef EBADF
 #define EBADF 9
 #endif
@@ -1819,8 +1759,6 @@ void SString::VPrintf(const CHAR *format, va_list args)
         {
             // Succeeded in writing. Now resize -
             Resize(result, REPRESENTATION_UTF8, PRESERVE);
-            SString sss(Utf8, format);
-            INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
         }
     }
@@ -1850,8 +1788,6 @@ void SString::VPrintf(const CHAR *format, va_list args)
         {
             // Succeed in writing. Shrink the buffer to fit exactly.
             Resize(result, REPRESENTATION_UTF8, PRESERVE);
-            SString sss(Utf8, format);
-            INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
         }
 

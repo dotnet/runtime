@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -23,7 +24,15 @@ namespace System
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string?>, IEquatable<string?>, ICloneable
+    public sealed partial class String
+        : IComparable,
+          IEnumerable,
+          IConvertible,
+          IEnumerable<char>,
+          IComparable<string?>,
+          IEquatable<string?>,
+          ICloneable,
+          ISpanParsable<string>
     {
         /// <summary>Maximum length allowed for a string.</summary>
         /// <remarks>Keep in sync with AllocateString in gchelpers.cpp.</remarks>
@@ -294,13 +303,19 @@ namespace System
 
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
-            ArgumentNullException.ThrowIfNull(action);
+            if (action is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
+            }
 
             if (length <= 0)
             {
                 if (length == 0)
+                {
                     return Empty;
-                throw new ArgumentOutOfRangeException(nameof(length));
+                }
+
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
 
             string result = FastAllocateString(length);
@@ -320,7 +335,7 @@ namespace System
         /// <param name="initialBuffer">The initial buffer that may be used as temporary space as part of the formatting operation. The contents of this buffer may be overwritten.</param>
         /// <param name="handler">The interpolated string.</param>
         /// <returns>The string that results for formatting the interpolated string using the specified format provider.</returns>
-        public static string Create(IFormatProvider? provider, Span<char> initialBuffer, [InterpolatedStringHandlerArgument("provider", "initialBuffer")] ref DefaultInterpolatedStringHandler handler) =>
+        public static string Create(IFormatProvider? provider, Span<char> initialBuffer, [InterpolatedStringHandlerArgument(nameof(provider), nameof(initialBuffer))] ref DefaultInterpolatedStringHandler handler) =>
             handler.ToStringAndClear();
 
         [Intrinsic] // When input is a string literal
@@ -574,9 +589,9 @@ namespace System
             return new StringRuneEnumerator(this);
         }
 
-        internal static unsafe int wcslen(char* ptr) => SpanHelpers.IndexOfNullCharacter(ref *ptr);
+        internal static unsafe int wcslen(char* ptr) => SpanHelpers.IndexOfNullCharacter(ptr);
 
-        internal static unsafe int strlen(byte* ptr) => SpanHelpers.IndexOfNullByte(ref *ptr);
+        internal static unsafe int strlen(byte* ptr) => SpanHelpers.IndexOfNullByte(ptr);
 
         //
         // IConvertible implementation
@@ -671,7 +686,7 @@ namespace System
 
         public bool IsNormalized(NormalizationForm normalizationForm)
         {
-            if (this.IsAscii())
+            if (Ascii.IsValid(this))
             {
                 // If its ASCII && one of the 4 main forms, then its already normalized
                 if (normalizationForm == NormalizationForm.FormC ||
@@ -690,7 +705,7 @@ namespace System
 
         public string Normalize(NormalizationForm normalizationForm)
         {
-            if (this.IsAscii())
+            if (Ascii.IsValid(this))
             {
                 // If its ASCII && one of the 4 main forms, then its already normalized
                 if (normalizationForm == NormalizationForm.FormC ||
@@ -700,14 +715,6 @@ namespace System
                     return this;
             }
             return Normalization.Normalize(this, normalizationForm);
-        }
-
-        private unsafe bool IsAscii()
-        {
-            fixed (char* str = &_firstChar)
-            {
-                return ASCIIUtility.GetIndexOfFirstNonAsciiChar(str, (uint)Length) == (uint)Length;
-            }
         }
 
         // Gets the character at a specified position.
@@ -735,6 +742,49 @@ namespace System
         {
             [Intrinsic]
             get => _stringLength;
+        }
+
+        //
+        // IParsable
+        //
+
+        static string IParsable<string>.Parse(string s, IFormatProvider? provider)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+            return s;
+        }
+
+        static bool IParsable<string>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out string result)
+        {
+            result = s;
+            return s is not null;
+        }
+
+        //
+        // ISpanParsable
+        //
+
+        static string ISpanParsable<string>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+        {
+            if (s.Length > MaxLength)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+            return s.ToString();
+        }
+
+        static bool ISpanParsable<string>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out string result)
+        {
+            if (s.Length <= MaxLength)
+            {
+                result = s.ToString();
+                return true;
+            }
+            else
+            {
+                result = null;
+                return false;
+            }
         }
     }
 }

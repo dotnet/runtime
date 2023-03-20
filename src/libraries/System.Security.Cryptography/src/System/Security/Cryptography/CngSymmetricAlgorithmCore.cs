@@ -116,7 +116,7 @@ namespace System.Security.Cryptography
             return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
-        private ICryptoTransform CreateCryptoTransform(bool encrypting)
+        private UniversalCryptoTransform CreateCryptoTransform(bool encrypting)
         {
             if (KeyInPlainText)
             {
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography
             return CreatePersistedLiteSymmetricCipher(ProduceCngKey, iv, encrypting, mode, feedbackSizeInBits);
         }
 
-        private ILiteSymmetricCipher CreateLiteSymmetricCipher(
+        private BasicSymmetricCipherLiteBCrypt CreateLiteSymmetricCipher(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             bool encrypting,
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography
             return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
-        private ILiteSymmetricCipher CreatePersistedLiteSymmetricCipher(
+        private BasicSymmetricCipherLiteNCrypt CreatePersistedLiteSymmetricCipher(
             Func<CngKey> cngKeyFactory,
             ReadOnlySpan<byte> iv,
             bool encrypting,

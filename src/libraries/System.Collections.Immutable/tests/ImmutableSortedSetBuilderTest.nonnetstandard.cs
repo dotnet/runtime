@@ -18,8 +18,8 @@ namespace System.Collections.Immutable.Tests
             var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
             var builder = new ImmutableSortedSet<int>.Builder(array);
 
-            ref readonly var safeRef = ref builder.ItemRef(1);
-            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref readonly int safeRef = ref builder.ItemRef(1);
+            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
 
             Assert.Equal(2, builder.ItemRef(1));
 

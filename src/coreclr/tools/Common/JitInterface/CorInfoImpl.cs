@@ -1151,12 +1151,19 @@ namespace Internal.JitInterface
                 // supplied by RyuJIT is a concrete instantiation.
                 if (type != method.OwningType)
                 {
-                    Debug.Assert(type.HasSameTypeDefinition(method.OwningType));
-                    Instantiation methodInst = method.Instantiation;
-                    method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
-                    if (methodInst.Length > 0)
+                    if (type.IsArray)
                     {
-                        method = method.MakeInstantiatedMethod(methodInst);
+                        method = ((ArrayType)type).GetArrayMethod(((ArrayMethod)method).Kind);
+                    }
+                    else
+                    {
+                        Debug.Assert(type.HasSameTypeDefinition(method.OwningType));
+                        Instantiation methodInst = method.Instantiation;
+                        method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
+                        if (methodInst.Length > 0)
+                        {
+                            method = method.MakeInstantiatedMethod(methodInst);
+                        }
                     }
                 }
             }
@@ -1174,7 +1181,7 @@ namespace Internal.JitInterface
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
 #endif
-            MethodIL methodIL = _compilation.GetMethodIL(method);
+            MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
@@ -1915,12 +1922,19 @@ namespace Internal.JitInterface
 
         private byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
         {
-            var type = HandleToObject(cls) as MetadataType;
-            if (type != null)
+            TypeDesc type = HandleToObject(cls);
+            if (type.GetTypeDefinition() is EcmaType ecmaType)
+            {
+                var reader = ecmaType.MetadataReader;
+                if (namespaceName != null)
+                    *namespaceName = reader.GetTypeNamespacePointer(ecmaType.Handle);
+                return reader.GetTypeNamePointer(ecmaType.Handle);
+            }
+            else if (type is MetadataType mdType)
             {
                 if (namespaceName != null)
-                    *namespaceName = (byte*)GetPin(StringToUTF8(type.Namespace));
-                return (byte*)GetPin(StringToUTF8(type.Name));
+                    *namespaceName = (byte*)GetPin(StringToUTF8(mdType.Namespace));
+                return (byte*)GetPin(StringToUTF8(mdType.Name));
             }
 
             if (namespaceName != null)
@@ -1996,6 +2010,9 @@ namespace Internal.JitInterface
 
                 if (metadataType.IsUnsafeValueType)
                     result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
+
+                if (metadataType.IsInlineArray)
+                    result |= CorInfoFlag.CORINFO_FLG_INDEXABLE_FIELDS;
             }
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -2226,9 +2243,10 @@ namespace Internal.JitInterface
             }
         }
 
-        private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
+        private int GatherClassGCLayout(MetadataType type, byte* gcPtrs)
         {
             int result = 0;
+            bool isInlineArray = type.IsInlineArray;
 
             foreach (var field in type.GetFields())
             {
@@ -2264,11 +2282,30 @@ namespace Internal.JitInterface
 
                 if (gcType == CorInfoGCType.TYPE_GC_OTHER)
                 {
-                    result += GatherClassGCLayout(fieldType, fieldGcPtrs);
+                    result += GatherClassGCLayout((MetadataType)fieldType, fieldGcPtrs);
                 }
                 else
                 {
                     result += MarkGcField(fieldGcPtrs, gcType);
+                }
+
+                if (isInlineArray)
+                {
+                    if (result > 0)
+                    {
+                        Debug.Assert(field.Offset.AsInt == 0);
+                        int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;
+                        int elementLayoutSize = fieldType.GetElementSize().AsInt / PointerSize;
+                        int gcPointersInElement = result;
+                        for (int offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                        {
+                            Buffer.MemoryCopy(gcPtrs, gcPtrs + offset, elementLayoutSize, elementLayoutSize);
+                            result += gcPointersInElement;
+                        }
+                    }
+
+                    // inline array has only one element field
+                    break;
                 }
             }
             return result;
@@ -2278,7 +2315,7 @@ namespace Internal.JitInterface
         {
             uint result = 0;
 
-            DefType type = (DefType)HandleToObject(cls);
+            MetadataType type = (MetadataType)HandleToObject(cls);
 
             int pointerSize = PointerSize;
 
@@ -3066,7 +3103,7 @@ namespace Internal.JitInterface
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
             return target.IsWindows ? CORINFO_OS.CORINFO_WINNT :
-                   target.IsOSX ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
+                   target.IsOSXLike ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
         }
 
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
@@ -3172,21 +3209,47 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
 
-            string result;
-            string classResult;
-            string namespaceResult;
-            string enclosingResult;
+            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            {
+                EcmaType owningType = (EcmaType)ecmaMethod.OwningType;
+                var reader = owningType.MetadataReader;
 
-            result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+                if (className != null)
+                    *className = reader.GetTypeNamePointer(owningType.Handle);
+                if (namespaceName != null)
+                *namespaceName = reader.GetTypeNamespacePointer(owningType.Handle);
 
-            if (className != null)
-                *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
-            if (namespaceName != null)
-                *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
-            if (enclosingClassName != null)
-                *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+                // Query enclosingClassName when the method is in a nested class
+                // and get the namespace of enclosing classes (nested class's namespace is empty)
+                var containingType = owningType.ContainingType as EcmaType;
+                if (containingType != null)
+                {
+                    if (enclosingClassName != null)
+                        *enclosingClassName = reader.GetTypeNamePointer(containingType.Handle);
+                    if (namespaceName != null)
+                        *namespaceName = reader.GetTypeNamespacePointer(containingType.Handle);
+                }
 
-            return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
+                return reader.GetMethodNamePointer(ecmaMethod.Handle);
+            }
+            else
+            {
+                string result;
+                string classResult;
+                string namespaceResult;
+                string enclosingResult;
+
+                result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+
+                if (className != null)
+                    *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
+                if (namespaceName != null)
+                    *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
+                if (enclosingClassName != null)
+                    *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+
+                return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
+            }
         }
 
         private uint getMethodHash(CORINFO_METHOD_STRUCT_* ftn)
@@ -3356,8 +3419,6 @@ namespace Internal.JitInterface
 
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
-        private void addActiveDependency(CORINFO_MODULE_STRUCT_* moduleFrom, CORINFO_MODULE_STRUCT_* moduleTo)
-        { throw new NotImplementedException("addActiveDependency"); }
         private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
         { throw new NotImplementedException("GetDelegateCtor"); }
         private void MethodCompileComplete(CORINFO_METHOD_STRUCT_* methHnd)
@@ -3429,7 +3490,11 @@ namespace Internal.JitInterface
             {
                 _roDataAlignment = 8;
 
-                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
+                {
+                    _roDataAlignment = 64;
+                }
+                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
                 {
                     _roDataAlignment = 32;
                 }

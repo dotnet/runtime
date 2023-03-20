@@ -8,7 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly 'b16071' {}
-.class ILGEN_622380794 {
+.class public ILGEN_622380794 {
 
 .field static	unsigned int8 field_0x0
 .field static	int16 field_0x3
@@ -19,7 +19,7 @@
 .field static	int8 field_0x22
 .field static	unsigned int8 field_0x24
 
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	22
 

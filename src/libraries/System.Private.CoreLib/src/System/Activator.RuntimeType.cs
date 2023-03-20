@@ -112,7 +112,7 @@ namespace System
                                                            object?[]? activationAttributes,
                                                            ref StackCrawlMark stackMark)
         {
-            Assembly assembly;
+            RuntimeAssembly assembly;
             if (assemblyString == null)
             {
                 assembly = Assembly.GetExecutingAssembly(ref stackMark);

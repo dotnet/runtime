@@ -41,21 +41,6 @@ inline void DoStrTest_vsnprintf_s(const char *formatstr, char* param, const char
 }
 #define DoStrTest DoStrTest_vsnprintf_s
 
-inline void DoWStrTest_vsnprintf_s(const char *formatstr, WCHAR* param, const char *checkstr)
-{
-    char buf[256] = { 0 };
-
-    Testvsnprintf(buf, 256, formatstr, param);
-    if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
-    {
-        Fail("ERROR: failed to insert wide string \"%s\" into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n",
-            convertC(param), formatstr, checkstr, buf);
-    }
-}
-#define DoWStrTest DoWStrTest_vsnprintf_s
-
-
 inline void DoCharTest_vsnprintf_s(const char *formatstr, char param, const char *checkstr)
 {
     char buf[256] = { 0 };
@@ -97,20 +82,6 @@ inline void DoNumTest_vsnprintf_s(const char *formatstr, int value, const char *
     }
 }
 #define DoNumTest DoNumTest_vsnprintf_s
-
-inline void DoI64Test_vsnprintf_s(const char *formatstr, INT64 value, char *valuestr, const char *checkstr)
-{
-    char buf[256] = { 0 };
-
-    Testvsnprintf(buf, 256, formatstr, value);
-    if (memcmp(buf, checkstr, strlen(buf) + 1) != 0)
-    {
-        Fail("ERROR: failed to insert %s into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n",
-            valuestr, formatstr, checkstr, buf);
-    }
-}
-#define DoI64Test DoI64Test_vsnprintf_s
 
 inline void DoDoubleTest_vsnprintf_s(const char *formatstr, double value, const char *checkstr1, char
  *checkstr2)

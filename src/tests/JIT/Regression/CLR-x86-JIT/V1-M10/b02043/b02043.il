@@ -10,7 +10,7 @@
 .assembly b02043
 {
 }
-.class EvenOdd
+.class public EvenOdd
 { .method static bool IsEven(int32 N)
   { .maxstack   2
     ldarg.0             // N

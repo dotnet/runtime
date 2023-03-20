@@ -26,6 +26,7 @@
   IL_0009:  ret
 } // end of global method foo
 
+.class public auto ansi Test_b102962c extends [mscorlib] System.Object {
 .method public static int32  
         main() cil managed
 {
@@ -38,4 +39,5 @@
   IL_000b:  br.s       IL_000d
 
   IL_000d:  ret
+}
 }

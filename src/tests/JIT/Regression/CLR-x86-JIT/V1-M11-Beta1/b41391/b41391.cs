@@ -26,7 +26,7 @@ namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         private double[] m_adDummyField1;
         private bool m_bDummyField2;
@@ -52,6 +52,6 @@ namespace Test
             while ((bool)m_axStatic2) { }
         }
 
-        static int Main() { try { Static2(null); } catch (NullReferenceException) { } return 100; }
+        public static int Main() { try { Static2(null); } catch (NullReferenceException) { } return 100; }
     }
 }

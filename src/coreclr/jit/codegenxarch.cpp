@@ -491,20 +491,74 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             if (vecCon->IsAllBitsSet())
             {
-                if ((attr != EA_32BYTE) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                switch (attr)
                 {
+                    case EA_8BYTE:
+                    case EA_16BYTE:
+                    {
+                        emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
+                        return;
+                    }
 #if defined(FEATURE_SIMD)
-                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
-#else
-                    emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
+                    case EA_32BYTE:
+                    {
+                        if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                        {
+                            emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+                            return;
+                        }
+                        break;
+                    }
+
+                    case EA_64BYTE:
+                    {
+                        assert(compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+                        emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
+                                                   static_cast<int8_t>(0xFF));
+                        return;
+                    }
 #endif // FEATURE_SIMD
-                    break;
+
+                    default:
+                    {
+                        unreached();
+                    }
                 }
             }
 
             if (vecCon->IsZero())
             {
-                if ((attr != EA_32BYTE) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                bool isSupported;
+
+                switch (attr)
+                {
+                    case EA_32BYTE:
+                    {
+                        isSupported = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX);
+                        break;
+                    }
+
+                    case EA_64BYTE:
+                    {
+                        isSupported = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F);
+                        break;
+                    }
+
+                    case EA_8BYTE:
+                    case EA_16BYTE:
+                    {
+                        assert((attr == EA_8BYTE) || (attr == EA_16BYTE));
+                        isSupported = true;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+
+                if (isSupported)
                 {
 #if defined(FEATURE_SIMD)
                     emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
@@ -520,34 +574,50 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 #if defined(FEATURE_SIMD)
                 case TYP_SIMD8:
                 {
-                    simd8_t              constValue = vecCon->gtSimd8Val;
-                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
+                    simd8_t constValue;
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
 
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(constValue);
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;
                 }
 
                 case TYP_SIMD12:
-                case TYP_SIMD16:
                 {
                     simd16_t constValue = {};
-
-                    if (vecCon->TypeIs(TYP_SIMD12))
-                        memcpy(&constValue, &vecCon->gtSimd12Val, sizeof(simd12_t));
-                    else
-                        constValue = vecCon->gtSimd16Val;
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd12_t));
 
                     CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
 
+                case TYP_SIMD16:
+                {
+                    simd16_t constValue;
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
+
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;
                 }
 
                 case TYP_SIMD32:
                 {
-                    simd32_t             constValue = vecCon->gtSimd32Val;
-                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd32Const(constValue);
+                    simd32_t constValue;
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd32_t));
 
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd32Const(constValue);
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
+
+                case TYP_SIMD64:
+                {
+                    simd64_t constValue;
+                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd64_t));
+
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd64Const(constValue);
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;
                 }
@@ -1284,7 +1354,8 @@ void CodeGen::genFloatReturn(GenTree* treeNode)
 //
 void CodeGen::genCodeForCompare(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE, GT_CMP));
+    assert(tree->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE, GT_BITTEST_EQ, GT_BITTEST_NE,
+                        GT_CMP, GT_TEST, GT_BT));
 
     // TODO-XArch-CQ: Check if we can use the currently set flags.
     // TODO-XArch-CQ: Check for the case where we can simply transfer the carry bit to a register
@@ -1304,76 +1375,154 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForCompare: Produce code for a GT_SELECT/GT_SELECT_HI node.
+// genCodeForJTrue: Produce code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - the node
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+    inst_RV_RV(INS_test, reg, reg, genActualType(op));
+    inst_JMP(EJ_jne, compiler->compCurBB->bbJumpDest);
+}
+
+//------------------------------------------------------------------------
+// JumpKindToCmov:
+//   Convert an emitJumpKind to the corresponding cmov instruction.
+//
+// Arguments:
+//    condition - the condition
+//
+// Returns:
+//    A cmov instruction.
+//
+instruction CodeGen::JumpKindToCmov(emitJumpKind condition)
+{
+    static constexpr instruction s_table[EJ_COUNT] = {
+        INS_none,  INS_none,  INS_cmovo,  INS_cmovno, INS_cmovb,  INS_cmovae, INS_cmove,  INS_cmovne, INS_cmovbe,
+        INS_cmova, INS_cmovs, INS_cmovns, INS_cmovp,  INS_cmovnp, INS_cmovl,  INS_cmovge, INS_cmovle, INS_cmovg,
+    };
+
+    static_assert_no_msg(s_table[EJ_NONE] == INS_none);
+    static_assert_no_msg(s_table[EJ_jmp] == INS_none);
+    static_assert_no_msg(s_table[EJ_jo] == INS_cmovo);
+    static_assert_no_msg(s_table[EJ_jno] == INS_cmovno);
+    static_assert_no_msg(s_table[EJ_jb] == INS_cmovb);
+    static_assert_no_msg(s_table[EJ_jae] == INS_cmovae);
+    static_assert_no_msg(s_table[EJ_je] == INS_cmove);
+    static_assert_no_msg(s_table[EJ_jne] == INS_cmovne);
+    static_assert_no_msg(s_table[EJ_jbe] == INS_cmovbe);
+    static_assert_no_msg(s_table[EJ_ja] == INS_cmova);
+    static_assert_no_msg(s_table[EJ_js] == INS_cmovs);
+    static_assert_no_msg(s_table[EJ_jns] == INS_cmovns);
+    static_assert_no_msg(s_table[EJ_jp] == INS_cmovp);
+    static_assert_no_msg(s_table[EJ_jnp] == INS_cmovnp);
+    static_assert_no_msg(s_table[EJ_jl] == INS_cmovl);
+    static_assert_no_msg(s_table[EJ_jge] == INS_cmovge);
+    static_assert_no_msg(s_table[EJ_jle] == INS_cmovle);
+    static_assert_no_msg(s_table[EJ_jg] == INS_cmovg);
+
+    assert((condition >= EJ_NONE) && (condition < EJ_COUNT));
+    return s_table[condition];
+}
+
+//------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_SELECT/GT_SELECTCC node.
 //
 // Arguments:
 //    select - the node
 //
 void CodeGen::genCodeForSelect(GenTreeOp* select)
 {
-#ifdef TARGET_X86
-    assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
-#else
-    assert(select->OperIs(GT_SELECT));
-#endif
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
-    regNumber dstReg = select->GetRegNum();
     if (select->OperIs(GT_SELECT))
     {
-        genConsumeReg(select->AsConditional()->gtCond);
+        genConsumeRegs(select->AsConditional()->gtCond);
     }
 
     genConsumeOperands(select);
 
-    instruction cmovKind = INS_cmovne;
-    GenTree*    trueVal  = select->gtOp1;
-    GenTree*    falseVal = select->gtOp2;
+    regNumber dstReg = select->GetRegNum();
 
-    // If the 'true' operand was allocated the same register as the target
-    // register then flip it to the false value so we can skip a reg-reg mov.
-    if (trueVal->isUsedFromReg() && (trueVal->GetRegNum() == dstReg))
-    {
-        std::swap(trueVal, falseVal);
-        cmovKind = INS_cmove;
-    }
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    GenCondition cc = GenCondition::NE;
 
     if (select->OperIs(GT_SELECT))
     {
-        // TODO-CQ: Support contained relops here.
-        assert(select->AsConditional()->gtCond->isUsedFromReg());
+        GenTree*  cond    = select->AsConditional()->gtCond;
+        regNumber condReg = cond->GetRegNum();
+        GetEmitter()->emitIns_R_R(INS_test, emitActualTypeSize(cond), condReg, condReg);
+    }
+    else
+    {
+        cc = select->AsOpCC()->gtCondition;
+    }
 
-        regNumber condReg = select->AsConditional()->gtCond->GetRegNum();
-        GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+    // The usual codegen will be
+    // mov targetReg, falseValue
+    // cmovne targetReg, trueValue
+    //
+    // However, if the 'true' operand was allocated the same register as the
+    // target register then prefer to generate
+    //
+    // mov targetReg, trueValue
+    // cmove targetReg, falseValue
+    //
+    // so the first mov is elided.
+    //
+    if (falseVal->isUsedFromReg() && (falseVal->GetRegNum() == dstReg))
+    {
+        std::swap(trueVal, falseVal);
+        cc = GenCondition::Reverse(cc);
+    }
+
+    // If there is a conflict then swap the condition anyway. LSRA should have
+    // ensured the other way around has no conflict.
+    if ((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
+    {
+        std::swap(trueVal, falseVal);
+        cc = GenCondition::Reverse(cc);
+    }
+
+    GenConditionDesc desc = GenConditionDesc::Get(cc);
+
+    // There may also be a conflict with the falseVal in case this is an AND
+    // condition. Once again, after swapping there should be no conflict as
+    // ensured by LSRA.
+    if ((desc.oper == GT_AND) && (falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
+    {
+        std::swap(trueVal, falseVal);
+        cc   = GenCondition::Reverse(cc);
+        desc = GenConditionDesc::Get(cc);
     }
 
     inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
-    inst_RV_TT(cmovKind, emitTypeSize(select), dstReg, trueVal);
+
+    assert(!trueVal->isContained() || trueVal->isUsedFromMemory());
+    assert((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
+    inst_RV_TT(JumpKindToCmov(desc.jumpKind1), emitTypeSize(select), dstReg, trueVal);
+
+    if (desc.oper == GT_AND)
+    {
+        assert(falseVal->isUsedFromReg());
+        assert((falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
+        inst_RV_TT(JumpKindToCmov(emitter::emitReverseJumpKind(desc.jumpKind2)), emitTypeSize(select), dstReg,
+                   falseVal);
+    }
+    else if (desc.oper == GT_OR)
+    {
+        assert(trueVal->isUsedFromReg());
+        inst_RV_TT(JumpKindToCmov(desc.jumpKind2), emitTypeSize(select), dstReg, trueVal);
+    }
 
     genProduceReg(select);
-}
-
-//------------------------------------------------------------------------
-// genCodeForBT: Generates code for a GT_BT node.
-//
-// Arguments:
-//    tree - The node.
-//
-void CodeGen::genCodeForBT(GenTreeOp* bt)
-{
-    assert(bt->OperIs(GT_BT));
-
-    GenTree*  op1  = bt->gtGetOp1();
-    GenTree*  op2  = bt->gtGetOp2();
-    var_types type = genActualType(op1->TypeGet());
-
-    assert(op1->isUsedFromReg() && op2->isUsedFromReg());
-    assert((genTypeSize(type) >= genTypeSize(TYP_INT)) && (genTypeSize(type) <= genTypeSize(TYP_I_IMPL)));
-
-    genConsumeOperands(bt);
-    // Note that the emitter doesn't fully support INS_bt, it only supports the reg,reg
-    // form and encodes the registers in reverse order. To get the correct order we need
-    // to reverse the operands when calling emitIns_R_R.
-    GetEmitter()->emitIns_R_R(INS_bt, emitTypeSize(type), op2->GetRegNum(), op1->GetRegNum());
 }
 
 // clang-format off
@@ -1743,14 +1892,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_INTRINSIC:
-            genIntrinsic(treeNode);
+            genIntrinsic(treeNode->AsIntrinsic());
             break;
-
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            genSIMDIntrinsic(treeNode->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -1770,12 +1913,17 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_GT:
         case GT_TEST_EQ:
         case GT_TEST_NE:
+        case GT_BITTEST_EQ:
+        case GT_BITTEST_NE:
         case GT_CMP:
+        case GT_TEST:
+        case GT_BT:
+            genConsumeOperands(treeNode->AsOp());
             genCodeForCompare(treeNode->AsOp());
             break;
 
         case GT_JTRUE:
-            genCodeForJumpTrue(treeNode->AsOp());
+            genCodeForJTrue(treeNode->AsOp());
             break;
 
         case GT_JCC:
@@ -1790,14 +1938,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSelect(treeNode->AsConditional());
             break;
 
-#ifdef TARGET_X86
-        case GT_SELECT_HI:
+        case GT_SELECTCC:
             genCodeForSelect(treeNode->AsOp());
-            break;
-#endif
-
-        case GT_BT:
-            genCodeForBT(treeNode->AsOp());
             break;
 
         case GT_RETURNTRAP:
@@ -2134,9 +2276,6 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
     if (delta == 0)
     {
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, /* canSkip */ false);
-#ifdef USING_SCOPE_INFO
-        psiMoveESPtoEBP();
-#endif // USING_SCOPE_INFO
     }
     else
     {
@@ -2248,13 +2387,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
             *pInitRegZeroed = false;
         }
     }
-
-#ifdef USING_SCOPE_INFO
-    if (!doubleAlignOrFramePointerUsed())
-    {
-        psiAdjustStackLevel(frameSize);
-    }
-#endif // USING_SCOPE_INFO
 }
 
 //------------------------------------------------------------------------
@@ -2934,11 +3066,13 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                                ? YMM_REGSIZE_BYTES
                                : XMM_REGSIZE_BYTES;
 
+        bool zeroing = false;
         if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
         {
             // If the source is constant 0 then always use xorps, it's faster
             // than copying the constant from a GPR to a XMM register.
             emit->emitIns_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg);
+            zeroing = true;
         }
         else
         {
@@ -2958,6 +3092,18 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         instruction simdMov      = simdUnalignedMovIns();
         unsigned    bytesWritten = 0;
 
+        auto emitSimdMovs = [&]() {
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        };
+
         while (bytesWritten < size)
         {
 #ifdef TARGET_X86
@@ -2969,31 +3115,43 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
             if (bytesWritten + regSize > size)
             {
-                assert(srcIntReg != REG_NA);
                 break;
             }
 
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
-
+            emitSimdMovs();
             dstOffset += regSize;
             bytesWritten += regSize;
 
-            if (regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES)
+            if (!zeroing && regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES)
             {
                 regSize = XMM_REGSIZE_BYTES;
             }
         }
 
         size -= bytesWritten;
+
+        // Handle the remainder by overlapping with previosly processed data (only for zeroing)
+        if (zeroing && (size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
+        {
+            if (isPow2(size) && (size <= REGSIZE_BYTES))
+            {
+                // For sizes like 1,2,4 and 8 we delegate handling to normal stores
+                // because that will be a single instruction that is smaller than SIMD mov
+            }
+            else
+            {
+                // if reminder is <=16 then switch to XMM
+                regSize = size <= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : regSize;
+
+                // Rewind dstOffset so we can fit a vector for the while remainder
+                dstOffset -= (regSize - size);
+                emitSimdMovs();
+                size = 0;
+            }
+        }
     }
+
+    assert((srcIntReg != REG_NA) || (size == 0));
 
 // Fill the remainder using normal stores.
 #ifdef TARGET_AMD64
@@ -3205,35 +3363,57 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                ? YMM_REGSIZE_BYTES
                                : XMM_REGSIZE_BYTES;
 
-        while (size >= regSize)
-        {
-            for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        auto emitSimdMovs = [&]() {
+            if (srcLclNum != BAD_VAR_NUM)
             {
-                if (srcLclNum != BAD_VAR_NUM)
-                {
-                    emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-                }
-                else
-                {
-                    emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                        srcAddrIndexScale, srcOffset);
-                }
-
-                if (dstLclNum != BAD_VAR_NUM)
-                {
-                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-                }
-                else
-                {
-                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                        dstAddrIndexScale, dstOffset);
-                }
+                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
             }
 
-            // Size is too large for YMM moves, try stepping down to XMM size to finish SIMD copies.
-            if (regSize == YMM_REGSIZE_BYTES)
+            if (dstLclNum != BAD_VAR_NUM)
             {
-                regSize = XMM_REGSIZE_BYTES;
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        };
+
+        while (size >= regSize)
+        {
+            emitSimdMovs();
+            srcOffset += regSize;
+            dstOffset += regSize;
+            size -= regSize;
+        }
+
+        assert((size >= 0) && (size < regSize));
+
+        // Handle the remainder by overlapping with previosly processed data
+        if ((size > 0) && (size < regSize))
+        {
+            assert(regSize >= XMM_REGSIZE_BYTES);
+
+            if (isPow2(size) && (size <= REGSIZE_BYTES))
+            {
+                // For sizes like 1,2,4 and 8 (on AMD64) we delegate handling to normal load/stores
+            }
+            else
+            {
+                // if reminder is <=16 then switch to XMM
+                regSize = size <= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : regSize;
+
+                // Rewind dstOffset so we can fit a vector for the while remainder
+                srcOffset -= (regSize - size);
+                dstOffset -= (regSize - size);
+                emitSimdMovs();
+                size = 0;
             }
         }
     }
@@ -3505,7 +3685,8 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     }
 
     unsigned loadSize = putArgNode->GetArgLoadSize();
-    assert(!src->GetLayout(compiler)->HasGCPtr() && (loadSize <= CPBLK_UNROLL_LIMIT));
+    assert(!src->GetLayout(compiler)->HasGCPtr() &&
+           (loadSize <= compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy)));
 
     unsigned  offset     = 0;
     regNumber xmmTmpReg  = REG_NA;
@@ -3540,7 +3721,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
         //       this probably needs to be changed.
 
         // Load
-        genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmTmpReg, src, offset);
+        genCodeForLoadOffset(INS_movdqu, EA_16BYTE, xmmTmpReg, src, offset);
         // Store
         genStoreRegToStackArg(TYP_STRUCT, xmmTmpReg, offset);
 
@@ -3808,11 +3989,9 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     // Make sure we got the arguments of the cpobj operation in the right registers
     GenTree*  dstAddr     = cpObjNode->Addr();
     GenTree*  source      = cpObjNode->Data();
-    GenTree*  srcAddr     = nullptr;
     var_types srcAddrType = TYP_BYREF;
     bool      dstOnStack  = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
 
-#ifdef DEBUG
     // If the GenTree node has data about GC pointers, this means we're dealing
     // with CpObj, so this requires special logic.
     assert(cpObjNode->GetLayout()->HasGCPtr());
@@ -3824,7 +4003,10 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     if (!source->IsLocal())
     {
         assert(source->gtOper == GT_IND);
-        srcAddr                   = source->gtGetOp1();
+        GenTree* srcAddr = source->gtGetOp1();
+        srcAddrType      = srcAddr->TypeGet();
+
+#ifdef DEBUG
         GenTree* actualSrcAddr    = srcAddr->gtSkipReloadOrCopy();
         GenTree* actualDstAddr    = dstAddr->gtSkipReloadOrCopy();
         unsigned srcLclVarNum     = BAD_VAR_NUM;
@@ -3845,9 +4027,8 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                ((srcLclVarNum == dstLclVarNum) && !isDstAddrLiveOut));
         assert((actualDstAddr->GetRegNum() != REG_RDI) || !isDstAddrLiveOut ||
                ((srcLclVarNum == dstLclVarNum) && !isSrcAddrLiveOut));
-        srcAddrType = srcAddr->TypeGet();
-    }
 #endif // DEBUG
+    }
 
     // Consume the operands and get them into the right registers.
     // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
@@ -4774,18 +4955,18 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     assert(tree->OperIs(GT_LCL_FLD));
 
     var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
-
-    noway_assert(targetReg != REG_NA);
 
 #ifdef FEATURE_SIMD
     // Loading of TYP_SIMD12 (i.e. Vector3) field
     if (targetType == TYP_SIMD12)
     {
-        genLoadLclTypeSIMD12(tree);
+        genLoadLclTypeSimd12(tree);
         return;
     }
 #endif
+
+    regNumber targetReg = tree->GetRegNum();
+    noway_assert(targetReg != REG_NA);
 
     noway_assert(targetType != TYP_STRUCT);
 
@@ -4825,7 +5006,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         // Loading of TYP_SIMD12 (i.e. Vector3) variable
         if (tree->TypeGet() == TYP_SIMD12)
         {
-            genLoadLclTypeSIMD12(tree);
+            genLoadLclTypeSimd12(tree);
             return;
         }
 #endif // defined(FEATURE_SIMD) && defined(TARGET_X86)
@@ -4854,7 +5035,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // storing of TYP_SIMD12 (i.e. Vector3) field
     if (targetType == TYP_SIMD12)
     {
-        genStoreLclTypeSIMD12(tree);
+        genStoreLclTypeSimd12(tree);
         return;
     }
 #endif // FEATURE_SIMD
@@ -4889,17 +5070,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     {
         GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
     }
-
-    // Updating variable liveness after instruction was emitted
-    if (targetReg != REG_NA)
-    {
-        genProduceReg(tree);
-    }
-    else
-    {
-        genUpdateLife(tree);
-        varDsc->SetRegNum(REG_STK);
-    }
+    genUpdateLifeStore(tree, targetReg, varDsc);
 }
 
 //------------------------------------------------------------------------
@@ -4955,7 +5126,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         // storing of TYP_SIMD12 (i.e. Vector3) field
         if (targetType == TYP_SIMD12)
         {
-            genStoreLclTypeSIMD12(lclNode);
+            genStoreLclTypeSimd12(lclNode);
             return;
         }
 #endif // FEATURE_SIMD
@@ -5018,16 +5189,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                                 emitTypeSize(targetType));
             }
         }
-        // Updating variable liveness after instruction was emitted
-        if (targetReg != REG_NA)
-        {
-            genProduceReg(lclNode);
-        }
-        else
-        {
-            genUpdateLife(lclNode);
-            varDsc->SetRegNum(REG_STK);
-        }
+        genUpdateLifeStore(lclNode, targetReg, varDsc);
     }
 }
 
@@ -5137,7 +5299,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     // Handling of Vector3 type values loaded through indirection.
     if (tree->TypeGet() == TYP_SIMD12)
     {
-        genLoadIndTypeSIMD12(tree);
+        genLoadIndTypeSimd12(tree);
         return;
     }
 #endif // FEATURE_SIMD
@@ -5176,7 +5338,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     // Storing Vector3 of size 12 bytes through indirection
     if (tree->TypeGet() == TYP_SIMD12)
     {
-        genStoreIndTypeSIMD12(tree);
+        genStoreIndTypeSimd12(tree);
         return;
     }
 #endif // FEATURE_SIMD
@@ -5340,6 +5502,12 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
                             attr = emitActualTypeSize(baseType);
                             break;
+                        }
+
+                        case NI_Vector128_GetElement:
+                        {
+                            assert(baseType == TYP_FLOAT);
+                            FALLTHROUGH;
                         }
 
                         case NI_SSE2_Extract:
@@ -5701,7 +5869,8 @@ void CodeGen::genCall(GenTreeCall* call)
     // To limit code size increase impact: we only issue VZEROUPPER before PInvoke call, not issue
     // VZEROUPPER after PInvoke call because transition penalty from legacy SSE to AVX only happens
     // when there's preceding 256-bit AVX to legacy SSE transition penalty.
-    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && GetEmitter()->Contains256bitAVX())
+    // This applies to 512bit AVX512 instructions as well.
+    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && (GetEmitter()->Contains256bitOrMoreAVX()))
     {
         assert(compiler->canUseVexEncoding());
         instGen(INS_vzeroupper);
@@ -6269,7 +6438,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
             assert(typeHnd != nullptr);
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
@@ -6319,9 +6488,9 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             // Register argument
             CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_X86
-            noway_assert(
-                isRegParamType(genActualType(varDsc->TypeGet())) ||
-                (varTypeIsStruct(varDsc->TypeGet()) && compiler->isTrivialPointerSizedStruct(varDsc->GetStructHnd())));
+            noway_assert(isRegParamType(genActualType(varDsc->TypeGet())) ||
+                         ((varDsc->TypeGet() == TYP_STRUCT) &&
+                          compiler->isTrivialPointerSizedStruct(varDsc->GetLayout()->GetClassHandle())));
 #else
             noway_assert(isRegParamType(genActualType(varDsc->TypeGet())));
 #endif // TARGET_X86
@@ -6481,15 +6650,13 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 //
 void CodeGen::genCompareFloat(GenTree* treeNode)
 {
-    assert(treeNode->OperIsCompare());
+    assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
 
     GenTreeOp* tree    = treeNode->AsOp();
     GenTree*   op1     = tree->gtOp1;
     GenTree*   op2     = tree->gtOp2;
     var_types  op1Type = op1->TypeGet();
     var_types  op2Type = op2->TypeGet();
-
-    genConsumeOperands(tree);
 
     assert(varTypeIsFloating(op1Type));
     assert(op1Type == op2Type);
@@ -6498,12 +6665,20 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     instruction ins;
     emitAttr    cmpAttr;
 
-    GenCondition condition = GenCondition::FromFloatRelop(treeNode);
-
-    if (condition.PreferSwap())
+    GenCondition condition;
+    if (!treeNode->OperIs(GT_CMP))
     {
-        condition = GenCondition::Swap(condition);
-        std::swap(op1, op2);
+        condition = GenCondition::FromFloatRelop(treeNode);
+
+        if (condition.PreferSwap())
+        {
+            condition = GenCondition::Swap(condition);
+            std::swap(op1, op2);
+        }
+    }
+    else
+    {
+        assert(targetReg == REG_NA);
     }
 
     ins     = (op1Type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
@@ -6553,7 +6728,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
 //    None.
 void CodeGen::genCompareInt(GenTree* treeNode)
 {
-    assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
+    assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP, GT_TEST, GT_BT));
 
     GenTreeOp* tree          = treeNode->AsOp();
     GenTree*   op1           = tree->gtOp1;
@@ -6564,15 +6739,13 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     emitter*   emit          = GetEmitter();
     bool       canReuseFlags = false;
 
-    genConsumeOperands(tree);
-
     assert(!op1->isContainedIntOrIImmed());
     assert(!varTypeIsFloating(op2Type));
 
     instruction ins;
     var_types   type = TYP_UNKNOWN;
 
-    if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE))
+    if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE, GT_TEST))
     {
         ins = INS_test;
 
@@ -6591,6 +6764,21 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         {
             type = TYP_UBYTE;
         }
+    }
+    else if (tree->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE, GT_BT))
+    {
+        ins = INS_bt;
+
+        // BT is a bit special in that the index is used modulo 32. We allow
+        // mixing the types of op1/op2 because of that -- even if the index is
+        // TYP_INT but the op size is TYP_LONG the instruction itself will
+        // ignore the upper part of the register anyway.
+        type = genActualType(op1->TypeGet());
+
+        // The emitter's general logic handles op1/op2 for bt reversed. As a
+        // small hack we reverse it in codegen instead of special casing the
+        // emitter throughout.
+        std::swap(op1, op2);
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
@@ -6664,21 +6852,10 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     assert(genTypeSize(type) <= genTypeSize(TYP_I_IMPL));
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
-    // Sign jump optimization should only be set the following check
-    assert((tree->gtFlags & GTF_RELOP_SJUMP_OPT) == 0);
 
     var_types targetType = tree->TypeGet();
 
-    if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), tree->OperGet()))
-    {
-        JITDUMP("Not emitting compare due to flags being already set\n");
-    }
-    else if (canReuseFlags && emit->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(type), tree))
-    {
-        JITDUMP("Not emitting compare due to sign being already set, follow up instr will transform jump\n");
-        tree->gtFlags |= GTF_RELOP_SJUMP_OPT;
-    }
-    else
+    if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, type))
     {
         // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
         if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
@@ -6700,6 +6877,111 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         inst_SETCC(GenCondition::FromIntegralRelop(tree), targetType, targetReg);
         genProduceReg(tree);
     }
+}
+
+//------------------------------------------------------------------------
+// genCanAvoidEmittingCompareAgainstZero: A peephole to check if we can avoid
+// emitting a compare against zero because the register was previously used
+// with an instruction that sets the zero flag.
+//
+// Parameters:
+//    tree   - the compare node
+//    opType - type of the compare
+//
+// Returns:
+//    True if the compare can be omitted.
+//
+bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType)
+{
+    GenTree* op1 = tree->gtGetOp1();
+    assert(tree->gtGetOp2()->IsIntegralConst(0));
+
+    if (!op1->isUsedFromReg())
+    {
+        return false;
+    }
+
+    GenTree*      consumer    = nullptr;
+    GenCondition* mutableCond = nullptr;
+    GenCondition  cond;
+
+    if (tree->OperIsCompare())
+    {
+        cond = GenCondition::FromIntegralRelop(tree);
+    }
+    else
+    {
+        consumer = genTryFindFlagsConsumer(tree, &mutableCond);
+        if (consumer == nullptr)
+        {
+            return false;
+        }
+
+        cond = *mutableCond;
+    }
+
+    if (GetEmitter()->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(opType), cond))
+    {
+        JITDUMP("Not emitting compare due to flags being already set\n");
+        return true;
+    }
+
+    if ((mutableCond != nullptr) &&
+        GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(opType), cond))
+    {
+        JITDUMP("Not emitting compare due to sign being already set; modifying [%06u] to check sign flag\n",
+                Compiler::dspTreeID(consumer));
+        *mutableCond =
+            (cond.GetCode() == GenCondition::SLT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// genTryFindFlagsConsumer: Given a node that produces flags, try to look ahead
+// for the node that consumes those flags.
+//
+// Parameters:
+//    producer - the node that produces CPU flags
+//    cond     - [out] the pointer to the condition inside that consumer.
+//
+// Returns:
+//    A node that consumes the flags, or nullptr if no such node was found.
+//
+GenTree* CodeGen::genTryFindFlagsConsumer(GenTree* producer, GenCondition** cond)
+{
+    assert((producer->gtFlags & GTF_SET_FLAGS) != 0);
+    // We allow skipping some nodes where we know for sure that the flags are
+    // not consumed. In particular we handle resolution nodes. If we see any
+    // other node after the compare (which is an uncommon case, happens
+    // sometimes with decomposition) then we assume it could consume the flags.
+    for (GenTree* candidate = producer->gtNext; candidate != nullptr; candidate = candidate->gtNext)
+    {
+        if (candidate->OperIs(GT_JCC, GT_SETCC))
+        {
+            *cond = &candidate->AsCC()->gtCondition;
+            return candidate;
+        }
+
+        if (candidate->OperIs(GT_SELECTCC))
+        {
+            *cond = &candidate->AsOpCC()->gtCondition;
+            return candidate;
+        }
+
+        // The following nodes can be inserted between the compare and the user
+        // of the flags by resolution. Codegen for these will never modify CPU
+        // flags.
+        if (!candidate->OperIs(GT_LCL_VAR, GT_COPY, GT_SWAP))
+        {
+            // For other nodes we do the conservative thing.
+            return nullptr;
+        }
+    }
+
+    return nullptr;
 }
 
 #if !defined(TARGET_64BIT)
@@ -6908,6 +7190,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         case GenIntCastDesc::LOAD_SIGN_EXTEND_INT:
             ins     = INS_movsxd;
             insSize = 4;
+            canSkip = compiler->opts.OptimizationEnabled() && emit->AreUpper32BitsSignExtended(srcReg);
             break;
 #endif
         case GenIntCastDesc::COPY:
@@ -7657,10 +7940,10 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 // Return value:
 //    None
 //
-void CodeGen::genIntrinsic(GenTree* treeNode)
+void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
     // Handle intrinsics that can be implemented by target-specific instructions
-    switch (treeNode->AsIntrinsic()->gtIntrinsicName)
+    switch (treeNode->gtIntrinsicName)
     {
         case NI_System_Math_Abs:
             genSSE2BitwiseOp(treeNode);
@@ -7676,7 +7959,7 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
         case NI_System_Math_Sqrt:
         {
             // Both operand and its result must be of the same floating point type.
-            GenTree* srcNode = treeNode->AsOp()->gtOp1;
+            GenTree* srcNode = treeNode->gtGetOp1();
             assert(varTypeIsFloating(srcNode));
             assert(srcNode->TypeGet() == treeNode->TypeGet());
 
@@ -7686,6 +7969,23 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             GetEmitter()->emitInsBinary(ins, emitTypeSize(treeNode), treeNode, srcNode);
             break;
         }
+
+#if defined(FEATURE_SIMD)
+        // The handling is a bit more complex so genSimdUpperSave/Restore
+        // handles genConsumeOperands and genProduceReg
+
+        case NI_SIMD_UpperRestore:
+        {
+            genSimdUpperRestore(treeNode);
+            return;
+        }
+
+        case NI_SIMD_UpperSave:
+        {
+            genSimdUpperSave(treeNode);
+            return;
+        }
+#endif // FEATURE_SIMD
 
         default:
             assert(!"genIntrinsic: Unsupported intrinsic");
@@ -8112,7 +8412,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             if (fieldType == TYP_SIMD12)
             {
                 assert(genIsValidFloatReg(simdTmpReg));
-                genStoreSIMD12ToStack(argReg, simdTmpReg);
+                genStoreSimd12ToStack(argReg, simdTmpReg);
             }
             else
 #endif // defined(FEATURE_SIMD)
@@ -8340,7 +8640,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
     {
         ins = INS_movdqu;
         // This should be changed!
-        attr = EA_8BYTE;
+        attr = EA_16BYTE;
         size = 16;
     }
     else
@@ -8407,7 +8707,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
 #if defined(TARGET_X86) && defined(FEATURE_SIMD)
     if (putArgStk->isSIMD12())
     {
-        genPutArgStkSIMD12(putArgStk);
+        genPutArgStkSimd12(putArgStk);
         return;
     }
 #endif // defined(TARGET_X86) && defined(FEATURE_SIMD)
@@ -8763,7 +9063,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
 /*****************************************************************************
 * Unit testing of the XArch emitter: generate a bunch of instructions into the prolog
-* (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late
+* (it's as good a place as any), then use DOTNET_JitLateDisasm=* to see if the late
 * disassembler thinks the instructions as the same as we do.
 */
 
@@ -9546,12 +9846,6 @@ void CodeGen::genPushCalleeSavedRegisters()
         {
             inst_RV(INS_push, reg, TYP_REF);
             compiler->unwindPush(reg);
-#ifdef USING_SCOPE_INFO
-            if (!doubleAlignOrFramePointerUsed())
-            {
-                psiAdjustStackLevel(REGSIZE_BYTES);
-            }
-#endif // USING_SCOPE_INFO
             rsPushRegs &= ~regBit;
         }
     }
@@ -10512,7 +10806,6 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     assert(compiler->compGeneratingProlog);
     assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
-    assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
 
     emitter*  emit        = GetEmitter();
     regNumber frameReg    = genFramePointerReg();
@@ -10872,7 +11165,7 @@ void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
     bool emitVzeroUpper = false;
     if (check256bitOnly)
     {
-        emitVzeroUpper = GetEmitter()->Contains256bitAVX();
+        emitVzeroUpper = GetEmitter()->Contains256bitOrMoreAVX();
     }
     else
     {

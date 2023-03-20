@@ -93,8 +93,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             int resultOrIndex = ObjectHeader.TryAcquire(obj);
             if (resultOrIndex < 0)
@@ -149,20 +148,14 @@ namespace System.Threading
 
         public static void Pulse(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             GetCondition(obj).SignalOne();
         }
 
         public static void PulseAll(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             GetCondition(obj).SignalAll();
         }

@@ -9,10 +9,12 @@
 }
 .assembly 'b84586'{}
 
+.class public auto ansi Test_b84586 extends [mscorlib] System.Object {
 .method public static int32 main() {
 .entrypoint
     tail. call    int32 method2()
     ret
+}
 }
 .method public     static    int32 method2() {
     ldc.i4      100

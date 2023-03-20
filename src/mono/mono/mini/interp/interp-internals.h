@@ -26,8 +26,11 @@
 #define TRACING_FLAG 0x1
 #define PROFILING_FLAG 0x2
 
-#define MINT_VT_ALIGNMENT 8
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
+// This alignment provides us with straight forward support for Vector128
+#define MINT_STACK_ALIGNMENT (2 * MINT_STACK_SLOT_SIZE)
+#define MINT_SIMD_ALIGNMENT (MINT_STACK_ALIGNMENT)
+#define SIZEOF_V128 16
 
 #define INTERP_STACK_SIZE (1024*1024)
 #define INTERP_REDZONE_SIZE (8*1024)
@@ -99,6 +102,10 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
+#if !HOST_BROWSER && __GNUC__
+#define INTERP_ENABLE_SIMD
+#endif
+
 #define INTERP_IMETHOD_TAG_1(im) ((gpointer)((mono_u)(im) | 1))
 #define INTERP_IMETHOD_IS_TAGGED_1(im) ((mono_u)(im) & 1)
 #define INTERP_IMETHOD_UNTAG_1(im) ((InterpMethod*)((mono_u)(im) & ~1))
@@ -169,6 +176,13 @@ struct InterpMethod {
 	unsigned int vararg : 1;
 	unsigned int optimized : 1;
 	unsigned int needs_thread_attach : 1;
+	// If set, this method is MulticastDelegate.Invoke
+	unsigned int is_invoke : 1;
+#if HOST_BROWSER
+	unsigned int contains_traces : 1;
+	guint16 *backward_branch_offsets;
+	unsigned int backward_branch_offsets_count;
+#endif
 #if PROFILE_INTERP
 	long calls;
 	long opcounts;
@@ -297,9 +311,6 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 
 void
 mono_interp_error_cleanup (MonoError *error);
-
-gboolean
-mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method);
 
 #if HOST_BROWSER
 

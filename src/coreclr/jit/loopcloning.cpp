@@ -213,7 +213,15 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
     GenTree* op1Tree = op1.ToGenTree(comp, bb);
     GenTree* op2Tree = op2.ToGenTree(comp, bb);
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
-    return comp->gtNewOperNode(invert ? GenTree::ReverseRelop(oper) : oper, TYP_INT, op1Tree, op2Tree);
+
+    GenTree* result = comp->gtNewOperNode(invert ? GenTree::ReverseRelop(oper) : oper, TYP_INT, op1Tree, op2Tree);
+
+    if (compareUnsigned)
+    {
+        result->gtFlags |= GTF_UNSIGNED;
+    }
+
+    return result;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -963,12 +971,14 @@ void LC_ArrayDeref::DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStac
     }
     else
     {
-        // Adjust for level0 having just 1 condition and push condition (i < a.len).
+        // Adjust for level0 having just 1 condition and push conditions (i >= 0) && (i < a.len).
+        // We fold the two compares into one using unsigned compare, since we know a.len is non-negative.
+        //
         LC_Array arrLen = array;
         arrLen.oper     = LC_Array::ArrLen;
         arrLen.dim      = level - 1;
-        (*conds)[level * 2 - 1]->Push(
-            LC_Condition(GT_LT, LC_Expr(LC_Ident::CreateVar(Lcl())), LC_Expr(LC_Ident::CreateArrAccess(arrLen))));
+        (*conds)[level * 2 - 1]->Push(LC_Condition(GT_LT, LC_Expr(LC_Ident::CreateVar(Lcl())),
+                                                   LC_Expr(LC_Ident::CreateArrAccess(arrLen)), /*unsigned*/ true));
 
         // Push condition (a[i] != null)
         LC_Array arrTmp = array;
@@ -1524,7 +1534,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
         assert(maxRank != -1);
 
         // First level will always yield the null-check, since it is made of the array base variables.
-        // All other levels (dimensions) will yield two conditions ex: (i < a.length && a[i] != null)
+        // All other levels (dimensions) will yield two conditions ex: ((unsigned) i < a.length && a[i] != null)
         // So add 1 after rank * 2.
         const unsigned condBlocks = (unsigned)maxRank * 2 + 1;
 
@@ -1700,7 +1710,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
 
                 indir->gtFlags |= GTF_ORDER_SIDEEFF | GTF_IND_NONFAULTING;
                 indir->gtFlags &= ~GTF_EXCEPT;
-                assert(!fgStmtListThreaded);
+                assert(fgNodeThreading == NodeThreading::None);
                 gtUpdateStmtSideEffects(stmt);
 
                 JITDUMP("After:\n");
@@ -3156,7 +3166,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
 
 //----------------------------------------------------------------------------
 // optLoopCloningEnabled: Determine whether loop cloning is allowed. It is allowed
-// in release builds. For debug builds, use the value of the COMPlus_JitCloneLoops
+// in release builds. For debug builds, use the value of the DOTNET_JitCloneLoops
 // flag (which defaults to 1, or allowed).
 //
 // Return Value:
@@ -3286,9 +3296,8 @@ PhaseStatus Compiler::optCloneLoops()
     if (optLoopsCloned > 0)
     {
         JITDUMP("Recompute reachability and dominators after loop cloning\n");
-        constexpr bool computePreds = false;
         // TODO: recompute the loop table, to include the slow loop path in the table?
-        fgUpdateChangedFlowGraph(computePreds);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
 #ifdef DEBUG

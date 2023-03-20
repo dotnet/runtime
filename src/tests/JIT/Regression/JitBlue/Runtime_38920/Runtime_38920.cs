@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-class TestStructs
+public class TestStructs
 {
     static int exitStatus = 100;
 

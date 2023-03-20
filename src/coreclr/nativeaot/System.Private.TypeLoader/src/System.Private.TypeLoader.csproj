@@ -265,6 +265,7 @@
     <Compile Include="Internal\TypeSystem\MethodDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodForInstantiatedType.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\NoMetadataMethodDesc.cs" />
+    <Compile Include="Internal\TypeSystem\RuntimeGenericParameterDesc.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.Canon.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.cs" />
     <Compile Include="Internal\TypeSystem\RuntimeNoMetadataType.cs" />

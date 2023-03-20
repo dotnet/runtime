@@ -59,11 +59,9 @@ The best way to create a minimal reproduction is gradually removing code and dep
 
 ## Contributing Changes
 
-Project maintainers will merge changes that improve the product significantly and broadly align with the [.NET Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
+Project maintainers will merge changes that improve the product significantly.
 
-Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. .NET is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
-
-Contributions must also satisfy the other published guidelines defined in this document as well as in [pr-guide docs](docs/pr-guide.md).
+The [Pull Request Guide](docs/pr-guide.md) and [Copyright](docs/project/copyright.md) docs define additional guidance.
 
 ### DOs and DON'Ts
 

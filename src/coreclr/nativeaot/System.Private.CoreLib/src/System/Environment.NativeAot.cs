@@ -28,7 +28,6 @@ namespace System
         {
             s_latchedExitCode = exitCode;
             ShutdownCore();
-            RuntimeImports.RhpShutdown();
             ExitRaw();
         }
 

@@ -102,8 +102,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             // This logic is written to match CoreCLR's behavior.
             return other is Type && other is IRuntimeMemberInfoWithNoMetadataDefinition;

@@ -19,7 +19,7 @@ namespace System.Net
         private const int OSStatus_noErr = 0;
         private const int OSStatus_errSSLWouldBlock = -9803;
         private const int InitialBufferSize = 2048;
-        private SafeSslHandle _sslContext;
+        private readonly SafeSslHandle _sslContext;
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
@@ -169,7 +169,9 @@ namespace System.Net
                     SetProtocols(sslContext, sslAuthenticationOptions.EnabledSslProtocols);
                 }
 
-                if (sslAuthenticationOptions.CertificateContext != null)
+                // SslBreakOnCertRequested does not seem to do anything when we already provide the cert here.
+                // So we set it only for server in order to reliably detect whether the peer asked for it on client.
+                if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.IsServer)
                 {
                     SetCertificate(sslContext, sslAuthenticationOptions.CertificateContext);
                 }

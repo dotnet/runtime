@@ -322,7 +322,7 @@ namespace System.Security.Cryptography
 
             if (fOAEP)
             {
-                int rsaSize = (KeySize + 7) / 8;
+                int rsaSize = GetMaxOutputSize();
                 const int OaepSha1Overhead = 20 + 20 + 2;
 
                 // Normalize the Windows 7 and Windows 8.1+ exception
@@ -674,7 +674,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static Exception PaddingModeNotSupported()
+        private static CryptographicException PaddingModeNotSupported()
         {
             return new CryptographicException(SR.Cryptography_InvalidPaddingMode);
         }

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-class Bug
+public class Bug
 {
     static short s1 = 8712, s2 = -973;
     public static int Main()

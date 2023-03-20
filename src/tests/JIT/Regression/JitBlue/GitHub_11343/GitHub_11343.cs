@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class GitHub_11343
+public class GitHub_11343
 {
     const int Passed = 100;
     const int Failed = 0;
@@ -17,7 +17,7 @@ class GitHub_11343
         int unused = s.Length;
     }
 
-    static int Main()
+    public static int Main()
     {
         try
         {

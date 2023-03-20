@@ -427,7 +427,7 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe bool SslCtxSetAlpnProtocol(SafeSslHandle ctx, SslApplicationProtocol protocol)
+        internal static unsafe int SslCtxSetAlpnProtocol(SafeSslHandle ctx, SslApplicationProtocol protocol)
         {
             int osStatus;
 
@@ -440,7 +440,7 @@ internal static partial class Interop
                 }
             }
 
-            return osStatus == 0;
+            return osStatus;
         }
 
         internal static byte[]? SslGetAlpnSelected(SafeSslHandle ssl)

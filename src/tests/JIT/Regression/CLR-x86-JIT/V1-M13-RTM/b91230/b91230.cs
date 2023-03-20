@@ -6,7 +6,7 @@
 using System;
 public struct AA
 {
-    static int Main()
+    public static int Main()
     {
         sbyte local2 = 0;
         while (

@@ -17,7 +17,6 @@ namespace Internal.Runtime.TypeLoader
     using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
     using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
     using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
-    using HandleBasedGenericMethodLookup = TypeLoaderEnvironment.HandleBasedGenericMethodLookup;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
 
     internal static class LowLevelListExtensions
@@ -76,31 +75,16 @@ namespace Internal.Runtime.TypeLoader
         }
 
 
-        private static bool CheckAllHandlesValidForMethod(MethodDesc method)
-        {
-            if (!method.OwningType.RetrieveRuntimeTypeHandleIfPossible())
-                return false;
-
-            for (int i = 0; i < method.Instantiation.Length; i++)
-                if (!method.Instantiation[i].RetrieveRuntimeTypeHandleIfPossible())
-                    return false;
-
-            return true;
-        }
-
         internal static bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
         {
             if (method.RuntimeMethodDictionary != IntPtr.Zero)
                 return true;
 
-            bool allHandlesValid = CheckAllHandlesValidForMethod(method);
-
-            TypeLoaderLogger.WriteLine("Looking for method dictionary for method " + method.ToString() + " ... " + (allHandlesValid ? "(All type arg handles valid)" : ""));
+            TypeLoaderLogger.WriteLine("Looking for method dictionary for method " + method.ToString() + " ... ");
 
             IntPtr methodDictionary;
 
-            if ((allHandlesValid && TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionaryForComponents(new HandleBasedGenericMethodLookup(method), out methodDictionary)) ||
-                 (!allHandlesValid && TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionaryForComponents(new MethodDescBasedGenericMethodLookup(method), out methodDictionary)))
+            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out methodDictionary))
             {
                 TypeLoaderLogger.WriteLine("Found DICT = " + methodDictionary.LowLevelToString() + " for method " + method.ToString());
                 method.AssociateWithRuntimeMethodDictionary(methodDictionary);
@@ -332,10 +316,15 @@ namespace Internal.Runtime.TypeLoader
 
             uint nativeLayoutInfoToken;
             NativeFormatModuleInfo nativeLayoutModule;
-            MethodDesc templateMethod = TemplateLocator.TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
+            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
             if (templateMethod == null)
             {
                 throw new MissingTemplateException();
+            }
+
+            if (templateMethod.FunctionPointer != IntPtr.Zero)
+            {
+                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer, isFunctionPointerUSG: false);
             }
 
             // Ensure that if this method is non-shareable from a normal canonical perspective, then
@@ -515,7 +504,7 @@ namespace Internal.Runtime.TypeLoader
 
                 _bitfield = null;
                 _isReferenceTypeGCLayout = false; // This field is only used for the LowLevelList<bool> path
-                _gcdesc = MethodTable->HasGCPointers ? (void**)MethodTable - 1 : null;
+                _gcdesc = MethodTable->ContainsGCPointers ? (void**)MethodTable - 1 : null;
                 _size = (int)MethodTable->BaseSize;
             }
 
@@ -527,8 +516,7 @@ namespace Internal.Runtime.TypeLoader
             /// <param name="offset">The offset at which we need to write the bitfield.</param>
             public void WriteToBitfield(LowLevelList<bool> bitfield, int offset)
             {
-                if (bitfield == null)
-                    throw new ArgumentNullException(nameof(bitfield));
+                ArgumentNullException.ThrowIfNull(bitfield);
 
                 if (IsNone)
                     return;
@@ -742,7 +730,7 @@ namespace Internal.Runtime.TypeLoader
             *generatedTypeClassConstructorSlotPointer = generatedTypeClassConstructorFatFunctionPointer;
         }
 
-        private void CopyDictionaryFromTypeToAppropriateSlotInDerivedType(TypeDesc baseType, TypeBuilderState derivedTypeState)
+        private void CopyDictionaryFromTypeToAppropriateSlotInDerivedType(DefType baseType, TypeBuilderState derivedTypeState)
         {
             var baseTypeState = baseType.GetOrCreateTypeBuilderState();
 
@@ -1254,7 +1242,7 @@ namespace Internal.Runtime.TypeLoader
             if (!TypeSystemContext.PointerTypesCache.TryGetValue(pointeeTypeHandle, out pointerTypeHandle))
             {
                 TypeSystemContext context = TypeSystemContextFactory.Create();
-                TypeDesc pointerType = context.GetPointerType(context.ResolveRuntimeTypeHandle(pointeeTypeHandle));
+                PointerType pointerType = context.GetPointerType(context.ResolveRuntimeTypeHandle(pointeeTypeHandle));
                 pointerTypeHandle = EETypeCreator.CreatePointerEEType((uint)pointerType.GetHashCode(), pointeeTypeHandle, pointerType);
                 unsafe
                 {
@@ -1274,7 +1262,7 @@ namespace Internal.Runtime.TypeLoader
             if (!TypeSystemContext.ByRefTypesCache.TryGetValue(pointeeTypeHandle, out byRefTypeHandle))
             {
                 TypeSystemContext context = TypeSystemContextFactory.Create();
-                TypeDesc byRefType = context.GetByRefType(context.ResolveRuntimeTypeHandle(pointeeTypeHandle));
+                ByRefType byRefType = context.GetByRefType(context.ResolveRuntimeTypeHandle(pointeeTypeHandle));
                 byRefTypeHandle = EETypeCreator.CreateByRefEEType((uint)byRefType.GetHashCode(), pointeeTypeHandle, byRefType);
                 unsafe
                 {
@@ -1287,22 +1275,6 @@ namespace Internal.Runtime.TypeLoader
             }
 
             return true;
-        }
-
-        public static bool TryBuildGenericMethod(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericMethodArgHandles, MethodNameAndSignature methodNameAndSignature, out IntPtr methodDictionary)
-        {
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, declaringType, methodNameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles), IntPtr.Zero, false);
-
-            bool success = TryBuildGenericMethod(methodBeingLoaded, out methodDictionary);
-
-            // Recycle the context only if we successfully built the method. The state may be partially initialized otherwise.
-            if (success)
-                TypeSystemContextFactory.Recycle(context);
-
-            return success;
         }
 
         internal static bool TryBuildGenericMethod(InstantiatedMethod methodBeingLoaded, out IntPtr methodDictionary)

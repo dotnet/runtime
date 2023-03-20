@@ -1531,15 +1531,6 @@ uint32_t MyICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** p
     return jitInstance->mc->repGetFieldThreadLocalStoreID(field, ppIndirection);
 }
 
-// Adds an active dependency from the context method's module to the given module
-// This is internal callback for the EE. JIT should not call it directly.
-void MyICJI::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo)
-{
-    jitInstance->mc->cr->AddCall("addActiveDependency");
-    LogError("Hit unimplemented addActiveDependency");
-    DebugBreakorAV(116);
-}
-
 CORINFO_METHOD_HANDLE MyICJI::GetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,
                                               CORINFO_CLASS_HANDLE  clsHnd,
                                               CORINFO_METHOD_HANDLE targetMethodHnd,
@@ -1662,6 +1653,10 @@ void MyICJI::allocMem(AllocMemArgs* pArgs)
         size_t roDataAlignment   = sizeof(void*);
         size_t roDataAlignedSize = static_cast<size_t>(pArgs->roDataSize);
 
+        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
+        {
+            roDataAlignment = 64;
+        }
         if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
         {
             roDataAlignment = 32;

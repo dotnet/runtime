@@ -24,6 +24,9 @@ private:
     // Indicates whether optimization tiers should be shown for methods in perf maps
     static bool s_ShowOptimizationTiers;
 
+    // Set to true if an error is encountered when writing to the file.
+    static unsigned s_StubsMapped;
+
     // The file stream to write the map to.
     CFileStream * m_FileStream;
 
@@ -32,9 +35,6 @@ private:
 
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
-
-    // Set to true if an error is encountered when writing to the file.
-    unsigned m_StubsMapped;
 
     // Construct a new map for the specified pid.
     PerfMap(int pid);
@@ -81,25 +81,4 @@ public:
     // Close the map and flush any remaining data.
     static void Destroy();
 };
-
-// Generates a perfmap file for a native image by running crossgen.
-class NativeImagePerfMap : PerfMap
-{
-private:
-    const WCHAR *strOFFSET = W("OFFSET");
-
-    // Specify the address format since it's now possible for 'perf script' to output file offsets or RVAs.
-    bool m_EmitRVAs;
-
-    // Log a pre-compiled method to the map.
-    void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout *pLoadedLayout, const char *optimizationTier);
-
-public:
-    // Construct a new map for a native image.
-    NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath);
-
-    // Log method information for each module.
-    void LogDataForModule(Module * pModule);
-};
-
 #endif // PERFPID_H

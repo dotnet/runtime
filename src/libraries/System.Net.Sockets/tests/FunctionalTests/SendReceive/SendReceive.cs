@@ -479,7 +479,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows8x))]
+        [Theory]
         [MemberData(nameof(LoopbacksAndBuffers))]
         public async Task SendRecvPollSync_TcpListener_Socket(IPAddress listenAt, bool pollBeforeOperation)
         {
@@ -892,14 +892,14 @@ namespace System.Net.Sockets.Tests
                     {
                         b.SignalAndWait();
                         client.Dispose();
-                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).WaitAsync(TestSettings.PassingTestTimeout);
 
                     Task send = Task.Factory.StartNew(() =>
                     {
                         SendAsync(server, new ArraySegment<byte>(new byte[1])).GetAwaiter().GetResult();
                         b.SignalAndWait();
                         ReceiveAsync(client, new ArraySegment<byte>(new byte[1])).GetAwaiter().GetResult();
-                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).WaitAsync(TestSettings.PassingTestTimeout);
 
                     await dispose;
                     Exception error = await Record.ExceptionAsync(() => send);

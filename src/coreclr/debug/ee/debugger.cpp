@@ -2050,7 +2050,7 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
     // This lets us run a set of managed apps under a debugger.
     if (!CORDebuggerAttached())
     {
-        #define DBG_ATTACH_ON_STARTUP_ENV_VAR W("COMPlus_DbgAttachOnStartup")
+        #define DBG_ATTACH_ON_STARTUP_ENV_VAR W("DOTNET_DbgAttachOnStartup")
         PathString temp;
         // We explicitly just check the env because we don't want a switch this invasive to be global.
         DWORD fAttach = WszGetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, temp) > 0;
@@ -6890,10 +6890,10 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
         bool fHasDebugger = GetCompleteDebuggerLaunchString(&strDbgCommand);
         if (fHasDebugger)
         {
+            LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%s]\n", strDbgCommand.GetUTF8()));
+
             wszDbgCommand = strDbgCommand.GetUnicode();
             _ASSERTE(wszDbgCommand != NULL); // would have thrown on oom.
-
-            LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%S]\n", wszDbgCommand));
         }
     }
     EX_CATCH
@@ -9335,7 +9335,7 @@ void Debugger::LoadAssembly(DomainAssembly * pDomainAssembly)
     if (CORDBUnrecoverableError(this))
         return;
 
-    LOG((LF_CORDB, LL_INFO100, "D::LA: Load Assembly Asy:0x%p AD:0x%p which:%ls\n",
+    LOG((LF_CORDB, LL_INFO100, "D::LA: Load Assembly Asy:0x%p AD:0x%p which:%s\n",
         pDomainAssembly, pDomainAssembly->GetAppDomain(), pDomainAssembly->GetAssembly()->GetDebugName() ));
 
     if (!CORDebuggerAttached())
@@ -9391,7 +9391,7 @@ void Debugger::UnloadAssembly(DomainAssembly * pDomainAssembly)
     if (CORDBUnrecoverableError(this))
         return;
 
-    LOG((LF_CORDB, LL_INFO100, "D::UA: Unload Assembly Asy:0x%p AD:0x%p which:%ls\n",
+    LOG((LF_CORDB, LL_INFO100, "D::UA: Unload Assembly Asy:0x%p AD:0x%p which:%s\n",
          pDomainAssembly, pDomainAssembly->GetAppDomain(), pDomainAssembly->GetAssembly()->GetDebugName() ));
 
     Thread *thread = g_pEEInterface->GetThread();
@@ -9676,7 +9676,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
 
 
 
-    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%ls\n",
+    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%s\n",
          LookupOrCreateModule(pRuntimeModule, pAppDomain), pAppDomain, pRuntimeModule, pRuntimeModule->GetDebugName()));
 
 
@@ -9689,7 +9689,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         DebuggerModule* module = LookupOrCreateModule(pRuntimeModule, pAppDomain);
         if (module == NULL)
         {
-            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded AD:%#08x runtimeMod:%#08x modName:%ls\n",
+            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded AD:%#08x runtimeMod:%#08x modName:%s\n",
                  pAppDomain, pRuntimeModule, pRuntimeModule->GetDebugName()));
             goto LExit;
         }
@@ -9776,7 +9776,7 @@ void Debugger::DestructModule(Module *pModule)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO100, "D::DM: destruct module runtimeMod:%#08x modName:%ls\n",
+    LOG((LF_CORDB, LL_INFO100, "D::DM: destruct module runtimeMod:%#08x modName:%s\n",
          pModule, pModule->GetDebugName()));
 
     // @@@
@@ -10002,7 +10002,7 @@ BOOL  Debugger::LoadClass(TypeHandle th,
     // handle this in SendSystemClassLoadUnloadEvent below by looping through all AppDomains and dispatching
     // events for each that contain this assembly.
 
-    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%#08x AD:%#08x classMod:%#08x modName:%ls\n",
+    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%#08x AD:%#08x classMod:%#08x modName:%s\n",
          classMetadataToken, (pAppDomain == NULL) ? NULL : LookupOrCreateModule(classModule, pAppDomain),
          pAppDomain, classModule, classModule->GetDebugName()));
 
@@ -10057,7 +10057,7 @@ void Debugger::UnloadClass(mdTypeDef classMetadataToken,
         return;
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%ls\n",
+    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%s\n",
          classMetadataToken, LookupOrCreateModule(classModule, pAppDomain), pAppDomain, classModule, classModule->GetDebugName()));
 
     Assembly *pAssembly = classModule->GetClassLoader()->GetAssembly();
@@ -12736,7 +12736,7 @@ EnCSequencePointHelper::~EnCSequencePointHelper()
 
     if (m_pOffsetToHandlerInfo)
     {
-        delete m_pOffsetToHandlerInfo;
+        delete[] m_pOffsetToHandlerInfo;
     }
 }
 
@@ -14350,8 +14350,12 @@ void Debugger::SendLogSwitchSetting(int iLevel,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "D::SLSS: Sending log switch message switch=%S parent=%S.\n",
-        pLogSwitchName, pParentSwitchName));
+#ifdef LOGGING
+    MAKE_UTF8PTR_FROMWIDE(pLogSwitchNameUtf8, pLogSwitchName);
+    MAKE_UTF8PTR_FROMWIDE(pParentSwitchNameUtf8, pParentSwitchName);
+    LOG((LF_CORDB, LL_INFO1000, "D::SLSS: Sending log switch message switch=%s parent=%s.\n",
+        pLogSwitchNameUtf8, pParentSwitchNameUtf8));
+#endif // LOGGING
 
     // Send the message only if the debugger is attached to this appdomain.
     if (!CORDebuggerAttached())
@@ -14652,10 +14656,6 @@ HRESULT Debugger::UpdateAppDomainEntryInIPC(AppDomain *pAppDomain)
     // Update the name only if new name is non-null
     szName = pADInfo->m_pAppDomain->GetFriendlyNameForDebugger();
     pADInfo->SetName(szName);
-
-    LOG((LF_CORDB, LL_INFO100,
-         "D::UADEIIPC: New name:%ls (AD:0x%x)\n", pADInfo->m_szAppDomainName,
-         pAppDomain));
 
 ErrExit:
     // UnLock the list

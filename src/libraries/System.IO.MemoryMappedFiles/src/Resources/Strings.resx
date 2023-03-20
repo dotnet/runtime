@@ -174,9 +174,6 @@
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedPositiveNumber" xml:space="preserve">
-    <value>A positive number is required.</value>
-  </data>
   <data name="ArgumentOutOfRange_PositiveOrDefaultCapacityRequired" xml:space="preserve">
     <value>The capacity must be greater than or equal to 0. 0 represents the size of the file being mapped.</value>
   </data>

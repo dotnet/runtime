@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
@@ -88,8 +89,8 @@ namespace System.Runtime.Serialization
                 }
             }
             // m_obj must ALWAYS have at least one slot empty (null).
-            DiagnosticUtility.DebugAssert("Object table overflow");
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.ObjectTableOverflow));
+            Debug.Fail("Object table overflow");
+            throw XmlObjectSerializer.CreateSerializationException(SR.ObjectTableOverflow);
         }
 
         private void RemoveAt(int position)
@@ -127,8 +128,8 @@ namespace System.Runtime.Serialization
                 }
             }
             // m_obj must ALWAYS have at least one slot empty (null).
-            DiagnosticUtility.DebugAssert("Object table overflow");
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.ObjectTableOverflow));
+            Debug.Fail("Object table overflow");
+            throw XmlObjectSerializer.CreateSerializationException(SR.ObjectTableOverflow);
         }
 
         private int ComputeStartPosition(object? o)
@@ -161,24 +162,26 @@ namespace System.Runtime.Serialization
 
         private static int GetPrime(int min)
         {
-            for (int i = 0; i < primes.Length; i++)
+            ReadOnlySpan<int> primes = new int[]
             {
-                int prime = primes[i];
-                if (prime >= min) return prime;
+                3, 7, 17, 37, 89, 197, 431, 919, 1931, 4049, 8419, 17519, 36353,
+                75431, 156437, 324449, 672827, 1395263, 2893249, 5999471,
+                11998949, 23997907, 47995853, 95991737, 191983481, 383966977, 767933981, 1535867969,
+                2146435069, 0x7FFFFFC7
+                // 0x7FFFFFC7 == Array.MaxLength is not prime, but it is the largest possible array size.
+                // There's nowhere to go from here. Using a const rather than the MaxLength property
+                // so that the array contains only const values.
+            };
+
+            foreach (int prime in primes)
+            {
+                if (prime >= min)
+                {
+                    return prime;
+                }
             }
 
             return min;
         }
-
-        internal static readonly int[] primes =
-        {
-            3, 7, 17, 37, 89, 197, 431, 919, 1931, 4049, 8419, 17519, 36353,
-            75431, 156437, 324449, 672827, 1395263, 2893249, 5999471,
-            11998949, 23997907, 47995853, 95991737, 191983481, 383966977, 767933981, 1535867969,
-            2146435069, 0x7FFFFFC7
-            // 0x7FFFFFC7 == Array.MaxLength is not prime, but it is the largest possible array size.
-            // There's nowhere to go from here. Using a const rather than the MaxLength property
-            // so that the array contains only const values.
-        };
     }
 }

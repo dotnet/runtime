@@ -118,7 +118,7 @@ namespace System.Linq.Parallel
 
     internal sealed class SortQueryOperatorResults<TInputOutput, TSortKey> : QueryResults<TInputOutput>
     {
-        private QueryResults<TInputOutput> _childQueryResults; // Results of the child query
+        private readonly QueryResults<TInputOutput> _childQueryResults; // Results of the child query
         private readonly SortQueryOperator<TInputOutput, TSortKey> _op; // Operator that generated these results
         private QuerySettings _settings; // Settings collected from the query
 

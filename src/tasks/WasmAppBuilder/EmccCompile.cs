@@ -78,7 +78,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
 
             _totalFiles = SourceFiles.Length;
-            IDictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
+            Dictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
             ConcurrentBag<ITaskItem> outputItems = new();
             try
             {
@@ -238,7 +238,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
             ITaskItem CreateOutputItemFor(string srcFile, string objFile)
             {
-                ITaskItem newItem = new TaskItem(objFile);
+                TaskItem newItem = new TaskItem(objFile);
                 newItem.SetMetadata("SourceFile", srcFile);
                 return newItem;
             }
@@ -291,7 +291,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
         }
 
-        private IDictionary<string, string> GetEnvironmentVariablesDict()
+        private Dictionary<string, string> GetEnvironmentVariablesDict()
         {
             Dictionary<string, string> envVarsDict = new();
             if (EnvironmentVariables == null)

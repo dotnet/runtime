@@ -56,6 +56,8 @@ namespace Microsoft.Interop
                         ? MarshalMode.ManagedToUnmanagedOut
                         : MarshalMode.UnmanagedToManagedIn));
 
+            generatorFactory = new ManagedHResultExceptionMarshallerFactory(generatorFactory, direction);
+
             generatorFactory = new NativeToManagedThisMarshallerFactory(generatorFactory);
 
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);

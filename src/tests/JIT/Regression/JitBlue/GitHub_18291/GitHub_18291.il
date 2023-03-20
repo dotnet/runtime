@@ -18,7 +18,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit GitHub_18291
+.class public auto ansi beforefieldinit GitHub_18291
        extends [System.Runtime]System.Object
 {
   .method static uint16 ILGEN_METHOD(native unsigned int, int8, native int)
@@ -136,7 +136,7 @@
   }
 
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

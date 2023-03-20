@@ -4,6 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
+using SourceGenerators.Tests;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -155,7 +156,7 @@ partial class C
 }}";
             Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(comp, new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(targetFramework)), out _, new Microsoft.Interop.LibraryImportGenerator());
 
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");

@@ -9,7 +9,7 @@ namespace Test
     {
     }
 
-    internal struct AA
+    public struct AA
     {
         private static float[] s_afStatic1;
 
@@ -47,7 +47,7 @@ namespace Test
             }
             catch (OtherException) { }
         }
-        private static int Main()
+        public static int Main()
         {
             try
             {

@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly MethodDesc _decl;
 
+        public MethodDesc Method => _decl;
+
         public VirtualMethodUseNode(MethodDesc decl)
         {
             Debug.Assert(!decl.IsRuntimeDeterminedExactMethod);

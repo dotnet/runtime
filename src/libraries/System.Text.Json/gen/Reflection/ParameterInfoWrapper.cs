@@ -25,7 +25,7 @@ namespace System.Text.Json.Reflection
 
         public override bool HasDefaultValue => _parameter.HasExplicitDefaultValue;
 
-        public override object DefaultValue => HasDefaultValue ? _parameter.ExplicitDefaultValue : null;
+        public override object? DefaultValue => HasDefaultValue ? _parameter.ExplicitDefaultValue : null;
 
         public override int Position => _parameter.Ordinal;
 

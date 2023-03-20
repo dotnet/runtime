@@ -10,7 +10,7 @@ public class Repro
     public float x;
     public float y;
 
-    private static int Main()
+    public static int Main()
     {
         byte[] buf = new byte[8];
         WriteFloat(buf, 0, 123.0F);

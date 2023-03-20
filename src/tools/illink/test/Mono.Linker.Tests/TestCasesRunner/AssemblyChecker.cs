@@ -57,6 +57,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			linkedMembers.Remove ("System.Int32 System.Runtime.CompilerServices.RefSafetyRulesAttribute::Version");
 			linkedMembers.Remove ("System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)");
 
+			// Workaround for compiler injected attribute to describe the language version
+			verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
+			verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
+
 			var membersToAssert = originalAssembly.MainModule.Types;
 			foreach (var originalMember in membersToAssert) {
 				if (originalMember is TypeDefinition td) {
@@ -99,10 +103,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDefinition linked)
 		{
-			// Workaround for compiler injected attribute to describe the language version
-			verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
-			verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
-
 			if (linked != null && verifiedGeneratedTypes.Contains (linked.FullName))
 				return;
 
@@ -115,9 +115,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// - It contains at least one member which has [Kept] attribute (not recursive)
 			//
 			bool expectedKept =
-				original.HasAttributeDerivedFrom (nameof (KeptAttribute)) ||
+				HasActiveKeptDerivedAttribute (original) ||
 				(linked != null && linkedModule.Assembly.EntryPoint?.DeclaringType == linked) ||
-				original.AllMembers ().Any (l => l.HasAttribute (nameof (KeptAttribute)));
+				original.AllMembers ().Any (HasActiveKeptDerivedAttribute);
 
 			if (!expectedKept) {
 				if (linked != null)
@@ -143,7 +143,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		/// <summary>
-		/// Validates that all <see cref="KeptByAttribute"/> instances on a member are valid (i.e. the linker recorded a marked dependency described in the attribute)
+		/// Validates that all <see cref="KeptByAttribute"/> instances on a member are valid (i.e. ILLink recorded a marked dependency described in the attribute)
 		/// </summary>
 		void VerifyKeptByAttributes (IMemberDefinition src, IMemberDefinition linked)
 		{
@@ -152,7 +152,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		/// <summary>
-		/// Validates that all <see cref="KeptByAttribute"/> instances on an attribute provider are valid (i.e. the linker recorded a marked dependency described in the attribute)
+		/// Validates that all <see cref="KeptByAttribute"/> instances on an attribute provider are valid (i.e. ILLink recorded a marked dependency described in the attribute)
 		/// <paramref name="src"/> is the attribute provider that may have a <see cref="KeptByAttribute"/>, and <paramref name="attributeProviderFullName"/> is the 'FullName' of <paramref name="src"/>.
 		/// </summary>
 		void VerifyKeptByAttributes (ICustomAttributeProvider src, string attributeProviderFullName)
@@ -325,7 +325,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					Assert.True (linked.DeclaringType.Interfaces.Select (i => i.InterfaceType).Contains (overriddenMethod.DeclaringType),
 						$"Method {linked} overrides method {overriddenMethod}, but {linked.DeclaringType} does not implement interface {overriddenMethod.DeclaringType}");
 				} else {
-					TypeReference baseType = linked.DeclaringType;
+					TypeDefinition baseType = linked.DeclaringType;
 					TypeReference overriddenType = overriddenMethod.DeclaringType;
 					while (baseType is not null) {
 						if (baseType.Equals (overriddenType))
@@ -1061,14 +1061,54 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual bool ShouldBeKept<T> (T member, string signature = null) where T : MemberReference, ICustomAttributeProvider
 		{
-			if (member.HasAttribute (nameof (KeptAttribute)) || member.HasAttribute (nameof (KeptByAttribute)))
+			if (HasActiveKeptAttribute (member) || member.HasAttribute (nameof (KeptByAttribute)))
 				return true;
 
 			ICustomAttributeProvider cap = (ICustomAttributeProvider) member.DeclaringType;
 			if (cap == null)
 				return false;
 
-			return GetCustomAttributeCtorValues<string> (cap, nameof (KeptMemberAttribute)).Any (a => a == (signature ?? member.Name));
+			return GetActiveKeptAttributes (cap, nameof (KeptMemberAttribute)).Any (ca => {
+				if (ca.Constructor.Parameters.Count != 1 ||
+					ca.ConstructorArguments[0].Value is not string a)
+					return false;
+
+				return a == (signature ?? member.Name);
+			});
+		}
+
+		private static IEnumerable<CustomAttribute> GetActiveKeptAttributes (ICustomAttributeProvider provider, string attributeName)
+		{
+			return provider.CustomAttributes.Where(ca => {
+				if (ca.AttributeType.Name != attributeName) {
+					return false;
+				}
+
+				object keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.Trimmer);
+			});
+ 		}
+
+		private static bool HasActiveKeptAttribute (ICustomAttributeProvider provider)
+		{
+			return GetActiveKeptAttributes (provider, nameof (KeptAttribute)).Any ();
+		}
+
+		private static IEnumerable<CustomAttribute> GetActiveKeptDerivedAttributes (ICustomAttributeProvider provider)
+		{
+			return provider.CustomAttributes.Where (ca => {
+				if (!ca.AttributeType.Resolve ().DerivesFrom (nameof (KeptAttribute))) {
+					return false;
+				}
+
+				object keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.Trimmer);
+			});
+		}
+
+		private static bool HasActiveKeptDerivedAttribute (ICustomAttributeProvider provider)
+		{
+			return GetActiveKeptDerivedAttributes (provider).Any ();
 		}
 
 		protected static uint GetExpectedPseudoAttributeValue (ICustomAttributeProvider provider, uint sourceValue)

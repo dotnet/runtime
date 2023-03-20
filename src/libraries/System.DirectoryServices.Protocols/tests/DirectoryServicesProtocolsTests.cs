@@ -670,6 +670,30 @@ namespace System.DirectoryServices.Protocols.Tests
             }
         }
 
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestMultipleServerBind()
+        {
+            LdapDirectoryIdentifier directoryIdentifier = string.IsNullOrEmpty(LdapConfiguration.Configuration.Port) ?
+                                        new LdapDirectoryIdentifier(new string[] { LdapConfiguration.Configuration.ServerName, LdapConfiguration.Configuration.ServerName }, true, false) :
+                                        new LdapDirectoryIdentifier(new string[] { LdapConfiguration.Configuration.ServerName, LdapConfiguration.Configuration.ServerName },
+                                                                    int.Parse(LdapConfiguration.Configuration.Port, NumberStyles.None, CultureInfo.InvariantCulture),
+                                                                    true, false);
+            NetworkCredential credential = new NetworkCredential(LdapConfiguration.Configuration.UserName, LdapConfiguration.Configuration.Password);
+
+            using LdapConnection connection = new LdapConnection(directoryIdentifier, credential)
+            {
+                AuthType = AuthType.Basic
+            };
+
+            // Set server protocol before bind; OpenLDAP servers default
+            // to LDAP v2, which we do not support, and will return LDAP_PROTOCOL_ERROR
+            connection.SessionOptions.ProtocolVersion = 3;
+            connection.SessionOptions.SecureSocketLayer = LdapConfiguration.Configuration.UseTls;
+            connection.Bind();
+
+            connection.Timeout = new TimeSpan(0, 3, 0);
+        }
+
         private void DeleteAttribute(LdapConnection connection, string entryDn, string attributeName)
         {
             string dn = entryDn + "," + LdapConfiguration.Configuration.SearchDn;

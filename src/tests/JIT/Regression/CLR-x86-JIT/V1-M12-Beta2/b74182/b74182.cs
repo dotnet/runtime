@@ -3,7 +3,7 @@
 //
 
 using System;
-class bug1
+public class bug1
 {
     public struct VT
     {

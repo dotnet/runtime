@@ -428,6 +428,9 @@ mono_if_conversion (MonoCompile *cfg)
 			mono_bblock_insert_before_ins (bb, compare, ins2);
 			mono_bblock_insert_before_ins (bb, ins2, ins1);
 
+			bb->needs_decompose |= true_bb->needs_decompose;
+			bb->needs_decompose |= false_bb->needs_decompose;
+
 			/* Add cmov instruction */
 			MONO_INST_NEW (cfg, cmov, OP_NOP);
 			cmov->dreg = dreg;

@@ -384,7 +384,9 @@ namespace System.Text.Json
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
         public System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver? TypeInfoResolver { get { throw null; } set { } }
+        public System.Collections.Generic.IList<System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver> TypeInfoResolverChain { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonUnmappedMemberHandling UnmappedMemberHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
         public void AddContext<TContext>() where TContext : System.Text.Json.Serialization.JsonSerializerContext, new() { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Getting a converter for a type may require reflection which depends on runtime code generation.")]
@@ -582,6 +584,7 @@ namespace System.Text.Json
         public void WritePropertyName(string propertyName) { }
         public void WritePropertyName(System.Text.Json.JsonEncodedText propertyName) { }
         public void WriteRawValue(System.ReadOnlySpan<byte> utf8Json, bool skipInputValidation = false) { }
+        public void WriteRawValue(System.Buffers.ReadOnlySequence<byte> utf8Json, bool skipInputValidation = false) { }
         public void WriteRawValue([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Json")] System.ReadOnlySpan<char> json, bool skipInputValidation = false) { }
         public void WriteRawValue([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Json")] string json, bool skipInputValidation = false) { }
         public void WriteStartArray() { }
@@ -1036,6 +1039,17 @@ namespace System.Text.Json.Serialization
         JsonElement = 0,
         JsonNode = 1,
     }
+    public enum JsonUnmappedMemberHandling
+    {
+        Skip = 0,
+        Disallow = 1,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    public partial class JsonUnmappedMemberHandlingAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonUnmappedMemberHandlingAttribute(System.Text.Json.Serialization.JsonUnmappedMemberHandling unmappedMemberHandling) { }
+        public System.Text.Json.Serialization.JsonUnmappedMemberHandling UnmappedMemberHandling { get { throw null; } }
+    }
     public abstract partial class ReferenceHandler
     {
         protected ReferenceHandler() { }
@@ -1232,9 +1246,12 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Action<object>? OnSerialized { get { throw null; } set { } }
         public System.Action<object>? OnSerializing { get { throw null; } set { } }
         public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver? OriginatingResolver { get { throw null; } set { } }
         public System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions? PolymorphismOptions { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.Metadata.JsonPropertyInfo> Properties { get { throw null; } }
         public System.Type Type { get { throw null; } }
+        public System.Text.Json.Serialization.JsonUnmappedMemberHandling? UnmappedMemberHandling { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
         public System.Text.Json.Serialization.Metadata.JsonPropertyInfo CreateJsonPropertyInfo(System.Type propertyType, string name) { throw null; }
@@ -1255,9 +1272,9 @@ namespace System.Text.Json.Serialization.Metadata
     }
     public static partial class JsonTypeInfoResolver
     {
-        public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver Combine(params System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver[] resolvers) { throw null; }
+        public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver Combine(params System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver?[] resolvers) { throw null; }
     }
-    public abstract partial class JsonTypeInfo<T> : System.Text.Json.Serialization.Metadata.JsonTypeInfo
+    public sealed partial class JsonTypeInfo<T> : System.Text.Json.Serialization.Metadata.JsonTypeInfo
     {
         internal JsonTypeInfo() { }
         public new System.Func<T>? CreateObject { get { throw null; } set { } }

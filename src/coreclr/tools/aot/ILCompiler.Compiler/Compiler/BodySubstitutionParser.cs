@@ -10,6 +10,7 @@ using Internal.TypeSystem;
 using System.Xml.XPath;
 using System.Globalization;
 using System.Linq;
+using ILLink.Shared;
 
 namespace ILCompiler
 {
@@ -18,8 +19,9 @@ namespace ILCompiler
         private readonly Dictionary<MethodDesc, BodySubstitution> _methodSubstitutions;
         private readonly Dictionary<FieldDesc, object> _fieldSubstitutions;
 
-        private BodySubstitutionsParser(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
-                : base(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
+
+        private BodySubstitutionsParser(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+                : base(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
         {
             _methodSubstitutions = new Dictionary<MethodDesc, BodySubstitution>();
             _fieldSubstitutions = new Dictionary<FieldDesc, object>();
@@ -49,7 +51,9 @@ namespace ILCompiler
             MethodDesc method = FindMethod(type, signature);
             if (method == null)
             {
-                // LogWarning(methodNav, DiagnosticId.XmlCouldNotFindMethodOnType, signature, type.GetDisplayName());
+#if !READYTORUN
+                LogWarning(methodNav, DiagnosticId.XmlCouldNotFindMethodOnType, signature, type.GetDisplayName());
+#endif
                 return;
             }
 
@@ -72,11 +76,15 @@ namespace ILCompiler
                     }
                     else
                     {
-                        // Context.LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, _xmlDocumentLocation);
+#if !READYTORUN
+                        LogWarning(methodNav, DiagnosticId.XmlInvalidValueForStub, method.GetDisplayName());
+#endif
                     }
                     break;
                 default:
-                    //Context.LogWarning($"Unknown body modification '{action}' for '{method.GetDisplayName()}'", 2011, _xmlDocumentLocation);
+#if !READYTORUN
+                    LogWarning(methodNav, DiagnosticId.XmlUnkownBodyModification, action, method.GetDisplayName());
+#endif
                     break;
             }
         }
@@ -90,27 +98,35 @@ namespace ILCompiler
             var field = type.GetFields().FirstOrDefault(f => f.Name == name);
             if (field == null)
             {
-                // LogWarning(fieldNav, DiagnosticId.XmlCouldNotFindFieldOnType, name, type.GetDisplayName());
+#if !READYTORUN
+                LogWarning(fieldNav, DiagnosticId.XmlCouldNotFindFieldOnType, name, type.GetDisplayName());
+#endif
                 return;
             }
 
             if (!field.IsStatic || field.IsLiteral)
             {
-                // LogWarning(fieldNav, DiagnosticId.XmlSubstitutedFieldNeedsToBeStatic, field.GetDisplayName());
+#if !READYTORUN
+                LogWarning(fieldNav, DiagnosticId.XmlSubstitutedFieldNeedsToBeStatic, field.GetDisplayName());
+#endif
                 return;
             }
 
             string value = GetAttribute(fieldNav, "value");
             if (string.IsNullOrEmpty(value))
             {
-                //Context.LogWarning($"Missing 'value' attribute for field '{field.GetDisplayName()}'.", 2014, _xmlDocumentLocation);
+#if !READYTORUN
+                LogWarning(fieldNav, DiagnosticId.XmlMissingSubstitutionValueForField, field.GetDisplayName());
+#endif
                 return;
             }
 
             object substitution = TryCreateSubstitution(field.FieldType, value);
             if (substitution == null)
             {
-                //Context.LogWarning($"Invalid value '{value}' for '{field.GetDisplayName()}'.", 2015, _xmlDocumentLocation);
+#if !READYTORUN
+                LogWarning(fieldNav, DiagnosticId.XmlInvalidSubstitutionValueForField, value, field.GetDisplayName());
+#endif
                 return;
             }
 
@@ -118,7 +134,7 @@ namespace ILCompiler
             {
                 // We would need to also mess with the cctor of the type to set the field to this value:
                 //
-                // * Linker will remove all stsfld instructions referencing this field from the cctor
+                // * ILLink will remove all stsfld instructions referencing this field from the cctor
                 // * It will place an explicit stsfld in front of the last "ret" instruction in the cctor
                 //
                 // This approach... has issues.
@@ -162,9 +178,9 @@ namespace ILCompiler
             return null;
         }
 
-        public static (Dictionary<MethodDesc, BodySubstitution>, Dictionary<FieldDesc, object>) GetSubstitutions(TypeSystemContext context, UnmanagedMemoryStream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        public static (Dictionary<MethodDesc, BodySubstitution>, Dictionary<FieldDesc, object>) GetSubstitutions(Logger logger, TypeSystemContext context, UnmanagedMemoryStream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
         {
-            var rdr = new BodySubstitutionsParser(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
+            var rdr = new BodySubstitutionsParser(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
             rdr.ProcessXml(false);
             return (rdr._methodSubstitutions, rdr._fieldSubstitutions);
         }

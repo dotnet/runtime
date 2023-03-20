@@ -7,7 +7,7 @@
 .assembly extern System.Console {}
 .assembly extern legacy library mscorlib {}
 .assembly 'Runtime_44266' { }
-.class a extends [mscorlib]System.Object
+.class public a extends [mscorlib]System.Object
 {
   .field static class ctest S_1
   .method public static native int byrefsubbyref(class ctest& V_1, class ctest& V_2) aggressiveinlining

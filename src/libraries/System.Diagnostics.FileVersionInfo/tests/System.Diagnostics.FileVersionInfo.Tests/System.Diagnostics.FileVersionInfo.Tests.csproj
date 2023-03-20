@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
@@ -38,17 +38,20 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerLanguageName.cs"
              Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.VerLanguageName.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="FileVersionInfoTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Include the test assembly as Content. We don't do this on Browser to work around
          https://github.com/dotnet/runtime/issues/46856 that would proceed to treat Content as an assembly reference anyway.
          Works around: Found identical vfs mappings for target path: System.Diagnostics.FileVersionInfo.TestAssembly.dll, source file: .../System.Diagnostics.FileVersionInfo.TestAssembly.dll. Ignoring. -->
-    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' != 'Browser'">
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' != 'browser'">
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' == 'Browser'" />
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' == 'browser'" />
+    <!-- R2R testing does not tolerate the combination of a regular project reference and a content reference. -->
+    <!-- This is a bug in the SDK tracked here: https://github.com/dotnet/sdk/issues/30718 -->
+    <PublishReadyToRunExclude Include="System.Diagnostics.FileVersionInfo.TestAssembly.dll" />
   </ItemGroup>
 </Project>

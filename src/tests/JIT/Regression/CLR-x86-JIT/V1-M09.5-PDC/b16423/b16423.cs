@@ -4,7 +4,7 @@
 
 using System;
 
-class AA
+public class AA
 {
 	bool[] m_null = null;
 	

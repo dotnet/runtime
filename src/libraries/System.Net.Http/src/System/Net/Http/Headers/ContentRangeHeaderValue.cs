@@ -165,7 +165,7 @@ namespace System.Net.Http.Headers
             return sb.ToString();
         }
 
-        public static ContentRangeHeaderValue Parse(string? input)
+        public static ContentRangeHeaderValue Parse(string input)
         {
             int index = 0;
             return (ContentRangeHeaderValue)GenericHeaderParser.ContentRangeParser.ParseValue(input, null, ref index);

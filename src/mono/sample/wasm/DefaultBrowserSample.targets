@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
     <!-- note that enabling debugger disables interp optimizations -->

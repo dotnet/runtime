@@ -32,14 +32,16 @@ namespace ILCompiler
         private readonly MetadataType _type;
         private readonly CompilationModuleGroup _compilationGroup;
         private readonly ILProvider _ilProvider;
+        private readonly TypePreinitializationPolicy _policy;
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
 
-        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider)
+        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy)
         {
             _type = owningType;
             _compilationGroup = compilationGroup;
             _ilProvider = ilProvider;
+            _policy = policy;
 
             // Zero initialize all fields we model.
             foreach (var field in owningType.GetFields())
@@ -51,38 +53,34 @@ namespace ILCompiler
             }
         }
 
-        // Could potentially expose this as a policy class. When type loader is not present or
-        // the given type can't be constructed by the type loader, preinitialization could still
-        // happen.
-        private static bool CanPreinitializeByPolicy(TypeDesc type)
-        {
-            // If the type has a canonical form the runtime type loader could create
-            // a new type sharing code with this one. They need to agree on how
-            // initialization happens. We can't preinitialize runtime-created
-            // generic types at compile time.
-            if (type.ConvertToCanonForm(CanonicalFormKind.Specific)
-                .IsCanonicalSubtype(CanonicalFormKind.Any))
-                return false;
-
-            return true;
-        }
-
-        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, MetadataType type)
+        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, MetadataType type)
         {
             Debug.Assert(type.HasStaticConstructor);
             Debug.Assert(!type.IsGenericDefinition);
+            Debug.Assert(!type.IsRuntimeDeterminedSubtype);
 
-            if (!CanPreinitializeByPolicy(type))
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // It's an odd question to ask about canonical types. Defer to policy that might
+                // have more information.
+                // If the policy allows it, we allow it, but create invalid field values so that
+                // things still crash if someone wanted to do more with canonical types than just
+                // ask if a cctor check is necessary to access.
+                if (policy.CanPreinitializeAllConcreteFormsForCanonForm(type))
+                    return new PreinitializationInfo(type, Array.Empty<KeyValuePair<FieldDesc, ISerializableValue>>());
+
                 return new PreinitializationInfo(type, "Disallowed by policy");
+            }
 
-            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+            if (!policy.CanPreinitialize(type))
+                return new PreinitializationInfo(type, "Disallowed by policy");
 
             TypePreinit preinit = null;
 
             Status status;
             try
             {
-                preinit = new TypePreinit(type, compilationGroup, ilProvider);
+                preinit = new TypePreinit(type, compilationGroup, ilProvider, policy);
                 int instructions = 0;
                 status = preinit.TryScanMethod(type.GetStaticConstructor(), null, null, ref instructions, out _);
             }
@@ -337,9 +335,9 @@ namespace ILCompiler
                             }
                             else if (field.IsInitOnly
                                 && field.OwningType.HasStaticConstructor
-                                && CanPreinitializeByPolicy(field.OwningType))
+                                && _policy.CanPreinitialize(field.OwningType))
                             {
-                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider);
+                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy);
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
 
@@ -897,11 +895,11 @@ namespace ILCompiler
                             }
 
                             TypeDesc token = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (token.IsGCPointer)
+                            if (token.IsGCPointer || popped.Value is not ByRefValue byrefVal)
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                             }
-                            ((ByRefValue)popped.Value).Initialize(token.GetElementSize().AsInt);
+                            byrefVal.Initialize(token.GetElementSize().AsInt);
                         }
                         break;
 
@@ -1417,6 +1415,53 @@ namespace ILCompiler
                         }
                         break;
 
+                    case ILOpcode.ldind_i1:
+                    case ILOpcode.ldind_u1:
+                    case ILOpcode.ldind_i2:
+                    case ILOpcode.ldind_u2:
+                    case ILOpcode.ldind_i4:
+                    case ILOpcode.ldind_u4:
+                    case ILOpcode.ldind_i8:
+                        {
+                            StackEntry entry = stack.Pop();
+                            if (entry.Value is ByRefValue byRefVal)
+                            {
+                                switch (opcode)
+                                {
+                                    case ILOpcode.ldind_i1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsSByte()));
+                                        break;
+                                    case ILOpcode.ldind_u1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)byRefVal.DereferenceAsSByte()));
+                                        break;
+                                    case ILOpcode.ldind_i2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt16()));
+                                        break;
+                                    case ILOpcode.ldind_u2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)byRefVal.DereferenceAsInt16()));
+                                        break;
+                                    case ILOpcode.ldind_i4:
+                                    case ILOpcode.ldind_u4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt32()));
+                                        break;
+                                    case ILOpcode.ldind_i8:
+                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(byRefVal.DereferenceAsInt64()));
+                                        break;
+                                    case ILOpcode.ldind_r4:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsSingle()));
+                                        break;
+                                    case ILOpcode.ldind_r8:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsDouble()));
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                ThrowHelper.ThrowInvalidProgramException();
+                            }
+                        }
+                        break;
+
                     case ILOpcode.constrained:
                         // Fallthrough. If this is ever implemented, make sure delegates to static virtual methods
                         // are also handled. We currently assume the frozen delegate will not be to a static
@@ -1430,11 +1475,19 @@ namespace ILCompiler
             return Status.Fail(methodIL.OwningMethod, "Control fell through");
         }
 
-        private static Value NewUninitializedLocationValue(TypeDesc locationType)
+        private static BaseValueTypeValue NewUninitializedLocationValue(TypeDesc locationType)
         {
             if (locationType.IsGCPointer || locationType.IsByRef)
             {
                 return null;
+            }
+            else if (locationType.IsByRefLike && locationType is MetadataType maybeReadOnlySpan
+                && maybeReadOnlySpan.Module == locationType.Context.SystemModule
+                && maybeReadOnlySpan.Name == "ReadOnlySpan`1"
+                && maybeReadOnlySpan.Namespace == "System"
+                && maybeReadOnlySpan.Instantiation[0] is MetadataType readOnlySpanElementType)
+            {
+                return new ReadOnlySpanValue(readOnlySpanElementType, Array.Empty<byte>());
             }
             else
             {
@@ -1460,6 +1513,33 @@ namespace ILCompiler
                     {
                         byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(ecmaField);
                         return array.TryInitialize(rvaData);
+                    }
+                    return false;
+                case "CreateSpan":
+                    if (method.OwningType is MetadataType createSpanType
+                        && createSpanType.Name == "RuntimeHelpers" && createSpanType.Namespace == "System.Runtime.CompilerServices"
+                        && createSpanType.Module == createSpanType.Context.SystemModule
+                        && parameters[0] is RuntimeFieldHandleValue createSpanFieldHandle
+                        && createSpanFieldHandle.Field.IsStatic && createSpanFieldHandle.Field.HasRva
+                        && createSpanFieldHandle.Field is Internal.TypeSystem.Ecma.EcmaField createSpanEcmaField
+                        && method.Instantiation[0].IsValueType)
+                    {
+                        var elementType = (MetadataType)method.Instantiation[0];
+                        int elementSize = elementType.InstanceFieldSize.AsInt;
+                        byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(createSpanEcmaField);
+                        if (rvaData.Length % elementSize != 0)
+                            return false;
+                        retVal = new ReadOnlySpanValue(elementType, rvaData);
+                        return true;
+                    }
+                    return false;
+                case "get_Item":
+                    if (method.OwningType is MetadataType readonlySpanType
+                        && readonlySpanType.Name == "ReadOnlySpan`1" && readonlySpanType.Namespace == "System"
+                        && parameters[0] is ReadOnlySpanReferenceValue spanRef
+                        && parameters[1] is ValueTypeValue spanIndex)
+                    {
+                        return spanRef.TryAccessElement(spanIndex.AsInt32(), out retVal);
                     }
                     return false;
             }
@@ -1940,6 +2020,93 @@ namespace ILCompiler
             }
         }
 
+        private sealed class ReadOnlySpanValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        {
+            private readonly MetadataType _elementType;
+            private readonly byte[] _bytes;
+
+            public ReadOnlySpanValue(MetadataType elementType, byte[] bytes)
+            {
+                _elementType = elementType;
+                _bytes = bytes;
+            }
+
+            public override int Size => 2 * _elementType.Context.Target.PointerSize;
+
+            public override bool Equals(Value value)
+            {
+                // ceq instruction on ReadOnlySpans is hard to support.
+                // We should not see it in the first place.
+                ThrowHelper.ThrowInvalidProgramException();
+                return false;
+            }
+
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
+
+            public override Value Clone()
+            {
+                // ReadOnlySpan is immutable and there's no way for the data to escape
+                return this;
+            }
+
+            public override bool TryCreateByRef(out Value value)
+            {
+                value = new ReadOnlySpanReferenceValue(_elementType, _bytes);
+                return true;
+            }
+        }
+
+        private sealed class ReadOnlySpanReferenceValue : Value
+        {
+            private readonly MetadataType _elementType;
+            private readonly byte[] _bytes;
+
+            public ReadOnlySpanReferenceValue(MetadataType elementType, byte[] bytes)
+            {
+                _elementType = elementType;
+                _bytes = bytes;
+            }
+
+            public override bool Equals(Value value)
+            {
+                // ceq instruction on refs to ReadOnlySpans is hard to support.
+                // We should not see it in the first place.
+                ThrowHelper.ThrowInvalidProgramException();
+                return false;
+            }
+
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
+
+            public bool TryAccessElement(int index, out Value value)
+            {
+                value = default;
+                int limit = _bytes.Length / _elementType.InstanceFieldSize.AsInt;
+                if (index >= limit)
+                    return false;
+
+                value = new ByRefValue(_bytes, index * _elementType.InstanceFieldSize.AsInt);
+                return true;
+            }
+        }
+
         private sealed class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             public MethodDesc PointedToMethod { get; }
@@ -2023,6 +2190,20 @@ namespace ILCompiler
                 data = null;
                 return false;
             }
+
+            private ReadOnlySpan<byte> AsExactByteCount(int count)
+            {
+                if (PointedToOffset + count > PointedToBytes.Length)
+                    ThrowHelper.ThrowInvalidProgramException();
+                return new ReadOnlySpan<byte>(PointedToBytes, PointedToOffset, count);
+            }
+
+            public sbyte DereferenceAsSByte() => (sbyte)AsExactByteCount(1)[0];
+            public short DereferenceAsInt16() => BitConverter.ToInt16(AsExactByteCount(2));
+            public int DereferenceAsInt32() => BitConverter.ToInt32(AsExactByteCount(4));
+            public long DereferenceAsInt64() => BitConverter.ToInt64(AsExactByteCount(8));
+            public float DereferenceAsSingle() => BitConverter.ToSingle(AsExactByteCount(4));
+            public double DereferenceAsDouble() => BitConverter.ToDouble(AsExactByteCount(8));
         }
 
         private abstract class ReferenceTypeValue : Value
@@ -2422,7 +2603,7 @@ namespace ILCompiler
                 _offset = offset;
             }
 
-            public Value GetField(FieldDesc field)
+            public ValueTypeValue GetField(FieldDesc field)
             {
                 Debug.Assert(!field.IsStatic);
                 Debug.Assert(!field.FieldType.IsGCPointer);
@@ -2544,6 +2725,40 @@ namespace ILCompiler
                 Debug.Assert(field.IsStatic && !field.HasRva && !field.IsThreadStatic && !field.IsLiteral);
                 return _fieldValues[field];
             }
+        }
+
+        public abstract class TypePreinitializationPolicy
+        {
+            /// <summary>
+            /// Returns true if the preinitialization system may attempt to preinitialize this type.
+            /// </summary>
+            public abstract bool CanPreinitialize(DefType type);
+
+            /// <summary>
+            /// Returns true if all concrete forms of this canonical form will be preinitialized.
+            /// This can only be answered by a whole program view.
+            /// </summary>
+            public abstract bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type);
+        }
+
+        /// <summary>
+        /// Preinitialization policy that doesn't allow preinitialization.
+        /// </summary>
+        public sealed class DisabledPreinitializationPolicy : TypePreinitializationPolicy
+        {
+            public override bool CanPreinitialize(DefType type) => false;
+            public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type) => false;
+        }
+
+        /// <summary>
+        /// Preinitialization policy that assumes new canonical forms of types could be created
+        /// at runtime.
+        /// </summary>
+        public sealed class TypeLoaderAwarePreinitializationPolicy : TypePreinitializationPolicy
+        {
+            public override bool CanPreinitialize(DefType type) => true;
+
+            public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type) => false;
         }
     }
 }

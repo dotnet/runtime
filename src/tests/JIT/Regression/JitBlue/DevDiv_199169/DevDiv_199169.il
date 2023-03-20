@@ -26,7 +26,7 @@
   IL_000d:  ret
 }
 
-.method assembly static int32  main() cil managed
+.method public assembly static int32  main() cil managed
 {
   .entrypoint
   .maxstack  6

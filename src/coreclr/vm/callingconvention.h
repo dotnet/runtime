@@ -563,7 +563,7 @@ public:
         if (m_argType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
-            return ((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg()));
+            return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
         }
         return FALSE;
 #else
@@ -840,11 +840,11 @@ public:
 
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
-            // TODO-LOONGARCH64: support SIMD.
             // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 8;
+            const int floatRegOfsInBytes = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
+            _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
 
-            assert(!m_argTypeHandle.IsHFA());
+            pLoc->m_idxFloatReg = floatRegOfsInBytes / 8;
 
             pLoc->m_cFloatReg = 1;
 
@@ -854,7 +854,7 @@ public:
         int cSlots = (GetArgSize() + 7)/ 8;
 
         // Composites greater than 16bytes are passed by reference
-        if (GetArgType() == ELEMENT_TYPE_VALUETYPE && GetArgSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
+        if (IsArgPassedByRef())
         {
             cSlots = 1;
         }

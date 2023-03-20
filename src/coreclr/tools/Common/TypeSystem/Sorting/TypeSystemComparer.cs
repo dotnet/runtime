@@ -31,10 +31,9 @@ namespace Internal.TypeSystem
 
         public int Compare(TypeDesc x, TypeDesc y)
         {
-            if (x == y)
-            {
-                return 0;
-            }
+            if (x == y) return 0;
+            if (x == null) return -1;
+            if (y == null) return 1;
 
             int codeX = x.ClassCode;
             int codeY = y.ClassCode;

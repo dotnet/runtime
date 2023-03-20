@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public int m_nField2 = 51;
         public static int[] Method1(int param1)
@@ -19,7 +19,7 @@ namespace Test
             uint[] local6 = new uint[7];
             return BB.m_adStatic1;
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

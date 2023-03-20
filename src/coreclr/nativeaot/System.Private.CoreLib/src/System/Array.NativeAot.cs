@@ -93,6 +93,7 @@ namespace System
             }
         }
 
+#pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6451
         private static void ValidateElementType(Type elementType)
         {
             while (elementType.IsArray)
@@ -106,6 +107,7 @@ namespace System
             if (elementType.ContainsGenericParameters)
                 throw new NotSupportedException(SR.NotSupported_OpenType);
         }
+#pragma warning restore CA1859
 
         public unsafe void Initialize()
         {
@@ -146,65 +148,6 @@ namespace System
             CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
 
-        public static void Copy(Array sourceArray, Array destinationArray, int length)
-        {
-            if (sourceArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
-            if (destinationArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
-
-            EETypePtr eeType = sourceArray.GetEETypePtr();
-            if (eeType.FastEquals(destinationArray.GetEETypePtr()) &&
-                eeType.IsSzArray &&
-                (uint)length <= sourceArray.NativeLength &&
-                (uint)length <= destinationArray.NativeLength)
-            {
-                nuint byteCount = (uint)length * (nuint)eeType.ComponentSize;
-                ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
-                ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
-
-                if (eeType.HasPointers)
-                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
-                else
-                    Buffer.Memmove(ref dst, ref src, byteCount);
-
-                // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
-                return;
-            }
-
-            // Less common
-            CopyImpl(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length, reliable: false);
-        }
-
-        public static unsafe void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            if (sourceArray != null && destinationArray != null)
-            {
-                EETypePtr eeType = sourceArray.GetEETypePtr();
-                if (eeType.FastEquals(destinationArray.GetEETypePtr()) &&
-                    eeType.IsSzArray &&
-                    length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
-                    (uint)(sourceIndex + length) <= sourceArray.NativeLength &&
-                    (uint)(destinationIndex + length) <= destinationArray.NativeLength)
-                {
-                    nuint elementSize = (nuint)eeType.ComponentSize;
-                    nuint byteCount = (uint)length * elementSize;
-                    ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(sourceArray).Data, (uint)sourceIndex * elementSize);
-                    ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
-
-                    if (eeType.HasPointers)
-                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
-                    else
-                        Buffer.Memmove(ref dst, ref src, byteCount);
-
-                    // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
-                    return;
-                }
-            }
-
-            // Less common
-            CopyImpl(sourceArray!, sourceIndex, destinationArray!, destinationIndex, length, reliable: false);
-        }
 
         //
         // Funnel for all the Array.Copy() overloads. The "reliable" parameter indicates whether the caller for ConstrainedCopy()
@@ -220,8 +163,7 @@ namespace System
             if (sourceArray.GetType() != destinationArray.GetType() && sourceArray.Rank != destinationArray.Rank)
                 throw new RankException(SR.Rank_MustMatch);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             const int srcLB = 0;
             if (sourceIndex < srcLB || sourceIndex - srcLB < 0)
@@ -260,7 +202,7 @@ namespace System
             {
                 if (RuntimeImports.AreTypesEquivalent(sourceElementEEType, destinationElementEEType))
                 {
-                    if (sourceElementEEType.HasPointers)
+                    if (sourceElementEEType.ContainsGCPointers)
                     {
                         CopyImplValueTypeArrayWithInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
                     }
@@ -520,9 +462,9 @@ namespace System
         //
         private static unsafe void CopyImplValueTypeArrayNoInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-            Debug.Assert((sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.HasPointers) ||
+            Debug.Assert((sourceArray.ElementEEType.IsValueType && !sourceArray.ElementEEType.ContainsGCPointers) ||
                 sourceArray.ElementEEType.IsPointer);
-            Debug.Assert((destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.HasPointers) ||
+            Debug.Assert((destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.ContainsGCPointers) ||
                 destinationArray.ElementEEType.IsPointer);
 
             // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
@@ -817,11 +759,11 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            EETypePtr eeType = array.GetEETypePtr();
-            nuint totalByteLength = eeType.ComponentSize * array.NativeLength;
+            MethodTable* mt = array.GetMethodTable();
+            nuint totalByteLength = mt->ComponentSize * array.NativeLength;
             ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
 
-            if (!eeType.HasPointers)
+            if (!mt->ContainsGCPointers)
             {
                 SpanHelpers.ClearWithoutReferences(ref pStart, totalByteLength);
             }
@@ -840,10 +782,10 @@ namespace System
             ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
             int lowerBound = 0;
 
-            EETypePtr eeType = array.GetEETypePtr();
-            if (!eeType.IsSzArray)
+            MethodTable* mt = array.GetMethodTable();
+            if (!mt->IsSzArray)
             {
-                int rank = eeType.ArrayRank;
+                int rank = mt->ArrayRank;
                 lowerBound = Unsafe.Add(ref Unsafe.As<byte, int>(ref p), rank);
                 p = ref Unsafe.Add(ref p, 2 * sizeof(int) * rank); // skip the bounds
             }
@@ -853,12 +795,12 @@ namespace System
             if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > array.NativeLength)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
-            nuint elementSize = eeType.ComponentSize;
+            nuint elementSize = mt->ComponentSize;
 
             ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * elementSize);
             nuint byteLength = (uint)length * elementSize;
 
-            if (eeType.HasPointers)
+            if (mt->ContainsGCPointers)
             {
                 Debug.Assert(byteLength % (nuint)sizeof(IntPtr) == 0);
                 SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
@@ -1095,11 +1037,11 @@ namespace System
         //
         // Return storage size of an individual element in bytes.
         //
-        internal nuint ElementSize
+        internal unsafe nuint ElementSize
         {
             get
             {
-                return this.GetEETypePtr().ComponentSize;
+                return this.GetMethodTable()->ComponentSize;
             }
         }
 
@@ -1156,38 +1098,6 @@ namespace System
         }
     }
 
-    internal class ArrayEnumeratorBase : ICloneable
-    {
-        protected int _index;
-        protected int _endIndex;
-
-        internal ArrayEnumeratorBase()
-        {
-            _index = -1;
-        }
-
-        public bool MoveNext()
-        {
-            if (_index < _endIndex)
-            {
-                _index++;
-                return (_index < _endIndex);
-            }
-            return false;
-        }
-
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
-
-#pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
-        public void Dispose()
-        {
-        }
-#pragma warning restore CA1822
-    }
-
     //
     // Note: the declared base type and interface list also determines what Reflection returns from TypeInfo.BaseType and TypeInfo.ImplementedInterfaces for array types.
     // This also means the class must be declared "public" so that the framework can reflect on it.
@@ -1199,17 +1109,15 @@ namespace System
 
         public new IEnumerator<T> GetEnumerator()
         {
-            // get length so we don't have to call the Length property again in ArrayEnumerator constructor
-            // and avoid more checking there too.
-            int length = this.Length;
-            return length == 0 ? ArrayEnumerator.Empty : new ArrayEnumerator(Unsafe.As<T[]>(this), length);
+            T[] @this = Unsafe.As<T[]>(this);
+            return @this.Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(@this);
         }
 
         public int Count
         {
             get
             {
-                return this.Length;
+                return Unsafe.As<T[]>(this).Length;
             }
         }
 
@@ -1239,13 +1147,14 @@ namespace System
 
         public bool Contains(T item)
         {
-            T[] array = Unsafe.As<T[]>(this);
-            return Array.IndexOf(array, item, 0, array.Length) >= 0;
+            T[] @this = Unsafe.As<T[]>(this);
+            return Array.IndexOf(@this, item, 0, @this.Length) >= 0;
         }
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            Array.Copy(Unsafe.As<T[]>(this), 0, array, arrayIndex, this.Length);
+            T[] @this = Unsafe.As<T[]>(this);
+            Array.Copy(@this, 0, array, arrayIndex, @this.Length);
         }
 
         public bool Remove(T item)
@@ -1283,8 +1192,8 @@ namespace System
 
         public int IndexOf(T item)
         {
-            T[] array = Unsafe.As<T[]>(this);
-            return Array.IndexOf(array, item, 0, array.Length);
+            T[] @this = Unsafe.As<T[]>(this);
+            return Array.IndexOf(@this, item, 0, @this.Length);
         }
 
         public void Insert(int index, T item)
@@ -1295,43 +1204,6 @@ namespace System
         public void RemoveAt(int index)
         {
             ThrowHelper.ThrowNotSupportedException();
-        }
-
-        private sealed class ArrayEnumerator : ArrayEnumeratorBase, IEnumerator<T>
-        {
-            private readonly T[] _array;
-
-            // Passing -1 for endIndex so that MoveNext always returns false without mutating _index
-            internal static readonly ArrayEnumerator Empty = new ArrayEnumerator(null, -1);
-
-            internal ArrayEnumerator(T[] array, int endIndex)
-            {
-                _array = array;
-                _endIndex = endIndex;
-            }
-
-            public T Current
-            {
-                get
-                {
-                    if ((uint)_index >= (uint)_endIndex)
-                        ThrowHelper.ThrowInvalidOperationException();
-                    return _array[_index];
-                }
-            }
-
-            object IEnumerator.Current
-            {
-                get
-                {
-                    return Current;
-                }
-            }
-
-            void IEnumerator.Reset()
-            {
-                _index = -1;
-            }
         }
     }
 

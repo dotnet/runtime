@@ -2619,6 +2619,8 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 12
 #elif defined(__FreeBSD__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 24
+#elif defined(__FreeBSD__) && defined(HOST_ARM64)
+#define PAL_CS_NATIVE_DATA_SIZE 24
 #elif defined(__linux__) && defined(HOST_ARM)
 #define PAL_CS_NATIVE_DATA_SIZE 80
 #elif defined(__linux__) && defined(HOST_ARM64)
@@ -3717,23 +3719,6 @@ YieldProcessor()
 #endif
 }
 
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentProcessorNumber();
-
-/*++
-Function:
-PAL_HasGetCurrentProcessorNumber
-
-Checks if GetCurrentProcessorNumber is available in the current environment
-
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_HasGetCurrentProcessorNumber();
-
 #define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
 #define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
 #define FORMAT_MESSAGE_FROM_STRING     0x00000400
@@ -3936,8 +3921,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    defines */
 #ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
-#define printf        PAL_printf
-#define vprintf       PAL_vprintf
 #define wcstod        PAL_wcstod
 #define wcstoul       PAL_wcstoul
 #define wcscat        PAL_wcscat
@@ -4007,6 +3990,10 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define _mm_getcsr    PAL__mm_getcsr
 #define _mm_setcsr    PAL__mm_setcsr
 #endif // HOST_AMD64
+
+// Forward declare functions that are in header files we can't include yet
+int printf(const char *, ...);
+int vprintf(const char *, va_list);
 
 #endif // !PAL_STDCPP_COMPAT
 
@@ -4084,14 +4071,13 @@ PALIMPORT int remove(const char*);
 PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t) THROW_DECL;
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
 PALIMPORT DLLEXPORT int __cdecl _stricmp(const char *, const char *);
-PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
 PALIMPORT int __cdecl __iscsym(int);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
-PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
+PALIMPORT DLLEXPORT int __cdecl vsprintf_s(char *, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
 PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 PALIMPORT DLLEXPORT errno_t __cdecl _itow_s(int, WCHAR *, size_t, int);
@@ -4356,9 +4342,6 @@ PALIMPORT PAL_FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 PALIMPORT int __cdecl rand(void);
 PALIMPORT void __cdecl srand(unsigned int);
-
-PALIMPORT DLLEXPORT int __cdecl printf(const char *, ...);
-PALIMPORT int __cdecl vprintf(const char *, va_list);
 
 #ifdef _MSC_VER
 #define PAL_get_caller _MSC_VER

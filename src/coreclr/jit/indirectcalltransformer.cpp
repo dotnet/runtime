@@ -115,12 +115,6 @@ private:
                 transformer.Run();
                 count++;
             }
-            else if (compiler->doesMethodHaveExpRuntimeLookup() && ContainsExpRuntimeLookup(stmt))
-            {
-                ExpRuntimeLookupTransformer transformer(compiler, block, stmt);
-                transformer.Run();
-                count++;
-            }
         }
 
         return count;
@@ -157,28 +151,6 @@ private:
     {
         GenTree* candidate = stmt->GetRootNode();
         return candidate->IsCall() && candidate->AsCall()->IsGuardedDevirtualizationCandidate();
-    }
-
-    //------------------------------------------------------------------------
-    // ContainsExpRuntimeLookup: check if this statement contains a dictionary
-    // with dynamic dictionary expansion that we want to transform in CFG.
-    //
-    // Return Value:
-    //    true if contains, false otherwise.
-    //
-    bool ContainsExpRuntimeLookup(Statement* stmt)
-    {
-        GenTree* candidate = stmt->GetRootNode();
-        if (candidate->OperIs(GT_ASG))
-        {
-            candidate = candidate->gtGetOp2();
-        }
-        if (candidate->OperIs(GT_CALL))
-        {
-            GenTreeCall* call = candidate->AsCall();
-            return call->IsExpRuntimeLookup();
-        }
-        return false;
     }
 
     class Transformer
@@ -279,9 +251,27 @@ private:
         //
         virtual void ChainFlow()
         {
-            assert(!compiler->fgComputePredsDone);
+            assert(compiler->fgPredsComputed);
+
+            // currBlock
+            compiler->fgRemoveRefPred(remainderBlock, currBlock);
+
+            if (checkBlock != currBlock)
+            {
+                compiler->fgAddRefPred(checkBlock, currBlock);
+            }
+
+            // checkBlock
             checkBlock->bbJumpDest = elseBlock;
-            thenBlock->bbJumpDest  = remainderBlock;
+            compiler->fgAddRefPred(elseBlock, checkBlock);
+            compiler->fgAddRefPred(thenBlock, checkBlock);
+
+            // thenBlock
+            thenBlock->bbJumpDest = remainderBlock;
+            compiler->fgAddRefPred(remainderBlock, thenBlock);
+
+            // elseBlock
+            compiler->fgAddRefPred(remainderBlock, elseBlock);
         }
 
         Compiler*    compiler;
@@ -747,7 +737,6 @@ private:
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
-
             InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
@@ -1002,8 +991,10 @@ private:
             // Finally, rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
+            compiler->fgRemoveRefPred(checkBlock, coldBlock);
             coldBlock->bbJumpKind = BBJ_ALWAYS;
             coldBlock->bbJumpDest = elseBlock;
+            compiler->fgAddRefPred(elseBlock, coldBlock);
         }
 
         // When the current candidate hads sufficiently high likelihood, scan
@@ -1202,173 +1193,6 @@ private:
         }
     };
 
-    // Runtime lookup with dynamic dictionary expansion transformer,
-    // it expects helper runtime lookup call with additional arguments that are:
-    // result handle, nullCheck tree, sizeCheck tree.
-    // before:
-    //   current block
-    //   {
-    //     previous statements
-    //     transforming statement
-    //     {
-    //       ASG lclVar, call with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag set and additional arguments.
-    //     }
-    //     subsequent statements
-    //   }
-    //
-    // after:
-    //   current block
-    //   {
-    //     previous statements
-    //   } BBJ_NONE check block
-    //   check block
-    //   {
-    //     jump to else if the handle fails size check
-    //   } BBJ_COND check block2, else block
-    //   check block2
-    //   {
-    //     jump to else if the handle fails null check
-    //   } BBJ_COND then block, else block
-    //   then block
-    //   {
-    //     return handle
-    //   } BBJ_ALWAYS remainder block
-    //   else block
-    //   {
-    //     do a helper call
-    //   } BBJ_NONE remainder block
-    //   remainder block
-    //   {
-    //     subsequent statements
-    //   }
-    //
-    class ExpRuntimeLookupTransformer final : public Transformer
-    {
-    public:
-        ExpRuntimeLookupTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(compiler, block, stmt)
-        {
-            GenTreeOp* asg = stmt->GetRootNode()->AsOp();
-            resultLclNum   = asg->gtOp1->AsLclVar()->GetLclNum();
-            origCall       = GetCall(stmt);
-            checkBlock2    = nullptr;
-        }
-
-    protected:
-        virtual const char* Name() override
-        {
-            return "ExpRuntimeLookup";
-        }
-
-        //------------------------------------------------------------------------
-        // GetCall: find a call in a statement.
-        //
-        // Arguments:
-        //    callStmt - the statement with the call inside.
-        //
-        // Return Value:
-        //    call tree node pointer.
-        virtual GenTreeCall* GetCall(Statement* callStmt) override
-        {
-            GenTree* tree = callStmt->GetRootNode();
-            assert(tree->OperIs(GT_ASG));
-            GenTreeCall* call = tree->gtGetOp2()->AsCall();
-            return call;
-        }
-
-        //------------------------------------------------------------------------
-        // ClearFlag: clear runtime exp lookup flag from the original call.
-        //
-        virtual void ClearFlag() override
-        {
-            origCall->ClearExpRuntimeLookup();
-        }
-
-        // FixupRetExpr: no action needed.
-        virtual void FixupRetExpr() override
-        {
-        }
-
-        //------------------------------------------------------------------------
-        // CreateCheck: create check blocks, that checks dictionary size and does null test.
-        //
-        virtual void CreateCheck() override
-        {
-            CallArg* nullCheck = origCall->gtArgs.GetArgByIndex(0);
-            CallArg* sizeCheck = origCall->gtArgs.GetArgByIndex(1);
-            origCall->gtArgs.Remove(nullCheck);
-            origCall->gtArgs.Remove(sizeCheck);
-            // The first argument is the handle now.
-            checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
-
-            assert(sizeCheck->GetEarlyNode()->OperIs(GT_LE));
-            GenTree*   sizeJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck->GetNode());
-            Statement* sizeJmpStmt = compiler->fgNewStmtFromTree(sizeJmpTree, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(checkBlock, sizeJmpStmt);
-
-            checkBlock2 = CreateAndInsertBasicBlock(BBJ_COND, checkBlock);
-            assert(nullCheck->GetEarlyNode()->OperIs(GT_EQ));
-            GenTree*   nullJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, nullCheck->GetNode());
-            Statement* nullJmpStmt = compiler->fgNewStmtFromTree(nullJmpTree, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(checkBlock2, nullJmpStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateThen: create then block, that is executed if the checks succeed.
-        // This simply returns the handle.
-        //
-        virtual void CreateThen() override
-        {
-            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock2);
-
-            CallArg* resultHandle = origCall->gtArgs.GetArgByIndex(0);
-            // The first argument is the real first argument for the call now.
-            origCall->gtArgs.Remove(resultHandle);
-
-            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, resultHandle->GetNode());
-            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(thenBlock, asgStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateElse: create else block, that is executed if the checks fail.
-        //
-        virtual void CreateElse() override
-        {
-            elseBlock          = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
-            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, origCall);
-            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(elseBlock, asgStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // SetWeights: set weights for new blocks.
-        //
-        virtual void SetWeights() override
-        {
-            remainderBlock->inheritWeight(currBlock);
-            checkBlock->inheritWeight(currBlock);
-            checkBlock2->inheritWeightPercentage(checkBlock, HIGH_PROBABILITY);
-            thenBlock->inheritWeightPercentage(currBlock, HIGH_PROBABILITY);
-            elseBlock->inheritWeightPercentage(currBlock, 100 - HIGH_PROBABILITY);
-        }
-
-        //------------------------------------------------------------------------
-        // ChainFlow: link new blocks into correct cfg.
-        //
-        virtual void ChainFlow() override
-        {
-            assert(!compiler->fgComputePredsDone);
-            checkBlock->bbJumpDest  = elseBlock;
-            checkBlock2->bbJumpDest = elseBlock;
-            thenBlock->bbJumpDest   = remainderBlock;
-        }
-
-    private:
-        BasicBlock* checkBlock2;
-        unsigned    resultLclNum;
-    };
-
     Compiler* compiler;
 };
 
@@ -1387,7 +1211,6 @@ Compiler::fgWalkResult Compiler::fgDebugCheckForTransformableIndirectCalls(GenTr
         GenTreeCall* call = tree->AsCall();
         assert(!call->IsFatPointerCandidate());
         assert(!call->IsGuardedDevirtualizationCandidate());
-        assert(!call->IsExpRuntimeLookup());
     }
     return WALK_CONTINUE;
 }
@@ -1399,7 +1222,6 @@ Compiler::fgWalkResult Compiler::fgDebugCheckForTransformableIndirectCalls(GenTr
 void Compiler::CheckNoTransformableIndirectCallsRemain()
 {
     assert(!doesMethodHaveFatPointer());
-    assert(!doesMethodHaveExpRuntimeLookup());
 
     for (BasicBlock* const block : Blocks())
     {
@@ -1423,7 +1245,7 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
 PhaseStatus Compiler::fgTransformIndirectCalls()
 {
     int count = 0;
-    if (doesMethodHaveFatPointer() || doesMethodHaveGuardedDevirtualization() || doesMethodHaveExpRuntimeLookup())
+    if (doesMethodHaveFatPointer() || doesMethodHaveGuardedDevirtualization())
     {
         IndirectCallTransformer indirectCallTransformer(this);
         count = indirectCallTransformer.Run();
@@ -1438,7 +1260,6 @@ PhaseStatus Compiler::fgTransformIndirectCalls()
         }
 
         clearMethodHasFatPointer();
-        clearMethodHasExpRuntimeLookup();
     }
     else
     {

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,6 +15,60 @@ namespace System.SpanTests
 {
     public static partial class SpanTests
     {
+        private static readonly Func<IndexOfAnyValues<byte>, byte[]> s_getValuesByteMethod =
+            typeof(IndexOfAnyValues<byte>).GetMethod("GetValues", BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate<Func<IndexOfAnyValues<byte>, byte[]>>();
+
+        private static readonly Func<IndexOfAnyValues<char>, char[]> s_getValuesCharMethod =
+            typeof(IndexOfAnyValues<char>).GetMethod("GetValues", BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate<Func<IndexOfAnyValues<char>, char[]>>();
+
+        public static IEnumerable<object[]> Values_MemberData()
+        {
+            string[] values = new[]
+            {
+                "",
+                "\0",
+                "a",
+                "ab",
+                "ac",
+                "abc",
+                "aei",
+                "abcd",
+                "aeio",
+                "aeiou",
+                "abceiou",
+                "123456789",
+                "123456789123",
+                "abcdefgh",
+                "abcdefghIJK",
+                "aa",
+                "aaa",
+                "aaaa",
+                "aaaaa",
+                "\uFFF0",
+                "\uFFF0\uFFF2",
+                "\uFFF0\uFFF2\uFFF4",
+                "\uFFF0\uFFF2\uFFF4\uFFF6",
+                "\uFFF0\uFFF2\uFFF4\uFFF6\uFFF8",
+                "\uFFF0\uFFF2\uFFF4\uFFF6\uFFF8\uFFFA",
+                "\u0000\u0001\u0002\u0003\u0004\u0005",
+                "\u0001\u0002\u0003\u0004\u0005\u0006",
+                "\u0001\u0002\u0003\u0004\u0005\u0007",
+                "\u007E\u007F\u0080\u0081\u0082\u0083",
+                "\u007E\u007F\u0080\u0081\u0082\u0084",
+                "\u007E\u007F\u0080\u0081\u0082",
+                "\u007E\u007F\u0080\u0081\u0083",
+                "\u00FE\u00FF\u0100\u0101\u0102\u0103",
+                "\u00FE\u00FF\u0100\u0101\u0102\u0104",
+                "\u00FE\u00FF\u0100\u0101\u0102",
+                "\u00FE\u00FF\u0100\u0101\u0103",
+                "\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFFA",
+                "\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFFB",
+                "\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFF9",
+            };
+
+            return values.Select(v => new object[] { v, Encoding.Latin1.GetBytes(v) });
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -124,44 +180,11 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [InlineData("\0")]
-        [InlineData("a")]
-        [InlineData("ab")]
-        [InlineData("ac")]
-        [InlineData("abc")]
-        [InlineData("aei")]
-        [InlineData("abcd")]
-        [InlineData("aeio")]
-        [InlineData("aeiou")]
-        [InlineData("abceiou")]
-        [InlineData("123456789")]
-        [InlineData("123456789123")]
-        [InlineData("abcdefgh")]
-        [InlineData("abcdefghIJK")]
-        [InlineData("aa")]
-        [InlineData("aaa")]
-        [InlineData("aaaa")]
-        [InlineData("aaaaa")]
-        [InlineData("\u0000\u0001\u0002\u0003\u0004\u0005")]
-        [InlineData("\u0001\u0002\u0003\u0004\u0005\u0006")]
-        [InlineData("\u0001\u0002\u0003\u0004\u0005\u0007")]
-        [InlineData("\u007E\u007F\u0080\u0081\u0082\u0083")]
-        [InlineData("\u007E\u007F\u0080\u0081\u0082\u0084")]
-        [InlineData("\u007E\u007F\u0080\u0081\u0082")]
-        [InlineData("\u007E\u007F\u0080\u0081\u0083")]
-        [InlineData("\u00FE\u00FF\u0100\u0101\u0102\u0103")]
-        [InlineData("\u00FE\u00FF\u0100\u0101\u0102\u0104")]
-        [InlineData("\u00FE\u00FF\u0100\u0101\u0102")]
-        [InlineData("\u00FE\u00FF\u0100\u0101\u0103")]
-        [InlineData("\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFFA")]
-        [InlineData("\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFFB")]
-        [InlineData("\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFF9")]
-        public static void IndexOfAnyValues_Contains(string needle)
+        [MemberData(nameof(Values_MemberData))]
+        public static void IndexOfAnyValues_Contains(string needle, byte[] byteNeedle)
         {
             Test(needle, IndexOfAnyValues.Create(needle));
-
-            byte[] needleBytes = Encoding.Latin1.GetBytes(needle);
-            Test(needleBytes, IndexOfAnyValues.Create(needleBytes));
+            Test(byteNeedle, IndexOfAnyValues.Create(byteNeedle));
 
             static void Test<T>(ReadOnlySpan<T> needle, IndexOfAnyValues<T> values) where T : struct, INumber<T>, IMinMaxValue<T>
             {
@@ -171,6 +194,18 @@ namespace System.SpanTests
                     Assert.Equal(needle.Contains(t), values.Contains(t));
                 }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(Values_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80875", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        public static void IndexOfAnyValues_GetValues(string needle, byte[] byteNeedle)
+        {
+            char[] charValuesActual = s_getValuesCharMethod(IndexOfAnyValues.Create(needle));
+            byte[] byteValuesActual = s_getValuesByteMethod(IndexOfAnyValues.Create(byteNeedle));
+
+            Assert.Equal(new HashSet<char>(needle).Order().ToArray(), new HashSet<char>(charValuesActual).Order().ToArray());
+            Assert.Equal(new HashSet<byte>(byteNeedle).Order().ToArray(), new HashSet<byte>(byteValuesActual).Order().ToArray());
         }
 
         [Fact]
@@ -360,7 +395,7 @@ namespace System.SpanTests
         private static class IndexOfAnyValuesTestHelper
         {
             private const int MaxNeedleLength = 10;
-            private const int MaxHaystackLength = 40;
+            private const int MaxHaystackLength = 100;
 
             private static readonly char[] s_randomAsciiChars;
             private static readonly char[] s_randomLatin1Chars;
@@ -461,8 +496,8 @@ namespace System.SpanTests
             private static void AssertionFailed<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> needle, int expected, int actual, string approach)
                 where T : INumber<T>
             {
-                string readableHaystack = string.Join(", ", haystack.ToString().Select(c => int.CreateChecked(c)));
-                string readableNeedle = string.Join(", ", needle.ToString().Select(c => int.CreateChecked(c)));
+                string readableHaystack = string.Join(", ", haystack.ToArray().Select(c => int.CreateChecked(c)));
+                string readableNeedle = string.Join(", ", needle.ToArray().Select(c => int.CreateChecked(c)));
 
                 Assert.True(false, $"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
             }

@@ -14,7 +14,7 @@ namespace System.Text.RegularExpressions.Tests
 {
     /// <summary>
     /// This class is to be ignored wrt unit tests in Release mode.
-    /// It contains temporary experimental code, such as lightweight profiling and debuggging locally.
+    /// It contains temporary experimental code, such as lightweight profiling and debugging locally.
     /// Set <see cref="Enabled"/> to true to run all the tests.
     /// </summary>
     public class RegexExperiment

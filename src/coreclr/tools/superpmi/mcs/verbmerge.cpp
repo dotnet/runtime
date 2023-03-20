@@ -5,6 +5,7 @@
 #include "verbmerge.h"
 #include "simpletimer.h"
 #include "logging.h"
+#include "spmiutil.h"
 #include <stdio.h>
 
 // Do reads/writes in large 256MB chunks.
@@ -260,7 +261,8 @@ int verbMerge::FilterDirectory(LPCWSTR                      searchPattern,
         }
         else
         {
-            LogError("Failed to find pattern '%S'. GetLastError()=%u", searchPattern, GetLastError());
+            std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
+            LogError("Failed to find pattern '%s'. GetLastError()=%u", searchPatternUtf8.c_str(), GetLastError());
             result = -1;
         }
         goto CLEAN_UP;

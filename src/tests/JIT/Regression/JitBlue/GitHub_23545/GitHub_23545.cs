@@ -16,7 +16,7 @@ namespace GitHub_23545
         }
     }
 
-    class Test
+    public class Test
     {
         public static Dictionary<TestStruct, TestStruct> StructKeyValue
         {
@@ -31,7 +31,7 @@ namespace GitHub_23545
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             int value = 0;
             foreach (var e in StructKeyValue)

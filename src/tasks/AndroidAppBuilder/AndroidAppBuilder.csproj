@@ -5,7 +5,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Templates\*.*" />
@@ -17,6 +17,12 @@
     <Compile Include="ApkBuilder.cs" />
     <Compile Include="AndroidAppBuilder.cs" />
     <Compile Include="AndroidApkFileReplacerTask.cs" />
+    <Compile Include="AndroidLibBuilderTask.cs" />
+    <Compile Include="..\Common\Builders\AndroidProject.cs" />
+    <Compile Include="..\Common\AndroidSdkHelper.cs" />
+    <Compile Include="..\Common\DexBuilder.cs" />
+    <Compile Include="..\Common\JarBuilder.cs" />
+    <Compile Include="..\Common\JavaCompiler.cs" />
     <Compile Include="..\Common\Utils.cs" />
   </ItemGroup>
 
@@ -24,6 +30,12 @@
           AfterTargets="Build"
           DependsOnTargets="Publish" />
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <!-- non-net4* -->
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

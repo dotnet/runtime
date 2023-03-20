@@ -56,12 +56,14 @@ namespace System
                 {
                     IntPtr unused;
                     IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST), Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, (IntPtr)lParam, 0, 1000, &unused);
-                    Debug.Assert(r != IntPtr.Zero, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
+
+                    // SendMessageTimeout message is a empty stub on Windows Nano Server that fails with both result and last error 0.
+                    Debug.Assert(r != IntPtr.Zero || Marshal.GetLastPInvokeError() == 0, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
                 }
             }
         }
 
-        private static IDictionary GetEnvironmentVariablesFromRegistry(bool fromMachine)
+        private static Hashtable GetEnvironmentVariablesFromRegistry(bool fromMachine)
         {
             var results = new Hashtable();
 
@@ -218,6 +220,14 @@ namespace System
 
             switch (folder)
             {
+                // Special-cased values to not use SHGetFolderPath when we have a more direct option available.
+                case SpecialFolder.System:
+                    // This assumes the system directory always exists and thus we don't need to do anything special for any SpecialFolderOption.
+                    return SystemDirectory;
+                default:
+                    return string.Empty;
+
+                // Map the SpecialFolder to the appropriate Guid
                 case SpecialFolder.ApplicationData:
                     folderGuid = Interop.Shell32.KnownFolders.RoamingAppData;
                     break;
@@ -268,9 +278,6 @@ namespace System
                     break;
                 case SpecialFolder.Startup:
                     folderGuid = Interop.Shell32.KnownFolders.Startup;
-                    break;
-                case SpecialFolder.System:
-                    folderGuid = Interop.Shell32.KnownFolders.System;
                     break;
                 case SpecialFolder.Templates:
                     folderGuid = Interop.Shell32.KnownFolders.Templates;
@@ -358,15 +365,8 @@ namespace System
                 case SpecialFolder.Windows:
                     folderGuid = Interop.Shell32.KnownFolders.Windows;
                     break;
-                default:
-                    return string.Empty;
             }
 
-            return GetKnownFolderPath(folderGuid, option);
-        }
-
-        private static string GetKnownFolderPath(string folderGuid, SpecialFolderOption option)
-        {
             Guid folderId = new Guid(folderGuid);
 
             int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out string path);

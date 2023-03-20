@@ -1266,7 +1266,7 @@ InternalDispatchImpl_GetIDsOfNames (
         if (pDispMemberInfo)
         {
             // Get the DISPID of the member.
-            rgdispid[0] = pDispMemberInfo->m_DispID;
+            rgdispid[0] = pDispMemberInfo->GetDISPID();
 
             // Get the ID's of the named arguments.
             if (cNames > 1)
@@ -1487,7 +1487,7 @@ HRESULT __stdcall   DispatchEx_GetIDsOfNames (
         if (pDispMemberInfo)
         {
             // Get the DISPID of the member.
-            rgdispid[0] = pDispMemberInfo->m_DispID;
+            rgdispid[0] = pDispMemberInfo->GetDISPID();
 
             // Get the ID's of the named arguments.
             if (cNames > 1)
@@ -1661,7 +1661,7 @@ HRESULT __stdcall   DispatchEx_GetDispID (
 
         // Set the return DISPID if the member has been found.
         if (pDispMemberInfo)
-            *pid = pDispMemberInfo->m_DispID;
+            *pid = pDispMemberInfo->GetDISPID();
     }
     END_EXTERNAL_ENTRYPOINT;
 
@@ -1714,7 +1714,7 @@ HRESULT __stdcall   DispatchEx_GetMemberName (
         else
         {
             // Copy the name into the output string.
-            *pbstrName = SysAllocString(pDispMemberInfo->m_strName);
+            *pbstrName = SysAllocString(pDispMemberInfo->GetName().GetUnicode());
         }
     }
     END_EXTERNAL_ENTRYPOINT;
@@ -1936,7 +1936,7 @@ HRESULT __stdcall   DispatchEx_GetNextDispID (
         // If we have found a member that has not been deleted then return its DISPID.
         if (pNextMember)
         {
-            *pid = pNextMember->m_DispID;
+            *pid = pNextMember->GetDISPID();
             hr = S_OK;
         }
         else

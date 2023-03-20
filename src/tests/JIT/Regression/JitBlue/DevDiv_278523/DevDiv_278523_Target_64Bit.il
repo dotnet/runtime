@@ -32,7 +32,7 @@
     .field public valuetype S m_fld
 }
 
-.class private abstract auto ansi sealed beforefieldinit C extends [mscorlib]System.Object
+.class public abstract auto ansi sealed beforefieldinit C extends [mscorlib]System.Object
 {
     .method private static int32 Test64Bit(int32 i) noinlining
     {
@@ -60,7 +60,7 @@
         ret
     }
 
-    .method private static int32 Main()
+    .method public static int32 Main()
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

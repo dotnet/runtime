@@ -11,7 +11,7 @@ namespace X
     //@ENDRENAME; Verify this renames
     using System;
 
-    class Y
+    public class Y
     {
         /*
         int     filt(unsigned a)

@@ -557,6 +557,11 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 		MonoObjectHandle  this_obj;
 		int i;
 
+		if (!invoke) {
+			mono_error_set_argument_format (error, "t", "Type %s has no Invoke method.", m_class_get_name (klass));
+			goto leave;
+		}
+
 		if (use_aot_wrappers) {
 			wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
 			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_defaults.int_class, &ftn, error));
@@ -3905,7 +3910,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 /*
  * mono_marshal_emit_managed_wrapper:
  *
- *   Emit the body of a native-to-managed wrapper. INVOKE_SIG is the signature of
+ * Emit the body of a native-to-managed wrapper. INVOKE_SIG is the signature of
  * the delegate which wraps the managed method to be called. For closed delegates,
  * it could have fewer parameters than the method it wraps.
  * THIS_LOC is the memory location where the target of the delegate is stored.
@@ -3913,7 +3918,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 void
 mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
 {
-	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle, error);
+	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle, FALSE, error);
 }
 
 static gboolean
@@ -4012,16 +4017,8 @@ method_signature_is_usable_when_marshalling_disabled (MonoMethodSignature *sig)
 	return check_all_types_in_method_signature (sig, &type_is_usable_when_marshalling_disabled);
 }
 
-/**
- * mono_marshal_get_managed_wrapper:
- * Generates IL code to call managed methods from unmanaged code
- * If \p target_handle is \c 0, the wrapper info will be a \c WrapperInfo structure.
- *
- * If \p delegate_klass is \c NULL, we're creating a wrapper for a function pointer to a method marked with
- * UnamangedCallersOnlyAttribute.
- */
-MonoMethod *
-mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error)
+static MonoMethod *
+marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig, *invoke_sig;
 	MonoMethodBuilder *mb;
@@ -4187,7 +4184,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_custom_attrs_free (cinfo);
 	}
 
-	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle, error);
+	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle, runtime_init_callback, error);
 
 	res = NULL;
 	if (is_ok (error)) {
@@ -4218,6 +4215,34 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	/* mono_method_print_code (res); */
 
 	return res;
+}
+
+/**
+ * mono_marshal_get_managed_wrapper:
+ * Generates IL code to call managed methods from unmanaged code
+ * If \p target_handle is \c 0, the wrapper info will be a \c WrapperInfo structure.
+ *
+ * If \p delegate_klass is \c NULL, we're creating a wrapper for a function pointer to a method marked with
+ * UnamangedCallersOnlyAttribute.
+ */
+MonoMethod *
+mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error)
+{
+	return marshal_get_managed_wrapper (method, delegate_klass, target_handle, FALSE, error);
+}
+
+/**
+ * mono_marshal_get_runtime_init_managed_wrapper:
+ * Generates IL code to call managed methods from unmanaged code with lazy runtime init support
+ * If \p target_handle is \c 0, the wrapper info will be a \c WrapperInfo structure.
+ *
+ * If \p delegate_klass is \c NULL, we're creating a wrapper for a function pointer to a method marked with
+ * UnamangedCallersOnlyAttribute.
+ */
+MonoMethod *
+mono_marshal_get_runtime_init_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error)
+{
+	return marshal_get_managed_wrapper (method, delegate_klass, target_handle, TRUE, error);
 }
 
 gpointer
@@ -4688,6 +4713,8 @@ is_monomorphic_array (MonoClass *klass)
 		return FALSE;
 
 	element_class = m_class_get_element_class (klass);
+	if (m_class_get_byval_arg (element_class)->type == MONO_TYPE_FNPTR)
+		return FALSE;
 	return mono_class_is_sealed (element_class) || m_class_is_valuetype (element_class);
 }
 

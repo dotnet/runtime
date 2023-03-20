@@ -9,7 +9,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
     uint i;
 
@@ -26,7 +26,7 @@ class Program
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         const int Pass = 100;
         const int Fail = -1;

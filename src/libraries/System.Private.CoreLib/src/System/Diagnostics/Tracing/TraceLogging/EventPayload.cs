@@ -90,11 +90,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            var instance = this as IEnumerable<KeyValuePair<string, object?>>;
-            return instance.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public void CopyTo(KeyValuePair<string, object?>[] payloadEntries, int count)
         {

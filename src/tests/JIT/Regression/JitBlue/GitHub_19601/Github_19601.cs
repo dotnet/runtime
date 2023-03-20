@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-class GitHub_19601
+public class GitHub_19601
 {
     static ushort s_2;
     static short[] s_5 = new short[]{1};

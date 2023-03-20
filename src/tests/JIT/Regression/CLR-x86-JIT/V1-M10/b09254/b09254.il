@@ -11,7 +11,8 @@
 {
 }
 
-.method static int32 main() {
+.class public auto ansi Test_b09254 extends [mscorlib] System.Object {
+.method public static int32 main() {
 	.entrypoint
 	.locals (int32)
 	.maxstack		20
@@ -23,4 +24,5 @@
 	pop
 	ldc.i4 100
 	ret
+}
 }

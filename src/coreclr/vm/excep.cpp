@@ -62,9 +62,6 @@
 #define NULL_AREA_SIZE   GetOsPageSize()
 #endif // !TARGET_UNIX
 
-
-BOOL IsIPInEE(void *ip);
-
 //----------------------------------------------------------------------------
 //
 // IsExceptionFromManagedCode - determine if pExceptionRecord points to a managed exception
@@ -3051,8 +3048,10 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
 
     // Get an IErrorInfo if one is available.
     IErrorInfo *pErrInfo = NULL;
+#ifdef FEATURE_COMINTEROP
     if (SafeGetErrorInfo(&pErrInfo) != S_OK)
         pErrInfo = NULL;
+#endif // FEATURE_COMINTEROP
 
     GetExceptionForHR(hr, pErrInfo, pProtectedThrowable);
 }
@@ -4040,11 +4039,12 @@ BuildCreateDumpCommandLine(
         }
     }
 
-    commandLine.AppendASCII(DumpGeneratorName);
+    commandLine.AppendUTF8(DumpGeneratorName);
 
     if (dumpName != nullptr)
     {
-        commandLine.AppendPrintf(" --name %S", dumpName);
+        commandLine.AppendUTF8(" --name ");
+        commandLine.Append(dumpName);
     }
 
     const char* dumpTypeOption = nullptr;
@@ -6171,8 +6171,7 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
             GCStress<cfg_instr>::IsEnabled() &&
             pExceptionRecord->ExceptionInformation[0] == 0 &&
             pExceptionRecord->ExceptionInformation[1] == ~0 &&
-            pThread->GetLastAVAddress() != (LPVOID)GetIP(pContext) &&
-            !IsIPInEE((LPVOID)GetIP(pContext)))
+            pThread->GetLastAVAddress() != (LPVOID)GetIP(pContext))
         {
             pThread->SetLastAVAddress((LPVOID)GetIP(pContext));
             return true;
@@ -7144,13 +7143,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
 #endif // !TARGET_UNIX
 
-BOOL IsIPInEE(void *ip)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return FALSE;
-}
-
 #if defined(FEATURE_HIJACK) && (!defined(TARGET_X86) || defined(TARGET_UNIX))
 
 // This function is used to check if the specified IP is in the prolog or not.
@@ -7506,22 +7498,11 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         }
     }
 
-
-    // Also check if the exception was in the EE or not
-    BOOL fExceptionInEE = FALSE;
-    if (!pThread)
-    {
-        // Check if the exception was in EE only if Thread object isnt available.
-        // This will save us from unnecessary checks
-        fExceptionInEE = IsIPInEE(pExceptionInfo->ExceptionRecord->ExceptionAddress);
-    }
-
     // We are going to process the exception only if one of the following conditions is true:
     //
     // 1) We have a valid Thread object (implies exception on managed thread)
-    // 2) Not a valid Thread object but the IP is in the execution engine (implies native thread within EE faulted)
     // 3) The exception occurred in a GC marked location when no thread exists (i.e. reverse P/Invoke with UnmanagedCallersOnlyAttribute).
-    if (pThread || fExceptionInEE)
+    if (pThread)
     {
         if (!bIsGCMarker)
         {
@@ -7587,34 +7568,25 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 // If Frame chain is corrupted, we may get AV while accessing frames, and this function will be
                 // called recursively.  We use Frame chain to limit our search range.  It is not disaster if we
                 // can not use it.
-                if (!(dwCode == STATUS_ACCESS_VIOLATION &&
-                      IsIPInEE(pExceptionInfo->ExceptionRecord->ExceptionAddress)))
+                // Find the stop point (most jitted function)
+                Frame* pFrame = pThread->GetFrame();
+                for(;;)
                 {
-                    // Find the stop point (most jitted function)
-                    Frame* pFrame = pThread->GetFrame();
-                    for(;;)
-                    {
-                        // skip GC frames
-                        if (pFrame == 0 || pFrame == (Frame*) -1)
-                            break;
+                    // skip GC frames
+                    if (pFrame == 0 || pFrame == (Frame*) -1)
+                        break;
 
-                        Frame::ETransitionType type = pFrame->GetTransitionType();
-                        if (type == Frame::TT_M2U || type == Frame::TT_InternalCall)
-                        {
-                            stopPoint = pFrame;
-                            break;
-                        }
-                        pFrame = pFrame->Next();
+                    Frame::ETransitionType type = pFrame->GetTransitionType();
+                    if (type == Frame::TT_M2U || type == Frame::TT_InternalCall)
+                    {
+                        stopPoint = pFrame;
+                        break;
                     }
+                    pFrame = pFrame->Next();
                 }
                 STRESS_LOG0(LF_EH, LL_INFO100, "CLRVectoredExceptionHandlerShim: stack");
                 while (count < 20 && sp < stopPoint)
                 {
-                    if (IsIPInEE((BYTE*)*sp))
-                    {
-                        STRESS_LOG1(LF_EH, LL_INFO100, "%pK\n", *sp);
-                        count ++;
-                    }
                     sp += 1;
                 }
             }
@@ -11317,6 +11289,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
 }
 
 
+#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
 {
     CONTRACTL
@@ -11336,6 +11309,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
     // Throw the exception.
     RealCOMPlusThrowHR(hr, pErrInfo);
 }
+#endif // FEATURE_COMINTEROP
 
 
 

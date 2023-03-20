@@ -8,7 +8,7 @@ namespace X
     //@ENDRENAME; Verify this renames
     using System;
 
-    class Y
+    public class Y
     {
 
         //extern("msvcrt.dll:printf") int printf(const char *fmt, ...);

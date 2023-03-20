@@ -515,6 +515,16 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsMultiDimensionalArray
+        {
+            get
+            {
+                Debug.Assert(HasComponentSize);
+                // See comment on RawArrayData for details
+                return BaseSize > (uint)(3 * sizeof(IntPtr));
+            }
+        }
+
         internal bool IsGeneric
         {
             get
@@ -634,7 +644,7 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsGeneric);
+                Debug.Assert(IsGeneric || IsGenericTypeDefinition);
 
                 if (!HasGenericVariance)
                     return null;
@@ -762,7 +772,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool HasGCPointers
+        internal bool ContainsGCPointers
         {
             get
             {
@@ -1452,10 +1462,10 @@ namespace Internal.Runtime
 
             if (eField == EETypeField.ETF_GenericComposition)
             {
-                Debug.Assert(IsGeneric);
+                Debug.Assert(IsGeneric || (IsGenericTypeDefinition && HasGenericVariance));
                 return cbOffset;
             }
-            if (IsGeneric)
+            if (IsGeneric || (IsGenericTypeDefinition && HasGenericVariance))
             {
                 cbOffset += relativeOrFullPointerOffset;
             }

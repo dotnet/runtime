@@ -486,7 +486,6 @@ inline Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_
     runtimeLookup.helper               = (DWORD)pLookup->helper;
     runtimeLookup.indirections         = (DWORD)pLookup->indirections;
     runtimeLookup.testForNull          = (DWORD)pLookup->testForNull;
-    runtimeLookup.testForFixup         = (DWORD)pLookup->testForFixup;
     runtimeLookup.sizeOffset           = pLookup->sizeOffset;
     runtimeLookup.indirectFirstOffset  = (DWORD)pLookup->indirectFirstOffset;
     runtimeLookup.indirectSecondOffset = (DWORD)pLookup->indirectSecondOffset;
@@ -503,13 +502,12 @@ inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
     runtimeLookup.helper               = (CorInfoHelpFunc)lookup.helper;
     runtimeLookup.indirections         = (WORD)lookup.indirections;
     runtimeLookup.testForNull          = lookup.testForNull != 0;
-    runtimeLookup.testForFixup         = lookup.testForFixup != 0;
     runtimeLookup.sizeOffset           = lookup.sizeOffset;
     runtimeLookup.indirectFirstOffset  = lookup.indirectFirstOffset != 0;
     runtimeLookup.indirectSecondOffset = lookup.indirectSecondOffset != 0;
     for (int i                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (size_t)lookup.offsets[i];
-    return CORINFO_RUNTIME_LOOKUP();
+    return runtimeLookup;
 }
 
 inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup)

@@ -718,7 +718,7 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Assert(false);
                 }
 
-                if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+                if (_targetPlatform.IsOSXLike)
                 {
                     // Emit a symbol for beginning of the frame. This is workaround for ld64
                     // linker bug which would produce DWARF with incorrect pcStart offsets for
@@ -766,12 +766,13 @@ namespace ILCompiler.DependencyAnalysis
             _offsetToDefName.Clear();
             foreach (ISymbolDefinitionNode n in definedSymbols)
             {
-                if (!_offsetToDefName.ContainsKey(n.Offset))
+                if (!_offsetToDefName.TryGetValue(n.Offset, out var nodes))
                 {
-                    _offsetToDefName[n.Offset] = new List<ISymbolDefinitionNode>();
+                    nodes = new List<ISymbolDefinitionNode>();
+                    _offsetToDefName[n.Offset] = nodes;
                 }
 
-                _offsetToDefName[n.Offset].Add(n);
+                nodes.Add(n);
                 _byteInterruptionOffsets[n.Offset] = true;
             }
 
@@ -791,9 +792,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private void AppendExternCPrefix(Utf8StringBuilder sb)
         {
-            if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+            if (_targetPlatform.IsOSXLike)
             {
-                // On OSX, we need to prefix an extra underscore to account for correct linkage of
+                // On OSX-like systems, we need to prefix an extra underscore to account for correct linkage of
                 // extern "C" functions.
                 sb.Append('_');
             }
@@ -907,7 +908,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_isSingleFileCompilation)
                 return false;
 
-            if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+            if (_targetPlatform.IsOSXLike)
                 return false;
 
             if (!(node is ISymbolNode))
@@ -1148,8 +1149,25 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
 
+                // Native side of the object writer is going to do more native memory allocations.
+                // Free up as much memory as possible so that we don't get OOM killed.
+                // This is potentially a waste of time. We're about to end the process and let the
+                // OS "garbage collect" the entire address space.
+                var gcInfo = GC.GetGCMemoryInfo();
+
                 if (logger.IsVerbose)
-                    logger.LogMessage($"Finalizing output to '{objectFilePath}'...");
+                    logger.LogMessage($"Memory stats: {gcInfo.TotalCommittedBytes} bytes committed, {gcInfo.TotalAvailableMemoryBytes} bytes available");
+
+                if (gcInfo.TotalCommittedBytes > gcInfo.TotalAvailableMemoryBytes / 5)
+                {
+                    if (logger.IsVerbose)
+                        logger.LogMessage($"Freeing up memory");
+
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+                }
+
+                if (logger.IsVerbose)
+                    logger.LogMessage($"Emitting debug information");
 
                 objectWriter.EmitDebugModuleInfo();
 
@@ -1157,6 +1175,9 @@ namespace ILCompiler.DependencyAnalysis
             }
             finally
             {
+                if (logger.IsVerbose)
+                    logger.LogMessage($"Finalizing output to '{objectFilePath}'...");
+
                 objectWriter.Dispose();
 
                 if (!succeeded)
@@ -1172,6 +1193,9 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
+
+            if (logger.IsVerbose)
+                logger.LogMessage($"Done writing object file");
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -1248,6 +1272,31 @@ namespace ILCompiler.DependencyAnalysis
                     vendor = "apple";
                     sys = "darwin16";
                     abi = "macho";
+                    break;
+                case TargetOS.MacCatalyst:
+                    vendor = "apple";
+                    sys = target.Architecture == TargetArchitecture.X64 ? "ios13.5" :"ios14.2";
+                    abi = "macabi";
+                    break;
+                case TargetOS.iOS:
+                    vendor = "apple";
+                    sys = "ios11.0";
+                    abi = "macho";
+                    break;
+                case TargetOS.iOSSimulator:
+                    vendor = "apple";
+                    sys = "ios11.0";
+                    abi = "simulator";
+                    break;
+                case TargetOS.tvOS:
+                    vendor = "apple";
+                    sys = "tvos11.0";
+                    abi = "macho";
+                    break;
+                case TargetOS.tvOSSimulator:
+                    vendor = "apple";
+                    sys = "tvos11.0";
+                    abi = "simulator";
                     break;
                 case TargetOS.WebAssembly:
                     vendor = "unknown";

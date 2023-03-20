@@ -106,7 +106,7 @@ namespace Mono.Linker
 			return attributeList.Cast<T> ();
 		}
 
-		static Attribute? ProcessRequiresUnreferencedCodeAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
+		static RequiresUnreferencedCodeAttribute? ProcessRequiresUnreferencedCodeAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
 		{
 			if (!(provider is MethodDefinition || provider is TypeDefinition))
 				return null;

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <MonoAotIncompatible>false</MonoAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="case13.cs" />
+  </ItemGroup>
+</Project>

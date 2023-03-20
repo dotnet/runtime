@@ -16,10 +16,10 @@ namespace System.Text.Json
         internal const string TypePropertyName = "$type";
         internal const string ValuesPropertyName = "$values";
 
-        internal static readonly byte[] s_idPropertyName = Encoding.UTF8.GetBytes(IdPropertyName);
-        internal static readonly byte[] s_refPropertyName = Encoding.UTF8.GetBytes(RefPropertyName);
-        internal static readonly byte[] s_typePropertyName = Encoding.UTF8.GetBytes(TypePropertyName);
-        internal static readonly byte[] s_valuesPropertyName = Encoding.UTF8.GetBytes(ValuesPropertyName);
+        private static readonly byte[] s_idPropertyName = "$id"u8.ToArray();
+        private static readonly byte[] s_refPropertyName = "$ref"u8.ToArray();
+        private static readonly byte[] s_typePropertyName = "$type"u8.ToArray();
+        private static readonly byte[] s_valuesPropertyName = "$values"u8.ToArray();
 
         internal static bool TryReadMetadata(JsonConverter converter, JsonTypeInfo jsonTypeInfo, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {

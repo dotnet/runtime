@@ -8,6 +8,7 @@
 #cmakedefine01 HAVE_STATFS_MOUNT
 #cmakedefine01 HAVE_FLOCK64
 #cmakedefine01 HAVE_F_DUPFD_CLOEXEC
+#cmakedefine01 HAVE_F_DUPFD
 #cmakedefine01 HAVE_F_FULLFSYNC
 #cmakedefine01 HAVE_O_CLOEXEC
 #cmakedefine01 HAVE_GETIFADDRS
@@ -15,6 +16,9 @@
 #cmakedefine01 HAVE_STAT64
 #cmakedefine01 HAVE_FORK
 #cmakedefine01 HAVE_VFORK
+#cmakedefine01 HAVE_CHMOD
+#cmakedefine01 HAVE_FCHMOD
+#cmakedefine01 HAVE_PIPE
 #cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_STAT_BIRTHTIME
 #cmakedefine01 HAVE_STAT_TIMESPEC
@@ -39,6 +43,7 @@
 #cmakedefine01 PRIORITY_REQUIRES_INT_WHO
 #cmakedefine01 KEVENT_REQUIRES_INT_PARAMS
 #cmakedefine01 HAVE_IOCTL
+#cmakedefine01 HAVE_IOCTL_WITH_INT_REQUEST
 #cmakedefine01 HAVE_TIOCGWINSZ
 #cmakedefine01 HAVE_TIOCSWINSZ
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
@@ -126,6 +131,12 @@
 #cmakedefine01 HAVE_CFSETSPEED
 #cmakedefine01 HAVE_CFMAKERAW
 #cmakedefine01 HAVE_GETGROUPLIST
+#cmakedefine01 HAVE_SYSLOG_H
+#cmakedefine01 HAVE_TERMIOS_H
+#cmakedefine01 HAVE_DLFCN_H
+#cmakedefine01 HAVE_PTHREAD_H
+#cmakedefine01 HAVE_SYS_STATVFS_H
+#cmakedefine01 HAVE_NET_IF_H
 #cmakedefine01 HAVE_SYS_PROCINFO_H
 #cmakedefine01 HAVE_IOSS_H
 #cmakedefine01 HAVE_ALIGNED_ALLOC
@@ -136,6 +147,11 @@
 #cmakedefine01 HAVE_MAKEDEV_FILEH
 #cmakedefine01 HAVE_MAKEDEV_SYSMACROSH
 #cmakedefine01 HAVE_GETGRGID_R
+#cmakedefine01 HAVE_TERMIOS2
+
+#ifndef HOST_WASI
+#cmakedefine01 HAVE_GETRUSAGE
+#endif
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

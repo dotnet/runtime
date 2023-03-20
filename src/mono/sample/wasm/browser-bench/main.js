@@ -98,61 +98,61 @@ class MainApp {
             setTasks(tasks.join(','));
         }
 
-        this.yieldBench();
-    }
+        const r = await fetch("/bootstrap.flag", {
+            method: 'POST',
+            body: "ok"
+        });
+        console.log("bootstrap post request complete, response: ", r);
 
-    bootstraped = false;
+        while (true) {
+            const resultString = await this.yieldBench();
+            if (resultString.length == 0) break;
+            document.getElementById("out").innerHTML += resultString;
+            console.log(resultString);
+        }
+
+        _jiterpreter_dump_stats();
+        document.getElementById("out").innerHTML += "Finished";
+        const r1 = await fetch("/results.json", {
+            method: 'POST',
+            body: getFullJsonResults()
+        });
+        console.log("post request complete, response: ", r1);
+        const r2 = await fetch("/results.html", {
+            method: 'POST',
+            body: document.getElementById("out").innerHTML
+        });
+        console.log("post request complete, response: ", r2);
+    }
 
     yieldBench() {
-        let promise = runBenchmark();
-        promise.then(ret => {
-            if (!this.bootstraped) {
-                fetch("/bootstrap.flag", {
-                    method: 'POST',
-                    body: "ok"
-                }).then(r => { console.log("bootstrap post request complete, response: ", r); });
-                this.bootstraped = true;
-            }
-            document.getElementById("out").innerHTML += ret;
-            if (ret.length > 0) {
-                setTimeout(() => { this.yieldBench(); }, 0);
-            } else {
-                _jiterpreter_dump_stats();
-                document.getElementById("out").innerHTML += "Finished";
-                fetch("/results.json", {
-                    method: 'POST',
-                    body: getFullJsonResults()
-                }).then(r => { console.log("post request complete, response: ", r); });
-                fetch("/results.html", {
-                    method: 'POST',
-                    body: document.getElementById("out").innerHTML
-                }).then(r => { console.log("post request complete, response: ", r); });
-            }
-        });
+        return new Promise(resolve => setTimeout(() => resolve(runBenchmark()), 0));
     }
 
-    async pageShow() {
+    async pageShow(guid) {
         try {
-            await this.waitFor('pageshow');
+            await this.waitFor('pageshow', guid);
         } finally {
             this.removeFrame();
         }
     }
 
-    async frameReachedManaged() {
+    async frameReachedManaged(guid) {
         try {
-            await this.waitFor('reached');
+            await this.waitFor('reached', guid);
         } finally {
             this.removeFrame();
         }
     }
 
-    async waitFor(eventName) {
+    async waitFor(eventName, guid) {
         try {
             let promise;
             let promiseResolve;
             this._frame = document.createElement('iframe');
-            this._frame.src = 'appstart-frame.html';
+            this._frame.src = guid
+                ? 'unique/' + guid + '/appstart-frame.html'
+                : 'appstart-frame.html';
 
             promise = new Promise(resolve => { promiseResolve = resolve; })
             window.resolveAppStartEvent = function (event) {

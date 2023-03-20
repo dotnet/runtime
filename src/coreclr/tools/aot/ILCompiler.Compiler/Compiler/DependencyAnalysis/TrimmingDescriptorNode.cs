@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             using (Stream fs = File.OpenRead(_fileName))
             {
                 var metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
-                return DescriptorMarker.GetDependencies(factory, fs, default, default, _fileName, metadataManager.FeatureSwitches);
+                return DescriptorMarker.GetDependencies(metadataManager.Logger, factory, fs, default, default, _fileName, metadataManager.FeatureSwitches);
             }
         }
 

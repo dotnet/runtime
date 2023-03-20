@@ -59,6 +59,33 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Gets the maximum number of bytes an RSA operation can produce.
+        /// </summary>
+        /// <returns>
+        ///  The maximum number of bytes an RSA operation can produce.
+        /// </returns>
+        /// <remarks>
+        ///   The maximum output size is defined by the RSA modulus, or key size. The key size, in bytes, is the maximum
+        ///   output size. If the key size is not an even number of bytes, then it is rounded up to the nearest number of
+        ///   whole bytes for purposes of determining the maximum output size.
+        /// </remarks>
+        /// <exception cref="CryptographicException">
+        ///   <see cref="AsymmetricAlgorithm.KeySize" /> returned a value that is not a possible RSA key size.
+        /// </exception>
+        public int GetMaxOutputSize()
+        {
+            if (KeySize <= 0)
+            {
+                throw new CryptographicException(SR.Cryptography_InvalidKeySize);
+            }
+
+            // KeySize is in bits. Add 7 before dividing by 8 to get ceil() instead of floor().
+            // There is no reality in which we will have a 2 GB RSA key. However, since KeySize is virtual,
+            // perform an unsigned shift so that we end up with the right value if the addition overflows.
+            return (KeySize + 7) >>> 3;
+        }
+
         public abstract RSAParameters ExportParameters(bool includePrivateParameters);
         public abstract void ImportParameters(RSAParameters parameters);
         public virtual byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) => throw DerivedClassMustOverride();
@@ -329,7 +356,7 @@ namespace System.Security.Cryptography
         public virtual bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             VerifyHash(hash.ToArray(), signature.ToArray(), hashAlgorithm, padding);
 
-        private static Exception DerivedClassMustOverride() =>
+        private static NotImplementedException DerivedClassMustOverride() =>
             new NotImplementedException(SR.NotSupported_SubclassOverride);
 
         [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -357,10 +384,13 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(padding);
 
@@ -617,10 +647,13 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentNullException.ThrowIfNull(signature);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(padding);
@@ -1378,7 +1411,7 @@ namespace System.Security.Cryptography
             // In normal circumstances, the signing and encryption size is the key size.
             // In the case of decryption, it will be at most the size of the key, but the final output size is not
             // deterministic, so start with the key size.
-            int resultSize = (KeySize + 7) / 8;
+            int resultSize = GetMaxOutputSize();
             int written;
 
             // For scenarios where we are confident that we can get the output side right on the first try, we allocate

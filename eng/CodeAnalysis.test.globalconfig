@@ -21,6 +21,30 @@ dotnet_diagnostic.BCL0015.severity = none
 # BCL0020: Invalid SR.Format call
 dotnet_diagnostic.BCL0020.severity = none
 
+# SYSLIB1045: Convert to 'GeneratedRegexAttribute'.
+dotnet_diagnostic.SYSLIB1045.severity = none
+
+# SYSLIB1054: Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+dotnet_diagnostic.SYSLIB1054.severity = none
+
+# SYSLIB1055: Invalid 'CustomMarshallerAttribute' usage
+dotnet_diagnostic.SYSLIB1055.severity = error
+
+# SYSLIB1056:Specified marshaller type is invalid
+dotnet_diagnostic.SYSLIB1056.severity = error
+
+# SYSLIB1057: Marshaller type does not have the required shape
+dotnet_diagnostic.SYSLIB1057.severity = error
+
+# SYSLIB1058: Invalid 'NativeMarshallingAttribute' usage
+dotnet_diagnostic.SYSLIB1058.severity = error
+
+# SYSLIB1060: Specified marshaller type is invalid
+dotnet_diagnostic.SYSLIB1060.severity = error
+
+# SYSLIB1061: Marshaller type has incompatible method signatures
+dotnet_diagnostic.SYSLIB1061.severity = error
+
 # CA1000: Do not declare static members on generic types
 dotnet_diagnostic.CA1000.severity = none
 
@@ -237,6 +261,18 @@ dotnet_diagnostic.CA1508.severity = none
 # CA1509: Invalid entry in code metrics rule specification file
 dotnet_diagnostic.CA1509.severity = none
 
+# CA1510: Use ArgumentNullException throw helper
+dotnet_diagnostic.CA1510.severity = none
+
+# CA1511: Use ArgumentException throw helper
+dotnet_diagnostic.CA1511.severity = none
+
+# CA1512: Use ArgumentOutOfRangeException throw helper
+dotnet_diagnostic.CA1512.severity = none
+
+# CA1513: Use ObjectDisposedException throw helper
+dotnet_diagnostic.CA1513.severity = none
+
 # CA1700: Do not name enum values 'Reserved'
 dotnet_diagnostic.CA1700.severity = none
 
@@ -417,6 +453,21 @@ dotnet_diagnostic.CA1854.severity = none
 # CA1855: Prefer 'Clear' over 'Fill'
 dotnet_diagnostic.CA1855.severity = none
 
+# CA1856: Incorrect usage of ConstantExpected attribute
+dotnet_diagnostic.CA1856.severity = none
+
+# CA1857: A constant is expected for the parameter
+dotnet_diagnostic.CA1857.severity = none
+
+# CA1858: Use 'StartsWith' instead of 'IndexOf'
+dotnet_diagnostic.CA1858.severity = none
+
+# CA1859: Use concrete types when possible for improved performance
+dotnet_diagnostic.CA1859.severity = none
+
+# CA1860: Prefer Length/Count/IsEmpty property check over Any()
+dotnet_diagnostic.CA1860.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -462,14 +513,14 @@ dotnet_diagnostic.CA2019.severity = none
 # CA2020: Prevent behavioral changes
 dotnet_diagnostic.CA2020.severity = none
 
+# CA2021: Do not call Enumerable.Cast<T> or Enumerable.OfType<T> with incompatible types
+dotnet_diagnostic.CA2021.severity = none
+
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
 
 # CA2101: Specify marshaling for P/Invoke string arguments
 dotnet_diagnostic.CA2101.severity = none
-
-# CA2109: Review visible event handlers
-dotnet_diagnostic.CA2109.severity = none
 
 # CA2119: Seal methods that satisfy private interfaces
 dotnet_diagnostic.CA2119.severity = none

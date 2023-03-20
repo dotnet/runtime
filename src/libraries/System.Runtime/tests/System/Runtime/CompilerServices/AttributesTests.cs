@@ -192,6 +192,15 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(MethodImplOptions.Unmanaged, attr3.Value);
         }
 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(42)]
+        public static void RefSafetyRulesAttributeTests(int version)
+        {
+            var attr = new RefSafetyRulesAttribute(version);
+            Assert.Equal(version, attr.Version);
+        }
+
         [Fact]
         public static void ReferenceAssemblyAttributeTests()
         {

@@ -82,7 +82,7 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 
     GenTree* addr = indir->Addr();
 
-    if (addr->OperIs(GT_LCL_VAR_ADDR) && comp->lvaGetDesc(addr->AsLclVar())->lvSIMDType)
+    if (addr->OperIs(GT_LCL_VAR_ADDR) && varTypeIsSIMD(comp->lvaGetDesc(addr->AsLclVar())))
     {
         // If we have GT_IND(GT_LCL_VAR_ADDR) and the var is a SIMD type,
         // replace the expression by GT_LCL_VAR or GT_LCL_FLD.
@@ -607,37 +607,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // Non-target intrinsics should have already been rewritten back into user calls.
             assert(comp->IsTargetIntrinsic(node->AsIntrinsic()->gtIntrinsicName));
             break;
-
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-        {
-            GenTreeSIMD* simdNode = node->AsSIMD();
-            unsigned     simdSize = simdNode->GetSimdSize();
-            var_types    simdType = comp->getSIMDTypeForSize(simdSize);
-
-            // Certain SIMD trees require rationalizing.
-            if (simdNode->AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray)
-            {
-                // Rewrite this as an explicit load.
-                JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
-                unsigned int baseTypeSize = genTypeSize(simdNode->GetSimdBaseType());
-
-                GenTree* base    = simdNode->Op(1);
-                GenTree* index   = (simdNode->GetOperandCount() == 2) ? simdNode->Op(2) : nullptr;
-                GenTree* address = new (comp, GT_LEA)
-                    GenTreeAddrMode(TYP_BYREF, base, index, baseTypeSize, OFFSETOF__CORINFO_Array__data);
-                GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
-
-                BlockRange().InsertBefore(simdNode, address, ind);
-                use.ReplaceWith(ind);
-                BlockRange().Remove(simdNode);
-
-                DISPTREERANGE(BlockRange(), use.Def());
-                JITDUMP("\n");
-            }
-        }
-        break;
-#endif // FEATURE_SIMD
 
         default:
             // Check that we don't have nodes not allowed in HIR here.

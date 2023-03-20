@@ -79,20 +79,6 @@ namespace System
             return (int)_value->HashCode;
         }
 
-        //
-        // Faster version of Equals for use on EETypes that are known not to be null and where the "match" case is the hot path.
-        //
-        public bool FastEquals(EETypePtr other)
-        {
-            Debug.Assert(!this.IsNull);
-            Debug.Assert(!other.IsNull);
-
-            // Fast check for raw equality before making call to helper.
-            if (this.RawValue == other.RawValue)
-                return true;
-            return RuntimeImports.AreTypesEquivalent(this, other);
-        }
-
         // Caution: You cannot safely compare RawValue's as RH does NOT unify EETypes. Use the == or Equals() methods exposed by EETypePtr itself.
         internal IntPtr RawValue
         {
@@ -245,14 +231,6 @@ namespace System
             }
         }
 
-        internal bool IsAbstract
-        {
-            get
-            {
-                return _value->IsAbstract;
-            }
-        }
-
         internal bool IsByRefLike
         {
             get
@@ -332,14 +310,6 @@ namespace System
             }
         }
 
-        internal ushort ComponentSize
-        {
-            get
-            {
-                return _value->ComponentSize;
-            }
-        }
-
         internal uint BaseSize
         {
             get
@@ -356,12 +326,12 @@ namespace System
             }
         }
 
-        // Has internal gc pointers.
-        internal bool HasPointers
+        // Instance contains pointers to managed objects.
+        internal bool ContainsGCPointers
         {
             get
             {
-                return _value->HasGCPointers;
+                return _value->ContainsGCPointers;
             }
         }
 

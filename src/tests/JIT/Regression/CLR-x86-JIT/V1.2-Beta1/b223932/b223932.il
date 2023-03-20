@@ -4,8 +4,8 @@
 .assembly 'b223932' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
-.class ILGEN_0xb6f84258 {
-.method static int32 Main() {
+.class public ILGEN_0xb6f84258 {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

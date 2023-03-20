@@ -13,7 +13,7 @@
 .assembly 'GitHub_15291' {}
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit P
+.class public auto ansi beforefieldinit P
        extends [mscorlib]System.Object
 {
   .method public hidebysig static uint32

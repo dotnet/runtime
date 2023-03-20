@@ -15,7 +15,7 @@ using Mono.Linker.Dataflow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed partial class FlowAnnotations
+	internal sealed partial class FlowAnnotations
 	{
 		readonly LinkContext _context;
 		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations> ();
@@ -40,7 +40,7 @@ namespace ILLink.Shared.TrimAnalysis
 		public bool RequiresGenericArgumentDataFlowAnalysis (GenericParameter genericParameter) =>
 			GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None;
 
-		public DynamicallyAccessedMemberTypes GetParameterAnnotation (ParameterProxy param)
+		internal DynamicallyAccessedMemberTypes GetParameterAnnotation (ParameterProxy param)
 		{
 			if (GetAnnotations (param.Method.Method.DeclaringType).TryGetAnnotation (param.Method.Method, out var annotation) &&
 				annotation.ParameterAnnotations != null)
@@ -126,7 +126,7 @@ namespace ILLink.Shared.TrimAnalysis
 			//   class DerivedAtRuntimeFromBase
 			//   {
 			//       // No point in adding annotation on the return value - nothing will look at it anyway
-			//       // Linker will not see this code, so there are no checks
+			//       // Trimming will not see this code, so there are no checks
 			//       public override Type GetTypeWithFields() { return typeof(TestType); }
 			//   }
 			//
@@ -194,7 +194,7 @@ namespace ILLink.Shared.TrimAnalysis
 			// class, interface, struct can have annotations
 			DynamicallyAccessedMemberTypes typeAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (type);
 
-			var annotatedFields = new ArrayBuilder<FieldAnnotation> ();
+			ArrayBuilder<FieldAnnotation> annotatedFields = default;
 
 			// First go over all fields with an explicit annotation
 			if (type.HasFields) {
@@ -227,8 +227,6 @@ namespace ILLink.Shared.TrimAnalysis
 						_context.LogWarning (method, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods);
 					}
 
-					// We convert indices from metadata space to IL space here.
-					// IL space assigns index 0 to the `this` parameter on instance methods.
 					foreach (var param in method.GetParameters ()) {
 						DynamicallyAccessedMemberTypes pa = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, param.GetCustomAttributeProvider ());
 						if (pa == DynamicallyAccessedMemberTypes.None)
@@ -357,7 +355,6 @@ namespace ILLink.Shared.TrimAnalysis
 						if (getterAnnotation?.ReturnParameterAnnotation is not (null or DynamicallyAccessedMemberTypes.None)) {
 							_context.LogWarning (getMethod, DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor, property.GetDisplayName (), getMethod.GetDisplayName ());
 						} else {
-							int offset = getMethod.HasImplicitThis () ? 1 : 0;
 							if (getterAnnotation is not null)
 								annotatedMethods.Remove (getterAnnotation.Value);
 
@@ -722,7 +719,7 @@ namespace ILLink.Shared.TrimAnalysis
 			return GetMethodParameterValue (new ParameterProxy (method, (ParameterIndex) 0), damt);
 		}
 
-		// Linker-specific dataflow value creation. Eventually more of these should be shared.
+		// Trimming dataflow value creation. Eventually more of these should be shared.
 		internal SingleValue GetFieldValue (FieldDefinition field)
 			=> field.Name switch {
 				"EmptyTypes" when field.DeclaringType.IsTypeOf (WellKnownType.System_Type) => ArrayValue.Create (0, field.DeclaringType),

@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly 'b70909' {}
+.class public auto ansi Test_b70909 extends [mscorlib] System.Object {
 .method public static int32 f1() cil managed
 {
 	.entrypoint
@@ -57,5 +58,6 @@
 	catch [mscorlib]System.Exception handler start_handler2 to end_handler2
 	.try start_try3 to end_try3 fault handler start_fault3 to end_fault3
 	
+}
 }
 

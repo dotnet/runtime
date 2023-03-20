@@ -18,7 +18,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test
        extends [System.Runtime]System.Object
 {
 

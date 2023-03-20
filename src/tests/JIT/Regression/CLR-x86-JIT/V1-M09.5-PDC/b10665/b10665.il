@@ -99,7 +99,7 @@ TryDenom:
     ret
   }
 
-.method static int32 main()
+.method public static int32 main()
 { .entrypoint
   .locals (value class Rational Half, value class Rational Third,
            value class Rational Temporary,

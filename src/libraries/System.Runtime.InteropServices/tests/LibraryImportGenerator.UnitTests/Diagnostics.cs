@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
+using SourceGenerators.Tests;
 using Xunit;
 
 using StringMarshalling = Microsoft.Interop.StringMarshalling;
@@ -320,8 +321,11 @@ partial class Test
             // Compile against Standard so that we generate forwarders
             Compilation comp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(
+                comp,
+                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Standard)),
+                out var generatorDiags,
+                new Microsoft.Interop.LibraryImportGenerator());
             DiagnosticResult[] expectedDiags = new DiagnosticResult[]
             {
                 (new DiagnosticResult(GeneratorDiagnostics.CannotForwardToDllImport))

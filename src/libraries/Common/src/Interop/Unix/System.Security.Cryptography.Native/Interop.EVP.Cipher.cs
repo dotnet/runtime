@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -115,8 +116,12 @@ internal static partial class Interop
 
         internal static void EvpCipherSetInputLength(SafeEvpCipherCtxHandle ctx, int inputLength)
         {
-            ref byte nullRef = ref MemoryMarshal.GetReference(Span<byte>.Empty);
-            if (!EvpCipherUpdate(ctx, ref nullRef, out _, ref nullRef, inputLength))
+            if (!EvpCipherUpdate(
+                ctx,
+                ref Unsafe.NullRef<byte>(),
+                out _,
+                ref Unsafe.NullRef<byte>(),
+                inputLength))
             {
                 throw CreateOpenSslCryptographicException();
             }
@@ -229,8 +234,7 @@ internal static partial class Interop
 
         internal static void EvpCipherSetCcmTagLength(SafeEvpCipherCtxHandle ctx, int tagLength)
         {
-            ref byte nullRef = ref MemoryMarshal.GetReference(Span<byte>.Empty);
-            if (!EvpCipherSetCcmTag(ctx, ref nullRef, tagLength))
+            if (!EvpCipherSetCcmTag(ctx, ref Unsafe.NullRef<byte>(), tagLength))
             {
                 throw CreateOpenSslCryptographicException();
             }

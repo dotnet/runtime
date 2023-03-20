@@ -395,7 +395,7 @@ namespace System.Xml
             return true;
         }
 
-        private Task FinishReadElementContentAsXxxAsync()
+        private Task<bool> FinishReadElementContentAsXxxAsync()
         {
             if (NodeType != XmlNodeType.EndElement)
             {

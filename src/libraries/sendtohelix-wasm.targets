@@ -5,7 +5,7 @@
       To run a custom project specific target for adding/editing @(HelixWorkItem):
 
       - In the project add:
-        <HelixTargetsFile Condition="'$(TargetOS)' == 'Browser'">wasm.helix.targets</HelixTargetsFile>
+        <HelixTargetsFile Condition="'$(TargetOS)' == 'browser'">wasm.helix.targets</HelixTargetsFile>
         - This files gets copied next to the test archive as $(MSBuildProjectName).helix.targets
 
       - In this `wasm.helix.targets` file, add to $(HelixExtensionTargets) to run your custom target
@@ -15,6 +15,17 @@
 
         - Useful properties to condition on: $(Scenario), $(IsRunningLibraryTests)
         - And add to, change, or remove from @(HelixWorkItem)
+
+      ** Staging system directories before use as helix payloads **
+
+      Helix tries to write a `.payload` file to the payload directory, but if that is
+      not writable then it needs to be staged first. For example:
+
+        <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)"   Include="$(WasmtimeDirForHelixPayload)" />
+
+      Then the payload can use specified as:
+
+        <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
   -->
 
   <PropertyGroup>
@@ -35,24 +46,29 @@
         _AddWorkItemsForBuildWasmApps
     </PrepareForBuildHelixWorkItems_WasmDependsOn>
 
-    <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);StageEmSdkForHelix;PrepareForBuildHelixWorkItems_Wasm</BuildHelixWorkItemsDependsOn>
+    <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);PrepareForBuildHelixWorkItems_Wasm</BuildHelixWorkItemsDependsOn>
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
     <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
-    <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
+    <EmSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\emsdk</EmSdkDirForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
-    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJS' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
+    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJS' or '$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
     <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
     <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
 
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
     <IncludeNodePayload Condition="'$(NeedsEMSDKNode)' == 'true' and '$(NeedsEMSDK)' != 'true'">true</IncludeNodePayload>
+
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+
+    <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-latest</SdkForWorkloadTestingDirName>
+    <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">dotnet-none</SdkForWorkloadTestingDirName>
   </PropertyGroup>
 
   <Import Project="$(TestArchiveRoot)**\*.helix.targets" />
@@ -64,6 +80,15 @@
     <_HelixLocalNodePath Condition="'$(NeedsEMSDK)' == 'true' and '$(WindowsShell)' != 'true'">$HELIX_CORRELATION_PAYLOAD/build/emsdk/node</_HelixLocalNodePath>
     <_HelixLocalNodePath Condition="'$(NeedsEMSDK)' == 'true' and '$(WindowsShell)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node</_HelixLocalNodePath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <HelixDependenciesToStage
+          Name="emsdk"
+          Include="$(EmSdkDirForHelixPayload)"
+          Condition="'$(NeedsEMSDK)' == 'true' or '$(IncludeNodePayload)' == 'true'"
+          SourcePath="$(EMSDK_PATH)"
+    />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
@@ -118,6 +143,9 @@
 
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -137,7 +165,7 @@
     <When Condition="'$(NeedsEMSDK)' == 'true'">
       <PropertyGroup>
         <NeedsDotNetSdk>true</NeedsDotNetSdk>
-        <!-- <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson> -->
+        <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
         <IncludeXHarnessCli>true</IncludeXHarnessCli>
         <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
       </PropertyGroup>
@@ -234,6 +262,7 @@
       <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(TestUsingWebcil)' == 'true'">$(WorkItemPrefix)Webcil-</WorkItemPrefix>
     </PropertyGroup>
 
     <ItemGroup>
@@ -258,29 +287,11 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="NoWorkload-Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
     </ItemGroup>
-  </Target>
-
-  <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
-       attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation
-       payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
-  <Target Name="StageEmSdkForHelix" Condition="('$(NeedsEMSDK)' == 'true' or '$(IncludeNodePayload)' == 'true') and !Exists($(EmSdkDirForHelixPayload))">
-    <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))"
-           Text="Could not find emscripten sdk in EMSDK_PATH=$(EMSDK_PATH), needed to provision for running tests on helix" />
-
-    <MakeDir Directories="$(EmSdkDirForHelixPayload)" />
-
-    <ItemGroup>
-      <_EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_EmSdkFiles)"
-          DestinationFiles="@(_EmSdkFiles -> '$(EmSdkDirForHelixPayload)\%(RecursiveDir)%(FileName)%(Extension)')"
-          SkipUnchangedFiles="true" />
   </Target>
 </Project>

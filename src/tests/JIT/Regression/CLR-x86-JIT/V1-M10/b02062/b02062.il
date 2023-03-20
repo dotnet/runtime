@@ -10,7 +10,7 @@
 .assembly b02062
 {
 }
-.class test
+.class public test
 {
   .field public        int32 m_i
   .field public static int32 s_i

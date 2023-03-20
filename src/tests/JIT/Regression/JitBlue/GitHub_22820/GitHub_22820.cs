@@ -17,7 +17,7 @@ class DisposableObject : IDisposable
     }
 }
 
-class Program
+public class Program
 {
     public static bool IsExpectedException(Exception e)
     {
@@ -31,7 +31,7 @@ class Program
         return new DisposableObject();
     }
     
-    static int Main()
+    public static int Main()
     {
         int result = 0;
 

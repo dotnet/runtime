@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
+#pragma warning disable SA1648 // TODO: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3595
+
 namespace System.Net
 {
     /// <devdoc>
@@ -16,7 +18,7 @@ namespace System.Net
     ///     Provides an Internet Protocol (IP) address.
     ///   </para>
     /// </devdoc>
-    public class IPAddress
+    public class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>
     {
         public static readonly IPAddress Any = new ReadOnlyIPAddress(new byte[] { 0, 0, 0, 0 });
         public static readonly IPAddress Loopback = new ReadOnlyIPAddress(new byte[] { 127, 0, 0, 1 });
@@ -107,10 +109,7 @@ namespace System.Net
         /// </devdoc>
         public IPAddress(long newAddress)
         {
-            if ((ulong)newAddress > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(newAddress));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((ulong)newAddress, 0x00000000FFFFFFFF, nameof(newAddress));
 
             PrivateAddress = (uint)newAddress;
         }
@@ -134,10 +133,7 @@ namespace System.Net
 
             // Consider: Since scope is only valid for link-local and site-local
             //           addresses we could implement some more robust checking here
-            if ((ulong)scopeid > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(scopeid));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((ulong)scopeid, 0x00000000FFFFFFFF, nameof(scopeid));
 
             _numbers = ReadUInt16NumbersFromBytes(address);
             PrivateScopeId = (uint)scopeid;
@@ -242,6 +238,16 @@ namespace System.Net
             return (address != null);
         }
 
+        /// <inheritdoc/>
+        static bool IParsable<IPAddress>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result) =>
+            // provider is explicitly ignored
+            TryParse(s, out result);
+
+        /// <inheritdoc/>
+        static bool ISpanParsable<IPAddress>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result) =>
+            // provider is explicitly ignored
+            TryParse(s, out result);
+
         public static IPAddress Parse(string ipString)
         {
             ArgumentNullException.ThrowIfNull(ipString);
@@ -253,6 +259,16 @@ namespace System.Net
         {
             return IPAddressParser.Parse(ipSpan, tryParse: false)!;
         }
+
+        /// <inheritdoc/>
+        static IPAddress ISpanParsable<IPAddress>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) =>
+            // provider is explicitly ignored
+            Parse(s);
+
+        /// <inheritdoc/>
+        static IPAddress IParsable<IPAddress>.Parse(string s, IFormatProvider? provider) =>
+            // provider is explicitly ignored
+            Parse(s);
 
         public bool TryWriteBytes(Span<byte> destination, out int bytesWritten)
         {
@@ -374,10 +390,8 @@ namespace System.Net
 
                 // Consider: Since scope is only valid for link-local and site-local
                 //           addresses we could implement some more robust checking here
-                if (value < 0 || value > 0x00000000FFFFFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x00000000FFFFFFFF);
 
                 PrivateScopeId = (uint)value;
             }
@@ -394,12 +408,22 @@ namespace System.Net
                 IPAddressParser.IPv4AddressToString(PrivateAddress) :
                 IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId);
 
+        /// <inheritdoc/>
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) =>
+            // format and provider are explicitly ignored
+            ToString();
+
         public bool TryFormat(Span<char> destination, out int charsWritten)
         {
             return IsIPv4 ?
                 IPAddressParser.IPv4AddressToString(PrivateAddress, destination, out charsWritten) :
                 IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId, destination, out charsWritten);
         }
+
+        /// <inheritdoc/>
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            // format and provider are explicitly ignored
+            TryFormat(destination, out charsWritten);
 
         public static long HostToNetworkOrder(long host)
         {

@@ -52,9 +52,9 @@ namespace BadOverride1
         }
     }
 
-    static class App
+    public static class App
     {
-        static int Main()
+        public static int Main()
         {
             Dll.Apis.RunDllCode();
             Console.Write("\r\n");

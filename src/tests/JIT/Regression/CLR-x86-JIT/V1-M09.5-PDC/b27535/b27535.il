@@ -8,9 +8,9 @@
   .ver 4:0:0:0
 }
 .assembly 'b27535' {}
-.class stelem_test {
+.class public stelem_test {
 
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	17
 

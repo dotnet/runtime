@@ -72,10 +72,10 @@ jobs:
     - ${{ if eq(parameters.targetos, 'windows') }}:
       - name: target_crossgen2_os
         value: windows
-    - ${{ if eq(parameters.targetos, 'Linux') }}:
+    - ${{ if eq(parameters.targetos, 'linux') }}:
       - name: target_crossgen2_os
         value: linux
-    - ${{ if eq(parameters.targetos, 'OSX') }}:
+    - ${{ if eq(parameters.targetos, 'osx') }}:
       - name: target_crossgen2_os
         value: osx
 

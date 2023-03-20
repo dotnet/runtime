@@ -9,11 +9,13 @@
   .ver 4:0:0:0
 }
 
+.class public auto ansi Test_b99667 extends [mscorlib] System.Object {
 .method public static int32 main()
 {
     .entrypoint
     ldc.i4.s 100
     ret
+}
 }
 
 .method public static valuetype [mscorlib]System.DateTime 

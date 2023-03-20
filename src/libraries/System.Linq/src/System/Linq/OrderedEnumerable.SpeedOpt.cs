@@ -21,7 +21,7 @@ namespace System.Linq
 
             TElement[] array = new TElement[count];
             int[] map = SortedMap(buffer);
-            for (int i = 0; i != array.Length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = buffer._items[map[i]];
             }

@@ -1,11 +1,10 @@
-//! Licensed to the .NET Foundation under one or more agreements.
-//! The .NET Foundation licenses this file to you under the MIT license.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-import BuildConfiguration from "consts:configuration";
 import { INTERNAL, Module, runtimeHelpers } from "./imports";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
-const wasm_func_map = new Map<number, string>();
+export const wasm_func_map = new Map<number, string>();
 const regexes: any[] = [];
 
 // V8
@@ -62,8 +61,8 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
 export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
     let errObj: any = err;
-    if (!(errObj instanceof Error)) {
-        errObj = new Error(errObj);
+    if (!errObj || !errObj.stack || !(errObj instanceof Error)) {
+        errObj = new Error(errObj || "Unknown error");
     }
 
     // Error
@@ -183,31 +182,15 @@ export function setup_proxy_console(id: string, console: Console, origin: string
         anyConsole[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 
-export function readSymbolMapFile(filename: string): void {
-    if (runtimeHelpers.mono_wasm_symbols_are_ready) return;
-    runtimeHelpers.mono_wasm_symbols_are_ready = true;
-    try {
-        const res = Module.FS_readFile(filename, { flags: "r", encoding: "utf8" });
-        res.split(/[\r\n]/).forEach((line: string) => {
-            const parts: string[] = line.split(/:/);
-            if (parts.length < 2)
-                return;
+export function parseSymbolMapFile(text: string) {
+    text.split(/[\r\n]/).forEach((line: string) => {
+        const parts: string[] = line.split(/:/);
+        if (parts.length < 2)
+            return;
 
-            parts[1] = parts.splice(1).join(":");
-            wasm_func_map.set(Number(parts[0]), parts[1]);
-        });
-        if (BuildConfiguration === "Debug") {
-            console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
-        }
-    } catch (error: any) {
-        if (error.errno == 44) {// NOENT
-            if (BuildConfiguration === "Debug") {
-                console.debug(`MONO_WASM: Could not find symbols file ${filename}. Ignoring.`);
-            }
-        }
-        else {
-            console.log(`MONO_WASM: Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
-        }
-        return;
-    }
+        parts[1] = parts.splice(1).join(":");
+        wasm_func_map.set(Number(parts[0]), parts[1]);
+    });
+
+    if (runtimeHelpers.diagnosticTracing) console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
 }

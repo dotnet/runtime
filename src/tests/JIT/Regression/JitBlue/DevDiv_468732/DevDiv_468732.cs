@@ -5,7 +5,7 @@
 
 using System.Runtime.CompilerServices;
 
-struct S
+public struct S
 {
     int i;
 
@@ -21,7 +21,7 @@ struct S
         return s;
     }
 
-    static unsafe int Main()
+    public static unsafe int Main()
     {
         S s;
         return Test(&s)->i;

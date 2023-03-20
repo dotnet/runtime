@@ -789,7 +789,7 @@ namespace System.Linq
                 }
 
                 TResult[] array = new TResult[count];
-                for (int i = 0, curIdx = _minIndexInclusive; i != array.Length; ++i, ++curIdx)
+                for (int i = 0, curIdx = _minIndexInclusive; i < array.Length; ++i, ++curIdx)
                 {
                     array[i] = _selector(_source[curIdx]);
                 }

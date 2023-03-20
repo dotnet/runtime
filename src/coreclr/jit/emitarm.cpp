@@ -6058,21 +6058,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_T2_G0: // T2_G0   .......PU.W.nnnn ttttTTTTiiiiiiii       R1  R2  R3         imm8, PUW
         case IF_T2_G1: // T2_G1   ............nnnn ttttTTTT........       R1  R2  R3
+            sz   = emitGetInstrDescSize(id);
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_T(id->idReg1());
             code |= insEncodeRegT2_D(id->idReg2());
             code |= insEncodeRegT2_N(id->idReg3());
             if (fmt == IF_T2_G0)
             {
-                sz  = emitGetInstrDescSizeSC(id);
                 imm = emitGetInsSC(id);
                 assert(unsigned_abs(imm) <= 0x00ff);
                 code |= abs(imm);
                 code |= insEncodePUW_G0(id->idInsOpt(), imm);
-            }
-            else
-            {
-                sz = emitGetInstrDescSize(id);
             }
             dst += emitOutput_Thumb2Instr(dst, code);
             break;
@@ -6080,7 +6076,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_T2_H0: // T2_H0   ............nnnn tttt.PUWiiiiiiii       R1  R2             imm8, PUW
         case IF_T2_H1: // T2_H1   ............nnnn tttt....iiiiiiii       R1  R2             imm8
         case IF_T2_H2: // T2_H2   ............nnnn ........iiiiiiii       R1                 imm8
-            sz   = emitGetInstrDescSizeSC(id);
+            sz   = emitGetInstrDescSize(id);
             imm  = emitGetInsSC(id);
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_T(id->idReg1());
@@ -6104,7 +6100,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_T2_I0: // T2_I0   ..........W.nnnn rrrrrrrrrrrrrrrr       R1              W, imm16
         case IF_T2_I1: // T2_I1   ................ rrrrrrrrrrrrrrrr                          imm16
-            sz   = emitGetInstrDescSizeSC(id);
+            sz   = emitGetInstrDescSize(id);
             code = emitInsCode(ins, fmt);
             if (fmt == IF_T2_I0)
             {
@@ -6150,7 +6146,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_T2_K2: // T2_K2   ............nnnn ....iiiiiiiiiiii       R1                 imm12
-            sz   = emitGetInstrDescSizeSC(id);
+            sz   = emitGetInstrDescSize(id);
             imm  = emitGetInsSC(id);
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_N(id->idReg1());
@@ -6185,7 +6181,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_T2_M0: // T2_M0   .....i......nnnn .iiiddddiiiiiiii       R1  R2             imm12
-            sz   = emitGetInstrDescSizeSC(id);
+            sz   = emitGetInstrDescSize(id);
             imm  = emitGetInsSC(id);
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_D(id->idReg1());
@@ -6200,7 +6196,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_T2_N: // T2_N    .....i......iiii .iiiddddiiiiiiii       R1                 imm16
-            sz   = emitGetInstrDescSizeSC(id);
+            sz   = emitGetInstrDescSize(id);
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_D(id->idReg1());
             imm = emitGetInsSC(id);
@@ -6223,7 +6219,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_T2_N2: // T2_N2   .....i......iiii .iiiddddiiiiiiii       R1                 imm16
-            sz   = emitGetInstrDescSizeSC(id);
+            sz   = emitGetInstrDescSize(id);
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_D(id->idReg1());
             imm  = emitGetInsSC(id);
@@ -6327,7 +6323,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
 
         case IF_T2_VLDST:
-            sz   = emitGetInstrDescSizeSC(id);
+            sz   = emitGetInstrDescSize(id);
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_N(id->idReg2());
             code |= insEncodeRegT2_VectorD(id->idReg1(), size, true);
@@ -6927,8 +6923,25 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 {
     if (isFloatReg(reg))
     {
-        const char* size = attr == EA_8BYTE ? "d" : "s";
-        printf("%s%s", size, emitFloatRegName(reg, attr) + 1);
+        if (attr == EA_8BYTE)
+        {
+            unsigned regIndex = reg - REG_F0;
+            regIndex >>= 1;
+
+            if (regIndex < 10)
+            {
+                printf("d%c", regIndex + '0');
+            }
+            else
+            {
+                assert(regIndex < 100);
+                printf("d%c%c", (regIndex / 10), (regIndex % 10));
+            }
+        }
+        else
+        {
+            printf("s%s", emitFloatRegName(reg, attr) + 1);
+        }
     }
     else
     {

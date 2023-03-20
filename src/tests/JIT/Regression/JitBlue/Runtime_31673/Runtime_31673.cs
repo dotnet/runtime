@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 namespace Runtime_31673
 {
 
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static Vector4 Test(Vector4 v)
@@ -17,7 +17,7 @@ namespace Runtime_31673
             return Vector4.Clamp(v, Vector4.Zero, Vector4.One);
         }
 
-        static int Main()
+        public static int Main()
         {
             int returnVal = 100;
 

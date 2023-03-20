@@ -8,7 +8,7 @@ namespace DefaultNamespace
     //@ENDRENAME; Verify this renames
     using System;
 
-    class AppStarter
+    public class AppStarter
     {
         private static int n = 0;
 

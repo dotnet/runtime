@@ -8,7 +8,7 @@
 // in Test::Main(). Despite the fact that each local refers to a different array element, all of the locals were
 // assigned the same value number.
 
-.class Test extends [mscorlib]System.Object
+.class public Test extends [mscorlib]System.Object
 {
     .method static void Equal(int32 i, int32 j) cil noinlining
     {

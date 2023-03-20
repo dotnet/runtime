@@ -1,6 +1,0 @@
-<Project>
-    <Import Project="..\..\Directory.Build.targets" />
-
-    <!-- Use live-build targets -->
-    <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
-</Project>

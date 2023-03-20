@@ -615,9 +615,7 @@ void MetaSig::Init(
         }
     }
 
-
     m_pStart = psig;
-
     m_flags = 0;
 
     // Reset the iterator fields
@@ -661,7 +659,7 @@ MetaSig::MetaSig(MethodDesc *pMD, Instantiation classInst, Instantiation methodI
     DWORD cbSigSize;
     pMD->GetSig(&pSig, &cbSigSize);
 
-    Init(pSig, cbSigSize, pMD->GetModule(),&typeContext);
+    Init(pSig, cbSigSize, pMD->GetModule(), &typeContext);
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
@@ -682,7 +680,7 @@ MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
     DWORD cbSigSize;
     pMD->GetSig(&pSig, &cbSigSize);
 
-    Init(pSig, cbSigSize, pMD->GetModule(),&typeContext);
+    Init(pSig, cbSigSize, pMD->GetModule(), &typeContext);
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
@@ -1481,9 +1479,9 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             {
                 if (TypeFromToken(typeToken) == mdtTypeRef)
                 {
-                        loadedType = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
-                        thRet = loadedType;
-                        break;
+                    loadedType = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
+                    thRet = loadedType;
+                    break;
                 }
             }
 
@@ -1535,8 +1533,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                              pZapSigContext);
             if (elemType.IsNull())
             {
-                    thRet = elemType;
-                    break;
+                thRet = elemType;
+                break;
             }
 
             uint32_t rank = 0;
@@ -1547,7 +1545,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 _ASSERTE(0 < rank);
             }
             thRet = ClassLoader::LoadArrayTypeThrowing(elemType, typ, rank, fLoadTypes, level);
-                break;
+            break;
         }
 
         case ELEMENT_TYPE_PINNED:
@@ -1559,7 +1557,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                dropGenericArgumentLevel,
                                                pSubst,
                                                pZapSigContext);
-                break;
+            break;
 
         case ELEMENT_TYPE_BYREF:
         case ELEMENT_TYPE_PTR:
@@ -1577,69 +1575,84 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             }
             else
             {
-                    thRet = ClassLoader::LoadPointerOrByrefTypeThrowing(typ, baseType, fLoadTypes, level);
+                thRet = ClassLoader::LoadPointerOrByrefTypeThrowing(typ, baseType, fLoadTypes, level);
             }
-                break;
+            break;
         }
 
         case ELEMENT_TYPE_FNPTR:
-            {
+        {
 #ifndef DACCESS_COMPILE
-                uint32_t uCallConv = 0;
-                IfFailThrowBF(psig.GetData(&uCallConv), BFA_BAD_SIGNATURE, pOrigModule);
+            uint32_t uCallConv = 0;
+            IfFailThrowBF(psig.GetData(&uCallConv), BFA_BAD_SIGNATURE, pOrigModule);
 
-                if ((uCallConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD)
-                    THROW_BAD_FORMAT(BFA_FNPTR_CANNOT_BE_A_FIELD, pOrigModule);
+            if ((uCallConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD)
+                THROW_BAD_FORMAT(BFA_FNPTR_CANNOT_BE_A_FIELD, pOrigModule);
 
-                if ((uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) > 0)
-                    THROW_BAD_FORMAT(BFA_FNPTR_CANNOT_BE_GENERIC, pOrigModule);
+            if ((uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) > 0)
+                THROW_BAD_FORMAT(BFA_FNPTR_CANNOT_BE_GENERIC, pOrigModule);
 
-                // Get arg count;
-                uint32_t cArgs = 0;
-                IfFailThrowBF(psig.GetData(&cArgs), BFA_BAD_SIGNATURE, pOrigModule);
+            // Get the arg count.
+            uint32_t cArgs = 0;
+            IfFailThrowBF(psig.GetData(&cArgs), BFA_BAD_SIGNATURE, pOrigModule);
 
-                uint32_t cAllocaSize;
-                if (!ClrSafeInt<uint32_t>::addition(cArgs, 1, cAllocaSize) ||
-                    !ClrSafeInt<uint32_t>::multiply(cAllocaSize, sizeof(TypeHandle), cAllocaSize))
+            uint32_t cAllocaSize;
+            if (!ClrSafeInt<uint32_t>::addition(cArgs, 1, cAllocaSize) ||
+                !ClrSafeInt<uint32_t>::multiply(cAllocaSize, sizeof(TypeHandle), cAllocaSize))
+            {
+                ThrowHR(COR_E_OVERFLOW);
+            }
+
+            TypeHandle *retAndArgTypes = (TypeHandle*) _alloca(cAllocaSize);
+            bool fReturnTypeOrParameterNotLoaded = false;
+
+            for (unsigned i = 0; i <= cArgs; i++)
+            {
+                // Lookup type handle.
+                retAndArgTypes[i] = psig.GetTypeHandleThrowing(pOrigModule,
+                                                               pTypeContext,
+                                                               fLoadTypes,
+                                                               level,
+                                                               dropGenericArgumentLevel,
+                                                               pSubst,
+                                                               pZapSigContext);
+
+                if (retAndArgTypes[i].IsNull())
                 {
-                    ThrowHR(COR_E_OVERFLOW);
-                }
-
-                TypeHandle *retAndArgTypes = (TypeHandle*) _alloca(cAllocaSize);
-                bool fReturnTypeOrParameterNotLoaded = false;
-
-                for (unsigned i = 0; i <= cArgs; i++)
-                {
-                    retAndArgTypes[i] = psig.GetTypeHandleThrowing(pOrigModule,
-                                                                   pTypeContext,
-                                                                   fLoadTypes,
-                                                                   level,
-                                                                   dropGenericArgumentLevel,
-                                                                   pSubst,
-                                                                   pZapSigContext);
-                    if (retAndArgTypes[i].IsNull())
-                    {
-                        thRet = TypeHandle();
-                        fReturnTypeOrParameterNotLoaded = true;
-                        break;
-                    }
-
-                    IfFailThrowBF(psig.SkipExactlyOne(), BFA_BAD_SIGNATURE, pOrigModule);
-                }
-
-                if (fReturnTypeOrParameterNotLoaded)
-                {
+                    thRet = TypeHandle();
+                    fReturnTypeOrParameterNotLoaded = true;
                     break;
                 }
 
-                // Now make the function pointer type
-                thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);
+                IfFailThrowBF(psig.SkipExactlyOne(), BFA_BAD_SIGNATURE, pOrigModule);
+            }
+
+            if (fReturnTypeOrParameterNotLoaded)
+            {
+                break;
+            }
+
+            // Only have an unmanaged\managed status, and not the unmanaged CALLCONV_ value.
+            switch (uCallConv & IMAGE_CEE_CS_CALLCONV_MASK)
+            {
+                case IMAGE_CEE_CS_CALLCONV_C:
+                case IMAGE_CEE_CS_CALLCONV_STDCALL:
+                case IMAGE_CEE_CS_CALLCONV_THISCALL:
+                case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+                    // Strip the calling convention.
+                    uCallConv &= ~IMAGE_CEE_CS_CALLCONV_MASK;
+                    // Normalize to unmanaged.
+                    uCallConv |= IMAGE_CEE_CS_CALLCONV_UNMANAGED;
+            }
+
+            // Find an existing function pointer or make a new one
+            thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);                
 #else
             DacNotImpl();
-                thRet = TypeHandle();
+            thRet = TypeHandle();
 #endif
             break;
-            }
+        }
 
         case ELEMENT_TYPE_INTERNAL :
             {
@@ -4827,26 +4840,45 @@ public:
         WRAPPER_NO_CONTRACT;
     }
 
+    void Find(FieldDesc* pFD, SIZE_T baseOffset)
+    {
+        if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            if (pFieldMT->IsByRefLike())
+            {
+                Find(pFieldMT, baseOffset + pFD->GetOffset());
+            }
+        }
+        else if (pFD->IsByRef())
+        {
+            Report(baseOffset + pFD->GetOffset());
+        }
+    }
+
     void Find(PTR_MethodTable pMT, SIZE_T baseOffset)
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(pMT != nullptr);
         _ASSERTE(pMT->IsByRefLike());
 
+        bool isValArray = pMT->GetClass()->IsInlineArray();
         ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
         for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {
-            if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+            if (isValArray)
             {
-                PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-                if (pFieldMT->IsByRefLike())
+                _ASSERTE(pFD->GetOffset() == 0);
+                DWORD elementSize = pFD->GetSize();
+                DWORD totalSize = pMT->GetNumInstanceFieldBytes();
+                for (DWORD offset = 0; offset < totalSize; offset += elementSize)
                 {
-                    Find(pFieldMT, baseOffset + pFD->GetOffset());
+                    Find(pFD, baseOffset + offset);
                 }
             }
-            else if (pFD->IsByRef())
+            else
             {
-                Report(baseOffset + pFD->GetOffset());
+                Find(pFD, baseOffset);
             }
         }
     }

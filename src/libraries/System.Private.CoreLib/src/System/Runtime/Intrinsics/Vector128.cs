@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
@@ -234,9 +235,26 @@ namespace System.Runtime.Intrinsics
         public static Vector128<ulong> AsUInt64<T>(this Vector128<T> vector)
             where T : struct => vector.As<T, ulong>();
 
+        /// <summary>Reinterprets a <see cref="Plane" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <param name="value">The plane to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> AsVector128(this Plane value)
+            => Unsafe.As<Plane, Vector128<float>>(ref value);
+
+        /// <summary>Reinterprets a <see cref="Quaternion" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <param name="value">The quaternion to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> AsVector128(this Quaternion value)
+            => Unsafe.As<Quaternion, Vector128<float>>(ref value);
+
         /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<float> AsVector128(this Vector2 value)
             => new Vector4(value, 0.0f, 0.0f).AsVector128();
@@ -244,6 +262,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<float> AsVector128(this Vector3 value)
             => new Vector4(value, 0.0f).AsVector128();
@@ -276,6 +295,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Vector2" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector2" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 AsVector2(this Vector128<float> value)
         {
@@ -286,6 +306,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Vector3" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector3" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 AsVector3(this Vector128<float> value)
         {
@@ -599,6 +620,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector128{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector128<T> vector, T[] destination)
             where T : struct
         {
@@ -609,8 +631,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[0]), vector);
         }
 
         /// <summary>Copies a <see cref="Vector128{T}" /> to a given array starting at the specified index.</summary>
@@ -622,6 +643,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex" /> is negative or greater than the length of <paramref name="destination" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void CopyTo<T>(this Vector128<T> vector, T[] destination, int startIndex)
             where T : struct
         {
@@ -637,8 +659,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref Unsafe.Add(ref address, startIndex), vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[startIndex]), vector);
         }
 
         /// <summary>Copies a <see cref="Vector128{T}" /> to a given span.</summary>
@@ -647,16 +668,16 @@ namespace System.Runtime.Intrinsics
         /// <param name="destination">The span to which the <paramref name="vector" /> is copied.</param>
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector128{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector128<T> vector, Span<T> destination)
             where T : struct
         {
-            if ((uint)destination.Length < (uint)Vector128<T>.Count)
+            if (destination.Length < Vector128<T>.Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance with all elements initialized to the specified value.</summary>
@@ -779,6 +800,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector128{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Create<T>(T[] values)
             where T : struct
         {
@@ -789,8 +811,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            return Unsafe.ReadUnaligned<Vector128<T>>(ref address);
+            return Unsafe.ReadUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref values[0]));
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> from a given array.</summary>
@@ -801,6 +822,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector128{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Create<T>(T[] values, int index)
             where T : struct
         {
@@ -811,8 +833,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            return Unsafe.ReadUnaligned<Vector128<T>>(ref Unsafe.Add(ref address, index));
+            return Unsafe.ReadUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref values[index]));
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> from a given readonly span.</summary>
@@ -830,8 +851,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-            return Unsafe.ReadUnaligned<Vector128<T>>(ref address);
+            return Unsafe.ReadUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
         /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1801,6 +1821,21 @@ namespace System.Runtime.Intrinsics
             return Unsafe.ReadUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref source));
         }
 
+        /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<ushort> LoadUnsafe(ref char source) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source));
+
+        /// <summary>Loads a vector from the given source and element offset and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
+        /// <param name="elementOffset">The element offset from <paramref name="source" /> from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" /> plus <paramref name="elementOffset" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -2400,6 +2435,35 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].
+        /// On hardware with <see cref="Ssse3"/> support, indices are treated as modulo 16, and if the high bit is set, the result will be set to 0 for that element.
+        /// On hardware with <see cref="AdvSimd.Arm64"/> or <see cref="PackedSimd"/> support, this method behaves the same as Shuffle.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
+        {
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.Shuffle(vector, indices);
+            }
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
+            }
+
+            if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Swizzle(vector, indices);
+            }
+
+            return Shuffle(vector, indices);
+        }
+
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
@@ -2774,16 +2838,16 @@ namespace System.Runtime.Intrinsics
         /// <param name="destination">The span to which <paramref name="destination" /> is copied.</param>
         /// <returns><c>true</c> if <paramref name="vector" /> was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector128{T}.Count" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCopyTo<T>(this Vector128<T> vector, Span<T> destination)
             where T : struct
         {
-            if ((uint)destination.Length < (uint)Vector128<T>.Count)
+            if (destination.Length < Vector128<T>.Count)
             {
                 return false;
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
             return true;
         }
 
@@ -3163,6 +3227,34 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             Unsafe.AsRef(in vector._upper) = value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.UnpackLow(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.Arm64.ZipLow(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.UnpackHigh(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.Arm64.ZipHigh(left, right);
         }
     }
 }

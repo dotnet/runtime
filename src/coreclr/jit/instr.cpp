@@ -101,12 +101,88 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
+    const emitter* emit = GetEmitter();
+
+    if (emit->IsVexOrEvexEncodedInstruction(ins))
     {
-        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
-        retbuf = buf[curBuf];
-        curBuf = (curBuf + 1) % 4;
-        return retbuf;
+        if (!emit->IsBMIInstruction(ins) && !emit->IsKInstruction(ins))
+        {
+            if (emit->TakesEvexPrefix(id))
+            {
+                switch (ins)
+                {
+                    case INS_movdqa:
+                    {
+                        return "vmovdqa32";
+                    }
+
+                    case INS_movdqu:
+                    {
+                        return "vmovdqu32";
+                    }
+
+                    case INS_pand:
+                    {
+                        return "vpandd";
+                    }
+
+                    case INS_pandn:
+                    {
+                        return "vpandnd";
+                    }
+
+                    case INS_por:
+                    {
+                        return "vpord";
+                    }
+
+                    case INS_pxor:
+                    {
+                        return "vpxord";
+                    }
+
+                    case INS_vbroadcastf128:
+                    {
+                        return "vbroadcastf32x4";
+                    }
+
+                    case INS_vextractf128:
+                    {
+                        return "vextractf32x4";
+                    }
+
+                    case INS_vinsertf128:
+                    {
+                        return "vinsertf32x4";
+                    }
+
+                    case INS_vbroadcasti128:
+                    {
+                        return "vbroadcasti32x4";
+                    }
+
+                    case INS_vextracti128:
+                    {
+                        return "vextracti32x4";
+                    }
+
+                    case INS_vinserti128:
+                    {
+                        return "vinserti32x4";
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+
+            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
+            retbuf = buf[curBuf];
+            curBuf = (curBuf + 1) % 4;
+            return retbuf;
+        }
     }
 
     // Some instructions have different mnemonics depending on the size.
@@ -157,36 +233,23 @@ const char* CodeGen::genSizeStr(emitAttr attr)
     static
     const char * const sizes[] =
     {
-        "",
         "byte  ptr ",
         "word  ptr ",
-        nullptr,
         "dword ptr ",
-        nullptr,
-        nullptr,
-        nullptr,
         "qword ptr ",
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
         "xmmword ptr ",
-        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-        "ymmword ptr"
+        "ymmword ptr",
+        "zmmword ptr"
     };
     // clang-format on
 
     unsigned size = EA_SIZE(attr);
 
-    assert(size == 0 || size == 1 || size == 2 || size == 4 || size == 8 || size == 16 || size == 32);
+    assert(genMaxOneBit(size) && (size <= 64));
 
     if (EA_ATTR(size) == attr)
     {
-        return sizes[size];
+        return (size > 0) ? sizes[genLog2(size)] : "";
     }
     else if (attr == EA_GCREF)
     {
@@ -702,10 +765,38 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
         }
         else
         {
+            assert(op->OperIsHWIntrinsic());
+
 #if defined(FEATURE_HW_INTRINSICS)
-            assert(op->AsHWIntrinsic()->OperIsMemoryLoad());
-            assert(op->AsHWIntrinsic()->GetOperandCount() == 1);
-            addr = op->AsHWIntrinsic()->Op(1);
+            GenTreeHWIntrinsic* hwintrinsic = op->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+            switch (intrinsicId)
+            {
+                case NI_Vector128_CreateScalarUnsafe:
+                case NI_Vector256_CreateScalarUnsafe:
+                case NI_Vector512_CreateScalarUnsafe:
+                {
+                    // The hwintrinsic should be contained and its
+                    // op1 should be either contained or spilled. This
+                    // allows us to transparently "look through" the
+                    // CreateScalarUnsafe and treat it directly like
+                    // a load from memory.
+
+                    assert(hwintrinsic->isContained());
+                    op = hwintrinsic->Op(1);
+                    return genOperandDesc(op);
+                }
+
+                default:
+                {
+                    assert(hwintrinsic->OperIsMemoryLoad());
+                    assert(hwintrinsic->GetOperandCount() == 1);
+
+                    addr = hwintrinsic->Op(1);
+                    break;
+                }
+            }
 #else
             unreached();
 #endif // FEATURE_HW_INTRINSICS
@@ -758,28 +849,39 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #if defined(FEATURE_SIMD)
                     case TYP_SIMD8:
                     {
-                        simd8_t constValue = op->AsVecCon()->gtSimd8Val;
+                        simd8_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd8_t));
                         return OperandDesc(emit->emitSimd8Const(constValue));
                     }
 
                     case TYP_SIMD12:
-                    case TYP_SIMD16:
                     {
                         simd16_t constValue = {};
-
-                        if (op->TypeIs(TYP_SIMD12))
-                            memcpy(&constValue, &op->AsVecCon()->gtSimd12Val, sizeof(simd12_t));
-                        else
-                            constValue = op->AsVecCon()->gtSimd16Val;
-
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd12_t));
+                        return OperandDesc(emit->emitSimd16Const(constValue));
+                    }
+                    case TYP_SIMD16:
+                    {
+                        simd16_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd16_t));
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 
+#if defined(TARGET_XARCH)
                     case TYP_SIMD32:
                     {
-                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
+                        simd32_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd32_t));
                         return OperandDesc(emit->emitSimd32Const(constValue));
                     }
+
+                    case TYP_SIMD64:
+                    {
+                        simd64_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
+                        return OperandDesc(emit->emitSimd64Const(constValue));
+                    }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
                     default:
@@ -960,7 +1062,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
         break;
 
         case OperandKind::Reg:
-            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOp->GetRegNum(), ival);
+            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpDesc.GetReg(), ival);
             break;
 
         default:
@@ -1013,7 +1115,7 @@ void CodeGen::inst_RV_RV_TT(
 
         case OperandKind::Reg:
         {
-            regNumber op2Reg = op2->GetRegNum();
+            regNumber op2Reg = op2Desc.GetReg();
 
             if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
             {
@@ -1237,7 +1339,7 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
     {
         if (srcType == TYP_DOUBLE)
         {
-            return (srcInReg) ? INS_movaps : INS_movsdsse2;
+            return (srcInReg) ? INS_movaps : INS_movsd_simd;
         }
         else if (srcType == TYP_FLOAT)
         {
@@ -1374,15 +1476,10 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #ifdef FEATURE_SIMD
         if (srcType == TYP_SIMD8)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
-        else
         {
             // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
             // former doesn't require 66h prefix and one byte smaller than the
@@ -1401,7 +1498,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_XARCH)
         if (srcType == TYP_DOUBLE)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else if (srcType == TYP_FLOAT)
         {
@@ -1637,15 +1734,10 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #ifdef FEATURE_SIMD
         if (dstType == TYP_SIMD8)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
-        else
         {
             // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
             // former doesn't require 66h prefix and one byte smaller than the
@@ -1657,7 +1749,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     {
         if (dstType == TYP_DOUBLE)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else if (dstType == TYP_FLOAT)
         {

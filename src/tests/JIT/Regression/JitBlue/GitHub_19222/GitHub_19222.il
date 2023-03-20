@@ -8,7 +8,8 @@
 
 .assembly GitHub_19222 { }
 
-.method assembly static int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl) 
+.class public auto ansi Test_GitHub_19222 extends [mscorlib] System.Object {
+.method public assembly static int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl) 
         main() cil managed
 {
   .entrypoint
@@ -33,6 +34,7 @@
   // Sum of the 2 calls should give 100
   add
   ret
+}
 }
 
 .class public auto ansi beforefieldinit A

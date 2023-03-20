@@ -43,6 +43,17 @@ namespace ILCompiler.Logging
             ILOffset = null;
         }
 
+        // The assembly parameter should be specified if available as it allows assigning the diagnostic
+        // to a an assembly (we group based on assembly).
+        public MessageOrigin(string fileName, int sourceLine, int sourceColumn, ModuleDesc? assembly)
+        {
+            FileName = fileName;
+            SourceLine = sourceLine;
+            SourceColumn = sourceColumn;
+            MemberDefinition = assembly;
+            ILOffset = null;
+        }
+
         public MessageOrigin(MethodIL methodBody, int ilOffset)
         {
             string? document = null;

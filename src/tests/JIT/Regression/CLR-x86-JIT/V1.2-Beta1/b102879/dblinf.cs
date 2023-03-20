@@ -4,7 +4,7 @@
 
 // compile with csc /o+
 using System;
-class MyClass
+public class MyClass
 {
 
     public static int Main()

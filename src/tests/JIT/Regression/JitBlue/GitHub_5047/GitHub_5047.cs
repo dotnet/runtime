@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Get42()
@@ -26,7 +26,7 @@ class Program
         return x;
     }
 
-    static int Main()
+    public static int Main()
     {
         const int Pass = 100;
         const int Fail = -1;

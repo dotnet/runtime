@@ -839,8 +839,7 @@ void ObjectAllocator::RewriteUses()
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* tree = *use;
-            assert(tree != nullptr);
-            assert(tree->IsLocal());
+            assert(tree->IsLocal() || tree->OperIsLocalAddr());
 
             const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
             unsigned int       newLclNum = BAD_VAR_NUM;
@@ -849,6 +848,9 @@ void ObjectAllocator::RewriteUses()
             if ((lclNum < BitVecTraits::GetSize(&m_allocator->m_bitVecTraits)) &&
                 m_allocator->MayLclVarPointToStack(lclNum))
             {
+                // Analysis does not handle indirect access to pointer locals.
+                assert(tree->OperIs(GT_LCL_VAR));
+
                 var_types newType;
                 if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
                 {

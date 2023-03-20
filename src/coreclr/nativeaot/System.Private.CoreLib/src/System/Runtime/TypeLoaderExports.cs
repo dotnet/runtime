@@ -114,7 +114,7 @@ namespace System.Runtime
             Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot);
             entry ??= CacheMiss((IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
+                        => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
             return entry.Result;
         }
 

@@ -45,7 +45,7 @@ namespace Internal.JitInterface
             _compilation = compilation;
         }
 
-        private MethodDesc getUnboxingThunk(MethodDesc method)
+        private UnboxingMethodDesc getUnboxingThunk(MethodDesc method)
         {
             return _unboxingThunkFactory.GetUnboxingMethod(method);
         }
@@ -261,6 +261,10 @@ namespace Internal.JitInterface
                     lookup.lookupKind.runtimeLookupFlags = (ushort)genericLookup.HelperId;
                     lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(genericLookup.HelperObject);
                 }
+                else if (genericLookup.UseNull)
+                {
+                    lookup.runtimeLookup.indirections = CORINFO.USENULL;
+                }
                 else
                 {
                     if (genericLookup.ContextSource == GenericContextSource.MethodParameter)
@@ -285,7 +289,6 @@ namespace Internal.JitInterface
                         lookup.runtimeLookup.offset1 = IntPtr.Zero;
                     }
                     lookup.runtimeLookup.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
-                    lookup.runtimeLookup.testForFixup = false; // TODO: this will be needed in true multifile
                     lookup.runtimeLookup.testForNull = false;
                     lookup.runtimeLookup.indirectFirstOffset = false;
                     lookup.runtimeLookup.indirectSecondOffset = false;
@@ -1139,7 +1142,7 @@ namespace Internal.JitInterface
                 _compilation.DetectGenericCycles(methodIL.OwningMethod, method);
             }
 
-            return _compilation.NodeFactory.MethodEntrypoint(method, isUnboxingThunk);
+            return _compilation.NodeFactory.MethodEntrypointOrTentativeMethod(method, isUnboxingThunk);
         }
 
         private static bool IsTypeSpecForTypicalInstantiation(TypeDesc t)
@@ -2141,6 +2144,22 @@ namespace Internal.JitInterface
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
+                    else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
+                    {
+                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
+                        ISymbolNode baseAddr;
+                        if (field.HasGCStaticBase)
+                        {
+                            pResult->fieldLookup.accessType = InfoAccessType.IAT_PVALUE;
+                            baseAddr = _compilation.NodeFactory.TypeGCStaticsSymbol((MetadataType)field.OwningType);
+                        }
+                        else
+                        {
+                            pResult->fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                            baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
+                        }
+                        pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddr);
+                    }
                     else
                     {
                         if (field.HasGCStaticBase)
@@ -2152,17 +2171,6 @@ namespace Internal.JitInterface
                         {
                             pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
                             helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                        }
-
-                        //
-                        // Currently, we only do this optimization for regular statics, but it
-                        // looks like it may be permissible to do this optimization for
-                        // thread statics as well.
-                        //
-                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
-                            (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
-                        {
-                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
                         }
                     }
 

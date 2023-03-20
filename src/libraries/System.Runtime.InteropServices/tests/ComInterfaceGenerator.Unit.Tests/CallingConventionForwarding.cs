@@ -23,10 +23,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -50,10 +50,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [SuppressGCTransitionAttribute]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -78,10 +78,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [UnmanagedCallConv]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -106,10 +106,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -134,10 +134,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -168,10 +168,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [SuppressGCTransition]
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
                     [VirtualMethodIndex(0)]
@@ -204,7 +204,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             INamedTypeSymbol generatedInterfaceImplementation = Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
 
-            IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"{userDefinedInterfaceName}.{methodName}").OfType<IMethodSymbol>());
+            IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"global::{userDefinedInterfaceName}.{methodName}").OfType<IMethodSymbol>());
 
             SyntaxNode emittedImplementationSyntax = await methodImplementation.DeclaringSyntaxReferences[0].GetSyntaxAsync();
 

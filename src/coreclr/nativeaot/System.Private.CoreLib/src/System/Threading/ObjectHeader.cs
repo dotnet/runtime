@@ -86,6 +86,38 @@ namespace System.Threading
         }
 
         /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        public static unsafe int TryGetHashCode(object o)
+        {
+            if (o == null)
+                return 0;
+
+            fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
+            {
+                int* pHeader = GetHeaderPtr(ppMethodTable);
+                int bits = *pHeader;
+                int hashOrIndex = bits & MASK_HASHCODE_INDEX;
+                if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
+                {
+                    // Found the hash code in the header
+                    Debug.Assert(hashOrIndex != 0);
+                    return hashOrIndex;
+                }
+
+                if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
+                {
+                    // Look up the hash code in the SyncTable
+                    return SyncTable.GetHashCode(hashOrIndex);
+                }
+
+                // The hash code has not yet been set.
+                return 0;
+            }
+        }
+
+        /// <summary>
         /// Assigns a hash code to the object in a thread-safe way.
         /// </summary>
         private static unsafe int AssignHashCode(object o, int* pHeader)

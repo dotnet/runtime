@@ -7,17 +7,17 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	partial struct ParameterProxy
+	internal partial struct ParameterProxy
 	{
 		public ParameterProxy (IParameterSymbol parameter)
 		{
-			Method = (new ((IMethodSymbol) parameter.ContainingSymbol));
+			Method = new ((IMethodSymbol) parameter.ContainingSymbol);
 			Index = (ParameterIndex) parameter.Ordinal + (Method.HasImplicitThis () ? 1 : 0);
 		}
 
 		public partial ReferenceKind GetReferenceKind () =>
 			IsImplicitThis
-			? ((ITypeSymbol) Method.Method.ContainingSymbol).IsValueType
+			? Method.Method.ContainingType.IsValueType
 				? ReferenceKind.Ref
 				: ReferenceKind.None
 			: Method.Method.Parameters[MetadataIndex].RefKind switch {

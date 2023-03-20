@@ -91,7 +91,6 @@ void MulticoreJitFireEtwMethodCodeReturned(MethodDesc * pMethod)
 #ifdef MULTICOREJIT_LOGGING
 
 // %s ANSI
-// %S UNICODE
 void _MulticoreJitTrace(const char * format, ...)
 {
     static unsigned s_startTick = 0;
@@ -152,6 +151,7 @@ HRESULT MulticoreJitRecorder::WriteOutput()
     // Go into preemptive mode for file operations
     GCX_PREEMP();
 
+    EX_TRY
     {
         CFileStream fileStream;
 
@@ -160,6 +160,9 @@ HRESULT MulticoreJitRecorder::WriteOutput()
             hr = WriteOutput(& fileStream);
         }
     }
+    EX_CATCH
+    { }
+    EX_END_CATCH(SwallowAllExceptions);
 
     return hr;
 }
@@ -919,7 +922,7 @@ HRESULT MulticoreJitRecorder::StopProfile(bool appDomainShutdown)
         hr = WriteOutput();
     }
 
-    MulticoreJitTrace(("StopProfile: Save new profile to %S, hr=0x%x", m_fullFileName.GetUnicode(), hr));
+    MulticoreJitTrace(("StopProfile: Save new profile to %s, hr=0x%x", m_fullFileName.GetUTF8(), hr));
 
     return hr;
 }
@@ -937,7 +940,11 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         return E_INVALIDARG;
     }
 
-    MulticoreJitTrace(("StartProfile('%S', '%S', %d)", pRoot, pFile, suffix));
+#ifdef MULTICOREJIT_LOGGING
+    MAKE_UTF8PTR_FROMWIDE(pRootUtf8, pRoot);
+    MAKE_UTF8PTR_FROMWIDE(pFileUtf8, pFile);
+    MulticoreJitTrace(("StartProfile('%s', '%s', %d)", pRootUtf8, pFileUtf8, suffix));
+#endif // MULTICOREJIT_LOGGING
 
     size_t lenFile = wcslen(pFile);
 
@@ -1049,7 +1056,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                 player.SuppressRelease();
             }
 
-            MulticoreJitTrace(("ProcessProfile('%S') returns %x", m_fullFileName.GetUnicode(), hr1));
+            MulticoreJitTrace(("ProcessProfile('%s') returns %x", m_fullFileName.GetUTF8(), hr1));
 
             // Ignore error, even when we can't play back the file, we can still record new one
 
@@ -1061,7 +1068,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         }
     }
 
-    MulticoreJitTrace(("StartProfile('%S', '%S', %d) returns %x", pRoot, pFile, suffix, hr));
+    MulticoreJitTrace(("StartProfile('%s', '%s', %d) returns %x", pRootUtf8, pFileUtf8, suffix, hr));
 
     _FireEtwMulticoreJit(W("STARTPROFILE"), m_fullFileName.GetUnicode(), hr, 0, 0);
 

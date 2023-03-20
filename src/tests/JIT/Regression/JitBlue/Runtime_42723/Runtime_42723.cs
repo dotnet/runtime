@@ -4,9 +4,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-class Runtime_42723
+public class Runtime_42723
 {
-    static int Main()
+    public static int Main()
     {
         return Test(new S { X = 17, Y = 83 });
     }

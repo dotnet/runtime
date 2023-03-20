@@ -140,7 +140,7 @@ namespace System.Net.Mail
                 for (int i = 0; i < clientDomainRaw.Length; i++)
                 {
                     ch = clientDomainRaw[i];
-                    if ((ushort)ch <= 0x7F)
+                    if (Ascii.IsValid(ch))
                         sb.Append(ch);
                 }
                 if (sb.Length > 0)
@@ -272,7 +272,7 @@ namespace System.Net.Mail
                 // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
                 // protocols that do not use URI."
 #pragma warning disable SYSLIB0014
-                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
+                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri($"mailto:{_host}:{_port}"));
 #pragma warning restore SYSLIB0014
             }
         }

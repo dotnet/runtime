@@ -34,7 +34,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit MyApp
+.class public auto ansi beforefieldinit MyApp
        extends [mscorlib]System.Object
 {
   .method private hidebysig instance void 

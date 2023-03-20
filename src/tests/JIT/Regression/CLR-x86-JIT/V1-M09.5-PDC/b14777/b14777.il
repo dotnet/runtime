@@ -19,8 +19,8 @@
 .assembly b14777
 {
 }
-.class	_ldtoken	 {
-.method static int32 main() {
+.class	public _ldtoken	 {
+.method public static int32 main() {
 .entrypoint
 .locals	()
 .maxstack	2

@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis;
 #nullable enable
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed partial class FlowAnnotations
+	public sealed partial class FlowAnnotations
 	{
 		// In the analyzer there's no stateful data the flow annotations need to store
 		// so we just create a singleton on demand.
@@ -35,7 +35,7 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
-		public static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
+		internal static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
 		{
 			IMethodSymbol method = param.Method.Method;
 			if (param.IsImplicitThis)
@@ -81,7 +81,7 @@ namespace ILLink.Shared.TrimAnalysis
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 
 		// TODO: This is relatively expensive on the analyzer since it doesn't cache the annotation information
-		// In linker this is an optimization to avoid the heavy lifting of analysis if there's no point
+		// For trimming tools this is an optimization to avoid the heavy lifting of analysis if there's no point
 		// it's unclear if the same optimization makes sense for the analyzer.
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
 			=> RequiresDataFlowAnalysis (method.Method);

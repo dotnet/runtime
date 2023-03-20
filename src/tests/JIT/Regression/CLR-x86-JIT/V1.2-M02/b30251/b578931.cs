@@ -4,9 +4,9 @@
 
 using System;
 
-class Test_b578931
+public class Test_b578931
 {
-    static int Main()
+    public static int Main()
     {
         int N = 3;
         int tmp = (1 << N) - 1;

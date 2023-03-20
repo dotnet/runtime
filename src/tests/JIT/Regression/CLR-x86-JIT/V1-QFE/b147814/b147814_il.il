@@ -9,6 +9,7 @@
 }
 .assembly 'b147814_il' {}
 
+.class public auto ansi Test_b147814_il extends [mscorlib] System.Object {
 .method public static unmanagedexp int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl)
  main() cil managed 
  {
@@ -26,4 +27,5 @@
   	  ldc.i4 100
   	  ret
 } 
+}
 

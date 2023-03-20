@@ -215,7 +215,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private RateLimitLease CreateFailedTokenLease(int tokenCount)
+        private TokenBucketLease CreateFailedTokenLease(int tokenCount)
         {
             int replenishAmount = tokenCount - (int)_tokenCount + _queueCount;
             // can't have 0 replenish periods, that would mean it should be a successful lease

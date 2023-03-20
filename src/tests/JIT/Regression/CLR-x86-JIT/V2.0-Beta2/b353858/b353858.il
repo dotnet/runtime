@@ -22,7 +22,8 @@
 }
 
 
-.method assembly static int32  main() cil managed
+.class public auto ansi Test_b353858 extends [mscorlib] System.Object {
+.method public assembly static int32  main() cil managed
 {
   .entrypoint
   .maxstack  1
@@ -53,4 +54,5 @@ PASS:
 END:
 
   ret
+}
 }

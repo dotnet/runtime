@@ -4,9 +4,9 @@
 
 using System;
 
-class Repro
+public class Repro
 {
-    static int Main()
+    public static int Main()
     {
         //We used to incorrectly generate an infinite loop by
         //emitting a jump instruction to itself

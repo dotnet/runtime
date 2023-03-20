@@ -1,10 +1,9 @@
 parameters:
   buildConfig: ''
-  archType: 'wasm'
-  osGroup: 'Browser'
+  osGroup: ''
   osSubgroup: ''
   container: ''
-  testGroup: ''
+  testBuildArgs: ''
   crossBuild: false
   readyToRun: false
   liveLibrariesBuildConfig: ''
@@ -12,7 +11,11 @@ parameters:
   helixQueues: ''
   displayNameArgs: ''
   runInUnloadableContext: false
+  nativeAotTest: false
+  runtimeFlavor: 'mono'
   runtimeVariant: 'monointerpreter'
+  scenarios:
+    - normal
   variables: {}
   pool: ''
   dependsOn: []
@@ -26,8 +29,13 @@ parameters:
   shouldContinueOnError: false
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -mono -ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
-    displayName: Build Tests
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ci ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
+      displayName: Build Tests
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
+      displayName: Build Tests
+
 
 
   # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
@@ -47,10 +55,10 @@ steps:
 
     - ${{ if eq(parameters.archType, 'x64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} 
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }}
           displayName: "LLVM AOT compile CoreCLR tests"
       - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} 
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }}
           displayName: "LLVM AOT compile CoreCLR tests"
     - ${{ if eq(parameters.archType, 'arm64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
@@ -100,6 +108,7 @@ steps:
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        nativeAotTest: ${{ parameters.nativeAotTest }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
@@ -108,4 +117,4 @@ steps:
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
-        scenarios: normal
+        scenarios: ${{ parameters.scenarios }}

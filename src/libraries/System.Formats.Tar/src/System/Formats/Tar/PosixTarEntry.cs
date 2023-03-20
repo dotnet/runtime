@@ -61,10 +61,9 @@ namespace System.Formats.Tar
                     throw new InvalidOperationException(SR.TarEntryBlockOrCharacterExpected);
                 }
 
-                if (value < 0 || value > 2097151) // 7777777 in octal
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+
                 _header._devMajor = value;
             }
         }
@@ -84,10 +83,10 @@ namespace System.Formats.Tar
                 {
                     throw new InvalidOperationException(SR.TarEntryBlockOrCharacterExpected);
                 }
-                if (value < 0 || value > 2097151) // 7777777 in octal
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+
                 _header._devMinor = value;
             }
         }

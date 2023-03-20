@@ -314,7 +314,6 @@ FUNCTIONS
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE   module, mdToken                 metaTok, void                  **ppValue);
     InfoAccessType emptyStringLiteral(void                  **ppValue);
     uint32_t getFieldThreadLocalStoreID (CORINFO_FIELD_HANDLE    field, void                  **ppIndirection);
-    void addActiveDependency(CORINFO_MODULE_HANDLE       moduleFrom, CORINFO_MODULE_HANDLE       moduleTo);
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE  methHnd, CORINFO_CLASS_HANDLE   clsHnd, CORINFO_METHOD_HANDLE  targetMethodHnd, DelegateCtorArgs *     pCtorData);
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
     bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);

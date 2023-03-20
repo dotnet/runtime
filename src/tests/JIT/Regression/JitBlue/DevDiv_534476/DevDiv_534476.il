@@ -12,7 +12,7 @@
 // In this case a helper call, created for IL_002c, will create a put_arg, but it will be moved from IL_0026 to IL_0014.
 // This  put_arg movement will affect throw edge at IL_0021, that will have incorrect stack level.
 
-.class private auto ansi beforefieldinit DevDiv_534476.ILGEN_CLASS
+.class public auto ansi beforefieldinit DevDiv_534476.ILGEN_CLASS
        extends [System.Runtime]System.Object
 {
   .method private static float32 
@@ -35,7 +35,7 @@
 	IL_002d: ret
   } // end of method ILGEN_CLASS::ILGEN_METHOD
 
-.method private hidebysig static int32  Main() cil managed
+.method public hidebysig static int32  Main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00

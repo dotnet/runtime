@@ -4,7 +4,7 @@
 using System;
 using System.Diagnostics;
 
-internal class M
+public class M
 {
     public static void GenericClassStaticMethod()
     {
