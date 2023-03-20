@@ -34,7 +34,7 @@ TypeHandle Attribute::GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, Dom
     CONTRACTL_END;
 
     StackSString sszEnumName(SString::Utf8, szEnumName, cbEnumName);
-    return TypeName::GetTypeUsingCASearchRules(sszEnumName.GetUTF8(), pDomainAssembly->GetAssembly());
+    return TypeName::GetTypeUsingCASearchRules(sszEnumName.GetUnicode(), pDomainAssembly->GetAssembly());
 }
 
 /*static*/
@@ -1041,7 +1041,7 @@ TypeHandle COMCustomAttribute::GetTypeHandleFromBlob(Assembly *pCtorAssembly,
         *pBlob += size;
         szName[size] = 0;
 
-        RtnTypeHnd = TypeName::GetTypeUsingCASearchRules(szName, pModule->GetAssembly(), NULL, FALSE);
+        RtnTypeHnd = TypeName::GetTypeUsingCASearchRules(szName, pModule->GetAssembly());
         break;
     }
 
