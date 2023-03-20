@@ -2287,7 +2287,28 @@ void Compiler::compSetProcessor()
         instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW) &&
         instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ))
     {
-        if (!DoJitStressEvexEncoding())
+        // Using JitStressEVEXEncoding flag will force instructions which would
+        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
+        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
+        // causing failure if not running on compatible hardware.
+
+        // We can't use !DoJitStressEvexEncoding() yet because opts.compSupportsISA hasn't
+        // been set yet as that's what we're trying to set here
+
+        bool enableAvx512 = false;
+
+#if defined(DEBUG)
+        if (JitConfig.JitForceEVEXEncoding())
+        {
+            enableAvx512 = true;
+        }
+        else if (JitConfig.JitStressEvexEncoding() && instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL))
+        {
+            enableAvx512 = true;
+        }
+#endif // DEBUG
+
+        if (!enableAvx512)
         {
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
@@ -2327,17 +2348,17 @@ void Compiler::compSetProcessor()
 #ifdef TARGET_XARCH
     if (!compIsForInlining())
     {
-        if (canUseEvexEncoding())
-        {
-            codeGen->GetEmitter()->SetUseEvexEncoding(true);
-            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
-        }
         if (canUseVexEncoding())
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+        }
+        if (canUseEvexEncoding())
+        {
+            codeGen->GetEmitter()->SetUseEvexEncoding(true);
+            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
         }
     }
 #endif // TARGET_XARCH
@@ -5201,6 +5222,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 PhaseStatus Compiler::placeLoopAlignInstructions()
 {
+    // Add align only if there were any loops that needed alignment
     if (loopAlignCandidates == 0)
     {
         return PhaseStatus::MODIFIED_NOTHING;
@@ -5208,7 +5230,6 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
 
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
-    // Add align only if there were any loops that needed alignment
     bool                   madeChanges           = false;
     weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
     BasicBlock*            bbHavingAlign         = nullptr;

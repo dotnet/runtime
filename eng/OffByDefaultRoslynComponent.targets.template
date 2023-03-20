@@ -1,0 +1,17 @@
+<Project>
+    <Target Name="_{TargetPrefix}GatherAnalyzers">
+        <ItemGroup>
+            <_{TargetPrefix}Analyzer Include="@(Analyzer)" Condition="'%(Analyzer.NuGetPackageId)' == '{NuGetPackageId}'" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="_{TargetPrefix}RemoveAnalyzer" 
+            Condition="'$({EnableSourceGeneratorPropertyName})' != 'true'"
+            AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
+            DependsOnTargets="_{TargetPrefix}GatherAnalyzers">
+
+        <ItemGroup>
+            <Analyzer Remove="@(_{TargetPrefix}Analyzer)" />
+        </ItemGroup>
+    </Target>
+</Project>

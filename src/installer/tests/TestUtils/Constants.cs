@@ -43,6 +43,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string CommandLineArgument = "--additional-deps";
         }
 
+        public static class AdditionalProbingPath
+        {
+            public const string CommandLineArgument = "--additionalprobingpath";
+            public const string RuntimeConfigPropertyName = "additionalProbingPaths";
+        }
+
         public static class DepsFile
         {
             public const string CommandLineArgument = "--depsfile";

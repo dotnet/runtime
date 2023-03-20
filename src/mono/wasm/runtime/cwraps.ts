@@ -94,6 +94,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_get_f64_unaligned", "number", ["number"]],
 
     // jiterpreter
+    [true, "mono_jiterp_trace_bailout", "void", ["number"]],
     [true, "mono_jiterp_get_trace_bailout_count", "number", ["number"]],
     [true, "mono_jiterp_value_copy", "void", ["number", "number", "number"]],
     [true, "mono_jiterp_get_member_offset", "number", ["number"]],
@@ -204,6 +205,7 @@ export interface t_Cwraps {
     mono_wasm_get_f32_unaligned(source: VoidPtr): number;
     mono_wasm_get_f64_unaligned(source: VoidPtr): number;
 
+    mono_jiterp_trace_bailout(reason: number): void;
     mono_jiterp_get_trace_bailout_count(reason: number): number;
     mono_jiterp_value_copy(destination: VoidPtr, source: VoidPtr, klass: MonoClass): void;
     mono_jiterp_get_member_offset(id: number): number;

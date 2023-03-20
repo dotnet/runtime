@@ -5651,10 +5651,14 @@ bool emitter::emitEndsWithAlignInstr()
 //       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
 //                         During generating code, it is 'false' (because we haven't adjusted the size yet).
 //                         During outputting code, it is 'true'.
+//      containingIGNum  - IG number of IG that contains the current align instruction we are processing.
+//      loopHeadPredIGNum - IG number of IG that preceds the IG that we are aligning with current align instruction.
 //
 //  Returns:  size of a loop in bytes.
 //
-unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted))
+unsigned emitter::getLoopSize(insGroup* igLoopHeader,
+                              unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)
+                                  DEBUG_ARG(UNATIVE_OFFSET containingIGNum) DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum))
 {
     unsigned loopSize = 0;
 
@@ -5667,47 +5671,81 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
 
         if (igInLoop->endsWithAlignInstr() || igInLoop->hadAlignInstr())
         {
-            // If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
-            // for next IG or some future IG.
-            //
-            // For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
-            //
-            // If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
-            // set for them and such loops are not aligned. For such cases, the loop size threshold will never
-            // be met and we would break as soon as loopSize > maxLoopSize.
-            //
-            // IG05:
-            //      ...
-            //      jmp IG18
-            // ...
-            // IG18:
-            //      ...
-            //      jne IG05
-            //
-            // If igInLoop is a legitimate loop, and igInLoop's end with another 'align' instruction for different IG
-            // representing a loop that needs alignment, then igInLoop should be the last IG of the current loop and
-            // should have backedge to current loop header.
-            //
-            // Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
-            //
-            // IG03:
-            //      ...
-            //      align
-            // IG04:
-            //      ...
-            //      ...
-            // IG05:
-            //      ...
-            //      jne IG04
-            //      align     ; <---
-            // IG06:
-            //      ...
-            //      jne IG06
-            //
-            //
-            assert((igInLoop->igLoopBackEdge == nullptr) || (igInLoop->igLoopBackEdge == igLoopHeader));
+// If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
+// for next IG or some future IG.
+//
+// For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
+//
+// If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
+// set for them and such loops are not aligned. For such cases, the loop size threshold will never
+// be met and we would break as soon as loopSize > maxLoopSize.
+//
+// IG05:
+//      ...
+//      jmp IG18
+// ...
+// IG18:
+//      ...
+//      jne IG05
+//
+// If igInLoop is a legitimate loop, and igInLoop's end with another 'align' instruction for different IG
+// representing a loop that needs alignment, then igInLoop should be the last IG of the current loop and
+// should have backedge to current loop header.
+//
+// Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
+//
+// IG03:
+//      ...
+//      align
+// IG04:
+//      ...
+//      ...
+// IG05:
+//      ...
+//      jne IG04
+//      align     ; <---
+// IG06:
+//      ...
+//      jne IG06
+//
+//
 
 #ifdef DEBUG
+            if ((igInLoop->igLoopBackEdge != nullptr) && (igInLoop->igLoopBackEdge != igLoopHeader))
+            {
+                char buffer[5000];
+                int  written = sprintf_s(buffer, 35, "Mismatch in align instruction.\n");
+                written += sprintf_s(buffer + written, 100, "Containing IG: IG%02u\n", containingIGNum);
+                written += sprintf_s(buffer + written, 100, "loopHeadPredIG: IG%02u\n", loopHeadPredIGNum);
+                written += sprintf_s(buffer + written, 100, "loopHeadIG: IG%02u\n", igLoopHeader->igNum);
+                written += sprintf_s(buffer + written, 100, "igInLoop: IG%02u\n", igInLoop->igNum);
+                written +=
+                    sprintf_s(buffer + written, 100, "igInLoop->backEdge: IG%02u\n", igInLoop->igLoopBackEdge->igNum);
+
+#if EMIT_BACKWARDS_NAVIGATION
+                if (igInLoop->endsWithAlignInstr())
+                {
+
+                    instrDescAlign* alignInstr = (instrDescAlign*)igInLoop->igLastIns;
+                    assert(alignInstr->idaIG == igInLoop);
+                    written += sprintf_s(buffer + written, 100, "igInLoop has align instruction for : IG%02u\n",
+                                         alignInstr->idaLoopHeadPredIG->igNext->igNum);
+                }
+#endif // EMIT_BACKWARDS_NAVIGATION
+
+                written += sprintf_s(buffer + written, 35, "Loop:\n");
+                for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
+                {
+                    if (igInLoop->igLoopBackEdge == igLoopHeader)
+                    {
+                        break;
+                    }
+                    written += sprintf_s(buffer + written, 100, "\tIG%02u\n", igInLoop->igNum);
+                }
+                printf("%s", buffer);
+                assert(false);
+            }
+
             if (isAlignAdjusted)
             {
                 // If this IG is already align adjusted, get the adjusted padding already calculated.
@@ -5952,7 +5990,9 @@ void emitter::emitLoopAlignAdjustments()
 
         unsigned actualPaddingNeeded =
             containingIG->endsWithAlignInstr()
-                ? emitCalculatePaddingForLoopAlignment(loopHeadIG, loopIGOffset DEBUG_ARG(false))
+                ? emitCalculatePaddingForLoopAlignment(loopHeadIG,
+                                                       loopIGOffset DEBUG_ARG(false) DEBUG_ARG(containingIG->igNum)
+                                                           DEBUG_ARG(loopHeadPredIG->igNum))
                 : 0;
 
         assert(estimatedPaddingNeeded >= actualPaddingNeeded);
@@ -6066,6 +6106,8 @@ void emitter::emitLoopAlignAdjustments()
 //       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
 //                         During generating code, it is 'false' (because we haven't adjusted the size yet).
 //                         During outputting code, it is 'true'.
+//      containingIGNum  - IG number of IG that contains the current align instruction we are processing.
+//      loopHeadPredIGNum - IG number of IG that preceds the IG that we are aligning with current align instruction.
 //
 //  Returns: Padding amount.
 //    0 means no padding is needed, either because loop is already aligned or it
@@ -6090,7 +6132,9 @@ void emitter::emitLoopAlignAdjustments()
 //     3c. return paddingNeeded.
 //
 unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
-                                                       size_t offset DEBUG_ARG(bool isAlignAdjusted))
+                                                       size_t offset DEBUG_ARG(bool isAlignAdjusted)
+                                                           DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                                                               DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum))
 {
     unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
 
@@ -6117,7 +6161,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
         maxLoopSize = emitComp->opts.compJitAlignLoopMaxCodeSize;
     }
 
-    unsigned loopSize = getLoopSize(loopHeadIG, maxLoopSize DEBUG_ARG(isAlignAdjusted));
+    unsigned loopSize = getLoopSize(loopHeadIG, maxLoopSize DEBUG_ARG(isAlignAdjusted) DEBUG_ARG(containingIGNum)
+                                                    DEBUG_ARG(loopHeadPredIGNum));
 
     // No padding if loop is big
     if (loopSize > maxLoopSize)

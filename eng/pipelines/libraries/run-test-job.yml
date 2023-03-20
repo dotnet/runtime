@@ -201,3 +201,5 @@ jobs:
                 - jitosr_stress
                 - jitosr_stress_random
                 - syntheticpgo
+                - syntheticpgo_blend
+
