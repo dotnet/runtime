@@ -1278,7 +1278,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             {
                 // A faster/smaller way to generate 0.0
                 // We will just zero out the entire vector register for both float and double
-                emit->emitIns_R_R(INS_fmv_d_x, EA_8BYTE, targetReg, REG_R0);
+                emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, REG_R0);
             }
             else
             {
@@ -3356,6 +3356,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         bool      IsUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
         regNumber regOp1      = op1->GetRegNum();
         regNumber regOp2      = op2->GetRegNum();
+
         if (IsUnordered)
         {
             BasicBlock* skipLabel = nullptr;

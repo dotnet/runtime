@@ -3247,7 +3247,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else if (opcode4 == 2) // FEQ.S
                     {
-                        printf("feq.s        %s, %s, %s\n", fd, xs1, fs2);
+                        printf("feq.s        %s, %s, %s\n", xd, fs1, fs2);
                     }
                     else
                     {
