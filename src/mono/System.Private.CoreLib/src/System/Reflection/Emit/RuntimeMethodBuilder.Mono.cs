@@ -357,9 +357,7 @@ namespace System.Reflection.Emit
             {
                 // do not allow zero length method body on MS.NET 2.0 (and higher)
                 if (((ilgen == null) || (ilgen.ILOffset == 0)) && (code == null || code.Length == 0))
-                    throw new InvalidOperationException(
-                                         SR.Format(SR.MissingMethod_Body,
-                                                DeclaringType!.FullName, Name));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
             }
             ilgen?.label_fixup(this);
         }

@@ -454,7 +454,7 @@ namespace System.Reflection
         {
             MethodInfo? method = GetSetMethod(true);
             if (method == null)
-                throw new ArgumentException(SR.Format(SR.Argument_SetMethodNotFound, Name));
+                throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
 
             object?[] parms;
             if (index == null || index.Length == 0)

@@ -334,7 +334,7 @@
   <data name="Arg_ExternalException" xml:space="preserve">
     <value>External component has thrown an exception.</value>
   </data>
-  <data name="Arg_EnC" xml:space="preserve">
+  <data name="Arg_EnC_ExpectedPrimitive" xml:space="preserve">
     <value>Edit and Continue: Expected a primitive, valuetype, class or interface field.</value>
   </data>
   <data name="Arg_FieldAccessException" xml:space="preserve">
@@ -1543,9 +1543,6 @@
   <data name="Argument_SemaphoreInitialMaximum" xml:space="preserve">
     <value>The initial count for the semaphore must be greater than or equal to zero and less than the maximum count.</value>
   </data>
-  <data name="Argument_SetMethodNotFound" xml:space="preserve">
-    <value>Set method not found for '{0}'.</value>
-  </data>
   <data name="Argument_ShouldNotSpecifyExceptionType" xml:space="preserve">
     <value>Should not specify exception type for catch clause for filter block.</value>
   </data>
@@ -1591,9 +1588,6 @@
   <data name="Argument_TypeMustBeVisibleFromCom" xml:space="preserve">
     <value>The specified type must be visible from COM.</value>
   </data>
-  <data name="Argument_TypeMustBeOfExceptionType" xml:space="preserve">
-    <value>Type should be an exception type.</value>
-  </data>
   <data name="Argument_TypeMustNotBeComImport" xml:space="preserve">
     <value>The type must not be imported from COM.</value>
   </data>
@@ -1613,10 +1607,10 @@
     <value>Unknown unmanaged calling convention for function signature.</value>
   </data>
   <data name="Argument_UnmanagedMemAccessorWrapAround" xml:space="preserve">
-    <value>Specified unmanaged type is only valid on fields.</value>
+    <value>The UnmanagedMemoryAccessor capacity and offset would wrap around the high end of the address space.</value>
   </data>
   <data name="Argument_UnmanagedTypeOnlyValidOnFields" xml:space="preserve">
-    <value>The UnmanagedMemoryAccessor capacity and offset would wrap around the high end of the address space.</value>
+    <value>Specified unmanaged type is only valid on fields.</value>
   </data>
   <data name="Argument_UnmatchedFieldValueAndType" xml:space="preserve">
     <value>Value of field '{0}' does not match field type '{1}'.</value>
@@ -1641,9 +1635,6 @@
   </data>
   <data name="ArgumentException_BufferNotFromPool" xml:space="preserve">
     <value>The buffer is not associated with this pool and may not be returned to it.</value>
-  </data>
-  <data name="ArgumentException_InterfaceNotFound" xml:space="preserve">
-    <value>Interface not found.</value>
   </data>
   <data name="ArgumentException_OtherNotArrayOfCorrectLength" xml:space="preserve">
     <value>The object is not an array with the same number of elements as the array to compare it to.</value>
@@ -2905,9 +2896,6 @@
   </data>
   <data name="MissingMethod_Name" xml:space="preserve">
     <value>Method '{0}.{1}' not found.</value>
-  </data>
-  <data name="MissingMethod_Body" xml:space="preserve">
-    <value>Method '{0}.{1}' does not have a method body.</value>
   </data>
   <data name="MissingSatelliteAssembly_Culture_Name" xml:space="preserve">
     <value>The satellite assembly named "{1}" for fallback culture "{0}" either could not be found or could not be loaded. This is generally a setup problem. Please consider reinstalling or repairing the application.</value>
