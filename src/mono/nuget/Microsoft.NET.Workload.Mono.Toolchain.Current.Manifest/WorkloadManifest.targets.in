@@ -180,7 +180,7 @@
   <Target Name="_DropIntermediaryFilesFromOuput" AfterTargets="ResolveRuntimePackAssets">
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" 
-       Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.c' or '%(ReferenceCopyLocalPaths.Extension)' == '.h' or '%(ReferenceCopyLocalPaths.Extension)' == '.a' or '%(ReferenceCopyLocalPaths.Extension)' == '.rsp' or '%(ReferenceCopyLocalPaths.Extension)' == '.json' or '%(ReferenceCopyLocalPaths.Extension)' == '.symbols' or '%(ReferenceCopyLocalPaths.Extension)' == '.ts'" />
+       Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.c' or '%(ReferenceCopyLocalPaths.Extension)' == '.h' or '%(ReferenceCopyLocalPaths.Extension)' == '.a' or '%(ReferenceCopyLocalPaths.Extension)' == '.rsp' or '%(ReferenceCopyLocalPaths.Extension)' == '.json' or '%(ReferenceCopyLocalPaths.Extension)' == '.symbols' or '%(ReferenceCopyLocalPaths.Extension)' == '.ts' or $([MSBuild]::ValueOrDefault('%(FileName)', '').Contains('.es6')) or $([MSBuild]::ValueOrDefault('%(FileName)', '').Contains('.lib'))" />
     </ItemGroup>
     <Message Text="@(ReferenceCopyLocalPaths->'%(FileName) -- %(Extension)')" Importance="High" />
   </Target>
