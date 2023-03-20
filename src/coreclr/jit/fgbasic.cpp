@@ -4648,6 +4648,9 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
     BasicBlockFlags originalFlags = block->bbFlags;
     BasicBlock*     prevBb        = block;
 
+    // We use fgSplitBlockAfterStatement() API here to split the block, however, we want to split
+    // it *Before* rather than *After* so if the current statement is the first in the
+    // current block - invoke fgSplitBlockAtBeginning
     if (stmt == block->firstStmt())
     {
         block = fgSplitBlockAtBeginning(prevBb);

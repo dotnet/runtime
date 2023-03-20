@@ -1782,36 +1782,22 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     if (pRuntimeLookup->testForNull)
     {
+        // Import just a helper call and mark it for late expansion in fgExpandRuntimeLookups phase
         assert(pRuntimeLookup->indirections != 0);
+        GenTreeCall* helperCall = gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
 
-        // Call the helper
-        // - Setup argNode with the pointer to the signature returned by the lookup
-        GenTree* argNode =
-            gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-        GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
-
-        // No need to perform CSE/hoisting for signature node - it is expected to end up in a rarely-taken block after
-        // "Expand runtime lookups" phase.
-        argNode->gtFlags |= GTF_DONT_CSE;
-
-        // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
-        // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
-        impInlineRoot()->setMethodHasExpRuntimeLookup();
-        helperCall->SetExpRuntimeLookup();
-        if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
-        {
-            JITDUMP("Registering %p in SignatureToLookupInfoMap\n", pRuntimeLookup->signature)
-            impInlineRoot()->GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, *pRuntimeLookup);
-        }
+        // Spilling it to a temp improves CQ (mainly in Tier0)
         unsigned callLclNum = lvaGrabTemp(true DEBUGARG("spilling helperCall"));
         impAssignTempGen(callLclNum, helperCall);
         return gtNewLclvNode(callLclNum, helperCall->TypeGet());
     }
 
+    // Size-check is not expected without testForNull
+    assert(pRuntimeLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+
     // Slot pointer
-    GenTree* slotPtrTree   = ctxTree;
-    GenTree* indOffTree    = nullptr;
-    GenTree* lastIndOfTree = nullptr;
+    GenTree* slotPtrTree = ctxTree;
+    GenTree* indOffTree  = nullptr;
 
     // Applied repeated indirections
     for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
@@ -1822,18 +1808,10 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                       nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
         }
 
-        // The last indirection could be subject to a size check (dynamic dictionary expansion)
-        bool isLastIndirectionWithSizeCheck =
-            ((i == pRuntimeLookup->indirections - 1) && (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK));
-
         if (i != 0)
         {
             slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-            slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
-            if (!isLastIndirectionWithSizeCheck)
-            {
-                slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
-            }
+            slotPtrTree->gtFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         }
 
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
@@ -1843,12 +1821,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (pRuntimeLookup->offsets[i] != 0)
         {
-            if (isLastIndirectionWithSizeCheck)
-            {
-                lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                             nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
-            }
-
             slotPtrTree =
                 gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree, gtNewIconNode(pRuntimeLookup->offsets[i], TYP_I_IMPL));
         }
@@ -1865,37 +1837,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
     slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
 
-    if (!pRuntimeLookup->testForFixup)
-    {
-        return slotPtrTree;
-    }
-
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark0"));
-
-    unsigned slotLclNum = lvaGrabTemp(true DEBUGARG("impRuntimeLookup test"));
-    impAssignTempGen(slotLclNum, slotPtrTree, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr, impCurStmtDI);
-
-    GenTree* slot = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-    // downcast the pointer to a TYP_INT on 64-bit targets
-    slot = impImplicitIorI4Cast(slot, TYP_INT);
-    // Use a GT_AND to check for the lowest bit and indirect if it is set
-    GenTree* test  = gtNewOperNode(GT_AND, TYP_INT, slot, gtNewIconNode(1));
-    GenTree* relop = gtNewOperNode(GT_EQ, TYP_INT, test, gtNewIconNode(0));
-
-    // slot = GT_IND(slot - 1)
-    slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-    GenTree* add   = gtNewOperNode(GT_ADD, TYP_I_IMPL, slot, gtNewIconNode(-1, TYP_I_IMPL));
-    GenTree* indir = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
-    indir->gtFlags |= GTF_IND_NONFAULTING;
-    indir->gtFlags |= GTF_IND_INVARIANT;
-
-    slot                = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-    GenTree*      asg   = gtNewAssignNode(slot, indir);
-    GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
-    GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
-    impAppendTree(qmark, CHECK_SPILL_NONE, impCurStmtDI);
-
-    return gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+    return slotPtrTree;
 }
 
 struct RecursiveGuard

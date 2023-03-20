@@ -1109,7 +1109,7 @@ protected:
         }
 #endif // TARGET_LOONGARCH64
 
-        emitAttr idOpSize()
+        emitAttr idOpSize() const
         {
             return emitDecodeSize(_idOpSize);
         }

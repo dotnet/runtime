@@ -19,10 +19,16 @@
     <Compile Include="..\Common\Builders\AppBuilderTask.cs" />
     <Compile Include="..\Common\Builders\AndroidProject.cs" />
     <Compile Include="..\Common\Builders\CompiledAssembly.cs" />
+    <Compile Include="..\Common\LogAsErrorException.cs" />
     <Compile Include="..\AppleAppBuilder\TargetOS.cs" />
     <Compile Include="..\AppleAppBuilder\Xcode.cs" />
   </ItemGroup>
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+    </ItemGroup>
+  </Target>
 
 </Project>
