@@ -1096,7 +1096,7 @@
     <value>Error parsing generic params spec.</value>
   </data>
   <data name="Argument_OpenGenericTypeNotPermitted" xml:space="preserve">
-    <value>Open Generic Type not permitted.</value>
+    <value>Open generic type not permitted.</value>
   </data>
   <data name="Argument_GlobalMembersMustBeStatic" xml:space="preserve">
     <value>Global members must be static.</value>
