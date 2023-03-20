@@ -203,12 +203,20 @@ namespace System.Security.Cryptography.Tests
             Assert.NotEqual(test.Okm, okm);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
+        [Theory]
         [MemberData(nameof(Sha3TestCases))]
         public void Sha3Tests(HkdfTestCase test)
         {
-            byte[] okm = Expand(test.Hash, test.Prk, test.Okm.Length, test.Info);
-            Assert.Equal(test.Okm, okm);
+            if (PlatformDetection.SupportsSha3)
+            {
+                byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
+                Assert.Equal(test.Okm, okm);
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info));
+            }
         }
 
         public static IEnumerable<object[]> GetHkdfTestCases()
@@ -402,7 +410,8 @@ namespace System.Security.Cryptography.Tests
         public static IEnumerable<object[]> Sha3TestCases
         {
             // These cases were generated from the openssl kdf command.
-            // openssl kdf -keylen 8 -kdfopt digest:SHA3-256 -kdfopt hexkey:000102030405060708090A0B0C0D0E0F -kdfopt salt:mysalt -kdfopt info:myinfo -binary HKDF | xxd -p
+            // openssl kdf -keylen 8 -kdfopt digest:SHA3-256 -kdfopt hexkey:000102030405060708090A0B0C0D0E0F \
+            //     -kdfopt salt:mysalt -kdfopt info:myinfo -binary HKDF | xxd -p
             get
             {
                 yield return new object[]
@@ -411,10 +420,36 @@ namespace System.Security.Cryptography.Tests
                     {
                         Name = "SHA3-256 with salt and info",
                         Hash = HashAlgorithmName.SHA3_256,
-                        Ikm = "000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                        Ikm = "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
                         Salt = "mysalt"u8.ToArray(),
                         Info = "myinfo"u8.ToArray(),
-                        Okm = "ea306108f87774ac".HexToByteArray(),
+                        Okm = "35bd9d1c75cf7e30".HexToByteArray(),
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new HkdfTestCase
+                    {
+                        Name = "SHA3-384 with salt and info",
+                        Hash = HashAlgorithmName.SHA3_384,
+                        Ikm = "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        Salt = "mysalt"u8.ToArray(),
+                        Info = "myinfo"u8.ToArray(),
+                        Okm = "323a8ab50c7190c8".HexToByteArray(),
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new HkdfTestCase
+                    {
+                        Name = "SHA3-512 with salt and info",
+                        Hash = HashAlgorithmName.SHA3_512,
+                        Ikm = "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        Salt = "mysalt"u8.ToArray(),
+                        Info = "myinfo"u8.ToArray(),
+                        Okm = "27693b36a489e9f1".HexToByteArray(),
                     }
                 };
             }

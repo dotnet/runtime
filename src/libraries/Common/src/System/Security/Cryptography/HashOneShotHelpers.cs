@@ -156,6 +156,24 @@ namespace System.Security.Cryptography
             {
                 return HMACSHA384.HashData(key, source, destination);
             }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_256)
+            {
+                return HMACSHA3_256.IsSupported ?
+                    HMACSHA3_256.HashData(key, source, destination) :
+                    throw new PlatformNotSupportedException();
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
+            {
+                return HMACSHA3_384.IsSupported ?
+                    HMACSHA3_384.HashData(key, source, destination) :
+                    throw new PlatformNotSupportedException();
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
+            {
+                return HMACSHA3_512.IsSupported ?
+                    HMACSHA3_512.HashData(key, source, destination) :
+                    throw new PlatformNotSupportedException();
+            }
             else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
             {
                 return HMACMD5.HashData(key, source, destination);
