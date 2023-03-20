@@ -15,25 +15,25 @@ namespace System.Security.Cryptography.Tests
         protected abstract byte[] DeriveKey(HashAlgorithmName hash, byte[] ikm, int outputLength, byte[] salt, byte[] info);
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869ExtractTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void Rfc5869ExtractTests(HkdfTestCase test)
         {
             byte[] prk = Extract(test.Hash, test.Prk.Length, test.Ikm, test.Salt);
             Assert.Equal(test.Prk, prk);
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
+        [MemberData(nameof(GetHkdfTestCases))]
         [SkipOnPlatform(TestPlatforms.Browser, "MD5 is not supported on Browser")]
-        public void Rfc5869ExtractTamperHashTests(Rfc5869TestCase test)
+        public void Rfc5869ExtractTamperHashTests(HkdfTestCase test)
         {
             byte[] prk = Extract(HashAlgorithmName.MD5, 128 / 8, test.Ikm, test.Salt);
             Assert.NotEqual(test.Prk, prk);
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869ExtractTamperIkmTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void Rfc5869ExtractTamperIkmTests(HkdfTestCase test)
         {
             byte[] ikm = test.Ikm.ToArray();
             ikm[0] ^= 1;
@@ -42,8 +42,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCasesWithNonEmptySalt))]
-        public void Rfc5869ExtractTamperSaltTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCasesWithNonEmptySalt))]
+        public void Rfc5869ExtractTamperSaltTests(HkdfTestCase test)
         {
             byte[] salt = test.Salt.ToArray();
             salt[0] ^= 1;
@@ -92,8 +92,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869ExpandTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void Rfc5869ExpandTests(HkdfTestCase test)
         {
             byte[] okm = Expand(test.Hash, test.Prk, test.Okm.Length, test.Info);
             Assert.Equal(test.Okm, okm);
@@ -118,8 +118,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869ExpandTamperPrkTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void Rfc5869ExpandTamperPrkTests(HkdfTestCase test)
         {
             byte[] prk = test.Prk.ToArray();
             prk[0] ^= 1;
@@ -148,8 +148,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869DeriveKeyTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void Rfc5869DeriveKeyTests(HkdfTestCase test)
         {
             byte[] okm = DeriveKey(test.Hash, test.Ikm, test.Okm.Length, test.Salt, test.Info);
             Assert.Equal(test.Okm, okm);
@@ -174,8 +174,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCases))]
-        public void Rfc5869DeriveKeyTamperIkmTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCases))]
+        public void Rfc5869DeriveKeyTamperIkmTests(HkdfTestCase test)
         {
             byte[] ikm = test.Ikm.ToArray();
             ikm[0] ^= 1;
@@ -184,8 +184,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCasesWithNonEmptySalt))]
-        public void Rfc5869DeriveKeyTamperSaltTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCasesWithNonEmptySalt))]
+        public void Rfc5869DeriveKeyTamperSaltTests(HkdfTestCase test)
         {
             byte[] salt = test.Salt.ToArray();
             salt[0] ^= 1;
@@ -194,8 +194,8 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetRfc5869TestCasesWithNonEmptyInfo))]
-        public void Rfc5869DeriveKeyTamperInfoTests(Rfc5869TestCase test)
+        [MemberData(nameof(GetHkdfTestCasesWithNonEmptyInfo))]
+        public void Rfc5869DeriveKeyTamperInfoTests(HkdfTestCase test)
         {
             byte[] info = test.Info.ToArray();
             info[0] ^= 1;
@@ -203,17 +203,25 @@ namespace System.Security.Cryptography.Tests
             Assert.NotEqual(test.Okm, okm);
         }
 
-        public static IEnumerable<object[]> GetRfc5869TestCases()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
+        [MemberData(nameof(Sha3TestCases))]
+        public void Sha3Tests(HkdfTestCase test)
         {
-            foreach (Rfc5869TestCase test in Rfc5869TestCases)
+            byte[] okm = Expand(test.Hash, test.Prk, test.Okm.Length, test.Info);
+            Assert.Equal(test.Okm, okm);
+        }
+
+        public static IEnumerable<object[]> GetHkdfTestCases()
+        {
+            foreach (HkdfTestCase test in HkdfTestCases)
             {
                 yield return new object[] { test };
             }
         }
 
-        public static IEnumerable<object[]> GetRfc5869TestCasesWithNonEmptySalt()
+        public static IEnumerable<object[]> GetHkdfTestCasesWithNonEmptySalt()
         {
-            foreach (Rfc5869TestCase test in Rfc5869TestCases)
+            foreach (HkdfTestCase test in HkdfTestCases)
             {
                 if (test.Salt != null && test.Salt.Length != 0)
                 {
@@ -222,9 +230,9 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public static IEnumerable<object[]> GetRfc5869TestCasesWithNonEmptyInfo()
+        public static IEnumerable<object[]> GetHkdfTestCasesWithNonEmptyInfo()
         {
-            foreach (Rfc5869TestCase test in Rfc5869TestCases)
+            foreach (HkdfTestCase test in HkdfTestCases)
             {
                 if (test.Info != null && test.Info.Length != 0)
                 {
@@ -245,11 +253,18 @@ namespace System.Security.Cryptography.Tests
             {
                 yield return new object[] { HashAlgorithmName.MD5, 128 / 8 - 1 };
             }
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                yield return new object[] { HashAlgorithmName.SHA3_256, SHA3_256.HashSizeInBytes - 1 };
+                yield return new object[] { HashAlgorithmName.SHA3_384, SHA3_384.HashSizeInBytes - 1 };
+                yield return new object[] { HashAlgorithmName.SHA3_512, SHA3_512.HashSizeInBytes - 1 };
+            }
         }
 
-        private static Rfc5869TestCase[] Rfc5869TestCases { get; } = new Rfc5869TestCase[7]
+        private static HkdfTestCase[] HkdfTestCases { get; } = new HkdfTestCase[7]
         {
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Basic test case with SHA-256",
                 Hash = HashAlgorithmName.SHA256,
@@ -264,7 +279,7 @@ namespace System.Security.Cryptography.Tests
                     "2d2d0a90cf1a5a4c5db02d56ecc4c5bf" +
                     "34007208d5b887185865").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-256 and longer inputs/outputs",
                 Hash = HashAlgorithmName.SHA256,
@@ -297,7 +312,7 @@ namespace System.Security.Cryptography.Tests
                     "cc30c58179ec3e87c14c01d5c1f3434f" +
                     "1d87").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-256 and zero-length salt/info",
                 Hash = HashAlgorithmName.SHA256,
@@ -312,7 +327,7 @@ namespace System.Security.Cryptography.Tests
                     "b8a11f5c5ee1879ec3454e5f3c738d2d" +
                     "9d201395faa4b61a96c8").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Basic test case with SHA-1",
                 Hash = HashAlgorithmName.SHA1,
@@ -325,7 +340,7 @@ namespace System.Security.Cryptography.Tests
                     "a4f14b822f5b091568a9cdd4f155fda2" +
                     "c22e422478d305f3f896").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-1 and longer inputs/outputs",
                 Hash = HashAlgorithmName.SHA1,
@@ -356,7 +371,7 @@ namespace System.Security.Cryptography.Tests
                     "927336d0441f4c4300e2cff0d0900b52" +
                     "d3b4").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-1 and zero-length salt/info",
                 Hash = HashAlgorithmName.SHA1,
@@ -369,7 +384,7 @@ namespace System.Security.Cryptography.Tests
                     "b9ae52057220a306e07b6b87e8df21d0" +
                     "ea00033de03984d34918").HexToByteArray(),
             },
-            new Rfc5869TestCase()
+            new HkdfTestCase()
             {
                 Name = "Test with SHA-1, salt not provided (defaults to HashLen zero octets), zero-length info",
                 Hash = HashAlgorithmName.SHA1,
@@ -384,7 +399,28 @@ namespace System.Security.Cryptography.Tests
             },
         };
 
-        public struct Rfc5869TestCase
+        public static IEnumerable<object[]> Sha3TestCases
+        {
+            // These cases were generated from the openssl kdf command.
+            // openssl kdf -keylen 8 -kdfopt digest:SHA3-256 -kdfopt hexkey:000102030405060708090A0B0C0D0E0F -kdfopt salt:mysalt -kdfopt info:myinfo -binary HKDF | xxd -p
+            get
+            {
+                yield return new object[]
+                {
+                    new HkdfTestCase
+                    {
+                        Name = "SHA3-256 with salt and info",
+                        Hash = HashAlgorithmName.SHA3_256,
+                        Ikm = "000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                        Salt = "mysalt"u8.ToArray(),
+                        Info = "myinfo"u8.ToArray(),
+                        Okm = "ea306108f87774ac".HexToByteArray(),
+                    }
+                };
+            }
+        }
+
+        public struct HkdfTestCase
         {
             public string Name { get; set; }
             public HashAlgorithmName Hash { get; set; }
