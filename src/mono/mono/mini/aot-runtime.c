@@ -2439,8 +2439,8 @@ static void
 load_container_amodule (MonoAssemblyLoadContext *alc)
 {
 	// If container_amodule loaded, don't lock the runtime
-    if (!container_assm_name || container_amodule)
-        return;
+	if (!container_assm_name || container_amodule)
+		return;
 
 	mono_loader_lock ();
 	// There might be several threads that passed the first check
