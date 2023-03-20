@@ -450,7 +450,7 @@ namespace System
                                 throw new ArgumentException(SR.Argument_ByrefQualifierMustBeLastOneOfAType, "typeName");
                             ++pos;
                             if (pos >= name.Length)
-                                throw new ArgumentException(SR.Argument_IncompatibleArrayType, "typeName");
+                                throw new ArgumentException(SR.Argument_InvalidArrayType, "typeName");
                             SkipSpace(name, ref pos);
 
                             if (name[pos] != ',' && name[pos] != '*' && name[pos] != ']')
