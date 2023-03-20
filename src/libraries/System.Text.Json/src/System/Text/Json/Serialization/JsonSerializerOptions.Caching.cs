@@ -245,6 +245,9 @@ namespace System.Text.Json
                 // ancestors for which the resolver does provide metadata. This can be useful in
                 // cases where we're using a source generator and are trying to serialize private
                 // implementations of an interface that is supported by the source generator.
+                // NB this algorithm runs lazily and unsynchronized *after* the CacheEntry has been looked up
+                // from the global cache, so care should be taken to avoid potential race conditions.
+                //
                 // IMPORTANT: nearest-ancestor resolution should be reserved for weakly-typed serialization.
                 // Attempting to use it in strongly typed operations or deserialization will invariably
                 // result in an invalid cast exception, so use with caution.
