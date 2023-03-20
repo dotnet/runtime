@@ -2592,7 +2592,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     if (size >= simdSize)
     {
         // Number of SIMD regs needed to save the whole src to regs.
-        unsigned numberOfSimdRegs = (size / simdSize) + ((size % simdSize) == 0 ? 0 : 1);
+        unsigned numberOfSimdRegs = tree->AvailableTempRegCount(RBM_ALLFLOAT);
 
         // Pop all temp regs to a local array, currently, this impl is limitted with LSRA's MaxInternalCount
         regNumber tempRegs[LinearScan::MaxInternalCount] = {};
@@ -2634,9 +2634,9 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         };
 
         // load everything from SRC to temp regs
-        emitSimdLoadStore(true);
+        emitSimdLoadStore(/* load */ true);
         // store them to DST
-        emitSimdLoadStore(false);
+        emitSimdLoadStore(/* load */ false);
     }
     else
     {
@@ -2675,46 +2675,23 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
             }
         };
 
-        if (isPow2(size))
+        // Use overlapping loads/stores, e. g. for size == 9: "mov [dst], tmpReg1; mov [dst+1], tmpReg2".
+        unsigned loadStoreSize = genFindHighestBit(size);
+        if (loadStoreSize == size)
         {
-            // For size 1, 2, 4 and 8 we can perform single moves
-            assert(size <= REGSIZE_BYTES);
-            regNumber tmpReg = tree->ExtractTempReg(RBM_ALLINT);
-            emitScalarLoadStore(true, size, tmpReg, 0);
-            emitScalarLoadStore(false, size, tmpReg, 0);
+            regNumber tmpReg = tree->GetSingleTempReg(RBM_ALLINT);
+            emitScalarLoadStore(/* load */ true, loadStoreSize, tmpReg, 0);
+            emitScalarLoadStore(/* load */ false, loadStoreSize, tmpReg, 0);
         }
         else
         {
-            // Any size from 3 to 15 can be handled via two GPRs
+            assert(tree->AvailableTempRegCount() == 2);
             regNumber tmpReg1 = tree->ExtractTempReg(RBM_ALLINT);
             regNumber tmpReg2 = tree->ExtractTempReg(RBM_ALLINT);
-
-            unsigned offset = 0;
-            if (size == 3)
-            {
-                // 3 --> 2+2
-                offset = 1;
-                size   = 2;
-            }
-            else if ((size > 4) && (size < 8))
-            {
-                // 5,6,7 --> 4+4
-                offset = size - 4;
-                size   = 4;
-            }
-            else
-            {
-                // 9,10,11,12,13,14,15 --> 8+8
-                assert((size > 8) && (size < XMM_REGSIZE_BYTES));
-                offset = size - 8;
-                size   = 8;
-            }
-
-            // TODO-CQ: there is some minor CQ potential here, e.g. 10 is better to be done via 8 + 2, etc.
-            emitScalarLoadStore(true, size, tmpReg1, 0);
-            emitScalarLoadStore(true, size, tmpReg2, offset);
-            emitScalarLoadStore(false, size, tmpReg1, 0);
-            emitScalarLoadStore(false, size, tmpReg2, offset);
+            emitScalarLoadStore(/* load */ true, loadStoreSize, tmpReg1, 0);
+            emitScalarLoadStore(/* load */ true, loadStoreSize, tmpReg2, size - loadStoreSize);
+            emitScalarLoadStore(/* load */ false, loadStoreSize, tmpReg1, 0);
+            emitScalarLoadStore(/* load */ false, loadStoreSize, tmpReg2, size - loadStoreSize);
         }
     }
 }

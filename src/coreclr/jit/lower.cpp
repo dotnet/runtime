@@ -1808,7 +1808,7 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
             GenTree* srcAddr = call->gtArgs.GetArgByIndex(1)->GetNode();
 
             // TODO-CQ: Try to create an addressing mode
-            GenTreeBlk* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcOp);
+            GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
             srcBlk->gtFlags |= GTF_GLOB_REF;
             srcBlk->SetContained();
 
@@ -1816,16 +1816,16 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
                 GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
             storeBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
 
-            // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcOp and dstOp don't overlap, thus, we can
+            // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
             // unroll this memmove as memcpy - it doesn't require lots of temp registers
-            dstBlk->gtBlkOpKind = GenTreeObj::BlkOpKindUnrollMemmove;
+            storeBlk->gtBlkOpKind = GenTreeObj::BlkOpKindUnrollMemmove;
 
             BlockRange().InsertBefore(call, srcBlk);
-            BlockRange().InsertBefore(call, dstBlk);
+            BlockRange().InsertBefore(call, storeBlk);
             BlockRange().Remove(lengthArg);
             BlockRange().Remove(call);
 
-            return dstBlk;
+            return storeBlk;
         }
     }
     return nullptr;
