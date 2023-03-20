@@ -136,6 +136,6 @@
     <value>Module not found.</value>
   </data>
   <data name="SignatureNotSupported" xml:space="preserve">
-    <value>The sginature {0} is not yet supported.</value>
+    <value>The signature {0} is not yet supported.</value>
   </data>
 </root>
