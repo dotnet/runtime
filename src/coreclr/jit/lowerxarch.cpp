@@ -3776,11 +3776,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 tmp2 = comp->gtClone(tmp1);
                 BlockRange().InsertAfter(tmp1, tmp2);
 
-                tmp1 =
-                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
-                BlockRange().InsertAfter(tmp2, tmp1);
-                LowerNode(tmp1);
-
                 idx = comp->gtNewIconNode(0x01, TYP_INT);
                 BlockRange().InsertAfter(tmp2, idx);
 
@@ -3789,8 +3784,13 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 BlockRange().InsertAfter(idx, tmp2);
                 LowerNode(tmp2);
 
-                tmp3 = comp->gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, tmp1, tmp2, simdBaseJitType, 16, false);
-                BlockRange().InsertAfter(tmp2, tmp3);
+                tmp1 =
+                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+                LowerNode(tmp1);
+
+                tmp3 = comp->gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, tmp2, tmp1, simdBaseJitType, 16, false);
+                BlockRange().InsertAfter(tmp1, tmp3);
                 LowerNode(tmp3);
 
                 node->SetSimdSize(16);
@@ -4306,10 +4306,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         tmp2 = comp->gtClone(tmp1);
         BlockRange().InsertAfter(tmp1, tmp2);
 
-        tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
-        BlockRange().InsertAfter(tmp2, tmp1);
-        LowerNode(tmp1);
-
         idx = comp->gtNewIconNode(0x01, TYP_INT);
         BlockRange().InsertAfter(tmp2, idx);
 
@@ -4318,11 +4314,16 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         BlockRange().InsertAfter(idx, tmp2);
         LowerNode(tmp2);
 
-        tmp1 = comp->gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, tmp1, tmp2, simdBaseJitType, 16, false);
+        tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
         BlockRange().InsertAfter(tmp2, tmp1);
         LowerNode(tmp1);
 
+        tmp3 = comp->gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, tmp2, tmp1, simdBaseJitType, 16, false);
+        BlockRange().InsertAfter(tmp1, tmp3);
+        LowerNode(tmp3);
+
         node->SetSimdSize(16);
+        tmp1 = tmp3;
     }
 
     if (varTypeIsSIMD(node->gtType))
