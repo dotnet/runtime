@@ -4350,12 +4350,6 @@
     </ItemGroup>
 
     <ItemGroup Condition="( '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS' ) and '$(TargetArchitecture)' == 'arm64'" >
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/hugeexpr1/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/**">
             <Issue>Build time issue</Issue>
         </ExcludeList>
@@ -4384,6 +4378,24 @@
             <Issue>Build time issue</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/ilverify/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/common/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventactivityidcontrol/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventlistener/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/**">
             <Issue>Build time issue</Issue>
         </ExcludeList>
     </ItemGroup>
