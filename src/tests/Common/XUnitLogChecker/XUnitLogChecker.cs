@@ -413,13 +413,19 @@ public class XUnitLogChecker
             Directory.GetFiles(dumpsPath, "*coredump*.dmp")
                      .Where(dmp => DateTime.Compare(File.GetCreationTime(dmp), testRunDateTime) >= 0);
 
+        if (dumpsFound.Count() == 0)
+        {
+            Console.WriteLine("[XUnitLogChecker]: No crash dumps found. Continuing...");
+            return ;
+        }
+
         foreach (string dumpPath in dumpsFound)
         {
             if (OperatingSystem.IsWindows())
             {
                 Console.WriteLine("[XUnitLogChecker]: Reading crash dump"
                                 + $" '{dumpPath}'...");
-                Console.WriteLine("[XUnitLogChecker]: Stack Trace Found:");
+                Console.WriteLine("[XUnitLogChecker]: Stack Trace Found:\n");
 
                 CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath,
                                                                 Console.Out);
@@ -437,13 +443,12 @@ public class XUnitLogChecker
 
                 Console.WriteLine("[XUnitLogChecker]: Reading crash report"
                                 + $" '{crashReportPath}'...");
-                Console.WriteLine("[XUnitLogChecker]: Stack Trace Found:");
+                Console.WriteLine("[XUnitLogChecker]: Stack Trace Found:\n");
 
                 CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport(crashReportPath,
                                                                         Console.Out);
             }
         }
-        return ;
     }
 }
 
