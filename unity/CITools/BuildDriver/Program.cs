@@ -12,7 +12,7 @@ public class Program
         string configuration = "Release";
         bool silent = false;
         bool skipBuild = false;
-        bool test = false;
+        TestTargets testTargets = TestTargets.None;
         bool zip = RunningOnYamato();
         Task<NPath>? zipTask = null;
         foreach (string arg in args)
@@ -32,9 +32,20 @@ public class Program
             else if (arg.Equals("--test"))
             {
                 skipBuild = true; // Assume we've already built
-                test = true;
+                testTargets = TestTargets.All;
+            }
+            else if (arg.StartsWith("--test="))
+            {
+                if (!TryParseTestTargets(arg, out var testTarget))
+                    return 1;
+                skipBuild = true; // Assume we've already built
+                testTargets = Enum.Parse<TestTargets>(testTarget, ignoreCase: true);
             }
         }
+
+        // This gives a way to test and build in the same command
+        if (args.Any(a => a == "--build"))
+            skipBuild = false;
 
         if (RunningOnYamato())
         {
@@ -70,10 +81,14 @@ public class Program
                 SevenZip.Zip(zipExe, artifacts, gConfig);
         }
 
-        if (test)
+        if (testTargets != TestTargets.None)
         {
-            EmbeddingHost.Test(gConfig);
-            CoreCLR.Test(gConfig);
+            if (testTargets.HasFlag(TestTargets.Embedding))
+                EmbeddingHost.Test(gConfig);
+
+            if (testTargets.HasFlag(TestTargets.CoreClr))
+                CoreCLR.Test(gConfig);
+
             Console.WriteLine("******************************");
             Console.WriteLine("Unity: Tested CoreCLR successfully");
             Console.WriteLine("******************************");
@@ -108,6 +123,16 @@ public class Program
         Paths.RepoRoot.Combine("LICENSE.md").Copy(destDir);
 
         return destDir;
+    }
+
+    static bool TryParseTestTargets(string arg, out string value)
+    {
+        var values = Enum.GetValues(typeof(TestTargets));
+        var valid = new List<string>();
+        foreach(var v in values)
+            valid.Add(v.ToString().ToLower());
+
+        return TryParseArgument(valid.ToArray(), arg, out value);
     }
 
     static bool TryParseArgument(string[] validArgs, string arg, out string value)
