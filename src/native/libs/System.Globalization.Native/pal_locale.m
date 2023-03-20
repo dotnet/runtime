@@ -32,8 +32,7 @@ char* DetectDefaultAppleLocaleName()
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
-const char* GlobalizationNative_GetLocaleNameNative(const char* localeName,
-                                         int32_t valueLength)
+const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {
      NSString *locName = [NSString stringWithFormat:@"%s", localeName];
      NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
@@ -41,10 +40,7 @@ const char* GlobalizationNative_GetLocaleNameNative(const char* localeName,
      return strdup(value);
 }
 
-const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName,
-                                                LocaleStringData localeStringData,
-                                                int32_t valueLength,
-                                                const char* uiLocaleName)
+const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData)
 {
     const char* value;
     NSString *locName = [NSString stringWithFormat:@"%s", localeName];
@@ -147,10 +143,9 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         case LocaleString_MonetaryThousandSeparator:
         case LocaleString_Iso639LanguageThreeLetterName:
         case LocaleString_ParentName:
-        case LocaleString_Iso3166CountryName2:
-            value = "";
-            break;
+        case LocaleString_Iso3166CountryName2:            
         default:
+            value = "";
             break;
     }
     NSLog(@"Globalization GlobalizationNative_GetLocaleInfoStringNative value: %s", value);

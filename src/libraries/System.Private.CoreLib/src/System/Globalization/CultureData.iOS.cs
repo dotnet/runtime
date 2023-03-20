@@ -11,10 +11,6 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        // Native constants, check if we need this for native
-        private const int Native_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
-        private const int Native_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
-
         /// <summary>
         /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
         /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
@@ -25,33 +21,30 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             string realNameBuffer = _sRealName;
 
-            // Get the locale name
-            GetLocaleNameNative(realNameBuffer, out _sWindowsName);
+            _sWindowsName = GetLocaleNameNative(realNameBuffer);
             return true;
         }
 
-        internal static unsafe bool GetLocaleNameNative(string localeName, out string? windowsName)
+        internal static unsafe string GetLocaleNameNative(string localeName)
         {
-            windowsName = Interop.Globalization.GetLocaleNameNative(localeName, Native_ULOC_FULLNAME_CAPACITY);
-            return true;
+            return Interop.Globalization.GetLocaleNameNative(localeName);
         }
 
-        private string GetLocaleInfoNative(LocaleStringData type, string? uiCultureName = null)
+        private string GetLocaleInfoNative(LocaleStringData type)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfoNative] Expected _sWindowsName to be populated already");
 
-            return GetLocaleInfoNative(_sWindowsName, type, uiCultureName);
+            return GetLocaleInfoNative(_sWindowsName, type);
         }
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        private static unsafe string GetLocaleInfoNative(string localeName, LocaleStringData type, string? uiCultureName = null)
+        private static unsafe string GetLocaleInfoNative(string localeName, LocaleStringData type)
         {
             Debug.Assert(localeName != null, "[CultureData.GetLocaleInfoNative] Expected localeName to be not be null");
 
-            string result = Interop.Globalization.GetLocaleInfoStringNative(localeName, (uint)type, Native_ULOC_KEYWORD_AND_VALUES_CAPACITY, uiCultureName);
-            return result;
+            return Interop.Globalization.GetLocaleInfoStringNative(localeName, (uint)type);
         }
     }
 }

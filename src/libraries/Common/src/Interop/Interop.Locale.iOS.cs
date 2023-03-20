@@ -9,9 +9,9 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleNameNative", StringMarshalling = StringMarshalling.Utf16)]
-        internal static unsafe partial string GetLocaleNameNative(string localeName, int valueLength);
+        internal static unsafe partial string GetLocaleNameNative(string localeName);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoStringNative", StringMarshalling = StringMarshalling.Utf8)]
-        internal static unsafe partial string GetLocaleInfoStringNative(string localeName, uint localeStringData, int valueLength, string? uiLocaleName = null);
+        internal static unsafe partial string GetLocaleInfoStringNative(string localeName, uint localeStringData);
     }
 }

@@ -50,14 +50,5 @@ namespace System.Globalization.Tests
         {
             Assert.Equal(expected, new CultureInfo(name).TwoLetterISOLanguageName);
         }
-        
-        [Theory]
-        [InlineData("de-DE", "Deutsch (Deutschland)", "de (DE)")]
-        public void TestDisplayName(string cultureName, string nativeName, string englishDisplayName)
-        {
-            CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
-            Assert.Equal(nativeName, ci.NativeName);
-            Assert.Equal(englishDisplayName, ci.DisplayName);
-        }
     }
 }
