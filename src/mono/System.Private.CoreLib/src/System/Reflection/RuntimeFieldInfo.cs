@@ -275,7 +275,7 @@ namespace System.Reflection
         {
             Type? declaringType = DeclaringType;
             if (declaringType != null && declaringType.ContainsGenericParameters)
-                throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
+                throw new InvalidOperationException(SR.Arg_UnboundGenField);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeFieldInfo>(other);

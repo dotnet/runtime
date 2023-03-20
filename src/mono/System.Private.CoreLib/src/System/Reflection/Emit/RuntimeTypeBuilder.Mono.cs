@@ -141,7 +141,7 @@ namespace System.Reflection.Emit
 
             FieldInfo res = type.GetField(field);
             if (res == null)
-                throw new System.Exception(SR.MissingField);
+                throw new System.Exception(SR.Format(SR.MissingField, field.Name));
             else
                 return res;
         }
@@ -932,7 +932,7 @@ namespace System.Reflection.Emit
             {
                 t = t.UnderlyingSystemType;
                 if (t != null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))
-                    throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
+                    throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
                 return t;
             }
             else
@@ -1658,7 +1658,7 @@ namespace System.Reflection.Emit
         internal void check_not_created()
         {
             if (is_created)
-                throw new InvalidOperationException(SR.NotSupported_DynamicModule);
+                throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
         }
 
         private void check_created()

@@ -3254,6 +3254,9 @@
   <data name="PlatformNotSupported_ThreadSuspend" xml:space="preserve">
     <value>Thread suspend is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_UserDefinedSubclassesOfType" xml:space="preserve">
+    <value>User defined subclasses of System.Type are not yet supported.</value>
+  </data>
   <data name="PostconditionFailed" xml:space="preserve">
     <value>Postcondition failed.</value>
   </data>
@@ -4162,9 +4165,6 @@
   </data>
   <data name="TypeLoad_TypeNotFound" xml:space="preserve">
     <value>The type '{0}' cannot be found.</value>
-  </data>
-  <data name="TypeLoad_TypeNotLoaded" xml:space="preserve">
-    <value>The type '{0}' cannot be loaded.</value>
   </data>
   <data name="TypeLoad_TypeNotFoundInAssembly" xml:space="preserve">
     <value>The type '{0}' cannot be found in assembly '{1}'.</value>

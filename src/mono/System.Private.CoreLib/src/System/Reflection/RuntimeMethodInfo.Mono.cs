@@ -622,7 +622,7 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(methodInstantiation);
 
             if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, nameof(methodInstantiation)));
+                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
 
             /*FIXME add GetGenericArgumentsLength() internal vcall to speed this up*/
             if (GetGenericArguments().Length != methodInstantiation.Length)

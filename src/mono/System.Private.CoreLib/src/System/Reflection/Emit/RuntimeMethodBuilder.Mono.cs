@@ -91,9 +91,10 @@ namespace System.Reflection.Emit
                 this.call_conv |= CallingConventions.HasThis;
             if (parameterTypes != null)
             {
-                for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
-                        throw new ArgumentException(SR.ArgumentNull_TypeRequiredByResourceScope, nameof(parameterTypes));
+                foreach (Type t in parameterTypes)
+                {
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+                }
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
@@ -599,9 +600,10 @@ namespace System.Reflection.Emit
         {
             if (parameterTypes != null)
             {
-                for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
-                        throw new ArgumentNullException(nameof(parameterTypes), SR.ArgumentNull_ArrayElement);
+                foreach (Type t in parameterTypes)
+                {
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+                }
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);

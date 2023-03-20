@@ -396,12 +396,12 @@ namespace System.Reflection.Emit
             returnType ??= typeof(void);
 
             if (returnType.IsUserType)
-                throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
+                throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
             if (parameters != null)
             {
                 for (int i = 0; i < parameters.Length; ++i)
                     if (parameters[i].IsUserType)
-                        throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
+                        throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
 
             }
 

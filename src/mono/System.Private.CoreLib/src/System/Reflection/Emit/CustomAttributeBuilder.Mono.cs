@@ -420,7 +420,7 @@ namespace System.Reflection.Emit
 #endif
                 case UnmanagedType.ByValArray:
                     if (!is_field)
-                        throw new ArgumentException(SR.Argument_UnmanagedMemAccessorWrapAround);
+                        throw new ArgumentException(SR.Argument_UnmanagedTypeOnlyValidOnFields);
 
                     return UnmanagedMarshal.DefineByValArray(sizeConst);
                 case UnmanagedType.ByValTStr:
@@ -451,7 +451,7 @@ namespace System.Reflection.Emit
                 0x0c => typeof(float),
                 0x0d => typeof(double),
                 0x0e => typeof(string),
-                _ => throw new Exception(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType)),
+                _ => throw new Exception(SR.Format(SR.ArgumentException_InvalidTypeArgument, elementType)),
             };
 
         private static object? decode_cattr_value(Type t, byte[] data, int pos, out int rpos)
