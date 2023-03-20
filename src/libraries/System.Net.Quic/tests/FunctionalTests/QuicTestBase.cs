@@ -13,6 +13,8 @@ using Xunit;
 using Xunit.Abstractions;
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
+using Microsoft.Quic;
+using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Tests
 {
@@ -40,10 +42,18 @@ namespace System.Net.Quic.Tests
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
 
-        public QuicTestBase(ITestOutputHelper output)
+        public unsafe QuicTestBase(ITestOutputHelper output)
         {
             _output = output;
             _output.WriteLine($"Using {MsQuicApi.MsQuicLibraryVersion}");
+
+            QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+            settings.IsSet.MaxWorkerQueueDelayUs = 1;
+            settings.MaxWorkerQueueDelayUs = (uint)TimeSpan.FromSeconds(2.5).TotalMicroseconds;
+            if (StatusFailed(MsQuicApi.Api.ApiTable->SetParam(null, QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
+            {
+                _output.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+            }
         }
 
         public void Dispose()
