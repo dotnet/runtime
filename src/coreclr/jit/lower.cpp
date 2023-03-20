@@ -1782,9 +1782,9 @@ GenTree* Lowering::AddrGen(void* addr)
 }
 
 //------------------------------------------------------------------------
-// LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS) with a GT_STORE_BLK:
+// LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS_SIZE) with a GT_STORE_BLK:
 //
-//    *  STORE_BLK struct<Size> (copy) (Unroll)
+//    *  STORE_BLK struct<CNS_SIZE> (copy) (Unroll)
 //    +--*  LCL_VAR   byref  dst
 //    \--*  BLK       struct
 //       \--*  LCL_VAR   byref  src
@@ -1802,7 +1802,7 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
         // TODO-CQ: drop the whole thing in case of 0
-        if ((cnsSize > 0) && (cnsSize <= comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
+        if ((cnsSize > 0) && (cnsSize <= (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
         {
             GenTree* dstOp = call->gtArgs.GetArgByIndex(0)->GetNode();
             GenTree* srcOp = call->gtArgs.GetArgByIndex(1)->GetNode();
@@ -1814,7 +1814,7 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
 
             GenTreeBlk* dstBlk = comp->gtNewBlockVal(dstOp, (unsigned)cnsSize)->AsBlk();
             dstBlk->SetOperRaw(GT_STORE_BLK);
-            dstBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_IND_ASG_LHS | GTF_ASG | GTF_GLOB_REF);
+            dstBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_IND_ASG_LHS | GTF_ASG | GTF_EXCEPT);
             dstBlk->AsBlk()->Data() = srcBlk;
 
             // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcOp and dstOp don't overlap, thus, we can
@@ -1827,6 +1827,7 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
             BlockRange().Remove(call);
             DEBUG_DESTROY_NODE(call);
             DEBUG_DESTROY_NODE(lengthArg);
+
             return dstBlk->gtNext;
         }
     }
