@@ -1105,26 +1105,31 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
     else
     {
         UINT32 high = (imm >> 32) & 0xffffffff;
+        regNumber highReg = reg;
         if (((high + 0x800) >> 12) != 0)
         {
-            emitIns_R_I(INS_lui, size, reg, ((high + 0x800) >> 12));
+            emitIns_R_I(INS_lui, size, highReg, ((high + 0x800) >> 12));
             if ((high & 0xFFF) != 0)
             {
-                emitIns_R_R_I(INS_addi, size, reg, reg, high & 0xFFF);
+                emitIns_R_R_I(INS_addi, size, highReg, highReg, high & 0xFFF);
             }
         }
         else if ((high & 0xFFF) != 0)
         {
-            emitIns_R_R_I(INS_addi, size, reg, REG_R0, high & 0xFFF);
+            emitIns_R_R_I(INS_addi, size, highReg, REG_R0, high & 0xFFF);
         }
         else
         {
-            emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
+            highReg = REG_R0;
         }
-        UINT32 low = imm & 0xffffffff;
-        emitIns_R_R_I(INS_slli, size, reg, reg, 11);
-        emitIns_R_R_I(INS_addi, size, reg, reg, (low >> 21) & 0x7FF);
 
+        UINT32 low = imm & 0xffffffff;
+        if (highReg != REG_R0)
+        {
+            emitIns_R_R_I(INS_slli, size, highReg, highReg, 11);
+        }
+
+        emitIns_R_R_I(INS_addi, size, reg, highReg, (low >> 21) & 0x7FF);
         emitIns_R_R_I(INS_slli, size, reg, reg, 11);
         emitIns_R_R_I(INS_addi, size, reg, reg, (low >> 10) & 0x7FF);
 
