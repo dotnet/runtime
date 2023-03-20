@@ -59,6 +59,7 @@ namespace System.Security.Cryptography
         public HMACSHA3_256(byte[] key)
         {
             ArgumentNullException.ThrowIfNull(key);
+            CheckSha3Support();
 
             this.HashName = HashAlgorithmNames.SHA3_256;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA3_256, key, BlockSize);
@@ -179,6 +180,8 @@ namespace System.Security.Cryptography
         /// </returns>
         public static bool TryHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
+            CheckSha3Support();
+
             if (destination.Length < HashSizeInBytes)
             {
                 bytesWritten = 0;
@@ -221,6 +224,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckSha3Support();
             return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA3_256, key, source, destination);
         }
 
@@ -243,6 +247,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckSha3Support();
             return LiteHashProvider.HmacStream(HashAlgorithmNames.SHA3_256, HashSizeInBytes, key, source);
         }
 
@@ -288,6 +293,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckSha3Support();
             return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA3_256, key.Span, source, cancellationToken);
         }
 
@@ -352,6 +358,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
+            CheckSha3Support();
             return LiteHashProvider.HmacStreamAsync(
                 HashAlgorithmNames.SHA3_256,
                 key.Span,
@@ -373,6 +380,12 @@ namespace System.Security.Cryptography
                 }
             }
             base.Dispose(disposing);
+        }
+
+        private static void CheckSha3Support()
+        {
+            if (!IsSupported)
+                throw new PlatformNotSupportedException();
         }
     }
 }

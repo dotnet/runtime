@@ -246,7 +246,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 HashAlgorithmName.SHA512);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
         public void ValidateNistP256Sha3_256()
         {
             // From https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/P256_SHA3-256.pdf
@@ -278,7 +278,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 HashAlgorithmName.SHA3_256);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
         public void ValidateNistP384Sha3_384()
         {
             // From https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/P384_SHA3-384.pdf
@@ -315,7 +315,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 HashAlgorithmName.SHA3_384);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
         public void ValidateNistP521Sha3_512()
         {
             // From https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/P521_SHA3-512.pdf

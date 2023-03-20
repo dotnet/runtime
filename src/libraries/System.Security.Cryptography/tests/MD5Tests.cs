@@ -9,8 +9,14 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class MD5Tests : HashAlgorithmTestDriver
+    public class MD5Tests : HashAlgorithmTestDriver<MD5Tests.Traits>
     {
+        public sealed class Traits : IHashTrait
+        {
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => MD5.HashSizeInBytes;
+        }
+
         protected override HashAlgorithm Create()
         {
             return MD5.Create();

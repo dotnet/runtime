@@ -59,28 +59,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         [Theory]
         [MemberData(nameof(SignatureDigestAlgorithms))]
-        public static void SignatureAlgorithm_StableNotSame(HashAlgorithmName hashAlgorithm, bool isSupported)
+        public static void SignatureAlgorithm_StableNotSame(HashAlgorithmName hashAlgorithm)
         {
             using (RSA rsa = RSA.Create())
             {
                 RSAParameters parameters = TestData.RsaBigExponentParams;
                 rsa.ImportParameters(parameters);
 
-                if (isSupported)
-                {
-                    var signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+                var signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
 
-                    byte[] sigAlg = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
-                    byte[] sigAlg2 = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+                byte[] sigAlg = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+                byte[] sigAlg2 = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
 
-                    Assert.NotSame(sigAlg, sigAlg2);
-                    Assert.Equal(sigAlg, sigAlg2);
-                }
-                else
-                {
-                    Assert.Throws<PlatformNotSupportedException>(
-                        () => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1));
-                }
+                Assert.NotSame(sigAlg, sigAlg2);
+                Assert.Equal(sigAlg, sigAlg2);
             }
         }
 
@@ -107,7 +99,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         [Theory]
         [MemberData(nameof(SignatureDigestAlgorithms))]
-        public static void SignatureAlgorithm_Encoding(HashAlgorithmName hashAlgorithm, bool isSupported)
+        public static void SignatureAlgorithm_Encoding(HashAlgorithmName hashAlgorithm)
         {
             string expectedOid;
 
@@ -148,18 +140,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 RSAParameters parameters = TestData.RsaBigExponentParams;
                 rsa.ImportParameters(parameters);
 
-                if (isSupported)
-                {
-                    X509SignatureGenerator signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
-                    byte[] sigAlg = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+                X509SignatureGenerator signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+                byte[] sigAlg = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
 
-                    Assert.Equal(expectedHex, sigAlg.ByteArrayToHex());
-                }
-                else
-                {
-                    Assert.Throws<PlatformNotSupportedException>(
-                        () => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1));
-                }
+                Assert.Equal(expectedHex, sigAlg.ByteArrayToHex());
             }
         }
 
@@ -167,14 +151,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             get
             {
-                // hashAlgorithm, isSupported
-                yield return new object[] { HashAlgorithmName.SHA256, true };
-                yield return new object[] { HashAlgorithmName.SHA384, true };
-                yield return new object[] { HashAlgorithmName.SHA512, true };
-
-                yield return new object[] { HashAlgorithmName.SHA3_256, PlatformDetection.SupportsSha3 };
-                yield return new object[] { HashAlgorithmName.SHA3_384, PlatformDetection.SupportsSha3 };
-                yield return new object[] { HashAlgorithmName.SHA3_512, PlatformDetection.SupportsSha3 };
+                yield return new object[] { HashAlgorithmName.SHA256 };
+                yield return new object[] { HashAlgorithmName.SHA384 };
+                yield return new object[] { HashAlgorithmName.SHA512 };
+                yield return new object[] { HashAlgorithmName.SHA3_256 };
+                yield return new object[] { HashAlgorithmName.SHA3_384 };
+                yield return new object[] { HashAlgorithmName.SHA3_512 };
             }
         }
     }

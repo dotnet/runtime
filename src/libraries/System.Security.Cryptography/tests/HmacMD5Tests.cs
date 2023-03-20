@@ -10,8 +10,14 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class HmacMD5Tests : Rfc2202HmacTests
+    public class HmacMD5Tests : Rfc2202HmacTests<HmacMD5Tests.Traits>
     {
+        public sealed class Traits : IHmacTrait
+        {
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => HMACSHA1.HashSizeInBytes;
+        }
+
         private static readonly byte[][] s_testKeys2202 =
         {
             null,
@@ -45,6 +51,7 @@ namespace System.Security.Cryptography.Tests
         protected override int MacSize => HMACMD5.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACMD5();
+        protected override HMAC Create(byte[] key) => new HMACMD5(key);
         protected override HashAlgorithm CreateHashAlgorithm() => MD5.Create();
         protected override byte[] HashDataOneShot(byte[] key, byte[] source) =>
             HMACMD5.HashData(key, source);

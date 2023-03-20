@@ -58,25 +58,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         [Theory]
         [MemberData(nameof(SignatureDigestAlgorithms))]
-        public static void SignatureAlgorithm_StableNotSame(HashAlgorithmName hashAlgorithm, bool isSupported)
+        public static void SignatureAlgorithm_StableNotSame(HashAlgorithmName hashAlgorithm)
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp256r1Data.KeyParameters))
             {
                 var generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
 
-                if (isSupported)
-                {
-                    byte[] sigAlg = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
-                    byte[] sigAlg2 = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+                byte[] sigAlg = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
+                byte[] sigAlg2 = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
 
-                    Assert.NotSame(sigAlg, sigAlg2);
-                    Assert.Equal(sigAlg, sigAlg2);
-                }
-                else
-                {
-                    Assert.Throws<PlatformNotSupportedException>(() =>
-                        generator.GetSignatureAlgorithmIdentifier(hashAlgorithm));
-                }
+                Assert.NotSame(sigAlg, sigAlg2);
+                Assert.Equal(sigAlg, sigAlg2);
             }
         }
 
@@ -99,9 +91,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         [Theory]
         [MemberData(nameof(SignatureDigestAlgorithms))]
-        public static void SignatureAlgorithm_Encoding(HashAlgorithmName hashAlgorithm, bool isSupported)
+        public static void SignatureAlgorithm_Encoding(HashAlgorithmName hashAlgorithm)
         {
-            _ = isSupported;
             string expectedAlgOid;
 
             switch (hashAlgorithm.Name)
@@ -151,13 +142,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             get
             {
                 // hashAlgorithm, isSupported
-                yield return new object[] { HashAlgorithmName.SHA256, true };
-                yield return new object[] { HashAlgorithmName.SHA384, true };
-                yield return new object[] { HashAlgorithmName.SHA512, true };
-
-                yield return new object[] { HashAlgorithmName.SHA3_256, PlatformDetection.SupportsSha3 };
-                yield return new object[] { HashAlgorithmName.SHA3_384, PlatformDetection.SupportsSha3 };
-                yield return new object[] { HashAlgorithmName.SHA3_512, PlatformDetection.SupportsSha3 };
+                yield return new object[] { HashAlgorithmName.SHA256 };
+                yield return new object[] { HashAlgorithmName.SHA384 };
+                yield return new object[] { HashAlgorithmName.SHA512 };
+                yield return new object[] { HashAlgorithmName.SHA3_256 };
+                yield return new object[] { HashAlgorithmName.SHA3_384 };
+                yield return new object[] { HashAlgorithmName.SHA3_512 };
             }
         }
     }

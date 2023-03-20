@@ -8,8 +8,14 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class Sha384Tests : HashAlgorithmTestDriver
+    public class Sha384Tests : HashAlgorithmTestDriver<Sha384Tests.Traits>
     {
+        public sealed class Traits : IHashTrait
+        {
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => SHA384.HashSizeInBytes;
+        }
+
         protected override HashAlgorithm Create()
         {
             return SHA384.Create();

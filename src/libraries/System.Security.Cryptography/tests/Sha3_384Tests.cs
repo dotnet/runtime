@@ -9,8 +9,14 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class SHA3_384Tests : HashAlgorithmTestDriver
+    public class SHA3_384Tests : HashAlgorithmTestDriver<SHA3_384Tests.Traits>
     {
+        public sealed class Traits : IHashTrait
+        {
+            public static bool IsSupported => SHA3_384.IsSupported;
+            public static int HashSizeInBytes => SHA3_384.HashSizeInBytes;
+        }
+
         protected override HashAlgorithm Create()
         {
             return SHA3_384.Create();
@@ -39,7 +45,7 @@ namespace System.Security.Cryptography.Tests
         protected override ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken) =>
             SHA3_384.HashDataAsync(source, cancellationToken);
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void SHA3_384_Kats()
         {
             foreach ((string Msg, string MD) kat in Fips202Kats)

@@ -28,17 +28,17 @@ namespace System.Security.Cryptography
             {
                 return SHA384.HashData(source);
             }
-            else if (hashAlgorithm == HashAlgorithmName.SHA3_256 && SHA3_256.IsSupported)
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_256)
             {
-                return SHA3_256.HashData(source);
+                return SHA3_256.IsSupported ? SHA3_256.HashData(source) : throw new PlatformNotSupportedException();
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
             {
-                return SHA3_384.HashData(source);
+                return SHA3_384.IsSupported ? SHA3_384.HashData(source) : throw new PlatformNotSupportedException();
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
             {
-                return SHA3_512.HashData(source);
+                return SHA3_512.IsSupported ? SHA3_512.HashData(source) : throw new PlatformNotSupportedException();
             }
             else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
             {
@@ -70,17 +70,23 @@ namespace System.Security.Cryptography
             {
                 return SHA384.TryHashData(source, destination, out bytesWritten);
             }
-            else if (hashAlgorithm == HashAlgorithmName.SHA3_256 && SHA3_256.IsSupported)
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_256)
             {
-                return SHA3_256.TryHashData(source, destination, out bytesWritten);
+                return SHA3_256.IsSupported ?
+                    SHA3_256.TryHashData(source, destination, out bytesWritten) :
+                    throw new PlatformNotSupportedException();
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
             {
-                return SHA3_384.TryHashData(source, destination, out bytesWritten);
+                return SHA3_384.IsSupported ?
+                    SHA3_384.TryHashData(source, destination, out bytesWritten) :
+                    throw new PlatformNotSupportedException();
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
             {
-                return SHA3_512.TryHashData(source, destination, out bytesWritten);
+                return SHA3_512.IsSupported ?
+                    SHA3_512.TryHashData(source, destination, out bytesWritten) :
+                    throw new PlatformNotSupportedException();
             }
             else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
             {
@@ -108,17 +114,17 @@ namespace System.Security.Cryptography
             {
                 return SHA384.HashData(source);
             }
-            else if (hashAlgorithm == HashAlgorithmName.SHA3_256 && SHA3_256.IsSupported)
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_256)
             {
-                return SHA3_256.HashData(source);
+                return SHA3_256.IsSupported ? SHA3_256.HashData(source) : throw new PlatformNotSupportedException();
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
             {
-                return SHA3_384.HashData(source);
+                return SHA3_384.IsSupported ? SHA3_384.HashData(source) : throw new PlatformNotSupportedException();
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
             {
-                return SHA3_512.HashData(source);
+                return SHA3_512.IsSupported ? SHA3_512.HashData(source) : throw new PlatformNotSupportedException();
             }
             else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
             {

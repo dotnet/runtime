@@ -9,12 +9,19 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class HmacSha384Tests : Rfc4231HmacTests
+    public class HmacSha384Tests : Rfc4231HmacTests<HmacSha384Tests.Traits>
     {
+        public sealed class Traits : IHmacTrait
+        {
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => HMACSHA384.HashSizeInBytes;
+        }
+
         protected override int BlockSize => 128;
         protected override int MacSize => HMACSHA384.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACSHA384();
+        protected override HMAC Create(byte[] key) => new HMACSHA384(key);
         protected override HashAlgorithm CreateHashAlgorithm() => SHA384.Create();
         protected override byte[] HashDataOneShot(byte[] key, byte[] source) =>
             HMACSHA384.HashData(key, source);

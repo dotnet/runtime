@@ -10,12 +10,19 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class HmacSha3_256Tests : HmacTests
+    public class HmacSha3_256Tests : HmacTests<HmacSha3_256Tests.Traits>
     {
+        public sealed class Traits : IHmacTrait
+        {
+            public static bool IsSupported => HMACSHA3_256.IsSupported;
+            public static int HashSizeInBytes => HMACSHA3_256.HashSizeInBytes;
+        }
+
         protected override int BlockSize => 136;
         protected override int MacSize => HMACSHA3_256.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACSHA3_256();
+        protected override HMAC Create(byte[] key) => new HMACSHA3_256(key);
         protected override HashAlgorithm CreateHashAlgorithm() => SHA3_256.Create();
         protected override byte[] HashDataOneShot(byte[] key, byte[] source) =>
             HMACSHA3_256.HashData(key, source);
@@ -98,7 +105,7 @@ namespace System.Security.Cryptography.Tests
         {
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsSupported))]
         [MemberData(nameof(TestCaseIds))]
         public void HmacSha3_256_VerifyTestCases(int caseId)
         {
@@ -116,19 +123,19 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HmacSha3_256_Rfc2104_2()
         {
             VerifyHmacRfc2104_2();
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HmacSha3_256_ThrowsArgumentNullForNullConstructorKey()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA3_256(null));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HmacSha3_256_EmptyKey()
         {
             VerifyRepeating(
@@ -138,7 +145,7 @@ namespace System.Security.Cryptography.Tests
                 output: "c49c24ae6dce7e90d5e2853ad9e647d89ac3dd04eb71aa0912ab4b4b1068ba6a");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HmacSha3_256_Stream_MultipleOf4096()
         {
             // Verfied with:
@@ -150,7 +157,7 @@ namespace System.Security.Cryptography.Tests
                 output: "F09DD1B814BF4A576FF8AEAFF69509E3093895426F441A428953221F3CB9E421");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HmacSha3_256_Stream_NotMultipleOf4096()
         {
             // Verfied with:
@@ -162,7 +169,7 @@ namespace System.Security.Cryptography.Tests
                 output: "F1DB96FF2B53CBA0338FF519BFA10153731DB48A63C26EB66294895B220F72B5");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public void HmacSha3_256_Stream_Empty()
         {
             // Verfied with:
@@ -174,7 +181,7 @@ namespace System.Security.Cryptography.Tests
                 output: "72756291FF30F3E916BEF99EC9CF5938B25D90BBCAC1BDB1E1E6564E8EC6FDA5");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public async Task HmacSha3_256_Stream_MultipleOf4096_Async()
         {
             // Verfied with:
@@ -186,7 +193,7 @@ namespace System.Security.Cryptography.Tests
                 output: "F09DD1B814BF4A576FF8AEAFF69509E3093895426F441A428953221F3CB9E421");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public async Task HmacSha3_256_Stream_NotMultipleOf4096_Async()
         {
             // Verfied with:
@@ -198,7 +205,7 @@ namespace System.Security.Cryptography.Tests
                 output: "F1DB96FF2B53CBA0338FF519BFA10153731DB48A63C26EB66294895B220F72B5");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsSupported))]
         public async Task HmacSha3_256_Stream_Empty_Async()
         {
             // Verfied with:
