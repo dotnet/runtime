@@ -1741,10 +1741,10 @@ void emitter::emitCheckIGList()
         }
 
         // An IG can have at most one of the prolog and epilog flags set.
-        assert(genCountBits(currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
+        assert(genCountBits((unsigned)currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
 
         // An IG can't have both IGF_HAS_ALIGN and IGF_REMOVED_ALIGN.
-        assert(genCountBits(currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
+        assert(genCountBits((unsigned)currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
 
         if (currIG->igFlags & IGF_EXTEND)
         {
