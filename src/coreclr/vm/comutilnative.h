@@ -175,6 +175,7 @@ public:
     static void AddMemoryPressure(UINT64 bytesAllocated);
 
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
+    static void RefreshMemoryLimit();
 
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
@@ -201,6 +202,8 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
 extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
+
+extern "C" void QCALLTYPE GCInterface_RefreshMemoryLimit();
 
 class COMInterlocked
 {

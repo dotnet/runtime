@@ -789,5 +789,13 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
         internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
+
+        private static void _RefreshMemoryLimit()
+        {
+            RefreshMemoryLimit();
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RefreshMemoryLimit")]
+        internal static partial void RefreshMemoryLimit();
     }
 }

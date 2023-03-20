@@ -973,6 +973,9 @@ public:
 
     // Updates given frozen segment
     virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed) PURE_VIRTUAL
+
+    // Refresh the memory limit
+    virtual void RefreshMemoryLimit() PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

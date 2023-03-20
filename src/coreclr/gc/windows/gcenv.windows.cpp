@@ -252,10 +252,6 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // The limit was cached already
-    if (g_RestrictedPhysicalMemoryLimit != (size_t)UINTPTR_MAX)
-        return g_RestrictedPhysicalMemoryLimit;
-
     size_t job_physical_memory_limit = (size_t)UINTPTR_MAX;
     uint64_t total_virtual = 0;
     uint64_t total_physical = 0;
