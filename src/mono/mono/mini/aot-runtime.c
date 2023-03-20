@@ -2433,46 +2433,35 @@ mono_aot_init (void)
 /*
  * load_container_amodule:
  *
- *   Load AOT module of a container assembly
+ *   Load the container assembly and its AOT image.
  */
 static void
 load_container_amodule (MonoAssemblyLoadContext *alc)
 {
-	// If container_amodule loaded, don't lock the runtime
+	ERROR_DECL (error);
+
 	if (!container_assm_name || container_amodule)
 		return;
 
-	mono_loader_lock ();
-	// There might be several threads that passed the first check
-	// Adding another check to ensure single load of a container assembly due to race condition 
-	if (!container_amodule) {
-		ERROR_DECL (error);
-
-		// This method is recursively invoked within the same thread during AOT module loads
-		// It avoids recursive invocation by setting container_assm_name to NULL
-		char *local_ref = container_assm_name;
-		container_assm_name = NULL;
-
-		// Create a fake MonoAssembly/MonoImage to retrieve its AOT module.
-		// Container MonoAssembly/MonoImage shouldn't be used during the runtime.
-		MonoAssembly *assm = g_new0 (MonoAssembly, 1);
-		assm->image = g_new0 (MonoImage, 1);
-		assm->image->dynamic = 0;
-		assm->image->alc = alc;
-		assm->aname.name = local_ref;
-
-		mono_image_init (assm->image);
-		MonoAotFileInfo* info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assm->aname.name);
-		assm->image->guid = (char*)info->assembly_guid;
-		mono_assembly_addref (assm);
-
-		load_aot_module(alc, assm, NULL, error);
-		mono_memory_barrier ();
-		g_assert (assm->image->aot_module);
-		container_amodule = assm->image->aot_module;
+	char *local_ref = container_assm_name;
+	container_assm_name = NULL;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoAssemblyOpenRequest req;
+	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
+	/*
+	 * Don't fire managed assembly load events whose execution
+	 * might require this module to be already loaded.
+	 */
+	mono_assembly_request_prepare_open (&req, alc);
+	req.request.no_managed_load_event = TRUE;
+	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
+	if (!assm) {
+		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
+		assm = mono_assembly_request_open (exe, &req, &status);
 	}
-
-	mono_loader_unlock ();
+	g_assert (assm);
+	load_aot_module (alc, assm, NULL, error);
+	container_amodule = assm->image->aot_module;
 }
 
 static gboolean
