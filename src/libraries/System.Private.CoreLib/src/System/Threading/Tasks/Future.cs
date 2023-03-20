@@ -369,8 +369,6 @@ namespace System.Threading.Tasks
         // internal helper function breaks out logic used by TaskCompletionSource
         internal bool TrySetResult(TResult? result)
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
-
             bool returnValue = false;
 
             // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
