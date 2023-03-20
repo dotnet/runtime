@@ -29,10 +29,9 @@ namespace System.Security.Cryptography
 
         internal static bool HashSupported(string hashAlgorithmId)
         {
-
-            //TODO: This needs to ask CNG.
             switch (hashAlgorithmId)
             {
+                // We know that MD5, SHA1, and SHA2 are supported on all platforms. Don't bother asking.
                 case HashAlgorithmNames.MD5:
                 case HashAlgorithmNames.SHA1:
                 case HashAlgorithmNames.SHA256:
@@ -40,7 +39,27 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA512:
                     return true;
                 default:
-                    return false;
+                    return BCryptAlgorithmCache.IsBCryptAlgorithmSupported(
+                        hashAlgorithmId,
+                        BCryptOpenAlgorithmProviderFlags.None);
+            }
+        }
+
+        internal static bool MacSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                // We know that MD5, SHA1, and SHA2 are supported on all platforms. Don't bother asking.
+                case HashAlgorithmNames.MD5:
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                default:
+                    return BCryptAlgorithmCache.IsBCryptAlgorithmSupported(
+                        hashAlgorithmId,
+                        BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG);
             }
         }
 

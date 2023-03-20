@@ -19,6 +19,8 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
+
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
             switch (hashAlgorithmId)

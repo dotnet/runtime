@@ -27,6 +27,8 @@ namespace System.Security.Cryptography
             return Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId) != IntPtr.Zero;
         }
 
+        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
+
         internal static class OneShotHashProvider
         {
             public static int MacData(

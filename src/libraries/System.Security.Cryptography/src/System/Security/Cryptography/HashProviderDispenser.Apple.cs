@@ -36,6 +36,8 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
+
         internal static class OneShotHashProvider
         {
             public static unsafe int MacData(
