@@ -2676,7 +2676,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         };
 
         // Use overlapping loads/stores, e. g. for size == 9: "mov [dst], tmpReg1; mov [dst+1], tmpReg2".
-        unsigned loadStoreSize = genFindHighestBit(size);
+        unsigned loadStoreSize = 1 << BitOperations::Log2(i);
         if (loadStoreSize == size)
         {
             regNumber tmpReg = tree->GetSingleTempReg(RBM_ALLINT);
