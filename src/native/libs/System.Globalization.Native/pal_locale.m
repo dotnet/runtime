@@ -148,7 +148,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             value = "";
             break;
     }
-    NSLog(@"Globalization GlobalizationNative_GetLocaleInfoStringNative value: %s", value);
+
     return strdup(value);
 }
 #endif
