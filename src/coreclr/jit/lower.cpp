@@ -1786,7 +1786,7 @@ GenTree* Lowering::AddrGen(void* addr)
 //
 //    *  STORE_BLK struct<CNS_SIZE> (copy) (Unroll)
 //    +--*  LCL_VAR   byref  dst
-//    \--*  BLK       struct
+//    \--*  IND       struct
 //       \--*  LCL_VAR   byref  src
 //
 // Arguments:
@@ -1804,29 +1804,26 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
         // TODO-CQ: drop the whole thing in case of 0
         if ((cnsSize > 0) && (cnsSize <= (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
         {
-            GenTree* dstOp = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* srcOp = call->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* dstAddr = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* srcAddr = call->gtArgs.GetArgByIndex(1)->GetNode();
 
             // TODO-CQ: Try to create an addressing mode
-            GenTreeBlk* srcBlk = comp->gtNewBlockVal(srcOp, (unsigned)cnsSize)->AsBlk();
-            srcBlk->ChangeOper(GT_IND);
+            GenTreeBlk* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcOp);
+            srcBlk->gtFlags |= GTF_GLOB_REF;
             srcBlk->SetContained();
 
-            GenTreeBlk* dstBlk = comp->gtNewBlockVal(dstOp, (unsigned)cnsSize)->AsBlk();
-            dstBlk->SetOperRaw(GT_STORE_BLK);
-            dstBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_IND_ASG_LHS | GTF_ASG | GTF_EXCEPT);
-            dstBlk->AsBlk()->Data() = srcBlk;
+            GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
+                GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
+            storeBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
 
             // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcOp and dstOp don't overlap, thus, we can
             // unroll this memmove as memcpy - it doesn't require lots of temp registers
             dstBlk->gtBlkOpKind = GenTreeObj::BlkOpKindUnrollMemmove;
 
-            BlockRange().InsertAfter(srcOp, srcBlk);
+            BlockRange().InsertBefore(call, srcBlk);
             BlockRange().InsertBefore(call, dstBlk);
             BlockRange().Remove(lengthArg);
             BlockRange().Remove(call);
-            DEBUG_DESTROY_NODE(call);
-            DEBUG_DESTROY_NODE(lengthArg);
 
             return dstBlk;
         }
@@ -1854,7 +1851,6 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
-// Implemented only for AMD64 at the moment
 #ifdef TARGET_AMD64
         if (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove)
         {

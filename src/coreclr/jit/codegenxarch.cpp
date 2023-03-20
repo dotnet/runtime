@@ -2578,12 +2578,10 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
 
     // TODO-CQ: Support addressing modes, for now we don't use them
     GenTreeIndir* srcIndir = tree->Data()->AsIndir();
-    assert(srcIndir->isContained());
-    assert(!srcIndir->HasIndex());
-    assert(srcIndir->Offset() == 0);
+    assert(srcIndir->isContained() && !srcIndir->Addr()->isContained());
 
     regNumber dst  = genConsumeReg(tree->Addr());
-    regNumber src  = genConsumeReg(srcIndir->Base());
+    regNumber src  = genConsumeReg(srcIndir->Addr());
     unsigned  size = tree->Size();
 
     // TODO-XARCH-AVX512: Consider enabling it here
@@ -2656,10 +2654,10 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
                     memType = TYP_USHORT;
                     break;
                 case 4:
-                    memType = TYP_UINT;
+                    memType = TYP_INT;
                     break;
                 case 8:
-                    memType = TYP_ULONG;
+                    memType = TYP_LONG;
                     break;
                 default:
                     unreached();
