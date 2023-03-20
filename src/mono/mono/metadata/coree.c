@@ -646,7 +646,7 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 			*(Trampoline)++ = 0xFF;
 			*(Trampoline)++ = 0xE3;
 #else
-#error Unsupported architecture.
+			g_assert_not_reached();
 #endif
 #else
 			ProcRva = (DWORD)(ExportFixup->ProcAddress.DWordPtr - (DWORD_PTR)DosHeader);
