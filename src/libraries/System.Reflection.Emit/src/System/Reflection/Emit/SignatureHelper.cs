@@ -97,7 +97,7 @@ namespace System.Reflection.Emit.Experiment
                     signature.String();
                     break;
 
-                default: throw new NotImplementedException("This parameter type is not yet supported: " + type.FullName);
+                default: throw new NotImplementedException(SR.Format(SR.SignatureNotSupported, type.FullName));
             }
         }
     }

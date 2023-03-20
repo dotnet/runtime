@@ -64,7 +64,7 @@ namespace System.Reflection.Emit.Experiment
         {
             if (_previouslySaved) // Cannot save an assembly multiple times. This is consistent with Save() in .Net Framework.
             {
-                throw new InvalidOperationException("Cannot save an assembly multiple times");
+                throw new InvalidOperationException(SR.CannotSaveMultipleTimes);
             }
 
             ArgumentNullException.ThrowIfNull(stream);
@@ -76,7 +76,7 @@ namespace System.Reflection.Emit.Experiment
 
             if (_module == null)
             {
-                throw new InvalidOperationException("Assembly needs at least one module defined");
+                throw new InvalidOperationException(SR.AModuleRequired);
             }
 
             // Add assembly metadata
@@ -111,7 +111,7 @@ namespace System.Reflection.Emit.Experiment
 
             if (_module == null)
             {
-                throw new InvalidOperationException("Module not found");
+                throw new InvalidOperationException(SR.ModuleNotFound);
             }
 
             return _module;
