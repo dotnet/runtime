@@ -20,7 +20,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [Theory]
         [MemberData(nameof(GetUnspeakableTypes))]
-        public async Task CanSerializeUnspeakableRootTypes<T>(Envelope<T> envelope, string expectedJson)
+        public async Task CanSerializeUnspeakableRootTypes<T>(Envelope<T> envelope, string expectedJson, bool isBaseTypeDeserializable)
         {
             JsonSerializerOptions options = UnspeakableTypeContext.Default.Options;
 
@@ -41,17 +41,21 @@ namespace System.Text.Json.SourceGeneration.Tests
             json = await Serializer.SerializeWrapper(envelope.Value, envelope.Value.GetType(), options);
             Assert.Equal(expectedJson, json);
 
-            // And it can be deserialized using the declared type
-            await Serializer.DeserializeWrapper<T>(json, options);
+            if (isBaseTypeDeserializable)
+            {
+                // And it can be deserialized using the declared type
+                await Serializer.DeserializeWrapper<T>(json, options);
 
-            // But will still fail if you attempt to deserialize using the runtime type
-            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper(json, envelope.Value.GetType(), options));
+                // But will still fail if you attempt to deserialize using the runtime type
+                await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper(json, envelope.Value.GetType(), options));
+            }
         }
 
         [Theory]
         [MemberData(nameof(GetUnspeakableTypes))]
-        public async Task CanSerializeUnspeakableTypesAsBoxedProperties<T>(Envelope<T> envelope, string expectedJson)
+        public async Task CanSerializeUnspeakableTypesAsBoxedProperties<T>(Envelope<T> envelope, string expectedJson, bool isBaseTypeDeserializable)
         {
+            _ = isBaseTypeDeserializable;
             var boxedEnvelope = new Envelope<object>(envelope.Value);
             string expectedEnvelopeJson = $$"""{"Value":{{expectedJson}}}""";
 
@@ -61,8 +65,9 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [Theory]
         [MemberData(nameof(GetUnspeakableTypes))]
-        public async Task CanSerializeUnspeakableTypesAsBoxedCollectionElements<T>(Envelope<T> envelope, string expectedJson)
+        public async Task CanSerializeUnspeakableTypesAsBoxedCollectionElements<T>(Envelope<T> envelope, string expectedJson, bool isBaseTypeDeserializable)
         {
+            _ = isBaseTypeDeserializable;
             var boxedEnvelope = new List<object> { envelope.Value };
             string expectedCollectionJson = $"[{expectedJson}]";
 
@@ -72,8 +77,9 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [Theory]
         [MemberData(nameof(GetUnspeakableTypes))]
-        public async Task CanSerializeUnspeakableTypesAsBoxedDictionaryValues<T>(Envelope<T> envelope, string expectedJson)
+        public async Task CanSerializeUnspeakableTypesAsBoxedDictionaryValues<T>(Envelope<T> envelope, string expectedJson, bool isBaseTypeDeserializable)
         {
+            _ = isBaseTypeDeserializable;
             var boxedEnvelope = new Dictionary<string, object> { ["key"] = envelope.Value };
             string expectedCollectionJson = $$"""{"key":{{expectedJson}}}""";
 
@@ -106,8 +112,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             yield return Wrap(AsyncIteratorMethod(), "[1,2,3]");
 
             yield return Wrap<BasePoco>(new PrivateDerivedPoco { BaseValue = 1, DerivedValue = 2 }, """{"BaseValue":1}""");
+            yield return Wrap<IMyInterface>(new MyImplementation { Value = 1, AnotherValue = 2 }, """{"Value":1}""", isBaseTypeDeserializable: false);
 
-            static object[] Wrap<T>(T value, string expectedJson) => new object[] { new Envelope<T>(value), expectedJson };
+            static object[] Wrap<T>(T value, string expectedJson, bool isBaseTypeDeserializable = true)
+                => new object[] { new Envelope<T>(value), expectedJson, isBaseTypeDeserializable };
 
             static IEnumerable<int> IteratorMethod()
             {
@@ -131,6 +139,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             public int DerivedValue { get; set; }
         }
 
+        public interface IMyInterface
+        {
+            public int Value { get; set;  }
+        }
+
+        private class MyImplementation : IMyInterface
+        {
+            public int Value { get; set; }
+            public int AnotherValue { get; set; }
+        }
+
         private class TypeWithDiamondAmbiguity : BasePoco, IEnumerable<int>
         {
             public IEnumerator<int> GetEnumerator() { yield return 42; }
@@ -141,6 +160,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [JsonSerializable(typeof(object))]
         [JsonSerializable(typeof(BasePoco))]
+        [JsonSerializable(typeof(IMyInterface))]
         [JsonSerializable(typeof(IEnumerable))]
         [JsonSerializable(typeof(IEnumerable<int>))]
         [JsonSerializable(typeof(IAsyncEnumerable<int>))]
