@@ -15,8 +15,7 @@ namespace System.Net
     /// Represents an IP network in CIDR notation with a <see cref="IPAddress"/> and a prefix length.
     /// </summary>
     /// <remarks>
-    /// This type disallows arbitrary IP/prefixLength CIDR pairs. <see cref="BaseAddress"/> should represent the network prefix uniquely,
-    /// meaning that all bits after the network prefix must be zero.
+    /// This type disallows arbitrary IP/prefixLength CIDR pairs. <see cref="BaseAddress"/> must be defined so that all bits after the network prefix are set to zero.
     /// In other words, <see cref="BaseAddress"/> is always the first usable address of the network.
     /// The constructor and the parsing methods will throw in case there are non-zero bits after the prefix.
     /// </remarks>
