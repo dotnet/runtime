@@ -3735,7 +3735,7 @@
     <value>Property '{0}' does not have a valid type.</value>
   </data>
   <data name="Argument_PropertyInvalidValue" xml:space="preserve">
-    <value>Property {0} does not have a valid value.</value>
+    <value>Property '{0}' does not have a valid value.</value>
   </data>
   <data name="Argument_PropertyMissingSetter" xml:space="preserve">
     <value>"Property '{0}' does not have a setter.</value>
