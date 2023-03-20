@@ -73,11 +73,13 @@ namespace System.IO.Hashing
             && (Pclmulqdq.IsSupported || (Aes.IsSupported && AdvSimd.IsSupported))
             && source.Length >= Vector128<byte>.Count * 4;
 
-        // Processes the bytes in source in 64 byte chunks using x86 intrinsics, followed by processing 16
-        // byte chunks, and then processing remaining bytes individually. Requires little endian byte order and
-        // support for PCLMULUQDQ intrinsics on Intel architecture or AES and AdvSimd intrinsics on ARM architecture.
-        // Based on the algorithm put forth in the Intel paper "Fast CRC Computation for Generic Polynomials Using
-        // PCLMULQDQ Instruction" in December, 2009.
+        // Processes the bytes in source in 64 byte chunks using carryless/polynomial multiplication intrinsics,
+        // followed by processing 16 byte chunks, and then processing remaining bytes individually. Requires
+        // little endian byte order and support for PCLMULQDQ intrinsics on Intel architecture or AES and
+        // AdvSimd intrinsics on ARM architecture. Based on the algorithm put forth in the Intel paper "Fast CRC
+        // Computation for Generic Polynomials Using PCLMULQDQ Instruction" in December, 2009.
+        // https://github.com/intel/isa-l/blob/33a2d9484595c2d6516c920ce39a694c144ddf69/crc/crc32_ieee_by4.asm
+        // https://github.com/SixLabors/ImageSharp/blob/f4f689ce67ecbcc35cebddba5aacb603e6d1068a/src/ImageSharp/Formats/Png/Zlib/Crc32.cs#L80
         private static uint UpdateVectorized(uint crc, ReadOnlySpan<byte> source)
         {
             Debug.Assert(CanBeVectorized(source), "source cannot be vectorized.");
