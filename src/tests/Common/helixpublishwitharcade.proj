@@ -120,6 +120,7 @@
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
+    <Message Text="TargetsAppleMobile: $(TargetsAppleMobile)" Importance="High" />
     <Message Importance="High" Text="TimeoutPerTestInMinutes: $(TimeoutPerTestInMinutes)" />
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
@@ -283,6 +284,7 @@
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
+    <Message Text="PrepareCorrelationPayloadDirectory target executing" Importance="High" />
     <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" />
 
     <ItemGroup>
@@ -342,6 +344,8 @@
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
+
+    <Message Text="PrepareMergedTestPayloadDirectories target executing" Importance="High" />
     <ItemGroup>
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
@@ -503,6 +507,9 @@
       Condition="'$(TargetsAppleMobile)' == 'true'"
       Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
+
+      <Message Text="PrepareMergedTestPayloadDirectoryForAppleMobile target executing" Importance="High" />
+
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
