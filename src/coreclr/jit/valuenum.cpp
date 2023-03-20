@@ -5665,6 +5665,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
     {
         switch (funcApp.m_func)
         {
+#ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
             case VNF_HWI_POPCNT_PopCount:
             case VNF_HWI_POPCNT_X64_PopCount:
@@ -5673,6 +5674,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
             case VNF_HWI_AdvSimd_PopCount:
                 return true;
 #endif
+#endif // FEATURE_HW_INTRINSICS
 
             default:
                 break;
