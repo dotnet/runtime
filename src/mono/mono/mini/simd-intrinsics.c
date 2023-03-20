@@ -369,10 +369,10 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_op_Division:
 				return NULL;
 			case SN_Max:
-				instc0 = OP_IMAX;
+				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMAX_UN : OP_IMAX;
 				break;
 			case SN_Min:
-				instc0 = OP_IMIN;
+				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMIN_UN : OP_IMIN;
 				break;
 			case SN_Multiply:
 			case SN_op_Multiply:
@@ -1237,6 +1237,19 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_BitwiseAnd:
 		case SN_BitwiseOr:
 		case SN_Xor:
+		case SN_As:
+		case SN_AsByte:
+		case SN_AsDouble:
+		case SN_AsInt16:
+		case SN_AsInt32:
+		case SN_AsInt64:
+		case SN_AsSByte:
+		case SN_AsSingle:
+		case SN_AsUInt16:
+		case SN_AsUInt32:
+		case SN_AsUInt64:
+		case SN_Max:
+		case SN_Min:
 			break;
 		default: 
 			return NULL;

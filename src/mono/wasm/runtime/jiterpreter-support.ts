@@ -48,7 +48,8 @@ export const enum BailoutReason {
     SafepointBranchTaken,
     UnboxFailed,
     CallDelegate,
-    Debugging
+    Debugging,
+    Icall,
 }
 
 export const BailoutReasonNames = [
@@ -75,20 +76,23 @@ export const BailoutReasonNames = [
     "SafepointBranchTaken",
     "UnboxFailed",
     "CallDelegate",
-    "Debugging"
+    "Debugging",
+    "Icall",
 ];
 
 type FunctionType = [
     index: FunctionTypeIndex,
     parameters: { [name: string]: WasmValtype },
     returnType: WasmValtype,
-    signature: string
+    signature: string,
+    permanent: boolean,
 ];
 
 type FunctionTypeIndex = number;
 
 type FunctionTypeByIndex = [
     parameters: { [name: string]: WasmValtype },
+    parameterCount: number,
     returnType: WasmValtype,
 ];
 
@@ -109,8 +113,11 @@ type ImportedFunctionInfo = {
     typeIndex: number;
     module: string;
     name: string;
-    friendlyName: string;
+    assumeUsed: boolean;
+    func: Function;
 }
+
+const compressedNameCache : { [number: number] : string } = {};
 
 export class WasmBuilder {
     cfg: Cfg;
@@ -119,7 +126,7 @@ export class WasmBuilder {
     inSection!: boolean;
     inFunction!: boolean;
     allowNullCheckOptimization!: boolean;
-    locals = new Map<string, [WasmValtype, number]>();
+    locals = new Map<string, number>();
 
     permanentFunctionTypeCount = 0;
     permanentFunctionTypes: { [name: string] : FunctionType } = {};
@@ -130,6 +137,9 @@ export class WasmBuilder {
     functionTypes!: { [name: string] : FunctionType };
     functionTypesByShape!: { [shape: string] : FunctionTypeIndex };
     functionTypesByIndex: { [index: number] : FunctionTypeByIndex } = {};
+
+    permanentImportedFunctionCount = 0;
+    permanentImportedFunctions: { [name: string] : ImportedFunctionInfo } = {};
 
     importedFunctionCount!: number;
     importedFunctions!: { [name: string] : ImportedFunctionInfo };
@@ -147,6 +157,8 @@ export class WasmBuilder {
     constantSlots: Array<number> = [];
     backBranchOffsets: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
+
+    compressImportNames = false;
 
     constructor (constantSlotCount: number) {
         this.stack = [new BlobBuilder()];
@@ -167,8 +179,14 @@ export class WasmBuilder {
         this.functionTypesByIndex = Object.create(this.permanentFunctionTypesByIndex);
 
         this.nextImportIndex = 0;
-        this.importedFunctionCount = 0;
-        this.importedFunctions = {};
+        this.importedFunctionCount = this.permanentImportedFunctionCount;
+        this.importedFunctions = Object.create(this.permanentImportedFunctions);
+
+        for (const k in this.importedFunctions) {
+            const f = this.importedFunctions[k];
+            if (!f.assumeUsed)
+                f.index = undefined;
+        }
 
         this.functions.length = 0;
         this.estimatedExportBytes = 0;
@@ -201,13 +219,12 @@ export class WasmBuilder {
         const current = this.current;
         this.stackSize--;
 
-        const av = current.getArrayView();
         if (writeToOutput) {
             this.appendULeb(current.size);
-            this.appendBytes(av);
+            current.copyTo(this.current);
             return null;
         } else
-            return av.slice(0, current.size);
+            return current.getArrayView(false).slice(0, current.size);
     }
 
     // HACK: Approximate amount of space we need to generate the full module at present
@@ -336,15 +353,24 @@ export class WasmBuilder {
             if (permanent) {
                 this.permanentFunctionTypeCount++;
                 this.permanentFunctionTypesByShape[shape] = index;
-                this.permanentFunctionTypesByIndex[index] = [parameters, returnType];
+                this.permanentFunctionTypesByIndex[index] = [
+                    parameters,
+                    Object.values(parameters).length,
+                    returnType
+                ];
             } else {
                 this.functionTypesByShape[shape] = index;
-                this.functionTypesByIndex[index] = [parameters, returnType];
+                this.functionTypesByIndex[index] = [
+                    parameters,
+                    Object.values(parameters).length,
+                    returnType
+                ];
             }
         }
 
         const tup : FunctionType = [
-            index, parameters, returnType, `(${JSON.stringify(parameters)}) -> ${returnType}`
+            index, parameters, returnType,
+            `(${JSON.stringify(parameters)}) -> ${returnType}`, permanent
         ];
         if (permanent)
             this.permanentFunctionTypes[name] = tup;
@@ -362,11 +388,12 @@ export class WasmBuilder {
             console.log(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
         */
         for (let i = 0; i < this.functionTypeCount; i++) {
-            const parameters = this.functionTypesByIndex[i][0];
-            const returnType = this.functionTypesByIndex[i][1];
+            const parameters = this.functionTypesByIndex[i][0],
+                parameterCount = this.functionTypesByIndex[i][1],
+                returnType = this.functionTypesByIndex[i][2];
             this.appendU8(0x60);
             // Parameters
-            this.appendULeb(Object.keys(parameters).length);
+            this.appendULeb(parameterCount);
             for (const k in parameters)
                 this.appendU8(parameters[k]);
             // Return type(s)
@@ -379,9 +406,33 @@ export class WasmBuilder {
         this.endSection();
     }
 
+    getImportedFunctionTable () : any {
+        const imports : any = {};
+        for (const k in this.importedFunctions) {
+            const f = this.importedFunctions[k];
+            const name = this.getCompressedName(f);
+            imports[name] = f.func;
+        }
+        return imports;
+    }
+
+    getCompressedName (ifi: ImportedFunctionInfo) {
+        if (!this.compressImportNames || typeof(ifi.index) !== "number")
+            return ifi.name;
+
+        let result = compressedNameCache[ifi.index!];
+        if (typeof (result) !== "string")
+            compressedNameCache[ifi.index!] = result = ifi.index!.toString(shortNameBase);
+        return result;
+    }
+
     _generateImportSection () {
-        const allImports = Object.values(this.importedFunctions);
-        const importsToEmit = allImports.filter(f => f.index !== undefined);
+        const importsToEmit = [];
+        for (const k in this.importedFunctions) {
+            const f = this.importedFunctions[k];
+            if (f.index !== undefined)
+                importsToEmit.push(f);
+        }
         importsToEmit.sort((lhs, rhs) => lhs.index! - rhs.index!);
 
         // Import section
@@ -393,7 +444,7 @@ export class WasmBuilder {
             const ifi = importsToEmit[i];
             // console.log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.friendlyName}`);
             this.appendName(ifi.module);
-            this.appendName(ifi.name);
+            this.appendName(this.getCompressedName(ifi));
             this.appendU8(0x0); // function
             this.appendU8(ifi.typeIndex);
         }
@@ -417,18 +468,35 @@ export class WasmBuilder {
 
     defineImportedFunction (
         module: string, name: string, functionTypeName: string,
-        assumeUsed: boolean, wasmName?: string
+        assumeUsed: boolean, permanent: boolean, func: Function | number
     ) : ImportedFunctionInfo {
+        if (permanent && (this.importedFunctionCount > this.permanentImportedFunctionCount))
+            throw new Error("New permanent imports cannot be defined after non-permanent ones");
         const type = this.functionTypes[functionTypeName];
         if (!type)
             throw new Error("No function type named " + functionTypeName);
+        if (permanent && !type[4])
+            throw new Error("A permanent import must have a permanent function type");
         const typeIndex = type[0];
-        const result = this.importedFunctions[name] = {
-            index: assumeUsed ? this.importedFunctionCount++ : undefined,
+        const table = permanent ? this.permanentImportedFunctions : this.importedFunctions;
+        const index = assumeUsed
+            ? (
+                permanent
+                    ? this.permanentImportedFunctionCount++
+                    : this.importedFunctionCount++
+            )
+            : undefined;
+        if (typeof (func) === "number")
+            func = getWasmFunctionTable().get(func);
+        if (typeof (func) !== "function")
+            throw new Error(`Value passed for imported function ${name} was not a function or valid function pointer`);
+        const result = table[name] = {
+            index,
             typeIndex,
             module,
-            name: wasmName || name,
-            friendlyName: name,
+            name,
+            assumeUsed,
+            func
         };
         return result;
     }
@@ -486,6 +554,8 @@ export class WasmBuilder {
             const func = this.functions[i];
             if (!func.export)
                 continue;
+            // FIXME: This combined with the initial cost of decoding the function name is somewhat expensive
+            // It might be ideal to keep the original C name function pointer around and copy that directly into the buffer.
             this.appendName(func.name);
             this.appendU8(0); // func export
             this.appendULeb(this.importedFunctionCount + i);
@@ -530,6 +600,69 @@ export class WasmBuilder {
         this.inSection = false;
     }
 
+    _assignParameterIndices = (parms: {[name: string] : WasmValtype}) => {
+        let result = 0;
+        for (const k in parms) {
+            this.locals.set(k, result);
+            // console.log(`parm ${k} -> ${result}`);
+            result++;
+        }
+        return result;
+    };
+
+    _assignLocalIndices (
+        counts: any, locals: {[name: string] : WasmValtype},
+        base: number, localGroupCount: number
+    ) {
+        counts[WasmValtype.i32] = 0;
+        counts[WasmValtype.i64] = 0;
+        counts[WasmValtype.f32] = 0;
+        counts[WasmValtype.f64] = 0;
+
+        for (const k in locals) {
+            const ty = locals[k];
+            if (counts[ty] <= 0)
+                localGroupCount++;
+            counts[ty]++;
+        }
+
+        const offi32 = 0,
+            offi64 = counts[WasmValtype.i32],
+            offf32 = offi64 + counts[WasmValtype.i64],
+            offf64 = offf32 + counts[WasmValtype.f32];
+
+        counts[WasmValtype.i32] = 0;
+        counts[WasmValtype.i64] = 0;
+        counts[WasmValtype.f32] = 0;
+        counts[WasmValtype.f64] = 0;
+
+        for (const k in locals) {
+            const ty = locals[k];
+            let idx = 0;
+            switch (ty) {
+                case WasmValtype.i32:
+                    idx = (counts[ty]++) + offi32 + base;
+                    this.locals.set(k, idx);
+                    break;
+                case WasmValtype.i64:
+                    idx = (counts[ty]++) + offi64 + base;
+                    this.locals.set(k, idx);
+                    break;
+                case WasmValtype.f32:
+                    idx = (counts[ty]++) + offf32 + base;
+                    this.locals.set(k, idx);
+                    break;
+                case WasmValtype.f64:
+                    idx = (counts[ty]++) + offf64 + base;
+                    this.locals.set(k, idx);
+                    break;
+            }
+            // console.log(`local ${k} ${locals[k]} -> ${idx}`);
+        }
+
+        return localGroupCount;
+    }
+
     beginFunction (
         type: string,
         locals?: {[name: string]: WasmValtype}
@@ -544,77 +677,17 @@ export class WasmBuilder {
         let counts: any = {};
         const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64];
 
-        const assignParameterIndices = (parms: {[name: string] : WasmValtype}) => {
-            let result = 0;
-            for (const k in parms) {
-                const parm = parms[k];
-                this.locals.set(k, [parm, result]);
-                // console.log(`parm ${k} -> ${result}`);
-                result++;
-            }
-            return result;
-        };
-
-        let localGroupCount = 0;
-
         // We first assign the parameters local indices and then
         //  we assign the named locals indices, because parameters
         //  come first in the local space. Imagine if parameters
         //  had their own opcode and weren't mutable??????
-        const assignLocalIndices = (locals: {[name: string] : WasmValtype}, base: number) => {
-            Object.assign(counts, {
-                [WasmValtype.i32]: 0,
-                [WasmValtype.i64]: 0,
-                [WasmValtype.f32]: 0,
-                [WasmValtype.f64]: 0,
-            });
-            for (const k in locals) {
-                const ty = locals[k];
-                if (counts[ty] <= 0)
-                    localGroupCount++;
-                counts[ty]++;
-            }
-
-            const offi32 = 0,
-                offi64 = counts[WasmValtype.i32],
-                offf32 = offi64 + counts[WasmValtype.i64],
-                offf64 = offf32 + counts[WasmValtype.f32];
-            Object.assign(counts,{
-                [WasmValtype.i32]: 0,
-                [WasmValtype.i64]: 0,
-                [WasmValtype.f32]: 0,
-                [WasmValtype.f64]: 0,
-            });
-            for (const k in locals) {
-                const ty = locals[k];
-                let idx = 0;
-                switch (ty) {
-                    case WasmValtype.i32:
-                        idx = (counts[ty]++) + offi32 + base;
-                        this.locals.set(k, [ty, idx]);
-                        break;
-                    case WasmValtype.i64:
-                        idx = (counts[ty]++) + offi64 + base;
-                        this.locals.set(k, [ty, idx]);
-                        break;
-                    case WasmValtype.f32:
-                        idx = (counts[ty]++) + offf32 + base;
-                        this.locals.set(k, [ty, idx]);
-                        break;
-                    case WasmValtype.f64:
-                        idx = (counts[ty]++) + offf64 + base;
-                        this.locals.set(k, [ty, idx]);
-                        break;
-                }
-                // console.log(`local ${k} ${locals[k]} -> ${idx}`);
-            }
-        };
+        let localGroupCount = 0;
 
         // Assign indices for the parameter list from the function signature
-        const localBaseIndex = assignParameterIndices(signature[1]);
+        const localBaseIndex = this._assignParameterIndices(signature[1]);
         if (locals)
             // Now if we have any locals, assign indices for those
-            assignLocalIndices(locals, localBaseIndex);
+            localGroupCount = this._assignLocalIndices(counts, locals, localBaseIndex, localGroupCount);
         else
             // Otherwise erase the counts table from the parameter assignment
             counts = {};
@@ -663,7 +736,7 @@ export class WasmBuilder {
 
     arg (name: string | number, opcode?: WasmOpcode) {
         const index = typeof(name) === "string"
-            ? (this.locals.has(name) ? this.locals.get(name)![1] : undefined)
+            ? (this.locals.has(name) ? this.locals.get(name)! : undefined)
             : name;
         if (typeof (index) !== "number")
             throw new Error("No local named " + name);
@@ -674,7 +747,7 @@ export class WasmBuilder {
 
     local (name: string | number, opcode?: WasmOpcode) {
         const index = typeof(name) === "string"
-            ? (this.locals.has(name) ? this.locals.get(name)![1] : undefined)
+            ? (this.locals.has(name) ? this.locals.get(name)! : undefined)
             : name + this.argumentCount;
         if (typeof (index) !== "number")
             throw new Error("No local named " + name);
@@ -726,19 +799,16 @@ export class BlobBuilder {
     textBuf = new Uint8Array(1024);
 
     constructor () {
-        this.capacity = 32000;
+        this.capacity = 16 * 1024;
         this.buffer = <any>Module._malloc(this.capacity);
+        Module.HEAPU8.fill(0, this.buffer, this.buffer + this.capacity);
         this.size = 0;
         this.clear();
         if (typeof (TextEncoder) === "function")
             this.encoder = new TextEncoder();
     }
 
-    // It is necessary for you to call this before using the builder so that the DataView
-    //  can be reconstructed in case the heap grew since last use
     clear () {
-        // FIXME: This should not be necessary
-        Module.HEAPU8.fill(0, this.buffer, this.buffer + this.size);
         this.size = 0;
     }
 
@@ -791,6 +861,15 @@ export class BlobBuilder {
     }
 
     appendULeb (value: number) {
+        mono_assert(value >= 0, "cannot pass negative value to appendULeb");
+        if (value < 0x7F) {
+            if (this.size + 1 >= this.capacity)
+                throw new Error("Buffer full");
+
+            this.appendU8(value);
+            return 1;
+        }
+
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -823,6 +902,14 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
+    copyTo (destination: BlobBuilder, count?: number) {
+        if (typeof (count) !== "number")
+            count = this.size;
+
+        Module.HEAPU8.copyWithin(destination.buffer + destination.size, this.buffer, this.buffer + count);
+        destination.size += count;
+    }
+
     appendBytes (bytes: Uint8Array, count?: number) {
         const result = this.size;
         if (bytes.buffer === Module.HEAPU8.buffer) {
@@ -833,6 +920,8 @@ export class BlobBuilder {
         } else {
             if (typeof (count) === "number")
                 bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
+            // FIXME: Find a way to avoid temporarily allocating a view for every appendBytes
+            // The problem is that if we cache it and the native heap grows, the view will become detached
             const av = this.getArrayView(true);
             av.set(bytes, this.size);
             this.size += bytes.length;
@@ -851,6 +940,10 @@ export class BlobBuilder {
         // Also don't bother running the encode path for empty strings
         if (count && (singleChar < 0)) {
             if (this.encoder) {
+                // The ideal would be to encodeInto directly into a heap buffer so we can copyWithin,
+                //  or even encodeInto the destination. But that would require allocating a subarray
+                //  every time we encode text, which is probably worse.
+                // This is somehow one of the most expensive parts of the compiler :(
                 const temp = this.encoder.encodeInto(text, this.textBuf);
                 count = temp.written || 0;
             } else {
@@ -1088,12 +1181,12 @@ class Cfg {
                         if (this.dispatchTable.has(segment.target)) {
                             const disp = this.dispatchTable.get(segment.target)!;
                             if (this.trace)
-                                console.log(`backward br from ${segment.from} to ${segment.target}: disp=${disp}`);
+                                console.log(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
                             this.builder.i32_const(disp);
                             this.builder.local("disp", WasmOpcode.set_local);
                         } else {
                             if (this.trace)
-                                console.log(`br from ${segment.from} to ${segment.target} failed: back branch target not in dispatch table`);
+                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed: back branch target not in dispatch table`);
                             indexInStack = -1;
                         }
                     }
@@ -1104,10 +1197,10 @@ class Cfg {
                         this.builder.appendU8(WasmOpcode.br);
                         this.builder.appendULeb(offset + indexInStack);
                         if (this.trace)
-                            console.log(`br from ${segment.from} to ${segment.target} breaking out ${offset + indexInStack + 1} level(s)`);
+                            console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
                     } else {
                         if (this.trace)
-                            console.log(`br from ${segment.from} to ${segment.target} failed`);
+                            console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed`);
                         append_bailout(this.builder, segment.target, BailoutReason.Branch);
                     }
                     break;
@@ -1176,6 +1269,7 @@ let scratchBuffer : NativePointer = <any>0;
 export function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
+        builder.i32_const(builder.base);
         builder.i32_const(reason);
         builder.callImport("bailout");
     }
@@ -1404,6 +1498,7 @@ export const enum JiterpMember {
     ArrayLength = 9,
     BackwardBranchOffsets = 10,
     BackwardBranchOffsetsCount = 11,
+    ClauseDataOffsets = 12,
 }
 
 const memberOffsets : { [index: number] : number } = {};

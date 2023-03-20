@@ -12,11 +12,10 @@ import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
-    _now, elapsedTimes, shortNameBase,
-    counters, getRawCwrap, importDef,
+    _now, elapsedTimes, counters, getRawCwrap, importDef,
     JiterpreterOptions, getOptions, recordFailure,
     JiterpMember, getMemberOffset,
-    BailoutReasonNames
+    BailoutReasonNames, BailoutReason
 } from "./jiterpreter-support";
 import {
     generate_wasm_body
@@ -106,7 +105,9 @@ export class TraceInfo {
     index: number; // used to look up hit count
     name: string | undefined;
     abortReason: string | undefined;
-    fnPtr: Number | undefined;
+    fnPtr: number | undefined;
+    bailoutCounts: { [code: number] : number } | undefined;
+    bailoutCount: number | undefined;
 
     constructor (ip: MintOpcodePtr, index: number) {
         this.ip = ip;
@@ -217,12 +218,38 @@ const mathOps1d = [
         "powf",
     ];
 
+function recordBailout (ip: number, base: MintOpcodePtr, reason: BailoutReason) {
+    cwraps.mono_jiterp_trace_bailout(reason);
+    // Counting these is not meaningful and messes up the end of run statistics
+    if (reason === BailoutReason.Return)
+        return ip;
+
+    const info = traceInfo[<any>base];
+    if (!info) {
+        console.error(`trace info not found for ${base}`);
+        return;
+    }
+    let table = info.bailoutCounts;
+    if (!table)
+        info.bailoutCounts = table = {};
+    const counter = table[reason];
+    if (!counter)
+        table[reason] = 1;
+    else
+        table[reason] = counter + 1;
+    if (!info.bailoutCount)
+        info.bailoutCount = 1;
+    else
+        info.bailoutCount++;
+    return ip;
+}
+
 function getTraceImports () {
     if (traceImports)
         return traceImports;
 
     traceImports = [
-        importDef("bailout", getRawCwrap("mono_jiterp_trace_bailout")),
+        importDef("bailout", recordBailout),
         importDef("copy_pointer", getRawCwrap("mono_wasm_copy_managed_pointer")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
@@ -327,7 +354,8 @@ function initialize_builder (builder: WasmBuilder) {
     );
     builder.defineType(
         "bailout", {
-            "ip": WasmValtype.i32,
+            "retval": WasmValtype.i32,
+            "base": WasmValtype.i32,
             "reason": WasmValtype.i32
         }, WasmValtype.i32, true
     );
@@ -574,6 +602,14 @@ function initialize_builder (builder: WasmBuilder) {
             "ref": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
+
+    const traceImports = getTraceImports();
+
+    // Pre-define function imports as persistent
+    for (let i = 0; i < traceImports.length; i++) {
+        mono_assert(traceImports[i], () => `trace #${i} missing`);
+        builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], false, true, traceImports[i][2]);
+    }
 }
 
 function assert_not_null (
@@ -643,7 +679,7 @@ function generate_wasm (
         console.log(`instrumenting: ${methodFullName}`);
         instrumentedTraces[instrumentedTraceId] = new InstrumentedTraceState(methodFullName);
     }
-    const compress = compressImportNames && !instrument;
+    builder.compressImportNames = compressImportNames && !instrument;
 
     try {
         // Magic number and version
@@ -651,16 +687,6 @@ function generate_wasm (
         builder.appendU32(1);
 
         builder.generateTypeSection();
-
-        // Import section
-        const traceImports = getTraceImports();
-
-        // Emit function imports
-        for (let i = 0; i < traceImports.length; i++) {
-            mono_assert(traceImports[i], () => `trace #${i} missing`);
-            const wasmName = compress ? i.toString(shortNameBase) : undefined;
-            builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], false, wasmName);
-        }
 
         let keep = true,
             opcodesProcessed = 0;
@@ -728,20 +754,8 @@ function generate_wasm (
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
-        const imports : any = {
-        };
-        // Place our function imports into the import dictionary
-        for (let i = 0; i < traceImports.length; i++) {
-            const ifn = traceImports[i][2];
-            const iname = traceImports[i][0];
-            if (!ifn || (typeof (ifn) !== "function"))
-                throw new Error(`Import '${iname}' not found or not a function`);
-            const wasmName = compress ? i.toString(shortNameBase) : iname;
-            imports[wasmName] = ifn;
-        }
-
         const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: imports,
+            i: builder.getImportedFunctionTable(),
             c: <any>builder.getConstants(),
             m: { h: (<any>Module).asm.memory },
         });
@@ -960,10 +974,22 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
         return;
 
     if (mostRecentOptions.countBailouts) {
+        const traces = Object.values(traceInfo);
+        traces.sort((lhs, rhs) => (rhs.bailoutCount || 0) - (lhs.bailoutCount || 0));
         for (let i = 0; i < BailoutReasonNames.length; i++) {
             const bailoutCount = cwraps.mono_jiterp_get_trace_bailout_count(i);
             if (bailoutCount)
                 console.log(`// traces bailed out ${bailoutCount} time(s) due to ${BailoutReasonNames[i]}`);
+        }
+
+        for (let i = 0, c = 0; i < traces.length && c < 30; i++) {
+            const trace = traces[i];
+            if (!trace.bailoutCount)
+                continue;
+            c++;
+            console.log(`${trace.name}: ${trace.bailoutCount} bailout(s)`);
+            for (const k in trace.bailoutCounts)
+                console.log(`  ${BailoutReasonNames[<any>k]} x${trace.bailoutCounts[<any>k]}`);
         }
     }
 
@@ -1035,7 +1061,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                     case "newobj_vt":
                     case "newobj_slow":
                     case "switch":
-                    case "call_handler.s":
                     case "rethrow":
                     case "endfinally":
                     case "end-of-body":

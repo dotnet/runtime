@@ -87,17 +87,28 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
 
     // Assign weights to entry points in the flow graph
     //
-    AssignInputWeights();
+    AssignInputWeights(option);
 
     // Compute the block weights given the inputs and edge likelihoods
     //
     ComputeBlockWeights();
 
-    // For now, since we have installed synthesized profile data,
-    // act as if we don't have "real" profile data.
+    // Update pgo info
     //
+    const bool             hadPgoWeights = m_comp->fgPgoHaveWeights;
+    ICorJitInfo::PgoSource newSource     = ICorJitInfo::PgoSource::Synthesis;
+
+    if (option == ProfileSynthesisOption::RepairLikelihoods)
+    {
+        newSource = m_comp->fgPgoSource;
+    }
+    else if (hadPgoWeights && (option == ProfileSynthesisOption::BlendLikelihoods))
+    {
+        newSource = ICorJitInfo::PgoSource::Blend;
+    }
+
     m_comp->fgPgoHaveWeights = true;
-    m_comp->fgPgoSource      = ICorJitInfo::PgoSource::Synthesis;
+    m_comp->fgPgoSource      = newSource;
 
 #ifdef DEBUG
     if (JitConfig.JitCheckSynthesizedCounts() > 0)
@@ -357,14 +368,14 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
         if (isJumpEdgeBackEdge)
         {
             JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, jump->bbNum);
-            jumpEdge->setLikelihood(0.9);
-            nextEdge->setLikelihood(0.1);
+            jumpEdge->setLikelihood(loopBackLikelihood);
+            nextEdge->setLikelihood(1.0 - loopBackLikelihood);
         }
         else
         {
             JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, next->bbNum);
-            jumpEdge->setLikelihood(0.1);
-            nextEdge->setLikelihood(0.9);
+            jumpEdge->setLikelihood(1.0 - loopBackLikelihood);
+            nextEdge->setLikelihood(loopBackLikelihood);
         }
 
         return;
@@ -383,14 +394,14 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
         if (isJumpEdgeExitEdge)
         {
             JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, jump->bbNum);
-            jumpEdge->setLikelihood(0.1);
-            nextEdge->setLikelihood(0.9);
+            jumpEdge->setLikelihood(1.0 - loopExitLikelihood);
+            nextEdge->setLikelihood(loopExitLikelihood);
         }
         else
         {
             JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, next->bbNum);
-            jumpEdge->setLikelihood(0.9);
-            nextEdge->setLikelihood(0.1);
+            jumpEdge->setLikelihood(loopExitLikelihood);
+            nextEdge->setLikelihood(1.0 - loopExitLikelihood);
         }
 
         return;
@@ -405,13 +416,13 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
     {
         if (isJumpReturn)
         {
-            jumpEdge->setLikelihood(0.2);
-            nextEdge->setLikelihood(0.8);
+            jumpEdge->setLikelihood(returnLikelihood);
+            nextEdge->setLikelihood(1.0 - returnLikelihood);
         }
         else
         {
-            jumpEdge->setLikelihood(0.8);
-            nextEdge->setLikelihood(0.2);
+            jumpEdge->setLikelihood(1.0 - returnLikelihood);
+            nextEdge->setLikelihood(returnLikelihood);
         }
 
         return;
@@ -421,8 +432,8 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
     //
     // Give slight preference to bbNext
     //
-    jumpEdge->setLikelihood(0.48);
-    nextEdge->setLikelihood(0.52);
+    jumpEdge->setLikelihood(1.0 - ilNextLikelihood);
+    nextEdge->setLikelihood(ilNextLikelihood);
 }
 
 //------------------------------------------------------------------------
@@ -450,22 +461,311 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// fgBlendLikelihoods: blend existing and heuristic likelihoods for all blocks
+// SumOutgoingLikelihoods: sum existing likelihoods for exiting a block
+//
+// Arguments:
+//   block -- block in question
+//   likelihoods -- [optional, out] vector to fill in with the outgoing likelihoods
+//
+// Returns:
+//   Sum of likelihoods of each successor
+//
+weight_t ProfileSynthesis::SumOutgoingLikelihoods(BasicBlock* block, WeightVector* likelihoods)
+{
+    weight_t sum = 0;
+
+    if (likelihoods != nullptr)
+    {
+        likelihoods->clear();
+    }
+
+    for (BasicBlock* const succ : block->Succs(m_comp))
+    {
+        FlowEdge* const edge       = m_comp->fgGetPredForBlock(succ, block);
+        weight_t        likelihood = edge->getLikelihood();
+        if (likelihoods != nullptr)
+        {
+            likelihoods->push_back(likelihood);
+        }
+        sum += likelihood;
+    }
+
+    return sum;
+}
+
+//------------------------------------------------------------------------
+// RepairLikelihoods: find nodes with inconsistent or missing likelihoods
+//   and update them with heuristics.
+//
+// Notes:
+//   Existing likelihoods are retained, if consistent.
+//
+void ProfileSynthesis::RepairLikelihoods()
+{
+    JITDUMP("Repairing inconsistent or missing edge likelihoods\n");
+
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        switch (block->bbJumpKind)
+        {
+            case BBJ_THROW:
+            case BBJ_RETURN:
+            case BBJ_EHFINALLYRET:
+                // No successor cases
+                // Nothing to do.
+                break;
+
+            case BBJ_NONE:
+            case BBJ_CALLFINALLY:
+                // Single successor next cases.
+                // Just assign 1.0
+                AssignLikelihoodNext(block);
+                break;
+
+            case BBJ_ALWAYS:
+            case BBJ_LEAVE:
+            case BBJ_EHCATCHRET:
+            case BBJ_EHFILTERRET:
+                // Single successor jump cases
+                // Just assign 1.0
+                AssignLikelihoodJump(block);
+                break;
+
+            case BBJ_COND:
+            case BBJ_SWITCH:
+            {
+                weight_t sum = SumOutgoingLikelihoods(block);
+
+                if (Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon))
+                {
+                    break;
+                }
+
+                JITDUMP("Repairing likelihoods in " FMT_BB ", existing likelihood sum " FMT_WT "\n", block->bbNum, sum);
+
+                if (block->bbJumpKind == BBJ_COND)
+                {
+                    AssignLikelihoodCond(block);
+                }
+                else
+                {
+                    AssignLikelihoodSwitch(block);
+                }
+
+                break;
+            }
+
+            default:
+                unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// BlendLikelihoods: if a node has existing likelihoods that differ from
+//   the heuristic likelihoods, blend the heuristic prediction with the
+//   current prediction
+//
+// Notes:
+//
+//   Blend is weighted 95% existing / 5% heuristics
+//
+//   If a node's existing likelihoods don't sum to 1.0:
+//     * if sum is zero, just run heuristics
+//     * if sum is nonzero, scale that up and then blend
 //
 void ProfileSynthesis::BlendLikelihoods()
 {
+    JITDUMP("Blending existing likelihoods with heuristics\n");
+    WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
+
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
+
+        switch (block->bbJumpKind)
+        {
+            case BBJ_THROW:
+            case BBJ_RETURN:
+            case BBJ_EHFINALLYRET:
+                // No successor cases
+                // Nothing to do.
+                break;
+
+            case BBJ_NONE:
+            case BBJ_CALLFINALLY:
+                // Single successor next cases.
+                // Just assign 1.0
+                AssignLikelihoodNext(block);
+                break;
+
+            case BBJ_ALWAYS:
+            case BBJ_LEAVE:
+            case BBJ_EHCATCHRET:
+            case BBJ_EHFILTERRET:
+                // Single successor jump cases
+                // Just assign 1.0
+                AssignLikelihoodJump(block);
+                break;
+
+            case BBJ_COND:
+            case BBJ_SWITCH:
+            {
+                // Capture the existing weights and assign new
+                // weights based on heuristics.
+                weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
+
+                if (block->bbJumpKind == BBJ_COND)
+                {
+                    AssignLikelihoodCond(block);
+                }
+                else
+                {
+                    AssignLikelihoodSwitch(block);
+                }
+
+                if (Compiler::fgProfileWeightsEqual(sum, 0.0, epsilon))
+                {
+                    // Existing likelihood was zero. Go with the synthesized likelihoods.
+                    JITDUMP("Existing likelihoods in " FMT_BB " were zero, synthesizing new ones\n", block->bbNum);
+                    break;
+                }
+
+                WeightVector::iterator iter;
+
+                if (!Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon))
+                {
+                    // Existing likelihood was too low or too high. Scale.
+                    weight_t scale = 1.0 / sum;
+                    JITDUMP("Scaling old likelihoods in " FMT_BB " by " FMT_WT "\n", block->bbNum, scale);
+                    for (iter = likelihoods.begin(); iter != likelihoods.end(); iter++)
+                    {
+                        *iter *= scale;
+                    }
+                }
+
+                // Blend
+                //
+                JITDUMP("Blending likelihoods in " FMT_BB " with blend factor " FMT_WT " \n", block->bbNum,
+                        blendFactor);
+                iter = likelihoods.begin();
+                for (BasicBlock* const succ : block->Succs(m_comp))
+                {
+                    FlowEdge* const edge          = m_comp->fgGetPredForBlock(succ, block);
+                    weight_t        newLikelihood = edge->getLikelihood();
+                    weight_t        oldLikelihood = *iter;
+
+                    edge->setLikelihood((blendFactor * oldLikelihood) + ((1.0 - blendFactor) * newLikelihood));
+                    JITDUMP(FMT_BB " -> " FMT_BB " was " FMT_WT " now " FMT_WT "\n", block->bbNum, succ->bbNum,
+                            oldLikelihood, edge->getLikelihood());
+
+                    iter++;
+                }
+                break;
+            }
+
+            default:
+                unreached();
+        }
+    }
 }
 
+//------------------------------------------------------------------------
+// ClearLikelihoods: unset likelihoods on all edges
+//
 void ProfileSynthesis::ClearLikelihoods()
 {
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        for (BasicBlock* const succ : block->Succs(m_comp))
+        {
+            FlowEdge* const edge = m_comp->fgGetPredForBlock(succ, block);
+            edge->clearLikelihood();
+        }
+    }
 }
 
+//------------------------------------------------------------------------
+// ReverseLikelihoods: for all blocks, reverse likelihoods on all edges
+//   from the block
+//
 void ProfileSynthesis::ReverseLikelihoods()
 {
+#ifdef DEBUG
+    JITDUMP("Reversing likelihoods\n");
+    WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        for (BasicBlock* const succ : block->Succs(m_comp))
+        {
+            weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
+
+            if (likelihoods.size() < 2)
+            {
+                continue;
+            }
+
+            for (size_t i = 0; i < likelihoods.size() / 2; i++)
+            {
+                size_t   j     = likelihoods.size() - i - 1;
+                weight_t t     = likelihoods[i];
+                likelihoods[i] = likelihoods[j];
+                likelihoods[j] = t;
+            }
+        }
+    }
+#endif // DEBUG
 }
 
+//------------------------------------------------------------------------
+// RandomizeLikelihoods: for all blocks, randomize likelihoods on all edges
+//   from the block
+//
+// Notes:
+//   total outgoing likelihood for each block remains at 1.0
+//
 void ProfileSynthesis::RandomizeLikelihoods()
 {
+#ifdef DEBUG
+    // todo: external seed
+    JITDUMP("Randomizing likelihoods\n");
+    WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
+    CLRRandom    random;
+
+    random.Init(m_comp->info.compMethodHash());
+
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        unsigned const N = block->NumSucc(m_comp);
+
+        if (N < 2)
+        {
+            continue;
+        }
+
+        likelihoods.clear();
+        likelihoods.reserve(N);
+
+        weight_t sum = 0;
+        unsigned i   = 0;
+
+        // Consider: something other than uniform distribution.
+        // As is, this will rarely set likelihoods to zero.
+        //
+        for (i = 0; i < N; i++)
+        {
+            likelihoods[i] = (weight_t)random.NextDouble();
+            sum += likelihoods[i];
+        }
+
+        i = 0;
+        for (BasicBlock* const succ : block->Succs(m_comp))
+        {
+            FlowEdge* const edge = m_comp->fgGetPredForBlock(succ, block);
+            edge->setLikelihood(likelihoods[i++] / sum);
+        }
+    }
+#endif // DEBUG
 }
 
 //------------------------------------------------------------------------
@@ -830,10 +1130,10 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
     // (todo: decrease loop gain if we are in a deep nest?)
     // assert(cyclicWeight <= 1.01);
     //
-    if (cyclicWeight > 0.999)
+    if (cyclicWeight > cappedLikelihood)
     {
         capped       = true;
-        cyclicWeight = 0.999;
+        cyclicWeight = cappedLikelihood;
         m_cappedCyclicProbabilities++;
     }
 
@@ -848,21 +1148,75 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
 //------------------------------------------------------------------------
 // fgAssignInputWeights: provide initial profile weights for all blocks
 //
+// Arguments:
+//   option - profile synthesis option
+//
 // Notes:
 //   For finallys we will pick up new entry weights when we process
 //   the subtree that can invoke them normally.
 //
-void ProfileSynthesis::AssignInputWeights()
+//   Option is used to determine the entry weight, so that the
+//   absolute values of weights does not change dramatically.
+//
+//   Some parts of the jit are sensitive to the absolute weights.
+//
+void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 {
-    const weight_t entryWeight = BB_UNITY_WEIGHT;
-    const weight_t ehWeight    = entryWeight / 1000;
+    // Determine input weight for entire method.
+    //
+    BasicBlock* const entryBlock  = m_comp->fgFirstBB;
+    weight_t          entryWeight = BB_UNITY_WEIGHT;
+
+    switch (option)
+    {
+        case ProfileSynthesisOption::BlendLikelihoods:
+        case ProfileSynthesisOption::RepairLikelihoods:
+        {
+            // Try and retain fgEntryBB's weight.
+            // Easiest to do when the block has no preds.
+            //
+            if (entryBlock->hasProfileWeight())
+            {
+                weight_t currentEntryWeight = entryBlock->bbWeight;
+
+                if (!Compiler::fgProfileWeightsEqual(currentEntryWeight, 0.0, epsilon))
+                {
+                    if (entryBlock->bbPreds == nullptr)
+                    {
+                        entryWeight = currentEntryWeight;
+                    }
+                    else
+                    {
+                        // TODO: something similar to how we compute fgCalledCount;
+                        // try and sum return weights?
+                    }
+                }
+                else
+                {
+                    // Entry weight was zero or nearly zero, just use default
+                }
+            }
+            else
+            {
+                // Entry was unprofiled, just use default
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    // Determine input weight for EH regions.
+    //
+    const weight_t ehWeight = entryWeight * exceptionScale;
 
     for (BasicBlock* block : m_comp->Blocks())
     {
         block->setBBProfileWeight(0.0);
     }
 
-    m_comp->fgFirstBB->setBBProfileWeight(entryWeight);
+    entryBlock->setBBProfileWeight(entryWeight);
 
     for (EHblkDsc* const HBtab : EHClauses(m_comp))
     {

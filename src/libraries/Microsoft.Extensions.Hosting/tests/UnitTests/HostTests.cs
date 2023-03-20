@@ -55,12 +55,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             using var _ = RemoteExecutor.Invoke(() =>
             {
-                string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
-                if (string.IsNullOrEmpty(systemDirectory))
-                {
-                    // Skip the environments (like Nano Server) where Environment.SpecialFolder.System returns empty - https://github.com/dotnet/runtime/issues/21430
-                    return;
-                }
+                string systemDirectory = Environment.SystemDirectory;
 
                 // Test that the path gets normalized before comparison. Use C:\WINDOWS\SYSTEM32\ instead of C:\Windows\system32.
                 systemDirectory = systemDirectory.ToUpper() + "\\";

@@ -4,10 +4,10 @@
            Text="Both %24(RuntimeSrcDir) and %24(AppleBuildSupportDir) are not set. Either one of them needs to be set to use local runtime builds" />
     <Error Condition="'$(RuntimeSrcDir)' != '' and '$(AppleBuildSupportDir)' != ''"
            Text="Both %24(RuntimeSrcDir) and %24(AppleBuildSupportDir) are set. " />
-    <Error Condition="!Exists('$(_AppleTargetsDir)AppleApp.LocalBuild.props')"
-           Text="Could not find AppleApp.LocalBuild.props in $(_AppleTargetsDir)" />
-    <Error Condition="!Exists('$(_AppleTargetsDir)AppleApp.LocalBuild.targets')"
-           Text="Could not find AppleApp.LocalBuild.targets in $(_AppleTargetsDir)" />
+    <Error Condition="!Exists('$(_AppleTargetsDir)AppleBuild.LocalBuild.props')"
+           Text="Could not find AppleBuild.LocalBuild.props in $(_AppleTargetsDir)" />
+    <Error Condition="!Exists('$(_AppleTargetsDir)AppleBuild.LocalBuild.targets')"
+           Text="Could not find AppleBuild.LocalBuild.targets in $(_AppleTargetsDir)" />
   </Target>
   <Target Name="PrepareForAppleBuild">
     <ItemGroup>
@@ -15,5 +15,5 @@
     </ItemGroup>
   </Target>
   <Import Project="$(_LibraryTargetsDir)LibraryBuilder.targets" Condition="Exists('$(_LibraryTargetsDir)LibraryBuilder.targets')" />
-  <Import Project="$(_AppleTargetsDir)AppleApp.LocalBuild.targets" Condition="Exists('$(_AppleTargetsDir)AppleApp.LocalBuild.targets')" />
+  <Import Project="$(_AppleTargetsDir)AppleBuild.LocalBuild.targets" Condition="Exists('$(_AppleTargetsDir)AppleBuild.LocalBuild.targets')" />
 </Project>
