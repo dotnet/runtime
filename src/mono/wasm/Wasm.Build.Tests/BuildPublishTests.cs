@@ -25,7 +25,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"build_publish_{buildArgs.Config}{s_unicodeChar}";
+            string projectName = GetTestProjectPath(prefix: "build_publish", config: buildArgs.Config);
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -73,7 +73,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
         public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"build_publish_{buildArgs.Config}_{s_unicodeChar}";
+            string projectName = GetTestProjectPath(prefix: "build_publish", config: buildArgs.Config);
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<_WasmDevel>true</_WasmDevel>");
@@ -108,7 +108,7 @@ namespace Wasm.Build.Tests
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
-            // relinking for paths with unicode does not work:
+            // FIXME: relinking for paths with unicode does not work:
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
             // relink by default for Release+publish
             // (_, output) = BuildProject(buildArgs,
@@ -144,6 +144,7 @@ namespace Wasm.Build.Tests
 
             // no native files changed
             pathsDict.UpdateTo(unchanged: true);
+            // FIXME: elinking for paths with unicode does not work:
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
             // CompareStat(publishStat, secondBuildStat, pathsDict.Values);
 
@@ -160,5 +161,9 @@ namespace Wasm.Build.Tests
 
             AssertSubstring("pinvoke.c -> pinvoke.o", buildOutput, contains: expectRelinking || expectAOT);
         }
+        
+        
+        // appending UTF-8 char makes sure project build&publish under all types of paths is supported
+        string GetTestProjectPath(string prefix, string config) => $"{prefix}_{config}_{s_unicodeChar}";
     }
 }
