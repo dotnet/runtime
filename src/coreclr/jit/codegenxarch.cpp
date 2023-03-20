@@ -2676,7 +2676,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         };
 
         // Use overlapping loads/stores, e. g. for size == 9: "mov [dst], tmpReg1; mov [dst+1], tmpReg2".
-        unsigned loadStoreSize = 1 << BitOperations::Log2(i);
+        unsigned loadStoreSize = 1 << BitOperations::Log2(size);
         if (loadStoreSize == size)
         {
             regNumber tmpReg = tree->GetSingleTempReg(RBM_ALLINT);
