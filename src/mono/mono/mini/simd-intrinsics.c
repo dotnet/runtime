@@ -613,15 +613,23 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 		return ins;
 	}
 
-	MonoInst *ins = emit_simd_ins (cfg, vector_class, OP_ARM64_XADDV, arg->dreg, -1);
-
+	MonoInst *sum = emit_simd_ins (cfg, vector_class, OP_ARM64_XADDV, arg->dreg, -1);
 	if (type_enum_is_float (element_type)) {
-		ins->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
+		sum->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
+		sum->inst_c1 = element_type;
 	} else {
-		ins->inst_c0 = type_enum_is_unsigned (element_type) ? INTRINS_AARCH64_ADV_SIMD_UADDV : INTRINS_AARCH64_ADV_SIMD_SADDV;
+		sum->inst_c0 = type_enum_is_unsigned (element_type) ? INTRINS_AARCH64_ADV_SIMD_UADDV : INTRINS_AARCH64_ADV_SIMD_SADDV;
+		sum->inst_c1 = element_type;
 	}
 
-	return ins;
+	if (COMPILE_LLVM (cfg)) {
+		return sum;
+	} else {
+		MonoInst *ins = emit_simd_ins (cfg, vector_class, type_to_extract_op (element_type), sum->dreg, -1);
+		ins->inst_c0 = 0;
+		ins->inst_c1 = element_type;
+		return ins;
+	}
 }
 #endif
 #ifdef TARGET_WASM
@@ -1191,8 +1199,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
-	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
-		return NULL;
+	//if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
+	//	return NULL;
 #endif
 
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
@@ -1233,6 +1241,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_AsUInt64:
 		case SN_Max:
 		case SN_Min:
+		case SN_Sum:
 			break;
 		default: 
 			return NULL;
@@ -1908,6 +1917,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		case SN_op_BitwiseAnd:
 		case SN_op_BitwiseOr:
 		case SN_op_ExclusiveOr:
+		case SN_Sum:
 			break;
 		default:
 			return NULL;
