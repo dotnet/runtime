@@ -67,7 +67,7 @@
 
   <!-- Include only baseservices on iOS to have basic E2E flow. FIXME: Enable parallel AOT compilation and include other groups. -->
   <ItemGroup Condition="'$(TargetOS)' == 'iOS'">
-    <TestDirectories Include="$(XunitTestBinBase)/baseservices" />
+    <TestDirectories Include="$(XunitTestBinBase)baseservices/varargs" />
   </ItemGroup>
 
     <Message Text="Test directories are %(TestDirectories.Identity)" Importance="High" />
