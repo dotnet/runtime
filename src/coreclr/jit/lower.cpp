@@ -1828,7 +1828,7 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
             DEBUG_DESTROY_NODE(call);
             DEBUG_DESTROY_NODE(lengthArg);
 
-            return dstBlk->gtNext;
+            return dstBlk;
         }
     }
     return nullptr;
@@ -1861,7 +1861,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
             GenTree* newNode = LowerCallMemmove(call);
             if (newNode != nullptr)
             {
-                return newNode;
+                return newNode->gtNext;
             }
         }
 #endif
