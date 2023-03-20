@@ -3777,7 +3777,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
 		case OP_XEXTRACT: 
-			code = emit_xextract (code, (ins->inst_c1 == 16) ? VREG_FULL : VREG_LOW, ins->inst_c0, dreg, sreg1);
+			code = emit_xextract (code, VREG_FULL, ins->inst_c0, dreg, sreg1);
 			break;
 
 			/* ALU */

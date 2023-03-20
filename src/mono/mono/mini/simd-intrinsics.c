@@ -510,7 +510,8 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 {
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		MonoInst* cmp = emit_xcompare (cfg, arg1->klass, arg1->type, arg1, arg2);
+		MonoTypeEnum elemt = get_underlying_type (m_class_get_this_arg (arg1->klass));
+		MonoInst* cmp = emit_xcompare (cfg, arg1->klass, elemt, arg1, arg2);
 		MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
 		ret->inst_c0 = SIMD_EXTR_ARE_ALL_SET;
 		ret->inst_c1 = mono_class_value_size (klass, NULL);
