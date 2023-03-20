@@ -370,12 +370,12 @@ namespace System.Xml
             {
                 fixed (byte* _bytes = &buffer[offset])
                 {
-                    byte* bytes = _bytes;
-                    char* charsMax = &chars[charCount];
-
-                    // Fast path for small strings, skip and use Encoding.GetBytes for larger strings since it is faster
-                    if (charCount < 32)
+                    // Fast path for small strings, use Encoding.GetBytes for larger strings since it is faster when vectorization is possible
+                    if (charCount < 8)
                     {
+                        byte* bytes = _bytes;
+                        char* charsMax = &chars[charCount];
+
                         while (chars < charsMax)
                         {
                             char t = *chars;
@@ -387,11 +387,15 @@ namespace System.Xml
                             chars++;
                         }
                         return charCount;
-                    }
 
-                NonAscii:
-                    byte* bytesMax = _bytes + buffer.Length - offset;
-                    return (int)(bytes - _bytes) + (_encoding ?? DataContractSerializer.ValidatingUTF8).GetBytes(chars, (int)(charsMax - chars), bytes, (int)(bytesMax - bytes));
+                    NonAscii:
+                        byte* bytesMax = _bytes + buffer.Length - offset;
+                        return (int)(bytes - _bytes) + (_encoding ?? Encoding.UTF8).GetBytes(chars, (int)(charsMax - chars), bytes, (int)(bytesMax - bytes));
+                    }
+                    else
+                    {
+                        return (_encoding ?? Encoding.UTF8).GetBytes(chars, charCount, _bytes, buffer.Length - offset);
+                    }
                 }
             }
             return 0;
