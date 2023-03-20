@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.Experiment
                 hashValue: default); // not sure where to find hashValue.
         }
 
-        internal static TypeDefinitionHandle AddTypeDef(MetadataBuilder metadata, PersistableTypeBuilder typeBuilder, EntityHandle baseType, int methodToken)
+        internal static TypeDefinitionHandle AddTypeDef(MetadataBuilder metadata, PersistableTypeBuilder typeBuilder, EntityHandle baseType, int methodToken, int fieldToken)
         {
             //Add type metadata
             return metadata.AddTypeDefinition(
@@ -40,7 +40,7 @@ namespace System.Reflection.Emit.Experiment
                 (typeBuilder.Namespace == null) ? default : metadata.GetOrAddString(typeBuilder.Namespace),
                 name: metadata.GetOrAddString(typeBuilder.Name),
                 baseType: baseType,
-                fieldList: MetadataTokens.FieldDefinitionHandle(1), //Update once we support fields.
+                fieldList: MetadataTokens.FieldDefinitionHandle(fieldToken),
                 methodList: MetadataTokens.MethodDefinitionHandle(methodToken));
         }
 

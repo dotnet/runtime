@@ -19,6 +19,7 @@ namespace System.Reflection.Emit.Experiment
         internal Dictionary<Type, TypeReferenceHandle> _typeRefStore = new Dictionary<Type, TypeReferenceHandle>();
         internal List<PersistableTypeBuilder> _typeDefStore = new List<PersistableTypeBuilder>();
         internal int _nextMethodDefRowId = 1;
+        internal int _nextFieldDefRowId = 1;
         internal const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
 
         #endregion
@@ -58,7 +59,7 @@ namespace System.Reflection.Emit.Experiment
                     parent = GetTypeReference(metadata, typeBuilder.BaseType);
                 }
 
-                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDef(metadata, typeBuilder, parent, _nextMethodDefRowId);
+                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDef(metadata, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
 
                 // Add each method definition to metadata table.
                 foreach (PersistableMethodBuilder method in typeBuilder._methodDefStore)
@@ -70,6 +71,7 @@ namespace System.Reflection.Emit.Experiment
                 foreach (PersistableFieldBuilder field in typeBuilder._fieldDefStore)
                 {
                     MetadataHelper.AddFieldDefintion(metadata, field);
+                    _nextFieldDefRowId++;
                 }
             }
         }
