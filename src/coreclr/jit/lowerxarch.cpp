@@ -3874,7 +3874,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                     if (varTypeIsSIMD(node->gtType))
                     {
                         // We're producing a vector result, so just emit DotProduct directly
-                        node->SetSimdSize(16);
                         node->ResetHWIntrinsicId(NI_SSE41_DotProduct, comp, op1, op2, idx);
                     }
                     else
