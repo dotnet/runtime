@@ -1032,8 +1032,14 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 
     if (!IsEvexEncodableInstruction(ins))
     {
-        // Can't be EVEX encoded ever
+        // Never supports the EVEX encoding
         return false;
+    }
+
+    if (!IsVexEncodableInstruction(ins))
+    {
+        // Only supports the EVEX encoding
+        return true;
     }
 
     if (HasHighSIMDReg(id) || (id->idOpSize() == EA_64BYTE) || HasMaskReg(id))
@@ -1044,14 +1050,28 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 
     if (HasEmbeddedBroadcast(id))
     {
+        // Requires the EVEX encoding due to embedded functionality
+        //
         // TODO-XArch-AVX512: This needs to return true when the id includes:
         // * embedded rounding control
         // * other EVEX specific functionality
         return true;
     }
 
-    // Only supports the EVEX encoding or in stress mode to always use EVEX encoding
-    return !IsVexEncodableInstruction(ins) || emitComp->DoJitStressEvexEncoding();
+#if defined(DEBUG)
+    if (emitComp->DoJitStressEvexEncoding())
+    {
+        // Requires the EVEX encoding due to STRESS mode and no change in semantics
+        //
+        // Some instructions, like VCMPEQW return the value in a SIMD register for
+        // VEX but in a MASK register for EVEX. Such instructions will have already
+        // returned TRUE if they should have used EVEX due to the HasMaskReg(id)
+        // check above so we need to still return false here to preserve semantics.
+        return !HasKMaskRegisterDest(ins);
+    }
+#endif // DEBUG
+
+    return false;
 }
 
 // Intel AVX-512 encoding is defined in "Intel 64 and ia-32 architectures software developer's manual volume 2", Section
