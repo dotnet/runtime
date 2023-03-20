@@ -62,7 +62,9 @@ internal static partial class Interop
                         null,
                         key.flags);
 
-                    if (s_supported.TryAdd(key, status == NTSTATUS.STATUS_SUCCESS))
+                    bool isSupported = status == NTSTATUS.STATUS_SUCCESS;
+
+                    if (s_supported.TryAdd(key, isSupported) && isSupported)
                     {
                         // It's a valid algorithm. Let's prime the handle cache while we are here. Presumably it's
                         // going to get used if we're asking if it's supported.
