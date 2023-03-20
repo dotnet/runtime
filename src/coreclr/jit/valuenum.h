@@ -863,6 +863,9 @@ public:
     // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);
 
+    // Returns true if the VN represents a node that is never negative.
+    bool IsVNNeverNegative(ValueNum vn);
+
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
     // Returns true if the VN is known or likely to appear as the conservative value number

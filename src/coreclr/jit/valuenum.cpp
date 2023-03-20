@@ -4714,6 +4714,14 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 {
                     resultVN = VNOneForType(typ);
                 }
+                else if ((genTreeOps(func) == GT_GE) && varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+                {
+                    ZeroVN = VNZeroForType(typ);
+                    if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
+                    {
+                        resultVN = VNOneForType(typ);
+                    }
+                }
                 break;
 
             case GT_NE:
@@ -4772,6 +4780,14 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 if (arg0VN == arg1VN)
                 {
                     resultVN = VNZeroForType(typ);
+                }
+                else if ((genTreeOps(func) == GT_LT) && varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+                {
+                    ZeroVN = VNZeroForType(typ);
+                    if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
+                    {
+                        resultVN = ZeroVN;
+                    }
                 }
                 break;
 
@@ -5616,6 +5632,48 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
     }
 
     return TypeOfVN(vn) == TYP_INT;
+}
+
+bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
+{
+    if (IsVNConstant(vn))
+    {
+        var_types vnTy = TypeOfVN(vn);
+        if (varTypeIsIntegral(vnTy))
+        {
+            if (vnTy == TYP_INT)
+            {
+                return GetConstantInt32(vn) >= 0;
+            }
+            else if (vnTy == TYP_LONG)
+            {
+                return GetConstantInt64(vn) >= 0;
+            }
+        }
+
+        return false;
+    }
+
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp))
+    {
+        switch (funcApp.m_func)
+        {
+#ifdef TARGET_XARCH
+            case VNF_HWI_POPCNT_PopCount:
+            case VNF_HWI_POPCNT_X64_PopCount:
+                return true;
+#elif TARGET_ARM64
+            case VNF_HWI_AdvSimd_PopCount:
+                return true;
+#endif
+
+            default:
+                break;
+        }
+    }
+
+    return false;
 }
 
 GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
