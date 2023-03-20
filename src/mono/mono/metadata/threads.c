@@ -4963,3 +4963,32 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_p
 	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
 	mono_lifo_semaphore_release (sem, count);
 }
+
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+gpointer
+ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal (void)
+{
+	return (gpointer)mono_lifo_js_semaphore_init ();
+}
+
+void
+ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal (gpointer sem_ptr)
+{
+	LifoJSSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	mono_lifo_js_semaphore_delete (sem);
+}
+
+gint32
+ves_icall_System_Threading_LowLevelJSSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
+{
+	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
+	return mono_lifo_js_semaphore_timed_wait (sem, timeout_ms);
+}
+
+void
+ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
+{
+	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
+	mono_lifo_js_semaphore_release (sem, count);
+}
+#endif /* HOST_BROWSER && !DISABLE_THREADS */

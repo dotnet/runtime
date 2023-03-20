@@ -184,6 +184,13 @@ ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInt
 ICALL_EXPORT gint32   ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms);
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count);
 
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+ICALL_EXPORT gpointer ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal (void);
+ICALL_EXPORT void     ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal (gpointer sem_ptr);
+ICALL_EXPORT gint32   ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timeout_cb, gpointer gchandle, gpointer user_data);
+ICALL_EXPORT void     ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count);
+#endif
+
 #ifdef TARGET_AMD64
 ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id);
 #endif
