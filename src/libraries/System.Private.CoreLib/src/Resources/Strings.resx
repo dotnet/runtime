@@ -1381,9 +1381,6 @@
   <data name="Argument_MismatchedArrays" xml:space="preserve">
     <value>Two arrays, {0} and {1}, must be of  the same size.</value>
   </data>
-  <data name="Argument_MissingDefaultConstructor" xml:space="preserve">
-    <value>was missing default constructor.</value>
-  </data>
   <data name="Argument_MustBeFalse" xml:space="preserve">
     <value>Argument must be initialized to false</value>
   </data>

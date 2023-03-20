@@ -901,7 +901,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
             ConstructorInfo? ctor = excType.GetConstructor(Type.EmptyTypes);
             if (ctor == null)
-                throw new ArgumentException(SR.Argument_MissingDefaultConstructor, nameof(excType));
+                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
             Emit(OpCodes.Newobj, ctor);
             Emit(OpCodes.Throw);
         }
