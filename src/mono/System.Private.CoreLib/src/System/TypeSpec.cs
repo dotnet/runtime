@@ -406,7 +406,7 @@ namespace System
                     {
                         case '&':
                             if (data.is_byref)
-                                throw new ArgumentException(SR.Format(SR.CannotCreatePointerOfByRef, data.TypeName), "typeName");
+                                throw new ArgumentException(SR.Format(SR.CannotCreateByRefOfByRef, data.TypeName), "typeName");
 
                             data.is_byref = true;
                             break;

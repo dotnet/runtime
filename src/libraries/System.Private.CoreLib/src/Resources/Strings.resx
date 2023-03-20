@@ -933,17 +933,11 @@
   <data name="Argument_ByrefQualifierMustBeLastOneOfAType" xml:space="preserve">
     <value>Byref qualifier must be the last one of a type.</value>
   </data>
-  <data name="Argument_CannotCreatePointerTypeOfByref" xml:space="preserve">
-    <value>Can't have a pointer to a byref type.</value>
-  </data>
   <data name="Argument_CannotCreateTypedReference" xml:space="preserve">
     <value>Cannot use function evaluation to create a TypedReference object.</value>
   </data>
   <data name="Argument_CannotSetParentToInterface" xml:space="preserve">
     <value>Cannot set parent to an interface.</value>
-  </data>
-  <data name="Argument_CannotHaveAByrefOfByref" xml:space="preserve">
-    <value>Can't have a byref of a byref.</value>
   </data>
   <data name="Argument_CodepageNotSupported" xml:space="preserve">
     <value>{0} is not a supported code page.</value>
