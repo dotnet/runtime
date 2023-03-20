@@ -103,7 +103,7 @@ namespace System.Text.RegularExpressions.Tests
             EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
             ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
             ImmutableArray<Diagnostic> resultsDiagnostics = results.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
-            if (!results.Success || resultsDiagnostics.Length != 0 || generatorDiagnostics.Length != 0)
+            if (!results.Success || resultsDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, resultsDiagnostics.Concat(generatorDiagnostics)) + Environment.NewLine +

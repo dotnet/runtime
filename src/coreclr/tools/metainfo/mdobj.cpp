@@ -280,7 +280,8 @@ void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_
         pFname = szFile;
     }
 
-    sprintf_s(szString,1024,"\nFile %S: \n",pFname);
+    MAKE_UTF8PTR_FROMWIDE(pFnameUtf8, pFname);
+    sprintf_s(szString,1024,"\nFile %s: \n",pFnameUtf8);
     pDisplayString(szString);
 
     if (DumpFilter & MDInfo::dumpValidate)

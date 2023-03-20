@@ -218,6 +218,9 @@ if ($vs) {
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
+  
+  # Disable .NET runtime signature validation errors which errors for local builds
+  $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
   if ($runtimeConfiguration)
   {
@@ -265,6 +268,10 @@ foreach ($argument in $PSBoundParameters.Keys)
     "arch"                   {}
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
+}
+
+if ($env:TreatWarningsAsErrors -eq 'false') {
+  $arguments += " -warnAsError 0"
 }
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.

@@ -26,7 +26,7 @@ internal static partial class Interop
             out SafeCFStringHandle cfSubjectSummaryOut);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
-        private static partial int AppleCryptoNative_X509GetPublicKey(SafeSecCertificateHandle cert, out SafeSecKeyRefHandle publicKey, out int pOSStatus);
+        private static partial int AppleCryptoNative_X509GetPublicKey(SafeSecCertificateHandle cert, out SafeSecKeyRefHandle publicKey);
 
         internal static X509ContentType X509GetContentType(ReadOnlySpan<byte> data)
             => X509GetContentType(ref MemoryMarshal.GetReference(data), data.Length);
@@ -125,8 +125,7 @@ internal static partial class Interop
         internal static SafeSecKeyRefHandle X509GetPublicKey(SafeSecCertificateHandle cert)
         {
             SafeSecKeyRefHandle publicKey;
-            int osStatus;
-            int ret = AppleCryptoNative_X509GetPublicKey(cert, out publicKey, out osStatus);
+            int ret = AppleCryptoNative_X509GetPublicKey(cert, out publicKey);
 
             if (ret == 1)
             {
@@ -134,11 +133,6 @@ internal static partial class Interop
             }
 
             publicKey.Dispose();
-
-            if (ret == 0)
-            {
-                throw CreateExceptionForOSStatus(osStatus);
-            }
 
             Debug.Fail($"Unexpected return value {ret}");
             throw new CryptographicException();

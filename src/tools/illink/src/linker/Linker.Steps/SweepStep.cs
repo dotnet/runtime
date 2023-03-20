@@ -143,8 +143,8 @@ namespace Mono.Linker.Steps
 						// rewrite the copy to save to update the scopes not to point
 						// forwarding assembly (facade).
 						//
-						//		foo.dll -> facade.dll    -> lib.dll
-						//		copy    |  copy (delete) |  link
+						//      foo.dll -> facade.dll    -> lib.dll
+						//      copy    |  copy (delete) |  link
 						//
 						Annotations.SetAction (assembly, AssemblyAction.Save);
 						continue;
@@ -452,16 +452,16 @@ namespace Mono.Linker.Steps
 				// We can't rely on the context resolution cache anymore, since it may remember methods which are already removed
 				// So call the direct Resolve here and avoid the cache.
 				// We want to remove a method from the list of Overrides if:
-				//	Resolve() is null
-				//		This can happen for a couple of reasons, but it indicates the method isn't in the final assembly.
-				//		Resolve also may return a removed value if method.Overrides[i] is a MethodDefinition. In this case, Resolve short circuits and returns `this`.
-				//	OR
-				//	ov.DeclaringType is null
-				//		ov.DeclaringType may be null if Resolve short circuited and returned a removed method. In this case, we want to remove the override.
-				//	OR
-				//	ov is in a `link` scope and is unmarked
-				//		ShouldRemove returns true if the method is unmarked, but we also We need to make sure the override is in a link scope.
-				//		Only things in a link scope are marked, so ShouldRemove is only valid for items in a `link` scope.
+				//  Resolve() is null
+				//    This can happen for a couple of reasons, but it indicates the method isn't in the final assembly.
+				//    Resolve also may return a removed value if method.Overrides[i] is a MethodDefinition. In this case, Resolve short circuits and returns `this`.
+				// OR
+				// ov.DeclaringType is null
+				//    ov.DeclaringType may be null if Resolve short circuited and returned a removed method. In this case, we want to remove the override.
+				// OR
+				// ov is in a `link` scope and is unmarked
+				//    ShouldRemove returns true if the method is unmarked, but we also We need to make sure the override is in a link scope.
+				//    Only things in a link scope are marked, so ShouldRemove is only valid for items in a `link` scope.
 #pragma warning disable RS0030 // Cecil's Resolve is banned - it's necessary when the metadata graph isn't stable
 				if (method.Overrides[i].Resolve () is not MethodDefinition ov || ov.DeclaringType is null || (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov)))
 					method.Overrides.RemoveAt (i);
@@ -636,7 +636,7 @@ namespace Mono.Linker.Steps
 #pragma warning restore RS0030
 				if (td == null) {
 					// Forwarded type cannot be resolved but it was marked
-					// linker is running in --skip-unresolved true mode
+					// ILLink is running in --skip-unresolved true mode
 					var anr = (AssemblyNameReference) exportedType.Scope;
 					exportedType.Scope = importer.ImportReference (anr);
 					return;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 #define NEG_INF    "float32(0xFF800000)"
 #define MIN        "float32(0xFF7FFFFF)"
@@ -49,6 +50,9 @@
 }
 
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
 	call	void _ble_un::initialize()

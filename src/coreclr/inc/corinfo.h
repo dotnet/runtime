@@ -852,11 +852,11 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info, AOT can't rely on it (used for types outside of AOT compilation version bubble)
+    CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info (used for types outside of AOT compilation version bubble)
     CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
-    // CORINFO_FLG_UNUSED             = 0x04000000,
+    CORINFO_FLG_INDEXABLE_FIELDS      = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
     CORINFO_FLG_BYREF_LIKE            = 0x08000000, // it is byref-like value type
     CORINFO_FLG_VARIANCE              = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
     CORINFO_FLG_BEFOREFIELDINIT       = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
@@ -1246,6 +1246,7 @@ struct CORINFO_LOOKUP_KIND
 //
 #define CORINFO_MAXINDIRECTIONS 4
 #define CORINFO_USEHELPER ((uint16_t) 0xffff)
+#define CORINFO_USENULL ((uint16_t) 0xfffe)
 #define CORINFO_NO_SIZE_CHECK ((uint16_t) 0xffff)
 
 struct CORINFO_RUNTIME_LOOKUP
@@ -1258,6 +1259,7 @@ struct CORINFO_RUNTIME_LOOKUP
 
     // Number of indirections to get there
     // CORINFO_USEHELPER = don't know how to get it, so use helper function at run-time instead
+    // CORINFO_USENULL = the context should be null because the callee doesn't actually use it
     // 0 = use the this pointer itself (e.g. token is C<!0> inside code in sealed class C)
     //     or method desc itself (e.g. token is method void M::mymeth<!!0>() inside code in M::mymeth)
     // Otherwise, follow each byte-offset stored in the "offsets[]" array (may be negative)
@@ -1265,9 +1267,6 @@ struct CORINFO_RUNTIME_LOOKUP
 
     // If set, test for null and branch to helper if null
     bool                    testForNull;
-
-    // If set, test the lowest bit and dereference if set (see code:FixupPointer)
-    bool                    testForFixup;
 
     uint16_t                sizeOffset;
     size_t                  offsets[CORINFO_MAXINDIRECTIONS];
@@ -1685,7 +1684,7 @@ enum CORINFO_FIELD_ACCESSOR
     CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
     CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
     CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
-
+    CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access using relocation (used in AOT)
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
     CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
     CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
@@ -1698,7 +1697,6 @@ enum CORINFO_FIELD_FLAGS
     CORINFO_FLG_FIELD_UNMANAGED                 = 0x00000002, // RVA field
     CORINFO_FLG_FIELD_FINAL                     = 0x00000004,
     CORINFO_FLG_FIELD_STATIC_IN_HEAP            = 0x00000008, // See code:#StaticFields. This static field is in the GC heap as a boxed object
-    CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN   = 0x00000010, // Field can be returned safely (has GC heap lifetime)
     CORINFO_FLG_FIELD_INITCLASS                 = 0x00000020, // initClass has to be called before accessing the field
     CORINFO_FLG_FIELD_PROTECTED                 = 0x00000040,
 };

@@ -507,6 +507,30 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
+
+OBJECTREF FnPtrTypeDesc::GetManagedClassObject()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+
+        INJECT_FAULT(COMPlusThrowOM());
+
+        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
+    }
+    CONTRACTL_END;
+
+    if (m_hExposedClassObject == NULL)
+    {
+        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
+    }
+    return GetManagedClassObjectIfExists();
+}
+
+#endif // #ifndef DACCESS_COMPILE
+
 BOOL TypeDesc::IsRestored()
 {
     STATIC_CONTRACT_NOTHROW;

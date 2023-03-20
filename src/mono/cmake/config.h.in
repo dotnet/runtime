@@ -666,6 +666,9 @@
 /* ... */
 #cmakedefine TARGET_WASM 1
 
+/* ... */
+#cmakedefine TARGET_WASI 1
+
 /* The JIT/AOT targets WatchOS */
 #cmakedefine TARGET_WATCHOS 1
 
@@ -932,6 +935,9 @@
 
 /* Enable System.WeakAttribute support */
 #cmakedefine ENABLE_WEAK_ATTR 1
+
+/* Enable WebCIL image loader */
+#cmakedefine ENABLE_WEBCIL 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

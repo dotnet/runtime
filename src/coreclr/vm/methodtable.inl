@@ -1377,6 +1377,7 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(pInterface->IsInterface()); // class we are looking up should be an interface
+        PRECONDITION(!pInterface->IsSpecialMarkerTypeForGenericCasting());
     }
     CONTRACTL_END;
 

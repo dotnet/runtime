@@ -1,0 +1,28 @@
+<Project>
+  <PropertyGroup>
+    <!-- FIXME: update the condition for this in Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets -->
+    <_RuntimeIdentifierUsesAppHost>false</_RuntimeIdentifierUsesAppHost>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
+    <WasmBuildNativeTarget>_WasiBuildNativeCore</WasmBuildNativeTarget>
+
+    <_WasmBuildCoreDependsOn>
+        _InitializeCommonProperties;
+        _PrepareForAfterBuild;
+        _BeforeWasmBuildApp;
+        $(WasmBuildNativeTarget);
+        _WasiGenerateAppBundle;
+    </_WasmBuildCoreDependsOn>
+    <WasmBuildAppDependsOn>
+      $(_WasmBuildCoreDependsOn)
+    </WasmBuildAppDependsOn>
+
+    <WasmNestedPublishAppDependsOn>
+      _PrepareForNestedPublish;
+      $(_WasmBuildCoreDependsOn)
+    </WasmNestedPublishAppDependsOn>
+  </PropertyGroup>
+</Project>

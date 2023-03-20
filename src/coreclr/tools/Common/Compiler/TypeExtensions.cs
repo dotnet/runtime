@@ -96,20 +96,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets a value indicating whether this type has any generic virtual methods.
-        /// </summary>
-        public static bool HasGenericVirtualMethods(this TypeDesc type)
-        {
-            foreach (var method in type.GetAllMethods())
-            {
-                if (method.IsVirtual && method.HasInstantiation)
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Wrapper helper function around the IsCanonicalDefinitionType API on the TypeSystemContext
         /// </summary>
         public static bool IsCanonicalDefinitionType(this TypeDesc type, CanonicalFormKind kind)

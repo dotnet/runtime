@@ -279,7 +279,7 @@ namespace Internal.Runtime.TypeLoader
                     bool isSzArray = isArray ? state.ArrayRank < 1 : false;
                     int arrayRank = isArray ? state.ArrayRank.Value : 0;
                     CreateInstanceGCDesc(state, pTemplateEEType, pEEType, baseSize, cbGCDesc, isValueType, isArray, isSzArray, arrayRank);
-                    Debug.Assert(pEEType->HasGCPointers == (cbGCDesc != 0));
+                    Debug.Assert(pEEType->ContainsGCPointers == (cbGCDesc != 0));
 
                     // Copy the encoded optional fields buffer to the newly allocated memory, and update the OptionalFields field on the MethodTable
                     if (cbOptionalFieldsSize > 0)
@@ -397,7 +397,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (cbGCDesc != 0)
                 {
-                    pEEType->HasGCPointers = true;
+                    pEEType->ContainsGCPointers = true;
                     if (state.IsArrayOfReferenceTypes)
                     {
                         IntPtr* gcDescStart = (IntPtr*)((byte*)pEEType - cbGCDesc);
@@ -412,29 +412,29 @@ namespace Internal.Runtime.TypeLoader
                 }
                 else
                 {
-                    pEEType->HasGCPointers = false;
+                    pEEType->ContainsGCPointers = false;
                 }
             }
             else if (gcBitfield != null)
             {
                 if (cbGCDesc != 0)
                 {
-                    pEEType->HasGCPointers = true;
+                    pEEType->ContainsGCPointers = true;
                     CreateGCDesc(gcBitfield, baseSize, isValueType, false, ((void**)pEEType) - 1);
                 }
                 else
                 {
-                    pEEType->HasGCPointers = false;
+                    pEEType->ContainsGCPointers = false;
                 }
             }
             else if (pTemplateEEType != null)
             {
                 Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
-                pEEType->HasGCPointers = pTemplateEEType->HasGCPointers;
+                pEEType->ContainsGCPointers = pTemplateEEType->ContainsGCPointers;
             }
             else
             {
-                pEEType->HasGCPointers = false;
+                pEEType->ContainsGCPointers = false;
             }
         }
 

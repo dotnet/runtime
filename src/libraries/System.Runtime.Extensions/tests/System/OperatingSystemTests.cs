@@ -18,7 +18,8 @@ namespace System.Tests
             "Windows",
             "Linux",
             "FreeBSD",
-            "Browser"
+            "Browser",
+            "Wasi",
         };
 
         [Theory]
@@ -79,6 +80,12 @@ namespace System.Tests
 
         [Fact, PlatformSpecific(TestPlatforms.Browser)]
         public static void TestIsOSVersionAtLeast_Browser() => TestIsOSVersionAtLeast("BROWSER");
+
+        [Fact, PlatformSpecific(TestPlatforms.Wasi)]
+        public static void TestIsOSPlatform_Wasi() => TestIsOSPlatform("WASI", OperatingSystem.IsWasi);
+
+        [Fact, PlatformSpecific(TestPlatforms.Wasi)]
+        public static void TestIsOSVersionAtLeast_Wasi() => TestIsOSVersionAtLeast("WASI");
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
         public static void TestIsOSPlatform_Linux() => TestIsOSPlatform("Linux", OperatingSystem.IsLinux);
@@ -191,7 +198,8 @@ namespace System.Tests
                 OperatingSystem.IsMacOS(),
                 OperatingSystem.IsTvOS(),
                 OperatingSystem.IsWatchOS(),
-                OperatingSystem.IsWindows()
+                OperatingSystem.IsWindows(),
+                OperatingSystem.IsWasi(),
             };
 
             // MacCatalyst is a special case since it also returns true for iOS
@@ -208,6 +216,7 @@ namespace System.Tests
                 Assert.False(allResults[7]); // IsTvOS()
                 Assert.False(allResults[8]); // IsWatchOS()
                 Assert.False(allResults[9]); // IsWindows()
+                Assert.False(allResults[10]); // IsWasi()
             }
             else
             {

@@ -77,7 +77,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowArgumentException_ValueTooLarge(int tokenLength)
+        public static void ThrowArgumentException_ValueTooLarge(long tokenLength)
         {
             throw GetArgumentException(SR.Format(SR.ValueTooLarge, tokenLength));
         }

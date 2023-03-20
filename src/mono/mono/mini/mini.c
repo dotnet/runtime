@@ -1502,18 +1502,15 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 				 * Align the size too so the code generated for passing vtypes in
 				 * registers doesn't overwrite random locals.
 				 */
-				size = (size + (align - 1)) & ~(align -1);
+				size = ALIGN_TO (size, align);
 			}
 
 			if (backward) {
-				offset += size;
-				offset += align - 1;
-				offset &= ~(align - 1);
+				offset = ALIGN_TO (offset + size, align);
 				slot = offset;
 			}
 			else {
-				offset += align - 1;
-				offset &= ~(align - 1);
+				offset = ALIGN_TO (offset, align);
 				slot = offset;
 				offset += size;
 			}
@@ -3178,8 +3175,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->jit_mm = jit_mm_for_method (cfg->method);
 	cfg->mem_manager = m_method_get_mem_manager (cfg->method);
 
-	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
-		/* We can't have seq points inside gc critical regions */
+	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		/* We can't have seq points inside gc critical regions or native-to-managed wrapper */
 		cfg->gen_seq_points = FALSE;
 		cfg->gen_sdb_seq_points = FALSE;
 	}
@@ -4480,4 +4477,57 @@ mini_get_cpu_features (MonoCompile* cfg)
 #endif
 	// apply parameters passed via -mattr
 	return (features | mono_cpu_features_enabled) & ~mono_cpu_features_disabled;
+}
+
+int
+mini_primitive_type_size (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return 1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return 2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		return 4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		return 8;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return TARGET_SIZEOF_VOID_P == 8 ? 8 : 4;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
+/*
+ * mini_get_simd_type_info:
+ *
+ *   Return the element type of a SIMD type. Set NELEMS to the number of elements.
+ */
+MonoTypeEnum
+mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
+{
+	*nelems = 0;
+
+	const char *klass_name = m_class_get_name (klass);
+	if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
+		*nelems = 4;
+		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
+		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
+		int size = mono_class_value_size (klass, NULL);
+		*nelems = size / mini_primitive_type_size (etype->type);
+		return etype->type;
+	} else {
+		printf ("%s\n", klass_name);
+		NOT_IMPLEMENTED;
+		return MONO_TYPE_VOID;
+	}
 }

@@ -512,7 +512,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_securityContext!))
+            if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!))
             {
                 // We may select client cert but it may not be used.
                 // This is primarily an issue on Windows with credential caching.
@@ -715,9 +715,17 @@ namespace System.Net.Security
                 return frameSize;
             }
 
-            if (frameSize < int.MaxValue)
+            if (frameSize != int.MaxValue)
             {
+                // make sure we have space for the whole frame
                 _buffer.EnsureAvailableSpace(frameSize - _buffer.EncryptedLength);
+            }
+            else
+            {
+                // move existing data to the beginning of the buffer (they will
+                // be couple of bytes only, otherwise we would have entire
+                // header and know exact size)
+                _buffer.EnsureAvailableSpace(_buffer.Capacity - _buffer.EncryptedLength);
             }
 
             while (_buffer.EncryptedLength < frameSize)

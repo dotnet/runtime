@@ -80,10 +80,15 @@
              Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" 
              Link="Common\System\Obsoletions.cs" />
+    <!-- IP parser -->
+    <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
+             Link="System\Net\IPv4AddressHelper.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs"
+             Link="System\Net\IPv6AddressHelper.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
+             Link="Common\System\Net\IPAddressParserStatics.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="ProductionCode\Common\System\Net\Logging\NetEventSource.Common.cs" />

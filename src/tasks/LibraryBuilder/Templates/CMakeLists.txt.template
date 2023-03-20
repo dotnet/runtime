@@ -1,0 +1,64 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(%LIBRARY_NAME%)
+
+enable_language(%CMAKE_LANGS%)
+
+set(DOTNET_AOT_SOURCES
+%AotSources%
+)
+set(DOTNET_AOT_OBJECTS
+%AotObjects%
+)
+set(DOTNET_EXTRA_SOURCES
+    library-builder.h
+    preloaded-assemblies.c
+%ExtraSources%)
+
+include_directories("%MonoInclude%")
+
+add_library(
+    aot_library STATIC
+    ${DOTNET_AOT_SOURCES}
+)
+target_link_libraries(
+    aot_library
+    PUBLIC
+    ${DOTNET_AOT_OBJECTS}
+)
+
+add_library(
+    %LIBRARY_NAME% %LIBRARY_TYPE%
+    ${DOTNET_EXTRA_SOURCES}
+)
+
+if(TARGETS_ANDROID)
+    set(MOBILE_SYSTEM_LIBS
+        libz.so
+        log
+    )
+    add_definitions(-DHOST_ANDROID=1)
+    add_definitions(-fPIC)
+elseif(TARGETS_APPLE_MOBILE)
+    set(MOBILE_SYSTEM_LIBS
+        "-framework Foundation"
+        "-framework Security"
+        "-framework UIKit"
+        "-lz"
+        "-lc++"
+        "-liconv"
+    )
+    add_definitions(-DHOST_APPLE_MOBILE=1)
+    add_definitions(-fPIC)
+else()
+    message(FATAL_ERROR "Unsupported Platform. Ensure the TargetOS is supported by the LibraryBuilder and the platform specific libs are added here.")
+endif()
+
+%ExtraDefinitions%
+
+target_link_libraries(
+    %LIBRARY_NAME%
+    PUBLIC
+    aot_library
+    ${MOBILE_SYSTEM_LIBS}
+%LIBRARY_LINKER_ARGS%)

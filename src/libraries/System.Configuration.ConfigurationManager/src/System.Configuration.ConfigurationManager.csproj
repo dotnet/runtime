@@ -5,7 +5,8 @@
     <NoWarn>$(NoWarn);nullable</NoWarn>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
     <IsTrimmable>false</IsTrimmable>
-    <NoWarn>$(NoWarn);CA1847</NoWarn>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types that support using XML configuration files (app.config). This package exists only to support migrating existing .NET Framework code that already uses System.Configuration. When writing new code, use another configuration system instead, such as Microsoft.Extensions.Configuration.</PackageDescription>
   </PropertyGroup>
@@ -272,9 +273,9 @@
     <Compile Include="System\Diagnostics\TraceUtils.cs" />
   </ItemGroup>
 
-  <!-- Since this package is compatible with .NETStandard, it must also ensure its .NETFramework and .NETCoreApp behavior is compatible with its .NETStandard behavior.-->
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+  <!-- This reference is for the System.Security.PermissionSet class, which is implemented in corelib, so the reference is only necessary for netstandard. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">

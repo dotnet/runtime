@@ -1151,12 +1151,19 @@ namespace Internal.JitInterface
                 // supplied by RyuJIT is a concrete instantiation.
                 if (type != method.OwningType)
                 {
-                    Debug.Assert(type.HasSameTypeDefinition(method.OwningType));
-                    Instantiation methodInst = method.Instantiation;
-                    method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
-                    if (methodInst.Length > 0)
+                    if (type.IsArray)
                     {
-                        method = method.MakeInstantiatedMethod(methodInst);
+                        method = ((ArrayType)type).GetArrayMethod(((ArrayMethod)method).Kind);
+                    }
+                    else
+                    {
+                        Debug.Assert(type.HasSameTypeDefinition(method.OwningType));
+                        Instantiation methodInst = method.Instantiation;
+                        method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
+                        if (methodInst.Length > 0)
+                        {
+                            method = method.MakeInstantiatedMethod(methodInst);
+                        }
                     }
                 }
             }
@@ -1174,7 +1181,7 @@ namespace Internal.JitInterface
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
 #endif
-            MethodIL methodIL = _compilation.GetMethodIL(method);
+            MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
 
@@ -2003,6 +2010,9 @@ namespace Internal.JitInterface
 
                 if (metadataType.IsUnsafeValueType)
                     result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
+
+                if (metadataType.IsInlineArray)
+                    result |= CorInfoFlag.CORINFO_FLG_INDEXABLE_FIELDS;
             }
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -2233,9 +2243,10 @@ namespace Internal.JitInterface
             }
         }
 
-        private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
+        private int GatherClassGCLayout(MetadataType type, byte* gcPtrs)
         {
             int result = 0;
+            bool isInlineArray = type.IsInlineArray;
 
             foreach (var field in type.GetFields())
             {
@@ -2271,11 +2282,30 @@ namespace Internal.JitInterface
 
                 if (gcType == CorInfoGCType.TYPE_GC_OTHER)
                 {
-                    result += GatherClassGCLayout(fieldType, fieldGcPtrs);
+                    result += GatherClassGCLayout((MetadataType)fieldType, fieldGcPtrs);
                 }
                 else
                 {
                     result += MarkGcField(fieldGcPtrs, gcType);
+                }
+
+                if (isInlineArray)
+                {
+                    if (result > 0)
+                    {
+                        Debug.Assert(field.Offset.AsInt == 0);
+                        int totalLayoutSize = type.GetElementSize().AsInt / PointerSize;
+                        int elementLayoutSize = fieldType.GetElementSize().AsInt / PointerSize;
+                        int gcPointersInElement = result;
+                        for (int offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                        {
+                            Buffer.MemoryCopy(gcPtrs, gcPtrs + offset, elementLayoutSize, elementLayoutSize);
+                            result += gcPointersInElement;
+                        }
+                    }
+
+                    // inline array has only one element field
+                    break;
                 }
             }
             return result;
@@ -2285,7 +2315,7 @@ namespace Internal.JitInterface
         {
             uint result = 0;
 
-            DefType type = (DefType)HandleToObject(cls);
+            MetadataType type = (MetadataType)HandleToObject(cls);
 
             int pointerSize = PointerSize;
 
@@ -3073,7 +3103,7 @@ namespace Internal.JitInterface
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
             return target.IsWindows ? CORINFO_OS.CORINFO_WINNT :
-                   target.IsOSX ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
+                   target.IsOSXLike ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
         }
 
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
@@ -3460,7 +3490,11 @@ namespace Internal.JitInterface
             {
                 _roDataAlignment = 8;
 
-                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
+                {
+                    _roDataAlignment = 64;
+                }
+                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
                 {
                     _roDataAlignment = 32;
                 }

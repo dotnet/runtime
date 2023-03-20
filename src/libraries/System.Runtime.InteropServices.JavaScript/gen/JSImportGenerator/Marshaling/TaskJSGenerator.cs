@@ -11,7 +11,8 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class TaskJSGenerator : BaseJSGenerator
     {
-        private MarshalerType _resultMarshalerType;
+        private readonly MarshalerType _resultMarshalerType;
+
         public TaskJSGenerator(MarshalerType resultMarshalerType)
             : base(MarshalerType.Task, new Forwarder())
         {

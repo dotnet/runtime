@@ -22,7 +22,6 @@
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "event.h"
-#include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "shash.h"

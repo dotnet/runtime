@@ -1,6 +1,6 @@
 # Builds and copies library artifacts into target dotnet sdk image
 ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-f39df28-20191023143754
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:7.0-bullseye-slim
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
 
@@ -12,7 +12,7 @@ RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURAT
 
 FROM $SDK_BASE_IMAGE as target
 
-ARG VERSION=7.0
+ARG VERSION=8.0
 ARG CONFIGURATION=Release
 ENV _DOTNET_INSTALL_CHANNEL="$VERSION.1xx"
 

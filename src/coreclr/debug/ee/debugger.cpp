@@ -2050,7 +2050,7 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
     // This lets us run a set of managed apps under a debugger.
     if (!CORDebuggerAttached())
     {
-        #define DBG_ATTACH_ON_STARTUP_ENV_VAR W("COMPlus_DbgAttachOnStartup")
+        #define DBG_ATTACH_ON_STARTUP_ENV_VAR W("DOTNET_DbgAttachOnStartup")
         PathString temp;
         // We explicitly just check the env because we don't want a switch this invasive to be global.
         DWORD fAttach = WszGetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, temp) > 0;
@@ -6890,10 +6890,10 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
         bool fHasDebugger = GetCompleteDebuggerLaunchString(&strDbgCommand);
         if (fHasDebugger)
         {
+            LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%s]\n", strDbgCommand.GetUTF8()));
+
             wszDbgCommand = strDbgCommand.GetUnicode();
             _ASSERTE(wszDbgCommand != NULL); // would have thrown on oom.
-
-            LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%S]\n", wszDbgCommand));
         }
     }
     EX_CATCH
@@ -12736,7 +12736,7 @@ EnCSequencePointHelper::~EnCSequencePointHelper()
 
     if (m_pOffsetToHandlerInfo)
     {
-        delete m_pOffsetToHandlerInfo;
+        delete[] m_pOffsetToHandlerInfo;
     }
 }
 
@@ -14350,8 +14350,12 @@ void Debugger::SendLogSwitchSetting(int iLevel,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "D::SLSS: Sending log switch message switch=%S parent=%S.\n",
-        pLogSwitchName, pParentSwitchName));
+#ifdef LOGGING
+    MAKE_UTF8PTR_FROMWIDE(pLogSwitchNameUtf8, pLogSwitchName);
+    MAKE_UTF8PTR_FROMWIDE(pParentSwitchNameUtf8, pParentSwitchName);
+    LOG((LF_CORDB, LL_INFO1000, "D::SLSS: Sending log switch message switch=%s parent=%s.\n",
+        pLogSwitchNameUtf8, pParentSwitchNameUtf8));
+#endif // LOGGING
 
     // Send the message only if the debugger is attached to this appdomain.
     if (!CORDebuggerAttached())

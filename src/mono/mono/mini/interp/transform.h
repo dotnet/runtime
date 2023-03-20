@@ -23,9 +23,12 @@
 
 #define INTERP_LOCAL_FLAG_UNKNOWN_USE 32
 #define INTERP_LOCAL_FLAG_LOCAL_ONLY 64
+// We use this flag to avoid addition of align field in InterpLocal, for now
+#define INTERP_LOCAL_FLAG_SIMD 128
 
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
+typedef struct _InterpCallInfo InterpCallInfo;
 
 typedef struct
 {
@@ -82,10 +85,7 @@ struct _InterpInst {
 	union {
 		InterpBasicBlock *target_bb;
 		InterpBasicBlock **target_bb_table;
-		// For call instructions, this represents an array of all call arg vars
-		// in the order they are pushed to the stack. This makes it easy to find
-		// all source vars for these types of opcodes. This is terminated with -1.
-		int *call_args;
+		InterpCallInfo *call_info;
 	} info;
 	// Variable data immediately following the dreg/sreg information. This is represented exactly
 	// in the final code stream as in this array.
@@ -142,6 +142,20 @@ struct _InterpBasicBlock {
 	// used by jiterpreter
 	int backwards_branch_target: 1;
 	int contains_call_instruction: 1;
+};
+
+struct _InterpCallInfo {
+	// For call instructions, this represents an array of all call arg vars
+	// in the order they are pushed to the stack. This makes it easy to find
+	// all source vars for these types of opcodes. This is terminated with -1.
+	int *call_args;
+	int call_offset;
+	union {
+		// Array of call dependencies that need to be resolved before
+		GSList *call_deps;
+		// Stack end offset of call arguments
+		int call_end_offset;
+	};
 };
 
 typedef enum {
@@ -251,6 +265,7 @@ typedef struct
 	int aggressive_inlining : 1;
 	int optimized : 1;
 	int has_invalid_code : 1;
+	int has_inlined_one_call : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0
@@ -266,6 +281,78 @@ typedef struct
 #define STACK_TYPE_I STACK_TYPE_I8
 #else
 #define STACK_TYPE_I STACK_TYPE_I4
+#endif
+
+
+#define interp_ins_set_dreg(ins,dr) do { \
+        ins->dreg = dr; \
+} while (0)
+
+#define interp_ins_set_sreg(ins,s1) do { \
+        ins->sregs [0] = s1; \
+} while (0)
+
+#define interp_ins_set_sregs2(ins,s1,s2) do { \
+        ins->sregs [0] = s1; \
+        ins->sregs [1] = s2; \
+} while (0)
+
+#define interp_ins_set_sregs3(ins,s1,s2,s3) do { \
+        ins->sregs [0] = s1; \
+        ins->sregs [1] = s2; \
+        ins->sregs [2] = s3; \
+} while (0)
+
+#if NO_UNALIGNED_ACCESS
+#define WRITE32(ip, v) \
+        do { \
+                * (ip) = * (guint16 *)(v); \
+                * ((ip) + 1) = * ((guint16 *)(v) + 1); \
+                (ip) += 2; \
+        } while (0)
+
+#define WRITE32_INS(ins, index, v) \
+        do { \
+                (ins)->data [index] = * (guint16 *)(v); \
+                (ins)->data [index + 1] = * ((guint16 *)(v) + 1); \
+        } while (0)
+
+#define WRITE64(ins, v) \
+        do { \
+                *((ins) + 0) = * ((guint16 *)(v) + 0); \
+                *((ins) + 1) = * ((guint16 *)(v) + 1); \
+                *((ins) + 2) = * ((guint16 *)(v) + 2); \
+                *((ins) + 3) = * ((guint16 *)(v) + 3); \
+        } while (0)
+
+#define WRITE64_INS(ins, index, v) \
+        do { \
+                (ins)->data [index] = * (guint16 *)(v); \
+                (ins)->data [index + 1] = * ((guint16 *)(v) + 1); \
+                (ins)->data [index + 2] = * ((guint16 *)(v) + 2); \
+                (ins)->data [index + 3] = * ((guint16 *)(v) + 3); \
+        } while (0)
+#else
+#define WRITE32(ip, v) \
+        do { \
+                * (guint32 *)(ip) = * (guint32 *)(v); \
+                (ip) += 2; \
+        } while (0)
+#define WRITE32_INS(ins, index, v) \
+        do { \
+                * (guint32 *)(&(ins)->data [index]) = * (guint32 *)(v); \
+        } while (0)
+
+#define WRITE64(ip, v) \
+        do { \
+                * (guint64 *)(ip) = * (guint64 *)(v); \
+                (ip) += 4; \
+        } while (0)
+#define WRITE64_INS(ins, index, v) \
+        do { \
+                * (guint64 *)(&(ins)->data [index]) = * (guint64 *)(v); \
+        } while (0)
+
 #endif
 
 /* test exports for white box testing */
@@ -284,5 +371,9 @@ mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
 /* debugging aid */
 void
 mono_interp_print_td_code (TransformData *td);
+
+/* Forward definitions for simd methods */
+static gboolean
+interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature);
 
 #endif /* __MONO_MINI_INTERP_TRANSFORM_H__ */

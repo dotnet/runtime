@@ -143,6 +143,168 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        public async Task SslStream_ResumedSessionsClientCollection_IsMutuallyAuthenticatedCorrect(
+           SslProtocols protocol)
+        {
+            var clientOptions = new SslClientAuthenticationOptions
+            {
+                EnabledSslProtocols = protocol,
+                RemoteCertificateValidationCallback = delegate { return true; },
+                TargetHost = Guid.NewGuid().ToString("N")
+            };
+
+            // Create options with certificate context so TLS resume is possible on Linux
+            var serverOptions = new SslServerAuthenticationOptions
+            {
+                ClientCertificateRequired = true,
+                ServerCertificateContext = SslStreamCertificateContext.Create(_serverCertificate, null),
+                RemoteCertificateValidationCallback = delegate { return true; },
+                EnabledSslProtocols = protocol
+            };
+
+            for (int i = 0; i < 5; i++)
+            {
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                {
+                    bool expectMutualAuthentication = (i % 2) == 0;
+
+                    clientOptions.ClientCertificates = expectMutualAuthentication ? new X509CertificateCollection() { _clientCertificate } : null;
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    // mutual authentication should only be set if client set certificate
+                    Assert.Equal(expectMutualAuthentication, server.IsMutuallyAuthenticated);
+                    Assert.Equal(expectMutualAuthentication, client.IsMutuallyAuthenticated);
+
+                    if (expectMutualAuthentication)
+                    {
+                        Assert.NotNull(server.RemoteCertificate);
+                    }
+                    else
+                    {
+                       Assert.Null(server.RemoteCertificate);
+                    }
+                };
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        public async Task SslStream_ResumedSessionsCallbackSet_IsMutuallyAuthenticatedCorrect(
+           SslProtocols protocol)
+        {
+            var clientOptions = new SslClientAuthenticationOptions
+            {
+                EnabledSslProtocols = protocol,
+                RemoteCertificateValidationCallback = delegate { return true; },
+                TargetHost = Guid.NewGuid().ToString("N")
+            };
+
+            // Create options with certificate context so TLS resume is possible on Linux
+            var serverOptions = new SslServerAuthenticationOptions
+            {
+                ClientCertificateRequired = true,
+                ServerCertificateContext = SslStreamCertificateContext.Create(_serverCertificate, null),
+                RemoteCertificateValidationCallback = delegate { return true; },
+                EnabledSslProtocols = protocol
+            };
+
+            for (int i = 0; i < 5; i++)
+            {
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                {
+                    bool expectMutualAuthentication = (i % 2) == 0;
+
+                    clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) =>
+                    {
+                        return expectMutualAuthentication ? _clientCertificate : null;
+                    };
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    // mutual authentication should only be set if client set certificate
+                    Assert.Equal(expectMutualAuthentication, server.IsMutuallyAuthenticated);
+                    Assert.Equal(expectMutualAuthentication, client.IsMutuallyAuthenticated);
+
+                    if (expectMutualAuthentication)
+                    {
+                        Assert.NotNull(server.RemoteCertificate);
+                    }
+                    else
+                    {
+                       Assert.Null(server.RemoteCertificate);
+                    }
+                };
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        public async Task SslStream_ResumedSessionsCallbackMaybeSet_IsMutuallyAuthenticatedCorrect(
+           SslProtocols protocol)
+        {
+            var clientOptions = new SslClientAuthenticationOptions
+            {
+                EnabledSslProtocols = protocol,
+                RemoteCertificateValidationCallback = delegate { return true; },
+                TargetHost = Guid.NewGuid().ToString("N")
+            };
+
+            // Create options with certificate context so TLS resume is possible on Linux
+            var serverOptions = new SslServerAuthenticationOptions
+            {
+                ClientCertificateRequired = true,
+                ServerCertificateContext = SslStreamCertificateContext.Create(_serverCertificate, null),
+                RemoteCertificateValidationCallback = delegate { return true; },
+                EnabledSslProtocols = protocol
+            };
+
+            for (int i = 0; i < 5; i++)
+            {
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                {
+                    bool expectMutualAuthentication = (i % 2) == 0;
+
+                    if (expectMutualAuthentication)
+                    {
+                      clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) => _clientCertificate;
+                    }
+                    else
+                    {
+                        clientOptions.LocalCertificateSelectionCallback = null;
+                    }
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    // mutual authentication should only be set if client set certificate
+                    Assert.Equal(expectMutualAuthentication, server.IsMutuallyAuthenticated);
+                    Assert.Equal(expectMutualAuthentication, client.IsMutuallyAuthenticated);
+
+                    if (expectMutualAuthentication)
+                    {
+                        Assert.NotNull(server.RemoteCertificate);
+                    }
+                    else
+                    {
+                       Assert.Null(server.RemoteCertificate);
+                    }
+                };
+            }
+        }
+
         private static bool AllowAnyCertificate(
             object sender,
             X509Certificate certificate,

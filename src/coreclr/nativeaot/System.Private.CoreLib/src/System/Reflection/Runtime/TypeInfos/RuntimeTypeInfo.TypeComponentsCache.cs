@@ -52,7 +52,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 PerNameQueryCache<M> unifier = Unsafe.As<PerNameQueryCache<M>>(obj);
 
                 // Set the policies if they're not set yet. See the comment on SetPolicies on why we do this for details.
-                unifier.SetPolicies(policies);
+                unifier.SetPolicies(policies, QueriedMemberList<M>.Create);
 
                 QueriedMemberList<M> result = unifier.GetOrAdd(name);
                 return result;
@@ -127,19 +127,21 @@ namespace System.Reflection.Runtime.TypeInfos
                 // purpose - the PerNameQueryCache instances are created eagerly, but not all apps might require
                 // MemberPolicies for all members. This allows us to delay creating the MemberPolicies instance
                 // until the need arises.
-                public void SetPolicies(MemberPolicies<M> policies)
+                public void SetPolicies(MemberPolicies<M> policies, Func<MemberPolicies<M>, RuntimeTypeInfo, string, bool, QueriedMemberList<M>> factory)
                 {
                     _policies = policies;
+                    _factory = factory;
                 }
 
                 protected sealed override QueriedMemberList<M> Factory(string key)
                 {
-                    QueriedMemberList<M> result = QueriedMemberList<M>.Create(_policies, _type, key, ignoreCase: _ignoreCase);
+                    QueriedMemberList<M> result = _factory(_policies, _type, key, _ignoreCase);
                     result.Compact();
                     return result;
                 }
 
                 private MemberPolicies<M> _policies;
+                private Func<MemberPolicies<M>, RuntimeTypeInfo, string, bool, QueriedMemberList<M>> _factory;
                 private readonly RuntimeTypeInfo _type;
                 private readonly bool _ignoreCase;
             }

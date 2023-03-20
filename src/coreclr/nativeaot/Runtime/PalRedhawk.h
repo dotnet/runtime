@@ -112,6 +112,11 @@ struct FILETIME
 
 #ifdef HOST_AMD64
 
+#define CONTEXT_AMD64   0x00100000L
+
+#define CONTEXT_CONTROL         (CONTEXT_AMD64 | 0x00000001L)
+#define CONTEXT_INTEGER         (CONTEXT_AMD64 | 0x00000002L)
+
 typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
     uint16_t  ControlWord;
     uint16_t  StatusWord;
@@ -232,6 +237,11 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 } CONTEXT, *PCONTEXT;
 #elif defined(HOST_ARM)
 
+#define CONTEXT_ARM   0x00200000L
+
+#define CONTEXT_CONTROL (CONTEXT_ARM | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_ARM | 0x2L)
+
 #define ARM_MAX_BREAKPOINTS     8
 #define ARM_MAX_WATCHPOINTS     1
 
@@ -275,6 +285,12 @@ typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
 } CONTEXT, *PCONTEXT;
 
 #elif defined(HOST_X86)
+
+#define CONTEXT_i386    0x00010000L
+
+#define CONTEXT_CONTROL         (CONTEXT_i386 | 0x00000001L) // SS:SP, CS:IP, FLAGS, BP
+#define CONTEXT_INTEGER         (CONTEXT_i386 | 0x00000002L) // AX, BX, CX, DX, SI, DI
+
 #define SIZE_OF_80387_REGISTERS      80
 #define MAXIMUM_SUPPORTED_EXTENSION  512
 
@@ -328,6 +344,11 @@ typedef struct _CONTEXT {
 #include "poppack.h"
 
 #elif defined(HOST_ARM64)
+
+#define CONTEXT_ARM64   0x00400000L
+
+#define CONTEXT_CONTROL (CONTEXT_ARM64 | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_ARM64 | 0x2L)
 
 // Specify the number of breakpoints and watchpoints that the OS
 // will track. Architecturally, ARM64 supports up to 16. In practice,
@@ -614,6 +635,11 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx);
 
+// For platforms that have segment registers in the CONTEXT_CONTROL set that
+// are not saved in PAL_LIMITED_CONTEXT, this captures them from the current
+// thread and saves them in `pContext`.
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext);
+
 REDHAWK_PALIMPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount();
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
@@ -716,6 +742,7 @@ REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t f
 typedef uint32_t (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
 typedef void (*PalHijackCallback)(_In_ NATIVE_CONTEXT* pThreadContext, _In_opt_ void* pThreadToHijack);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack);

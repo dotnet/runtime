@@ -29,7 +29,7 @@ namespace Internal.Runtime.TypeLoader
         public Instantiation _typeArgumentHandles;
         public Instantiation _methodArgumentHandles;
 
-        private TypeDesc GetInstantiationType(ref NativeParser parser, uint arity)
+        private DefType GetInstantiationType(ref NativeParser parser, uint arity)
         {
             DefType typeDefinition = (DefType)GetType(ref parser);
 

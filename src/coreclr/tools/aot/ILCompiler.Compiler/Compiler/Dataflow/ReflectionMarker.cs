@@ -23,52 +23,58 @@ namespace ILCompiler.Dataflow
     {
         private DependencyList _dependencies = new DependencyList();
         private readonly Logger _logger;
+        private readonly MetadataType? _typeHierarchyDataFlowOrigin;
+        private readonly bool _enabled;
+
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
-        private bool _typeHierarchyDataFlow;
-        private bool _enabled;
         public DependencyList Dependencies { get => _dependencies; }
 
-        public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, bool typeHierarchyDataFlow, bool enabled)
+        public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, MetadataType? typeHierarchyDataFlowOrigin, bool enabled)
         {
             _logger = logger;
             Factory = factory;
             Annotations = annotations;
-            _typeHierarchyDataFlow = typeHierarchyDataFlow;
+            _typeHierarchyDataFlowOrigin = typeHierarchyDataFlowOrigin;
             _enabled = enabled;
         }
 
-        internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, Origin memberWithRequirements, bool declaredOnly = false)
+        internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, string reason, bool declaredOnly = false)
         {
             if (!_enabled)
                 return;
 
             foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
             {
-                switch (member)
-                {
-                    case MethodDesc method:
-                        MarkMethod(origin, method, memberWithRequirements);
-                        break;
-                    case FieldDesc field:
-                        MarkField(origin, field, memberWithRequirements);
-                        break;
-                    case MetadataType nestedType:
-                        MarkType(origin, nestedType, memberWithRequirements);
-                        break;
-                    case PropertyPseudoDesc property:
-                        MarkProperty(origin, property, memberWithRequirements);
-                        break;
-                    case EventPseudoDesc @event:
-                        MarkEvent(origin, @event, memberWithRequirements);
-                        break;
-                        // case InterfaceImplementation
-                        //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
-                }
+                MarkTypeSystemEntity(origin, member, reason);
             }
         }
 
-        internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, Origin memberWithRequirements, [NotNullWhen(true)] out TypeDesc? type)
+        internal void MarkTypeSystemEntity(in MessageOrigin origin, TypeSystemEntity entity, string reason)
+        {
+            switch (entity)
+            {
+                case MethodDesc method:
+                    MarkMethod(origin, method, reason);
+                    break;
+                case FieldDesc field:
+                    MarkField(origin, field, reason);
+                    break;
+                case MetadataType nestedType:
+                    MarkType(origin, nestedType, reason);
+                    break;
+                case PropertyPseudoDesc property:
+                    MarkProperty(origin, property, reason);
+                    break;
+                case EventPseudoDesc @event:
+                    MarkEvent(origin, @event, reason);
+                    break;
+                    // case InterfaceImplementation
+                    //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
+            }
+        }
+
+        internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, string reason, [NotNullWhen(true)] out TypeDesc? type)
         {
             ModuleDesc? callingModule = ((diagnosticContext.Origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
 
@@ -84,102 +90,102 @@ namespace ILCompiler.Dataflow
             {
                 // Also add module metadata in case this reference was through a type forward
                 if (Factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
-                    _dependencies.Add(Factory.ModuleMetadata(referenceModule), memberWithRequirements.ToString());
+                    _dependencies.Add(Factory.ModuleMetadata(referenceModule), reason);
 
-                MarkType(diagnosticContext.Origin, foundType, memberWithRequirements);
+                MarkType(diagnosticContext.Origin, foundType, reason);
             }
 
             type = foundType;
             return true;
         }
 
-        internal void MarkType(in MessageOrigin origin, TypeDesc type, Origin memberWithRequirements)
+        internal void MarkType(in MessageOrigin origin, TypeDesc type, string reason)
         {
             if (!_enabled)
                 return;
 
-            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, Factory, type, memberWithRequirements.ToString());
+            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, Factory, type, reason);
         }
 
-        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, Origin memberWithRequirements)
+        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, string reason)
         {
             if (!_enabled)
                 return;
 
-            CheckAndWarnOnReflectionAccess(origin, method, memberWithRequirements);
+            CheckAndWarnOnReflectionAccess(origin, method);
 
-            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, memberWithRequirements.ToString());
+            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, reason);
         }
 
-        private void MarkField(in MessageOrigin origin, FieldDesc field, Origin memberWithRequirements)
+        internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason)
         {
             if (!_enabled)
                 return;
 
-            CheckAndWarnOnReflectionAccess(origin, field, memberWithRequirements);
+            CheckAndWarnOnReflectionAccess(origin, field);
 
-            RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, memberWithRequirements.ToString());
+            RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, reason);
         }
 
-        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, Origin memberWithRequirements)
+        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, string reason)
         {
             if (!_enabled)
                 return;
 
             if (property.GetMethod != null)
-                MarkMethod(origin, property.GetMethod, memberWithRequirements);
+                MarkMethod(origin, property.GetMethod, reason);
             if (property.SetMethod != null)
-                MarkMethod(origin, property.SetMethod, memberWithRequirements);
+                MarkMethod(origin, property.SetMethod, reason);
         }
 
-        private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, Origin memberWithRequirements)
+        private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, string reason)
         {
             if (!_enabled)
                 return;
 
             if (@event.AddMethod != null)
-                MarkMethod(origin, @event.AddMethod, memberWithRequirements);
+                MarkMethod(origin, @event.AddMethod, reason);
             if (@event.RemoveMethod != null)
-                MarkMethod(origin, @event.RemoveMethod, memberWithRequirements);
+                MarkMethod(origin, @event.RemoveMethod, reason);
         }
 
-        internal void MarkConstructorsOnType(in MessageOrigin origin, TypeDesc type, Func<MethodDesc, bool>? filter, Origin memberWithRequirements, BindingFlags? bindingFlags = null)
+        internal void MarkConstructorsOnType(in MessageOrigin origin, TypeDesc type, Func<MethodDesc, bool>? filter, string reason, BindingFlags? bindingFlags = null)
         {
             if (!_enabled)
                 return;
 
             foreach (var ctor in type.GetConstructorsOnType(filter, bindingFlags))
-                MarkMethod(origin, ctor, memberWithRequirements);
+                MarkMethod(origin, ctor, reason);
         }
 
-        internal void MarkFieldsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<FieldDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
+        internal void MarkFieldsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<FieldDesc, bool> filter, string reason, BindingFlags? bindingFlags = BindingFlags.Default)
         {
             if (!_enabled)
                 return;
 
             foreach (var field in type.GetFieldsOnTypeHierarchy(filter, bindingFlags))
-                MarkField(origin, field, memberWithRequirements);
+                MarkField(origin, field, reason);
         }
 
-        internal void MarkPropertiesOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<PropertyPseudoDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
+        internal void MarkPropertiesOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<PropertyPseudoDesc, bool> filter, string reason, BindingFlags? bindingFlags = BindingFlags.Default)
         {
             if (!_enabled)
                 return;
 
             foreach (var property in type.GetPropertiesOnTypeHierarchy(filter, bindingFlags))
-                MarkProperty(origin, property, memberWithRequirements);
+                MarkProperty(origin, property, reason);
         }
 
-        internal void MarkEventsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<EventPseudoDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
+        internal void MarkEventsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<EventPseudoDesc, bool> filter, string reason, BindingFlags? bindingFlags = BindingFlags.Default)
         {
             if (!_enabled)
                 return;
 
             foreach (var @event in type.GetEventsOnTypeHierarchy(filter, bindingFlags))
-                MarkEvent(origin, @event, memberWithRequirements);
+                MarkEvent(origin, @event, reason);
         }
 
-        internal void MarkStaticConstructor(in MessageOrigin origin, TypeDesc type)
+        internal void MarkStaticConstructor(in MessageOrigin origin, TypeDesc type, string reason)
         {
             if (!_enabled)
                 return;
@@ -192,45 +198,70 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        private void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, Origin memberWithRequirements)
+        internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity)
         {
-            if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
+            if (!_enabled)
+                return;
+
+            // Note that we're using `ShouldSuppressAnalysisWarningsForRequires` instead of `DoesMemberRequire`.
+            // This is because reflection access is actually problematic on all members which are in a "requires" scope
+            // so for example even instance methods. See for example https://github.com/dotnet/linker/issues/3140 - it's possible
+            // to call a method on a "null" instance via reflection.
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
             {
-                if (_typeHierarchyDataFlow)
+                if (_typeHierarchyDataFlowOrigin is not null)
                 {
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode,
-                        ((TypeOrigin)memberWithRequirements).GetDisplayName(),
+                        _typeHierarchyDataFlowOrigin.GetDisplayName(),
                         entity.GetDisplayName(),
                         MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value)),
                         MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value)));
                 }
                 else
                 {
-                    var diagnosticContext = new DiagnosticContext(
-                        origin,
-                        _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                        _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
-                        _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
-                        _logger);
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
+                }
+            }
 
-                    string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
-                    string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute))
+            {
+                if (_typeHierarchyDataFlowOrigin is not null)
+                {
+                    // For now we decided to not report single-file warnings due to type hierarchy marking.
+                    // It is considered too complex to figure out for the user and the likelihood of this
+                    // causing problems is pretty low.
+                }
+                else
+                {
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
+                }
+            }
 
-                    diagnosticContext.AddDiagnostic(DiagnosticId.RequiresUnreferencedCode, entity.GetDisplayName(), arg1, arg2);
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute))
+            {
+                if (_typeHierarchyDataFlowOrigin is not null)
+                {
+                    // For now we decided to not report dynamic code warnings due to type hierarchy marking.
+                    // It is considered too complex to figure out for the user and the likelihood of this
+                    // causing problems is pretty low.
+                }
+                else
+                {
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
                 }
             }
 
             if (!Annotations.ShouldWarnWhenAccessedForReflection(entity))
                 return;
 
-            if (_typeHierarchyDataFlow)
+            if (_typeHierarchyDataFlowOrigin is not null)
             {
                 // Don't check whether the current scope is a RUC type or RUC method because these warnings
                 // are not suppressed in RUC scopes. Here the scope represents the DynamicallyAccessedMembers
                 // annotation on a type, not a callsite which uses the annotation. We always want to warn about
                 // possible reflection access indicated by these annotations.
                 _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers,
-                    ((TypeOrigin)memberWithRequirements).GetDisplayName(), entity.GetDisplayName());
+                    _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
             }
             else
             {
@@ -248,6 +279,18 @@ namespace ILCompiler.Dataflow
                     }
                 }
             }
+        }
+
+        private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)
+        {
+            var diagnosticContext = new DiagnosticContext(
+                origin,
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
+                _logger);
+
+            ReflectionMethodBodyScanner.ReportRequires(diagnosticContext, entity, requiresAttributeName, requiresAttribute);
         }
     }
 }

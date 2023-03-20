@@ -18,7 +18,7 @@ namespace System.IO.Packaging
         // Methods
         static PackageXmlStringTable()
         {
-            object nameString = s_nameTable.AddNoLock("http://www.w3.org/2001/XMLSchema-instance");
+            string nameString = s_nameTable.AddNoLock("http://www.w3.org/2001/XMLSchema-instance");
             s_xmlstringtable[1] = new XmlStringTableStruct(nameString, PackageXmlEnum.NotDefined, null);
             nameString = s_nameTable.AddNoLock("xsi");
             s_xmlstringtable[2] = new XmlStringTableStruct(nameString, PackageXmlEnum.NotDefined, null);
@@ -107,7 +107,7 @@ namespace System.IO.Packaging
         internal static string GetXmlString(PackageXmlEnum id)
         {
             CheckIdRange(id);
-            return (string)s_xmlstringtable[(int)id].Name;
+            return s_xmlstringtable[(int)id].Name;
         }
 
         internal static object GetXmlStringAsObject(PackageXmlEnum id)
@@ -127,39 +127,24 @@ namespace System.IO.Packaging
 
         // Nested Types
         [StructLayout(LayoutKind.Sequential)]
-        private struct XmlStringTableStruct
+        private readonly struct XmlStringTableStruct
         {
-            private readonly object _nameString;
+            private readonly string _nameString;
             private readonly PackageXmlEnum _namespace;
             private readonly string? _valueType;
-            internal XmlStringTableStruct(object nameString, PackageXmlEnum ns, string? valueType)
+
+            internal XmlStringTableStruct(string nameString, PackageXmlEnum ns, string? valueType)
             {
                 _nameString = nameString;
                 _namespace = ns;
                 _valueType = valueType;
             }
 
-            internal object Name
-            {
-                get
-                {
-                    return (string)_nameString;
-                }
-            }
-            internal PackageXmlEnum Namespace
-            {
-                get
-                {
-                    return _namespace;
-                }
-            }
-            internal string? ValueType
-            {
-                get
-                {
-                    return _valueType;
-                }
-            }
+            internal string Name => _nameString;
+
+            internal PackageXmlEnum Namespace => _namespace;
+
+            internal string? ValueType => _valueType;
         }
 
         private sealed class ThreadSafeNameTable : NameTable

@@ -28,6 +28,7 @@ enum hostfxr_delegate_type
     hdt_com_unregister,
     hdt_load_assembly_and_get_function_pointer,
     hdt_get_function_pointer,
+    hdt_load_assembly,
 };
 
 typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_main_fn)(const int argc, const char_t **argv);

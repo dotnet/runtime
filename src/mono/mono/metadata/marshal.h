@@ -323,7 +323,7 @@ typedef struct {
 	void (*emit_stelemref) (MonoMethodBuilder *mb);
 	void (*emit_array_address) (MonoMethodBuilder *mb, int rank, int elem_size);
 	void (*emit_native_wrapper) (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags);
-	void (*emit_managed_wrapper) (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error);
+	void (*emit_managed_wrapper) (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error);
 	void (*emit_runtime_invoke_body) (MonoMethodBuilder *mb, const char **param_names, MonoImage *image, MonoMethod *method, MonoMethodSignature *sig, MonoMethodSignature *callsig, gboolean virtual_, gboolean need_direct_wrapper);
 	void (*emit_runtime_invoke_dynamic) (MonoMethodBuilder *mb);
 	void (*emit_delegate_begin_invoke) (MonoMethodBuilder *mb, MonoMethodSignature *sig);
@@ -505,6 +505,9 @@ mono_marshal_get_string_ctor_signature (MonoMethod *method);
 
 MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle this_loc, MonoError *exernal_error);
+
+MonoMethod *
+mono_marshal_get_runtime_init_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle this_loc, MonoError *exernal_error);
 
 gpointer
 mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type);

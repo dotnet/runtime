@@ -3,9 +3,18 @@
 
 namespace Microsoft.Interop.UnitTests
 {
-    public static class CustomStructMarshallingCodeSnippets<TSignatureTestProvider>
-        where TSignatureTestProvider : ICustomMarshallingSignatureTestProvider
+    public class CustomStructMarshallingCodeSnippets
     {
+        readonly ICustomMarshallingSignatureTestProvider _provider;
+        public StatelessSnippets Stateless { get; }
+        public StatefulSnippets Stateful { get; }
+        public CustomStructMarshallingCodeSnippets(ICustomMarshallingSignatureTestProvider provider)
+        {
+            _provider = provider;
+            Stateless = new StatelessSnippets(provider);
+            Stateful = new StatefulSnippets(provider);
+        }
+
         private static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
 
         public static string NonBlittableUserDefinedType(bool defineNativeMarshalling = true) => $@"
@@ -26,7 +35,7 @@ public class Marshaller
     public static Native ConvertToUnmanaged(S s) => default;
 }
 ";
-        public static string NonStaticMarshallerEntryPoint => TSignatureTestProvider.BasicParameterByValue("S")
+        public string NonStaticMarshallerEntryPoint => _provider.BasicParameterByValue("S")
             + NonBlittableUserDefinedType()
             + NonStatic;
 
@@ -40,13 +49,19 @@ public struct Marshaller
     public Native ToUnmanaged() => default;
 }
 ";
-        public static string StructMarshallerEntryPoint => TSignatureTestProvider.BasicParameterByValue("S")
+        public string StructMarshallerEntryPoint => _provider.BasicParameterByValue("S")
             + NonBlittableUserDefinedType()
             + Struct;
 
 
-        public static class Stateless
+        public class StatelessSnippets
         {
+            public readonly ICustomMarshallingSignatureTestProvider _provider;
+            public StatelessSnippets(ICustomMarshallingSignatureTestProvider provider)
+            {
+                this._provider = provider;
+            }
+
             private static string In = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
 [CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedOut, typeof(Marshaller))]
@@ -161,89 +176,94 @@ public static class Marshaller
     public static S ConvertToManaged(Native n) => default;
 }
 ";
-            public static string ManagedToNativeOnlyOutParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("out", "S")
+            public string ManagedToNativeOnlyOutParameter => _provider.BasicParameterWithByRefModifier("out", "S")
                 + NonBlittableUserDefinedType()
                 + In;
 
-            public static string NativeToManagedOnlyOutParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("out", "S")
+            public string NativeToManagedOnlyOutParameter => _provider.BasicParameterWithByRefModifier("out", "S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string NativeToManagedFinallyOnlyOutParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("out", "S")
+            public string NativeToManagedFinallyOnlyOutParameter => _provider.BasicParameterWithByRefModifier("out", "S")
                 + NonBlittableUserDefinedType()
                 + OutGuaranteed;
 
-            public static string ManagedToNativeOnlyReturnValue => TSignatureTestProvider.BasicReturnType("S")
+            public string ManagedToNativeOnlyReturnValue => _provider.BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + In;
 
-            public static string NativeToManagedOnlyReturnValue => TSignatureTestProvider.BasicReturnType("S")
+            public string NativeToManagedOnlyReturnValue => _provider.BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string NativeToManagedFinallyOnlyReturnValue => TSignatureTestProvider.BasicReturnType("S")
+            public string NativeToManagedFinallyOnlyReturnValue => _provider.BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string NativeToManagedOnlyInParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("in", "S")
+            public string NativeToManagedOnlyInParameter => _provider.BasicParameterWithByRefModifier("in", "S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string NativeToManagedFinallyOnlyInParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("in", "S")
+            public string NativeToManagedFinallyOnlyInParameter => _provider.BasicParameterWithByRefModifier("in", "S")
                 + NonBlittableUserDefinedType()
                 + OutGuaranteed;
 
-            public static string ParametersAndModifiers = TSignatureTestProvider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+            public string ParametersAndModifiers => _provider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                 + NonBlittableUserDefinedType(defineNativeMarshalling: true)
                 + Default;
 
-            public static string MarshalUsingParametersAndModifiers = TSignatureTestProvider.MarshalUsingParametersAndModifiers("S", "Marshaller")
+            public string MarshalUsingParametersAndModifiers => _provider.MarshalUsingParametersAndModifiers("S", "Marshaller")
                 + NonBlittableUserDefinedType(defineNativeMarshalling: false)
                 + Default;
 
-            public static string ByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string ByValueInParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + In;
 
-            public static string ByValueOutParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string ByValueOutParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string StackallocByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string StackallocByValueInParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + InBuffer;
 
-            public static string PinByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string PinByValueInParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + InPinnable;
 
-            public static string StackallocParametersAndModifiersNoRef = TSignatureTestProvider.BasicParametersAndModifiersNoRef("S")
+            public string StackallocParametersAndModifiersNoRef => _provider.BasicParametersAndModifiersNoRef("S")
                 + NonBlittableUserDefinedType()
                 + InOutBuffer;
 
-            public static string RefParameter = TSignatureTestProvider.BasicParameterWithByRefModifier("ref", "S")
+            public string RefParameter => _provider.BasicParameterWithByRefModifier("ref", "S")
                 + NonBlittableUserDefinedType()
                 + Ref;
 
-            public static string StackallocOnlyRefParameter = TSignatureTestProvider.BasicParameterWithByRefModifier("ref", "S")
+                public string StackallocOnlyRefParameter => _provider.BasicParameterWithByRefModifier("ref", "S")
                 + NonBlittableUserDefinedType()
                 + InOutBuffer;
 
-            public static string OptionalStackallocParametersAndModifiers = TSignatureTestProvider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+            public string OptionalStackallocParametersAndModifiers => _provider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                 + NonBlittableUserDefinedType()
                 + DefaultOptionalBuffer;
 
-            public static string DefaultModeByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string DefaultModeByValueInParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + DefaultIn;
 
-            public static string DefaultModeReturnValue => TSignatureTestProvider.BasicReturnType("S")
+            public string DefaultModeReturnValue => _provider.BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + DefaultOut;
         }
 
-        public static class Stateful
+        public class StatefulSnippets
         {
+            private readonly ICustomMarshallingSignatureTestProvider _provider;
+            public StatefulSnippets (ICustomMarshallingSignatureTestProvider provider)
+            {
+                _provider = provider;
+            }
             private static string In = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(M))]
 [CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedOut, typeof(M))]
@@ -454,95 +474,95 @@ public static class Marshaller
     }
 }
 ";
-            public static string ManagedToNativeOnlyOutParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("out", "S")
+            public string ManagedToNativeOnlyOutParameter => _provider.BasicParameterWithByRefModifier("out", "S")
                 + NonBlittableUserDefinedType()
                 + In;
 
-            public static string NativeToManagedOnlyOutParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("out", "S")
+            public string NativeToManagedOnlyOutParameter => _provider.BasicParameterWithByRefModifier("out", "S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string NativeToManagedFinallyOnlyOutParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("out", "S")
+            public string NativeToManagedFinallyOnlyOutParameter => _provider.BasicParameterWithByRefModifier("out", "S")
                 + NonBlittableUserDefinedType()
                 + OutGuaranteed;
 
-            public static string ManagedToNativeOnlyReturnValue => TSignatureTestProvider.BasicReturnType("S")
+            public string ManagedToNativeOnlyReturnValue => _provider.BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + In;
 
-            public static string NativeToManagedOnlyReturnValue => TSignatureTestProvider.BasicReturnType("S")
+            public string NativeToManagedOnlyReturnValue => _provider.BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string NativeToManagedFinallyOnlyReturnValue => TSignatureTestProvider.BasicReturnType("S")
+            public string NativeToManagedFinallyOnlyReturnValue => _provider.BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string NativeToManagedOnlyInParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("in", "S")
+            public string NativeToManagedOnlyInParameter => _provider.BasicParameterWithByRefModifier("in", "S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string NativeToManagedFinallyOnlyInParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("in", "S")
+            public string NativeToManagedFinallyOnlyInParameter => _provider.BasicParameterWithByRefModifier("in", "S")
                 + NonBlittableUserDefinedType()
                 + OutGuaranteed;
 
-            public static string ParametersAndModifiers = TSignatureTestProvider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+            public string ParametersAndModifiers => _provider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                 + NonBlittableUserDefinedType(defineNativeMarshalling: true)
                 + Default;
 
-            public static string ParametersAndModifiersWithFree = TSignatureTestProvider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+            public string ParametersAndModifiersWithFree => _provider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                 + NonBlittableUserDefinedType(defineNativeMarshalling: true)
                 + DefaultWithFree;
 
-            public static string ParametersAndModifiersWithOnInvoked = TSignatureTestProvider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+            public string ParametersAndModifiersWithOnInvoked => _provider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                 + NonBlittableUserDefinedType(defineNativeMarshalling: true)
                 + DefaultWithOnInvoked;
 
-            public static string MarshalUsingParametersAndModifiers = TSignatureTestProvider.MarshalUsingParametersAndModifiers("S", "Marshaller")
+            public string MarshalUsingParametersAndModifiers => _provider.MarshalUsingParametersAndModifiers("S", "Marshaller")
                 + NonBlittableUserDefinedType(defineNativeMarshalling: false)
                 + Default;
 
-            public static string ByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string ByValueInParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + In;
 
-            public static string ByValueOutParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string ByValueOutParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + Out;
 
-            public static string StackallocByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string StackallocByValueInParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + InBuffer;
 
-            public static string PinByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string PinByValueInParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + InStatelessPinnable;
 
-            public static string MarshallerPinByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string MarshallerPinByValueInParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + InPinnable;
 
-            public static string StackallocParametersAndModifiersNoRef = TSignatureTestProvider.BasicParametersAndModifiersNoRef("S")
+            public string StackallocParametersAndModifiersNoRef => _provider.BasicParametersAndModifiersNoRef("S")
                 + NonBlittableUserDefinedType()
                 + InOutBuffer;
 
-            public static string RefParameter = TSignatureTestProvider.BasicParameterWithByRefModifier("ref", "S")
+            public string RefParameter => _provider.BasicParameterWithByRefModifier("ref", "S")
                 + NonBlittableUserDefinedType()
                 + Ref;
 
-            public static string StackallocOnlyRefParameter = TSignatureTestProvider.BasicParameterWithByRefModifier("ref", "S")
+            public string StackallocOnlyRefParameter => _provider.BasicParameterWithByRefModifier("ref", "S")
                 + NonBlittableUserDefinedType()
                 + InOutBuffer;
 
-            public static string OptionalStackallocParametersAndModifiers = TSignatureTestProvider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
+            public string OptionalStackallocParametersAndModifiers => _provider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                 + NonBlittableUserDefinedType()
                 + DefaultOptionalBuffer;
 
-            public static string DefaultModeByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
+            public string DefaultModeByValueInParameter => _provider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + DefaultIn;
 
-            public static string DefaultModeReturnValue => TSignatureTestProvider.BasicReturnType("S")
+            public string DefaultModeReturnValue => _provider.BasicReturnType("S")
                 + NonBlittableUserDefinedType()
                 + DefaultOut;
         }
