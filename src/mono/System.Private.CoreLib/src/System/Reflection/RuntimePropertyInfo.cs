@@ -402,7 +402,7 @@ namespace System.Reflection
                 {
                     MethodInfo? method = GetGetMethod(true);
                     if (method == null)
-                        throw new ArgumentException($"Get Method not found for '{Name}'");
+                        throw new ArgumentException(SR.Arg_GetMethNotFnd);
                     if (!DeclaringType.IsValueType && !PropertyType.IsByRef && !method.ContainsGenericParameters)
                     {
                         //FIXME find a way to build an invoke delegate for value types.
@@ -440,7 +440,7 @@ namespace System.Reflection
 
             MethodInfo? method = GetGetMethod(true);
             if (method == null)
-                throw new ArgumentException($"Get Method not found for '{Name}'");
+                throw new ArgumentException(SR.Arg_GetMethNotFnd);
 
             if (index == null || index.Length == 0)
                 ret = method.Invoke(obj, invokeAttr, binder, null, culture);

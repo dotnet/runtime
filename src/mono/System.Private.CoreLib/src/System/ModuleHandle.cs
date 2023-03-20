@@ -30,7 +30,7 @@ namespace System
             get
             {
                 if (value == IntPtr.Zero)
-                    throw new ArgumentNullException(string.Empty, "Invalid handle");
+                    throw new ArgumentNullException(string.Empty, SR.Arg_InvalidHandle);
                 return RuntimeModule.GetMDStreamVersion(value);
             }
         }
@@ -68,7 +68,7 @@ namespace System
         public RuntimeTypeHandle ResolveTypeHandle(int typeToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             if (value == IntPtr.Zero)
-                throw new ArgumentNullException(string.Empty, "Invalid handle");
+                throw new ArgumentNullException(string.Empty, SR.Arg_InvalidHandle);
             IntPtr res = RuntimeModule.ResolveTypeToken(value, typeToken, ptrs_from_handles(typeInstantiationContext), ptrs_from_handles(methodInstantiationContext), out _);
             if (res == IntPtr.Zero)
                 throw new TypeLoadException(SR.Format(SR.ClassLoad_General_Hex, typeToken, value.ToInt64()));
@@ -80,7 +80,7 @@ namespace System
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             if (value == IntPtr.Zero)
-                throw new ArgumentNullException(string.Empty, "Invalid handle");
+                throw new ArgumentNullException(string.Empty, SR.Arg_InvalidHandle);
             IntPtr res = RuntimeModule.ResolveMethodToken(value, methodToken, ptrs_from_handles(typeInstantiationContext), ptrs_from_handles(methodInstantiationContext), out _);
             if (res == IntPtr.Zero)
                 throw new Exception(SR.Format(SR.ClassLoad_General_Hex, methodToken, value.ToInt64()));
@@ -92,7 +92,7 @@ namespace System
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             if (value == IntPtr.Zero)
-                throw new ArgumentNullException(string.Empty, "Invalid handle");
+                throw new ArgumentNullException(string.Empty, SR.Arg_InvalidHandle);
 
             IntPtr res = RuntimeModule.ResolveFieldToken(value, fieldToken, ptrs_from_handles(typeInstantiationContext), ptrs_from_handles(methodInstantiationContext), out _);
             if (res == IntPtr.Zero)

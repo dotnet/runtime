@@ -26,7 +26,7 @@ namespace Mono
                 }
                 catch (NullReferenceException)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(ptr), "Value does not refer to a valid string.");
+                    throw new ArgumentOutOfRangeException(nameof(ptr), SR.ArgumentOutOfRange_InvalidString);
                 }
 
                 return new string((sbyte*)ptr, 0, length, System.Text.Encoding.UTF8);

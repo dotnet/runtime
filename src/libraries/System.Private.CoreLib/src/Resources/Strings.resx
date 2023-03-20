@@ -1840,6 +1840,9 @@
   <data name="ArgumentOutOfRange_InvalidUTF32" xml:space="preserve">
     <value>A valid UTF32 value is between 0x000000 and 0x10ffff, inclusive, and should not include surrogate codepoint values (0x00d800 ~ 0x00dfff).</value>
   </data>
+  <data name="ArgumentOutOfRange_InvalidString" xml:space="preserve">
+    <value>Value does not refer to a valid string.</value>
+  </data>
   <data name="ArgumentOutOfRange_Length" xml:space="preserve">
     <value>The specified length exceeds maximum capacity of SecureString.</value>
   </data>
@@ -2044,6 +2047,18 @@
   </data>
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
+  </data>
+  <data name="CustomMarshaler_MultipleGetInstanceMethods" xml:space="preserve">
+    <value>Custom marshaler '{0}' implements multiple static GetInstance methods that take a single string parameter.</value>
+  </data>
+  <data name="CustomMarshaler_NoGetInstanceMethod" xml:space="preserve">
+    <value>Custom marshaler '{0}' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler.</value>
+  </data>
+  <data name="CustomMarshaler_UnassignedGenericParams" xml:space="preserve">
+    <value>Custom marshaler '{0}' contains unassigned generic type parameter(s).</value>
+  </data>
+  <data name="CustomMarshaler_NullReturnForGetInstance" xml:space="preserve">
+    <value>A call to GetInstance() for custom marshaler '{0}' returned null, which is not allowed.</value>
   </data>
   <data name="event_TaskCompleted" xml:space="preserve">
     <value>Task {2} completed.</value>

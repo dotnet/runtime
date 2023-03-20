@@ -65,7 +65,7 @@ namespace System.Reflection.Emit
 
             ConstructorInfo res = type.GetConstructor(constructor);
             if (res == null)
-                throw new ArgumentException("constructor not found");
+                throw new ArgumentException(SR.Format(SR.MissingConstructor_Name, type));
 
             return res;
         }
@@ -115,7 +115,7 @@ namespace System.Reflection.Emit
 
             MethodInfo res = type.GetMethod(method);
             if (res == null)
-                throw new ArgumentException(string.Format("method {0} not found in type {1}", method.Name, type));
+                throw new ArgumentException(SR.Format(SR.MissingMethod_Name, type, method.Name));
 
             return res;
         }
@@ -137,11 +137,11 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
             if (field is FieldOnTypeBuilderInstantiation)
-                throw new ArgumentException("The specified field must be declared on a generic type definition.", nameof(field));
+                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
 
             FieldInfo res = type.GetField(field);
             if (res == null)
-                throw new System.Exception("field not found");
+                throw new System.Exception(SR.MissingField);
             else
                 return res;
         }

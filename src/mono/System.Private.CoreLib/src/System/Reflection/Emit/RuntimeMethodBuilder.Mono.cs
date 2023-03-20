@@ -603,7 +603,7 @@ namespace System.Reflection.Emit
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
                     if (parameterTypes[i] == null)
-                        throw new ArgumentNullException(nameof(parameterTypes), "Elements of the parameterTypes array cannot be null");
+                        throw new ArgumentNullException(nameof(parameterTypes), SR.ArgumentNull_ArrayElement);
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
