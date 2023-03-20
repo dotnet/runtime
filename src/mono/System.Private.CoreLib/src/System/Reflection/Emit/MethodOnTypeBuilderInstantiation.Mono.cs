@@ -98,7 +98,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(typeArgs);
 
             if (_method.GetGenericArguments().Length != typeArgs.Length)
-                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, base_method.GetGenericArguments().Length, methodInstantiation.Length));
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, _method.GetGenericArguments().Length, typeArgs.Length));
 
             foreach (Type type in typeArgs)
             {

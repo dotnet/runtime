@@ -645,7 +645,7 @@ namespace System.Reflection
                 throw new NotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
             }
 
-            MethodInfo ret = MakeGenericMethod_impl(methodInstantiation); 
+            MethodInfo ret = MakeGenericMethod_impl(methodInstantiation);
             if (ret == null)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, GetGenericArguments().Length, methodInstantiation.Length));
             return ret;
