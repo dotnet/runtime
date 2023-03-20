@@ -1,5 +1,10 @@
 #include <mono/utils/lifo-semaphore.h>
 
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+#include <emscripten/eventloop.h>
+#include <emscripten/threading.h>
+#endif
+
 LifoSemaphore *
 mono_lifo_semaphore_init (void)
 {
@@ -87,3 +92,236 @@ mono_lifo_semaphore_release (LifoSemaphore *semaphore, uint32_t count)
 
 	mono_coop_mutex_unlock (&semaphore->mutex);
 }
+
+#if defined(HOST_BROWSSER) && !defined(DISABLE_THREADS)
+
+LifoJSSemaphore *
+mono_lifo_js_semaphore_init (void)
+{
+	LifoJSSemaphore *sem = g_new0 (LifoJSSemahore, 1);
+	if (sem == NULL)
+		return NULL;
+
+	mono_coop_mutex_init (&sem->mutex);
+
+	return sem;
+}
+
+void
+mono_lifo_js_semaphore_delete (LifoJSSemaphore *sem)
+{
+	/* FIXME: this is probably hard to guarantee - in-flight signaled semaphores still have wait entries */
+	g_assert (sem->head == NULL);
+	mono_coop_mutex_destroy (&sem->mutex);
+	g_free (semaphore);
+}
+
+enum {
+	LIFO_JS_WAITING = 0,
+	LIFO_JS_SIGNALED = 1,
+	LIFO_JS_SIGNALED_TIMEOUT_IGNORED = 2,
+
+};
+
+static void
+lifo_js_wait_entry_on_timeout (void *wait_entry_as_user_data);
+static void
+lifo_js_wait_entry_on_success (void *wait_entry_as_user_data);
+
+
+static void
+lifo_js_wait_entry_push (LifoJSSemaphoreWaitEntry **head,
+			 LifoJSSemaphoreWaitEntry *entry)
+{
+	LifoJSSemaphoreWaitEntry *next = *head;
+	*head = entry;
+	entry->next = next;
+	next->previous = entry;
+}
+
+static void
+lifo_js_wait_entry_unlink (LifoJSSemaphoreWaitEntry **head,
+			   LifoJSSemaphoreWaitEntry *entry)
+{
+	if (*head == entry) {
+		*head = entry->next;
+	}
+	if (entry->previous) {
+		entry->previous->next = entry->next;
+	}
+	if (entry->next) {
+		entry->next->previous = entry->previous;
+	}
+}
+
+/* LOCKING: assumes semaphore is locked */
+static LifoJSSemaphoreWaitEntry *
+lifo_js_find_waiter (LifoJSSemaphoreWaitEntry *entry)
+{
+	while (entry) {
+		if (entry->state == LIFO_JS_WAITING)
+			return entry;
+		entry = entry->next;
+	}
+	return NULL;
+}
+
+static gboolean
+lifo_js_wait_entry_no_thread (LifoJSSemaphoreWaitEntry *entry,
+			     pthread_t cur)
+{
+	while (entry) {
+		if (entry->waiting_thread == cur)
+			return FALSE;
+		entry = entry->next;
+	}
+	return TRUE;
+}
+
+void
+mono_lifo_js_semaphore_prepare_wait (LifoJSSemaphore *sem,
+				     int32_t timeout_ms,
+				     LifoJSSemaphoreCallbackFn success_cb,
+				     LifoJSSemaphoreCallbackFn timeout_cb,
+				     uint32_t gchandle,
+				     void *user_data)
+{
+	mono_coop_mutex_lock (&sem->mutex);
+	if (sem->pending_signals > 0) {
+		sem->pending_signals--;
+		mono_coop_mutex_unlock (&sem->mutex);
+		success_cb (sem, gchandle, user_data); // FIXME: queue microtask
+		return;
+	}
+
+	pthread_t cur = pthread_self ();
+
+	/* Don't allow the current thread to wait multiple times.
+	 * No particular reason for it, except that it makes reasoning a bit easier.
+	 * This can probably be relaxed if there's a need.
+	 */
+	g_assert (lifo_js_wait_entry_no_thread(sem->head, cur));
+
+	LifoJSSemaphoreWaitEntry wait_entry = g_new0 (LifoJSSemaphoreWaitEntry, 1);
+	wait_entry->success_cb = success_cb;
+	wait_entry->timeout_cb = timeout_cb;
+	wait_entry->sem = sem;
+	wait_entry->gchandle = gchandle;
+	wait_entry->user_data = user_data;
+	wait_entry->waiting_thread = pthread_self();
+	wait_entry->state = LIFO_JS_WAITING;
+        wait_entry->refcount = 1; // timeout owns the wait entry
+	wait_entry->js_timeout_id = emscripten_set_timeout (lifo_js_wait_entry_on_timeout, (double)timeout_ms, &wait_entry);
+	lifo_js_wait_entry_push (&sem->head, wait_entry);
+	mono_coop_mutex_unlock (&sem->mutex);
+	return;
+}
+
+static void
+mono_lifo_js_semaphore_release (LifoJSSemaphore *sem,
+				uint32_t count)
+{
+	mono_coop_mutex_lock (&sem->mutex);
+
+	while (count > 0) {
+		LifoSemaphoreWaitEntry *wait_entry = lifo_js_find_waiter (sem->head);
+		if (wait_entry != NULL) {
+			/* found one.  set its status and queue some work to run on the signaled thread */
+			pthread_t target = wait_entry->thread;
+			wait_entry->state = LIFO_JS_SIGNALED;
+			wait_entry->refcount++;
+			// we're under the mutex - if we got here the timeout hasn't fired yet
+			g_assert (wait_entry->refcount == 2); 
+			--count;
+			/* if we're on the same thread, don't run the callback while holding the lock */
+			emscripten_dispatch_to_thread_async (target, EM_FUNC_SIG_VI, lifo_js_wait_entry_on_success, NULL, wait_entry);
+		} else {
+			semaphore->pending_signals += count;
+			count = 0;
+		}
+	}
+
+	mono_coop_mutex_unlock (&semaphore->mutex);
+}
+
+static void
+lifo_js_wait_entry_on_timeout (void *wait_entry_as_user_data)
+{
+	LifoJSSemaphoreWaitEntry *wait_entry = (LifoJSSemaphoreWaitEntry *)wait_entry_as_user_data;
+	g_assert (pthread_equal (wait_entry->thread, pthread_self()));
+	g_assert (wait_entry->sem != NULL);
+	LifoJSSemaphore *sem = wait_entry->sem;
+	gboolean call_timeout_cb = FALSE;;
+	LifoJSSemaphoreCallbackFn *timeout_cb = NULL;
+	uint32_t gchandle gchandle = 0;
+	void *user_data = NULL;
+	mono_coop_mutex_lock (&sem->mutex);
+	switch (wait_entry->state) {
+	case LIFO_JS_WAITING:
+		/* semaphore timed out before a Release. */
+		g_assert (wait_entry->refcount == 1);
+		/* unlink and free the wait entry, run the user timeout_cb. */
+		lifo_js_wait_entry_unlink (&sem->head, wait_entry);
+		timeout_cb = wait_entry->timeout_cb;
+		gchandle = wait_entry->gchandle;
+		user_data = wait_entry->user_data;
+		g_free (wait_entry);
+		call_timeout_cb = TRUE;
+		break;
+	case LIFO_JS_SIGNALED:
+		/* seamphore was signaled, but the timeout callback ran before the success callback arrived */
+		g_assert (wait_entry->refcount == 2);
+		/* set state to LIFO_JS_SIGNALED_TIMEOUT_IGNORED, decrement refcount, return */
+		wait_entry->state = LIFO_JS_SIGNALED_TIMEOUT_IGNORED;
+		wait_entry->refcount--;		
+		break;
+	case LIFO_JS_SIGNALED_TIMEOUT_IGNORED:
+	default:
+		g_assert_not_reached();
+	}
+	mono_coop_mutex_unlock (&sem->mutex);
+	if (call_timeout_cb) {
+		timeout_cb (sem, gchandle, user_data);
+	}
+}
+
+static void
+lifo_js_wait_entry_on_success (void *wait_entry_as_user_data)
+{
+	LifoJSSemaphoreWaitEntry *wait_entry = (LifoJSSemaphoreWaitEntry *)wait_entry_as_user_data;
+	g_assert (pthread_equal (wait_entry->thread, pthread_self()));
+	g_assert (wait_entry->sem != NULL);
+	LifoJSSemaphore *sem = wait_entry->sem;
+	gboolean call_success_cb = FALSE;
+	LifoJSSemaphoreCallbackFn *success_cb = NULL;
+	uint32_t gchandle = 0;
+	void *user_data = NULL;
+	mono_coop_mutex_lock (&sem->mutex);
+	switch (wait_entry->state) {
+	case LIFO_JS_SIGNALED:
+		g_assert (wait_entry->refcount == 2);
+		emscripten_clear_timeout (wait_entry->js_timeout_id);
+		/* emscripten safeSetTimeout calls keepalive push which is popped by the timeout
+		 * callback. If we cancel the timeout, we have to pop the keepalive ourselves. */
+		emscripten_runtime_keepalive_pop();
+		wait_entry->refcount--;
+		/* fallthru */
+	case LIFO_JS_SIGNALED_TIMEOUT_IGNORED:
+		g_assert (wait_entry->refcount == 1);
+		lifo_js_wait_entry_unlink (&sem->head, wait_entry);
+		success_cb = wait_entry->success_cb;
+		gchandle = wait_entry->gchandle;
+		user_data = wait_entry->user_data;
+		g_free (wait_entry);
+		call_success_cb = TRUE;
+		break;
+	case LIFO_JS_WAITING:
+	default:
+		g_assert_not_reached();
+	}
+	mono_coop_mutex_unlock (&sem->mutex);
+	g_assert (call_success_cb);
+	success_cb (sem, gchandle, user_data);
+}
+
+#endif /* HOST_BROWSER && !DISABLE_THREADS */
