@@ -104,6 +104,7 @@
     <Compile Include="Serialization\UnsupportedTypesTests.cs" />
     <Compile Include="TestClasses.cs" />
     <Compile Include="TestClasses.CustomConverters.cs" />
+    <Compile Include="UnspeakableTypeTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RoslynSupportsRequiredAttributes)' == 'true'">
