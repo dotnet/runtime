@@ -95,12 +95,12 @@ DEFINE_BOOL(jiterpreter_call_resume_enabled, "jiterpreter-call-resume-enabled", 
 //  stats for options like estimateHeat, but raises overhead.
 DEFINE_BOOL(jiterpreter_disable_heuristic, "jiterpreter-disable-heuristic", FALSE, "Always insert trace entry points for more accurate statistics")
 // Automatically prints stats at app exit or when jiterpreter_dump_stats is called
-DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", TRUE, "Automatically print jiterpreter statistics")
+DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", FALSE, "Automatically print jiterpreter statistics")
 // Continue counting hits for traces that fail to compile and use it to estimate
 //  the relative importance of the opcode that caused them to abort
 DEFINE_BOOL(jiterpreter_estimate_heat, "jiterpreter-estimate-heat", FALSE, "Maintain accurate hit count for all trace entry points")
 // Count the number of times a trace bails out (branch taken, etc) and for what reason
-DEFINE_BOOL(jiterpreter_count_bailouts, "jiterpreter-count-bailouts", TRUE, "Maintain accurate count of all trace bailouts based on cause")
+DEFINE_BOOL(jiterpreter_count_bailouts, "jiterpreter-count-bailouts", FALSE, "Maintain accurate count of all trace bailouts based on cause")
 // Dump the wasm blob for all compiled traces
 DEFINE_BOOL(jiterpreter_dump_traces, "jiterpreter-dump-traces", FALSE, "Dump the wasm blob for all compiled traces to the console")
 // Use runtime imports for pointer constants
@@ -122,9 +122,9 @@ DEFINE_INT(jiterpreter_minimum_trace_hit_count, "jiterpreter-minimum-trace-hit-c
 // trace prepares turn into a monitor opcode and stay one this long before being converted to enter or nop
 DEFINE_INT(jiterpreter_trace_monitoring_period, "jiterpreter-trace-monitoring-period", 1000, "Monitor jitted traces for this many calls to determine whether to keep them")
 // traces that process less than this many opcodes have a high exit penalty, more than this have a low exit penalty
-DEFINE_INT(jiterpreter_trace_monitoring_short_distance, "jiterpreter-trace-monitoring-short-distance", 8, "Traces that exit after processing this many opcodes have a reduced exit penalty")
+DEFINE_INT(jiterpreter_trace_monitoring_short_distance, "jiterpreter-trace-monitoring-short-distance", 2, "Traces that exit after processing this many opcodes have a reduced exit penalty")
 // traces that process this many opcodes have no exit penalty
-DEFINE_INT(jiterpreter_trace_monitoring_long_distance, "jiterpreter-trace-monitoring-long-distance", 24, "Traces that exit after processing this many opcodes have no exit penalty")
+DEFINE_INT(jiterpreter_trace_monitoring_long_distance, "jiterpreter-trace-monitoring-long-distance", 8, "Traces that exit after processing this many opcodes have no exit penalty")
 // the average penalty value for a trace is compared against this threshold / 100 to decide whether to discard it
 DEFINE_INT(jiterpreter_trace_monitoring_max_average_penalty, "jiterpreter-trace-monitoring-max-average-penalty", 80, "If the average penalty value for a trace is above this value it will be rejected")
 // After a do_jit_call call site is hit this many times, we will queue it to be jitted

@@ -1362,14 +1362,15 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 	//  executed at least one time. We don't know how long it actually ran, but back
 	//  branches are almost always going to be loops. It's fine if a bailout happens
 	//  after multiple loop iterations.
-	if ((cinfo.bailout_opcode_count >= 0) && !cinfo.backward_branch_taken) {
-		int penalty = (cinfo.bailout_opcode_count < mono_opt_jiterpreter_trace_monitoring_short_distance)
-			? 2
-			: (
-				(cinfo.bailout_opcode_count >= mono_opt_jiterpreter_trace_monitoring_long_distance)
-				? 0
-				: 1
-			);
+	if (
+		(cinfo.bailout_opcode_count >= 0) &&
+		!cinfo.backward_branch_taken &&
+		(cinfo.bailout_opcode_count < mono_opt_jiterpreter_trace_monitoring_long_distance)
+	) {
+		// Start with a penalty of 2 and lerp all the way down to 0
+		float scaled = (float)(cinfo.bailout_opcode_count - mono_opt_jiterpreter_trace_monitoring_short_distance)
+			/ (mono_opt_jiterpreter_trace_monitoring_long_distance - mono_opt_jiterpreter_trace_monitoring_short_distance);
+		int penalty = MIN((int)((1.0f - scaled) * 200.0f), 200);
 		info->penalty_total += penalty;
 
 		// g_print("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
@@ -1382,8 +1383,8 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 		*mutable_ip = MINT_TIER_NOP_JITERPRETER;
 
 		mono_memory_barrier ();
-		double average_penalty = info->penalty_total / (double)hit_count;
-		double threshold = (mono_opt_jiterpreter_trace_monitoring_max_average_penalty / 100.0);
+		float average_penalty = info->penalty_total / (float)hit_count / 100.0f,
+			threshold = (mono_opt_jiterpreter_trace_monitoring_max_average_penalty / 100.0f);
 
 		if (average_penalty <= threshold) {
 			*(volatile JiterpreterThunk*)(ip + 1) = thunk;
