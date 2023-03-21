@@ -198,7 +198,14 @@ export function generate_wasm_body (
             startBranchBlock = isBackBranchTarget || isForwardBranchTarget ||
                 // If a method contains backward branches, we also need to check eip at the first insn
                 //  because a backward branch might target a point in the middle of the trace
-                (isFirstInstruction && backwardBranchTable);
+                (isFirstInstruction && backwardBranchTable),
+            // We want to approximate the number of unconditionally executed instructions along with
+            //  the ones that were probably conditionally executed by the time we reached the exit point
+            // We don't know the exact path that would have taken us to a given point, but it's a reasonable
+            //  guess that methods dense with branches are more likely to take a complex path to reach
+            //  a given exit
+            exitOpcodeCounter = conditionalOpcodeCounter + prologueOpcodeCounter +
+                builder.branchTargets.size;
         let isLowValueOpcode = false,
             skipDregInvalidation = false;
 
@@ -835,7 +842,7 @@ export function generate_wasm_body (
                     // We generate a bailout instead of aborting, because we don't want calls
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
-                    append_exit(builder, ip, prologueOpcodeCounter + conditionalOpcodeCounter, BailoutReason.Call);
+                    append_exit(builder, ip, exitOpcodeCounter, BailoutReason.Call);
                     isLowValueOpcode = true;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
@@ -855,7 +862,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CALL_DELEGATE:
                 // See comments for MINT_CALL
                 if (builder.branchTargets.size > 0) {
-                    append_exit(builder, ip, prologueOpcodeCounter + conditionalOpcodeCounter,
+                    append_exit(builder, ip, exitOpcodeCounter,
                         opcode == MintOpcode.MINT_CALL_DELEGATE
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
@@ -1165,7 +1172,7 @@ export function generate_wasm_body (
                     // complex safepoint branches, just generate a bailout
                     if (builder.branchTargets.size > 0) {
                         // FIXME: Try to reduce the number of these
-                        append_exit(builder, ip, prologueOpcodeCounter + conditionalOpcodeCounter, BailoutReason.ComplexBranch);
+                        append_exit(builder, ip, exitOpcodeCounter, BailoutReason.ComplexBranch);
                         isLowValueOpcode = true;
                     } else
                         ip = abort;

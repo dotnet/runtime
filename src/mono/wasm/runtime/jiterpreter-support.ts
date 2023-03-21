@@ -1289,11 +1289,12 @@ export function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason:
 
 // generate a bailout that is recorded for the monitoring phase as a possible early exit.
 export function append_exit (builder: WasmBuilder, ip: MintOpcodePtr, opcodeCounter: number, reason: BailoutReason) {
-    // FIXME: Only generate if below the long threshold
-    builder.local("cinfo");
-    builder.i32_const(opcodeCounter);
-    builder.appendU8(WasmOpcode.i32_store);
-    builder.appendMemarg(4, 0); // bailout_opcode_count
+    if (opcodeCounter <= (builder.options.monitoringLongDistance + 1)) {
+        builder.local("cinfo");
+        builder.i32_const(opcodeCounter);
+        builder.appendU8(WasmOpcode.i32_store);
+        builder.appendMemarg(4, 0); // bailout_opcode_count
+    }
 
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
@@ -1579,6 +1580,10 @@ export type JiterpreterOptions = {
     eliminateNullChecks: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
+    monitoringPeriod: number;
+    monitoringShortDistance: number;
+    monitoringLongDistance: number;
+    monitoringMaxAveragePenalty: number;
     jitCallHitCount: number;
     jitCallFlushThreshold: number;
     interpEntryHitCount: number;
@@ -1605,6 +1610,10 @@ const optionNames : { [jsName: string] : string } = {
     "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
+    "monitoringPeriod": "jiterpreter-trace-monitoring-period",
+    "monitoringShortDistance": "jiterpreter-trace-monitoring-short-distance",
+    "monitoringLongDistance": "jiterpreter-trace-monitoring-long-distance",
+    "monitoringMaxAveragePenalty": "jiterpreter-trace-monitoring-max-average-penalty",
     "jitCallHitCount": "jiterpreter-jit-call-hit-count",
     "jitCallFlushThreshold": "jiterpreter-jit-call-queue-flush-threshold",
     "interpEntryHitCount": "jiterpreter-interp-entry-hit-count",
