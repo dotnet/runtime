@@ -1604,6 +1604,36 @@ CallArg* CallArgs::GetArgByIndex(unsigned index)
 }
 
 //---------------------------------------------------------------
+// GetUserArgByIndex: Get an argument with the specified index.
+//   Unlike GetArgByIndex, this function ignores non-user args
+//   like r2r cells.
+//
+// Parameters:
+//   index - The index of the argument to find.
+//
+// Returns:
+//   A pointer to the argument.
+//
+// Remarks:
+//   This function assumes enough arguments exist.
+//
+CallArg* CallArgs::GetUserArgByIndex(unsigned index)
+{
+    CallArg* cur = m_head;
+    for (unsigned i = 0; i < index || cur->IsArgAddedLate();)
+    {
+        if (!cur->IsArgAddedLate())
+        {
+            i++;
+        }
+        assert((cur != nullptr) && "Not enough arguments in GetArgByIndex");
+        cur = cur->GetNext();
+    }
+
+    return cur;
+}
+
+//---------------------------------------------------------------
 // GetIndex: Get the index for the specified argument.
 //
 // Parameters:

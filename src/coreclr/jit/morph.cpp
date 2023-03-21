@@ -3055,6 +3055,24 @@ unsigned CallArgs::CountArgs()
 }
 
 //------------------------------------------------------------------------
+// CountArgs: Count the number of arguments ignoring non-user ones, e.g.
+//    r2r cell argument in a user function.
+//
+unsigned CallArgs::CountUserArgs()
+{
+    unsigned numArgs = 0;
+    for (CallArg& arg : Args())
+    {
+        if (!arg.IsArgAddedLate())
+        {
+            numArgs++;
+        }
+    }
+
+    return numArgs;
+}
+
+//------------------------------------------------------------------------
 // fgMorphArgs: Walk and transform (morph) the arguments of a call
 //
 // Arguments:

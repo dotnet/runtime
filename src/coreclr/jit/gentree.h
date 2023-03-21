@@ -4704,6 +4704,7 @@ public:
     CallArg* GetThisArg();
     CallArg* GetRetBufferArg();
     CallArg* GetArgByIndex(unsigned index);
+    CallArg* GetUserArgByIndex(unsigned index);
     unsigned GetIndex(CallArg* arg);
 
     bool IsEmpty() const
@@ -4772,6 +4773,7 @@ public:
     unsigned OutgoingArgsStackSize() const;
 
     unsigned CountArgs();
+    unsigned CountUserArgs();
 
     template <CallArg* (CallArg::*Next)()>
     class CallArgIterator

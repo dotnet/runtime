@@ -1794,20 +1794,30 @@ GenTree* Lowering::AddrGen(void* addr)
 //
 GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
 {
+    JITDUMP("Considering Memmove [%06d] for unrolling.. ", comp->dspTreeID(call))
     assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove);
 
-    // R2R adds r2r cell arg on arm64
-    assert(comp->opts.IsReadyToRun() || (call->gtArgs.CountArgs() == 3));
+    assert(call->gtArgs.CountUserArgs() == 3);
 
-    GenTree* lengthArg = call->gtArgs.GetArgByIndex(2)->GetNode();
+    if (comp->info.compHasNextCallRetAddr)
+    {
+        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n")
+        return nullptr;
+    }
+
+    GenTree* lengthArg = call->gtArgs.GetUserArgByIndex(2)->GetNode();
     if (lengthArg->IsIntegralConst())
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
+        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
         // TODO-CQ: drop the whole thing in case of 0
         if ((cnsSize > 0) && (cnsSize <= (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
         {
-            GenTree* dstAddr = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* srcAddr = call->gtArgs.GetArgByIndex(1)->GetNode();
+            JITDUMP("Accepted for unrolling!\nOld tree:\n")
+            DISPTREE(call);
+
+            GenTree* dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
             // TODO-CQ: Try to create an addressing mode
             GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
@@ -1827,8 +1837,27 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
             BlockRange().Remove(lengthArg);
             BlockRange().Remove(call);
 
+            // Remove all non-user args (e.g. r2r cell)
+            for (CallArg& arg : call->gtArgs.Args())
+            {
+                if (arg.IsArgAddedLate())
+                {
+                    BlockRange().Remove(arg.GetNode());
+                }
+            }
+
+            JITDUMP("\nNew tree:\n")
+            DISPTREE(storeBlk);
             return storeBlk;
         }
+        else
+        {
+            JITDUMP("Size is either 0 or too big to unroll.\n")
+        }
+    }
+    else
+    {
+        JITDUMP("size is not a constant.\n")
     }
     return nullptr;
 }
