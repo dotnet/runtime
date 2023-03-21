@@ -22,6 +22,7 @@ namespace System
         /// <summary>
         /// Initializes the instance with the timestamp frequency.
         /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">The value of <paramref name="timestampFrequency"/> is negative or zero.</exception>
         /// <param name="timestampFrequency">Frequency of the values returned from <see cref="GetTimestamp"/> method. </param>
         protected TimeProvider(long timestampFrequency)
         {

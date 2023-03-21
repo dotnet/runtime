@@ -31,14 +31,17 @@ namespace Tests.System
             DateTimeOffset providerDto = TimeProvider.System.LocalNow;
             DateTimeOffset dto2 = DateTimeOffset.Now;
 
-            Assert.InRange(providerDto.Ticks, dto1.Ticks, dto2.Ticks);
-            Assert.Equal(dto1.Offset, providerDto.Offset);
+            // Ensure there was no daylight saving shift during the test execution.
+            if (dto1.Offset == dto2.Offset)
+            {
+                Assert.InRange(providerDto.Ticks, dto1.Ticks, dto2.Ticks);
+                Assert.Equal(dto1.Offset, providerDto.Offset);
+            }
         }
 
         [Fact]
         public void TestSystemProviderWithTimeZone()
         {
-
             Assert.Equal(TimeZoneInfo.Local.Id, TimeProvider.System.LocalTimeZone.Id);
 
             TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(OperatingSystem.IsWindows() ? "Pacific Standard Time" : "America/Los_Angeles");
@@ -80,8 +83,6 @@ namespace Tests.System
         [MemberData(nameof(TimersProvidersData))]
         public void TestProviderTimer(TimeProvider provider, int MaxMilliseconds)
         {
-            ManualResetEventSlim mres = new ManualResetEventSlim(false);
-
             TimerState state = new TimerState();
 
             state.Timer = provider.CreateTimer(
@@ -100,7 +101,7 @@ namespace Tests.System
                                             break;
 
                                         case 4:
-                                            mres.Set();
+                                            s.TokenSource.Cancel();
                                             s.Timer.Dispose();
                                             break;
                                     }
@@ -110,7 +111,8 @@ namespace Tests.System
                             state,
                             TimeSpan.FromMilliseconds(state.Period), TimeSpan.FromMilliseconds(state.Period));
 
-            mres.Wait(TimeSpan.FromMilliseconds(30000));
+            state.TokenSource.Token.WaitHandle.WaitOne(30000);
+            state.TokenSource.Dispose();
 
             Assert.Equal(4, state.Counter);
             Assert.Equal(400, state.Period);
@@ -240,17 +242,53 @@ namespace Tests.System
         {
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            Task task = Task.Run(() => { while (true) {} });
-            await Assert.ThrowsAsync<TimeoutException>(() => task.WaitAsync(TimeSpan.FromMilliseconds(100), provider));
+            var tcs1 = new TaskCompletionSource();
+            Task task1 = tcs1.Task.WaitAsync(TimeSpan.FromDays(1), provider);
+            Assert.False(task1.IsCompleted);
+            tcs1.SetResult();
+            await task1;
 
-            task = Task.Run(() => { while (true) {} });
-            await Assert.ThrowsAsync<TimeoutException>(() => task.WaitAsync(TimeSpan.FromMilliseconds(100), provider, cts.Token));
+            var tcs2 = new TaskCompletionSource();
+            Task task2 = tcs2.Task.WaitAsync(TimeSpan.FromDays(1), provider, cts.Token);
+            Assert.False(task2.IsCompleted);
+            tcs2.SetResult();
+            await task2;
 
-            Task<int> task1 = new Task<int>(() => { while (true) {} });
-            await Assert.ThrowsAsync<TimeoutException>(() => task1.WaitAsync(TimeSpan.FromMilliseconds(100), provider));
+            var tcs3 = new TaskCompletionSource<int>();
+            Task<int> task3 = tcs3.Task.WaitAsync(TimeSpan.FromDays(1), provider);
+            Assert.False(task3.IsCompleted);
+            tcs3.SetResult(42);
+            Assert.Equal(42, await task3);
 
-            task1 = new Task<int>(() => { while (true) {} });
-            await Assert.ThrowsAsync<TimeoutException>(() => task1.WaitAsync(TimeSpan.FromMilliseconds(100), provider, cts.Token));
+            var tcs4 = new TaskCompletionSource<int>();
+            Task<int> task4 = tcs4.Task.WaitAsync(TimeSpan.FromDays(1), provider, cts.Token);
+            Assert.False(task4.IsCompleted);
+            tcs4.SetResult(42);
+            Assert.Equal(42, await task4);
+
+            using CancellationTokenSource cts1 = new CancellationTokenSource();
+            Task task5 = Task.Run(() => { while (!cts1.Token.IsCancellationRequested) { Thread.Sleep(10); } });
+            await Assert.ThrowsAsync<TimeoutException>(() => task5.WaitAsync(TimeSpan.FromMilliseconds(10), provider));
+            cts1.Cancel();
+            await task5;
+
+            using CancellationTokenSource cts2 = new CancellationTokenSource();
+            Task task6 = Task.Run(() => { while (!cts2.Token.IsCancellationRequested) { Thread.Sleep(10); } });
+            await Assert.ThrowsAsync<TimeoutException>(() => task6.WaitAsync(TimeSpan.FromMilliseconds(10), provider, cts2.Token));
+            cts1.Cancel();
+            await task5;
+
+            using CancellationTokenSource cts3 = new CancellationTokenSource();
+            Task<int> task7 = Task<int>.Run(() => { while (!cts3.Token.IsCancellationRequested) { Thread.Sleep(10); } return 100; });
+            await Assert.ThrowsAsync<TimeoutException>(() => task7.WaitAsync(TimeSpan.FromMilliseconds(10), provider));
+            cts3.Cancel();
+            Assert.Equal(100, await task7);
+
+            using CancellationTokenSource cts4 = new CancellationTokenSource();
+            Task<int> task8 = Task<int>.Run(() => { while (!cts4.Token.IsCancellationRequested) { Thread.Sleep(10); } return 200; });
+            await Assert.ThrowsAsync<TimeoutException>(() => task8.WaitAsync(TimeSpan.FromMilliseconds(10), provider, cts4.Token));
+            cts4.Cancel();
+            Assert.Equal(200, await task8);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -291,8 +329,10 @@ namespace Tests.System
                 Period = 300;
                 TotalTicks = 0;
                 UtcNow = DateTimeOffset.UtcNow;
+                TokenSource = new CancellationTokenSource();
             }
 
+            public CancellationTokenSource TokenSource { get; set; }
             public int Counter { get; set; }
             public int Period { get; set; }
             public DateTimeOffset UtcNow { get; set; }
