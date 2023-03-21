@@ -1122,6 +1122,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		code = (guint8 *)mini_add_method_trampoline (m, code, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
 	}
 
+	mono_memory_barrier ();
+
 	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
 	if (enable_caching && !callvirt && tramp_info->method) {
 		tramp_info->method_ptr = delegate->method_ptr;
