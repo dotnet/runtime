@@ -114,7 +114,7 @@ jobs:
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvOS_arm64') }}:
-      - OSX.1200.Amd64.AppleTV.Open
+      - OSX.13.Amd64.AppleTV.Open
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
