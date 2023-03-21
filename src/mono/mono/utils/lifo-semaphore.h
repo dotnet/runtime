@@ -55,7 +55,7 @@ struct _LifoJSSemaphoreWaitEntry {
 	LifoJSSemaphoreCallbackFn timeout_cb;
 	LifoJSSemaphore *sem;
 	void *user_data;
-	pthread_t waiting_thread;
+	pthread_t thread;
 	uint32_t gchandle; // what do we want in here?
 	int32_t js_timeout_id; // only valid to access from the waiting thread
 	/* state and refcount are protected by the semaphore mutex */
@@ -65,7 +65,7 @@ struct _LifoJSSemaphoreWaitEntry {
 	
 struct _LifoJSSemaphore {
 	MonoCoopMutex mutex;
-	LifoSemaphoreWaitEntry *head;
+	LifoJSSemaphoreWaitEntry *head;
 	uint32_t pending_signals;
 };
 
@@ -75,8 +75,8 @@ mono_lifo_js_semaphore_init (void);
 /* what to do with waiters?
  * might be kind of academic - we don't expect to destroy these
  */
-LifoJSSemaphore *
-mono_lifo_js_semahore_delete (void);
+void
+mono_lifo_js_semaphore_delete (LifoJSSemaphore *semaphore);
 
 /*
  * the timeout_cb is triggered by a JS setTimeout callback

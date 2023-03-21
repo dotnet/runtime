@@ -572,13 +572,13 @@ ICALL_TYPE(JSSEM, "System.Threading.LowLevelJSSemaphore", JSSEM_1)
 NOHANDLES(ICALL(JSSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal))
 NOHANDLES(ICALL(JSSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal))
 NOHANDLES(ICALL(JSSEM_3, "ReleaseInternal", ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal))
-NOHANDLES(ICALL(JSSEM_4, "TimedWaitInternal", ves_icall_System_Threading_LowLevelJSSemaphore_TimedWaitInternal))
+NOHANDLES(ICALL(JSSEM_4, "PrepareWaitInternal", ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal))
 #endif
 
 ICALL_TYPE(LIFOSEM, "System.Threading.LowLevelLifoSemaphore", LIFOSEM_1)
 NOHANDLES(ICALL(LIFOSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
 NOHANDLES(ICALL(LIFOSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal))
-NOHANDLES(ICALL(LIFOSEM_3, "PrepareWaitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareWaitInternal))
+NOHANDLES(ICALL(LIFOSEM_3, "TimedWaitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal))
 NOHANDLES(ICALL(LIFOSEM_4, "ReleaseInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal))
 
 ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_0)

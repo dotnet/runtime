@@ -4974,15 +4974,15 @@ ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal (void)
 void
 ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal (gpointer sem_ptr)
 {
-	LifoJSSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
 	mono_lifo_js_semaphore_delete (sem);
 }
 
-gint32
-ves_icall_System_Threading_LowLevelJSSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
+void
+ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, gpointer gchandle, gpointer user_data)
 {
 	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
-	return mono_lifo_js_semaphore_timed_wait (sem, timeout_ms);
+	mono_lifo_js_semaphore_prepare_wait (sem, timeout_ms, (LifoJSSemaphoreCallbackFn)success_cb, (LifoJSSemaphoreCallbackFn)timedout_cb, (uint32_t)(MonoGCHandle)gchandle, user_data);
 }
 
 void
