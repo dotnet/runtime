@@ -348,15 +348,27 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                     {
                         const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
 #ifdef TARGET_AMD64
-                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size % XMM_REGSIZE_BYTES == 0);
+
+                        bool willUseOnlySimdMov = size % XMM_REGSIZE_BYTES == 0;
+                        if (!willUseOnlySimdMov)
+                        {
+                            // If we have a remainder we still might only use SIMD to process it (via overlapping)
+                            // unless it's more efficient to do that via scalar op (for sizes 1,2,4 and 8)
+                            const unsigned remainder = size % XMM_REGSIZE_BYTES;
+                            if (!isPow2(remainder) || (remainder > REGSIZE_BYTES))
+                            {
+                                willUseOnlySimdMov = true;
+                            }
+                        }
 #else
                         const bool willUseOnlySimdMov = (size % 8 == 0);
 #endif
-                        if (willUseOnlySimdMov)
+                        if (willUseOnlySimdMov && canUse16BytesSimdMov)
                         {
                             src->SetContained();
                         }
-                        else if (size > comp->getUnrollThreshold(Compiler::UnrollKind::Memset, /*canUseSimd*/ false))
+                        else if (size > comp->getUnrollThreshold(Compiler::UnrollKind::Memset,
+                                                                 /*canUseSimd*/ canUse16BytesSimdMov))
                         {
                             // It turns out we can't use SIMD so the default threshold is too big
                             goto TOO_BIG_TO_UNROLL;
@@ -1046,6 +1058,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector512_Create:
         case NI_Vector128_CreateScalar:
         case NI_Vector256_CreateScalar:
+        case NI_Vector512_CreateScalar:
         {
             // We don't directly support the Vector128.Create or Vector256.Create methods in codegen
             // and instead lower them to other intrinsic nodes in LowerHWIntrinsicCreate so we expect
@@ -1942,9 +1955,10 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     GenTree* tmp2 = nullptr;
     GenTree* tmp3 = nullptr;
 
-    bool   isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
-    bool   isCreateScalar = (intrinsicId == NI_Vector128_CreateScalar) || (intrinsicId == NI_Vector256_CreateScalar);
-    size_t argCnt         = node->GetOperandCount();
+    bool isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
+    bool isCreateScalar = (intrinsicId == NI_Vector128_CreateScalar) || (intrinsicId == NI_Vector256_CreateScalar) ||
+                          (intrinsicId == NI_Vector512_CreateScalar);
+    size_t argCnt = node->GetOperandCount();
 
     if (isConstant)
     {
@@ -6688,6 +6702,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             {
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
+                case NI_Vector512_CreateScalarUnsafe:
                 {
                     if (!varTypeIsIntegral(childNode->TypeGet()))
                     {
@@ -6834,6 +6849,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
     {
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
         {
             if (!supportsSIMDScalarLoads)
             {
@@ -7063,7 +7079,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             NamedIntrinsic      childNodeId = childNode->GetHWIntrinsicId();
 
                             if ((childNodeId == NI_Vector128_CreateScalarUnsafe) ||
-                                (childNodeId == NI_Vector256_CreateScalarUnsafe))
+                                (childNodeId == NI_Vector256_CreateScalarUnsafe) ||
+                                (childNodeId == NI_Vector512_CreateScalarUnsafe))
                             {
                                 // We have a very special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
                                 //

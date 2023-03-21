@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
+
+    <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
+
+    <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
+    <AndroidBuildDependsOn>
+        _InitializeCommonProperties;
+        _BeforeAndroidBuild;
+        _AndroidResolveReferences;
+        _AndroidPrepareProfiledAot;
+        _AndroidAotCompile;
+        _BuildNativeLibrary;
+        _AndroidGenerateAppBundle;
+        _AfterAndroidBuild
+    </AndroidBuildDependsOn>
+  </PropertyGroup>
+</Project>

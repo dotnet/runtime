@@ -4,6 +4,8 @@
 [[SetCommands]]
 [[SetCommandsEcho]]
 
+export PATH="$HOME/.jsvu/bin:$PATH"
+
 EXECUTION_DIR=$(dirname $0)
 if [[ -n "$3" ]]; then
 	SCENARIO=$3
@@ -45,11 +47,7 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 	fi
 
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
-		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
-			JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
-		else
-			JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000 --engine-arg=--experimental-wasm-bigint"
-		fi
+		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
 	fi
 fi
 
@@ -65,6 +63,7 @@ if [[ -n "$XUNIT_RANDOM_ORDER_SEED" ]]; then
     WasmXHarnessMonoArgs="${WasmXHarnessMonoArgs} --setenv=XUNIT_RANDOM_ORDER_SEED=${XUNIT_RANDOM_ORDER_SEED}"
 fi
 
+echo PATH=$PATH
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo SCENARIO=$SCENARIO
 echo XHARNESS_OUT=$XHARNESS_OUT

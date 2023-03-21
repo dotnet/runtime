@@ -55,7 +55,7 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null)
         {
             ValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType, fallBackToNearestAncestorType: true);
             return WriteBytesAsObject(value, jsonTypeInfo);
         }
 
