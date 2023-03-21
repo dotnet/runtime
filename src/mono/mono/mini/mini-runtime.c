@@ -1235,7 +1235,6 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 	case MONO_PATCH_INFO_METHOD_RGCTX:
 	case MONO_PATCH_INFO_SIGNATURE:
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 	case MONO_PATCH_INFO_GSHARED_METHOD_INFO:
@@ -1491,22 +1490,6 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
 		target = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (patch_info->data.method, FALSE, error);
 		mono_error_assert_ok (error);
-		break;
-	}
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
-		gpointer code_slot;
-
-		MonoJitMemoryManager *jit_mm = jit_mm_for_method (patch_info->data.method);
-		jit_mm_lock (jit_mm);
-		if (!jit_mm->method_code_hash)
-			jit_mm->method_code_hash = g_hash_table_new (NULL, NULL);
-		code_slot = g_hash_table_lookup (jit_mm->method_code_hash, patch_info->data.method);
-		if (!code_slot) {
-			code_slot = mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (gpointer));
-			g_hash_table_insert (jit_mm->method_code_hash, patch_info->data.method, code_slot);
-		}
-		jit_mm_unlock (jit_mm);
-		target = code_slot;
 		break;
 	}
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
@@ -4302,7 +4285,6 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 		g_hash_table_foreach (info->dynamic_code_hash, dynamic_method_info_free, NULL);
 		g_hash_table_destroy (info->dynamic_code_hash);
 	}
-	g_hash_table_destroy (info->method_code_hash);
 	g_hash_table_destroy (info->jump_trampoline_hash);
 	g_hash_table_destroy (info->jit_trampoline_hash);
 	g_hash_table_destroy (info->delegate_info_hash);
