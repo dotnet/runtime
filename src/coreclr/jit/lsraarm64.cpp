@@ -376,8 +376,10 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP candidates, RefPosition
         //
         //
         // Among `consecutiveResultForBusy`, we could shortlist the registers that are beneficial from "busy register
-        // selection" heuristics perspective. However, we would need to add logic of try_SPILL_COST(), try_FAR_NEXT_REF(),
-        // etc. here which would complicate things. Instead, we just go with option# 1 and select registers based on fewer
+        // selection" heuristics perspective. However, we would need to add logic of try_SPILL_COST(),
+        // try_FAR_NEXT_REF(),
+        // etc. here which would complicate things. Instead, we just go with option# 1 and select registers based on
+        // fewer
         // number of registers that has to be spilled.
         //
 
