@@ -82,7 +82,7 @@ namespace System.Net
 
             if (address.AddressFamily == AddressFamily.InterNetwork)
             {
-                uint mask = uint.MaxValue << 32 - PrefixLength;
+                uint mask = uint.MaxValue << (32 - PrefixLength);
 
                 if (BitConverter.IsLittleEndian)
                 {
@@ -99,7 +99,7 @@ namespace System.Net
                 BaseAddress.TryWriteBytes(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref baseAddressValue, 1)), out _);
                 address.TryWriteBytes(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref otherAddressValue, 1)), out _);
 
-                UInt128 mask = UInt128.MaxValue << 128 - PrefixLength;
+                UInt128 mask = UInt128.MaxValue << (128 - PrefixLength);
                 if (BitConverter.IsLittleEndian)
                 {
                     mask = BinaryPrimitives.ReverseEndianness(mask);
@@ -182,27 +182,15 @@ namespace System.Net
 
         private static bool TryParseCore(ReadOnlySpan<char> s, [NotNullWhen(true)] out IPAddress? address, out int prefixLength)
         {
-            const int MaxCharsCountAfterIpAddress = 4;
-            const int MinCharsRequired = 4;
-
-            if (s.Length < MinCharsRequired)
+            int separatorIndex = s.LastIndexOf('/');
+            if (separatorIndex >= 0)
             {
-                goto Failure;
-            }
-
-            int separatorExpectedStartingIndex = s.Length - MaxCharsCountAfterIpAddress;
-            int separatorIndex = s
-                .Slice(separatorExpectedStartingIndex)
-                .IndexOf('/');
-
-            if (separatorIndex != -1)
-            {
-                separatorIndex += separatorExpectedStartingIndex;
 
                 ReadOnlySpan<char> ipAddressSpan = s.Slice(0, separatorIndex);
                 ReadOnlySpan<char> prefixLengthSpan = s.Slice(separatorIndex + 1);
 
-                if (IPAddress.TryParse(ipAddressSpan, out address) && int.TryParse(prefixLengthSpan, out prefixLength))
+                if (IPAddress.TryParse(ipAddressSpan, out address) &&
+                    int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out prefixLength))
                 {
                     return true;
                 }
@@ -250,7 +238,8 @@ namespace System.Net
         {
             if (baseAddress.AddressFamily == AddressFamily.InterNetwork)
             {
-                uint mask = (uint)((long)uint.MaxValue << 32 - prefixLength);
+                // The cast to long ensures that the mask becomes 0 for the case where 'prefixLength == 0'.
+                uint mask = (uint)((long)uint.MaxValue << (32 - prefixLength));
                 if (BitConverter.IsLittleEndian)
                 {
                     mask = BinaryPrimitives.ReverseEndianness(mask);
@@ -267,7 +256,7 @@ namespace System.Net
                     return value != UInt128.Zero;
                 }
 
-                UInt128 mask = UInt128.MaxValue << 128 - prefixLength;
+                UInt128 mask = UInt128.MaxValue << (128 - prefixLength);
                 if (BitConverter.IsLittleEndian)
                 {
                     mask = BinaryPrimitives.ReverseEndianness(mask);
@@ -283,7 +272,7 @@ namespace System.Net
         /// <returns>The <see cref="string"/> containing the <see cref="IPNetwork"/>'s CIDR notation.</returns>
         public override string ToString()
         {
-            return $"{BaseAddress}/{PrefixLength}";
+            return string.Create(CultureInfo.InvariantCulture, stackalloc char[128], $"{BaseAddress}/{PrefixLength}");
         }
 
         /// <summary>
@@ -294,7 +283,7 @@ namespace System.Net
         /// <returns><see langword="true"/> if the formatting was succesful; otherwise <see langword="false"/>.</returns>
         public bool TryFormat(Span<char> destination, out int charsWritten)
         {
-            return destination.TryWrite($"{BaseAddress}/{PrefixLength}", out charsWritten);
+            return destination.TryWrite(CultureInfo.InvariantCulture, $"{BaseAddress}/{PrefixLength}", out charsWritten);
         }
 
         /// <summary>
@@ -303,15 +292,9 @@ namespace System.Net
         /// <param name="other">The <see cref="IPNetwork"/> instance to compare to this instance.</param>
         /// <returns><see langword="true"/> if the networks are equal; otherwise <see langword="false"/>.</returns>
         /// <exception cref="InvalidOperationException">Uninitialized <see cref="IPNetwork"/> instance.</exception>
-        public bool Equals(IPNetwork other)
-        {
-            if (BaseAddress == null || other.BaseAddress == null)
-            {
-                throw new InvalidOperationException(SR.net_uninitialized_ip_network_instance);
-            }
-
-            return BaseAddress.Equals(other.BaseAddress) && PrefixLength == other.PrefixLength;
-        }
+        public bool Equals(IPNetwork other) =>
+            PrefixLength == other.PrefixLength &&
+            (BaseAddress is null ? other.BaseAddress is null : BaseAddress.Equals(other.BaseAddress));
 
         /// <summary>
         /// Determines whether two <see cref="IPNetwork"/> instances are equal.
@@ -319,14 +302,9 @@ namespace System.Net
         /// <param name="obj">The <see cref="IPNetwork"/> instance to compare to this instance.</param>
         /// <returns><see langword="true"/> if <paramref name="obj"/> is an <see cref="IPNetwork"/> instance and the networks are equal; otherwise <see langword="false"/>.</returns>
         /// <exception cref="InvalidOperationException">Uninitialized <see cref="IPNetwork"/> instance.</exception>
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            if (obj is not IPNetwork other)
-            {
-                return false;
-            }
-
-            return Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is IPNetwork other &&
+            Equals(other);
         }
 
         /// <summary>
@@ -375,7 +353,6 @@ namespace System.Net
         /// <inheritdoc />
         static IPNetwork IParsable<IPNetwork>.Parse([NotNull] string s, IFormatProvider? provider)
         {
-            ArgumentNullException.ThrowIfNull(s);
             return Parse(s);
         }
 
