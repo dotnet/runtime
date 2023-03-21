@@ -3051,6 +3051,132 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 }
 
 //------------------------------------------------------------------------
+// genCodeForMemmove: Perform an unrolled memmove. The idea that we can
+//    ignore the fact that dst and src might overlap if we save the whole
+//    dst to temp regs in advance, e.g. for memmove(rax, rcx, 30):
+//
+//       ldr   q16, [x0]
+//       ldr   q17, [x0, #0x0E]
+//       str   q16, [x1]
+//       str   q17, [x1, #0x0E]
+//
+// Arguments:
+//    tree - GenTreeBlk node
+//
+void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
+{
+#ifdef TARGET_ARM64
+    // TODO-CQ: Support addressing modes, for now we don't use them
+    GenTreeIndir* srcIndir = tree->Data()->AsIndir();
+    assert(srcIndir->isContained() && !srcIndir->Addr()->isContained());
+
+    regNumber dst  = genConsumeReg(tree->Addr());
+    regNumber src  = genConsumeReg(srcIndir->Addr());
+    unsigned  size = tree->Size();
+
+    auto emitLoadStore = [&](bool load, unsigned regSize, regNumber tempReg, unsigned offset) {
+        var_types memType;
+        switch (regSize)
+        {
+            case 1:
+                memType = TYP_UBYTE;
+                break;
+            case 2:
+                memType = TYP_USHORT;
+                break;
+            case 4:
+                memType = TYP_INT;
+                break;
+            case 8:
+                memType = TYP_LONG;
+                break;
+            case 16:
+                memType = TYP_SIMD16;
+                break;
+            default:
+                unreached();
+        }
+        if (load)
+        {
+            GetEmitter()->emitIns_R_R_I(ins_Load(memType), emitTypeSize(memType), tempReg, src, offset);
+        }
+        else
+        {
+            GetEmitter()->emitIns_R_R_I(ins_Store(memType), emitTypeSize(memType), tempReg, dst, offset);
+        }
+    };
+
+    // Eventually we want to emit CPYP+CPYM+CPYE on armv9 for large sizes
+
+    // TODO-CQ: Emit stp/ldp (32 bytes at once).
+    unsigned simdSize = FP_REGSIZE_BYTES;
+    if (size >= simdSize)
+    {
+        // Number of SIMD regs needed to save the whole src to regs.
+        const unsigned numberOfSimdRegs = tree->AvailableTempRegCount(RBM_ALLFLOAT);
+
+        // Pop all temp regs to a local array, currently, this impl is limited with LSRA's MaxInternalCount
+        regNumber tempRegs[LinearScan::MaxInternalCount] = {};
+        for (unsigned i = 0; i < numberOfSimdRegs; i++)
+        {
+            tempRegs[i] = tree->ExtractTempReg(RBM_ALLFLOAT);
+        }
+
+        auto emitSimdLoadStore = [&](bool load) {
+            unsigned offset   = 0;
+            int      regIndex = 0;
+            do
+            {
+                emitLoadStore(load, simdSize, tempRegs[regIndex++], offset);
+                offset += simdSize;
+                if (size == offset)
+                {
+                    break;
+                }
+                if ((size - offset) < simdSize)
+                {
+                    // Overlap with the previously processed data. We'll always use SIMD for that for simplicity
+                    // TODO-CQ: Consider using smaller SIMD reg or GPR for the remainder.
+                    offset = size - simdSize;
+                }
+            } while (true);
+        };
+
+        // load everything from SRC to temp regs
+        emitSimdLoadStore(/* load */ true);
+        // store them to DST
+        emitSimdLoadStore(/* load */ false);
+    }
+    else
+    {
+        // Here we work with size 1..15
+        assert((size > 0) && (size < FP_REGSIZE_BYTES));
+
+        // Use overlapping loads/stores, e. g. for size == 9: "ldr x2, [x0]; ldr x3, [x0, #0x01]".
+        const unsigned loadStoreSize = 1 << BitOperations::Log2(size);
+        if (loadStoreSize == size)
+        {
+            const regNumber tmpReg = tree->GetSingleTempReg(RBM_ALLINT);
+            emitLoadStore(/* load */ true, loadStoreSize, tmpReg, 0);
+            emitLoadStore(/* load */ false, loadStoreSize, tmpReg, 0);
+        }
+        else
+        {
+            assert(tree->AvailableTempRegCount() == 2);
+            const regNumber tmpReg1 = tree->ExtractTempReg(RBM_ALLINT);
+            const regNumber tmpReg2 = tree->ExtractTempReg(RBM_ALLINT);
+            emitLoadStore(/* load */ true, loadStoreSize, tmpReg1, 0);
+            emitLoadStore(/* load */ true, loadStoreSize, tmpReg2, size - loadStoreSize);
+            emitLoadStore(/* load */ false, loadStoreSize, tmpReg1, 0);
+            emitLoadStore(/* load */ false, loadStoreSize, tmpReg2, size - loadStoreSize);
+        }
+    }
+#else // TARGET_ARM64
+    unreached();
+#endif
+}
+
+//------------------------------------------------------------------------
 // genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
 //
 // Arguments:
@@ -4370,13 +4496,22 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             break;
 
         case GenTreeBlk::BlkOpKindUnroll:
+        case GenTreeBlk::BlkOpKindUnrollMemmove:
             if (isCopyBlk)
             {
                 if (blkOp->gtBlkOpGcUnsafe)
                 {
                     GetEmitter()->emitDisableGC();
                 }
-                genCodeForCpBlkUnroll(blkOp);
+                if (blkOp->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
+                {
+                    genCodeForCpBlkUnroll(blkOp);
+                }
+                else
+                {
+                    assert(blkOp->gtBlkOpKind == GenTreeBlk::BlkOpKindUnrollMemmove);
+                    genCodeForMemmove(blkOp);
+                }
                 if (blkOp->gtBlkOpGcUnsafe)
                 {
                     GetEmitter()->emitEnableGC();

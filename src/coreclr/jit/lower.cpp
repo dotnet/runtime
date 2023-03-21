@@ -1851,7 +1851,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         if (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove)
         {
             GenTree* newNode = LowerCallMemmove(call);
