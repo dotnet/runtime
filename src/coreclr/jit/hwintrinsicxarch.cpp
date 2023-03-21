@@ -1382,7 +1382,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             simdVal.u64[3] = 0x8080808080808080;
 
                             shuffleIntrinsic  = NI_AVX2_Shuffle;
-                            moveMaskIntrinsic = NI_AVX2_MoveMask;
+                            moveMaskIntrinsic = NI_SSE2_MoveMask;
                         }
                         else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                         {
