@@ -4,9 +4,9 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>0f4efddefc5a9b42250d8ab3defe6e99ad0a6a20</Sha>
     </Dependency>
-    <Dependency Name="System.Net.MsQuic.Transport" Version="8.0.0-alpha.1.23166.1">
+    <Dependency Name="System.Net.MsQuic.Transport" Version="8.0.0-alpha.1.23170.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
-      <Sha>a880e93af4e50d19110d228e698900c110e2b0e9</Sha>
+      <Sha>a526aac230962dbe39e6d1e8f00a87b91878bfcc</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
