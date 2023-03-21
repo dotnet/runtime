@@ -9170,7 +9170,7 @@ private:
     //
     bool IsBaselineVector512IsaSupportedDebugOnly() const
     {
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
         return (compIsaSupportedDebugOnly(InstructionSet_Vector512));
 #else
         return false;
@@ -9186,7 +9186,7 @@ private:
     //
     bool IsBaselineVector512IsaSupported() const
     {
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
         return (compExactlyDependsOn(InstructionSet_Vector512));
 #else
         return false;
