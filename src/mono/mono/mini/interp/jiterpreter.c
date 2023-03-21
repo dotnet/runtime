@@ -1059,8 +1059,6 @@ mono_interp_tier_prepare_jiterpreter_fast (
 			frame, method, ip, (gint32)trace_index,
 			start_of_body, size_of_body
 		);
-		// Record the maximum size of the trace (we don't know how long it actually is here)
-		//  which might be smaller than the function body if this trace is in the middle
 		trace_info->thunk = result;
 		return result;
 	} else {
