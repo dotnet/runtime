@@ -185,7 +185,7 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking)
         {
-            bool aggressive = generation == 2 && mode == GCCollectionMode.Aggressive;
+            bool aggressive = generation == MaxGeneration && mode == GCCollectionMode.Aggressive;
             Collect(generation, mode, blocking, compacting: aggressive);
         }
 
