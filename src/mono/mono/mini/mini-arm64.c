@@ -3744,28 +3744,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XCAST:
 			break;
 
-
-
 		case OP_EXTRACT_I1:
 		case OP_EXTRACT_I2:
 		case OP_EXTRACT_I4:
 		case OP_EXTRACT_I8: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			if (is_type_unsigned_macro (ins->inst_c1)) {
+			// smov is not defined for i64
+			if (is_type_unsigned_macro (ins->inst_c1) || t == TYPE_I64) {
 				arm_neon_umov (code, t, ins->dreg, ins->sreg1, ins->inst_c0);
 			} else {
 				arm_neon_smov (code, t, ins->dreg, ins->sreg1, ins->inst_c0);
-			}	
+			}
 			break;
 		}
 		case OP_EXTRACT_R4:
 		case OP_EXTRACT_R8:
 			if (ins->dreg != ins->sreg1 || ins->inst_c0 != 0) {
-			const int t = get_type_size_macro (ins->inst_c1);
-			// Technically, this broadcasts element #inst_c0 to all dest XREG elements; whereas it should
-			// set the FREG to the said element. Since FREG and XREG pool is the same on arm64 and the rest
-			// of the F/XREG is ignored in FREG mode, this operation remains valid.
-			arm_neon_fdup_e (code, VREG_FULL, t, ins->dreg, ins->sreg1, ins->inst_c0);
+				const int t = get_type_size_macro (ins->inst_c1);
+				// Technically, this broadcasts element #inst_c0 to all dest XREG elements; whereas it should
+				// set the FREG to the said element. Since FREG and XREG pool is the same on arm64 and the rest
+				// of the F/XREG is ignored in FREG mode, this operation remains valid.
+				arm_neon_fdup_e (code, VREG_FULL, t, ins->dreg, ins->sreg1, ins->inst_c0);
 			}
 			break;
 		case OP_ARM64_XADDV: {

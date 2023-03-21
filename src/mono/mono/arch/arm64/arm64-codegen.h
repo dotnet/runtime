@@ -1122,8 +1122,8 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_ins_g(p, type, rd, rn, index) arm_neon_cpy_opcode ((p), 0b1, 0b0, (((index) << 1) | 0b1) << (type), 0b0011, (rd), (rn))
 #define arm_neon_ins_e(p, type, rd, rn, indexd, indexs) arm_neon_cpy_opcode ((p), 0b1, 0b1, (((indexd) << 1) | 0b1) << (type), (indexs) << (type), (rd), (rn))
 
-#define arm_neon_smov(p, type, rd, rn, index) arm_neon_cpy_opcode ((p), (type == TYPE_I64) ? 0b1 : 0b0, 0b0, (0b00001 << ((type)-1)) | ((index) << (type)), 0b0101, (rd), (rn))
-#define arm_neon_umov(p, type, rd, rn, index) arm_neon_cpy_opcode ((p), (type == TYPE_I64) ? 0b1 : 0b0, 0b0, (0b00001 << ((type)-1)) | ((index) << (type)), 0b0111, (rd), (rn))
+#define arm_neon_smov(p, type, rd, rn, index) arm_neon_cpy_opcode ((p), (type == TYPE_I32) ? 0b1 : 0b0, 0b0, (0b00001 << (type)) | ((index) << ((type) + 1)), 0b0101, (rd), (rn))
+#define arm_neon_umov(p, type, rd, rn, index) arm_neon_cpy_opcode ((p), (type == TYPE_I64) ? 0b1 : 0b0, 0b0, (0b00001 << (type)) | ((index) << ((type) + 1)), 0b0111, (rd), (rn))
 #define arm_neon_dup_e(p, width, type, rd, rn, index) arm_neon_cpy_opcode ((p), (width), 0b0, (0b00001 << (type)) | ((index) << ((type)+1)), 0b0000, (rd), (rn)) 
 #define arm_neon_fdup_e(p, width, type, rd, rn, index) arm_neon_dup_e ((p), (width), (type) + TYPE_I32, (rd), (rn), (index))
 
@@ -1138,8 +1138,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 
 #define arm_neon_smov_b(p, rd, rn, index) arm_neon_cpy_opcode ((p), 0b0, 0b0, 0b00001 | ((index) << 1), 0b0101, (rd), (rn))
 #define arm_neon_smov_h(p, rd, rn, index) arm_neon_cpy_opcode ((p), 0b0, 0b0, 0b00010 | ((index) << 2), 0b0101, (rd), (rn))
-#define arm_neon_smov_s(p, rd, rn, index) arm_neon_cpy_opcode ((p), 0b0, 0b0, 0b00100 | ((index) << 3), 0b0101, (rd), (rn))
-#define arm_neon_smov_d(p, rd, rn, index) arm_neon_cpy_opcode ((p), 0b1, 0b0, 0b01000 | ((index) << 4), 0b0101, (rd), (rn))
+#define arm_neon_smov_s(p, rd, rn, index) arm_neon_cpy_opcode ((p), 0b1, 0b0, 0b00100 | ((index) << 3), 0b0101, (rd), (rn))
 
 #define arm_neon_umov_b(p, rd, rn, index) arm_neon_cpy_opcode ((p), 0b0, 0b0, 0b00001 | ((index) << 1), 0b0111, (rd), (rn))
 #define arm_neon_umov_h(p, rd, rn, index) arm_neon_cpy_opcode ((p), 0b0, 0b0, 0b00010 | ((index) << 2), 0b0111, (rd), (rn))

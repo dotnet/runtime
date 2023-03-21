@@ -1259,6 +1259,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_Max:
 		case SN_Min:
 		case SN_Sum:
+		case SN_ToScalar:
 			break;
 		default: 
 			return NULL;
@@ -1949,7 +1950,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		case SN_op_BitwiseAnd:
 		case SN_op_BitwiseOr:
 		case SN_op_ExclusiveOr:
-		case SN_Sum:
 		case SN_op_Equality:
 		case SN_op_Inequality:
 			break;
