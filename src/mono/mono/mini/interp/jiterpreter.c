@@ -877,13 +877,12 @@ typedef struct {
 	// 64-bits because it can get very high if estimate heat is turned on
 	gint64 hit_count;
 	JiterpreterThunk thunk;
-	int size_of_trace;
 	int penalty_total;
 } TraceInfo;
 
 // The maximum number of trace segments used to store TraceInfo. This limits
 //  the maximum total number of traces to MAX_TRACE_SEGMENTS * TRACE_SEGMENT_SIZE
-#define MAX_TRACE_SEGMENTS 256
+#define MAX_TRACE_SEGMENTS 1024
 #define TRACE_SEGMENT_SIZE 1024
 
 static volatile gint32 trace_count = 0;
@@ -922,7 +921,14 @@ trace_info_get (gint32 index) {
 
 static gint32
 trace_info_alloc () {
-	gint32 index = trace_count++;
+	gint32 index = trace_count++,
+		limit = (MAX_TRACE_SEGMENTS * TRACE_SEGMENT_SIZE);
+	// Make sure we're not out of space in the trace info table.
+	if (index == limit)
+		g_print ("MONO_WASM: Reached maximum number of jiterpreter trace entry points (%d).\n", limit);
+	if (index >= limit)
+		return -1;
+
 	TraceInfo *info = trace_info_get (index);
 	info->hit_count = 0;
 	info->thunk = NULL;
@@ -989,20 +995,24 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 
 		if (enabled && should_generate) {
 			gint32 trace_index = trace_info_alloc ();
+			if (trace_index < 0) {
+				// We're out of space in the TraceInfo table.
+				return;
+			} else {
+				td->cbb = bb;
+				imethod->contains_traces = TRUE;
+				InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
+				memcpy(ins->data, &trace_index, sizeof (trace_index));
 
-			td->cbb = bb;
-			imethod->contains_traces = TRUE;
-			InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
-			memcpy(ins->data, &trace_index, sizeof (trace_index));
+				// Clear the instruction counter
+				instruction_count = 0;
 
-			// Clear the instruction counter
-			instruction_count = 0;
-
-			// Note that we only clear enter_at_next here, after generating a trace.
-			// This means that the flag will stay set intentionally if we keep failing
-			//  to generate traces, perhaps due to a string of small basic blocks
-			//  or multiple call instructions.
-			enter_at_next = bb->contains_call_instruction;
+				// Note that we only clear enter_at_next here, after generating a trace.
+				// This means that the flag will stay set intentionally if we keep failing
+				//  to generate traces, perhaps due to a string of small basic blocks
+				//  or multiple call instructions.
+				enter_at_next = bb->contains_call_instruction;
+			}
 		} else if (is_backwards_branch && enabled && !should_generate) {
 			// We failed to start a trace at a backwards branch target, but that might just mean
 			//  that the loop body starts with one or two unsupported opcodes, so it may be
@@ -1051,7 +1061,6 @@ mono_interp_tier_prepare_jiterpreter_fast (
 		);
 		// Record the maximum size of the trace (we don't know how long it actually is here)
 		//  which might be smaller than the function body if this trace is in the middle
-		trace_info->size_of_trace = size_of_body - (ip - start_of_body);
 		trace_info->thunk = result;
 		return result;
 	} else {
