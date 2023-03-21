@@ -1585,6 +1585,16 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
         // Just `regCount` to actual registers count for first ref-position.
         // For others, set 0 so we can identify that this is non-first refposition.
         firstRefPos->regCount = regCount;
+
+#ifdef DEBUG
+        // Set the minimum register candidates needed for stress to work.
+        currRefPos = firstRefPos;
+        while (currRefPos != nullptr)
+        {
+            currRefPos->minRegCandidateCount = regCount;
+            currRefPos                       = getNextConsecutiveRefPosition(currRefPos);
+        }
+#endif
         srcCount += regCount;
     }
     else

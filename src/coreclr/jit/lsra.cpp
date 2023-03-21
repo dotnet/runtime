@@ -3104,7 +3104,11 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
     // busy until the next kill.
     assert(!isRegBusy(physRegRecord->regNum, current->registerType));
     // We should already have determined that the register isn't actively in use.
+#ifdef TARGET_ARM64
+    assert(!isRegInUse(physRegRecord->regNum, current->registerType) || refPosition->needsConsecutive);
+#else
     assert(!isRegInUse(physRegRecord->regNum, current->registerType));
+#endif
     // We shouldn't be calling this if 'refPosition' is a fixed reference to this register.
     assert(!refPosition->isFixedRefOfRegMask(candidateBit));
     // We shouldn't be calling this if there is a fixed reference at the same location
@@ -11691,6 +11695,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
     weight_t bestSpillWeight = FloatingPointUtils::infinite_double();
     // True if we found registers with lower spill weight than this refPosition.
     bool foundLowerSpillWeight = false;
+    LsraLocation thisLocation = refPosition->nodeLocation;
 
     for (regMaskTP spillCandidates = candidates; spillCandidates != RBM_NONE;)
     {
@@ -11702,7 +11707,14 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
 
         // Can and should the interval in this register be spilled for this one,
         // if we don't find a better alternative?
-        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == refPosition->nodeLocation) &&
+#ifdef TARGET_ARM64
+        if (linearScan->isRefPositionActive(assignedInterval->recentRefPosition, thisLocation) && (assignedInterval->recentRefPosition->needsConsecutive))
+        {
+            continue;
+        }
+#endif
+
+        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == thisLocation) &&
             !assignedInterval->getNextRefPosition()->RegOptional())
         {
             continue;
