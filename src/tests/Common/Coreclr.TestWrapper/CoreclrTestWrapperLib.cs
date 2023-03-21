@@ -601,10 +601,13 @@ namespace CoreclrTestLib
                 return false;
             }
 
+            string sosPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".dotnet", "sos", "sos.dll");
+
             var cdbScriptPath = Path.GetTempFileName();
-            // TODO: Add SOS support once we can easily download SOS to install.
-            File.WriteAllText(cdbScriptPath, """
+            File.WriteAllText(cdbScriptPath, $$"""
+                .load {{sosPath}}
                 ~*k
+                !clrstack -f -all
                 q
                 """);
 

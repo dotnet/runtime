@@ -320,12 +320,12 @@
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_EmccCompileRsp)" />
-      <EmscriptenMinimalBuildEnvVars Include="@(EmscriptenEnvVars)" />
-      <EmscriptenMinimalBuildEnvVars Include="FROZEN_CACHE=" />
+      <_EmscriptenEnvVarsForBuildMinimal Include="@(EmscriptenEnvVars)" />
+      <_EmscriptenEnvVarsForBuildMinimal Include="FROZEN_CACHE=" />
     </ItemGroup>
 
     <!-- warm up the cache -->
-    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenMinimalBuildEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
+    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(_EmscriptenEnvVarsForBuildMinimal)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
 
     <Message Text="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..." Importance="High" />
     <ItemGroup>

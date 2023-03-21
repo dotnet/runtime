@@ -953,7 +953,6 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/82837", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public static void BuildInvalidSignatureTwice()
         {
             byte[] bytes = (byte[])TestData.MsCertificate.Clone();

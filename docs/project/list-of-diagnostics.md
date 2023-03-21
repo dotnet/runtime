@@ -211,6 +211,20 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1097`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
 |  __`SYSLIB1098`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
 |  __`SYSLIB1099`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1100`__ | Configuration binding generator: type is not supported. |
+|  __`SYSLIB1101`__ | Configuration binding generator: property on type is not supported. |
+|  __`SYSLIB1102`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1103`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1104`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1105`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1106`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1107`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1108`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1109`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1110`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1111`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1112`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1113`__ | *_`SYSLIB1101`-`SYSLIB1113` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
