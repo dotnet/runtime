@@ -3781,8 +3781,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 
 			case INTRINS_AARCH64_ADV_SIMD_UADDV:
-			case INTRINS_AARCH64_ADV_SIMD_SADDV:
-				if (ins->inst_c1 == MONO_TYPE_I8 || ins->inst_c1 == MONO_TYPE_U8) 
+			case INTRINS_AARCH64_ADV_SIMD_SADDV: 
+				if (get_type_size_macro (ins->inst_c1) == TYPE_I64) 
 					arm_neon_addp (code, VREG_FULL, TYPE_I64, ins->dreg, ins->sreg1, ins->sreg1);
 				else
 					g_assert_not_reached (); // remaining int types are handled through the codegen table
