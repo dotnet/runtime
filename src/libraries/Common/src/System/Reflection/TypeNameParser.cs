@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Reflection
@@ -10,8 +11,13 @@ namespace System.Reflection
     //
     // Parser for type names passed to GetType() apis.
     //
+    [StructLayout(LayoutKind.Auto)]
     internal ref partial struct TypeNameParser
     {
+        private ReadOnlySpan<char> _input;
+        private int _index;
+        private int _errorIndex; // Position for error reporting
+
         private TypeNameParser(ReadOnlySpan<char> name)
         {
             _input = name;

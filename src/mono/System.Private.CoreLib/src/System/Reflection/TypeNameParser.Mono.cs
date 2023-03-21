@@ -13,10 +13,6 @@ namespace System.Reflection
 {
     internal unsafe ref partial struct TypeNameParser
     {
-        private ReadOnlySpan<char> _input;
-        private int _index;
-        private int _errorIndex; // Position for error reporting
-
         private Func<AssemblyName, Assembly?>? _assemblyResolver;
         private Func<Assembly?, string, bool, Type?>? _typeResolver;
         private bool _throwOnError;
