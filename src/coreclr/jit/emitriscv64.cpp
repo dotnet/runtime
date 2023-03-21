@@ -1087,54 +1087,53 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
 {
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
-    if (0 == ((imm + 0x800) >> 32))
+    if (0 == ((imm + 0x800) >> 31))
     {
         if (((imm + 0x800) >> 12) != 0)
         {
             emitIns_R_I(INS_lui, size, reg, ((imm + 0x800) >> 12));
             if ((imm & 0xFFF) != 0)
             {
-                emitIns_R_R_I(INS_addiw, size, reg, reg, imm & 0xFFF);
+                emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, reg, imm & 0xFFF);
             }
         }
         else
         {
-            emitIns_R_R_I(INS_addiw, size, reg, REG_R0, imm & 0xFFF);
+            emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, REG_R0, imm & 0xFFF);
         }
     }
     else
     {
-        UINT32 high = (imm >> 32) & 0xffffffff;
+        UINT32    high    = (imm >> 33) & 0x7fffffff;
         regNumber highReg = reg;
         if (((high + 0x800) >> 12) != 0)
         {
             emitIns_R_I(INS_lui, size, highReg, ((high + 0x800) >> 12));
             if ((high & 0xFFF) != 0)
             {
-                emitIns_R_R_I(INS_addi, size, highReg, highReg, high & 0xFFF);
+                emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, highReg, highReg, high & 0xFFF);
             }
         }
         else if ((high & 0xFFF) != 0)
         {
-            emitIns_R_R_I(INS_addi, size, highReg, REG_R0, high & 0xFFF);
+            emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, highReg, REG_R0, high & 0xFFF);
         }
         else
         {
             highReg = REG_R0;
         }
-
-        UINT32 low = imm & 0xffffffff;
+        UINT64 low = imm & 0x1ffffffff;
         if (highReg != REG_R0)
         {
-            emitIns_R_R_I(INS_slli, size, highReg, highReg, 11);
+            emitIns_R_R_I(size == EA_4BYTE ? INS_slliw : INS_slli, size, highReg, highReg, 11);
         }
+        emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, highReg, (low >> 22) & 0x7FF);
 
-        emitIns_R_R_I(INS_addi, size, reg, highReg, (low >> 21) & 0x7FF);
-        emitIns_R_R_I(INS_slli, size, reg, reg, 11);
-        emitIns_R_R_I(INS_addi, size, reg, reg, (low >> 10) & 0x7FF);
+        emitIns_R_R_I(size == EA_4BYTE ? INS_slliw : INS_slli, size, reg, reg, 11);
+        emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, reg, (low >> 11) & 0x7FF);
 
-        emitIns_R_R_I(INS_slli, size, reg, reg, 10);
-        emitIns_R_R_I(INS_addi, size, reg, reg, low & 0x3FF);
+        emitIns_R_R_I(size == EA_4BYTE ? INS_slliw : INS_slli, size, reg, reg, 11);
+        emitIns_R_R_I(size == EA_4BYTE ? INS_addiw : INS_addi, size, reg, reg, low & 0x7FF);
     }
 }
 
