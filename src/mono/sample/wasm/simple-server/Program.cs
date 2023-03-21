@@ -20,7 +20,7 @@ namespace HttpServer
     {
         private bool Verbose = false;
         private ConcurrentDictionary<string, Session> Sessions = new ConcurrentDictionary<string, Session>();
-        private Dictionary<string, byte[]> cache = new Dictionary<string, byte[]>();
+        private Dictionary<string, byte[]> cache = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
 
         public static int Main()
         {
@@ -85,7 +85,7 @@ namespace HttpServer
             }
             else
             {
-                System.Console.WriteLine("Don't know how to open url on this OS platform");
+                Console.WriteLine("Don't know how to open url on this OS platform");
             }
 
             proc.StartInfo = si;
