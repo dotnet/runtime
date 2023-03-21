@@ -54,10 +54,10 @@ PhaseStatus Compiler::optRedundantBranches()
                 madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
 
                 // If we modified some flow out of block but it's still
-                // a BBJ_COND, retry; perhaps one of the later optimizations
+                // a reachable BBJ_COND, retry; perhaps one of the later optimizations
                 // we can do has enabled one of the earlier optimizations.
                 //
-                if (madeChangesThisBlock && (block->bbJumpKind == BBJ_COND))
+                if (madeChangesThisBlock && (block->bbJumpKind == BBJ_COND) && (block->countOfInEdges() > 0))
                 {
                     JITDUMP("Will retry RBO in " FMT_BB " after partial optimization\n", block->bbNum);
                     madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
@@ -636,9 +636,24 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     }
                     else
                     {
+                        // If just one path from a dominator reaches block, check if we can
+                        // alter the test in domBlock to subsume the test done in block.
+                        //
+                        if (falseReaches != trueReaches)
+                        {
+                            JITDUMP("inference failed, but %s path reaches, trying subsumption\n",
+                                    trueReaches ? "true" : "false");
+
+                            const bool wasSubsumed = optSubsumeRelop(block, domBlock, trueReaches);
+                            if (wasSubsumed)
+                            {
+                                return true;
+                            }
+                        }
+
                         // Keep looking up the dom tree
                         //
-                        JITDUMP("inference failed -- will keep looking higher\n");
+                        JITDUMP("inference and subsumption failed -- will keep looking higher\n");
                     }
                 }
             }
@@ -691,12 +706,553 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     }
     else
     {
+        // If tree is the only user of some local ssa defs, see if we can remove the defs too.
+
         tree->BashToConst(relopValue);
     }
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
     fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
+    return true;
+}
+
+//------------------------------------------------------------------------
+// optSubsumeRelop: see if the relop in block is subsumable
+//    by altering the condition checked in domBlock.
+//
+// Arguments:
+//    block: block in question
+//    domBlock: dominator of block with one successor reaching block,
+//      relop with same VN operands as block
+//   trueReaches: true if the jump successor of domBlock reaches block
+//
+// Returns:
+//    true domBlock's relop and flow were modified
+//
+// Notes:
+//    Given the following flow shape
+//
+//         domBlock
+//           |    \
+//           |     \
+//           |      \
+//          block   |
+//           |  \   |
+//           |   \  |
+//           |    \ |
+//           |     \|
+//           D      C
+//
+//   Suppose that:
+//   * block and domBlock are both BBJ_COND and have different relops with the same operands
+//   * the value of block's relop can't be predicted from domBlock's relop and reaching path
+//   * flow reaches from domBlock->block along only the true or false path
+//   * one successor of block (say C) is dominated by domBlock and control flow from domBlock->C does not go through D
+//   * the other successor of block (say D) is dominated by block
+//   * block and the paths from domBlock->block, block->C, and domBlock->C are side effect free
+//
+//   Then by altering the predicate in domBlock, we can rewire flow from block directly to D:
+//
+//         domBlock
+//           |    \
+//           |     \
+//         block    \
+//           |      |
+//           |      |
+//           D      C
+//
+bool Compiler::optSubsumeRelop(BasicBlock* const block, BasicBlock* const domBlock, bool trueReaches)
+{
+    JITDUMP("optSubsumeRelop: dom " FMT_BB " reaches block " FMT_BB " via %s edge (via " FMT_BB ")\n", domBlock->bbNum,
+            block->bbNum, trueReaches ? "jump" : "next",
+            trueReaches ? domBlock->bbJumpDest->bbNum : domBlock->bbNext->bbNum);
+
+    // Figure out if we have blocks C and D like above.
+    //
+    BasicBlock* blockC = nullptr;
+    BasicBlock* blockD = nullptr;
+
+    assert(block->bbJumpKind == BBJ_COND);
+
+    JITDUMP("optSubsumeRelop: " FMT_BB " successors are jump " FMT_BB " next " FMT_BB "\n", block->bbNum,
+            block->bbJumpDest->bbNum, block->bbNext->bbNum);
+
+    // See if one of the successors leads in a linear chain to a join.
+    //
+    bool trueFromBlockReachesBlockC = false;
+    {
+        bool              pathFromJumpHasSideEffects = false;
+        BasicBlock* const pathFromJump =
+            optTraceLinearFlow(block->bbJumpDest, nullptr, &pathFromJumpHasSideEffects, /*tryRepair*/ false);
+        bool              pathFromNextHasSideEffects = false;
+        BasicBlock* const pathFromNext =
+            optTraceLinearFlow(block->bbNext, nullptr, &pathFromNextHasSideEffects, /*tryRepair*/ false);
+
+        JITDUMP("optSubsumeRelop: " FMT_BB " linear flow endpoints are jump " FMT_BB "%s next " FMT_BB "%s\n",
+                block->bbNum, pathFromJump->bbNum, pathFromJumpHasSideEffects ? "(+sideeff)" : "", pathFromNext->bbNum,
+                pathFromNextHasSideEffects ? "(+sideeff)" : "");
+
+        // The path from block->C must be free of side effects, since we won't be taking it at all.
+        //
+        if (!fgDominate(block, pathFromJump) && fgDominate(domBlock, pathFromJump) && !pathFromJumpHasSideEffects &&
+            optReachable(domBlock, pathFromJump, block))
+        {
+            trueFromBlockReachesBlockC = true;
+            blockC                     = pathFromJump;
+            blockD                     = pathFromNext;
+        }
+        else if (!fgDominate(block, pathFromNext) && fgDominate(domBlock, pathFromNext) &&
+                 !pathFromNextHasSideEffects && optReachable(domBlock, pathFromNext, block))
+        {
+            trueFromBlockReachesBlockC = false;
+            blockC                     = pathFromNext;
+            blockD                     = pathFromJump;
+        }
+
+        if ((blockC == nullptr) || (blockD == nullptr))
+        {
+            JITDUMP("optSubsumeRelop: did not pass initial flow shape / side effect checks\n");
+            return false;
+        }
+    }
+
+    JITDUMP("optSubsumeRelop: matched flow shape: domBlock " FMT_BB " block " FMT_BB " blockC " FMT_BB " blockD " FMT_BB
+            "\n",
+            domBlock->bbNum, block->bbNum, blockC->bbNum, blockD->bbNum);
+
+    // Insist that the path from domBlock to block be linear flow
+    // and side effect free (since we will be taking it less often).
+    //
+    {
+        bool              pathFromDomBlockToBlockHasSideEffects = false;
+        BasicBlock* const pathFromDomBlockToBlock =
+            optTraceLinearFlow(trueReaches ? domBlock->bbJumpDest : domBlock->bbNext, block,
+                               &pathFromDomBlockToBlockHasSideEffects, /*tryRepair*/ true);
+
+        if (pathFromDomBlockToBlock != block)
+        {
+            JITDUMP("optSubsumeRelop: domBlock does not have linear flow to block: fork or join or dead-end at " FMT_BB
+                    "\n",
+                    pathFromDomBlockToBlock);
+            return false;
+        }
+
+        if (pathFromDomBlockToBlockHasSideEffects)
+        {
+            JITDUMP("optSubsumeRelop: path from domBlock " FMT_BB " to block " FMT_BB " has side effects, sorry\n",
+                    domBlock->bbNum, block->bbNum);
+            return false;
+        }
+    }
+
+    // Insist that the path from domBlock->C be linear flow
+    // and side effect free (since we will be taking it more often).
+    //
+    {
+        bool              pathFromDomBlockToBlockCHasSideEffects = false;
+        BasicBlock* const pathFromDomBlockToBlockC =
+            optTraceLinearFlow(trueReaches ? domBlock->bbNext : domBlock->bbJumpDest, blockC,
+                               &pathFromDomBlockToBlockCHasSideEffects, /*tryRepair*/ true);
+
+        if (pathFromDomBlockToBlockC != blockC)
+        {
+            JITDUMP("optSubsumeRelop: domBlock does not have linear flow to blockC: fork or join or dead-end at " FMT_BB
+                    "\n",
+                    pathFromDomBlockToBlockC->bbNum);
+            return false;
+        }
+
+        if (pathFromDomBlockToBlockCHasSideEffects)
+        {
+            JITDUMP("optSubsumeRelop: path from " FMT_BB " to blockC " FMT_BB " has side effects, sorry\n",
+                    domBlock->bbNum, blockC->bbNum);
+            return false;
+        }
+    }
+
+    // Form the compound predicate describing how flow reaches C from domBlock via block.
+    // Do this in VN space.
+    //
+    ValueNum domCmpNormVN   = ValueNumStore::NoVN;
+    ValueNum domCmpExcVN    = ValueNumStore::NoVN;
+    ValueNum blockCmpNormVN = ValueNumStore::NoVN;
+    ValueNum blockCmpExcVN  = ValueNumStore::NoVN;
+
+    Statement* const domJumpStmt = domBlock->lastStmt();
+    GenTree* const   domJumpTree = domJumpStmt->GetRootNode();
+    assert(domJumpTree->OperIs(GT_JTRUE));
+    GenTree* const domCmpTree = domJumpTree->AsOp()->gtGetOp1();
+    assert(domCmpTree->OperIsCompare());
+    vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Liberal), &domCmpNormVN, &domCmpExcVN);
+
+    Statement* const blockJumpStmt = block->lastStmt();
+    GenTree* const   blockJumpTree = blockJumpStmt->GetRootNode();
+    assert(blockJumpTree->OperIs(GT_JTRUE));
+    GenTree* const blockCmpTree = blockJumpTree->AsOp()->gtGetOp1();
+    assert(blockCmpTree->OperIsCompare());
+    vnStore->VNUnpackExc(blockCmpTree->GetVN(VNK_Liberal), &blockCmpNormVN, &blockCmpExcVN);
+
+    JITDUMP("domBlock branch condition is " FMT_VN ": ", domCmpNormVN);
+    JITDUMPEXEC(vnStore->vnDump(this, domCmpNormVN));
+    JITDUMP("\n");
+    JITDUMP("block branch condition is " FMT_VN ": ", blockCmpNormVN);
+    JITDUMPEXEC(vnStore->vnDump(this, blockCmpNormVN));
+    JITDUMP("\n");
+
+    // The two CMP vns above should be relops with same operands (possibly swapped)
+    // Form the Compound VN for the path (domBlock -> block -> C)
+    //
+    ValueNum combinedVN = ValueNumStore::NoVN;
+
+    if (trueReaches)
+    {
+        if (trueFromBlockReachesBlockC)
+        {
+            // both true
+            combinedVN = vnStore->VNForFunc(TYP_INT, (VNFunc)GT_AND, domCmpNormVN, blockCmpNormVN);
+        }
+        else
+        {
+            // dom true, block false
+            combinedVN = vnStore->VNForFunc(TYP_INT, (VNFunc)GT_AND, domCmpNormVN,
+                                            vnStore->VNForFunc(TYP_INT, (VNFunc)GT_NOT, blockCmpNormVN));
+        }
+    }
+    else
+    {
+        if (trueFromBlockReachesBlockC)
+        {
+            // dom false, block true
+            combinedVN = vnStore->VNForFunc(TYP_INT, (VNFunc)GT_AND,
+                                            vnStore->VNForFunc(TYP_INT, (VNFunc)GT_NOT, domCmpNormVN), blockCmpNormVN);
+        }
+        else
+        {
+            // both false
+            combinedVN =
+                vnStore->VNForFunc(TYP_INT, (VNFunc)GT_AND, vnStore->VNForFunc(TYP_INT, (VNFunc)GT_NOT, domCmpNormVN),
+                                   vnStore->VNForFunc(TYP_INT, (VNFunc)GT_NOT, blockCmpNormVN));
+        }
+    }
+
+    JITDUMP("Combined condition (domBlock->block->blockC) is " FMT_VN ": ", combinedVN);
+    JITDUMPEXEC(vnStore->vnDump(this, combinedVN));
+    JITDUMP("\n");
+
+    // Form the alternate vn where domBlock reaches blockC directly (domBlock->blockC)
+    //
+    ValueNum alternateVN = ValueNumStore::NoVN;
+
+    if (trueReaches)
+    {
+        // domBlock (false) -> blockC
+        alternateVN = vnStore->VNForFunc(TYP_INT, (VNFunc)GT_NOT, domCmpNormVN);
+    }
+    else
+    {
+        // domBlock (true) -> blockC
+        alternateVN = domCmpNormVN;
+    }
+
+    JITDUMP("Alternate condition (dom->!block->blockC is " FMT_VN ": ", alternateVN);
+    JITDUMPEXEC(vnStore->vnDump(this, alternateVN));
+    JITDUMP("\n");
+
+    // Form the total vn (domBlock->!block->blockC OR domBlock->block->blockC)
+    //
+    ValueNum totalVN = vnStore->VNForFunc(TYP_INT, (VNFunc)GT_OR, combinedVN, alternateVN);
+
+    JITDUMP("Total condition (dom->(...)->blockC is " FMT_VN ": ", totalVN);
+    JITDUMPEXEC(vnStore->vnDump(this, totalVN));
+    JITDUMP("\n");
+
+    // If domBlock reaches C by false path, we need to negate the above.
+    //
+    // `trueReaches` tells us how domBlock reaches block, so if it is true,
+    // domBlock reaches C by the false path.
+    //
+    if (trueReaches)
+    {
+        totalVN = vnStore->VNForFunc(TYP_INT, VNFunc(GT_NOT), totalVN);
+        JITDUMP("blockC reached from domBlock via fall through (false path); inverting condition " FMT_VN ": ",
+                totalVN);
+        JITDUMPEXEC(vnStore->vnDump(this, totalVN));
+        JITDUMP("\n");
+    }
+
+    // Look at the total relation. Ideally it is relop**(x,y).
+    // If it is some othe VN func we won't know how to alter the domBlock to do the right thing.
+    // (presumably we could actually materialize a compound test ...?)
+    //
+    VNFuncApp totalFN;
+    if (vnStore->GetVNFunc(totalVN, &totalFN))
+    {
+        // Verify we simplified to a relop
+        //
+        if (!vnStore->IsVNFuncAppRelop(totalFN))
+        {
+            JITDUMP("Could not simplify the path expression, sorry.\n");
+            return false;
+        }
+
+        // grab old Conservative VN
+        //
+        ValueNum domCmpCnsVN    = ValueNumStore::NoVN;
+        ValueNum domCmpCnsExcVN = ValueNumStore::NoVN;
+        vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Conservative), &domCmpCnsVN, &domCmpCnsExcVN);
+
+        genTreeOps newOper    = GT_COUNT;
+        bool       isUnsigned = false;
+
+        if (totalFN.m_func < VNF_Boundary)
+        {
+            newOper = (genTreeOps)totalFN.m_func;
+        }
+        else
+        {
+            isUnsigned = true;
+            switch (totalFN.m_func)
+            {
+                case VNF_LE_UN:
+                    newOper = GT_LE;
+                    break;
+                case VNF_LT_UN:
+                    newOper = GT_LT;
+                    break;
+                case VNF_GT_UN:
+                    newOper = GT_GT;
+                    break;
+                case VNF_GE_UN:
+                    newOper = GT_GE;
+                    break;
+                default:
+                    assert(!"unexpected VNF");
+                    return false;
+            }
+        }
+
+        JITDUMP("changing relop in domBlock " FMT_BB " to %s%s\n", domBlock->bbNum, GenTree::OpName(newOper),
+                isUnsigned ? " (unsigned)" : "");
+
+        // change operation
+        //
+        if (domCmpTree->IsUnsigned())
+        {
+            domCmpTree->ClearUnsigned();
+        }
+
+        domCmpTree->SetOper(newOper);
+
+        if (isUnsigned)
+        {
+            domCmpTree->SetUnsigned();
+        }
+
+        // fix Liberal VN
+        ValueNum newLiberalVN = vnStore->VNWithExc(totalVN, domCmpExcVN);
+        domCmpTree->SetVN(VNK_Liberal, newLiberalVN);
+
+        // fix Conservative VN
+        //
+        // this is like "change oper" for VNs
+        //
+        VNFuncApp domCmpCnsFN;
+        vnStore->GetVNFunc(domCmpCnsVN, &domCmpCnsFN);
+
+        ValueNum newConservativeVN =
+            vnStore->VNWithExc(vnStore->VNForFunc(TYP_INT, totalFN.m_func, domCmpCnsFN.m_args[0],
+                                                  domCmpCnsFN.m_args[1]),
+                               domCmpCnsExcVN);
+
+        domCmpTree->SetVN(VNK_Conservative, newConservativeVN);
+
+        JITDUMP("Will modify block " FMT_BB " to always flow to blockD " FMT_BB "\n", block->bbNum, blockD->bbNum);
+
+        Statement* const lastStmt = block->lastStmt();
+        fgRemoveStmt(block, lastStmt);
+
+        if (trueFromBlockReachesBlockC)
+        {
+            // BlockD is reachable along the false (fall through) path.
+            // Change block to always fall through.
+            //
+            fgRemoveRefPred(block->bbJumpDest, block);
+            block->bbJumpKind = BBJ_NONE;
+        }
+        else
+        {
+            // BlockD is reachable along the true (jump) path.
+            // Change block to always jump.
+            //
+            fgRemoveRefPred(block->bbNext, block);
+            block->bbJumpKind = BBJ_ALWAYS;
+        }
+
+        return true;
+    }
+    else
+    {
+        // We simplified the relop to a constant or other leaf. This is a surprise.
+        // If a constant, block's relop was predictable given the outcome
+        // of the current domBlock relop. We ought to have handled that case by inference.
+        //
+        JITDUMP("Unexpectedly simple path expression, sorry.\n");
+        return false;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optTraceLinearChain: search for the endpoint of linear flow
+//    beginning from a given block
+//
+// Arguments:
+//    fromBlock: start of possible linear flow path
+//    endBlock: maximum extent of linear flow path (nullptr if not known)
+//    hasSideEffect [out]: set if any block in the path has a visible side effect
+//       does not include effects in the ending block
+//    tryRepair: if true, try running optRedundantBranch to create linear flow
+//
+// Returns:
+//    Block just after the last block in linear flow.
+//      If the linear flow path is empty (fromBlock is a fork or join) this will be from fromBlock.
+//      If the linear flow path is not empty and reaches toBlock, return value will be toBlock.
+//      Else the return value will be some fork or join or no-successor block.
+//
+//    HasSideEffect flag is set if any block on the path has a visible effect.
+//
+//    If repair mode is enabled, this method may modify flow along the path as it will
+//    recursively invoke the branch optimizer to remove conditional branches and expose
+//    latent linear flow.
+//
+BasicBlock* Compiler::optTraceLinearFlow(BasicBlock* const fromBlock,
+                                         BasicBlock* const toBlock,
+                                         bool*             hasSideEffect,
+                                         bool              tryRepair)
+{
+    BasicBlock* traceBlock = fromBlock;
+    bool        sideEffect = !optHasIgnorableSideEffects(traceBlock);
+
+    while ((traceBlock != toBlock) && (traceBlock->countOfInEdges() == 1))
+    {
+        BasicBlock* traceSucc = traceBlock->GetUniqueSucc();
+        if (traceSucc == nullptr)
+        {
+            if (!tryRepair)
+            {
+                break;
+            }
+
+            JITDUMP("optTraceLinearFlow: trying to linearize at " FMT_BB "\n", traceBlock->bbNum);
+            optRedundantBranch(traceBlock);
+            traceSucc = traceBlock->GetUniqueSucc();
+            if (traceSucc == nullptr)
+            {
+                JITDUMP("optTraceLinearFlow: linearization at " FMT_BB " failed\n", traceBlock->bbNum);
+                break;
+            }
+        }
+
+        traceBlock = traceSucc;
+
+        if (!sideEffect)
+        {
+            sideEffect = !optHasIgnorableSideEffects(traceBlock);
+        }
+    }
+
+    *hasSideEffect = sideEffect;
+    return traceBlock;
+}
+
+//------------------------------------------------------------------------
+// optHasIgnorableSideEffects: true if this block is effectively empty
+//    despite having statements in it.
+//
+// Arguments:
+//    block: block in question
+//
+// Returns:
+//    true if block is empty, or only has assignments to locals
+//    that don't live past this block,
+//    or statements with no side effects.
+//
+// Notes:
+//    Such blocks are created by RBO by optimizing away branches
+//    fed by non-global assignments.
+//
+bool Compiler::optHasIgnorableSideEffects(BasicBlock* const block)
+{
+    Statement* const lastStmt = block->lastStmt();
+
+    if (lastStmt != nullptr)
+    {
+        Statement* stmt = lastStmt;
+
+        do
+        {
+            GenTree* const tree = stmt->GetRootNode();
+            stmt                = stmt->GetPrevStmt();
+
+            if ((tree->gtFlags & GTF_SIDE_EFFECT) == 0)
+            {
+                // No side effects at all
+                continue;
+            }
+
+            if ((tree->gtFlags & GTF_SIDE_EFFECT) != GTF_ASG)
+            {
+                JITDUMP("SE in " FMT_BB " [%06u]", block->bbNum, dspTreeID(tree));
+                return false;
+            }
+
+            // Only assignment effects
+            //
+            if (!tree->OperIsLocalStore())
+            {
+                JITDUMP("NON-ASG in " FMT_BB " [%06u]", block->bbNum, dspTreeID(tree));
+                return false;
+            }
+
+            // Bail if there are embedded assigments.
+            //
+            if ((tree->AsOp()->gtOp1->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                JITDUMP("EMBED-ASG in " FMT_BB " [%06u]", block->bbNum, dspTreeID(tree));
+                return false;
+            }
+
+            GenTreeLclVarCommon* const lhsLcl = tree->AsLclVarCommon();
+
+            if (!lhsLcl->HasSsaName())
+            {
+                JITDUMP("NO-SSA in " FMT_BB " [%06u] V%02u", block->bbNum, dspTreeID(tree), lhsLcl->GetLclNum());
+                return false;
+            }
+
+            unsigned const      lclNum    = lhsLcl->GetLclNum();
+            unsigned const      ssaNum    = lhsLcl->GetSsaNum();
+            LclVarDsc* const    varDsc    = lvaGetDesc(lclNum);
+            LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
+
+            if (ssaVarDsc->HasGlobalUse())
+            {
+                JITDUMP("GLOBAL-USE in " FMT_BB " at [%06u]  V%02u.%u", block->bbNum, dspTreeID(tree), lclNum, ssaNum);
+                return false;
+            }
+
+            // This assignment of lclNum dies in this block, and
+            // no statement after the current one is live, so this
+            // assignment is also dead.
+            //
+            // Keep walking back...
+            //
+            continue;
+        } while (stmt != lastStmt);
+    }
+
     return true;
 }
 

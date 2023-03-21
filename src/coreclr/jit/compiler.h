@@ -7267,6 +7267,12 @@ public:
     PhaseStatus optRedundantBranches();
     bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
+    bool optHasIgnorableSideEffects(BasicBlock* const block);
+    BasicBlock* optTraceLinearFlow(BasicBlock* const fromBlock,
+                                   BasicBlock* const toBlock,
+                                   bool*             hasSideEffects,
+                                   bool              tryRepair);
+    bool optSubsumeRelop(BasicBlock* const block, BasicBlock* const domBlock, bool trueReaches);
     bool optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
     bool optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
