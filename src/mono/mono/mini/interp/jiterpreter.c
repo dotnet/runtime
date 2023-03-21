@@ -878,7 +878,7 @@ typedef struct {
 	gint64 hit_count;
 	JiterpreterThunk thunk;
 	int size_of_trace;
-	gint32 total_opcodes;
+	int penalty_total;
 } TraceInfo;
 
 // The maximum number of trace segments used to store TraceInfo. This limits
@@ -1337,6 +1337,7 @@ mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
 #define TRACE_EFFECTIVE_DISTANCE_LIMIT 64
 #define TRACE_LENGTH_DIVISOR 2
 #define TRACE_THRESHOLD_DIVISOR 3.0
+#define TRACE_MONITORING_DETAILED FALSE
 
 ptrdiff_t
 mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
@@ -1354,26 +1355,25 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 	cinfo.backward_branch_taken = 0;
 	cinfo.bailout_opcode_count = -1;
 
-	ptrdiff_t result = thunk(_frame, locals, &cinfo);
+	InterpFrame *frame = _frame;
+
+	ptrdiff_t result = thunk(frame, locals, &cinfo);
 	// If a backward branch was taken, we can treat the trace as if it successfully
 	//  executed at least one time. We don't know how long it actually ran, but back
 	//  branches are almost always going to be loops. It's fine if a bailout happens
 	//  after multiple loop iterations.
-	gint32 effective_distance = MIN(info->size_of_trace / TRACE_LENGTH_DIVISOR, TRACE_EFFECTIVE_DISTANCE_LIMIT),
-		effective_opcode_count = cinfo.backward_branch_taken || (cinfo.bailout_opcode_count == -1)
-			? effective_distance // FIXME
-			: cinfo.bailout_opcode_count;
+	if ((cinfo.bailout_opcode_count >= 0) && !cinfo.backward_branch_taken) {
+		int penalty = (cinfo.bailout_opcode_count < mono_opt_jiterpreter_trace_monitoring_short_distance)
+			? 2
+			: (
+				(cinfo.bailout_opcode_count >= mono_opt_jiterpreter_trace_monitoring_long_distance)
+				? 0
+				: 1
+			);
+		info->penalty_total += penalty;
 
-	InterpFrame *frame = _frame;
-
-	/*
-	if (cinfo.bailout_opcode_count >= 0)
-		g_print("trace #%d @%d '%s' bailout recorded at opcode #%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count);
-	*/
-
-	// Add the effective opcode count (either the location of the bailout, or a suitably large value)
-	//  to the sum, so we can compute an average later.
-	info->total_opcodes += effective_opcode_count;
+		// g_print("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
+	}
 
 	gint64 hit_count = info->hit_count++ - mono_opt_jiterpreter_minimum_trace_hit_count;
 	if (hit_count == mono_opt_jiterpreter_trace_monitoring_period) {
@@ -1382,23 +1382,22 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 		*mutable_ip = MINT_TIER_NOP_JITERPRETER;
 
 		mono_memory_barrier ();
-		double average_opcodes = info->total_opcodes / (double)hit_count;
-		double threshold = mono_opt_jiterpreter_trace_average_opcodes_threshold,
-			low_threshold = info->size_of_trace / TRACE_THRESHOLD_DIVISOR; // FIXME
-		// Don't reject short traces as long as they run mostly to the end, we already
-		//  decided previously that they are worth keeping based on our other heuristics
-		if (low_threshold < threshold)
-			threshold = low_threshold;
+		double average_penalty = info->penalty_total / (double)hit_count;
+		double threshold = (mono_opt_jiterpreter_trace_monitoring_max_average_penalty / 100);
 
-		if (average_opcodes >= threshold) {
+		if (average_penalty <= threshold) {
 			*(volatile JiterpreterThunk*)(ip + 1) = thunk;
 			mono_memory_barrier ();
 			*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
-			// g_print("trace #%d @%d '%s' accepted; average_opcodes %f >= %f\n", index, ip, frame->imethod->method->name, average_opcodes, threshold);
+			if (mono_opt_jiterpreter_stats_enabled && TRACE_MONITORING_DETAILED)
+				g_print ("trace #%d @%d '%s' accepted; average_penalty %f <= %f\n", index, ip, frame->imethod->method->name, average_penalty, threshold);
 		} else {
 			traces_rejected++;
-			if (mono_opt_jiterpreter_stats_enabled)
-				g_print("trace #%d @%d '%s' rejected; average_opcodes %f < %f\n", index, ip, frame->imethod->method->name, average_opcodes, threshold);
+			if (mono_opt_jiterpreter_stats_enabled) {
+				char * full_name = mono_method_get_full_name (frame->imethod->method);
+				g_print ("trace #%d @%d '%s' rejected; average_penalty %f > %f\n", index, ip, full_name, average_penalty, threshold);
+				g_free (full_name);
+			}
 		}
 	}
 

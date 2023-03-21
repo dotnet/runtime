@@ -147,7 +147,9 @@ export function generate_wasm_body (
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, inBranchBlock = false,
         firstOpcodeInBlock = true;
-    let result = 0;
+    let result = 0,
+        prologueOpcodeCounter = 0,
+        conditionalOpcodeCounter = 0;
     const traceIp = ip;
 
     addressTakenLocals.clear();
@@ -220,6 +222,11 @@ export function generate_wasm_body (
             inBranchBlock = true;
             firstOpcodeInBlock = true;
             eraseInferredState();
+            // Monitoring wants an opcode count that is a measurement of how many opcodes
+            //  we definitely executed, so we want to ignore any opcodes that might
+            //  have been skipped due to forward branching. This gives us an approximation
+            //  of that by only counting how far we are from the most recent branch target
+            conditionalOpcodeCounter = 0;
         }
 
         isFirstInstruction = false;
@@ -395,6 +402,7 @@ export function generate_wasm_body (
                 }
                 break;
 
+            case MintOpcode.MINT_TIER_MONITOR_JITERPRETER:
             case MintOpcode.MINT_TIER_PREPARE_JITERPRETER:
             case MintOpcode.MINT_TIER_NOP_JITERPRETER: // FIXME: Should we abort for NOPs like ENTERs?
             case MintOpcode.MINT_NOP:
@@ -827,7 +835,7 @@ export function generate_wasm_body (
                     // We generate a bailout instead of aborting, because we don't want calls
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
-                    append_exit(builder, ip, result, BailoutReason.Call);
+                    append_exit(builder, ip, prologueOpcodeCounter + conditionalOpcodeCounter, BailoutReason.Call);
                     isLowValueOpcode = true;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
@@ -847,7 +855,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CALL_DELEGATE:
                 // See comments for MINT_CALL
                 if (builder.branchTargets.size > 0) {
-                    append_exit(builder, ip, result,
+                    append_exit(builder, ip, prologueOpcodeCounter + conditionalOpcodeCounter,
                         opcode == MintOpcode.MINT_CALL_DELEGATE
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
@@ -1157,7 +1165,7 @@ export function generate_wasm_body (
                     // complex safepoint branches, just generate a bailout
                     if (builder.branchTargets.size > 0) {
                         // FIXME: Try to reduce the number of these
-                        append_exit(builder, ip, result, BailoutReason.ComplexBranch);
+                        append_exit(builder, ip, prologueOpcodeCounter + conditionalOpcodeCounter, BailoutReason.ComplexBranch);
                         isLowValueOpcode = true;
                     } else
                         ip = abort;
@@ -1202,8 +1210,13 @@ export function generate_wasm_body (
                 builder.traceBuf.push(stmtText);
             }
 
-            if (!isLowValueOpcode)
+            if (!isLowValueOpcode) {
+                if (inBranchBlock)
+                    conditionalOpcodeCounter++;
+                else
+                    prologueOpcodeCounter++;
                 result++;
+            }
 
             ip += <any>(info[1] * 2);
             if (<any>ip <= (<any>endOfBody))
