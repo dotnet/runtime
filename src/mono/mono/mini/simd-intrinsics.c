@@ -1340,14 +1340,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!type_enum_is_float (arg0_type))
 			return NULL;
 #ifdef TARGET_ARM64
-		if (!COMPILE_LLVM(cfg)) {
-			int ceil_or_floor = id == SN_Ceiling ? OP_CEIL : OP_FLOOR;
-			return emit_simd_ins_for_sig (cfg, klass, OP_XUNOP, ceil_or_floor, arg0_type, fsig, args);
-		}
-		else {
-			int ceil_or_floor = id == SN_Ceiling ? INTRINS_AARCH64_ADV_SIMD_FRINTP : INTRINS_AARCH64_ADV_SIMD_FRINTM;
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
-		}
+		int ceil_or_floor = id == SN_Ceiling ? INTRINS_AARCH64_ADV_SIMD_FRINTP : INTRINS_AARCH64_ADV_SIMD_FRINTM;
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
 #elif defined(TARGET_AMD64)
 		if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41))
 			return NULL;
