@@ -1120,10 +1120,25 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/ReflectObj/reflectobj/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/BaseFinal/basefinal/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/NDPin/ndpinfinal/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlbigleak/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/doublinknoleak/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/doublinknoleak2/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlbigleakthd/**">
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/doublinkstay/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/doublinkgen/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlbigleakthd/**">
