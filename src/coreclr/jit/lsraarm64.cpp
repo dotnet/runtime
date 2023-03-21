@@ -169,22 +169,18 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP candidates, RefPosition
 {
     assert(compiler->info.needsConsecutiveRegisters);
     regMaskTP result = candidates & m_AvailableRegs;
-    if (!refPosition->isFirstRefPositionOfConsecutiveRegisters())
+    if (!refPosition->isFirstRefPositionOfConsecutiveRegisters() || (result == RBM_NONE))
     {
         return result;
     }
 
     unsigned int registersNeeded = refPosition->regCount;
-
-
     regMaskTP    currAvailableRegs        = result;
     regMaskTP    overallResult            = RBM_NONE;
     regMaskTP    consecutiveResult        = RBM_NONE;
     regMaskTP    consecutiveResultForBusy = RBM_NONE;
     regMaskTP    busyRegsInThisLocation   = regsBusyUntilKill | regsInUseThisLocation;
 
-    if (BitOperations::PopCount(currAvailableRegs) >= registersNeeded)
-    {
 // At this point, for 'n' registers requirement, if Rm+1, Rm+2, Rm+3, ..., Rm+k are
 // available, create the mask only for Rm+1, Rm+2, ..., Rm+(k-n+1) to convey that it
 // is safe to assign any of those registers, but not beyond that.
@@ -193,7 +189,6 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP candidates, RefPosition
     regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
     consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
-
 
         DWORD regAvailableStartIndex = 0, regAvailableEndIndex = 0;
 
@@ -223,7 +218,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP candidates, RefPosition
                     trackForBusyCandidates   = false;
                     consecutiveResultForBusy = RBM_NONE;
                 }
-                else
+            else if (trackForBusyCandidates)
                 {
                     // We reached a set of registers where there are not enough consecutive registers.
                     // Move a registersNeeded size window for all the available registers and track for which
@@ -296,7 +291,6 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP candidates, RefPosition
             }
             currAvailableRegs &= ~endMask;
         } while (currAvailableRegs != RBM_NONE);
-    }
 
     if (overallResult != RBM_NONE)
     {
