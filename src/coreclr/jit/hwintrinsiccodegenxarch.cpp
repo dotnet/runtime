@@ -1781,7 +1781,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             assert(testIns != INS_invalid);
             assert(emitter::isMaskReg(op1Reg));
 
-            emit->emitIns_R_R(testIns, attr, op1Reg, op1Reg);
+            emit->emitIns_R_R(testIns, EA_8BYTE, op1Reg, op1Reg);
             break;
         }
 

@@ -621,11 +621,6 @@ INST3(kortestw,      "kortestw",         IUM_WR, BAD_CODE,     BAD_CODE,     PAC
 INST3(kortestd,      "kortestd",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK3(0x66, 0x0F, 0x98),                  INS_TT_NONE,    Writes_ZF | Writes_CF ) // W1 
 INST3(kortestq,      "kortestq",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK2(0x0F, 0x98),                        INS_TT_NONE,    Writes_ZF | Writes_CF ) // W1
 
-INST3(knotb,         "knotb",           IUM_WR, BAD_CODE,     BAD_CODE,     PACK3(0x66, 0x0F, 0x44),                   INS_TT_NONE,    INS_FLAGS_None )
-INST3(knotw,         "knotw",           IUM_WR, BAD_CODE,     BAD_CODE,     PACK2(0x0F, 0x44),                         INS_TT_NONE,    INS_FLAGS_None )
-INST3(knotd,         "knotd",           IUM_WR, BAD_CODE,     BAD_CODE,     PACK3(0x66, 0x0F, 0x44),                   INS_TT_NONE,    INS_FLAGS_None ) // W1
-INST3(knotq,         "knotq",           IUM_WR, BAD_CODE,     BAD_CODE,     PACK2(0x0F, 0x44),                         INS_TT_NONE,    INS_FLAGS_None ) // W1
-
 INST3(LAST_K_INSTRUCTION, "LAST_K_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None )
 
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)

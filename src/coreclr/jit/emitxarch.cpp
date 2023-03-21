@@ -18313,17 +18313,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        // TODO-AVX512-XARCH double check
-        case INS_knotb:
-        case INS_knotw:
-        case INS_knotd:
-        case INS_knotq:
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            break;
-        }
-
         case INS_kortestb:
         case INS_kortestw:
         case INS_kortestd:
