@@ -1825,9 +1825,6 @@
   <data name="ArgumentOutOfRange_InvalidUTF32" xml:space="preserve">
     <value>A valid UTF32 value is between 0x000000 and 0x10ffff, inclusive, and should not include surrogate codepoint values (0x00d800 ~ 0x00dfff).</value>
   </data>
-  <data name="ArgumentOutOfRange_InvalidString" xml:space="preserve">
-    <value>Value does not refer to a valid string.</value>
-  </data>
   <data name="ArgumentOutOfRange_Length" xml:space="preserve">
     <value>The specified length exceeds maximum capacity of SecureString.</value>
   </data>
