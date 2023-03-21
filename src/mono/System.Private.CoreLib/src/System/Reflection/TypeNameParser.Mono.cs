@@ -63,10 +63,10 @@ namespace System.Reflection
             var name = new AssemblyName(assemblyName);
 
             Assembly? assembly;
-            if (_assemblyResolver != null)
+            if (_assemblyResolver is not null)
             {
                 assembly = _assemblyResolver(name);
-                if (assembly == null && _throwOnError)
+                if (assembly is null && _throwOnError)
                 {
                     throw new FileNotFoundException(SR.Format(SR.FileNotFound_ResolveAssembly, assemblyName));
                 }
@@ -102,7 +102,7 @@ namespace System.Reflection
             Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
         private Type? GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string? assemblyNameIfAny)
         {
-            Assembly? assembly = (assemblyNameIfAny != null) ? ResolveAssembly(assemblyNameIfAny) : null;
+            Assembly? assembly = (assemblyNameIfAny is not null) ? ResolveAssembly(assemblyNameIfAny) : null;
 
             // Both the external type resolver and the default type resolvers expect escaped type names
             string escapedTypeName = EscapeTypeName(typeName);
@@ -110,15 +110,15 @@ namespace System.Reflection
             Type? type;
 
             // Resolve the top level type.
-            if (_typeResolver != null)
+            if (_typeResolver is not null)
             {
                 type = _typeResolver(assembly, escapedTypeName, _ignoreCase);
 
-                if (type == null)
+                if (type is null)
                 {
                     if (_throwOnError)
                     {
-                        throw new TypeLoadException(assembly == null ?
+                        throw new TypeLoadException(assembly is null ?
                             SR.Format(SR.TypeLoad_ResolveType, escapedTypeName) :
                             SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, escapedTypeName, assembly.FullName));
                     }
@@ -127,7 +127,7 @@ namespace System.Reflection
             }
             else
             {
-                if (assembly == null)
+                if (assembly is null)
                 {
                     ref StackCrawlMark stackMark = ref Unsafe.AsRef<StackCrawlMark>(_stackMark);
 
@@ -138,7 +138,7 @@ namespace System.Reflection
                     type = assembly.GetType(escapedTypeName, _throwOnError, _ignoreCase);
                 }
 
-                if (type == null)
+                if (type is null)
                 {
                     return null;
                 }
@@ -152,7 +152,7 @@ namespace System.Reflection
 
                 type = type.GetNestedType(nestedTypeNames[i], bindingFlags);
 
-                if (type == null)
+                if (type is null)
                 {
                     if (_throwOnError)
                     {

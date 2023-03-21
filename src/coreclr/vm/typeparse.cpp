@@ -1080,9 +1080,8 @@ TypeName::GetTypeHaveAssembly(
                 break;
 
             if (th.GetAssembly() != pAssembly)
-            {   // It is forwarded type
-
-                // Use the found assembly class loader for potential nested types search
+            {
+                // For forwarded type, use the found assembly class loader for potential nested types search
                 // The nested type has to be in the same module as the nesting type, so it doesn't make
                 // sense to follow the same chain of type forwarders again for the nested type
                 pClassLoader = th.GetAssembly()->GetLoader();

@@ -338,7 +338,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetLocation(QCall::AssemblyHandle pAsse
 extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle assemblyHandle,
     LPCSTR szTypeName,
     LPCSTR * rgszNestedTypeNames,
-    INT32 cNestedTypeNamesLength,
+    int32_t cNestedTypeNamesLength,
     QCall::ObjectHandleOnStack retType)
 {
     CONTRACTL
@@ -358,7 +358,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle assem
 
     NameHandle typeName(pManifestModule, mdtBaseType);
 
-    for (INT32 i = -1; i < cNestedTypeNamesLength; i++)
+    for (int32_t i = -1; i < cNestedTypeNamesLength; i++)
     {
         typeName.SetName((i == -1) ? szTypeName : rgszNestedTypeNames[i]);
 
@@ -371,9 +371,8 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle assem
             break;
 
         if (th.GetAssembly() != pAssembly)
-        {   // It is forwarded type
-
-            // Use the found assembly class loader for potential nested types search
+        {
+            // For forwarded type, use the found assembly class loader for potential nested types search
             // The nested type has to be in the same module as the nesting type, so it doesn't make
             // sense to follow the same chain of type forwarders again for the nested type
             pClassLoader = th.GetAssembly()->GetLoader();
@@ -392,7 +391,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle assem
 extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHandle assemblyHandle,
     LPCWSTR wszTypeName,
     LPCWSTR* rgwszNestedTypeNames,
-    INT32 cNestedTypeNamesLength,
+    int32_t cNestedTypeNamesLength,
     QCall::ObjectHandleOnStack retType)
 {
     CONTRACTL
@@ -415,7 +414,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
     // Set up the name handle
     typeName.SetCaseInsensitive();
 
-    for (INT32 i = -1; i < cNestedTypeNamesLength; i++)
+    for (int32_t i = -1; i < cNestedTypeNamesLength; i++)
     {
         // each extra name represents one more level of nesting
         StackSString name((i == -1) ? wszTypeName : rgwszNestedTypeNames[i]);
@@ -434,9 +433,8 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
             break;
 
         if (th.GetAssembly() != pAssembly)
-        {   // It is forwarded type
-
-            // Use the found assembly class loader for potential nested types search
+        {
+            // For forwarded type, use the found assembly class loader for potential nested types search
             // The nested type has to be in the same module as the nesting type, so it doesn't make
             // sense to follow the same chain of type forwarders again for the nested type
             pClassLoader = th.GetAssembly()->GetLoader();

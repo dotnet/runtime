@@ -447,8 +447,6 @@ namespace System.Reflection
 
             public AssemblyQualifiedTypeName(TypeName nonQualifiedTypeName, string assemblyName)
             {
-                Debug.Assert(nonQualifiedTypeName != null);
-                Debug.Assert(assemblyName != null);
                 _nonQualifiedTypeName = nonQualifiedTypeName;
                 _assemblyName = assemblyName;
             }
@@ -505,11 +503,14 @@ namespace System.Reflection
         private sealed class ModifierTypeName : TypeName
         {
             private readonly TypeName _elementTypeName;
+
+            // Positive value is multi-dimensional array rank.
+            // Negative value is modifier encoded using constants below.
             private readonly int _rankOrModifier;
 
-            public const int Array = 0;
-            public const int Pointer = -1;
-            public const int ByRef = -2;
+            public const int Array = -1;
+            public const int Pointer = -2;
+            public const int ByRef = -3;
 
             public ModifierTypeName(TypeName elementTypeName, int rankOrModifier)
             {
