@@ -168,6 +168,9 @@ namespace System.Net.Tests
         {
             yield return new object[] { WebSocketCloseStatus.EndpointUnavailable, "", WebSocketCloseStatus.EndpointUnavailable };
             yield return new object[] { WebSocketCloseStatus.MandatoryExtension, "StatusDescription", WebSocketCloseStatus.MandatoryExtension };
+            yield return new object[] { WebSocketCloseStatus.ServiceRestart, "ServiceRestart", WebSocketCloseStatus.ServiceRestart };
+            yield return new object[] { WebSocketCloseStatus.TryAgainLater, "TryAgainLater", WebSocketCloseStatus.TryAgainLater };
+            yield return new object[] { WebSocketCloseStatus.BadGateway, "BadGateway", WebSocketCloseStatus.BadGateway };
         }
 
         [ConditionalTheory(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22015", TestPlatforms.AnyUnix)]

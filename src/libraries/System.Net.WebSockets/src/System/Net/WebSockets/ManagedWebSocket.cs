@@ -1059,6 +1059,9 @@ namespace System.Net.WebSockets
                 case WebSocketCloseStatus.NormalClosure:
                 case WebSocketCloseStatus.PolicyViolation:
                 case WebSocketCloseStatus.ProtocolError:
+                case WebSocketCloseStatus.ServiceRestart:
+                case WebSocketCloseStatus.TryAgainLater:
+                case WebSocketCloseStatus.BadGateway:
                     return true;
 
                 default:
