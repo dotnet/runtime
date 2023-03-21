@@ -224,7 +224,7 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-//#define TRACE_GC
+#define TRACE_GC
 //#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
@@ -2371,7 +2371,7 @@ private:
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD void sync_promoted_bytes();
 
-    PER_HEAP_METHOD void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
+    PER_HEAP_ISOLATED_METHOD void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
 
     PER_HEAP_METHOD heap_segment* unlink_first_rw_region (int gen_idx);
 
@@ -3818,6 +3818,7 @@ private:
     // These 2 fields' values do not change but are set/unset per GC
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent gc_start_event;
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent ee_suspend_event;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent gc_idle_thread_event;
 
     // Also updated on the heap#0 GC thread because that's where we are actually doing the decommit.
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC BOOL gradual_decommit_in_progress_p;
@@ -3869,6 +3870,10 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC BOOL dont_restart_ee_p;
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent bgc_start_event;
+
+#ifdef MULTIPLE_HEAPS
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC bool bgc_rebuild_free_list;
+#endif //MULTIPLE_HEAPS
 
 #ifdef BGC_SERVO_TUNING
     // Total allocated last BGC's plan + between last and this bgc +
@@ -4331,6 +4336,7 @@ public:
 #ifdef MULTIPLE_HEAPS
     // Init-ed in GCHeap::Initialize
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int n_heaps;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int n_max_heaps;
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_BASICFREEZE
