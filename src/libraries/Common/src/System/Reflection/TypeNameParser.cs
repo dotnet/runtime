@@ -289,7 +289,7 @@ namespace System.Reflection
                 if (token != TokenType.Other)
                     break;
                 src++;
-                if (c == '\\')
+                if (c == '\\') // Check for escaped character
                 {
                     // Update error location
                     _errorIndex = src - 1;
