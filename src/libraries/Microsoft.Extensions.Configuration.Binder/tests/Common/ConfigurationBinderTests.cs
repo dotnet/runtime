@@ -1434,5 +1434,75 @@ namespace Microsoft.Extensions
             Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
             Assert.Equal(2, options.OtherCode); // doesn't exist in configuration. the setter sets default value '2'
         }
+
+        [Fact]
+        public void RecursiveTypeGraphs_DirectRef()
+        {
+            var data = @"{
+                ""MyString"":""Hello"",
+                ""MyClass"": {
+                    ""MyString"": ""World"",
+                    ""MyClass"": {
+                        ""MyString"": ""World"",
+                        ""MyClass"": null
+                    }
+                }
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                .AddJsonStream(TestStreamHelpers.StringToStream(data))
+                .Build();
+
+            var obj = configuration.Get<ClassWithDirectSelfReference>();
+            Assert.Equal("Hello", obj.MyString);
+
+            var nested = obj.MyClass;
+            Assert.Equal("World", nested.MyString);
+
+            var deeplyNested = nested.MyClass;
+            Assert.Equal("World", deeplyNested.MyString);
+            Assert.Null(deeplyNested.MyClass);
+        }
+
+        public class ClassWithDirectSelfReference
+        {
+            public string MyString { get; set; }
+            public ClassWithDirectSelfReference MyClass { get; set; }
+        }
+
+        [Fact]
+        public void RecursiveTypeGraphs_IndirectRef()
+        {
+            var data = @"{
+                ""MyString"":""Hello"",
+                ""MyList"": [{
+                    ""MyString"": ""World"",
+                    ""MyList"": [{
+                        ""MyString"": ""World"",
+                        ""MyClass"": null
+                    }]
+                }]
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                .AddJsonStream(TestStreamHelpers.StringToStream(data))
+                .Build();
+
+            var obj = configuration.Get<ClassWithIndirectSelfReference>();
+            Assert.Equal("Hello", obj.MyString);
+
+            var nested = obj.MyList[0];
+            Assert.Equal("World", nested.MyString);
+
+            var deeplyNested = nested.MyList[0];
+            Assert.Equal("World", deeplyNested.MyString);
+            Assert.Null(deeplyNested.MyList);
+        }
+
+        public class ClassWithIndirectSelfReference
+        {
+            public string MyString { get; set; }
+            public List<ClassWithIndirectSelfReference> MyList { get; set; }
+        }
     }
 }
