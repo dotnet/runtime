@@ -555,6 +555,13 @@ if [[ ! -z "$__TestCollectionTimeoutMins" ]]%3B then
     _WatcherTimeoutMins=$__TestCollectionTimeoutMins
 fi
 
+# The watcher needs a bit of time to start up, capture dumps, clean up, and so on.
+# Because of this, we pass a smaller timeout than the test collection one.
+# For simplicity purposes, we will assume there are no work items with just
+# a one-minute max timeout.
+if (( $_WatcherTimeoutMins > 1 ))%3B then
+    _WatcherTimeoutMins="%24((_WatcherTimeoutMins-1))"
+fi
 
 # The __TestEnv variable may be used to specify a script to source before the test.
 if [ -n "$__TestEnv" ]%3B then
