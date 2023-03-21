@@ -4380,9 +4380,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/ilverify/**">
             <Issue>Build time issue</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/**">
-            <Issue>Build time issue</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS')">
