@@ -236,7 +236,6 @@
       System.Diagnostics.EventLog;
       System.Diagnostics.PerformanceCounter;
       System.DirectoryServices;
-      System.Drawing.Common;
       System.IO.Packaging;
       System.Resources.Extensions;
       System.Security.Cryptography.Pkcs;

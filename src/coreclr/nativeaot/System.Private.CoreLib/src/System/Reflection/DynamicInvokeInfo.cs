@@ -482,27 +482,17 @@ namespace System.Reflection
         // and pass it to CheckArguments().
         // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
         // GCReportingRegistration to safely track references.
-        [StructLayout(LayoutKind.Sequential)]
+        [InlineArray(MaxStackAllocArgCount)]
         private ref struct StackAllocedArguments
         {
             internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
-        [StructLayout(LayoutKind.Sequential)]
+        [InlineArray(MaxStackAllocArgCount)]
         private ref struct StackAllocatedByRefs
         {
             internal ref byte _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private ref byte _arg1;
-            private ref byte _arg2;
-            private ref byte _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
         }
     }
 }

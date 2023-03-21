@@ -62,7 +62,6 @@ void Compiler::fgInit()
     fgBBOrder          = nullptr;
 #endif // DEBUG
 
-    fgBBNumMin        = compIsForInlining() ? impInlineRoot()->fgBBNumMax + 1 : 1;
     fgBBNumMax        = 0;
     fgEdgeCount       = 0;
     fgDomBBcount      = 0;
@@ -1195,7 +1194,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_Create:
                             case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
+                            case NI_Vector512_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
+                            case NI_Vector512_CreateScalarUnsafe:
                             case NI_VectorT256_CreateBroadcast:
                             case NI_X86Base_BitScanForward:
                             case NI_X86Base_X64_BitScanForward:
@@ -1519,6 +1520,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_get_AllBitsSet:
                             case NI_Vector256_get_One:
                             case NI_Vector256_get_Zero:
+                            case NI_Vector512_get_AllBitsSet:
+                            case NI_Vector512_get_One:
+                            case NI_Vector512_get_Zero:
                             case NI_VectorT256_get_AllBitsSet:
                             case NI_VectorT256_get_One:
                             case NI_VectorT256_get_Zero:
@@ -4643,6 +4647,9 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
     BasicBlockFlags originalFlags = block->bbFlags;
     BasicBlock*     prevBb        = block;
 
+    // We use fgSplitBlockAfterStatement() API here to split the block, however, we want to split
+    // it *Before* rather than *After* so if the current statement is the first in the
+    // current block - invoke fgSplitBlockAtBeginning
     if (stmt == block->firstStmt())
     {
         block = fgSplitBlockAtBeginning(prevBb);
@@ -5432,7 +5439,7 @@ bool Compiler::fgRenumberBlocks()
 
     bool     renumbered  = false;
     bool     newMaxBBNum = false;
-    unsigned num         = fgBBNumMin;
+    unsigned num         = 1;
 
     for (BasicBlock* block : Blocks())
     {
@@ -5448,7 +5455,7 @@ bool Compiler::fgRenumberBlocks()
         if (block->bbNext == nullptr)
         {
             fgLastBB  = block;
-            fgBBcount = num - fgBBNumMin + 1;
+            fgBBcount = num;
             if (fgBBNumMax != num)
             {
                 fgBBNumMax  = num;

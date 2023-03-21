@@ -120,7 +120,7 @@ export type MonoConfig = {
      */
     pthreadPoolSize?: number,
     /**
-     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
      */
     startupMemoryCache?: boolean,
     /**
@@ -386,7 +386,7 @@ export interface ExitStatusError {
     new(status: number): any;
 }
 export type PThreadReplacements = {
-    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void,
+    loadWasmModuleToWorker(worker: Worker): Promise<Worker>,
     threadInitTLS: () => void,
     allocateUnusedWorker: () => void,
 }

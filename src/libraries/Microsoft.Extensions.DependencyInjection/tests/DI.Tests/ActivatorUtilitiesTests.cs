@@ -4,7 +4,6 @@
 using System;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using static Microsoft.Extensions.DependencyInjection.Tests.AsyncServiceScopeTests;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
@@ -89,6 +88,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void TypeActivatorThrowsOnNullProvider()
         {
             Assert.Throws<ArgumentNullException>(() => ActivatorUtilities.CreateInstance<ClassWithABCS>(null, "hello"));
+        }
+
+        [Fact]
+        public void FactoryActivatorThrowsOnNullProvider()
+        {
+            var f = ActivatorUtilities.CreateFactory(typeof(ClassWithA), new Type[0]);
+            Assert.Throws<ArgumentNullException>(() => f(serviceProvider: null, null));
         }
 
         [Fact]
