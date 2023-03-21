@@ -1081,8 +1081,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	 */
 	if (method && !callvirt) {
 		/* Avoid the overhead of looking up an already compiled method if possible */
-		if (enable_caching && delegate->method_code && *delegate->method_code) {
-			delegate->method_ptr = *delegate->method_code;
+		if (enable_caching && method == tramp_info->method && tramp_info->method_ptr) {
+			delegate->method_ptr = tramp_info->method_ptr;
 		} else {
 			compiled_method = addr = mono_jit_compile_method (method, error);
 			if (!is_ok (error)) {
@@ -1091,8 +1091,6 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			}
 			addr = mini_add_method_trampoline (method, compiled_method, need_rgctx_tramp, need_unbox_tramp);
 			delegate->method_ptr = addr;
-			if (enable_caching && delegate->method_code)
-				*delegate->method_code = (guint8 *)delegate->method_ptr;
 		}
 	} else {
 		if (need_rgctx_tramp)
