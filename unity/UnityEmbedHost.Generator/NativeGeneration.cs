@@ -12,6 +12,7 @@ static class NativeGeneration
     const string NoNativeWrapperAttributeName = "NoNativeWrapperAttribute";
     public const string NativeWrapperTypeAttributeName = "NativeWrapperTypeAttribute";
     public const string NativeCallbackTypeAttributeName = "NativeCallbackTypeAttribute";
+    public const string NativeWrapperNameAttributeName = "NativeWrapperNameAttribute";
 
     static readonly DiagnosticDescriptor NativeDestinationNotFound = new (
         id: "EMBEDHOSTGEN001",
