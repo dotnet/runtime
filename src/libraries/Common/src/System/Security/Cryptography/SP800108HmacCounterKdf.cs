@@ -558,6 +558,11 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA256:
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
+#if NET8_0_OR_GREATER
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
+#endif
                     break;
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName));

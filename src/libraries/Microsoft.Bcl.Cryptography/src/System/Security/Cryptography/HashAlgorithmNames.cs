@@ -9,5 +9,10 @@ namespace System.Security.Cryptography
         internal const string SHA256 = nameof(SHA256);
         internal const string SHA384 = nameof(SHA384);
         internal const string SHA512 = nameof(SHA512);
+#if NET8_0_OR_GREATER
+        internal const string SHA3_256 = nameof(SHA3_256);
+        internal const string SHA3_384 = nameof(SHA3_384);
+        internal const string SHA3_512 = nameof(SHA3_512);
+#endif
     }
 }
