@@ -24,20 +24,32 @@ internal static class GeneratedConfigurationBinder
             obj.MyInt = int.Parse(stringValue1);
         }
 
-        System.Collections.Generic.List<int> temp2 = obj.MyList;
-        temp2 ??= new System.Collections.Generic.List<int>();
-        BindCore(configuration.GetSection("MyList"), ref temp2);
-        obj.MyList = temp2;
+        global::Microsoft.Extensions.Configuration.IConfigurationSection section2 = configuration.GetSection("MyList");
+        if (HasChildren(section2))
+        {
+            System.Collections.Generic.List<int> temp3 = obj.MyList;
+            temp3 ??= new System.Collections.Generic.List<int>();
+            BindCore(section2, ref temp3);
+            obj.MyList = temp3;
+        }
 
-        System.Collections.Generic.Dictionary<string, string> temp3 = obj.MyDictionary;
-        temp3 ??= new System.Collections.Generic.Dictionary<string, string>();
-        BindCore(configuration.GetSection("MyDictionary"), ref temp3);
-        obj.MyDictionary = temp3;
+        global::Microsoft.Extensions.Configuration.IConfigurationSection section4 = configuration.GetSection("MyDictionary");
+        if (HasChildren(section4))
+        {
+            System.Collections.Generic.Dictionary<string, string> temp5 = obj.MyDictionary;
+            temp5 ??= new System.Collections.Generic.Dictionary<string, string>();
+            BindCore(section4, ref temp5);
+            obj.MyDictionary = temp5;
+        }
 
-        System.Collections.Generic.Dictionary<string, Program.MyClass2> temp4 = obj.MyComplexDictionary;
-        temp4 ??= new System.Collections.Generic.Dictionary<string, Program.MyClass2>();
-        BindCore(configuration.GetSection("MyComplexDictionary"), ref temp4);
-        obj.MyComplexDictionary = temp4;
+        global::Microsoft.Extensions.Configuration.IConfigurationSection section6 = configuration.GetSection("MyComplexDictionary");
+        if (HasChildren(section6))
+        {
+            System.Collections.Generic.Dictionary<string, Program.MyClass2> temp7 = obj.MyComplexDictionary;
+            temp7 ??= new System.Collections.Generic.Dictionary<string, Program.MyClass2>();
+            BindCore(section6, ref temp7);
+            obj.MyComplexDictionary = temp7;
+        }
 
     }
 
@@ -51,9 +63,9 @@ internal static class GeneratedConfigurationBinder
         int element;
         foreach (Microsoft.Extensions.Configuration.IConfigurationSection section in configuration.GetChildren())
         {
-            if (section.Value is string stringValue5)
+            if (section.Value is string stringValue8)
             {
-                element = int.Parse(stringValue5);
+                element = int.Parse(stringValue8);
                 obj.Add(element);
             }
         }
@@ -69,13 +81,13 @@ internal static class GeneratedConfigurationBinder
         string key;
         foreach (Microsoft.Extensions.Configuration.IConfigurationSection section in configuration.GetChildren())
         {
-            if (section.Key is string stringValue6)
+            if (section.Key is string stringValue9)
             {
-                key = stringValue6;
+                key = stringValue9;
                 string element;
-                if (section.Value is string stringValue7)
+                if (section.Value is string stringValue10)
                 {
-                    element = stringValue7;
+                    element = stringValue10;
                     obj[key] = element;
                 }
             }
@@ -92,9 +104,9 @@ internal static class GeneratedConfigurationBinder
         string key;
         foreach (Microsoft.Extensions.Configuration.IConfigurationSection section in configuration.GetChildren())
         {
-            if (section.Key is string stringValue8)
+            if (section.Key is string stringValue11)
             {
-                key = stringValue8;
+                key = stringValue11;
                 if (obj.TryGetValue(key, out Program.MyClass2? element) && element is not null)
                 {
                     BindCore(section, ref element);
@@ -119,4 +131,12 @@ internal static class GeneratedConfigurationBinder
 
     }
 
+    public static bool HasChildren(global::Microsoft.Extensions.Configuration.IConfiguration configuration)
+    {
+        foreach (global::Microsoft.Extensions.Configuration.IConfigurationSection section in configuration.GetChildren())
+        {
+            return true;
+        }
+        return false;
+    }
 }
