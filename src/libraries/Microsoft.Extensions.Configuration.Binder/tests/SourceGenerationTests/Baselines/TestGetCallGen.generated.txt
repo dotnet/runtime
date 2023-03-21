@@ -118,7 +118,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 return true;
             }
-
             return HasChildren(configuration);
         }
 
@@ -128,7 +127,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 return true;
             }
-
             return false;
         }
     }

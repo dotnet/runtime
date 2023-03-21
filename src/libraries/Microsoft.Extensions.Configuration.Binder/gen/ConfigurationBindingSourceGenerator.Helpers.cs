@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -107,79 +108,5 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         private static bool TypesAreEqual(ITypeSymbol first, ITypeSymbol second)
                 => first.Equals(second, SymbolEqualityComparer.Default);
-
-        private sealed class SourceWriter
-        {
-            private readonly StringBuilder _sb = new();
-            private int _indentationLevel;
-
-            public int Length => _sb.Length;
-            public int IndentationLevel => _indentationLevel;
-
-            public void WriteBlockStart(string? declaration = null)
-            {
-                if (declaration is not null)
-                {
-                    WriteLine(declaration);
-                }
-                WriteLine("{");
-                _indentationLevel++;
-            }
-
-            public void WriteBlockEnd(string? extra = null)
-            {
-                _indentationLevel--;
-                Debug.Assert(_indentationLevel > -1);
-                WriteLine($"}}{extra}");
-            }
-
-            public void WriteLine(string source)
-            {
-                _sb.Append(' ', 4 * _indentationLevel);
-                _sb.AppendLine(source);
-            }
-
-            public void WriteBlock(string source)
-            {
-                foreach (string value in source.Split('\n'))
-                {
-                    string line = value.Trim();
-                    switch (line)
-                    {
-                        case "{":
-                            {
-                                WriteBlockStart();
-                            }
-                            break;
-                        case "}":
-                            {
-                                WriteBlockEnd();
-                            }
-                            break;
-                        case "":
-                            {
-                                WriteBlankLine();
-                            }
-                            break;
-                        default:
-                            {
-                                WriteLine(line);
-                            }
-                            break;
-                    }
-                }
-            }
-
-            public void WriteBlankLine() => _sb.AppendLine();
-
-            public void RemoveBlankLine()
-            {
-                int newLineLength = Environment.NewLine.Length;
-                int lastNewLineStartIndex = Length - newLineLength;
-                _sb.Remove(lastNewLineStartIndex, newLineLength);
-            }
-
-            public string GetSource() => _sb.ToString();
-        }
     }
 }

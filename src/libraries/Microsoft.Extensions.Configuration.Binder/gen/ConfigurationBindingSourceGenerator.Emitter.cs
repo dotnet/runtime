@@ -4,10 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -79,8 +77,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitGenerationNamespaceAndHelpers();
 
-                SourceText source = SourceText.From(_writer.GetSource(), Encoding.UTF8);
-                _context.AddSource($"{Identifier.GeneratedConfigurationBinder}.g.cs", source);
+                _context.AddSource($"{Identifier.GeneratedConfigurationBinder}.g.cs", _writer.ToSourceText());
             }
 
             private void EmitConfigureMethod()
@@ -275,10 +272,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 // Resize array and copy fill with additional
                 _writer.WriteBlock($$"""
-{{Identifier.Int32}} {{Identifier.originalCount}} = {{Identifier.obj}}.{{Identifier.Length}};
-{{Identifier.Array}}.{{Identifier.Resize}}(ref {{Identifier.obj}}, {{Identifier.originalCount}} + {{tempVarName}}.{{Identifier.Count}});
-{{tempVarName}}.{{Identifier.CopyTo}}({{Identifier.obj}}, {{Identifier.originalCount}});
-""");
+                    {{Identifier.Int32}} {{Identifier.originalCount}} = {{Identifier.obj}}.{{Identifier.Length}};
+                    {{Identifier.Array}}.{{Identifier.Resize}}(ref {{Identifier.obj}}, {{Identifier.originalCount}} + {{tempVarName}}.{{Identifier.Count}});
+                    {{tempVarName}}.{{Identifier.CopyTo}}({{Identifier.obj}}, {{Identifier.originalCount}});
+                    """);
             }
 
             private void EmitBindCoreImplForDictionary(DictionarySpec type)
@@ -675,11 +672,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitIConfigurationHasValueOrChildrenCheck()
             {
                 _writer.WriteBlock($$"""
-if (!{{GetHelperMethodDisplayString(Identifier.HasValueOrChildren)}}({{Identifier.configuration}}))
-{
-    return default;
-}
-""");
+                    if (!{{GetHelperMethodDisplayString(Identifier.HasValueOrChildren)}}({{Identifier.configuration}}))
+                    {
+                        return default;
+                    }
+                    """);
                 _writer.WriteBlankLine();
             }
 
@@ -700,31 +697,29 @@ if (!{{GetHelperMethodDisplayString(Identifier.HasValueOrChildren)}}({{Identifie
             private void EmitHasValueOrChildrenMethod()
             {
                 _writer.WriteBlock($$"""
-public static bool {{Identifier.HasValueOrChildren}}({{Identifier.IConfiguration}} {{Identifier.configuration}})
-{
-    if (({{Identifier.configuration}} as {{Identifier.IConfigurationSection}})?.{{Identifier.Value}} is not null)
-    {
-        return true;
-    }
-
-    return {{Identifier.HasChildren}}({{Identifier.configuration}});
-}
-""");
+                    public static bool {{Identifier.HasValueOrChildren}}({{Identifier.IConfiguration}} {{Identifier.configuration}})
+                    {
+                        if (({{Identifier.configuration}} as {{Identifier.IConfigurationSection}})?.{{Identifier.Value}} is not null)
+                        {
+                            return true;
+                        }
+                        return {{Identifier.HasChildren}}({{Identifier.configuration}});
+                    }
+                    """);
             }
 
             private void EmitHasChildrenMethod()
             {
                 _writer.WriteBlock($$"""
-public static bool {{Identifier.HasChildren}}({{Identifier.IConfiguration}} {{Identifier.configuration}})
-{
-    foreach ({{Identifier.IConfigurationSection}} {{Identifier.section}} in {{Identifier.configuration}}.{{Identifier.GetChildren}}())
-    {
-        return true;
-    }
-
-    return false;
-}
-""");
+                    public static bool {{Identifier.HasChildren}}({{Identifier.IConfiguration}} {{Identifier.configuration}})
+                    {
+                        foreach ({{Identifier.IConfigurationSection}} {{Identifier.section}} in {{Identifier.configuration}}.{{Identifier.GetChildren}}())
+                        {
+                            return true;
+                        }
+                        return false;
+                    }
+                    """);
             }
 
             private void EmitVarDeclaration(TypeSpec type, string varName) => _writer.WriteLine($"{type.MinimalDisplayString} {varName};");
@@ -747,11 +742,11 @@ public static bool {{Identifier.HasChildren}}({{Identifier.IConfiguration}} {{Id
                 }
 
                 _writer.WriteBlock($$"""
-if ({{Identifier.configuration}} is not {{sectionTypeDisplayString}} {{Identifier.section}})
-{
-    throw new {{exceptionTypeDisplayString}}();
-}
-""");
+                    if ({{Identifier.configuration}} is not {{sectionTypeDisplayString}} {{Identifier.section}})
+                    {
+                        throw new {{exceptionTypeDisplayString}}();
+                    }
+                    """);
             }
 
             private void Emit_NotSupportedException_UnableToBindType(string reason, string typeDisplayString = "{typeof(T)}") =>
@@ -772,11 +767,11 @@ if ({{Identifier.configuration}} is not {{sectionTypeDisplayString}} {{Identifie
                     : Identifier.ArgumentNullException;
 
                 _writer.WriteBlock($$"""
-if ({{argName}} is null)
-{
-    throw new {{exceptionTypeDisplayString}}(nameof({{argName}}));
-}
-""");
+                    if ({{argName}} is null)
+                    {
+                        throw new {{exceptionTypeDisplayString}}(nameof({{argName}}));
+                    }
+                    """);
 
                 _writer.WriteBlankLine();
             }

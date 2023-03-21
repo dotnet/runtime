@@ -139,7 +139,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 return true;
             }
-
             return false;
         }
     }
