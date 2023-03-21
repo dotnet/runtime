@@ -38,6 +38,7 @@ namespace System.Net.Quic.Tests
             find.StartInfo.FileName = "find";
             find.StartInfo.Arguments = "/usr/ -iname libmsquic.so*";
             find.StartInfo.RedirectStandardOutput = true;
+            find.StartInfo.RedirectStandardError = true;
             find.Start();
             string output = await find.StandardOutput.ReadToEndAsync();
             _output.WriteLine(output);

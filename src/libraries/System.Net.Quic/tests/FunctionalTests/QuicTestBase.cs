@@ -45,14 +45,17 @@ namespace System.Net.Quic.Tests
         public unsafe QuicTestBase(ITestOutputHelper output)
         {
             _output = output;
-            _output.WriteLine($"Using {MsQuicApi.MsQuicLibraryVersion}");
+            _output.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{MsQuicApi.MsQuicLibraryVersion}' version.");
 
-            QUIC_SETTINGS settings = default(QUIC_SETTINGS);
-            settings.IsSet.MaxWorkerQueueDelayUs = 1;
-            settings.MaxWorkerQueueDelayUs = (uint)TimeSpan.FromSeconds(2.5).TotalMicroseconds;
-            if (StatusFailed(MsQuicApi.Api.ApiTable->SetParam(null, QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
+            if (IsSupported)
             {
-                _output.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+                QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+                settings.IsSet.MaxWorkerQueueDelayUs = 1;
+                settings.MaxWorkerQueueDelayUs = (uint)TimeSpan.FromSeconds(2.5).TotalMicroseconds;
+                if (StatusFailed(MsQuicApi.Api.ApiTable->SetParam(null, QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
+                {
+                    _output.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+                }
             }
         }
 
