@@ -154,4 +154,36 @@ public class NativeEmbeddingApiTests
     {
         Assert.That(CoreCLRHostNativeWrappers.object_get_class(Activator.CreateInstance(type)!), Is.EqualTo(type));
     }
+
+    [TestCase(typeof(int), 0)]
+    [TestCase(typeof(string), 10)]
+    [TestCase(typeof(ValueAnimal), 5)]
+    [TestCase(typeof(int[]), 2)]
+    [TestCase(typeof(int), 1000000)]
+    public void ArrayLength(Type arrayType, int length)
+    {
+        var arr = Array.CreateInstance(arrayType, length);
+        Assert.That(CoreCLRHostNativeWrappers.array_length(arr), Is.EqualTo(arr.Length));
+    }
+
+    [TestCase(typeof(int), 0, 0)]
+    [TestCase(typeof(int), 3, 10)]
+    [TestCase(typeof(ValueAnimal), 5, 5)]
+    [TestCase(typeof(int), 1000, 1000)]
+    public void ArrayLengthOf2d(Type arrayType, int size0, int size1)
+    {
+        var arr = Array.CreateInstance(arrayType, size0, size1);
+        Assert.That(CoreCLRHostNativeWrappers.array_length(arr), Is.EqualTo(arr.Length));
+    }
+
+    [TestCase(typeof(int), 0, 0, 0)]
+    [TestCase(typeof(int), 3, 10, 1)]
+    [TestCase(typeof(ValueAnimal), 5, 5, 5)]
+    [TestCase(typeof(int[]), 2, 1, 2)]
+    [TestCase(typeof(int), 100, 100, 100)]
+    public void ArrayLengthOf3d(Type arrayType, int size0, int size1, int size2)
+    {
+        var arr = Array.CreateInstance(arrayType, size0, size1, size2);
+        Assert.That(CoreCLRHostNativeWrappers.array_length(arr), Is.EqualTo(arr.Length));
+    }
 }

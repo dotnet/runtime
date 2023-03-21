@@ -128,6 +128,11 @@ static unsafe partial class CoreCLRHost
         [NativeCallbackType("size_t")] int size0, [NativeCallbackType("size_t")] int size1, [NativeCallbackType("size_t")] int size2)
         => Array.CreateInstance(klass.TypeFromHandleIntPtr(), size0, size1, size2).ToNativeRepresentation();
 
+    [NativeWrapperName("coreclr_array_length")]
+    [return: NativeCallbackType("int")]
+    public static int array_length([NativeCallbackType("MonoArray*")] IntPtr array)
+        => ((Array)array.ToManagedRepresentation()).Length;
+
     static StringPtr StringToPtr(string s)
     {
         // Return raw object pointer for now with the NullGC.

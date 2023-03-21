@@ -214,6 +214,38 @@ public class EmbeddingApiTests
         AssertMultiDimensionalArraysAreEquivalent(expected, result);
     }
 
+    [TestCase(typeof(int), 0)]
+    [TestCase(typeof(string), 10)]
+    [TestCase(typeof(ValueAnimal), 5)]
+    [TestCase(typeof(int[]), 2)]
+    [TestCase(typeof(int), 1000000)]
+    public void ArrayLength(Type arrayType, int length)
+    {
+        var arr = Array.CreateInstance(arrayType, length);
+        Assert.That(CoreCLRHostWrappers.array_length(arr), Is.EqualTo(arr.Length));
+    }
+
+    [TestCase(typeof(int), 0, 0)]
+    [TestCase(typeof(int), 3, 10)]
+    [TestCase(typeof(ValueAnimal), 5, 5)]
+    [TestCase(typeof(int), 1000, 1000)]
+    public void ArrayLengthOf2d(Type arrayType, int size0, int size1)
+    {
+        var arr = Array.CreateInstance(arrayType, size0, size1);
+        Assert.That(CoreCLRHostWrappers.array_length(arr), Is.EqualTo(arr.Length));
+    }
+
+    [TestCase(typeof(int), 0, 0, 0)]
+    [TestCase(typeof(int), 3, 10, 1)]
+    [TestCase(typeof(ValueAnimal), 5, 5, 5)]
+    [TestCase(typeof(int[]), 2, 1, 2)]
+    [TestCase(typeof(int), 100, 100, 100)]
+    public void ArrayLengthOf3d(Type arrayType, int size0, int size1, int size2)
+    {
+        var arr = Array.CreateInstance(arrayType, size0, size1, size2);
+        Assert.That(CoreCLRHostWrappers.array_length(arr), Is.EqualTo(arr.Length));
+    }
+
     /// <summary>
     /// NUnit's `Is.EquivalentTo` cannot handle multi-dimensional arrays.  It crashes on GetValue calls.
     /// </summary>
