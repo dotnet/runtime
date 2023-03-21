@@ -16,7 +16,7 @@ namespace System.Net
     /// Represents an IP network with an <see cref="IPAddress"/> containing the network prefix and an <see cref="int"/> defining the prefix length.
     /// </summary>
     /// <remarks>
-    /// This type disallows arbitrary &lt;IP&gt;/&lt;prefix-length&gt; CIDR pairs. <see cref="BaseAddress"/> must be defined so that all bits after the network prefix are set to zero.
+    /// This type disallows arbitrary IP-address/prefix-length CIDR pairs. <see cref="BaseAddress"/> must be defined so that all bits after the network prefix are set to zero.
     /// In other words, <see cref="BaseAddress"/> is always the first usable address of the network.
     /// The constructor and the parsing methods will throw in case there are non-zero bits after the prefix.
     /// </remarks>
@@ -143,19 +143,12 @@ namespace System.Net
         /// <exception cref="FormatException"><paramref name="s"/> is not a valid CIDR network string, or the address contains non-zero bits after the network prefix.</exception>
         public static IPNetwork Parse(ReadOnlySpan<char> s)
         {
-            if (!TryParseCore(s, out IPAddress? address, out int prefixLength))
+            if (!TryParse(s, out IPNetwork result))
             {
                 throw new FormatException(SR.net_bad_ip_network);
             }
 
-            try
-            {
-                return new IPNetwork(address, prefixLength);
-            }
-            catch (Exception inner)
-            {
-                throw new FormatException(inner.Message, inner);
-            }
+            return result;
         }
 
         /// <summary>
@@ -183,35 +176,24 @@ namespace System.Net
         /// <returns><see langword="true"/> if the conversion was succesful; otherwise, <see langword="false"/>.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, out IPNetwork result)
         {
-            if (TryParseCore(s, out IPAddress? address, out int prefixLength) &&
-                prefixLength <= GetMaxPrefixLength(address) && // Parsing with NumberStyles.None ensures that prefixLength is always non-negative.
-                !HasNonZeroBitsAfterNetworkPrefix(address, prefixLength))
-            {
-                result = new IPNetwork(address, prefixLength, false);
-                return true;
-            }
-
-            result = default;
-            return false;
-        }
-
-        private static bool TryParseCore(ReadOnlySpan<char> s, [NotNullWhen(true)] out IPAddress? address, out int prefixLength)
-        {
             int separatorIndex = s.LastIndexOf('/');
             if (separatorIndex >= 0)
             {
                 ReadOnlySpan<char> ipAddressSpan = s.Slice(0, separatorIndex);
                 ReadOnlySpan<char> prefixLengthSpan = s.Slice(separatorIndex + 1);
 
-                if (IPAddress.TryParse(ipAddressSpan, out address) &&
-                    int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out prefixLength))
+                if (IPAddress.TryParse(ipAddressSpan, out IPAddress? address) &&
+                    int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int prefixLength) &&
+                    prefixLength <= GetMaxPrefixLength(address) &&
+                    !HasNonZeroBitsAfterNetworkPrefix(address, prefixLength))
                 {
+                    Debug.Assert(prefixLength >= 0); // Parsing with NumberStyles.None should ensure that prefixLength is always non-negative.
+                    result = new IPNetwork(address, prefixLength, false);
                     return true;
                 }
             }
 
-            address = default;
-            prefixLength = default;
+            result = default;
             return false;
         }
 

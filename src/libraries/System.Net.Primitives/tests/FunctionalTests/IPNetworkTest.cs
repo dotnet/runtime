@@ -13,6 +13,7 @@ namespace System.Net.Primitives.Functional.Tests
             { "A.B.C.D/24" },
             { "127.0.0.1/AB" },
             { "127.0.0.1/-1" },
+            { "127.0.0.1/+1" },
             { "2a01:110:8012::/f" },
             { "" },
         };
