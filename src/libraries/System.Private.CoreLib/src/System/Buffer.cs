@@ -127,6 +127,7 @@ namespace System
             Memmove(ref *(byte*)destination, ref *(byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
+        [Intrinsic] // Unrolled for small constant lengths
         internal static void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.

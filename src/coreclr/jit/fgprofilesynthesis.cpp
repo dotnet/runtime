@@ -14,15 +14,11 @@
 // * faster way of doing fgGetPredForBlock
 // * vet against some real data
 // * IR based heuristics (perhaps)
-// * PGO blend modes, random, etc
-// * Repair mode
-// * Inlinee flow graphs
 // * During Cp, avoid repeatedly propagating through nested loops
 // * Fake BB0 or always force scratch BB
 // * Reconcile with our other loop finding stuff
 // * Stop the upweight/downweight of loops in rest of jit
 // * Durable edge properties (exit, back)
-// * Proper weight comp for finallies
 // * Tweak RunRarely to be at or near zero
 // * OSR entry weight
 // * Special handling for deep nests?
@@ -37,14 +33,6 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    // Just root instances for now.
-    // Need to sort out issues with flow analysis for inlinees.
-    //
-    if (m_comp->compIsForInlining())
-    {
-        return;
-    }
-
     BuildReversePostorder();
     FindLoops();
 
@@ -1218,14 +1206,17 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 
     entryBlock->setBBProfileWeight(entryWeight);
 
-    for (EHblkDsc* const HBtab : EHClauses(m_comp))
+    if (!m_comp->compIsForInlining())
     {
-        if (HBtab->HasFilter())
+        for (EHblkDsc* const HBtab : EHClauses(m_comp))
         {
-            HBtab->ebdFilter->setBBProfileWeight(ehWeight);
-        }
+            if (HBtab->HasFilter())
+            {
+                HBtab->ebdFilter->setBBProfileWeight(ehWeight);
+            }
 
-        HBtab->ebdHndBeg->setBBProfileWeight(ehWeight);
+            HBtab->ebdHndBeg->setBBProfileWeight(ehWeight);
+        }
     }
 }
 
@@ -1256,19 +1247,22 @@ void ProfileSynthesis::ComputeBlockWeights()
     // All finally and fault handlers from outer->inner
     // (walk EH table backwards)
     //
-    for (unsigned i = 0; i < m_comp->compHndBBtabCount; i++)
+    if (!m_comp->compIsForInlining())
     {
-        unsigned const  XTnum = m_comp->compHndBBtabCount - i - 1;
-        EHblkDsc* const HBtab = &m_comp->compHndBBtab[XTnum];
-        if (HBtab->HasFilter())
+        for (unsigned i = 0; i < m_comp->compHndBBtabCount; i++)
         {
-            // Filter subtree includes handler
-            //
-            ComputeBlockWeightsSubgraph(HBtab->ebdFilter);
-        }
-        else
-        {
-            ComputeBlockWeightsSubgraph(HBtab->ebdHndBeg);
+            unsigned const  XTnum = m_comp->compHndBBtabCount - i - 1;
+            EHblkDsc* const HBtab = &m_comp->compHndBBtab[XTnum];
+            if (HBtab->HasFilter())
+            {
+                // Filter subtree includes handler
+                //
+                ComputeBlockWeightsSubgraph(HBtab->ebdFilter);
+            }
+            else
+            {
+                ComputeBlockWeightsSubgraph(HBtab->ebdHndBeg);
+            }
         }
     }
 
