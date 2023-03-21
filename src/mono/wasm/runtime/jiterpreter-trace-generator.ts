@@ -12,7 +12,7 @@ import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
-    append_memset_dest, append_bailout,
+    append_memset_dest, append_bailout, append_exit,
     append_memmove_dest_src, try_append_memset_fast,
     try_append_memmove_fast, counters,
     getMemberOffset, JiterpMember, BailoutReason,
@@ -147,7 +147,9 @@ export function generate_wasm_body (
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, inBranchBlock = false,
         firstOpcodeInBlock = true;
-    let result = 0;
+    let result = 0,
+        prologueOpcodeCounter = 0,
+        conditionalOpcodeCounter = 0;
     const traceIp = ip;
 
     addressTakenLocals.clear();
@@ -196,7 +198,14 @@ export function generate_wasm_body (
             startBranchBlock = isBackBranchTarget || isForwardBranchTarget ||
                 // If a method contains backward branches, we also need to check eip at the first insn
                 //  because a backward branch might target a point in the middle of the trace
-                (isFirstInstruction && backwardBranchTable);
+                (isFirstInstruction && backwardBranchTable),
+            // We want to approximate the number of unconditionally executed instructions along with
+            //  the ones that were probably conditionally executed by the time we reached the exit point
+            // We don't know the exact path that would have taken us to a given point, but it's a reasonable
+            //  guess that methods dense with branches are more likely to take a complex path to reach
+            //  a given exit
+            exitOpcodeCounter = conditionalOpcodeCounter + prologueOpcodeCounter +
+                builder.branchTargets.size;
         let isLowValueOpcode = false,
             skipDregInvalidation = false;
 
@@ -220,6 +229,11 @@ export function generate_wasm_body (
             inBranchBlock = true;
             firstOpcodeInBlock = true;
             eraseInferredState();
+            // Monitoring wants an opcode count that is a measurement of how many opcodes
+            //  we definitely executed, so we want to ignore any opcodes that might
+            //  have been skipped due to forward branching. This gives us an approximation
+            //  of that by only counting how far we are from the most recent branch target
+            conditionalOpcodeCounter = 0;
         }
 
         isFirstInstruction = false;
@@ -387,6 +401,7 @@ export function generate_wasm_body (
                         builder.i32_const(targetTrace);
                         builder.local("frame");
                         builder.local("pLocals");
+                        builder.local("cinfo");
                         builder.callImport("transfer");
                         builder.appendU8(WasmOpcode.return_);
                         ip = abort;
@@ -394,6 +409,7 @@ export function generate_wasm_body (
                 }
                 break;
 
+            case MintOpcode.MINT_TIER_MONITOR_JITERPRETER:
             case MintOpcode.MINT_TIER_PREPARE_JITERPRETER:
             case MintOpcode.MINT_TIER_NOP_JITERPRETER: // FIXME: Should we abort for NOPs like ENTERs?
             case MintOpcode.MINT_NOP:
@@ -826,7 +842,7 @@ export function generate_wasm_body (
                     // We generate a bailout instead of aborting, because we don't want calls
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
-                    append_bailout(builder, ip, BailoutReason.Call);
+                    append_exit(builder, ip, exitOpcodeCounter, BailoutReason.Call);
                     isLowValueOpcode = true;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
@@ -846,7 +862,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CALL_DELEGATE:
                 // See comments for MINT_CALL
                 if (builder.branchTargets.size > 0) {
-                    append_bailout(builder, ip,
+                    append_exit(builder, ip, exitOpcodeCounter,
                         opcode == MintOpcode.MINT_CALL_DELEGATE
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
@@ -880,6 +896,8 @@ export function generate_wasm_body (
                 // As above, only abort if this throw happens unconditionally.
                 // Otherwise, it may be in a branch that is unlikely to execute
                 if (builder.branchTargets.size > 0) {
+                    // Not an exit, because throws are by definition unlikely
+                    // We shouldn't make optimization decisions based on them.
                     append_bailout(builder, ip, BailoutReason.Throw);
                     isLowValueOpcode = true;
                 } else {
@@ -1078,6 +1096,9 @@ export function generate_wasm_body (
                     )
                 ) {
                     if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts) {
+                        // Not an exit, because returns are normal and we don't want to make them more expensive.
+                        // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
+                        //  but the main problem is more likely to be calls early in traces. Worth testing later.
                         append_bailout(builder, ip, BailoutReason.Return);
                         isLowValueOpcode = true;
                     } else
@@ -1150,7 +1171,8 @@ export function generate_wasm_body (
                     //  to only perform a conditional bailout
                     // complex safepoint branches, just generate a bailout
                     if (builder.branchTargets.size > 0) {
-                        append_bailout(builder, ip, BailoutReason.ComplexBranch);
+                        // FIXME: Try to reduce the number of these
+                        append_exit(builder, ip, exitOpcodeCounter, BailoutReason.ComplexBranch);
                         isLowValueOpcode = true;
                     } else
                         ip = abort;
@@ -1195,8 +1217,13 @@ export function generate_wasm_body (
                 builder.traceBuf.push(stmtText);
             }
 
-            if (!isLowValueOpcode)
+            if (!isLowValueOpcode) {
+                if (inBranchBlock)
+                    conditionalOpcodeCounter++;
+                else
+                    prologueOpcodeCounter++;
                 result++;
+            }
 
             ip += <any>(info[1] * 2);
             if (<any>ip <= (<any>endOfBody))
