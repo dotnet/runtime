@@ -990,6 +990,9 @@ public:
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
 
+    // Returns true iff the VNFuncApp represents a relop
+    bool IsVNFuncAppRelop(const VNFuncApp& app);
+
     enum class VN_RELATION_KIND
     {
         VRK_Inferred,   // (x ?  y)

@@ -2327,6 +2327,39 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 }
             }
         }
+        else if (func == VNFunc(GT_NOT))
+        {
+            VNFuncApp funcApp;
+            if (GetVNFunc(arg0VN, &funcApp))
+            {
+                // NOT(NOT(x)) ==> x
+                //
+                if (funcApp.m_func == VNFunc(GT_NOT))
+                {
+                    resultVN = funcApp.m_args[0];
+                }
+                // NOT(relop(x,y)) ==> Reverse(relop)(x,y)
+                //
+                else if (IsVNFuncAppRelop(funcApp))
+                {
+                    resultVN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
+                }
+                // NOT(AND(x,y)) ==> OR(NOT(x), NOT(y))
+                //
+                else if (funcApp.m_func == VNFunc(GT_AND))
+                {
+                    resultVN = VNForFunc(typ, VNFunc(GT_OR), VNForFunc(typ, VNFunc(GT_NOT), funcApp.m_args[0]),
+                                         VNForFunc(typ, VNFunc(GT_NOT), funcApp.m_args[1]));
+                }
+                // NOT(OR(x,y)) ==> AND(NOT(x), NOT(y))
+                //
+                else if (funcApp.m_func == VNFunc(GT_OR))
+                {
+                    resultVN = VNForFunc(typ, VNFunc(GT_AND), VNForFunc(typ, VNFunc(GT_NOT), funcApp.m_args[0]),
+                                         VNForFunc(typ, VNFunc(GT_NOT), funcApp.m_args[1]));
+                }
+            }
+        }
 
         // Try to perform constant-folding.
         //
@@ -4404,6 +4437,205 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
     return true;
 }
 
+// Table entry describing when AND/OR of two relops
+// with identical operands can be combined into one
+//
+struct RelatedRelopEntry
+{
+    VNFunc relop0;
+    VNFunc relop1;
+    int    constantValue;
+    VNFunc jointRelop;
+};
+
+// clang-format off
+
+static RelatedRelopEntry s_relatedRelopTable_AND[] = {
+    // EQ & ...
+    {VNFunc(GT_EQ), VNFunc(GT_EQ), -1, VNFunc(GT_EQ)},
+    {VNFunc(GT_EQ), VNFunc(GT_NE),  0, VNF_COUNT},
+    {VNFunc(GT_EQ), VNFunc(GT_LE), -1, VNFunc(GT_EQ)},
+    {VNFunc(GT_EQ), VNFunc(GT_LT),  0, VNF_COUNT},
+    {VNFunc(GT_EQ), VNFunc(GT_GT),  0, VNF_COUNT},
+    {VNFunc(GT_EQ), VNFunc(GT_GE), -1, VNFunc(GT_EQ)},
+
+    {VNFunc(GT_EQ), VNF_LE_UN,     -1, VNFunc(GT_EQ)},
+    {VNFunc(GT_EQ), VNF_LT_UN,      0, VNF_COUNT},
+    {VNFunc(GT_EQ), VNF_GT_UN,      0, VNF_COUNT},
+    {VNFunc(GT_EQ), VNF_GE_UN,     -1, VNFunc(GT_EQ)},
+
+    // NE & ...
+    {VNFunc(GT_NE), VNFunc(GT_EQ),  0, VNF_COUNT},
+    {VNFunc(GT_NE), VNFunc(GT_NE), -1, VNFunc(GT_NE)},
+    {VNFunc(GT_NE), VNFunc(GT_LE), -1, VNFunc(GT_LT)},
+    {VNFunc(GT_NE), VNFunc(GT_LT), -1, VNFunc(GT_LT)},
+    {VNFunc(GT_NE), VNFunc(GT_GT), -1, VNFunc(GT_GT)},
+    {VNFunc(GT_NE), VNFunc(GT_GE), -1, VNFunc(GT_GT)},
+
+    {VNFunc(GT_NE), VNF_LE_UN,     -1, VNF_LE_UN},
+    {VNFunc(GT_NE), VNF_LT_UN,     -1, VNF_LT_UN},
+    {VNFunc(GT_NE), VNF_GT_UN,     -1, VNF_GT_UN},
+    {VNFunc(GT_NE), VNF_GE_UN,     -1, VNF_GE_UN},
+
+    // LE & ...
+    {VNFunc(GT_LE), VNFunc(GT_EQ), -1, VNFunc(GT_EQ)},
+    {VNFunc(GT_LE), VNFunc(GT_NE), -1, VNFunc(GT_LT)},
+    {VNFunc(GT_LE), VNFunc(GT_LE), -1, VNFunc(GT_LE)},
+    {VNFunc(GT_LE), VNFunc(GT_LT), -1, VNFunc(GT_LT)},
+    {VNFunc(GT_LE), VNFunc(GT_GT),  0, VNF_COUNT},
+    {VNFunc(GT_LE), VNFunc(GT_GE), -1, VNFunc(GT_EQ)},
+
+    // LT & ...
+    {VNFunc(GT_LT), VNFunc(GT_EQ),  0, VNF_COUNT},
+    {VNFunc(GT_LT), VNFunc(GT_NE), -1, VNFunc(GT_LT)},
+    {VNFunc(GT_LT), VNFunc(GT_LE), -1, VNFunc(GT_LT)},
+    {VNFunc(GT_LT), VNFunc(GT_LT), -1, VNFunc(GT_LT)},
+    {VNFunc(GT_LT), VNFunc(GT_GT),  0, VNF_COUNT},
+    {VNFunc(GT_LT), VNFunc(GT_GE),  0, VNF_COUNT},
+
+    // GT & ...
+    {VNFunc(GT_GT), VNFunc(GT_EQ),  0, VNF_COUNT},
+    {VNFunc(GT_GT), VNFunc(GT_NE), -1, VNFunc(GT_GT)},
+    {VNFunc(GT_GT), VNFunc(GT_LE),  0, VNF_COUNT},
+    {VNFunc(GT_GT), VNFunc(GT_LT),  0, VNF_COUNT},
+    {VNFunc(GT_GT), VNFunc(GT_GT), -1, VNFunc(GT_GT)},
+    {VNFunc(GT_GT), VNFunc(GT_GE), -1, VNFunc(GT_GT)},
+
+    // GE & ...
+    {VNFunc(GT_GE), VNFunc(GT_EQ), -1, VNFunc(GT_EQ)},
+    {VNFunc(GT_GE), VNFunc(GT_NE), -1, VNFunc(GT_GT)},
+    {VNFunc(GT_GE), VNFunc(GT_LE), -1, VNFunc(GT_EQ)},
+    {VNFunc(GT_GE), VNFunc(GT_LT),  0, VNF_COUNT},
+    {VNFunc(GT_GE), VNFunc(GT_GT), -1, VNFunc(GT_GT)},
+    {VNFunc(GT_GE), VNFunc(GT_GE), -1, VNFunc(GT_GE)},
+
+    // LEU & ...
+    {VNF_LE_UN,     VNFunc(GT_EQ), -1, VNFunc(GT_EQ)},
+    {VNF_LE_UN,     VNFunc(GT_NE), -1, VNF_LE_UN},
+    {VNF_LE_UN,     VNF_LE_UN,     -1, VNF_LE_UN},
+    {VNF_LE_UN,     VNF_LT_UN,     -1, VNF_LT_UN},
+    {VNF_LE_UN,     VNF_GT_UN,      0, VNF_COUNT},
+    {VNF_LE_UN,     VNF_GE_UN,     -1, VNFunc(GT_EQ)},
+
+    // LTU & ...
+    {VNF_LT_UN,     VNFunc(GT_EQ),  0, VNF_COUNT},
+    {VNF_LT_UN,     VNFunc(GT_NE), -1, VNF_LT_UN},
+    {VNF_LT_UN,     VNF_LE_UN,     -1, VNF_LT_UN},
+    {VNF_LT_UN,     VNF_LT_UN,     -1, VNF_LT_UN},
+    {VNF_LT_UN,     VNF_GT_UN,      0, VNF_COUNT},
+    {VNF_LT_UN,     VNF_GE_UN,      0, VNF_COUNT},
+
+    // GTU & ...
+    {VNF_GT_UN,     VNFunc(GT_EQ),  0, VNF_COUNT},
+    {VNF_GT_UN,     VNFunc(GT_NE), -1, VNF_GT_UN},
+    {VNF_GT_UN,     VNF_LE_UN,      0, VNF_COUNT},
+    {VNF_GT_UN,     VNF_LT_UN,      0, VNF_COUNT},
+    {VNF_GT_UN,     VNF_GT_UN,     -1, VNF_GT_UN},
+    {VNF_GT_UN,     VNF_GE_UN,     -1, VNF_GT_UN},
+
+    // GEU & ...
+    {VNF_GE_UN,     VNFunc(GT_EQ), -1, VNFunc(GT_EQ)},
+    {VNF_GE_UN,     VNFunc(GT_NE), -1, VNF_GE_UN},
+    {VNF_GE_UN,     VNF_LE_UN,     -1, VNFunc(GT_EQ)},
+    {VNF_GE_UN,     VNF_LT_UN,      0, VNF_COUNT},
+    {VNF_GE_UN,     VNF_GT_UN,     -1, VNF_GT_UN},
+    {VNF_GE_UN,     VNF_GE_UN,     -1, VNF_GE_UN},
+};
+
+static RelatedRelopEntry s_relatedRelopTable_OR[] = {
+    // EQ | ...
+    {VNFunc(GT_EQ), VNFunc(GT_EQ), -1, VNFunc(GT_EQ)},
+    {VNFunc(GT_EQ), VNFunc(GT_NE),  1, VNF_COUNT},
+    {VNFunc(GT_EQ), VNFunc(GT_LE), -1, VNFunc(GT_LE)},
+    {VNFunc(GT_EQ), VNFunc(GT_LT), -1, VNFunc(GT_LE)},
+    {VNFunc(GT_EQ), VNFunc(GT_GT), -1, VNFunc(GT_GE)},
+    {VNFunc(GT_EQ), VNFunc(GT_GE), -1, VNFunc(GT_GE)},
+
+    {VNFunc(GT_EQ), VNF_LE_UN,     -1, VNF_LE_UN},
+    {VNFunc(GT_EQ), VNF_LT_UN,     -1, VNF_LE_UN},
+    {VNFunc(GT_EQ), VNF_GT_UN,     -1, VNF_GE_UN},
+    {VNFunc(GT_EQ), VNF_GE_UN,     -1, VNF_GE_UN},
+
+    // NE | ...
+    {VNFunc(GT_NE), VNFunc(GT_EQ),  1, VNF_COUNT},
+    {VNFunc(GT_NE), VNFunc(GT_NE), -1, VNFunc(GT_NE)},
+    {VNFunc(GT_NE), VNFunc(GT_LE),  1, VNF_COUNT},
+    {VNFunc(GT_NE), VNFunc(GT_LT), -1, VNFunc(GT_NE)},
+    {VNFunc(GT_NE), VNFunc(GT_GT), -1, VNFunc(GT_NE)},
+    {VNFunc(GT_NE), VNFunc(GT_GE),  1, VNF_COUNT},
+
+    {VNFunc(GT_NE), VNF_LE_UN,      1, VNF_COUNT},
+    {VNFunc(GT_NE), VNF_LT_UN,     -1, VNFunc(GT_NE)},
+    {VNFunc(GT_NE), VNF_GT_UN,     -1, VNFunc(GT_NE)},
+    {VNFunc(GT_NE), VNF_GE_UN,      1, VNF_COUNT},
+
+    // LE | ...
+    {VNFunc(GT_LE), VNFunc(GT_EQ), -1, VNFunc(GT_LE)},
+    {VNFunc(GT_LE), VNFunc(GT_NE),  1, VNF_COUNT},
+    {VNFunc(GT_LE), VNFunc(GT_LE), -1, VNFunc(GT_LE)},
+    {VNFunc(GT_LE), VNFunc(GT_LT), -1, VNFunc(GT_LE)},
+    {VNFunc(GT_LE), VNFunc(GT_GT),  1, VNF_COUNT},
+    {VNFunc(GT_LE), VNFunc(GT_GE),  1, VNF_COUNT},
+
+    // LT | ...
+    {VNFunc(GT_LT), VNFunc(GT_EQ), -1, VNFunc(GT_LE)},
+    {VNFunc(GT_LT), VNFunc(GT_NE), -1, VNFunc(GT_NE)},
+    {VNFunc(GT_LT), VNFunc(GT_LE), -1, VNFunc(GT_LE)},
+    {VNFunc(GT_LT), VNFunc(GT_LT), -1, VNFunc(GT_LT)},
+    {VNFunc(GT_LT), VNFunc(GT_GT), -1, VNFunc(GT_NE)},
+    {VNFunc(GT_LT), VNFunc(GT_GE),  1, VNF_COUNT},
+
+    // GT | ...
+    {VNFunc(GT_GT), VNFunc(GT_EQ), -1, VNFunc(GT_GE)},
+    {VNFunc(GT_GT), VNFunc(GT_NE), -1, VNFunc(GT_NE)},
+    {VNFunc(GT_GT), VNFunc(GT_LE),  1, VNF_COUNT},
+    {VNFunc(GT_GT), VNFunc(GT_LT), -1, VNFunc(GT_NE)},
+    {VNFunc(GT_GT), VNFunc(GT_GT), -1, VNFunc(GT_GT)},
+    {VNFunc(GT_GT), VNFunc(GT_GE), -1, VNFunc(GT_GE)},
+
+    // GE | ...
+    {VNFunc(GT_GE), VNFunc(GT_EQ), -1, VNFunc(GT_GE)},
+    {VNFunc(GT_GE), VNFunc(GT_NE),  1, VNF_COUNT},
+    {VNFunc(GT_GE), VNFunc(GT_LE),  1, VNF_COUNT},
+    {VNFunc(GT_GE), VNFunc(GT_LT),  1, VNF_COUNT},
+    {VNFunc(GT_GE), VNFunc(GT_GT), -1, VNFunc(GT_GE)},
+    {VNFunc(GT_GE), VNFunc(GT_GE), -1, VNFunc(GT_GE)},
+
+    // LEU | ...
+    {VNF_LE_UN,     VNFunc(GT_EQ), -1, VNF_LE_UN},
+    {VNF_LE_UN,     VNFunc(GT_NE),  1, VNF_COUNT},
+    {VNF_LE_UN,     VNF_LE_UN,     -1, VNF_LE_UN},
+    {VNF_LE_UN,     VNF_LT_UN,     -1, VNF_LE_UN},
+    {VNF_LE_UN,     VNF_GT_UN,      1, VNF_COUNT},
+    {VNF_LE_UN,     VNF_GE_UN,      1, VNF_COUNT},
+
+    // LTU | ...
+    {VNF_LT_UN,     VNFunc(GT_EQ), -1, VNF_LE_UN},
+    {VNF_LT_UN,     VNFunc(GT_NE), -1, VNFunc(GT_NE)},
+    {VNF_LT_UN,     VNF_LE_UN,     -1, VNF_LE_UN},
+    {VNF_LT_UN,     VNF_LT_UN,     -1, VNF_LT_UN},
+    {VNF_LT_UN,     VNF_GT_UN,     -1, VNFunc(GT_NE)},
+    {VNF_LT_UN,     VNF_GE_UN,      1, VNF_COUNT},
+
+    // GTU | ...
+    {VNF_GT_UN,     VNFunc(GT_EQ), -1, VNF_GE_UN},
+    {VNF_GT_UN,     VNFunc(GT_NE), -1, VNFunc(GT_NE)},
+    {VNF_GT_UN,     VNF_LE_UN,      1, VNF_COUNT},
+    {VNF_GT_UN,     VNF_LT_UN,     -1, VNFunc(GT_NE)},
+    {VNF_GT_UN,     VNF_GT_UN,     -1, VNF_GT_UN},
+    {VNF_GT_UN,     VNF_GE_UN,     -1, VNF_GE_UN},
+
+    // GEU | ...
+    {VNF_GE_UN,     VNFunc(GT_EQ), -1, VNF_GE_UN},
+    {VNF_GE_UN,     VNFunc(GT_NE),  1, VNF_COUNT},
+    {VNF_GE_UN,     VNF_LE_UN,      1, VNF_COUNT},
+    {VNF_GE_UN,     VNF_LT_UN,      1, VNF_COUNT},
+    {VNF_GE_UN,     VNF_GT_UN,     -1, VNF_GE_UN},
+    {VNF_GE_UN,     VNF_GE_UN,     -1, VNF_GE_UN},
+};
+
+// clang-format on
+
 //----------------------------------------------------------------------------------------
 //  EvalUsingMathIdentity
 //                   - Attempts to evaluate 'func' by using mathematical identities
@@ -4570,7 +4802,55 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 if (arg0VN == arg1VN)
                 {
                     resultVN = arg0VN;
+                    break;
                 }
+
+                // x | ~x == ~0
+                ValueNum arg0VNnot = VNForFunc(typ, VNFunc(GT_NOT), arg0VN);
+                if (arg0VNnot == arg1VN)
+                {
+                    resultVN = AllBitsVN;
+                    break;
+                }
+
+                // relop1(x,y) | relop2(x,y) ==> relop3(x,y) or 0/1
+                //
+                // eg
+                // LE(x,y) | NE(x,y) ==> NE(x,y)
+                // LE(x,y) | GT(x,y) ==> 1
+                //
+                VNFuncApp arg0FN;
+                if (GetVNFunc(arg0VN, &arg0FN) && IsVNFuncAppRelop(arg0FN))
+                {
+                    VNFuncApp arg1FN;
+                    if (GetVNFunc(arg1VN, &arg1FN) && IsVNFuncAppRelop(arg1FN))
+                    {
+                        if ((arg0FN.m_args[0] == arg1FN.m_args[0]) && (arg0FN.m_args[1] == arg1FN.m_args[1]))
+                        {
+                            for (const RelatedRelopEntry& entry : s_relatedRelopTable_OR)
+                            {
+                                if (((entry.relop0 == arg0FN.m_func) && (entry.relop1 == arg1FN.m_func)) ||
+                                    ((entry.relop0 == arg1FN.m_func) && (entry.relop1 == arg0FN.m_func)))
+                                {
+                                    if (entry.constantValue == 1)
+                                    {
+                                        resultVN = VNOneForType(typ);
+                                    }
+                                    else if (entry.constantValue == 0)
+                                    {
+                                        resultVN = VNZeroForType(typ);
+                                    }
+                                    else
+                                    {
+                                        resultVN = VNForFunc(typ, entry.jointRelop, arg0FN.m_args[0], arg0FN.m_args[1]);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 break;
             }
 
@@ -4595,6 +4875,16 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 {
                     resultVN = ZeroVN;
                 }
+                break;
+
+                // x ^ ~x == ~0
+                ValueNum arg0VNnot = VNForFunc(typ, VNFunc(GT_NOT), arg0VN);
+                if (arg0VNnot == arg1VN)
+                {
+                    resultVN = VNAllBitsForType(typ);
+                    break;
+                }
+
                 break;
             }
 
@@ -4632,7 +4922,55 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 if (arg0VN == arg1VN)
                 {
                     resultVN = arg0VN;
+                    break;
                 }
+
+                // x & ~x == 0
+                ValueNum arg0VNnot = VNForFunc(typ, VNFunc(GT_NOT), arg0VN);
+                if (arg0VNnot == arg1VN)
+                {
+                    resultVN = ZeroVN;
+                    break;
+                }
+
+                // relop1(x,y) & relop2(x,y) ==> relop3(x,y) or 0/1
+                //
+                // eg
+                // LE(x,y) & NE(x,y) ==> LT(x,y)
+                // LE(x,y) & GT(x,y) ==> 0
+                //
+                VNFuncApp arg0FN;
+                if (GetVNFunc(arg0VN, &arg0FN) && IsVNFuncAppRelop(arg0FN))
+                {
+                    VNFuncApp arg1FN;
+                    if (GetVNFunc(arg1VN, &arg1FN) && IsVNFuncAppRelop(arg1FN))
+                    {
+                        if ((arg0FN.m_args[0] == arg1FN.m_args[0]) && (arg0FN.m_args[1] == arg1FN.m_args[1]))
+                        {
+                            for (const RelatedRelopEntry& entry : s_relatedRelopTable_AND)
+                            {
+                                if (((entry.relop0 == arg0FN.m_func) && (entry.relop1 == arg1FN.m_func)) ||
+                                    ((entry.relop0 == arg1FN.m_func) && (entry.relop1 == arg0FN.m_func)))
+                                {
+                                    if (entry.constantValue == 1)
+                                    {
+                                        resultVN = VNOneForType(typ);
+                                    }
+                                    else if (entry.constantValue == 0)
+                                    {
+                                        resultVN = VNZeroForType(typ);
+                                    }
+                                    else
+                                    {
+                                        resultVN = VNForFunc(typ, entry.jointRelop, arg0FN.m_args[0], arg0FN.m_args[1]);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 break;
             }
 
@@ -5869,6 +6207,11 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
         return false;
     }
 
+    return IsVNFuncAppRelop(funcAttr);
+}
+
+bool ValueNumStore::IsVNFuncAppRelop(const VNFuncApp& funcAttr)
+{
     if (funcAttr.m_arity != 2)
     {
         return false;
