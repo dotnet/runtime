@@ -64,13 +64,13 @@ namespace System.Reflection.Emit.Experiment
                 // Add each method definition to metadata table.
                 foreach (PersistableMethodBuilder method in typeBuilder._methodDefStore)
                 {
-                    MetadataHelper.AddMethodDefintion(metadata, method);
+                    MetadataHelper.AddMethodDefinition(metadata, method);
                     _nextMethodDefRowId++;
                 }
 
                 foreach (PersistableFieldBuilder field in typeBuilder._fieldDefStore)
                 {
-                    MetadataHelper.AddFieldDefintion(metadata, field);
+                    MetadataHelper.AddFieldDefinition(metadata, field);
                     _nextFieldDefRowId++;
                 }
             }

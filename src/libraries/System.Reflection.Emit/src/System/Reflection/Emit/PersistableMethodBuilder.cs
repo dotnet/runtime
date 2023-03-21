@@ -9,7 +9,7 @@ namespace System.Reflection.Emit.Experiment
     internal sealed class PersistableMethodBuilder : MethodBuilder
     {
         internal Type? _returnType;
-        internal Type[]? _parameters;
+        internal Type[]? _parametersTypes;
         private readonly PersistableModuleBuilder _module;
 
         internal PersistableMethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
@@ -23,7 +23,7 @@ namespace System.Reflection.Emit.Experiment
             Attributes = attributes;
             CallingConvention = callingConventions;
             _returnType = returnType;
-            _parameters = parameters;
+            _parametersTypes = parameters;
             DeclaringType = declaringType;
             Module = declaringType.Module;
         }

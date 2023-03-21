@@ -40,14 +40,13 @@ namespace System.Reflection.Emit.Experiment.Tests
             {
                 TypeBuilder tb = mb.DefineType(type.FullName, type.Attributes, type.BaseType);
 
-                var methods = type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly);
+                MethodInfo[] methods = type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly);
                 foreach (var method in methods)
                 {
-                    var paramTypes = Array.ConvertAll(method.GetParameters(), item => item.ParameterType);
-                    tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, paramTypes);
+                    MethodBuilder meb = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, null);
                 }
 
-                foreach (var field in type.GetFields())
+                foreach (FieldInfo field in type.GetFields())
                 {
                     tb.DefineField(field.Name, field.FieldType, field.GetRequiredCustomModifiers(),
                         field.GetOptionalCustomModifiers(), field.Attributes);

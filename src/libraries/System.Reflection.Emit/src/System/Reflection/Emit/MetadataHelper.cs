@@ -6,7 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit.Experiment
 {
-    //This static helper class adds common entities to a Metadata Builder.
+    // This static helper class adds common entities to a Metadata Builder.
     internal static class MetadataHelper
     {
         internal static AssemblyReferenceHandle AddAssemblyReference(Assembly assembly, MetadataBuilder metadata)
@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Experiment
 
         internal static TypeDefinitionHandle AddTypeDef(MetadataBuilder metadata, PersistableTypeBuilder typeBuilder, EntityHandle baseType, int methodToken, int fieldToken)
         {
-            //Add type metadata
+            // Add type metadata
             return metadata.AddTypeDefinition(
                 attributes: typeBuilder.Attributes,
                 (typeBuilder.Namespace == null) ? default : metadata.GetOrAddString(typeBuilder.Namespace),
@@ -58,19 +58,19 @@ namespace System.Reflection.Emit.Experiment
                 );
         }
 
-        internal static MethodDefinitionHandle AddMethodDefintion(MetadataBuilder metadata, PersistableMethodBuilder methodBuilder)
+        internal static MethodDefinitionHandle AddMethodDefinition(MetadataBuilder metadata, PersistableMethodBuilder methodBuilder)
         {
             return metadata.AddMethodDefinition(
                 methodBuilder.Attributes,
                 MethodImplAttributes.IL,
                 metadata.GetOrAddString(methodBuilder.Name),
-                metadata.GetOrAddBlob(MetadataSignatureHelper.MethodSignatureEncoder(methodBuilder._parameters, methodBuilder._returnType, !methodBuilder.IsStatic)),
-                -1, //No body supported
-                parameterList: default
+                metadata.GetOrAddBlob(MetadataSignatureHelper.MethodSignatureEncoder(methodBuilder._parametersTypes, methodBuilder._returnType, !methodBuilder.IsStatic)),
+                -1, // No body supported yet
+                parameterList: MetadataTokens.ParameterHandle(1)
                 );
         }
 
-        internal static FieldDefinitionHandle AddFieldDefintion(MetadataBuilder metadata, FieldInfo field)
+        internal static FieldDefinitionHandle AddFieldDefinition(MetadataBuilder metadata, FieldInfo field)
         {
             return metadata.AddFieldDefinition(field.Attributes, metadata.GetOrAddString(field.Name),
                 metadata.GetOrAddBlob(MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType)));
