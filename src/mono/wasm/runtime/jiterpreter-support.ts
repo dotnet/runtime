@@ -1300,6 +1300,7 @@ export function append_exit (builder: WasmBuilder, ip: MintOpcodePtr, opcode_cou
     }
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
+        builder.i32_const(builder.base);
         builder.i32_const(reason);
         builder.callImport("bailout");
     }
