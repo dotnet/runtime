@@ -25,7 +25,7 @@ namespace System.Reflection
 
         internal unsafe void FillName(MonoAssemblyName* native, string? codeBase, bool addVersion, bool addPublickey, bool defaultToken)
         {
-            _name = RuntimeMarshal.PtrToUtf8String(native->name);
+            _name = Marshal.PtrToStringUTF8(native->name);
 
             _flags = (AssemblyNameFlags)native->flags;
 
@@ -49,11 +49,11 @@ namespace System.Reflection
             _codeBase = codeBase;
 
             if (native->culture != IntPtr.Zero)
-                _cultureInfo = CultureInfo.GetCultureInfo(RuntimeMarshal.PtrToUtf8String(native->culture));
+                _cultureInfo = CultureInfo.GetCultureInfo(Marshal.PtrToStringUTF8(native->culture)!);
 
             if (native->public_key != IntPtr.Zero)
             {
-                _publicKey = RuntimeMarshal.DecodeBlobArray(native->public_key);
+                _publicKey = DecodeBlobArray(native->public_key);
                 _flags |= AssemblyNameFlags.PublicKey;
             }
             else if (addPublickey)
@@ -77,6 +77,49 @@ namespace System.Reflection
                 _publicKeyToken = Array.Empty<byte>();
             }
         }
+
+        private static int DecodeBlobSize(IntPtr in_ptr, out IntPtr out_ptr)
+        {
+            uint size;
+            unsafe
+            {
+                byte* ptr = (byte*)in_ptr;
+
+                if ((*ptr & 0x80) == 0)
+                {
+                    size = (uint)(ptr[0] & 0x7f);
+                    ptr++;
+                }
+                else if ((*ptr & 0x40) == 0)
+                {
+                    size = (uint)(((ptr[0] & 0x3f) << 8) + ptr[1]);
+                    ptr += 2;
+                }
+                else
+                {
+                    size = (uint)(((ptr[0] & 0x1f) << 24) +
+                        (ptr[1] << 16) +
+                        (ptr[2] << 8) +
+                        ptr[3]);
+                    ptr += 4;
+                }
+                out_ptr = (IntPtr)ptr;
+            }
+
+            return (int)size;
+        }
+
+        internal static byte[] DecodeBlobArray(IntPtr ptr)
+        {
+            IntPtr out_ptr;
+            int size = DecodeBlobSize(ptr, out out_ptr);
+            byte[] res = new byte[size];
+            Marshal.Copy(out_ptr, res, 0, size);
+            return res;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void FreeAssemblyName(ref MonoAssemblyName name, bool freeStruct);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe MonoAssemblyName* GetNativeName(IntPtr assemblyPtr);
