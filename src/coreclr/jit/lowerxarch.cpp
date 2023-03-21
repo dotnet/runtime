@@ -348,15 +348,27 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                     {
                         const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
 #ifdef TARGET_AMD64
-                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size % XMM_REGSIZE_BYTES == 0);
+
+                        bool willUseOnlySimdMov = size % XMM_REGSIZE_BYTES == 0;
+                        if (!willUseOnlySimdMov)
+                        {
+                            // If we have a remainder we still might only use SIMD to process it (via overlapping)
+                            // unless it's more efficient to do that via scalar op (for sizes 1,2,4 and 8)
+                            const unsigned remainder = size % XMM_REGSIZE_BYTES;
+                            if (!isPow2(remainder) || (remainder > REGSIZE_BYTES))
+                            {
+                                willUseOnlySimdMov = true;
+                            }
+                        }
 #else
                         const bool willUseOnlySimdMov = (size % 8 == 0);
 #endif
-                        if (willUseOnlySimdMov)
+                        if (willUseOnlySimdMov && canUse16BytesSimdMov)
                         {
                             src->SetContained();
                         }
-                        else if (size > comp->getUnrollThreshold(Compiler::UnrollKind::Memset, /*canUseSimd*/ false))
+                        else if (size > comp->getUnrollThreshold(Compiler::UnrollKind::Memset,
+                                                                 /*canUseSimd*/ canUse16BytesSimdMov))
                         {
                             // It turns out we can't use SIMD so the default threshold is too big
                             goto TOO_BIG_TO_UNROLL;
