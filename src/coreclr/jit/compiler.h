@@ -8924,8 +8924,9 @@ private:
 public:
     enum UnrollKind
     {
-        Memset, // Initializing memory with some value
-        Memcpy  // Copying memory from src to dst
+        Memset,
+        Memcpy,
+        Memmove
     };
 
     //------------------------------------------------------------------------
@@ -8955,7 +8956,7 @@ public:
             threshold *= 2;
 #elif defined(TARGET_XARCH)
             // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
-            threshold = max(threshold, YMM_REGSIZE_BYTES);
+            threshold = min(threshold, YMM_REGSIZE_BYTES);
 #endif
         }
 #if defined(TARGET_XARCH)
@@ -8988,7 +8989,11 @@ public:
         //
         // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
         //
-        return threshold * 4;
+        threshold *= 4;
+
+        // NOTE: Memmove's unrolling is currently limitted with LSRA -
+        // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*32=160 bytes for AVX cpu.
+        return threshold;
     }
 
     //------------------------------------------------------------------------

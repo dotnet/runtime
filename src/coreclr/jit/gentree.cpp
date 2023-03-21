@@ -11977,6 +11977,10 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case GenTreeBlk::BlkOpKindUnroll:
                         printf(" (Unroll)");
                         break;
+
+                    case GenTreeBlk::BlkOpKindUnrollMemmove:
+                        printf(" (Memmove)");
+                        break;
 #ifndef TARGET_X86
                     case GenTreeBlk::BlkOpKindHelper:
                         printf(" (Helper)");
