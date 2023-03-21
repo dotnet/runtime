@@ -48,8 +48,7 @@ namespace System.Reflection.Emit.Experiment.Tests
 
                 foreach (FieldInfo field in type.GetFields())
                 {
-                    tb.DefineField(field.Name, field.FieldType, field.GetRequiredCustomModifiers(),
-                        field.GetOptionalCustomModifiers(), field.Attributes);
+                    tb.DefineField(field.Name, field.FieldType, field.Attributes);
                 }
             }
         }

@@ -48,7 +48,7 @@ namespace System.Reflection.Emit.Experiment
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype) => throw new NotImplementedException();
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
-            var field = new PersistableFieldBuilder(this, fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+            var field = new PersistableFieldBuilder(this, fieldName, type, attributes);
             _fieldDefStore.Add(field);
            return field;
         }

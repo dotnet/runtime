@@ -13,8 +13,7 @@ namespace System.Reflection.Emit.Experiment
         private FieldAttributes _attributes;
         private Type _fieldType;
 
-        internal PersistableFieldBuilder(PersistableTypeBuilder typeBuilder, string fieldName, Type type,
-            Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
+        internal PersistableFieldBuilder(PersistableTypeBuilder typeBuilder, string fieldName, Type type, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
             ArgumentNullException.ThrowIfNull(type);
@@ -23,9 +22,6 @@ namespace System.Reflection.Emit.Experiment
             _typeBuilder = typeBuilder;
             _fieldType = type;
             _attributes = attributes & ~FieldAttributes.ReservedMask;
-
-            SignatureHelper sigHelp = SignatureHelper.GetFieldSigHelper(_typeBuilder.Module);
-            sigHelp.AddArgument(type, requiredCustomModifiers, optionalCustomModifiers);
         }
 
         #region MemberInfo Overrides
