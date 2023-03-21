@@ -1795,7 +1795,9 @@ GenTree* Lowering::AddrGen(void* addr)
 GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
 {
     assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove);
-    assert(call->gtArgs.CountArgs() == 3);
+
+    // R2R adds r2r cell arg on arm64
+    assert(comp->opts.IsReadyToRun() || (call->gtArgs.CountArgs() == 3));
 
     GenTree* lengthArg = call->gtArgs.GetArgByIndex(2)->GetNode();
     if (lengthArg->IsIntegralConst())
