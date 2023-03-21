@@ -616,10 +616,8 @@ void StubPrecode::StaticInitialize()
 
 }
 
-void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX)
+void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
-    int pageSize = GetOsPageSize();
-
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / StubPrecode::CodeSize) * StubPrecode::CodeSize;
     for (int i = 0; i < totalCodeSize; i += StubPrecode::CodeSize)
@@ -727,10 +725,8 @@ void FixupPrecode::StaticInitialize()
 #endif
 }
 
-void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX)
+void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
-    int pageSize = GetOsPageSize();
-
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize;
 

@@ -185,6 +185,7 @@ class UnlockedLoaderHeap
 {
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
+    friend struct LoaderHeapFreeBlock;
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -276,7 +277,7 @@ public:
 
 public:
     BOOL                m_fExplicitControl;  // Am I a LoaderHeap or an ExplicitControlLoaderHeap?
-    void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX);
+    void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
 
 #ifdef DACCESS_COMPILE
 public:
@@ -298,7 +299,7 @@ protected:
                        SIZE_T dwReservedRegionSize,
                        RangeList *pRangeList = NULL,
                        HeapKind kind = HeapKind::Data,
-                       void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX) = NULL,
+                       void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size) = NULL,
                        DWORD dwGranularity = 1);
 
     ~UnlockedLoaderHeap();
@@ -467,7 +468,7 @@ public:
                RangeList *pRangeList = NULL,
                UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
                BOOL fUnlocked = FALSE,
-               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX) = NULL,
+               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size) = NULL,
                DWORD dwGranularity = 1
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
@@ -491,7 +492,7 @@ public:
                RangeList *pRangeList = NULL,
                UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
                BOOL fUnlocked = FALSE,
-               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX) = NULL,
+               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size) = NULL,
                DWORD dwGranularity = 1
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,

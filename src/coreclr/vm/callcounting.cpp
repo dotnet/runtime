@@ -318,10 +318,8 @@ void CallCountingStub::StaticInitialize()
 
 #endif // DACCESS_COMPILE
 
-void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX)
+void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
-    int pageSize = GetOsPageSize();
-
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / CallCountingStub::CodeSize) * CallCountingStub::CodeSize;
 

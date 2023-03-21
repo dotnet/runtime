@@ -740,7 +740,8 @@ struct LoaderHeapFreeBlock
             }
             else
             {
-                memset((BYTE*)pMem + GetOsPageSize(), 0xcc, dwTotalSize);
+                _ASSERTE(dwTotalSize == (pHeap->m_dwGranularity / 2));
+                memset((BYTE*)pMem + (pHeap->m_dwGranularity / 2), 0xcc, dwTotalSize);
             }
 #endif // DEBUG
 
@@ -932,7 +933,7 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
                                        SIZE_T dwReservedRegionSize,
                                        RangeList *pRangeList,
                                        HeapKind kind,
-                                       void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX),
+                                       void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size),
                                        DWORD dwGranularity)
 {
     CONTRACTL
@@ -957,6 +958,7 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
     m_dwTotalAlloc               = 0;
 
+    _ASSERTE((m_dwGranularity % (GetOsPageSize() * 2)) == 0); // Granularity MUST be in increments of 2 times the page size
     m_dwGranularity = dwGranularity;
 
 #ifdef _DEBUG
@@ -1098,7 +1100,7 @@ BOOL UnlockedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
 
     if (IsInterleaved())
     {
-        _ASSERTE(dwSizeToCommitPart == GetOsPageSize());
+        _ASSERTE(dwSizeToCommitPart == m_dwGranularity);
 
         void *pTemp = ExecutableAllocator::Instance()->Commit((BYTE*)pData + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
         if (pTemp == NULL)
@@ -1106,9 +1108,9 @@ BOOL UnlockedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
             return FALSE;
         }
 
-        ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, GetOsPageSize(), ExecutableAllocator::DoNotAddToCache);
-        m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData);
-        FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
+        ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, dwSizeToCommitPart, ExecutableAllocator::DoNotAddToCache);
+        m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData, dwSizeToCommitPart);
+        FlushInstructionCache(GetCurrentProcess(), pData, dwSizeToCommitPart);
     }
 
     return TRUE;
@@ -1265,7 +1267,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         // or equal to the page size to ensure that the code range is consecutive.
         _ASSERTE(dwMinSize <= GetOsPageSize());
         // For interleaved heap, we always get two memory pages - one for code and one for data
-        dwMinSize = 2 * GetOsPageSize();
+        dwMinSize = m_dwGranularity;
     }
 
     // Does this fit in the reserved region?
@@ -1291,7 +1293,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         {
             // The end of committed region for interleaved heaps points to the end of the executable
             // page and the data pages goes right after that. So we skip the data page here.
-            pCommitBaseAddress += GetOsPageSize();
+            pCommitBaseAddress += m_dwGranularity / 2;
         }
         else
         {
@@ -1648,7 +1650,8 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
         if (IsInterleaved())
         {
             // Clear the RW page
-            memset((BYTE*)pMem + GetOsPageSize(), 0x00, dwSize); // Fill freed region with 0
+            _ASSERTE(dwSize == (m_dwGranularity / 2));
+            memset((BYTE*)pMem + (m_dwGranularity / 2), 0x00, dwSize); // Fill freed region with 0
         }
         else
         {

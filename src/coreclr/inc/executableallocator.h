@@ -244,6 +244,10 @@ public:
     // executable code due to memory addressing performance related reasons.
     void* Commit(void* pStart, size_t size, bool isExecutable);
 
+    // Commit a specified range of memory as sharing the same memory pages as
+    // a previous call to Commit. This memory may be freed by a call to Release
+    void* CommitCopy(void* pStart, size_t size, bool isExecutable, void* pOriginalStart);
+
     // Release the executable memory block starting at the passed in address that was allocated
     // by one of the ReserveXXX methods.
     void Release(void* pRX);
