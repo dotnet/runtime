@@ -1657,7 +1657,7 @@ void MyICJI::allocMem(AllocMemArgs* pArgs)
         {
             roDataAlignment = 64;
         }
-        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
         {
             roDataAlignment = 32;
         }
