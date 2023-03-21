@@ -3396,6 +3396,27 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 	return code;
 }
 
+static guint8*
+emit_xextract (guint8* code, int width, int mode, int dreg, int sreg1)
+{
+	switch (mode) {
+	case SIMD_EXTR_IS_ANY_SET:
+		arm_neon_umaxv (code, width, TYPE_I8, FP_TEMP_REG, sreg1);
+		arm_neon_umov_b (code, dreg, FP_TEMP_REG, 0);
+		arm_lsrw(code, dreg, dreg, 7); // dreg contains 0xff for TRUE or 0x0 for FALSE, normalize to 0x1/0x0
+		break;
+	case SIMD_EXTR_ARE_ALL_SET:
+		arm_neon_uminv (code, width, TYPE_I8, FP_TEMP_REG, sreg1);
+		arm_neon_umov_b (code, dreg, FP_TEMP_REG, 0);
+		arm_lsrw(code, dreg, dreg, 7);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return code;
+}
+
 /*
  * emit_branch_island:
  *
@@ -3821,6 +3842,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			break;
+		case OP_XEXTRACT: 
+			code = emit_xextract (code, VREG_FULL, ins->inst_c0, dreg, sreg1);
 			break;
 
 			/* ALU */
