@@ -1383,7 +1383,7 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 
 		mono_memory_barrier ();
 		double average_penalty = info->penalty_total / (double)hit_count;
-		double threshold = (mono_opt_jiterpreter_trace_monitoring_max_average_penalty / 100);
+		double threshold = (mono_opt_jiterpreter_trace_monitoring_max_average_penalty / 100.0);
 
 		if (average_penalty <= threshold) {
 			*(volatile JiterpreterThunk*)(ip + 1) = thunk;
