@@ -369,7 +369,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     {
         NOTHROW;
         PRECONDITION(dwSize != 0);
-        PRECONDITION(flAllocationType == MEM_RESERVE);
+        PRECONDITION(flAllocationType == MEM_RESERVE);  // ORed with MEM_RESERVE_EXECUTABLE on Unix
     }
     CONTRACTL_END;
 
@@ -449,7 +449,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
             (mbInfo.RegionSize >= (SIZE_T) dwSize || mbInfo.RegionSize == 0))
         {
             // Try reserving the memory using VirtualAlloc now
-            pResult = (BYTE*)ClrVirtualAlloc(tryAddr, dwSize, MEM_RESERVE, flProtect);
+            pResult = (BYTE*)ClrVirtualAlloc(tryAddr, dwSize, flAllocationType, flProtect);
 
             // Normally this will be successful
             //
