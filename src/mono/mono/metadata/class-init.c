@@ -701,7 +701,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	// compute is_byreflike
 	if (m_class_is_valuetype (klass)) {
-		struct FoundAttrUD attr = class_has_isbyreflike_attribute (klass);
+		struct FoundAttrUD attr;
+		attr = class_has_isbyreflike_attribute (klass);
 		if (attr.has_attr)
 			klass->is_byreflike = 1;
 		attr = class_has_inlinearray_attribute (klass);
@@ -753,19 +754,24 @@ mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd)
 }
 
 static gboolean
-has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, MonoCustomAttrEntry *attr, gpointer user_data)
+has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, guint32 *cols, gpointer user_data)
 {
-	struct FoundAttrUD *has_attr = (struct FoundAttrUD *)user_data;
-	if (!strcmp (name, has_attr->name) && !strcmp (nspace, has_attr->nspace)) {
-		has_attr->has_attr = TRUE;
-		if (attr) {
+	struct FoundAttrUD *attr = (struct FoundAttrUD *)user_data;
+	if (!strcmp (name, attr->name) && !strcmp (nspace, attr->nspace)) {
+		attr->has_attr = TRUE;
+		if (attr->has_value) {
 			MonoError error;
-			MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, attr->ctor, attr->data, attr->data_size, &error);
-			g_free (attr);
-			mono_error_assert_ok (&error);
-			has_attr->value = decoded_attr->typed_args[0]->value.primitive;
+			MonoMethod *ctor = mono_get_method_checked (image, method_token, NULL, NULL, &error);
+			if (ctor) {
+				const char *data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
+				uint32_t data_size = mono_metadata_decode_value (data, &data);
+				MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
+				mono_error_assert_ok (&error);
+				attr->value = decoded_attr->typed_args[0]->value.primitive;
+			} else {
+				g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));
+			}
 		}
-		return TRUE;
 	}
 	/* TODO: use typeref_scope_token to check that attribute comes from
 	 * corlib if in_corlib is TRUE, without triggering an assembly load.
@@ -773,48 +779,49 @@ has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, con
 	 * MONO_RESOLUTION_SCOPE_MODULE I think, if we're outside it'll be an
 	 * MONO_RESOLUTION_SCOPE_ASSEMBLYREF and we'll need to check the
 	 * name.*/
-	return FALSE;
+	return attr->has_attr;
 }
 
 static  struct FoundAttrUD
-class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib)
+class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value)
 {
-	struct FoundAttrUD has_attr;
-	has_attr.nspace = nspace;
-	has_attr.name = name;
-	has_attr.in_corlib = in_corlib;
-	has_attr.has_attr = FALSE;
+	struct FoundAttrUD attr;
+	attr.nspace = nspace;
+	attr.name = name;
+	attr.in_corlib = in_corlib;
+	attr.has_attr = FALSE;
+	attr.has_value = has_value;
 
-	mono_class_metadata_foreach_custom_attr (klass, has_wellknown_attribute_func, &has_attr);
+	mono_class_metadata_foreach_custom_attr (klass, has_wellknown_attribute_func, &attr);
 
-	return has_attr;
+	return attr;
 }
 
 static struct FoundAttrUD
-method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const char *name, gboolean in_corlib)
+method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value)
 {
-	struct FoundAttrUD has_attr;
-	has_attr.nspace = nspace;
-	has_attr.name = name;
-	has_attr.in_corlib = in_corlib;
-	has_attr.has_attr = FALSE;
+	struct FoundAttrUD attr;
+	attr.nspace = nspace;
+	attr.name = name;
+	attr.in_corlib = in_corlib;
+	attr.has_value = has_value;
 
-	mono_method_metadata_foreach_custom_attr (method, has_wellknown_attribute_func, &has_attr);
+	mono_method_metadata_foreach_custom_attr (method, has_wellknown_attribute_func, &attr);
 
-	return has_attr;
+	return attr;
 }
 
 
 static struct FoundAttrUD
 class_has_isbyreflike_attribute (MonoClass *klass)
 {
-	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "IsByRefLikeAttribute", TRUE);
+	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "IsByRefLikeAttribute", TRUE, FALSE);
 }
 
 static struct FoundAttrUD
 class_has_inlinearray_attribute (MonoClass *klass)
 {
-	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE);
+	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE, TRUE);
 }
 
 
@@ -825,7 +832,8 @@ mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *metho
 	/* FIXME: implement well known attribute check for dynamic images */
 	if (image_is_dynamic (image))
 		return FALSE;
-	return method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute", TRUE).has_attr;
+	struct FoundAttrUD attr = method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute", TRUE, FALSE);
+	return attr.has_attr;
 }
 
 static gboolean

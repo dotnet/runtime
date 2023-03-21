@@ -15,6 +15,7 @@ struct FoundAttrUD {
 	const char *nspace;
 	const char *name;
 	gboolean in_corlib;
+	gboolean has_value;
 	/* output */
 	gboolean has_attr;
 	gpointer value;
