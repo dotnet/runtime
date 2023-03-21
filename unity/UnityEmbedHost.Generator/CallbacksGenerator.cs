@@ -16,7 +16,9 @@ public class CallbacksGenerator : ISourceGenerator
             .OrderBy(m => m.Name)
             .ToArray();
 
-        ManagedGeneration.Run(context, callbackMethods);
+        CoreCLRHostGenerator.Run(context, callbackMethods);
+        CoreCLRHostNativeGenerator.Run(context, callbackMethods);
+        CoreCLRHostNativeWrappersGenerator.Run(context, callbackMethods);
         NativeGeneration.Run(context, callbackMethods);
     }
 }

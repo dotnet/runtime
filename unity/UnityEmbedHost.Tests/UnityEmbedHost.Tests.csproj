@@ -6,7 +6,9 @@
         <Nullable>enable</Nullable>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
-
+  <PropertyGroup Condition="'$(TestingUnityCoreClr)' == '1' Or '$(TestingUnityCoreClr)' == 'true'">
+    <DefineConstants>$(DefineConstants);TESTING_UNITY_CORECLR</DefineConstants>
+  </PropertyGroup>
     <ItemGroup>
       <PackageReference Include="NUnit" Version="3.13.3" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />

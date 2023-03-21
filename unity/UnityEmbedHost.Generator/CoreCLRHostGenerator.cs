@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace UnityEmbedHost.Generator;
 
-static class ManagedGeneration
+static class CoreCLRHostGenerator
 {
     public static void Run(GeneratorExecutionContext context, IMethodSymbol[] callbackMethods)
     {
@@ -72,7 +72,7 @@ static unsafe partial class CoreCLRHost
         foreach (var methodSymbol in callbackMethods)
         {
             sb.AppendLine("    [System.Runtime.InteropServices.UnmanagedCallersOnly]");
-            string signature = FormatMethodParametersForMethodSignature(methodSymbol);
+            string signature = methodSymbol.FormatMethodParametersForMethodSignature();
             sb.AppendLine($"    static {methodSymbol.ReturnType} {methodSymbol.Name}_native({signature}) => {methodSymbol.Name}({FormatMethodParametersNames(methodSymbol)});");
             sb.AppendLine();
         }
@@ -81,14 +81,10 @@ static unsafe partial class CoreCLRHost
         context.AddSource($"GeneratedCoreCLRHost.gen.cs",
             SourceText.From(sb.ToString(), Encoding.UTF8));
     }
-    static string FormatMethodParametersForMethodSignature(IMethodSymbol methodSymbol) =>
-        methodSymbol.Parameters.Select(p => $"{p.Type} {p.Name}")
-            .AggregateWithCommaSpace();
 
     static string FormatMethodParametersNames(IMethodSymbol methodSymbol) =>
         methodSymbol.Parameters.Select(p => p.Name)
             .AggregateWithCommaSpace();
-
 
     static string FormatMethodParameters(IMethodSymbol methodSymbol)
         => $"{methodSymbol.Parameters.Select(p => p.Type.ToString()).AggregateWithCommaSpace()}, {methodSymbol.ReturnType}";

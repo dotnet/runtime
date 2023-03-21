@@ -2,11 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using NiceIO;
 
 namespace BuildDriver;
 
 public class Utils
 {
+    public static string UnityEmbedHostTfmDirectoryName(GlobalConfig gConfig)
+        => Paths.UnityEmbedHost.Combine("bin", gConfig.Configuration).Directories().Single().FileName;
+
+    public static NPath RuntimeArtifactDirectory(GlobalConfig gConfig)
+        => Paths.RepoRoot.Combine("artifacts", "bin",
+            $"microsoft.netcore.app.runtime.{Paths.ShortPlatformNameInPaths}-{gConfig.Architecture}", gConfig.Configuration, "runtimes",
+            $"{Paths.ShortPlatformNameInPaths}-{gConfig.Architecture}");
+
+    public static NPath UnityTestHostDotNetRoot(GlobalConfig gConfig)
+        // Find the directory "net7.0-windows-Release-x64" without hard coding the tfm
+        => Paths.RepoRoot.Combine("artifacts/bin/testhost")
+            .DirectoryMustExist()
+            .Directories($"*-{Paths.FullPlatformNameInPaths}-{gConfig.Configuration}-{gConfig.Architecture}")
+            .Single();
+
+    public static NPath UnityTestHostDotNetAppDirectory(GlobalConfig gConfig)
+        => UnityTestHostDotNetRoot(gConfig).Combine("shared/Microsoft.NETCore.App")
+            .DirectoryMustExist()
+            .Directories()
+            // Ex: 7.0.0
+            .Single();
+
     public static string WinArchitecture(string arch) => arch.Equals("x86") ? "Win32" : "x64";
 
     public static string DotNetVerbosity(Verbosity val) =>

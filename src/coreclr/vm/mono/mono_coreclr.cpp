@@ -2128,6 +2128,18 @@ void list_tpa(const SString& searchPath, SString& tpa)
     }
 }
 
+extern "C" EXPORT_API void EXPORT_CC mono_unity_initialize_host_apis(initialize_func init_func)
+{
+    HRESULT hr;
+    g_HostStruct = (HostStruct*)malloc(sizeof(HostStruct));
+    memset(g_HostStruct, 0, sizeof(HostStruct));
+
+    hr = init_func(g_HostStruct, (int32_t)sizeof(HostStruct));
+
+    AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
+    gRootDomain = gCurrentDomain = (MonoDomain*)pCurDomain;
+}
+
 extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *file, const char* runtime_version)
 {
     #if defined(TARGET_UNIX)
@@ -2221,14 +2233,7 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
         return nullptr;
     }
 
-    g_HostStruct = (HostStruct*)malloc(sizeof(HostStruct));
-    memset(g_HostStruct, 0, sizeof(HostStruct));
-
-    hr = init_func(g_HostStruct, (int32_t)sizeof(HostStruct));
-
-    AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
-    gRootDomain = gCurrentDomain = (MonoDomain*)pCurDomain;
-
+    mono_unity_initialize_host_apis(init_func);
 
     //coreClrHelperAssembly->EnsureActive();
     //gCoreCLRHelperAssembly = (MonoImage*)coreClrHelperAssembly;

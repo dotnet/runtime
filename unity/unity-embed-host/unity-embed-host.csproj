@@ -36,45 +36,21 @@
       <PostBuildDestinationARM64Release>$(PostBuildDestinationARM64Debug)\Release\runtimes\$(DestinationPlatformDirectoryName)-arm64\lib\$(TargetFramework)</PostBuildDestinationARM64Release>
     </PropertyGroup>
     <ItemGroup>
-      <OuputFilesToCopy Include="$(OutputPath)\$(AssemblyName).*"/>
+      <OuputFilesToCopy Include="$(OutputPath)\$(AssemblyName).*" />
     </ItemGroup>
     <!-- Copy the current configuration to both the Release and Debug destinations.
           This way you can debug the native code using whichever managed configuration you prefer
     -->
 
     <!-- Debug Copies -->
-    <Copy
-      Condition="Exists('$(PostBuildDestinationX64Debug)') And '$(CopyToDebugDestination)'=='true'"
-      SourceFiles="@(OuputFilesToCopy)"
-      DestinationFolder="$(PostBuildDestinationX64Debug)"
-    />
-    <Copy
-      Condition="Exists('$(PostBuildDestinationX86Debug)') And '$(CopyToDebugDestination)'=='true'"
-      SourceFiles="@(OuputFilesToCopy)"
-      DestinationFolder="$(PostBuildDestinationX86Debug)"
-    />
-    <Copy
-      Condition="Exists('$(PostBuildDestinationARM64Debug)') And '$(CopyToDebugDestination)'=='true'"
-      SourceFiles="@(OuputFilesToCopy)"
-      DestinationFolder="$(PostBuildDestinationARM64Debug)"
-    />
+    <Copy Condition="Exists('$(PostBuildDestinationX64Debug)') And '$(CopyToDebugDestination)'=='true'" SourceFiles="@(OuputFilesToCopy)" DestinationFolder="$(PostBuildDestinationX64Debug)" />
+    <Copy Condition="Exists('$(PostBuildDestinationX86Debug)') And '$(CopyToDebugDestination)'=='true'" SourceFiles="@(OuputFilesToCopy)" DestinationFolder="$(PostBuildDestinationX86Debug)" />
+    <Copy Condition="Exists('$(PostBuildDestinationARM64Debug)') And '$(CopyToDebugDestination)'=='true'" SourceFiles="@(OuputFilesToCopy)" DestinationFolder="$(PostBuildDestinationARM64Debug)" />
 
     <!-- Release Copies -->
-    <Copy
-      Condition="Exists('$(PostBuildDestinationX64Release)') And '$(CopyToReleaseDestination)'=='true'"
-      SourceFiles="@(OuputFilesToCopy)"
-      DestinationFolder="$(PostBuildDestinationX64Release)"
-    />
-    <Copy
-      Condition="Exists('$(PostBuildDestinationX86Release)') And '$(CopyToReleaseDestination)'=='true'"
-      SourceFiles="@(OuputFilesToCopy)"
-      DestinationFolder="$(PostBuildDestinationX86Release)"
-    />
-    <Copy
-      Condition="Exists('$(PostBuildDestinationARM64Release)') And $(CopyToReleaseDestination)=='true'"
-      SourceFiles="@(OuputFilesToCopy)"
-      DestinationFolder="$(PostBuildDestinationARM64Release)"
-    />
+    <Copy Condition="Exists('$(PostBuildDestinationX64Release)') And '$(CopyToReleaseDestination)'=='true'" SourceFiles="@(OuputFilesToCopy)" DestinationFolder="$(PostBuildDestinationX64Release)" />
+    <Copy Condition="Exists('$(PostBuildDestinationX86Release)') And '$(CopyToReleaseDestination)'=='true'" SourceFiles="@(OuputFilesToCopy)" DestinationFolder="$(PostBuildDestinationX86Release)" />
+    <Copy Condition="Exists('$(PostBuildDestinationARM64Release)') And $(CopyToReleaseDestination)=='true'" SourceFiles="@(OuputFilesToCopy)" DestinationFolder="$(PostBuildDestinationARM64Release)" />
   </Target>
 
 </Project>
