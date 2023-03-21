@@ -2593,6 +2593,10 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     {
         // Number of SIMD regs needed to save the whole src to regs.
         unsigned numberOfSimdRegs = tree->AvailableTempRegCount(RBM_ALLFLOAT);
+        
+        // Lowering takes care to only introduce this node such that we will always have enough
+        // temporary SIMD registers to fully load the source and avoid any potential issues with overlap.
+        assert(numberOfSimdRegs * simdSize >= size);
 
         // Pop all temp regs to a local array, currently, this impl is limitted with LSRA's MaxInternalCount
         regNumber tempRegs[LinearScan::MaxInternalCount] = {};
