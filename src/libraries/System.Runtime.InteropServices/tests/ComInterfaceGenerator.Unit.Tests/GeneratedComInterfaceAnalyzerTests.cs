@@ -34,12 +34,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     {
                         void Bar() {}
                     }
-
-                    public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                    {
-                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                    }
-
                     """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -54,12 +48,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     {
                         void Bar() {}
                     }
-
-                    public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                    {
-                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                    }
-
                     """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -75,13 +63,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -97,12 +78,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -118,12 +93,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -139,12 +108,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -160,12 +123,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -181,12 +138,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -206,12 +157,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -232,12 +177,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -254,12 +193,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -276,12 +209,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -302,12 +229,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -328,12 +249,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -354,12 +269,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -380,12 +289,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -406,12 +309,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -438,12 +335,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -462,12 +353,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -486,12 +371,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -514,12 +393,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -542,12 +415,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -570,12 +437,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -598,12 +459,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
@@ -626,12 +481,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
-                {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,

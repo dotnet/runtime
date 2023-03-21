@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices.Marshalling
             qiHResult = 0;
             if (!CacheStrategy.TryGetTableInfo(handle, out result))
             {
-                IUnknownDerivedDetails? details = InterfaceDetailsStrategy.GetIUnknownDerivedDetails(handle);
+                IIUnknownDerivedDetails? details = InterfaceDetailsStrategy.GetIUnknownDerivedDetails(handle);
                 if (details is null)
                 {
                     return false;

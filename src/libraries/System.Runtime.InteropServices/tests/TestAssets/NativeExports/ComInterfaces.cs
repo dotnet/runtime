@@ -15,7 +15,7 @@ using static System.Runtime.InteropServices.ComWrappers;
 
 namespace NativeExports;
 
-public static unsafe class ComInterfaceGeneratorExports
+public static unsafe class ComInterfaces
 {
     interface IComInterface1
     {
@@ -30,42 +30,70 @@ public static unsafe class ComInterfaceGeneratorExports
     [UnmanagedCallersOnly(EntryPoint = "get_com_object")]
     public static void* CreateComObject()
     {
-        MyComWrapper cw = new();
         var myObject = new MyObject();
-        nint ptr = cw.GetOrCreateComInterfaceForObject(myObject, CreateComInterfaceFlags.None);
+        nint ptr = ComWrappersInstance.GetOrCreateComInterfaceForObject(myObject, CreateComInterfaceFlags.None);
 
         return (void*)ptr;
     }
 
+    [UnmanagedCallersOnly(EntryPoint = "set_com_object_data")]
+    public static void SetComObjectData(void* ptr, int value)
+    {
+        IComInterface1 obj = (IComInterface1)ComWrappersInstance.GetOrCreateObjectForComInstance((nint)ptr, CreateObjectFlags.None);
+        obj.SetData(value);
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "get_com_object_data")]
+    public static int GetComObjectData(void* ptr)
+    {
+        IComInterface1 obj = (IComInterface1)ComWrappersInstance.GetOrCreateObjectForComInstance((nint)ptr, CreateObjectFlags.None);
+        return obj.GetData();
+    }
+
+    private static readonly ComWrappers ComWrappersInstance = new MyComWrapper();
+
     class MyComWrapper : System.Runtime.InteropServices.ComWrappers
     {
-        static void* _s_comInterface1VTable = null;
-        static void* s_comInterface1VTable
+        static volatile void* s_comInterface1VTable = null;
+        static void* IComInterface1VTable
         {
             get
             {
-                if (MyComWrapper._s_comInterface1VTable != null)
-                    return _s_comInterface1VTable;
-                void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComInterfaceGeneratorExports), sizeof(void*) * 5);
+                if (s_comInterface1VTable != null)
+                    return s_comInterface1VTable;
+                void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComInterfaces), sizeof(void*) * 5);
                 GetIUnknownImpl(out var fpQueryInterface, out var fpAddReference, out var fpRelease);
                 vtable[0] = (void*)fpQueryInterface;
                 vtable[1] = (void*)fpAddReference;
                 vtable[2] = (void*)fpRelease;
                 vtable[3] = (delegate* unmanaged<void*, int*, int>)&MyObject.ABI.GetData;
                 vtable[4] = (delegate* unmanaged<void*, int, int>)&MyObject.ABI.SetData;
-                _s_comInterface1VTable = vtable;
-                return _s_comInterface1VTable;
+                s_comInterface1VTable = vtable;
+                return s_comInterface1VTable;
+            }
+        }
+
+        static volatile ComInterfaceEntry* s_myObjectComInterfaceEntries = null;
+        static ComInterfaceEntry* MyObjectComInterfaceEntries
+        {
+            get
+            {
+                if (s_myObjectComInterfaceEntries != null)
+                    return s_myObjectComInterfaceEntries;
+
+                ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(MyObject), sizeof(ComInterfaceEntry));
+                comInterfaceEntry->IID = IComInterface1.IID;
+                comInterfaceEntry->Vtable = (nint)IComInterface1VTable;
+                s_myObjectComInterfaceEntries = comInterfaceEntry;
+                return s_myObjectComInterfaceEntries;
             }
         }
         protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
         {
             if (obj is MyObject)
             {
-                ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(MyObject), sizeof(ComInterfaceEntry));
-                comInterfaceEntry->IID = IComInterface1.IID;
-                comInterfaceEntry->Vtable = (nint)s_comInterface1VTable;
                 count = 1;
-                return comInterfaceEntry;
+                return MyObjectComInterfaceEntries;
             }
             count = 0;
             return null;
@@ -77,20 +105,25 @@ public static unsafe class ComInterfaceGeneratorExports
             {
                 return null;
             }
-            return new IComInterface1Impl(ptr);
+            return new IComInterface1Impl(IComInterfaceImpl);
         }
 
         protected override void ReleaseObjects(IEnumerable objects) { }
     }
 
     // Wrapper for calling CCWs from the ComInterfaceGenerator
-    class IComInterface1Impl : IComInterface1
+    sealed class IComInterface1Impl : IComInterface1
     {
         nint _ptr;
 
         public IComInterface1Impl(nint @this)
         {
             _ptr = @this;
+        }
+
+        ~IComInterface1Impl()
+        {
+            int refCount = Marshal.Release(_ptr);
         }
 
         int GetData(nint inst)

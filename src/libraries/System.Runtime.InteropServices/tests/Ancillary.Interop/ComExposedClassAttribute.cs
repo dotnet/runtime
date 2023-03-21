@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class ComExposedClassAttribute<T> : Attribute, IComExposedDetails
         where T : IComExposedClass
     {

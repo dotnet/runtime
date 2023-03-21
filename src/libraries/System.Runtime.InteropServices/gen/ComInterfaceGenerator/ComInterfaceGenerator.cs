@@ -726,7 +726,7 @@ namespace Microsoft.Interop
                         .WithExpressionBody(
                             ArrowExpressionClause(
                                 ConditionalExpression(
-                                    BinaryExpression(SyntaxKind.EqualsExpression,
+                                    BinaryExpression(SyntaxKind.NotEqualsExpression,
                                         IdentifierName(vtableFieldName),
                                         LiteralExpression(SyntaxKind.NullLiteralExpression)),
                                     IdentifierName(vtableFieldName),

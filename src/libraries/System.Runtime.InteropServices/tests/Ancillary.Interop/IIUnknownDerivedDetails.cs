@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// Details for the IUnknown derived interface.
     /// </summary>
-    public interface IUnknownDerivedDetails
+    public interface IIUnknownDerivedDetails
     {
         /// <summary>
         /// Interface ID.
@@ -28,14 +28,14 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         public unsafe void** ManagedVirtualMethodTable { get; }
 
-        internal static IUnknownDerivedDetails? GetFromAttribute(RuntimeTypeHandle handle)
+        internal static IIUnknownDerivedDetails? GetFromAttribute(RuntimeTypeHandle handle)
         {
             var type = Type.GetTypeFromHandle(handle);
             if (type is null)
             {
                 return null;
             }
-            return (IUnknownDerivedDetails?)type.GetCustomAttribute(typeof(IUnknownDerivedAttribute<,>));
+            return (IIUnknownDerivedDetails?)type.GetCustomAttribute(typeof(IUnknownDerivedAttribute<,>));
         }
     }
 }

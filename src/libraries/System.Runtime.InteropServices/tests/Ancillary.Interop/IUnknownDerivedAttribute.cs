@@ -6,8 +6,8 @@
 
 namespace System.Runtime.InteropServices.Marshalling
 {
-    [AttributeUsage(AttributeTargets.Interface)]
-    public class IUnknownDerivedAttribute<T, TImpl> : Attribute, IUnknownDerivedDetails
+    [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
+    public class IUnknownDerivedAttribute<T, TImpl> : Attribute, IIUnknownDerivedDetails
         where T : IIUnknownInterfaceType
     {
         public IUnknownDerivedAttribute()

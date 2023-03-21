@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="type">RuntimeTypeHandle instance</param>
         /// <returns>Details if type is known.</returns>
-        IUnknownDerivedDetails? GetIUnknownDerivedDetails(RuntimeTypeHandle type);
+        IIUnknownDerivedDetails? GetIUnknownDerivedDetails(RuntimeTypeHandle type);
 
         /// <summary>
         /// Given a <see cref="RuntimeTypeHandle"/> get the details about the type that are exposed to COM.

@@ -9,7 +9,7 @@ using System.Collections;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
-    public abstract class StrategyBasedComWrappers : InteropServices.ComWrappers
+    public class StrategyBasedComWrappers : ComWrappers
     {
         public static IIUnknownInterfaceDetailsStrategy DefaultIUnknownInterfaceDetailsStrategy { get; } = Marshalling.DefaultIUnknownInterfaceDetailsStrategy.Instance;
 

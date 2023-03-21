@@ -8,7 +8,6 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Interop
@@ -54,7 +53,7 @@ namespace Microsoft.Interop
                 writer.WriteLine(classInfoType.ToFullString());
                 writer.WriteLine();
                 writer.WriteLine(attribute);
-                context.AddSource(comClassInfo.ClassName, SourceText.From(writer.ToString()));
+                context.AddSource(comClassInfo.ClassName, writer.ToString());
             });
         }
 
@@ -78,28 +77,34 @@ namespace Microsoft.Interop
             const string detailsTempLocal = "details";
             const string countIdentifier = "count";
             var typeDeclaration = ClassDeclaration(ClassInfoTypeName)
-                .AddModifiers(Token(SyntaxKind.FileKeyword), Token(SyntaxKind.SealedKeyword))
+                .AddModifiers(
+                    Token(SyntaxKind.FileKeyword),
+                    Token(SyntaxKind.SealedKeyword),
+                    Token(SyntaxKind.UnsafeKeyword))
                 .AddBaseListTypes(SimpleBaseType(ParseTypeName(TypeNames.IComExposedClass)))
                 .AddMembers(
                     FieldDeclaration(
                         VariableDeclaration(
                             PointerType(
-                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch)),
+                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
                             SingletonSeparatedList(VariableDeclarator(vtablesField))))
-                    .AddModifiers(Token(SyntaxKind.PrivateKeyword), Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.VolatileKeyword)));
+                    .AddModifiers(
+                        Token(SyntaxKind.PrivateKeyword),
+                        Token(SyntaxKind.StaticKeyword),
+                        Token(SyntaxKind.VolatileKeyword)));
             List<StatementSyntax> vtableInitializationBlock = new()
             {
-                // ComInterfaceDispatch* vtables = (ComInterfaceDispatch*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(<className>), sizeof(void*) * <numInterfaces>);
+                // ComInterfaceEntry* vtables = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(<className>), sizeof(void*) * <numInterfaces>);
                 LocalDeclarationStatement(
                     VariableDeclaration(
                             PointerType(
-                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch)),
+                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
                             SingletonSeparatedList(
                                 VariableDeclarator(vtablesLocal)
                                     .WithInitializer(EqualsValueClause(
                                         CastExpression(
                                             PointerType(
-                                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch)),
+                                                ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
                                         InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                                 ParseTypeName(TypeNames.System_Runtime_CompilerServices_RuntimeHelpers),
@@ -167,10 +172,12 @@ namespace Microsoft.Interop
                                             AssignmentExpression(
                                                 SyntaxKind.SimpleAssignmentExpression,
                                                 IdentifierName("Vtable"),
-                                                MemberAccessExpression(
-                                                    SyntaxKind.SimpleMemberAccessExpression,
-                                                    IdentifierName("details"),
-                                                    IdentifierName("ManagedVirtualMethodTable")))
+                                                CastExpression(
+                                                    IdentifierName("nint"),
+                                                    MemberAccessExpression(
+                                                        SyntaxKind.SimpleMemberAccessExpression,
+                                                        IdentifierName("details"),
+                                                        IdentifierName("ManagedVirtualMethodTable"))))
                                         }))))));
             }
 
@@ -182,6 +189,12 @@ namespace Microsoft.Interop
                         IdentifierName(vtablesLocal))));
 
             BlockSyntax getComInterfaceEntriesMethodBody = Block(
+                // count = <count>;
+                ExpressionStatement(
+                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(countIdentifier),
+                        LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                            Literal(info.ImplementedInterfacesNames.Array.Length)))),
                 // if (s_vtable == null)
                 //   { initializer block }
                 IfStatement(
@@ -197,13 +210,14 @@ namespace Microsoft.Interop
                 // { body }
                 MethodDeclaration(
                     PointerType(
-                        ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch)),
+                        ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
                     "GetComInterfaceEntries")
                     .AddParameterListParameters(
                         Parameter(Identifier(countIdentifier))
-                            .WithType(RefType(PredefinedType(Token(SyntaxKind.IntKeyword)))))
+                            .WithType(PredefinedType(Token(SyntaxKind.IntKeyword)))
+                            .AddModifiers(Token(SyntaxKind.OutKeyword)))
                     .WithBody(getComInterfaceEntriesMethodBody)
-                    .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.UnsafeKeyword)));
+                    .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword)));
 
             return typeDeclaration;
         }

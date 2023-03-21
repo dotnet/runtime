@@ -12,9 +12,9 @@ namespace System.Runtime.InteropServices.Marshalling
             return IComExposedDetails.GetFromAttribute(type);
         }
 
-        public IUnknownDerivedDetails? GetIUnknownDerivedDetails(RuntimeTypeHandle type)
+        public IIUnknownDerivedDetails? GetIUnknownDerivedDetails(RuntimeTypeHandle type)
         {
-            return IUnknownDerivedDetails.GetFromAttribute(type);
+            return IIUnknownDerivedDetails.GetFromAttribute(type);
         }
     }
 }
