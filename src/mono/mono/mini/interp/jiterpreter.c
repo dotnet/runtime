@@ -1334,22 +1334,19 @@ mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
 	}
 }
 
-#define TRACE_EFFECTIVE_DISTANCE_LIMIT 64
-#define TRACE_LENGTH_DIVISOR 2
-#define TRACE_THRESHOLD_DIVISOR 3.0
+#define TRACE_PENALTY_LIMIT 200
 #define TRACE_MONITORING_DETAILED FALSE
 
 ptrdiff_t
 mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 {
-	gint32 index = READ32(ip + 1);
-	TraceInfo *info = trace_info_get(index);
-	g_assert(info);
+	gint32 index = READ32 (ip + 1);
+	TraceInfo *info = trace_info_get (index);
+	g_assert (info);
 
 	JiterpreterThunk thunk = info->thunk;
 	// FIXME: This shouldn't be possible
-	if (((guint32)(void *)thunk) <= JITERPRETER_NOT_JITTED)
-		return 6;
+	g_assert (((guint32)(void *)thunk) > JITERPRETER_NOT_JITTED);
 
 	JiterpreterCallInfo cinfo;
 	cinfo.backward_branch_taken = 0;
@@ -1357,7 +1354,7 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 
 	InterpFrame *frame = _frame;
 
-	ptrdiff_t result = thunk(frame, locals, &cinfo);
+	ptrdiff_t result = thunk (frame, locals, &cinfo);
 	// If a backward branch was taken, we can treat the trace as if it successfully
 	//  executed at least one time. We don't know how long it actually ran, but back
 	//  branches are almost always going to be loops. It's fine if a bailout happens
@@ -1370,10 +1367,10 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 		// Start with a penalty of 2 and lerp all the way down to 0
 		float scaled = (float)(cinfo.bailout_opcode_count - mono_opt_jiterpreter_trace_monitoring_short_distance)
 			/ (mono_opt_jiterpreter_trace_monitoring_long_distance - mono_opt_jiterpreter_trace_monitoring_short_distance);
-		int penalty = MIN((int)((1.0f - scaled) * 200.0f), 200);
+		int penalty = MIN ((int)((1.0f - scaled) * TRACE_PENALTY_LIMIT), TRACE_PENALTY_LIMIT);
 		info->penalty_total += penalty;
 
-		// g_print("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
+		// g_print ("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
 	}
 
 	gint64 hit_count = info->hit_count++ - mono_opt_jiterpreter_minimum_trace_hit_count;
