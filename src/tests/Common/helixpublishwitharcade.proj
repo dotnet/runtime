@@ -626,6 +626,7 @@
     <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\nativeaottest.cmd" Condition=" '$(NativeAotTest)' == 'true' " />
     <HelixPreCommand Include="set __TestEnv=%HELIX_WORKITEM_PAYLOAD%\$(TestEnvFileName)" />
     <HelixPreCommand Include="set __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
+    <HelixPreCommand Include="set __TestCollectionTimeoutMins=$(TimeoutPerTestCollectionInMinutes)" Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' " />
     <HelixPreCommand Include="set __CollectDumps=1" />
     <HelixPreCommand Include="set __CrashDumpFolder=%HELIX_DUMP_FOLDER%" />
     <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
@@ -676,6 +677,7 @@
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/nativeaottest.sh" Condition=" '$(NativeAotTest)' == 'true' " />
     <HelixPreCommand Include="export __TestEnv=$HELIX_WORKITEM_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
+    <HelixPreCommand Include="export __TestCollectionTimeoutMins=$(TimeoutPerTestCollectionInMinutes)" Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' " />
     <HelixPreCommand Include="export __CollectDumps=1" />
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
     <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
