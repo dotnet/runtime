@@ -506,6 +506,13 @@ ones_complement: dest:x src1:x len:4
 xextract: dest:i src1:x len:12
 xbinop_forceint: dest:x src1:x src2:x len:4
 xcast: dest:x src1:x len:4 clob:1
+extract_i1: dest:i src1:x len:4
+extract_i2: dest:i src1:x len:4
+extract_i4: dest:i src1:x len:4
+extract_i8: dest:i src1:x len:4
+extract_r4: dest:f src1:x len:4
+extract_r8: dest:f src1:x len:4
+arm64_xaddv: dest:x src1:x len:8
 
 generic_class_init: src1:a len:44 clob:c
 gc_safe_point: src1:i len:12 clob:c
