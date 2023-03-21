@@ -133,7 +133,7 @@ jobs:
               - (Windows.Server.Core.1909.Amd64.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64
           - ${{ if ne(parameters.jobParameters.isFullMatrix, true) }}:
             - Windows.81.Amd64.Open
-            - Windows.10.Amd64.Server2022.ES.Open
+            - Windows.Amd64.Server2022.Open
             - Windows.11.Amd64.Client.Open
             - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
               - (Windows.Server.Core.1909.Amd64.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64
@@ -158,7 +158,7 @@ jobs:
             - Windows.Amd64.Server2022.Open
           - ${{ if ne(parameters.jobParameters.isFullMatrix, true) }}:
             - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
-              - Windows.10.Amd64.Server2022.ES.Open
+              - Windows.Amd64.Server2022.Open
             - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
               - Windows.7.Amd64.Open
               - Windows.Amd64.Server2022.Open
