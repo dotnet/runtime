@@ -49,7 +49,8 @@ struct _MonoClass {
 	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
 	guint is_array_special_interface : 1; /* gtd or ginst of once of the magic interfaces that arrays implement */
 	guint is_byreflike    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.IsByRefLikeAttribute */
-	guint inlinearray_value; /* class is a valuetype and has System.Runtime.CompilerServices.InlineArrayAttribute */
+	guint is_inlinearray    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.InlineArrayAttribute */
+	guint inlinearray_value; /* class is a valuetype and has System.Runtime.CompilerServices.InlineArrayAttribute value */
 
 	/* next byte */
 	guint8 min_align;

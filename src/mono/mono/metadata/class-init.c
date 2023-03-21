@@ -292,6 +292,9 @@ mono_class_setup_fields (MonoClass *klass)
 		instance_size = MONO_ABI_SIZEOF (MonoObject);
 	}
 
+	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0)
+		mono_class_set_type_load_failure (klass, "Inline array lenght must be greater than 0.");
+
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
 	if (explicit_size)
@@ -358,6 +361,10 @@ mono_class_setup_fields (MonoClass *klass)
 			}
 			if (mono_class_is_gtd (klass)) {
 				mono_class_set_type_load_failure (klass, "Generic class cannot have explicit layout.");
+				break;
+			}
+			if (m_class_is_inlinearray (klass)) {
+				mono_class_set_type_load_failure (klass, "Inline array struct must not have explicit layout.");
 				break;
 			}
 		}
@@ -706,8 +713,14 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		if (attr.has_attr)
 			klass->is_byreflike = 1;
 		attr = class_has_inlinearray_attribute (klass);
-		if (attr.has_attr)
-			klass->inlinearray_value = *(int*)attr.value;
+		if (attr.has_attr) {
+			klass->is_inlinearray = 1;
+			if (*(intptr_t*)attr.value > G_MAXUINT32) {
+				mono_class_set_type_load_failure (klass, "Inline array length > G_MAXUINT32");
+				goto parent_failure;
+			}
+			klass->inlinearray_value = *(guint32*)attr.value;
+		}
 	}
 
 	mono_loader_unlock ();
@@ -886,6 +899,8 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->this_arg.type = m_class_get_byval_arg (klass)->type;
 	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
 	klass->this_arg.byref__ = TRUE;
+	klass->is_inlinearray = gklass->is_inlinearray;
+	klass->inlinearray_value = gklass->inlinearray_value;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
@@ -2202,6 +2217,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			real_size = MONO_ABI_SIZEOF (MonoObject);
 		}
 
+		gboolean is_inlined = FALSE;
 		for (pass = 0; pass < passes; ++pass) {
 			for (i = 0; i < top; i++){
 				gint32 align;
@@ -2235,8 +2251,15 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				}
 
 				size = mono_type_size (field->type, &align);
-				if (klass->inlinearray_value > 0)
-					size *= klass->inlinearray_value;
+				if (m_class_is_inlinearray (klass)) {
+					if (!is_inlined) {
+						size *= m_class_inlinearray_value (klass);
+						is_inlined = TRUE;
+					} else {
+						mono_class_set_type_load_failure (klass, "Inline array struct must have a single field.");
+						break;
+					}
+				}
 
 				/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
 				align = packing_size ? MIN (packing_size, align): align;
@@ -2435,6 +2458,9 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		field_offsets [i] &= ~(align - 1);
 		class_size = field_offsets [i] + size;
 	}
+
+	if (m_class_is_inlinearray (klass) && has_static_fields)
+		mono_class_set_type_load_failure (klass, "Struct with inline array atribute must have a single field.");
 
 	if (has_static_fields && class_size == 0)
 		/* Simplify code which depends on class_size != 0 if the class has static fields */
