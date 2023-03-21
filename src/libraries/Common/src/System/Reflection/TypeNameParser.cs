@@ -381,25 +381,17 @@ namespace System.Reflection
         //
         private static TokenType CharToToken(char c)
         {
-            switch (c)
+            return c switch
             {
-                case '\0':
-                    return TokenType.End;
-                case '[':
-                    return TokenType.OpenSqBracket;
-                case ']':
-                    return TokenType.CloseSqBracket;
-                case ',':
-                    return TokenType.Comma;
-                case '+':
-                    return TokenType.Plus;
-                case '*':
-                    return TokenType.Asterisk;
-                case '&':
-                    return TokenType.Ampersand;
-                default:
-                    return TokenType.Other;
-            }
+                '\0' => TokenType.End,
+                '[' => TokenType.OpenSqBracket,
+                ']' => TokenType.CloseSqBracket,
+                ',' => TokenType.Comma,
+                '+' => TokenType.Plus,
+                '*' => TokenType.Asterisk,
+                '&' => TokenType.Ampersand,
+                _ => TokenType.Other,
+            };
         }
 
         //
