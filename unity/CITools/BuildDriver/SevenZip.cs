@@ -57,17 +57,16 @@ public class SevenZip
     {
         return Task.Run(() =>
         {
-#pragma warning disable SYSLIB0014
-            WebClient wc = new();
-#pragma warning restore SYSLIB0014
-            string url, filename;
-            Get7ZipUrl(out url, out filename);
+            Get7ZipUrl(out string url, out string filename);
             NPath zipDest = Paths.Artifacts.Combine(filename);
             zipDest.Parent.EnsureDirectoryExists();
             if (!zipDest.FileExists())
             {
                 Console.WriteLine($"Starting download of 7zip: {filename}");
-                wc.DownloadFile(url, zipDest);
+                using (HttpClient client = new())
+                    using (Task<Stream> s = client.GetStreamAsync(url))
+                        using (FileStream fs = new(zipDest, FileMode.OpenOrCreate))
+                            s.Result.CopyTo(fs);
             }
 
             NPath destDir = zipDest.Parent.Combine(zipDest.FileNameWithoutExtension);
