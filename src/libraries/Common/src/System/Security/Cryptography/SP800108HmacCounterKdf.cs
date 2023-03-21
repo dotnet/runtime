@@ -558,12 +558,27 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA256:
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
+                    break;
 #if NET8_0_OR_GREATER
                 case HashAlgorithmNames.SHA3_256:
-                case HashAlgorithmNames.SHA3_384:
-                case HashAlgorithmNames.SHA3_512:
-#endif
+                    if (!HMACSHA3_256.IsSupported)
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
                     break;
+                case HashAlgorithmNames.SHA3_384:
+                    if (!HMACSHA3_384.IsSupported)
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+                    break;
+                case HashAlgorithmNames.SHA3_512:
+                    if (!HMACSHA3_512.IsSupported)
+                    {
+                        throw new PlatformNotSupportedException();
+                    }
+                    break;
+#endif
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName));
             }
