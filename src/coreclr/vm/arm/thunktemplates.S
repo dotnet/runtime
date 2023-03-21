@@ -9,7 +9,7 @@
 
     .align 4
 
-PAGE_SIZE = 4096
+PAGE_SIZE = 16384
 
 #define DATA_SLOT(stub, field) stub##Code + PAGE_SIZE + stub##Data__##field
 

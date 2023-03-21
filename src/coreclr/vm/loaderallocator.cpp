@@ -1194,16 +1194,16 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
 
-    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetOsPageSize(),
-                                                                           2 * GetOsPageSize(),
+    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+                                                                           2 * GetStubCodePageSize(),
                                                                            &m_stubPrecodeRangeList,
                                                                            UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                            false /* fUnlocked */,
                                                                            StubPrecode::GenerateCodePage,
                                                                            StubPrecode::CodeSize);
 
-    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetOsPageSize(),
-                                                                       2 * GetOsPageSize(),
+    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+                                                                       2 * GetStubCodePageSize(),
                                                                        &m_fixupPrecodeRangeList,
                                                                        UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                        false /* fUnlocked */,

@@ -13,7 +13,7 @@ include AsmConstants.inc
 .686P
 .XMM
 
-PAGE_SIZE EQU 4096
+PAGE_SIZE EQU 16384
 
 DATA_SLOT macro stub, field
     exitm @CatStr(<_>, stub, <Code@0 + PAGE_SIZE + >, stub, <Data__>, field)

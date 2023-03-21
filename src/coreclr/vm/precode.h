@@ -114,7 +114,7 @@ struct StubPrecode
     PTR_StubPrecodeData GetData() const
     {
         LIMITED_METHOD_CONTRACT;
-        return dac_cast<PTR_StubPrecodeData>(dac_cast<TADDR>(this) + GetOsPageSize());
+        return dac_cast<PTR_StubPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
     }
 
     TADDR GetMethodDesc()
@@ -252,7 +252,7 @@ struct FixupPrecode
     PTR_FixupPrecodeData GetData() const
     {
         LIMITED_METHOD_CONTRACT;
-        return dac_cast<PTR_FixupPrecodeData>(dac_cast<TADDR>(this) + GetOsPageSize());
+        return dac_cast<PTR_FixupPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
     }
 
     TADDR GetMethodDesc()
@@ -579,7 +579,7 @@ public:
     static DWORD GetMaxTemporaryEntryPointsCount()
     {
         SIZE_T maxPrecodeCodeSize = Max(FixupPrecode::CodeSize, StubPrecode::CodeSize);
-        SIZE_T count = GetOsPageSize() / maxPrecodeCodeSize;
+        SIZE_T count = GetStubCodePageSize() / maxPrecodeCodeSize;
         _ASSERTE(count < MAXDWORD);
         return (DWORD)count;
     }

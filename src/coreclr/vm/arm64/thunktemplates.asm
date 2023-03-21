@@ -5,38 +5,36 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
+PAGE_SIZE = 16384
 
-    for STUB_PAGE_SIZE, <4096, 8192, 16384, 32768, 65536>
-#define DATA_SLOT(stub, field) (stub##Code + &STUB_PAGE_SIZE& + stub##Data__##field)
+#define DATA_SLOT(stub, field) (stub##Code + PAGE_SIZE + stub##Data__##field)
 
-    LEAF_ENTRY StubPrecodeCode&STUB_PAGE_SIZE
+    LEAF_ENTRY StubPrecodeCode
         ldr x10, DATA_SLOT(StubPrecode, Target)
         ldr x12, DATA_SLOT(StubPrecode, MethodDesc)
         br x10
-    LEAF_END_MARKED StubPrecodeCode&STUB_PAGE_SIZE
+    LEAF_END_MARKED StubPrecodeCode
 
-    LEAF_ENTRY FixupPrecodeCode&STUB_PAGE_SIZE
+    LEAF_ENTRY FixupPrecodeCode
         ldr x11, DATA_SLOT(FixupPrecode, Target)
         br  x11
         ldr x12, DATA_SLOT(FixupPrecode, MethodDesc)
         ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
         br  x11        
-    LEAF_END_MARKED FixupPrecodeCode\STUB_PAGE_SIZE
+    LEAF_END_MARKED FixupPrecodeCode
 
-    LEAF_ENTRY CallCountingStubCode\STUB_PAGE_SIZE
-LOCAL_LABEL(StubStart\STUB_PAGE_SIZE):
+    LEAF_ENTRY CallCountingStubCode
+LOCAL_LABEL(StubStart):
         ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
         ldrh w10, [x9]
         subs w10, w10, #1
         strh w10, [x9]
-        beq LOCAL_LABEL(CountReachedZero\STUB_PAGE_SIZE)
+        beq LOCAL_LABEL(CountReachedZero)
         ldr  x9, DATA_SLOT(CallCountingStub, TargetForMethod)
         br   x9
-LOCAL_LABEL(CountReachedZero\STUB_PAGE_SIZE):
+LOCAL_LABEL(CountReachedZero):
         ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
         br   x10
-    LEAF_END_MARKED CallCountingStubCode\STUB_PAGE_SIZE
-
-    endm
+    LEAF_END_MARKED CallCountingStubCode
 
     END

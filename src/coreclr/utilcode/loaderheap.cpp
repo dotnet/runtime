@@ -740,8 +740,8 @@ struct LoaderHeapFreeBlock
             }
             else
             {
-                _ASSERTE(dwTotalSize == (pHeap->m_dwGranularity / 2));
-                memset((BYTE*)pMem + (pHeap->m_dwGranularity / 2), 0xcc, dwTotalSize);
+                _ASSERTE(dwTotalSize == GetStubCodePageSize());
+                memset((BYTE*)pMem + GetStubCodePageSize(), 0xcc, dwTotalSize);
             }
 #endif // DEBUG
 
@@ -958,7 +958,7 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     // Round to VIRTUAL_ALLOC_RESERVE_GRANULARITY
     m_dwTotalAlloc               = 0;
 
-    _ASSERTE((m_dwGranularity % (GetOsPageSize() * 2)) == 0); // Granularity MUST be in increments of 2 times the page size
+    _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
     m_dwGranularity = dwGranularity;
 
 #ifdef _DEBUG
@@ -1100,7 +1100,7 @@ BOOL UnlockedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
 
     if (IsInterleaved())
     {
-        _ASSERTE(dwSizeToCommitPart == m_dwGranularity);
+        _ASSERTE(dwSizeToCommitPart == GetStubCodePageSize());
 
         void *pTemp = ExecutableAllocator::Instance()->Commit((BYTE*)pData + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
         if (pTemp == NULL)
@@ -1265,9 +1265,9 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         // This mode interleaves data and code pages 1:1. So the code size is required to be smaller than
         // or equal to the page size to ensure that the code range is consecutive.
-        _ASSERTE(dwMinSize <= GetOsPageSize());
+        _ASSERTE(dwMinSize <= GetStubCodePageSize());
         // For interleaved heap, we always get two memory pages - one for code and one for data
-        dwMinSize = m_dwGranularity;
+        dwMinSize = 2 * GetStubCodePageSize();
     }
 
     // Does this fit in the reserved region?
@@ -1293,7 +1293,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         {
             // The end of committed region for interleaved heaps points to the end of the executable
             // page and the data pages goes right after that. So we skip the data page here.
-            pCommitBaseAddress += m_dwGranularity / 2;
+            pCommitBaseAddress += GetStubCodePageSize();
         }
         else
         {
@@ -1321,7 +1321,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
             // block list.
             // Otherwise the remaining bytes that are available will be wasted.
-            if (unusedRemainder >= m_dwGranularity)
+            if (unusedRemainder >= GetStubCodePageSize())
             {
                 LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
             }
@@ -1346,7 +1346,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     // block list.
     // Otherwise the remaining bytes that are available will be wasted.
     size_t unusedRemainder = (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);
-    if (unusedRemainder >= AllocMem_TotalSize(m_dwGranularity))
+    if (unusedRemainder >= AllocMem_TotalSize(GetStubCodePageSize()))
     {
         LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, m_pAllocPtr, unusedRemainder, this);
     }
@@ -1650,8 +1650,8 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
         if (IsInterleaved())
         {
             // Clear the RW page
-            _ASSERTE(dwSize == (m_dwGranularity / 2));
-            memset((BYTE*)pMem + (m_dwGranularity / 2), 0x00, dwSize); // Fill freed region with 0
+            _ASSERTE(dwSize == GetStubCodePageSize());
+            memset((BYTE*)pMem + GetStubCodePageSize(), 0x00, dwSize); // Fill freed region with 0
         }
         else
         {

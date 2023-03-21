@@ -114,7 +114,7 @@ public:
 protected:
     PTR_CallCountingStubData GetData() const
     {
-        return dac_cast<PTR_CallCountingStubData>(dac_cast<TADDR>(this) + GetOsPageSize());
+        return dac_cast<PTR_CallCountingStubData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
     }
 
 #ifndef DACCESS_COMPILE

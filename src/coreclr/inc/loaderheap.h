@@ -154,6 +154,15 @@ struct LoaderHeapEvent;
 
 
 
+// When an interleaved LoaderHeap is constructed, this is the interleaving size
+inline UINT32 GetStubCodePageSize()
+{
+#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+    return max(16384, GetOsPageSize());
+#else
+    return 16384;
+#endif
+}
 
 
 
