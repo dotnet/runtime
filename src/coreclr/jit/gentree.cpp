@@ -16437,7 +16437,7 @@ bool Compiler::gtSplitTree(
             }
 
             Statement* stmt = nullptr;
-            if (!(*use)->IsValue() || (*use)->OperIs(GT_ASG) || (user == nullptr) ||
+            if (!(*use)->IsValue() || (*use)->gtEffectiveVal()->OperIs(GT_ASG) || (user == nullptr) ||
                 (user->OperIs(GT_COMMA) && (user->gtGetOp1() == *use)))
             {
                 GenTree* sideEffects = nullptr;
