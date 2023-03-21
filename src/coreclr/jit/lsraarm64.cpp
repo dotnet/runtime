@@ -76,7 +76,7 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
 
     INDEBUG(int refPosCount = 1);
-    regMaskTP busyConsecutiveRegMask = ~(((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
+    regMaskTP busyConsecutiveRegMask = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
 
     while (consecutiveRefPosition != nullptr)
     {
@@ -84,7 +84,10 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
         {
-            if (consecutiveRefPosition->getInterval()->isPartiallySpilled)
+            Interval* srcInterval = consecutiveRefPosition->getInterval();
+            assert(srcInterval->isUpperVector);
+            assert(srcInterval->relatedInterval != nullptr);
+            if (srcInterval->relatedInterval->isPartiallySpilled)
             {
                 // Make sure that restore doesn't get one of the registers that are part of series we are trying to set
                 // currently.
