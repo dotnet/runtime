@@ -354,8 +354,14 @@ namespace System.Net.Http.Tests
             value2.MaxStale = true;
             CompareValues(value1, value2, true);
 
-            value2.MaxStaleLimit = new TimeSpan(1, 2, 3);
+            value1.MaxStaleLimit = new TimeSpan(1, 2, 3);
             CompareValues(value1, value2, false);
+
+            value2.MaxStaleLimit = new TimeSpan(2, 3, 4);
+            CompareValues(value1, value2, false);
+
+            value1.MaxStaleLimit = new TimeSpan(2, 3, 4);
+            CompareValues(value1, value2, true);
         }
 
         [Fact]
