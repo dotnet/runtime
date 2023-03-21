@@ -16,15 +16,31 @@ public class CoreCLR
         Console.WriteLine("Unity: Building CoreCLR runtime");
         Console.WriteLine("******************************");
 
-        string crossbuild = string.Empty;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && gConfig.Architecture.Equals("arm64") &&
-            RuntimeInformation.OSArchitecture != Architecture.Arm64)
-            crossbuild = " /p:CrossBuild=true";
+
+        var args = new List<string>
+        {
+            "-subset clr+libs",
+            $"-a {gConfig.Architecture}",
+            $"-c {gConfig.Configuration}",
+            "-ci",
+            $"-v:{gConfig.DotNetVerbosity}"
+        };
+
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            string crossbuild = string.Empty;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && gConfig.Architecture.Equals("arm64") &&
+                RuntimeInformation.OSArchitecture != Architecture.Arm64)
+                crossbuild = " /p:CrossBuild=true";
+            // Avoids a message
+            // 'The -ninja option has no effect on Windows builds since the Ninja generator is the default generator.'
+            args.Add($"-ninja{crossbuild}");
+        }
 
         ProcessStartInfo sInfo = new()
         {
             FileName = BuildScript,
-            Arguments = $"-subset clr+libs -a {gConfig.Architecture} -c {gConfig.Configuration} -ci -ninja{crossbuild}",
+            Arguments = args.AggregateWithSpace(),
             WorkingDirectory = Paths.RepoRoot
         };
 
@@ -37,9 +53,26 @@ public class CoreCLR
         Console.WriteLine("Unity: Running class library tests");
         Console.WriteLine("******************************");
 
+        var args = new List<string>
+        {
+            "-subset libs.tests",
+            "-test /p:RunSmokeTestsOnly=true",
+            $"-a {gConfig.Architecture}",
+            $"-c {gConfig.Configuration}",
+            "-ci",
+            $"-v:{gConfig.DotNetVerbosity}"
+        };
+
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            // Avoids a message
+            // 'The -ninja option has no effect on Windows builds since the Ninja generator is the default generator.'
+            args.Add($"-ninja");
+        }
+
         ProcessStartInfo psi = new();
         psi.FileName = BuildScript;
-        psi.Arguments = $"-subset libs.tests -test /p:RunSmokeTestsOnly=true -a {gConfig.Architecture} -c {gConfig.Configuration} -ci -ninja";
+        psi.Arguments = args.AggregateWithSpace();
         psi.WorkingDirectory = Paths.RepoRoot;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             psi.Environment.Add("LD_LIBRARY_PATH", "/usr/local/opt/openssl/lib");

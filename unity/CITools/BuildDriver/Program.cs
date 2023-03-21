@@ -59,8 +59,18 @@ public class Program
         Console.WriteLine($"\tConfiguration:\t\t{configuration}");
         Console.WriteLine("*****************************");
 
-        GlobalConfig gConfig = new (){ Architecture = architecture, Configuration = configuration, Silent = silent};
+        GlobalConfig gConfig = new ()
+        {
+            Architecture = architecture,
+            Configuration = configuration,
+            Silent = silent,
+            DotNetVerbosity = "quiet"
+        };
+
+        // We need to build even when `skipBuild` is false because on CI we have the build and tests split into separate jobs.  And the way we have artifacts setup,
+        // we don't retain anything built under `unity`.  And therefore we need to rebuild it so that tests that depend on something in managed.sln can find what they need
         EmbeddingHost.Build(gConfig);
+
         if (!skipBuild)
         {
             NullGC.Build(gConfig);
