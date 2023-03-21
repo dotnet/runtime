@@ -4185,7 +4185,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
         //  -all callee-preserved registers in case of varargs
         //  -saved bool for synchronized methods
 
-        int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
+        int preservedAreaSize = (2 + genCountBits((uint64_t)RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
         if (compiler->info.compIsVarArgs)
         {
