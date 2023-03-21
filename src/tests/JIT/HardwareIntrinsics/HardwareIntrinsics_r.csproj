@@ -21,8 +21,8 @@
     <MergedWrapperProjectReference Remove="General/Vector64_1/**/*.csproj" Condition="'$(_IncludeArm64HWIntrinsicTests)' != 'true'" />
     <MergedWrapperProjectReference Remove="General/Vector256/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
     <MergedWrapperProjectReference Remove="General/Vector256_1/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
-    <MergedWrapperProjectReference Remove="General/Vector512/**/*.csproj" Condition="'$(CLRTestPriorityToBuild)' &lt; '1'" />
-    <MergedWrapperProjectReference Remove="General/Vector512_1/**/*.csproj" Condition="'$(CLRTestPriorityToBuild)' &lt; '1'" />
+    <MergedWrapperProjectReference Remove="General/Vector512/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
+    <MergedWrapperProjectReference Remove="General/Vector512_1/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
     <MergedWrapperProjectReference Remove="X86/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
 
   </ItemGroup>
