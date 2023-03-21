@@ -216,28 +216,22 @@ namespace System.Net.Primitives.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void Equals_CompareValidInstanceToDefault_ThrowsInvalidOperationException(bool testOperator)
+        public void Equals_CompareValidInstanceToDefault_ReturnsFalse(bool testOperator)
         {
             var valid = IPNetwork.Parse("127.0.0.0/24");
-            IPNetwork invalid1 = default;
-            IPNetwork invalid2 = default;
+            IPNetwork invalid = default;
 
             if (testOperator)
             {
-                Assert.Throws<InvalidOperationException>(() => valid == invalid1);
-                Assert.Throws<InvalidOperationException>(() => valid != invalid1);
-
-                Assert.Throws<InvalidOperationException>(() => invalid2 == invalid1);
-                Assert.Throws<InvalidOperationException>(() => invalid2 != invalid1);
+                Assert.False(valid == invalid);
+                Assert.True(valid != invalid);
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => valid.Equals(invalid1));
-                Assert.Throws<InvalidOperationException>(() => valid.Equals((object)invalid1));
-                Assert.Throws<InvalidOperationException>(() => invalid2.Equals(invalid1));
-                Assert.Throws<InvalidOperationException>(() => invalid2.Equals((object)invalid1));
-                Assert.Throws<InvalidOperationException>(() => invalid1.Equals(valid));
-                Assert.Throws<InvalidOperationException>(() => invalid1.Equals((object)valid));
+                Assert.False(valid.Equals(invalid));
+                Assert.False(valid.Equals((object)invalid));
+                Assert.False(invalid.Equals(valid));
+                Assert.False(invalid.Equals((object)valid));
             }
         }
 
