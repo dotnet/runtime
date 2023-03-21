@@ -2,9 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <InvariantGlobalization>false</InvariantGlobalization>
-    <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
     <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
   <ItemGroup>
