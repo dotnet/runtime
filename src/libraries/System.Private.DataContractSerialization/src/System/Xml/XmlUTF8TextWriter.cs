@@ -360,7 +360,7 @@ namespace System.Xml
             }
             else
             {
-                WriteUTF8Chars(prefixBuffer, prefixOffset, prefixLength);
+                WriteUTF8Bytes(prefixBuffer.AsSpan(prefixOffset, prefixLength));
             }
         }
 
@@ -371,7 +371,7 @@ namespace System.Xml
 
         private void WriteLocalName(byte[] localNameBuffer, int localNameOffset, int localNameLength)
         {
-            WriteUTF8Chars(localNameBuffer, localNameOffset, localNameLength);
+            WriteUTF8Bytes(localNameBuffer.AsSpan(localNameOffset, localNameLength));
         }
 
         public override void WriteEscapedText(XmlDictionaryString s)
@@ -430,7 +430,7 @@ namespace System.Xml
                 byte ch = chars[offset + j];
                 if (ch < isEscapedCharLength && isEscapedChar[ch])
                 {
-                    WriteUTF8Chars(chars, offset + i, j - i);
+                    WriteUTF8Bytes(chars.AsSpan(offset + i, j - i));
                     WriteCharEntity(ch);
                     i = j + 1;
                 }
@@ -443,13 +443,13 @@ namespace System.Xml
                     byte ch3 = chars[offset + j + 2];
                     if (ch2 == 191 && (ch3 == 190 || ch3 == 191))
                     {
-                        WriteUTF8Chars(chars, offset + i, j - i);
+                        WriteUTF8Bytes(chars.AsSpan(offset + i, j - i));
                         WriteCharEntity(ch3 == 190 ? (char)0xFFFE : (char)0xFFFF);
                         i = j + 3;
                     }
                 }
             }
-            WriteUTF8Chars(chars, offset + i, count - i);
+            WriteUTF8Bytes(chars.AsSpan(offset + i, count - i));
         }
 
         public void WriteText(int ch)
@@ -459,7 +459,7 @@ namespace System.Xml
 
         public override void WriteText(byte[] chars, int offset, int count)
         {
-            WriteUTF8Chars(chars, offset, count);
+            WriteUTF8Bytes(chars.AsSpan(offset, count));
         }
 
         public override unsafe void WriteText(char[] chars, int offset, int count)
@@ -517,7 +517,7 @@ namespace System.Xml
             chars[--offset] = (byte)'x';
             chars[--offset] = (byte)'#';
             chars[--offset] = (byte)'&';
-            WriteUTF8Chars(chars, offset, maxEntityLength - offset);
+            WriteUTF8Bytes(chars.AsSpan(offset, maxEntityLength - offset));
         }
 
         public override void WriteCharEntity(int ch)
