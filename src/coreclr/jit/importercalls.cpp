@@ -2916,7 +2916,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 else
                 {
                     ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                        nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+                                             nullptr DEBUGARG("Span.get_Item ptrToSpan"));
                 }
 
                 // Bounds check

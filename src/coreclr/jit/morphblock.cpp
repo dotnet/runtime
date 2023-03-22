@@ -742,7 +742,8 @@ void MorphCopyBlockHelper::TrySpecialCases()
         m_transformationDecision = BlockTransformation::SkipMultiRegSrc;
         m_result                 = m_asg;
     }
-    else if (m_src->gtEffectiveVal()->IsCall() && m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->CanBeReplacedWithItsField(m_comp))
+    else if (m_src->gtEffectiveVal()->IsCall() && m_dst->OperIs(GT_LCL_VAR) &&
+             m_dstVarDsc->CanBeReplacedWithItsField(m_comp))
     {
         JITDUMP("Not morphing a single reg call return\n");
         m_transformationDecision = BlockTransformation::SkipSingleRegCallSrc;

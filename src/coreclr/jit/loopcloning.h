@@ -885,7 +885,7 @@ struct LoopCloneContext
 
     // Ensure that the block condition is present, if not allocate space.
     JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* EnsureBlockConditions(unsigned loopNum,
-                                                                              unsigned totalBlocks);
+                                                                                   unsigned totalBlocks);
 
 #ifdef DEBUG
     // Print the block conditions for the loop.

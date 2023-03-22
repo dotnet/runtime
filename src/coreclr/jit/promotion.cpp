@@ -23,8 +23,8 @@ PhaseStatus Compiler::PromoteStructsNew()
 struct Access
 {
     ClassLayout* Layout;
-    unsigned Offset;
-    var_types AccessType;
+    unsigned     Offset;
+    var_types    AccessType;
 
     // Number of times we saw this access.
     unsigned Count = 0;
@@ -36,11 +36,11 @@ struct Access
     unsigned CountAssignmentsToRegisterCandidate = 0;
     // Number of times this access is on the LHS of an assignment where the RHS is a probable register candidate.
     unsigned CountAssignmentsFromRegisterCandidate = 0;
-    unsigned CountCallArgs = 0;
-    unsigned CountCallArgsByImplicitRef = 0;
-    unsigned CountCallArgsOnStack = 0;
-    unsigned CountReturns = 0;
-    unsigned CountPassedAsRetbuf = 0;
+    unsigned CountCallArgs                         = 0;
+    unsigned CountCallArgsByImplicitRef            = 0;
+    unsigned CountCallArgsOnStack                  = 0;
+    unsigned CountReturns                          = 0;
+    unsigned CountPassedAsRetbuf                   = 0;
 
     // Number of times we saw this access.
     weight_t CountWtd = 0;
@@ -52,15 +52,13 @@ struct Access
     weight_t CountAssignmentsToRegisterCandidateWtd = 0;
     // Number of times this access is on the LHS of an assignment where the RHS is a probable register candidate.
     weight_t CountAssignmentsFromRegisterCandidateWtd = 0;
-    weight_t CountCallArgsWtd = 0;
-    weight_t CountCallArgsByImplicitRefWtd = 0;
-    weight_t CountCallArgsOnStackWtd = 0;
-    weight_t CountReturnsWtd = 0;
-    weight_t CountPassedAsRetbufWtd = 0;
+    weight_t CountCallArgsWtd                         = 0;
+    weight_t CountCallArgsByImplicitRefWtd            = 0;
+    weight_t CountCallArgsOnStackWtd                  = 0;
+    weight_t CountReturnsWtd                          = 0;
+    weight_t CountPassedAsRetbufWtd                   = 0;
 
-
-    Access(
-        unsigned offset, var_types accessType, ClassLayout* layout)
+    Access(unsigned offset, var_types accessType, ClassLayout* layout)
         : Layout(layout), Offset(offset), AccessType(accessType)
     {
     }
@@ -86,12 +84,11 @@ struct Access
 
         return true;
     }
-
 };
 
 // Find first entry with an equal offset, or bitwise complement of first
 // entry with a higher offset.
-template<typename T, unsigned (T::*field)>
+template <typename T, unsigned(T::*field)>
 static size_t BinarySearch(const jitstd::vector<T>& vec, unsigned offset)
 {
     size_t min = 0;
@@ -123,13 +120,13 @@ static size_t BinarySearch(const jitstd::vector<T>& vec, unsigned offset)
 
 struct Replacement
 {
-    unsigned Offset;
-    var_types AccessType;
-    unsigned LclNum;
+    unsigned     Offset;
+    var_types    AccessType;
+    unsigned     LclNum;
     ClassLayout* Layout;
-    bool NeedsWriteBack = true;
-    bool NeedsReadBack = false;
-    Replacement* Next = nullptr;
+    bool         NeedsWriteBack = true;
+    bool         NeedsReadBack  = false;
+    Replacement* Next           = nullptr;
 
     Replacement(unsigned offset, var_types accessType, unsigned lclNum, ClassLayout* layout)
         : Offset(offset), AccessType(accessType), LclNum(lclNum), Layout(layout)
@@ -156,16 +153,16 @@ struct Replacement
 
 enum class AccessKindFlags : uint32_t
 {
-    None = 0,
-    IsCallArg = 1,
-    IsAssignmentSource = 2,
-    IsAssignmentDestination = 4,
-    IsAssignmentToRegisterCandidate = 8,
+    None                              = 0,
+    IsCallArg                         = 1,
+    IsAssignmentSource                = 2,
+    IsAssignmentDestination           = 4,
+    IsAssignmentToRegisterCandidate   = 8,
     IsAssignmentFromRegisterCandidate = 16,
-    IsCallArgByImplicitRef = 32,
-    IsCallArgOnStack = 64,
-    IsCallRetBuf = 128,
-    IsReturned = 256,
+    IsCallArgByImplicitRef            = 32,
+    IsCallArgOnStack                  = 64,
+    IsCallRetBuf                      = 128,
+    IsReturned                        = 256,
 };
 
 inline constexpr AccessKindFlags operator~(AccessKindFlags a)
@@ -202,7 +199,8 @@ public:
     {
     }
 
-    void RecordAccess(unsigned offs, var_types accessType, ClassLayout* accessLayout, AccessKindFlags flags, weight_t weight)
+    void RecordAccess(
+        unsigned offs, var_types accessType, ClassLayout* accessLayout, AccessKindFlags flags, weight_t weight)
     {
         Access* access = nullptr;
 
@@ -217,14 +215,14 @@ public:
                     Access& candidateAccess = m_accesses[index];
                     if (candidateAccess.AccessType == accessType)
                     {
-                        // Some operations on SIMD types do not require a layout, but those can be merged with ones that do.
-                        bool isMergeableLayout =
-                            (candidateAccess.Layout == accessLayout) ||
-                            (varTypeIsSIMD(accessType) && (candidateAccess.Layout == nullptr));
+                        // Some operations on SIMD types do not require a layout, but those can be merged with ones that
+                        // do.
+                        bool isMergeableLayout = (candidateAccess.Layout == accessLayout) ||
+                                                 (varTypeIsSIMD(accessType) && (candidateAccess.Layout == nullptr));
 
                         if (isMergeableLayout)
                         {
-                            access = &candidateAccess;
+                            access         = &candidateAccess;
                             access->Layout = accessLayout;
                             break;
                         }
@@ -309,7 +307,7 @@ public:
             return;
         }
 
-        //jitstd::sort(
+        // jitstd::sort(
         //    m_accesses.begin(), m_accesses.end(),
         //    [](const Access& l, const Access& r)
         //    {
@@ -377,9 +375,10 @@ public:
 
 #ifdef DEBUG
             char buf[32];
-            sprintf_s(buf, sizeof(buf), "V%02u.[%03u..%03u)", lclNum, access.Offset, access.Offset + genTypeSize(access.AccessType));
+            sprintf_s(buf, sizeof(buf), "V%02u.[%03u..%03u)", lclNum, access.Offset,
+                      access.Offset + genTypeSize(access.AccessType));
             size_t len  = strlen(buf) + 1;
-            char* bufp = new (comp, CMK_DebugOnly) char[len];
+            char*  bufp = new (comp, CMK_DebugOnly) char[len];
             strcpy_s(bufp, len, buf);
 #endif
             unsigned newLcl = comp->lvaGrabTemp(false DEBUGARG(bufp));
@@ -398,16 +397,16 @@ public:
 
     bool EvaluateReplacement(Compiler* comp, unsigned lclNum, const Access& access)
     {
-        unsigned countOverlappedCalls = 0;
-        unsigned countOverlappedReturns = 0;
-        unsigned countOverlappedRetbufs = 0;
-        unsigned countOverlappedAssignmentDestination = 0;
-        unsigned countOverlappedAssignmentSource = 0;
-        weight_t countOverlappedCallsWtd = 0;
-        weight_t countOverlappedReturnsWtd = 0;
-        weight_t countOverlappedRetbufsWtd = 0;
+        unsigned countOverlappedCalls                    = 0;
+        unsigned countOverlappedReturns                  = 0;
+        unsigned countOverlappedRetbufs                  = 0;
+        unsigned countOverlappedAssignmentDestination    = 0;
+        unsigned countOverlappedAssignmentSource         = 0;
+        weight_t countOverlappedCallsWtd                 = 0;
+        weight_t countOverlappedReturnsWtd               = 0;
+        weight_t countOverlappedRetbufsWtd               = 0;
         weight_t countOverlappedAssignmentDestinationWtd = 0;
-        weight_t countOverlappedAssignmentSourceWtd = 0;
+        weight_t countOverlappedAssignmentSourceWtd      = 0;
 
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
@@ -445,7 +444,8 @@ public:
 
         costWithout += access.CountWtd * 50;
 
-        // The register then also needs to be used. In many cases it is containable, however, so we pay a bit less for this.
+        // The register then also needs to be used. In many cases it is containable, however, so we pay a bit less for
+        // this.
         costWithout += access.CountWtd * 25;
 
         weight_t costWith = 0;
@@ -453,8 +453,8 @@ public:
         // For any use we expect to just use the register directly.
         costWith += access.CountWtd * 25;
 
-        weight_t countReadBacksWtd = 0;
-        LclVarDsc* lcl = comp->lvaGetDesc(lclNum);
+        weight_t   countReadBacksWtd = 0;
+        LclVarDsc* lcl               = comp->lvaGetDesc(lclNum);
         // For parameters we need an initial read back
         if (lcl->lvIsParam)
         {
@@ -469,8 +469,9 @@ public:
         // Write backs with TYP_REFs when the base local is an implicit byref
         // involves checked write barriers, so they are very expensive.
         // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
-        int writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 150 : 50;
-        weight_t countWriteBacksWtd = countOverlappedCallsWtd + countOverlappedReturnsWtd + countOverlappedAssignmentSourceWtd;
+        int      writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 150 : 50;
+        weight_t countWriteBacksWtd =
+            countOverlappedCallsWtd + countOverlappedReturnsWtd + countOverlappedAssignmentSourceWtd;
         costWith += countWriteBacksWtd * writeBackCost;
 
         JITDUMP("Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
@@ -525,9 +526,10 @@ public:
 
 class LocalsUseVisitor : public GenTreeVisitor<LocalsUseVisitor>
 {
-    Promotion* m_prom;
+    Promotion*  m_prom;
     LocalsUses* m_uses;
     BasicBlock* m_curBB;
+
 public:
     enum
     {
@@ -536,7 +538,8 @@ public:
 
     LocalsUseVisitor(Promotion* prom) : GenTreeVisitor(prom->m_compiler), m_prom(prom)
     {
-        m_uses = reinterpret_cast<LocalsUses*>(new (prom->m_compiler, CMK_Promotion) char[prom->m_compiler->lvaCount * sizeof(LocalsUses)]);
+        m_uses = reinterpret_cast<LocalsUses*>(
+            new (prom->m_compiler, CMK_Promotion) char[prom->m_compiler->lvaCount * sizeof(LocalsUses)]);
         for (size_t i = 0; i < prom->m_compiler->lvaCount; i++)
             new (&m_uses[i], jitstd::placement_t()) LocalsUses(prom->m_compiler);
     }
@@ -546,7 +549,10 @@ public:
         m_curBB = bb;
     }
 
-    LocalsUses* GetUsesByLocal(unsigned lcl) { return &m_uses[lcl]; }
+    LocalsUses* GetUsesByLocal(unsigned lcl)
+    {
+        return &m_uses[lcl];
+    }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
@@ -555,23 +561,25 @@ public:
         if (tree->OperIsLocal())
         {
             GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
-            LclVarDsc* dsc = m_compiler->lvaGetDesc(lcl);
+            LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
             if (!dsc->lvPromoted && (dsc->TypeGet() == TYP_STRUCT) && !dsc->IsAddressExposed())
             {
                 if (lcl->OperIsLocalAddr())
                 {
-                    assert(user->OperIs(GT_CALL) && dsc->IsHiddenBufferStructArg() && (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
+                    assert(user->OperIs(GT_CALL) && dsc->IsHiddenBufferStructArg() &&
+                           (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
                     // TODO: We should record that this is used as the address
                     // of a retbuf -- it makes promotion less desirable as we
                     // have to reload fields back from the retbuf.
                 }
                 else
                 {
-                    unsigned offs = lcl->GetLclOffs();
-                    var_types accessType = lcl->TypeGet();
-                    ClassLayout* accessLayout = varTypeIsStruct(lcl) ? lcl->GetLayout(m_compiler) : nullptr;
-                    AccessKindFlags accessFlags = ClassifyLocalAccess(lcl, user);
-                    m_uses[lcl->GetLclNum()].RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
+                    unsigned        offs         = lcl->GetLclOffs();
+                    var_types       accessType   = lcl->TypeGet();
+                    ClassLayout*    accessLayout = varTypeIsStruct(lcl) ? lcl->GetLayout(m_compiler) : nullptr;
+                    AccessKindFlags accessFlags  = ClassifyLocalAccess(lcl, user);
+                    m_uses[lcl->GetLclNum()].RecordAccess(offs, accessType, accessLayout, accessFlags,
+                                                          m_curBB->getBBWeight(m_compiler));
                 }
             }
         }
@@ -671,36 +679,43 @@ public:
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
-    Promotion* m_prom;
+    Promotion*                   m_prom;
     jitstd::vector<Replacement>* m_replacements;
-    BasicBlock* m_bb;
-    Statement* m_stmt;
-    unsigned m_seenAsgs;
-    unsigned m_seenAsgToLcl;
-    bool m_madeChanges;
-    Statement* m_lastStmt;
+    BasicBlock*                  m_bb;
+    Statement*                   m_stmt;
+    unsigned                     m_seenAsgs;
+    unsigned                     m_seenAsgToLcl;
+    bool                         m_madeChanges;
+    Statement*                   m_lastStmt;
+
 public:
     enum
     {
-        DoPostOrder = true,
+        DoPostOrder       = true,
         UseExecutionOrder = true,
     };
 
-    ReplaceVisitor(Promotion* prom, jitstd::vector<Replacement>* replacements) :
-        GenTreeVisitor(prom->m_compiler), m_prom(prom), m_replacements(replacements)
+    ReplaceVisitor(Promotion* prom, jitstd::vector<Replacement>* replacements)
+        : GenTreeVisitor(prom->m_compiler), m_prom(prom), m_replacements(replacements)
     {
     }
 
-    bool MadeChanges() { return m_madeChanges; }
-    Statement* GetNextStatement() { return m_lastStmt->GetNextStmt(); }
+    bool MadeChanges()
+    {
+        return m_madeChanges;
+    }
+    Statement* GetNextStatement()
+    {
+        return m_lastStmt->GetNextStmt();
+    }
 
     void Reset(BasicBlock* bb, Statement* stmt)
     {
-        m_bb = bb;
-        m_stmt = stmt;
-        m_seenAsgs = 0;
+        m_bb          = bb;
+        m_stmt        = stmt;
+        m_seenAsgs    = 0;
         m_madeChanges = false;
-        m_lastStmt = stmt;
+        m_lastStmt    = stmt;
     }
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
@@ -799,7 +814,7 @@ public:
             assert(retBufArg != nullptr);
             assert(retBufArg->GetNode()->OperIsLocalAddr());
             GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
-            unsigned size = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
+            unsigned             size      = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
 
             MarkForReadBack(retBufLcl->GetLclNum(), retBufLcl->GetLclOffs(), size);
         }
@@ -809,8 +824,8 @@ public:
 
     void ReplaceLocal(GenTree** use, GenTree* user)
     {
-        GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
-        unsigned lclNum = lcl->GetLclNum();
+        GenTreeLclVarCommon*         lcl          = (*use)->AsLclVarCommon();
+        unsigned                     lclNum       = lcl->GetLclNum();
         jitstd::vector<Replacement>& replacements = m_replacements[lclNum];
 
         if (replacements.size() <= 0)
@@ -818,7 +833,7 @@ public:
             return;
         }
 
-        unsigned offs = lcl->GetLclOffs();
+        unsigned  offs       = lcl->GetLclOffs();
         var_types accessType = lcl->TypeGet();
 
 #ifdef DEBUG
@@ -829,14 +844,15 @@ public:
         else
         {
             ClassLayout* accessLayout = varTypeIsStruct(accessType) ? lcl->GetLayout(m_compiler) : nullptr;
-            unsigned accessSize = accessLayout != nullptr ? accessLayout->GetSize() : genTypeSize(accessType);
+            unsigned     accessSize   = accessLayout != nullptr ? accessLayout->GetSize() : genTypeSize(accessType);
             for (const Replacement& rep : replacements)
             {
                 assert(!rep.Overlaps(offs, accessSize) || ((rep.Offset == offs) && (rep.AccessType == accessType)));
             }
 
             assert((accessType != TYP_STRUCT) || (accessLayout != nullptr));
-            JITDUMP("Processing use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs, offs + accessSize);
+            JITDUMP("Processing use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
+                    offs + accessSize);
         }
 #endif
 
@@ -853,13 +869,14 @@ public:
                 if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
                 {
                     rep.NeedsWriteBack = true;
-                    rep.NeedsReadBack = false;
+                    rep.NeedsReadBack  = false;
                 }
                 else if (rep.NeedsReadBack)
                 {
                     GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
                     GenTree* src = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
-                    *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), m_compiler->gtNewAssignNode(dst, src), *use);
+                    *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), m_compiler->gtNewAssignNode(dst, src),
+                                                     *use);
                     rep.NeedsReadBack = false;
                 }
 
@@ -889,7 +906,7 @@ public:
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
     {
         jitstd::vector<Replacement> replacements = m_replacements[lcl];
-        size_t index = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
+        size_t                      index        = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
 
         if ((ssize_t)index < 0)
         {
@@ -906,14 +923,15 @@ public:
             Replacement& rep = replacements[index];
             if (rep.NeedsWriteBack)
             {
-                GenTree* dst = m_compiler->gtNewLclFldNode(lcl, rep.AccessType, rep.Offset);
-                GenTree* src = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-                GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), m_compiler->gtNewAssignNode(dst, src), *use);
+                GenTree*   dst = m_compiler->gtNewLclFldNode(lcl, rep.AccessType, rep.Offset);
+                GenTree*   src = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
+                GenTreeOp* comma =
+                    m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), m_compiler->gtNewAssignNode(dst, src), *use);
                 *use = comma;
-                use = &comma->gtOp2;
+                use  = &comma->gtOp2;
 
                 rep.NeedsWriteBack = false;
-                m_madeChanges = true;
+                m_madeChanges      = true;
             }
 
             index++;
@@ -923,7 +941,7 @@ public:
     void MarkForReadBack(unsigned lcl, unsigned offs, unsigned size, bool conservative = false)
     {
         jitstd::vector<Replacement>& replacements = m_replacements[lcl];
-        size_t index = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
+        size_t                       index        = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
 
         if ((ssize_t)index < 0)
         {
@@ -939,7 +957,7 @@ public:
         {
             Replacement& rep = replacements[index];
             assert((rep.Offset >= offs) && (rep.Offset + genTypeSize(rep.AccessType) <= end));
-            rep.NeedsReadBack = true;
+            rep.NeedsReadBack  = true;
             rep.NeedsWriteBack = false;
             index++;
 
@@ -960,10 +978,10 @@ PhaseStatus Promotion::Run()
         m_compiler->fgDispBasicBlocks(true);
     }
 
-    //if (!ISMETHOD("NPTest"))
-    //{
-    //    return PhaseStatus::MODIFIED_NOTHING;
-    //}
+// if (!ISMETHOD("NPTest"))
+//{
+//    return PhaseStatus::MODIFIED_NOTHING;
+//}
 #endif
 
     LocalsUseVisitor localsUse(this);
@@ -991,11 +1009,13 @@ PhaseStatus Promotion::Run()
     }
 #endif
 
-    bool anyReplacements = false;
-    jitstd::vector<Replacement>* replacements = reinterpret_cast<jitstd::vector<Replacement>*>(new (m_compiler, CMK_Promotion) char[sizeof(jitstd::vector<Replacement>) * m_compiler->lvaCount]);
+    bool                         anyReplacements = false;
+    jitstd::vector<Replacement>* replacements    = reinterpret_cast<jitstd::vector<Replacement>*>(
+        new (m_compiler, CMK_Promotion) char[sizeof(jitstd::vector<Replacement>) * m_compiler->lvaCount]);
     for (unsigned i = 0; i < numLocals; i++)
     {
-        new (&replacements[i], jitstd::placement_t()) jitstd::vector<Replacement>(m_compiler->getAllocator(CMK_Promotion));
+        new (&replacements[i], jitstd::placement_t())
+            jitstd::vector<Replacement>(m_compiler->getAllocator(CMK_Promotion));
 
         localsUse.GetUsesByLocal(i)->PickPromotions(m_compiler, i, replacements[i]);
         if (replacements[i].size() > 0)
@@ -1003,7 +1023,8 @@ PhaseStatus Promotion::Run()
             JITDUMP("V%02u promoted with %d replacements\n", i, (int)replacements[i].size());
             for (const Replacement& rep : replacements[i])
             {
-                JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType), varTypeName(rep.AccessType), rep.LclNum);
+                JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
+                        varTypeName(rep.AccessType), rep.LclNum);
                 anyReplacements = true;
             }
         }
@@ -1041,11 +1062,8 @@ PhaseStatus Promotion::Run()
                 assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
                 if (rep.NeedsReadBack)
                 {
-                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u at the end of " FMT_BB "\n",
-                        i,
-                        rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
-                        rep.LclNum,
-                        bb->bbNum);
+                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u at the end of " FMT_BB "\n", i,
+                            rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
 
                     GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
                     GenTree* src = m_compiler->gtNewLclFldNode(i, rep.AccessType, rep.Offset);
@@ -1068,9 +1086,9 @@ PhaseStatus Promotion::Run()
 
             m_compiler->fgEnsureFirstBBisScratch();
 
-            GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-            GenTree* src = m_compiler->gtNewLclFldNode(i, rep.AccessType, rep.Offset);
-            GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
+            GenTree*   dst  = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
+            GenTree*   src  = m_compiler->gtNewLclFldNode(i, rep.AccessType, rep.Offset);
+            GenTree*   asg  = m_compiler->gtNewAssignNode(dst, src);
             Statement* stmt = m_compiler->fgNewStmtFromTree(asg);
             if (prevParamLoadStmt != nullptr)
             {
@@ -1088,10 +1106,11 @@ PhaseStatus Promotion::Run()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-bool Promotion::ParseLocation(GenTree* tree, unsigned* lcl, unsigned* offs, var_types* accessType, ClassLayout** accessLayout)
+bool Promotion::ParseLocation(
+    GenTree* tree, unsigned* lcl, unsigned* offs, var_types* accessType, ClassLayout** accessLayout)
 {
-    *offs = 0;
-    *accessType = TYP_UNDEF;
+    *offs         = 0;
+    *accessType   = TYP_UNDEF;
     *accessLayout = nullptr;
 
     while (true)
@@ -1102,7 +1121,7 @@ bool Promotion::ParseLocation(GenTree* tree, unsigned* lcl, unsigned* offs, var_
             *offs += tree->AsLclVarCommon()->GetLclOffs();
             if (*accessType == TYP_UNDEF)
             {
-                *accessType = tree->TypeGet();
+                *accessType   = tree->TypeGet();
                 *accessLayout = varTypeIsStruct(tree) ? tree->AsLclVarCommon()->GetLayout(m_compiler) : nullptr;
             }
 
@@ -1121,10 +1140,11 @@ bool Promotion::ParseLocation(GenTree* tree, unsigned* lcl, unsigned* offs, var_
                 if (*accessType == TYP_UNDEF)
                 {
                     CORINFO_CLASS_HANDLE fieldClassHandle;
-                    var_types            fieldType = m_compiler->eeGetFieldType(tree->AsField()->gtFldHnd, &fieldClassHandle);
+                    var_types fieldType = m_compiler->eeGetFieldType(tree->AsField()->gtFldHnd, &fieldClassHandle);
 
                     *accessType = fieldType == TYP_STRUCT ? m_compiler->impNormStructType(fieldClassHandle) : fieldType;
-                    *accessLayout = varTypeIsStruct(fieldType) ? m_compiler->typGetObjLayout(fieldClassHandle) : nullptr;
+                    *accessLayout =
+                        varTypeIsStruct(fieldType) ? m_compiler->typGetObjLayout(fieldClassHandle) : nullptr;
                 }
 
                 *offs += tree->AsField()->gtFldOffset;
@@ -1134,7 +1154,7 @@ bool Promotion::ParseLocation(GenTree* tree, unsigned* lcl, unsigned* offs, var_
             {
                 if (*accessType == TYP_UNDEF)
                 {
-                    *accessType = tree->TypeGet();
+                    *accessType   = tree->TypeGet();
                     *accessLayout = tree->OperIsBlk() ? tree->AsBlk()->GetLayout() : nullptr;
                 }
 

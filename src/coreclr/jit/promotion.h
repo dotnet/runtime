@@ -14,6 +14,7 @@ class Promotion
     friend class ReplaceVisitor;
 
     bool ParseLocation(GenTree* tree, unsigned* lcl, unsigned* offs, var_types* accessType, ClassLayout** accessLayout);
+
 public:
     explicit Promotion(Compiler* compiler) : m_compiler(compiler)
     {
