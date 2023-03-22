@@ -54,7 +54,7 @@ namespace System.IO.Tests
         [Fact]
         public async Task DerivedFileStream_PropertiesDontThrow_OnDisposeAsync()
         {
-            var fs = new FileStream_Dispose.DerivedFileStreamAccesingPropertiesOnDispose(GetTestFilePath(), FileMode.Create);
+            var fs = new FileStream_Dispose.DerivedFileStreamAccessingPropertiesOnDispose(GetTestFilePath(), FileMode.Create);
             await fs.DisposeAsync();
             fs.VerifyAfterDispose();
         }

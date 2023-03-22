@@ -216,7 +216,7 @@ namespace System.IO.Tests
         [Fact]
         public void DerivedFileStream_PropertiesDontThrow_OnDispose()
         {
-            var fs = new DerivedFileStreamAccesingPropertiesOnDispose(GetTestFilePath(), FileMode.Create);
+            var fs = new DerivedFileStreamAccessingPropertiesOnDispose(GetTestFilePath(), FileMode.Create);
             fs.Dispose();
             fs.VerifyAfterDispose();
         }
@@ -297,12 +297,12 @@ namespace System.IO.Tests
             }
         }
 
-        public sealed class DerivedFileStreamAccesingPropertiesOnDispose : FileStream
+        public sealed class DerivedFileStreamAccessingPropertiesOnDispose : FileStream
         {
             private readonly string _name;
             private bool _disposed;
 
-            public DerivedFileStreamAccesingPropertiesOnDispose(string path, FileMode mode) : base(path, mode, FileAccess.ReadWrite)
+            public DerivedFileStreamAccessingPropertiesOnDispose(string path, FileMode mode) : base(path, mode, FileAccess.ReadWrite)
             {
                 _name = path;
             }
