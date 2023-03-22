@@ -439,10 +439,10 @@ set "lockFolder=%~dp0\lock"
 pushd %~dp0
 set "scriptPath=%~dp0"
 set /A _RunWithWatcher=0
-set _WatcherTimeoutMins=10
+set /A _WatcherTimeoutMins=10
 
 IF NOT "%__TestCollectionTimeoutMins%"=="" (
-    set _WatcherTimeoutMins=%__TestCollectionTimeoutMins%
+    set /A _WatcherTimeoutMins=%__TestCollectionTimeoutMins%
 )
 
 REM The watcher needs a bit of time to start up, capture dumps, clean up, and so on.
@@ -450,7 +450,7 @@ REM Because of this, we pass a smaller timeout than the test collection one.
 REM For simplicity purposes, we will assume there are no work items with just
 REM a one-minute max timeout.
 IF %_WatcherTimeoutMins% GTR 1 (
-    _WatcherTimeoutMins-=1
+    set /A _WatcherTimeoutMins-=1
 )
 
 $(BatchCLRTestArgPrep)
