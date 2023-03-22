@@ -3126,11 +3126,8 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
     {
         canSpill = canSpillReg(physRegRecord, refLocation);
     }
-    if (!canSpill)
-    {
-        return false;
-    }
-    return true;
+
+    return canSpill;
 }
 
 // Grab a register to use to copy and then immediately use.
@@ -5493,7 +5490,7 @@ void LinearScan::allocateRegisters()
                 {
                     regNumber copyReg;
 #ifdef TARGET_ARM64
-                    if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
+                    if (hasConsecutiveRegister && currentRefPosition.needsConsecutive && currentRefPosition.refType == RefTypeUse)
                     {
                         copyReg = assignCopyReg<true>(&currentRefPosition);
                     }
@@ -5512,16 +5509,10 @@ void LinearScan::allocateRegisters()
                     {
                         if (currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
                         {
-                            // If the first RefPosition was not assigned to the register we wanted and we added
-                            // a copyReg for it, then allocate the subsequent RefPositions with the consecutive
+                            // If the first RefPosition was not assigned to the register that we wanted, we added
+                            // a copyReg for it. Allocate subsequent RefPositions with the consecutive
                             // registers.
                             setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
-                        }
-                        else
-                        {
-                            // For non-first RefPositions, if they were not in the register that we wanted, we
-                            // added a copyReg for them to move it to the desired register. No further action is
-                            // needed.
                         }
 
                         // For consecutive register, it doesn't matter what the assigned register was.
@@ -5608,11 +5599,6 @@ void LinearScan::allocateRegisters()
                         assignedRegister                      = REG_NA;
                         RegRecord* physRegRecord              = getRegisterRecord(currentInterval->physReg);
                         currentRefPosition.registerAssignment = allRegs(currentInterval->registerType);
-                        unassignPhysRegNoSpill(physRegRecord);
-                    }
-                    else
-                    {
-                        setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
                     }
                 }
             }
@@ -5630,12 +5616,6 @@ void LinearScan::allocateRegisters()
                     // If the subsequent refPosition is not assigned to the consecutive register, then reassign the
                     // right consecutive register.
                     assignedRegister = REG_NA;
-                    if (assignedRegBit != RBM_NONE)
-                    {
-                        // Also unassign the register currently assigned to it.
-                        RegRecord* physRegRecord = getRegisterRecord(currentInterval->physReg);
-                        unassignPhysRegNoSpill(physRegRecord);
-                    }
                 }
             }
         }
