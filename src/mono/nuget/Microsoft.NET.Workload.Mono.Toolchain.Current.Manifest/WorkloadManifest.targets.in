@@ -179,12 +179,11 @@
 
   <Target Name="_DropIntermediaryFilesFromOuput" AfterTargets="ResolveRuntimePackAssets">
     <PropertyGroup>
-      <_WasmExtensionsToDrop>.a;.c;.h;.rsp;.json;.symbols;.ts</_WasmExtensionsToDrop>
-      <_WasmFileNameContainsToDrop>.es6;.lib</_WasmFileNameContainsToDrop>
+      <_WasmExtensionsToDrop>.a;.c;.h;.rsp;.json;.symbols;.ts;</_WasmExtensionsToDrop>
     </PropertyGroup>
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" 
-       Condition="$(_WasmExtensionsToDrop.Contains('%(ReferenceCopyLocalPaths.Extension)')) or $([MSBuild]::ValueOrDefault('%(FileName)', '').Contains('.es6')) or $([MSBuild]::ValueOrDefault('%(FileName)', '').Contains('.lib'))" />
+       Condition="$(_WasmExtensionsToDrop.Contains('%(ReferenceCopyLocalPaths.Extension);')) or $([MSBuild]::ValueOrDefault('%(FullPath)', '').Contains('src'))" />
     </ItemGroup>
   </Target>
 </Project>
