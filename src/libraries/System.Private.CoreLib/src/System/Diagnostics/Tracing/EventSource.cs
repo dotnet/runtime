@@ -4264,7 +4264,8 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(s_EventSources != null);
 
             // First pass to call DisableEvents
-            foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
+            WeakReference<EventSource>[] eventSourcesSnapshot = s_EventSources.ToArray();
+            foreach (WeakReference<EventSource> eventSourceRef in eventSourcesSnapshot)
             {
                 if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
                 {
