@@ -105,6 +105,27 @@ partial class Basic
 }
 ";
 
+        public static readonly string InlineArrayAttributeUnsupported = @"
+//InOutRef
+using System;
+using System.Runtime.InteropServices.JavaScript;
+using System.Runtime.CompilerServices;
+
+partial class Basic
+{
+    [InlineArray(42)]
+    internal struct MyArray
+    {
+        byte b;
+    }
+
+    [JSImport(""DoesNotExist"")]
+    internal static partial void UnsupportedAttribute(
+        MyArray array
+    );
+}
+";
+
         public static readonly string AllUnsupported = @"
 //AllUnsupported
 using System;
