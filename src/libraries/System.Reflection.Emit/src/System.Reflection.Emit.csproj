@@ -6,11 +6,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Emit\MetadataHelper.cs" />
-    <Compile Include="System\Reflection\Emit\PersistableAssemblyBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\PersistableFieldBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\PersistableMethodBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\PersistableModuleBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\PersistableTypeBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\AssemblyBuilderPersistable.cs" />
+    <Compile Include="System\Reflection\Emit\FieldBuilderPersistable.cs" />
+    <Compile Include="System\Reflection\Emit\MethodBuilderPersistable.cs" />
+    <Compile Include="System\Reflection\Emit\ModuleBuilderPersistable.cs" />
+    <Compile Include="System\Reflection\Emit\TypeBuilderPersistable.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
   </ItemGroup>
   <ItemGroup>

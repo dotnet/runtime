@@ -7,17 +7,17 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
-namespace System.Reflection.Emit.Experiment
+namespace System.Reflection.Emit
 {
-    internal sealed class PersistableModuleBuilder : ModuleBuilder
+    internal sealed class ModuleBuilderPersistable : ModuleBuilder
     {
-        private readonly PersistableAssemblyBuilder _assemblyBuilder;
+        private readonly AssemblyBuilderPersistable _assemblyBuilder;
 
         #region Internal Data Members
 
         internal Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new Dictionary<Assembly, AssemblyReferenceHandle>();
         internal Dictionary<Type, TypeReferenceHandle> _typeRefStore = new Dictionary<Type, TypeReferenceHandle>();
-        internal List<PersistableTypeBuilder> _typeDefStore = new List<PersistableTypeBuilder>();
+        internal List<TypeBuilderPersistable> _typeDefStore = new List<TypeBuilderPersistable>();
         internal int _nextMethodDefRowId = 1;
         internal int _nextFieldDefRowId = 1;
         internal const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
@@ -25,7 +25,7 @@ namespace System.Reflection.Emit.Experiment
         #endregion
 
 
-        internal PersistableModuleBuilder(string name, PersistableAssemblyBuilder assembly)
+        internal ModuleBuilderPersistable(string name, AssemblyBuilderPersistable assembly)
         {
             _assemblyBuilder = assembly;
             ScopeName = name;
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit.Experiment
                 methodList: MetadataTokens.MethodDefinitionHandle(1));
 
             // Add each type definition to metadata table.
-            foreach (PersistableTypeBuilder typeBuilder in _typeDefStore)
+            foreach (TypeBuilderPersistable typeBuilder in _typeDefStore)
             {
                 TypeReferenceHandle parent = default;
                 if (typeBuilder.BaseType is not null)
@@ -62,13 +62,13 @@ namespace System.Reflection.Emit.Experiment
                 TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDef(metadata, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
 
                 // Add each method definition to metadata table.
-                foreach (PersistableMethodBuilder method in typeBuilder._methodDefStore)
+                foreach (MethodBuilderPersistable method in typeBuilder._methodDefStore)
                 {
                     MetadataHelper.AddMethodDefinition(metadata, method);
                     _nextMethodDefRowId++;
                 }
 
-                foreach (PersistableFieldBuilder field in typeBuilder._fieldDefStore)
+                foreach (FieldBuilderPersistable field in typeBuilder._fieldDefStore)
                 {
                     MetadataHelper.AddFieldDefinition(metadata, field);
                     _nextFieldDefRowId++;
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit.Experiment
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            PersistableTypeBuilder _type = new PersistableTypeBuilder(name, attr, parent, this);
+            TypeBuilderPersistable _type = new TypeBuilderPersistable(name, attr, parent, this);
             _typeDefStore.Add(_type);
             return _type;
         }

@@ -6,22 +6,22 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Globalization;
 
-namespace System.Reflection.Emit.Experiment
+namespace System.Reflection.Emit
 {
-    internal sealed class PersistableTypeBuilder : TypeBuilder
+    internal sealed class TypeBuilderPersistable : TypeBuilder
     {
         public override Module Module => _module;
-        internal List<PersistableMethodBuilder> _methodDefStore = new();
-        internal List<PersistableFieldBuilder> _fieldDefStore = new();
-        private readonly PersistableModuleBuilder _module;
+        internal List<MethodBuilderPersistable> _methodDefStore = new();
+        internal List<FieldBuilderPersistable> _fieldDefStore = new();
+        private readonly ModuleBuilderPersistable _module;
         private readonly string _name;
         private readonly string? _namespace;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private TypeAttributes _attributes;
 
-        internal PersistableTypeBuilder(string fullName, TypeAttributes typeAttributes,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PersistableModuleBuilder module)
+        internal TypeBuilderPersistable(string fullName, TypeAttributes typeAttributes,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderPersistable module)
         {
             _name = fullName;
             _module = module;
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Experiment
             }
         }
 
-        internal PersistableModuleBuilder GetModuleBuilder() => _module;
+        internal ModuleBuilderPersistable GetModuleBuilder() => _module;
         protected override PackingSize PackingSizeCore => throw new NotImplementedException();
         protected override int SizeCore => throw new NotImplementedException();
         protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type interfaceType) => throw new NotImplementedException();
@@ -48,7 +48,7 @@ namespace System.Reflection.Emit.Experiment
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype) => throw new NotImplementedException();
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
-            var field = new PersistableFieldBuilder(this, fieldName, type, attributes);
+            var field = new FieldBuilderPersistable(this, fieldName, type, attributes);
             _fieldDefStore.Add(field);
            return field;
         }
@@ -56,7 +56,7 @@ namespace System.Reflection.Emit.Experiment
         protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
         protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            PersistableMethodBuilder methodBuilder = new(name, attributes, callingConvention, returnType, parameterTypes, _module, this);
+            MethodBuilderPersistable methodBuilder = new(name, attributes, callingConvention, returnType, parameterTypes, _module, this);
             _methodDefStore.Add(methodBuilder);
             return methodBuilder;
         }

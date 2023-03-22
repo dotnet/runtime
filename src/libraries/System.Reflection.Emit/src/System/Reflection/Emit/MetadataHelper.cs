@@ -4,7 +4,7 @@
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
-namespace System.Reflection.Emit.Experiment
+namespace System.Reflection.Emit
 {
     // This static helper class adds common entities to a Metadata Builder.
     internal static class MetadataHelper
@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.Experiment
                 hashValue: default); // not sure where to find hashValue.
         }
 
-        internal static TypeDefinitionHandle AddTypeDef(MetadataBuilder metadata, PersistableTypeBuilder typeBuilder, EntityHandle baseType, int methodToken, int fieldToken)
+        internal static TypeDefinitionHandle AddTypeDef(MetadataBuilder metadata, TypeBuilderPersistable typeBuilder, EntityHandle baseType, int methodToken, int fieldToken)
         {
             // Add type metadata
             return metadata.AddTypeDefinition(
@@ -58,7 +58,7 @@ namespace System.Reflection.Emit.Experiment
                 );
         }
 
-        internal static MethodDefinitionHandle AddMethodDefinition(MetadataBuilder metadata, PersistableMethodBuilder methodBuilder)
+        internal static MethodDefinitionHandle AddMethodDefinition(MetadataBuilder metadata, MethodBuilderPersistable methodBuilder)
         {
             return metadata.AddMethodDefinition(
                 methodBuilder.Attributes,

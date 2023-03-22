@@ -4,16 +4,16 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
-namespace System.Reflection.Emit.Experiment
+namespace System.Reflection.Emit
 {
-    internal sealed class PersistableMethodBuilder : MethodBuilder
+    internal sealed class MethodBuilderPersistable : MethodBuilder
     {
         internal Type? _returnType;
         internal Type[]? _parametersTypes;
-        private readonly PersistableModuleBuilder _module;
+        private readonly ModuleBuilderPersistable _module;
 
-        internal PersistableMethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
-            Type[]? parameters, PersistableModuleBuilder module, PersistableTypeBuilder declaringType)
+        internal MethodBuilderPersistable(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
+            Type[]? parameters, ModuleBuilderPersistable module, TypeBuilderPersistable declaringType)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
             ArgumentNullException.ThrowIfNull(module);

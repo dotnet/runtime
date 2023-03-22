@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace System.Reflection.Emit.Experiment.Tests
+namespace System.Reflection.Emit.Tests
 {
     internal class AssemblyTools
     {
@@ -16,25 +16,17 @@ namespace System.Reflection.Emit.Experiment.Tests
 
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> assemblyAttributes)
         {
-            Type assemblyType = Type.GetType(
-                    "System.Reflection.Emit.Experiment.PersistableAssemblyBuilder, System.Reflection.Emit",
-                    throwOnError: true)!;
-
-            MethodInfo defineDynamicAssemblyMethod = assemblyType.GetMethod("DefineDynamicAssembly", BindingFlags.Public | BindingFlags.Static,
-                new Type[] { typeof(AssemblyName), typeof(List<CustomAttributeBuilder>) });
-
-            MethodInfo saveMethod = assemblyType.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance, new Type[] { typeof(string) });
+            MethodInfo defineDynamicAssemblyMethod = PopulateMethods(typeof(string), out MethodInfo saveMethod);
 
             AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null, new object[] { assemblyName, assemblyAttributes });
-
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
-            SetMembers(types, mb);
+            PopulateMembersForModule(types, mb);
 
             saveMethod.Invoke(assemblyBuilder, new object[] { fileLocation });
         }
 
-        private static void SetMembers(Type[] types, ModuleBuilder mb)
+        private static void PopulateMembersForModule(Type[] types, ModuleBuilder mb)
         {
             foreach (Type type in types)
             {
@@ -60,22 +52,27 @@ namespace System.Reflection.Emit.Experiment.Tests
 
         internal static void WriteAssemblyToStream(AssemblyName assemblyName, Type[] types, Stream stream, List<CustomAttributeBuilder>? assemblyAttributes)
         {
-            Type assemblyType = Type.GetType(
-                    "System.Reflection.Emit.Experiment.PersistableAssemblyBuilder, System.Reflection.Emit",
-                    throwOnError: true)!;
-
-            MethodInfo defineDynamicAssemblyMethod = assemblyType.GetMethod("DefineDynamicAssembly", BindingFlags.Public | BindingFlags.Static,
-                new Type[] { typeof(AssemblyName), typeof(List<CustomAttributeBuilder>) });
-
-            MethodInfo saveMethod = assemblyType.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance, new Type[] { typeof(Stream) });
+            MethodInfo defineDynamicAssemblyMethod = PopulateMethods(typeof(Stream), out MethodInfo saveMethod);
 
             AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null, new object[] { assemblyName, assemblyAttributes });
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
-            SetMembers(types, mb);
+            PopulateMembersForModule(types, mb);
 
             saveMethod.Invoke(assemblyBuilder, new object[] { stream });
+        }
+
+        private static MethodInfo PopulateMethods(Type parameterType, out MethodInfo saveMethod)
+        {
+            Type assemblyType = Type.GetType(
+                    "System.Reflection.Emit.AssemblyBuilderPersistable, System.Reflection.Emit",
+                    throwOnError: true)!;
+
+            saveMethod = assemblyType.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance, new Type[] { parameterType });
+
+            return assemblyType.GetMethod("DefineDynamicAssembly", BindingFlags.Public | BindingFlags.Static,
+                new Type[] { typeof(AssemblyName), typeof(List<CustomAttributeBuilder>) });
         }
 
         internal static Assembly TryLoadAssembly(string filePath)

@@ -1,19 +1,18 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Globalization;
 
-namespace System.Reflection.Emit.Experiment
+namespace System.Reflection.Emit
 {
-    internal sealed class PersistableFieldBuilder : FieldBuilder
+    internal sealed class FieldBuilderPersistable : FieldBuilder
     {
-        private PersistableTypeBuilder _typeBuilder;
+        private TypeBuilderPersistable _typeBuilder;
         private string _fieldName;
         private FieldAttributes _attributes;
         private Type _fieldType;
 
-        internal PersistableFieldBuilder(PersistableTypeBuilder typeBuilder, string fieldName, Type type, FieldAttributes attributes)
+        internal FieldBuilderPersistable(TypeBuilderPersistable typeBuilder, string fieldName, Type type, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
             ArgumentNullException.ThrowIfNull(type);

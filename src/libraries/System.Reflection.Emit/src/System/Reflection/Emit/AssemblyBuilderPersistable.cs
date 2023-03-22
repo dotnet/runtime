@@ -7,21 +7,21 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
-namespace System.Reflection.Emit.Experiment
+namespace System.Reflection.Emit
 {
-    public sealed class PersistableAssemblyBuilder : AssemblyBuilder
+    public sealed class AssemblyBuilderPersistable : AssemblyBuilder
     {
         private bool _previouslySaved;
         private AssemblyName _assemblyName;
-        private PersistableModuleBuilder? _module;
+        private ModuleBuilderPersistable? _module;
 
-        internal PersistableAssemblyBuilder(AssemblyName name, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        internal AssemblyBuilderPersistable(AssemblyName name, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             ArgumentNullException.ThrowIfNull(name);
 
             _assemblyName = name;
 
-            _module = new PersistableModuleBuilder(PersistableModuleBuilder.ManifestModuleName, this);
+            _module = new ModuleBuilderPersistable(ModuleBuilderPersistable.ManifestModuleName, this);
 
             if (assemblyAttributes != null)
             {
@@ -32,13 +32,13 @@ namespace System.Reflection.Emit.Experiment
             }
         }
 
-        public static PersistableAssemblyBuilder DefineDynamicAssembly(AssemblyName name)
-            => new PersistableAssemblyBuilder(name, null);
+        public static AssemblyBuilderPersistable DefineDynamicAssembly(AssemblyName name)
+            => new AssemblyBuilderPersistable(name, null);
 
-        public static PersistableAssemblyBuilder DefineDynamicAssembly(
+        public static AssemblyBuilderPersistable DefineDynamicAssembly(
             AssemblyName name,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
-                => new PersistableAssemblyBuilder(name, assemblyAttributes);
+                => new AssemblyBuilderPersistable(name, assemblyAttributes);
 
         private static void WritePEImage(Stream peStream, MetadataBuilder metadataBuilder, BlobBuilder ilBuilder) // MethodDefinitionHandle entryPointHandle when we have main method.
         {
@@ -121,7 +121,7 @@ namespace System.Reflection.Emit.Experiment
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (PersistableModuleBuilder.ManifestModuleName.Equals(name))
+            if (ModuleBuilderPersistable.ManifestModuleName.Equals(name))
             {
                 return _module;
             }

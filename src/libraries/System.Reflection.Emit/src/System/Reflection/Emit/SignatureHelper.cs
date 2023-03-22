@@ -4,7 +4,7 @@
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
-namespace System.Reflection.Emit.Experiment
+namespace System.Reflection.Emit
 {
     // This is prototype code, to generate simple signatures.
     // For more complex signatures, will port System.Reflection.Emit's SignatureHelper.
