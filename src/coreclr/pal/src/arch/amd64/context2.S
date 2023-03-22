@@ -125,7 +125,7 @@ LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
     vinsertf128 ymm14, ymm14, xmmword ptr [rdi + (CONTEXT_Ymm0H + 14 * 16)], 1
     vinsertf128 ymm15, ymm15, xmmword ptr [rdi + (CONTEXT_Ymm0H + 15 * 16)], 1
 
-    test    BYTE PTR [rdi + CONTEXT_XStateFeaturesMask], XFEATURE_MASK_AVX512
+    test    BYTE PTR [rdi + CONTEXT_XStateFeaturesMask], XSTATE_MASK_AVX512
     je      LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE)
 
     // Restore the Opmask state

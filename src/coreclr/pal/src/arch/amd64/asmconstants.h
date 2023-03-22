@@ -3,10 +3,17 @@
 
 #ifdef HOST_64BIT
 
-#define XFEATURE_MASK_OPMASK (1 << 5)
-#define XFEATURE_MASK_ZMM_Hi256 (1 << 6)
-#define XFEATURE_MASK_Hi16_ZMM (1 << 7)
-#define XFEATURE_MASK_AVX512 (XFEATURE_MASK_OPMASK | XFEATURE_MASK_ZMM_Hi256 | XFEATURE_MASK_Hi16_ZMM)
+#define XSTATE_GSSE (2)
+#define XSTATE_AVX (XSTATE_GSSE)
+#define XSTATE_AVX512_KMASK (5)
+#define XSTATE_AVX512_ZMM_H (6)
+#define XSTATE_AVX512_ZMM (7)
+
+#define XSTATE_MASK_GSSE (1 << (XSTATE_GSSE))
+#define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
+#define XSTATE_MASK_AVX512 ((1 << (XSTATE_AVX512_KMASK)) | \
+                            (1 << (XSTATE_AVX512_ZMM_H)) | \
+                            (1 << (XSTATE_AVX512_ZMM)))
 
 // The arch bit is normally set in the flag constants below. Since this is already arch-specific code and the arch bit is not
 // relevant, the arch bit is excluded from the flag constants below for simpler tests.
