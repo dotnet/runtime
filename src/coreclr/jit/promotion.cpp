@@ -10,7 +10,7 @@ PhaseStatus Compiler::PromoteStructsNew()
     }
 
 #ifdef DEBUG
-    if (JitConfig.JitNewStructPromotion() == 0)
+    if (fgNoStructPromotion)
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -291,50 +291,6 @@ public:
         {
             return;
         }
-
-        // jitstd::sort(
-        //    m_accesses.begin(), m_accesses.end(),
-        //    [](const Access& l, const Access& r)
-        //    {
-        //        if (l.Offset < r.Offset)
-        //        {
-        //            return true;
-        //        }
-
-        //        if (l.Offset > r.Offset)
-        //        {
-        //            return false;
-        //        }
-
-        //        if (l.Count > r.Count)
-        //        {
-        //            return true;
-        //        }
-
-        //        if (l.Count < r.Count)
-        //        {
-        //            return false;
-        //        }
-
-        //        // TODO: Better heuristics, use info about struct uses to decrease benefit of promotions
-        //        if (r.AccessType == TYP_STRUCT)
-        //        {
-        //            if (l.AccessType == TYP_STRUCT)
-        //            {
-        //                return l.Layout < r.Layout;
-        //            }
-
-        //            return true;
-        //        }
-
-        //        if (l.AccessType == TYP_STRUCT)
-        //        {
-        //            return false;
-        //        }
-
-        //        assert(l.AccessType != r.AccessType);
-        //        return l.AccessType < r.AccessType;
-        //    });
 
         assert(replacements.size() == 0);
         for (size_t i = 0; i < m_accesses.size(); i++)
