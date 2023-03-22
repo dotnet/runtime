@@ -891,13 +891,19 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
     ExecutableAllocator_MapRW_CallsWithCacheMiss++;
 #endif
 
-    for (BlockRX* pBlock = m_pFirstBlockRX; pBlock != NULL; pBlock = pBlock->next)
+    for (BlockRX** ppBlock = &m_pFirstBlockRX; *ppBlock != NULL; ppBlock = &((*ppBlock)->next))
     {
+        BlockRX* pBlock = *ppBlock;
 #ifdef ENABLE_MAPRW_STATISTICS
         ExecutableAllocator_MapRW_LinkedListWalkDepth++;
 #endif
         if (pRX >= pBlock->baseRX && ((size_t)pRX + size) <= ((size_t)pBlock->baseRX + pBlock->size))
         {
+            // Move found block to the front of the singly linked list
+            *ppBlock = pBlock->next;
+            pBlock->next = m_pFirstBlockRX;
+            m_pFirstBlockRX = pBlock;
+
             // Offset of the RX address in the originally allocated block
             size_t offset = (size_t)pRX - (size_t)pBlock->baseRX;
             // Offset of the RX address that will start the newly mapped block
