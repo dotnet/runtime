@@ -4,7 +4,7 @@ name: Build OSX ARM64 Debug
 
 agent:
   type: Unity::VM::osx
-  image: platform-foundation/mac-12-bokken:v0.1.1-1022244
+  image: platform-foundation/coreclr-osx:v0.0.1-1277968
   flavor: m1.mac
 
 variables:

@@ -4,7 +4,7 @@ name: Test OSX x64 Debug
 
 agent:
   type: Unity::VM::osx
-  image: platform-foundation/mac-bokken:v0.1.8-972754
+  image: platform-foundation/coreclr-osx:v0.0.1-1277968
   flavor: m1.mac
 
 dependencies:

@@ -22,7 +22,6 @@ public class CoreCLR
             "-subset clr+libs",
             $"-a {gConfig.Architecture}",
             $"-c {gConfig.Configuration}",
-            "-ci",
             $"-v:{gConfig.DotNetVerbosity}"
         };
 
@@ -90,7 +89,6 @@ public class CoreCLR
         else
             psi.Arguments =
                 $"{psi.Arguments} /p:LibrariesConfiguration={gConfig.Configuration} -tree:baseservices -tree:interop -tree:reflection";
-        psi.Environment.Remove("LD_LIBRARY_PATH"); // just in case
         Utils.RunProcess(psi, gConfig);
 
         psi.FileName = Paths.RepoRoot.Combine("src", "tests", "run").ChangeExtension(BuildScript.ExtensionWithDot);
@@ -110,7 +108,6 @@ public class CoreCLR
             "-test /p:RunSmokeTestsOnly=true",
             $"-a {gConfig.Architecture}",
             $"-c {gConfig.Configuration}",
-            "-ci",
             $"-v:{gConfig.DotNetVerbosity}"
         };
 
@@ -125,8 +122,6 @@ public class CoreCLR
         psi.FileName = BuildScript;
         psi.Arguments = args.AggregateWithSpace();
         psi.WorkingDirectory = Paths.RepoRoot;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            psi.Environment.Add("LD_LIBRARY_PATH", "/usr/local/opt/openssl/lib");
         Utils.RunProcess(psi, gConfig);
     }
 }
