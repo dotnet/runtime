@@ -9,15 +9,15 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class ModuleBuilderPersistable : ModuleBuilder
+    internal sealed class ModuleBuilderImpl : ModuleBuilder
     {
-        private readonly AssemblyBuilderPersistable _assemblyBuilder;
+        private readonly AssemblyBuilderImpl _assemblyBuilder;
 
         #region Internal Data Members
 
         internal Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new Dictionary<Assembly, AssemblyReferenceHandle>();
         internal Dictionary<Type, TypeReferenceHandle> _typeRefStore = new Dictionary<Type, TypeReferenceHandle>();
-        internal List<TypeBuilderPersistable> _typeDefStore = new List<TypeBuilderPersistable>();
+        internal List<TypeBuilderImpl> _typeDefStore = new List<TypeBuilderImpl>();
         internal int _nextMethodDefRowId = 1;
         internal int _nextFieldDefRowId = 1;
         internal const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
@@ -25,7 +25,7 @@ namespace System.Reflection.Emit
         #endregion
 
 
-        internal ModuleBuilderPersistable(string name, AssemblyBuilderPersistable assembly)
+        internal ModuleBuilderImpl(string name, AssemblyBuilderImpl assembly)
         {
             _assemblyBuilder = assembly;
             ScopeName = name;
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit
                 methodList: MetadataTokens.MethodDefinitionHandle(1));
 
             // Add each type definition to metadata table.
-            foreach (TypeBuilderPersistable typeBuilder in _typeDefStore)
+            foreach (TypeBuilderImpl typeBuilder in _typeDefStore)
             {
                 TypeReferenceHandle parent = default;
                 if (typeBuilder.BaseType is not null)
@@ -62,13 +62,13 @@ namespace System.Reflection.Emit
                 TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDef(metadata, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
 
                 // Add each method definition to metadata table.
-                foreach (MethodBuilderPersistable method in typeBuilder._methodDefStore)
+                foreach (MethodBuilderImpl method in typeBuilder._methodDefStore)
                 {
                     MetadataHelper.AddMethodDefinition(metadata, method);
                     _nextMethodDefRowId++;
                 }
 
-                foreach (FieldBuilderPersistable field in typeBuilder._fieldDefStore)
+                foreach (FieldBuilderImpl field in typeBuilder._fieldDefStore)
                 {
                     MetadataHelper.AddFieldDefinition(metadata, field);
                     _nextFieldDefRowId++;
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            TypeBuilderPersistable _type = new TypeBuilderPersistable(name, attr, parent, this);
+            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this);
             _typeDefStore.Add(_type);
             return _type;
         }

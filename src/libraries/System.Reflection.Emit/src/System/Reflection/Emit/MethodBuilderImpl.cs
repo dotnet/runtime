@@ -6,14 +6,14 @@ using System.Globalization;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class MethodBuilderPersistable : MethodBuilder
+    internal sealed class MethodBuilderImpl : MethodBuilder
     {
         internal Type? _returnType;
         internal Type[]? _parametersTypes;
-        private readonly ModuleBuilderPersistable _module;
+        private readonly ModuleBuilderImpl _module;
 
-        internal MethodBuilderPersistable(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
-            Type[]? parameters, ModuleBuilderPersistable module, TypeBuilderPersistable declaringType)
+        internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
+            Type[]? parameters, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
             ArgumentNullException.ThrowIfNull(module);

@@ -9,19 +9,19 @@ using System.Reflection.PortableExecutable;
 
 namespace System.Reflection.Emit
 {
-    public sealed class AssemblyBuilderPersistable : AssemblyBuilder
+    public sealed class AssemblyBuilderImpl : AssemblyBuilder
     {
         private bool _previouslySaved;
         private AssemblyName _assemblyName;
-        private ModuleBuilderPersistable? _module;
+        private ModuleBuilderImpl? _module;
 
-        internal AssemblyBuilderPersistable(AssemblyName name, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        internal AssemblyBuilderImpl(AssemblyName name, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             ArgumentNullException.ThrowIfNull(name);
 
             _assemblyName = name;
 
-            _module = new ModuleBuilderPersistable(ModuleBuilderPersistable.ManifestModuleName, this);
+            _module = new ModuleBuilderImpl(ModuleBuilderImpl.ManifestModuleName, this);
 
             if (assemblyAttributes != null)
             {
@@ -32,13 +32,13 @@ namespace System.Reflection.Emit
             }
         }
 
-        public static AssemblyBuilderPersistable DefineDynamicAssembly(AssemblyName name)
-            => new AssemblyBuilderPersistable(name, null);
+        public static AssemblyBuilderImpl DefineDynamicAssembly(AssemblyName name)
+            => new AssemblyBuilderImpl(name, null);
 
-        public static AssemblyBuilderPersistable DefineDynamicAssembly(
+        public static AssemblyBuilderImpl DefineDynamicAssembly(
             AssemblyName name,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
-                => new AssemblyBuilderPersistable(name, assemblyAttributes);
+                => new AssemblyBuilderImpl(name, assemblyAttributes);
 
         private static void WritePEImage(Stream peStream, MetadataBuilder metadataBuilder, BlobBuilder ilBuilder) // MethodDefinitionHandle entryPointHandle when we have main method.
         {
@@ -121,7 +121,7 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (ModuleBuilderPersistable.ManifestModuleName.Equals(name))
+            if (ModuleBuilderImpl.ManifestModuleName.Equals(name))
             {
                 return _module;
             }

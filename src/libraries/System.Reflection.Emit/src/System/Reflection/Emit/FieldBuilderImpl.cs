@@ -5,14 +5,14 @@ using System.Globalization;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class FieldBuilderPersistable : FieldBuilder
+    internal sealed class FieldBuilderImpl : FieldBuilder
     {
-        private TypeBuilderPersistable _typeBuilder;
+        private TypeBuilderImpl _typeBuilder;
         private string _fieldName;
         private FieldAttributes _attributes;
         private Type _fieldType;
 
-        internal FieldBuilderPersistable(TypeBuilderPersistable typeBuilder, string fieldName, Type type, FieldAttributes attributes)
+        internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
             ArgumentNullException.ThrowIfNull(type);

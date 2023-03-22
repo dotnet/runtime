@@ -66,7 +66,7 @@ namespace System.Reflection.Emit.Tests
         private static MethodInfo PopulateMethods(Type parameterType, out MethodInfo saveMethod)
         {
             Type assemblyType = Type.GetType(
-                    "System.Reflection.Emit.AssemblyBuilderPersistable, System.Reflection.Emit",
+                    "System.Reflection.Emit.AssemblyBuilderImpl, System.Reflection.Emit",
                     throwOnError: true)!;
 
             saveMethod = assemblyType.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance, new Type[] { parameterType });

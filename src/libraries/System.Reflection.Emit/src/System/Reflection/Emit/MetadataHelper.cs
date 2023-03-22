@@ -32,7 +32,7 @@ namespace System.Reflection.Emit
                 hashValue: default); // not sure where to find hashValue.
         }
 
-        internal static TypeDefinitionHandle AddTypeDef(MetadataBuilder metadata, TypeBuilderPersistable typeBuilder, EntityHandle baseType, int methodToken, int fieldToken)
+        internal static TypeDefinitionHandle AddTypeDef(MetadataBuilder metadata, TypeBuilderImpl typeBuilder, EntityHandle baseType, int methodToken, int fieldToken)
         {
             // Add type metadata
             return metadata.AddTypeDefinition(
@@ -58,7 +58,7 @@ namespace System.Reflection.Emit
                 );
         }
 
-        internal static MethodDefinitionHandle AddMethodDefinition(MetadataBuilder metadata, MethodBuilderPersistable methodBuilder)
+        internal static MethodDefinitionHandle AddMethodDefinition(MetadataBuilder metadata, MethodBuilderImpl methodBuilder)
         {
             return metadata.AddMethodDefinition(
                 methodBuilder.Attributes,
