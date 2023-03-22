@@ -851,7 +851,7 @@ inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *sz)
     _ASSERTE(sz != nullptr);
 
     *sz = sizeof(_STRUCT_OPMASK_REG) * 8;
-    return reinterpret_cast<void *>(&((_STRUCT_MCONTEXT_AVX512_64&)FPSTATE(uc)).__fpu_k0);
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_k0);
 }
 
 inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *sz)
@@ -860,7 +860,7 @@ inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *sz)
     _ASSERTE(sz != nullptr);
 
     *sz = sizeof(_STRUCT_YMM_REG) * 16;
-    return reinterpret_cast<void *>(&((_STRUCT_MCONTEXT_AVX512_64&)FPSTATE(uc)).__fpu_zmmh0);
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmmh0);
 }
 
 inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *sz)
@@ -869,7 +869,7 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *sz)
     _ASSERTE(sz != nullptr);
 
     *sz = sizeof(_STRUCT_ZMM_REG) * 16;
-    return reinterpret_cast<void *>(&((_STRUCT_MCONTEXT_AVX512_64&)FPSTATE(uc)).__fpu_zmm16);
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmm16);
 }
 #else //TARGET_OSX
 
