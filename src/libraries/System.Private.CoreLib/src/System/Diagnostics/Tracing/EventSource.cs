@@ -4286,9 +4286,9 @@ namespace System.Diagnostics.Tracing
             // eventSource.m_Dispatchers could have mutated
             foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
             {
-                if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
+                if (eventSourceRef.TryGetTarget(out EventSource? eventSource)
+                    && eventSource.m_Dispatchers != null)
                 {
-                    Debug.Assert(eventSource.m_Dispatchers != null);
                     // Is the first output dispatcher the dispatcher we are removing?
                     if (eventSource.m_Dispatchers.m_Listener == listenerToRemove)
                     {
