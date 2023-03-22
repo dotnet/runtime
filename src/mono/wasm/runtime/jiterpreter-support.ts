@@ -1232,8 +1232,13 @@ class Cfg {
                         if (this.trace > 1)
                             console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
                     } else {
-                        if (this.trace > 0)
-                            console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed`);
+                        if (this.trace > 0) {
+                            const base = <any>this.base;
+                            if ((segment.target >= base) && (segment.target < this.exitIp))
+                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (inside of trace!)`);
+                            else if (this.trace > 1)
+                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
+                        }
                         append_bailout(this.builder, segment.target, BailoutReason.Branch);
                     }
                     break;
