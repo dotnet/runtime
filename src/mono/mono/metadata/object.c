@@ -878,6 +878,11 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			pos += offset;
 
 			type = mono_type_get_underlying_type (field->type);
+
+			// If a struct has inline array attribute and type is not generic instance, consider it as an array
+			if (m_class_is_inlinearray (klass) && type->type != MONO_TYPE_GENERICINST && type->type != MONO_TYPE_TYPEDBYREF && type->type != MONO_TYPE_VALUETYPE)
+				type->type = MONO_TYPE_ARRAY;
+
 			switch (type->type) {
 			case MONO_TYPE_U:
 			case MONO_TYPE_I:
