@@ -5649,6 +5649,25 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             break;
                         }
 
+                        case NI_AVX512F_ConvertToVector128Int16:
+                        case NI_AVX512F_ConvertToVector128Int32:
+                        case NI_AVX512F_ConvertToVector128UInt16:
+                        case NI_AVX512F_ConvertToVector128UInt32:
+                        case NI_AVX512F_ConvertToVector256Int16:
+                        case NI_AVX512F_ConvertToVector256Int32:
+                        case NI_AVX512F_ConvertToVector256UInt16:
+                        case NI_AVX512F_ConvertToVector256UInt32:
+                        case NI_AVX512BW_ConvertToVector128Byte:
+                        case NI_AVX512BW_ConvertToVector128SByte:
+                        case NI_AVX512BW_ConvertToVector256Byte:
+                        case NI_AVX512BW_ConvertToVector256SByte:
+                        {
+                            // These intrinsics are "ins reg/mem, xmm"
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
+                            break;
+                        }
+
                         default:
                         {
                             unreached();
