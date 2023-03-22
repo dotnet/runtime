@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -65,8 +67,24 @@ namespace System.Threading
 
                 LowLevelLock threadAdjustmentLock = threadPoolInstance._threadAdjustmentLock;
                 SemaphoreWaitState state = new(threadPoolInstance, threadAdjustmentLock) { SpinWait = true };
+                // set up the callbacks for semaphore waits, tell
+                // emscripten to keep the thread alive, and return to
+                // the JS event loop.
                 WaitForWorkLoop(s_semaphore, state);
+                EmscriptenKeepalivePush();
+                EmscriptenUnwindToJsEventLoop();
             }
+
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            private static extern void EmscriptenKeepalivePush();
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            private static extern void EmscriptenKeepalivePop();
+            [DoesNotReturn]
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            private static extern void EmscriptenUnwindToJsEventLoop();
+            [DoesNotReturn]
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            private static extern void MonoThreadExit(); // FIXME: this is not Emscripten, it's just mono_thread_exit();
 
             private static readonly Action<LowLevelJSSemaphore, object?> s_WorkLoopSemaphoreSuccess = new(WorkLoopSemaphoreSuccess);
             private static readonly Action<LowLevelJSSemaphore, object?> s_WorkLoopSemaphoreTimedOut = new(WorkLoopSemaphoreTimedOut);
@@ -90,8 +108,8 @@ namespace System.Threading
                 if (WorkerTimedOutMaybeStop(state.ThreadPoolInstance, state.ThreadAdjustmentLock)) {
                     // we're done, kill the thread.
 
-                    // emscriptenKeepalivePop();
-                    // emscriptenThreadExit();
+                    EmscriptenKeepalivePop();
+                    MonoThreadExit();
                     return;
                 } else {
                     // more work showed up while we were shutting down, go around one more time

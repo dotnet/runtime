@@ -571,8 +571,8 @@ NOHANDLES(ICALL(ILOCK_23, "Read(long&)", ves_icall_System_Threading_Interlocked_
 ICALL_TYPE(JSSEM, "System.Threading.LowLevelJSSemaphore", JSSEM_1)
 NOHANDLES(ICALL(JSSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal))
 NOHANDLES(ICALL(JSSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal))
-NOHANDLES(ICALL(JSSEM_3, "ReleaseInternal", ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal))
-NOHANDLES(ICALL(JSSEM_4, "PrepareWaitInternal", ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal))
+NOHANDLES(ICALL(JSSEM_3, "PrepareWaitInternal", ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal))
+NOHANDLES(ICALL(JSSEM_4, "ReleaseInternal", ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal))
 #endif
 
 ICALL_TYPE(LIFOSEM, "System.Threading.LowLevelLifoSemaphore", LIFOSEM_1)
@@ -589,6 +589,14 @@ HANDLES(MONIT_3, "Monitor_pulse_all", ves_icall_System_Threading_Monitor_Monitor
 HANDLES(MONIT_7, "Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait, MonoBoolean, 3, (MonoObject, guint32, MonoBoolean))
 NOHANDLES(ICALL(MONIT_8, "get_LockContentionCount", ves_icall_System_Threading_Monitor_Monitor_LockContentionCount))
 HANDLES(MONIT_9, "try_enter_with_atomic_var", ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var, void, 4, (MonoObject, guint32, MonoBoolean, MonoBoolean_ref))
+
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+ICALL_TYPE(TPOOL_WORKER, "System.Threading.PortableThreadPool/WorkerThread", TPOOL_WORKER_1)
+NOHANDLES(ICALL(TPOOL_WORKER_1, "EmscriptenKeepalivePop", ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenKeepalivePop))
+NOHANDLES(ICALL(TPOOL_WORKER_2, "EmscriptenKeepalivePush", ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenKeepalivePush))
+NOHANDLES(ICALL(TPOOL_WORKER_3, "EmscriptenUnwindToJsEventLoop", ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenUnwindToJsEventLoop))
+NOHANDLES(ICALL(TPOOL_WORKER_4, "MonoThreadExit", mono_thread_exit))
+#endif
 
 ICALL_TYPE(THREAD, "System.Threading.Thread", THREAD_1)
 HANDLES(THREAD_1, "ClrState", ves_icall_System_Threading_Thread_ClrState, void, 2, (MonoInternalThread, guint32))

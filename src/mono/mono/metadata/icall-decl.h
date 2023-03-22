@@ -189,6 +189,10 @@ ICALL_EXPORT gpointer ves_icall_System_Threading_LowLevelJSSemaphore_InitInterna
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal (gpointer sem_ptr);
 ICALL_EXPORT void   ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timeout_cb, gpointer gchandle, gpointer user_data);
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count);
+
+ICALL_EXPORT void ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenKeepalivePop (void);
+ICALL_EXPORT void ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenKeepalivePush (void);
+ICALL_EXPORT void ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenUnwindToJsEventLoop (void);
 #endif
 
 #ifdef TARGET_AMD64

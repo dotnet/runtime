@@ -91,6 +91,10 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 #include <errno.h>
 #endif
 
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+#include <emscripten/eventloop.h>
+#endif
+
 #include "icall-decl.h"
 
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
@@ -4991,4 +4995,23 @@ ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal (gpointer sem_ptr
 	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
 	mono_lifo_js_semaphore_release (sem, count);
 }
+
+void
+ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenKeepalivePop (void)
+{
+	emscripten_runtime_keepalive_pop();
+}
+
+void
+ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenKeepalivePush (void)
+{
+	emscripten_runtime_keepalive_push();
+}
+
+void
+ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenUnwindToJsEventLoop (void)
+{
+	emscripten_unwind_to_js_event_loop();
+}
+
 #endif /* HOST_BROWSER && !DISABLE_THREADS */
