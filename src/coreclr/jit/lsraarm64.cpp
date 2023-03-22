@@ -117,7 +117,7 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
 //
 // Arguments:
 //    firstRefPosition  - First refPosition of the series of consecutive registers.
-//    regToAssign     - Register assigned to the first refposition.
+//    firstRegAssigned  - Register assigned to the first refposition.
 //
 //  Returns:
 //      True if all the consecutive registers starting from `firstRegAssigned` are assignable.
@@ -137,14 +137,21 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
         regToAssign     = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
         if (!isFree(getRegisterRecord(regToAssign)))
         {
+            if (nextRefPosition->refType == RefTypeUpperVectorRestore)
+            {
+                nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
+            }
+
             // If regToAssign is not free, check if it is already assigned to the interval corresponding
             // to the subsequent nextRefPosition. If yes, it would just use regToAssign for that nextRefPosition.
             if ((nextRefPosition->getInterval() != nullptr) &&
                 (nextRefPosition->getInterval()->assignedReg != nullptr) &&
-                ((nextRefPosition->getInterval()->assignedReg->regNum != regToAssign)))
+                ((nextRefPosition->getInterval()->assignedReg->regNum == regToAssign)))
             {
-                return false;
+                continue;
             }
+
+            return false;
         }
     } while (++i != registersCount);
 
