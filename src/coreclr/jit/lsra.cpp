@@ -502,7 +502,7 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
         {
             mask |= LsraExtraFPSetForConsecutive;
         }
-#endif;
+#endif
     }
 
     return mask;

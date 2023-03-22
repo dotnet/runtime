@@ -1853,7 +1853,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 {
                     newRefPosition->registerAssignment |= LsraExtraFPSetForConsecutive;
                 }
-#endif;
+#endif
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&
                     !interval->isLocalVar)
                 {
