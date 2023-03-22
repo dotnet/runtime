@@ -1501,11 +1501,11 @@ extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 #define XSTATE_AVX512_ZMM_H (6)
 #define XSTATE_AVX512_ZMM (7)
 
-#define XSTATE_MASK_GSSE (1ui64 << (XSTATE_GSSE))
+#define XSTATE_MASK_GSSE (UI64(1) << (XSTATE_GSSE))
 #define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
-#define XSTATE_MASK_AVX512 ((1ui64 << (XSTATE_AVX512_KMASK)) | \
-                            (1ui64 << (XSTATE_AVX512_ZMM_H)) | \
-                            (1ui64 << (XSTATE_AVX512_ZMM)))
+#define XSTATE_MASK_AVX512 ((UI64(1) << (XSTATE_AVX512_KMASK)) | \
+                            (UI64(1) << (XSTATE_AVX512_ZMM_H)) | \
+                            (UI64(1) << (XSTATE_AVX512_ZMM)))
 
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
