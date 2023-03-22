@@ -45,7 +45,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Fact]
         public void InvalidArguments_SafeFileHandle()
         {
-            // null is an invalid stream
+            // null is an invalid handle
             AssertExtensions.Throws<ArgumentNullException>("fileHandle", () => MemoryMappedFile.CreateFromFile((SafeFileHandle)null, CreateUniqueMapName(), 4096, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
         }
 
