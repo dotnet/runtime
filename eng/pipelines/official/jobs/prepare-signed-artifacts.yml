@@ -2,7 +2,7 @@ parameters:
   dependsOn: []
   PublishRidAgnosticPackagesFromPlatform: ''
   isOfficialBuild: false
-  logArtifactName: 'Logs-PrepareSignedArtifacts'
+  logArtifactName: 'Logs-PrepareSignedArtifacts_Attempt$(System.JobAttempt)'
 
 jobs:
 - job: PrepareSignedArtifacts
