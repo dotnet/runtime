@@ -1342,7 +1342,6 @@ mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
 }
 
 #define TRACE_PENALTY_LIMIT 200
-#define TRACE_MONITORING_DETAILED FALSE
 
 ptrdiff_t
 mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
@@ -1377,7 +1376,8 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 		int penalty = MIN ((int)((1.0f - scaled) * TRACE_PENALTY_LIMIT), TRACE_PENALTY_LIMIT);
 		info->penalty_total += penalty;
 
-		// g_print ("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
+		if (mono_opt_jiterpreter_trace_monitoring_log > 2)
+			g_print ("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
 	}
 
 	gint64 hit_count = info->hit_count++ - mono_opt_jiterpreter_minimum_trace_hit_count;
@@ -1394,11 +1394,11 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 			*(volatile JiterpreterThunk*)(ip + 1) = thunk;
 			mono_memory_barrier ();
 			*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
-			if (mono_opt_jiterpreter_stats_enabled && TRACE_MONITORING_DETAILED)
+			if (mono_opt_jiterpreter_trace_monitoring_log > 1)
 				g_print ("trace #%d @%d '%s' accepted; average_penalty %f <= %f\n", index, ip, frame->imethod->method->name, average_penalty, threshold);
 		} else {
 			traces_rejected++;
-			if (mono_opt_jiterpreter_stats_enabled) {
+			if (mono_opt_jiterpreter_trace_monitoring_log > 0) {
 				char * full_name = mono_method_get_full_name (frame->imethod->method);
 				g_print ("trace #%d @%d '%s' rejected; average_penalty %f > %f\n", index, ip, full_name, average_penalty, threshold);
 				g_free (full_name);
