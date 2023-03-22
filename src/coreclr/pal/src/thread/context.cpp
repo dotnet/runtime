@@ -319,7 +319,7 @@ typedef int __ptrace_request;
 #if !HAVE_MACH_EXCEPTIONS
 
 #ifdef XSTATE_SUPPORTED
-static Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
+Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
 #endif // XSTATE_SUPPORTED
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
@@ -1639,13 +1639,13 @@ CONTEXT_SetThreadContextOnPort(
         {
             if ((lpContext->XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
             {
-                memcpy(&State.__fpu_k0, lpContext->KMask0, sizeof(_STRUCT_OPMASK_REG) * 8);
-                memcpy(&State.__fpu_zmmh0, lpContext->Zmm0H, sizeof(_STRUCT_YMM_REG) * 16);
-                memcpy(&State.__fpu_zmm16, lpContext->Zmm16, sizeof(_STRUCT_ZMM_REG) * 16);
+                memcpy(&State.__fpu_k0, &lpContext->KMask0, sizeof(_STRUCT_OPMASK_REG) * 8);
+                memcpy(&State.__fpu_zmmh0, &lpContext->Zmm0H, sizeof(_STRUCT_YMM_REG) * 16);
+                memcpy(&State.__fpu_zmm16, &lpContext->Zmm16, sizeof(_STRUCT_ZMM_REG) * 16);
             }
 
             _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_AVX) == XSTATE_MASK_AVX);
-            memcpy(&State.__fpu_ymmh0, lpContext->Ymm0H, sizeof(_STRUCT_XMM_REG) * 16);
+            memcpy(&State.__fpu_ymmh0, &lpContext->Ymm0H, sizeof(_STRUCT_XMM_REG) * 16);
         }
 #endif
 
