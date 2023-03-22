@@ -42,10 +42,10 @@ struct Access
     unsigned CountReturns                          = 0;
     unsigned CountPassedAsRetbuf                   = 0;
 
-    weight_t CountWtd = 0;
-    weight_t CountAssignmentSourceWtd = 0;
-    weight_t CountAssignmentDestinationWtd = 0;
-    weight_t CountAssignmentsToRegisterCandidateWtd = 0;
+    weight_t CountWtd                                 = 0;
+    weight_t CountAssignmentSourceWtd                 = 0;
+    weight_t CountAssignmentDestinationWtd            = 0;
+    weight_t CountAssignmentsToRegisterCandidateWtd   = 0;
     weight_t CountAssignmentsFromRegisterCandidateWtd = 0;
     weight_t CountCallArgsWtd                         = 0;
     weight_t CountCallArgsByImplicitRefWtd            = 0;
@@ -209,7 +209,7 @@ public:
                     Access& candidateAccess = m_accesses[index];
                     if ((candidateAccess.AccessType == accessType) && (candidateAccess.Layout == accessLayout))
                     {
-                        access         = &candidateAccess;
+                        access = &candidateAccess;
                         break;
                     }
 
@@ -359,7 +359,7 @@ public:
             char*  bufp = new (comp, CMK_DebugOnly) char[len];
             strcpy_s(bufp, len, buf);
 #endif
-            unsigned newLcl = comp->lvaGrabTemp(false DEBUGARG(bufp));
+            unsigned newLcl                  = comp->lvaGrabTemp(false DEBUGARG(bufp));
             comp->lvaGetDesc(newLcl)->lvType = access.AccessType;
             replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl));
         }
@@ -481,13 +481,20 @@ public:
             }
 
             printf("    #:                             (%u, " FMT_WT ")\n", access.Count, access.CountWtd);
-            printf("    # assigned from:               (%u, " FMT_WT ")\n", access.CountAssignmentSource, access.CountAssignmentSourceWtd);
-            printf("    # assigned to:                 (%u, " FMT_WT ")\n", access.CountAssignmentDestination, access.CountAssignmentDestinationWtd);
-            printf("    # as call arg:                 (%u, " FMT_WT ")\n", access.CountCallArgs, access.CountCallArgsWtd);
-            printf("    # as implicit by-ref call arg: (%u, " FMT_WT ")\n", access.CountCallArgsByImplicitRef, access.CountCallArgsByImplicitRefWtd);
-            printf("    # as on-stack call arg:        (%u, " FMT_WT ")\n", access.CountCallArgsOnStack, access.CountCallArgsOnStackWtd);
-            printf("    # as retbuf:                   (%u, " FMT_WT ")\n", access.CountPassedAsRetbuf, access.CountPassedAsRetbufWtd);
-            printf("    # as returned value:           (%u, " FMT_WT ")\n\n", access.CountReturns, access.CountReturnsWtd);
+            printf("    # assigned from:               (%u, " FMT_WT ")\n", access.CountAssignmentSource,
+                   access.CountAssignmentSourceWtd);
+            printf("    # assigned to:                 (%u, " FMT_WT ")\n", access.CountAssignmentDestination,
+                   access.CountAssignmentDestinationWtd);
+            printf("    # as call arg:                 (%u, " FMT_WT ")\n", access.CountCallArgs,
+                   access.CountCallArgsWtd);
+            printf("    # as implicit by-ref call arg: (%u, " FMT_WT ")\n", access.CountCallArgsByImplicitRef,
+                   access.CountCallArgsByImplicitRefWtd);
+            printf("    # as on-stack call arg:        (%u, " FMT_WT ")\n", access.CountCallArgsOnStack,
+                   access.CountCallArgsOnStackWtd);
+            printf("    # as retbuf:                   (%u, " FMT_WT ")\n", access.CountPassedAsRetbuf,
+                   access.CountPassedAsRetbufWtd);
+            printf("    # as returned value:           (%u, " FMT_WT ")\n\n", access.CountReturns,
+                   access.CountReturnsWtd);
         }
     }
 #endif
