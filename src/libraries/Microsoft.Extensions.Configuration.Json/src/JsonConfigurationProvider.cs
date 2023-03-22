@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Configuration.Json
         {
             try
             {
-                Data = JsonConfigurationFileParser.Parse(stream);
+                Data = JsonConfigurationFileParser.Parse(stream, Source.ConfigurationRootKey);
             }
             catch (JsonException e)
             {

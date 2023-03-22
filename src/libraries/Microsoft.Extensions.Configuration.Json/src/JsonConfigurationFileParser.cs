@@ -16,25 +16,42 @@ namespace Microsoft.Extensions.Configuration.Json
         private readonly Dictionary<string, string?> _data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         private readonly Stack<string> _paths = new Stack<string>();
 
-        public static IDictionary<string, string?> Parse(Stream input)
-            => new JsonConfigurationFileParser().ParseStream(input);
+        public static IDictionary<string, string?> Parse(Stream input, string? prefix)
+            => new JsonConfigurationFileParser().ParseStream(input, prefix);
 
-        private Dictionary<string, string?> ParseStream(Stream input)
+        private Dictionary<string, string?> ParseStream(Stream input, string? docRootPrefix)
         {
             var jsonDocumentOptions = new JsonDocumentOptions
             {
-                CommentHandling = JsonCommentHandling.Skip,
-                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true,
             };
 
             using (var reader = new StreamReader(input))
             using (JsonDocument doc = JsonDocument.Parse(reader.ReadToEnd(), jsonDocumentOptions))
             {
-                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                if (!string.IsNullOrWhiteSpace(docRootPrefix))
                 {
-                    throw new FormatException(SR.Format(SR.Error_InvalidTopLevelJSONElement, doc.RootElement.ValueKind));
+                    if (doc.RootElement.ValueKind is not JsonValueKind.Object or JsonValueKind.Array)
+                    {
+                        throw new FormatException(SR.Format(SR.Error_InvalidTopLevelJSONElement,
+                            doc.RootElement.ValueKind));
+                    }
                 }
+                else
+                {
+                    if (doc.RootElement.ValueKind is not JsonValueKind.Object)
+                    {
+                        throw new FormatException(SR.Format(SR.Error_InvalidTopLevelJSONElement,
+                            doc.RootElement.ValueKind));
+                    }
+                }
+                if (!string.IsNullOrWhiteSpace(docRootPrefix))
+                    EnterContext(docRootPrefix);
+
                 VisitObjectElement(doc.RootElement);
+
+                if (!string.IsNullOrWhiteSpace(docRootPrefix))
+                    ExitContext();
             }
 
             return _data;
@@ -102,6 +119,7 @@ namespace Microsoft.Extensions.Configuration.Json
                     {
                         throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));
                     }
+
                     _data[key] = value.ToString();
                     break;
 
