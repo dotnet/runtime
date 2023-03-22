@@ -3438,7 +3438,8 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
+    StubCodeBlockKind sk;
+    VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(f_IP, &sk);
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
