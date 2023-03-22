@@ -315,7 +315,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
     <ItemGroup Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
-      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(UseLLVMLinker)' != 'true'" />
+      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(LinkerFlavor)' == '' or '$(LinkerFlavor)' == 'bfd'" />
     </ItemGroup>
     <ItemGroup>
       <CustomLibArg Include="-crs &quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' != 'win'" />
