@@ -1151,12 +1151,15 @@ class Cfg {
             this.builder.appendULeb(1); // br depth of 1 = skip the unreachable and fall through to the start
             for (let i = 0; i < this.backBranchTargets.length; i++) {
                 const offset = (this.backBranchTargets[i] * 2) + <any>this.startOfBody;
-                this.dispatchTable.set(offset, i + 1);
                 const breakDepth = this.blockStack.indexOf(offset);
-                if (breakDepth >= 0)
+                if (breakDepth >= 0) {
+                    this.dispatchTable.set(offset, i + 1);
                     this.builder.appendULeb(breakDepth + 2); // add 2 to the depth because of the double block around it
-                else // This means the back branch target is outside of the trace. It shouldn't be possible to reach this
+                } else {
+                    // This means the back branch target is outside of the trace. It shouldn't be possible to reach this
+                    //  and we didn't add it to the dispatch table anyway
                     this.builder.appendULeb(0);
+                }
             }
             this.builder.appendULeb(0); // for unrecognized value we br 0, which causes us to trap
             this.builder.endBlock();
