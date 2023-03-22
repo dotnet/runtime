@@ -72,11 +72,11 @@ target_link_libraries(
     "-framework Foundation"
     "-framework Security"
     "-framework UIKit"
-    %FrameworksToLink%
     "-lz"
     "-lc++"
     "-liconv"
     %NativeLibrariesToLink%
+%APP_LINKER_ARGS%
 )
 
 if(%UseNativeAOTRuntime%)

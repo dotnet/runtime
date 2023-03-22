@@ -23,11 +23,11 @@ namespace System.Xml
         public XmlDictionaryString Add(int id, string value)
         {
             if (id < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(id), SR.XmlInvalidID));
+                throw new ArgumentOutOfRangeException(nameof(id), SR.XmlInvalidID);
             ArgumentNullException.ThrowIfNull(value);
             XmlDictionaryString? xmlString;
             if (TryLookup(id, out _))
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIDDefined));
+                throw new InvalidOperationException(SR.XmlIDDefined);
 
             xmlString = new XmlDictionaryString(this, value, id);
             if (id >= MaxArrayEntries)

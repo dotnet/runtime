@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -13,6 +14,7 @@ namespace ILCompiler
     public partial class CompilerTypeSystemContext
     {
         private MethodDesc _objectEqualsMethod;
+        private MetadataType _iAsyncStateMachineType;
 
         private sealed class ValueTypeMethodHashtable : LockFreeReaderHashtable<DefType, MethodDesc>
         {
@@ -73,7 +75,19 @@ namespace ILCompiler
             if (valueType.IsWellKnownType(WellKnownType.Double) || valueType.IsWellKnownType(WellKnownType.Single))
                 return false;
 
+            // Heuristic: async state machines don't need equality/hashcode.
+            if (IsAsyncStateMachineType(valueType))
+                return false;
+
             return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
+        }
+
+        public bool IsAsyncStateMachineType(MetadataType type)
+        {
+            Debug.Assert(type.IsValueType);
+            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices", "IAsyncStateMachine", throwIfNotFound: false);
+            return type.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
+                && Array.IndexOf(type.RuntimeInterfaces, _iAsyncStateMachineType) >= 0;
         }
 
         private sealed class TypeState

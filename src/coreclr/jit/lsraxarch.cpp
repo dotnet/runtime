@@ -228,6 +228,11 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
+        case GT_JTRUE:
+            BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
+            srcCount = 1;
+            break;
+
         case GT_JCC:
             srcCount = 0;
             assert(dstCount == 0);
@@ -1504,6 +1509,68 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     }
                     break;
 
+                case GenTreeBlk::BlkOpKindUnrollMemmove:
+                {
+                    // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
+                    // we can ignore the fact that dst and src might overlap if we save the whole dst
+                    // to temp regs in advance, e.g. for memmove(rax, rcx, 120):
+                    //
+                    //       vmovdqu  ymm0, ymmword ptr[rax +  0]
+                    //       vmovdqu  ymm1, ymmword ptr[rax + 32]
+                    //       vmovdqu  ymm2, ymmword ptr[rax + 64]
+                    //       vmovdqu  ymm3, ymmword ptr[rax + 88]
+                    //       vmovdqu  ymmword ptr[rcx +  0], ymm0
+                    //       vmovdqu  ymmword ptr[rcx + 32], ymm1
+                    //       vmovdqu  ymmword ptr[rcx + 64], ymm2
+                    //       vmovdqu  ymmword ptr[rcx + 88], ymm3
+                    //
+
+                    // Not yet finished for x86
+                    assert(TARGET_POINTER_SIZE == 8);
+
+                    // Lowering was expected to get rid of memmove in case of zero
+                    assert(size > 0);
+
+                    // TODO-XARCH-AVX512: Consider enabling it here
+                    unsigned simdSize =
+                        (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                            ? YMM_REGSIZE_BYTES
+                            : XMM_REGSIZE_BYTES;
+
+                    if (size >= simdSize)
+                    {
+                        unsigned simdRegs = size / simdSize;
+                        if ((size % simdSize) != 0)
+                        {
+                            // TODO-CQ: Consider using GPR load/store here if the reminder is 1,2,4 or 8
+                            // especially if we enable AVX-512
+                            simdRegs++;
+                        }
+                        for (unsigned i = 0; i < simdRegs; i++)
+                        {
+                            // It's too late to revert the unrolling so we hope we'll have enough SIMD regs
+                            // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                        SetContainsAVXFlags();
+                    }
+                    else
+                    {
+                        if (isPow2(size))
+                        {
+                            // Single GPR for 1,2,4,8
+                            buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                        }
+                        else
+                        {
+                            // Any size from 3 to 15 can be handled via two GPRs
+                            buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                            buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                        }
+                    }
+                }
+                break;
+
                 case GenTreeBlk::BlkOpKindRepInstr:
                     dstAddrRegMask = RBM_RDI;
                     srcRegMask     = RBM_RSI;
@@ -2014,6 +2081,7 @@ static GenTree* SkipContainedCreateScalarUnsafe(GenTree* node)
     {
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
         {
             return hwintrinsic->Op(1);
         }
@@ -2122,6 +2190,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector128_ToScalar:
             case NI_Vector256_CreateScalarUnsafe:
             case NI_Vector256_ToScalar:
+            case NI_Vector512_CreateScalarUnsafe:
             {
                 assert(numArgs == 1);
 
@@ -2166,6 +2235,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector128_AsVector3:
             case NI_Vector128_ToVector256:
             case NI_Vector128_ToVector256Unsafe:
+            case NI_Vector256_ToVector512Unsafe:
             case NI_Vector256_GetLower:
             {
                 assert(numArgs == 1);
@@ -2483,6 +2553,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 // get a tmp register for mask that will be cleared by gather instructions
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+                setInternalRegsDelayFree = true;
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_AVX512F_MoveMaskSpecial:
+            {
+                srcCount += BuildOperandUses(op1);
+                buildInternalMaskRegisterDefForNode(intrinsicTree);
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;
@@ -2859,22 +2939,32 @@ int LinearScan::BuildMul(GenTree* tree)
 }
 
 //------------------------------------------------------------------------------
-// SetContainsAVXFlags: Set ContainsAVX flag when it is floating type, set
-// Contains256bitAVX flag when SIMD vector size is 32 bytes
+// SetContainsAVXFlags: Set ContainsAVX flag when it is floating type,
+// set SetContains256bitOrMoreAVX flag when SIMD vector size is 32 or 64 bytes.
 //
 // Arguments:
-//    isFloatingPointType   - true if it is floating point type
 //    sizeOfSIMDVector      - SIMD Vector size
 //
 void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 {
-    if (compiler->canUseVexEncoding())
+    if (!compiler->canUseVexEncoding())
     {
-        compiler->compExactlyDependsOn(InstructionSet_AVX);
-        compiler->GetEmitter()->SetContainsAVX(true);
-        if (sizeOfSIMDVector == 32)
+        return;
+    }
+
+    compiler->compExactlyDependsOn(InstructionSet_AVX);
+    compiler->GetEmitter()->SetContainsAVX(true);
+    if (sizeOfSIMDVector == 32)
+    {
+        compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
+        return;
+    }
+
+    if (compiler->canUseEvexEncoding())
+    {
+        if (compiler->compExactlyDependsOn(InstructionSet_AVX512F) && (sizeOfSIMDVector == 64))
         {
-            compiler->GetEmitter()->SetContains256bitAVX(true);
+            compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
         }
     }
 }

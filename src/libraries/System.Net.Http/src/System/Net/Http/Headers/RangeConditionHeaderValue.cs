@@ -8,18 +8,13 @@ namespace System.Net.Http.Headers
 {
     public class RangeConditionHeaderValue : ICloneable
     {
-        private readonly DateTimeOffset? _date;
+        // Exactly one of date and entityTag will be set.
+        private readonly DateTimeOffset _date;
         private readonly EntityTagHeaderValue? _entityTag;
 
-        public DateTimeOffset? Date
-        {
-            get { return _date; }
-        }
+        public DateTimeOffset? Date => _entityTag is null ? _date : null;
 
-        public EntityTagHeaderValue? EntityTag
-        {
-            get { return _entityTag; }
-        }
+        public EntityTagHeaderValue? EntityTag => _entityTag;
 
         public RangeConditionHeaderValue(DateTimeOffset date)
         {
@@ -46,45 +41,14 @@ namespace System.Net.Http.Headers
             _date = source._date;
         }
 
-        public override string ToString()
-        {
-            if (_entityTag == null)
-            {
-                Debug.Assert(_date != null);
-                return _date.GetValueOrDefault().ToString("r");
-            }
+        public override string ToString() => _entityTag?.ToString() ?? _date.ToString("r");
 
-            return _entityTag.ToString();
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is RangeConditionHeaderValue other &&
+            (_entityTag is null ? other._entityTag is null : _entityTag.Equals(other._entityTag)) &&
+            _date == other._date;
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            RangeConditionHeaderValue? other = obj as RangeConditionHeaderValue;
-
-            if (other == null)
-            {
-                return false;
-            }
-
-            if (_entityTag == null)
-            {
-                Debug.Assert(_date != null);
-                return (other._date != null) && (_date.Value == other._date.Value);
-            }
-
-            return _entityTag.Equals(other._entityTag);
-        }
-
-        public override int GetHashCode()
-        {
-            if (_entityTag == null)
-            {
-                Debug.Assert(_date != null);
-                return _date.Value.GetHashCode();
-            }
-
-            return _entityTag.GetHashCode();
-        }
+        public override int GetHashCode() => _entityTag?.GetHashCode() ?? _date.GetHashCode();
 
         public static RangeConditionHeaderValue Parse(string input)
         {

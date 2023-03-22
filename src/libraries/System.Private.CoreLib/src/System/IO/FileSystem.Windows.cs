@@ -765,7 +765,7 @@ namespace System.IO
                 path,
                 dwDesiredAccess: 0,
                 FileShare.ReadWrite | FileShare.Delete,
-                lpSecurityAttributes: (Interop.Kernel32.SECURITY_ATTRIBUTES*)IntPtr.Zero,
+                lpSecurityAttributes: null,
                 FileMode.Open,
                 dwFlagsAndAttributes: flags,
                 hTemplateFile: IntPtr.Zero);

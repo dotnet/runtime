@@ -59,7 +59,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					entrypointModule = module;
 				}
 
-				compilationRoots.Add (new ExportedMethodsRootProvider (module));
+				compilationRoots.Add (new UnmanagedEntryPointsRootProvider (module));
 			}
 
 			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options), generateLibraryAndModuleInitializers: true));

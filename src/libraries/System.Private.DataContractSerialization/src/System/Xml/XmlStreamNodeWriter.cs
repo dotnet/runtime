@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.Xml
 {
@@ -62,7 +63,7 @@ namespace System.Xml
 
         protected byte[] GetBuffer(int count, out int offset)
         {
-            DiagnosticUtility.DebugAssert(count >= 0 && count <= bufferLength, "");
+            Debug.Assert(count >= 0 && count <= bufferLength);
             int bufferOffset = _offset;
             if (bufferOffset + count <= bufferLength)
             {
@@ -74,7 +75,7 @@ namespace System.Xml
                 offset = 0;
             }
 #if DEBUG
-            DiagnosticUtility.DebugAssert(offset + count <= bufferLength, "");
+            Debug.Assert(offset + count <= bufferLength);
             for (int i = 0; i < count; i++)
             {
                 _buffer[offset + i] = (byte)'<';
@@ -86,7 +87,7 @@ namespace System.Xml
         protected async Task<BytesWithOffset> GetBufferAsync(int count)
         {
             int offset;
-            DiagnosticUtility.DebugAssert(count >= 0 && count <= bufferLength, "");
+            Debug.Assert(count >= 0 && count <= bufferLength);
             int bufferOffset = _offset;
             if (bufferOffset + count <= bufferLength)
             {
@@ -98,7 +99,7 @@ namespace System.Xml
                 offset = 0;
             }
 #if DEBUG
-            DiagnosticUtility.DebugAssert(offset + count <= bufferLength, "");
+            Debug.Assert(offset + count <= bufferLength);
             for (int i = 0; i < count; i++)
             {
                 _buffer[offset + i] = (byte)'<';
@@ -109,7 +110,7 @@ namespace System.Xml
 
         protected void Advance(int count)
         {
-            DiagnosticUtility.DebugAssert(_offset + count <= bufferLength, "");
+            Debug.Assert(_offset + count <= bufferLength);
             _offset += count;
         }
 
@@ -148,13 +149,13 @@ namespace System.Xml
 
         protected void WriteByte(char ch)
         {
-            DiagnosticUtility.DebugAssert(ch < 0x80, "");
+            Debug.Assert(ch < 0x80);
             WriteByte((byte)ch);
         }
 
         protected Task WriteByteAsync(char ch)
         {
-            DiagnosticUtility.DebugAssert(ch < 0x80, "");
+            Debug.Assert(ch < 0x80);
             return WriteByteAsync((byte)ch);
         }
 
@@ -195,13 +196,13 @@ namespace System.Xml
 
         protected void WriteBytes(char ch1, char ch2)
         {
-            DiagnosticUtility.DebugAssert(ch1 < 0x80 && ch2 < 0x80, "");
+            Debug.Assert(ch1 < 0x80 && ch2 < 0x80);
             WriteBytes((byte)ch1, (byte)ch2);
         }
 
         protected Task WriteBytesAsync(char ch1, char ch2)
         {
-            DiagnosticUtility.DebugAssert(ch1 < 0x80 && ch2 < 0x80, "");
+            Debug.Assert(ch1 < 0x80 && ch2 < 0x80);
             return WriteBytesAsync((byte)ch1, (byte)ch2);
         }
 

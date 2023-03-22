@@ -11,12 +11,12 @@ namespace System.Text.Json
         // SizeOrLength - offset - 0 - size - 4
         // NumberOfRows - offset - 4 - size - 4
         [StructLayout(LayoutKind.Sequential)]
-        private struct StackRow
+        private readonly struct StackRow
         {
             internal const int Size = 8;
 
-            internal int SizeOrLength;
-            internal int NumberOfRows;
+            internal readonly int SizeOrLength;
+            internal readonly int NumberOfRows;
 
             internal StackRow(int sizeOrLength = 0, int numberOfRows = -1)
             {

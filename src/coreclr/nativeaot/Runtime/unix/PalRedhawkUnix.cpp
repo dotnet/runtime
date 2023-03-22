@@ -302,10 +302,9 @@ public:
     {
         pthread_mutex_lock(&m_mutex);
         m_state = true;
-        pthread_mutex_unlock(&m_mutex);
-
         // Unblock all threads waiting for the condition variable
         pthread_cond_broadcast(&m_condition);
+        pthread_mutex_unlock(&m_mutex);
     }
 
     void Reset()
@@ -344,8 +343,6 @@ void ConfigureSignals()
     // issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
     signal(SIGPIPE, SIG_IGN);
 }
-
-extern bool GetCpuLimit(uint32_t* val);
 
 void InitializeCurrentProcessCpuCount()
 {

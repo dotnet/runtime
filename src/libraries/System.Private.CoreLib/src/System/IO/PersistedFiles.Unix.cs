@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.IO
@@ -9,22 +10,6 @@ namespace System.IO
     internal static partial class PersistedFiles
     {
         private static string? s_userProductDirectory;
-
-        /// <summary>
-        /// Get the location of where to persist information for a particular aspect of the framework,
-        /// such as "cryptography".
-        /// </summary>
-        /// <param name="featureName">The directory name for the feature</param>
-        /// <returns>A path within the user's home directory for persisting data for the feature</returns>
-        internal static string GetUserFeatureDirectory(string featureName)
-        {
-            if (s_userProductDirectory == null)
-            {
-                EnsureUserDirectories();
-            }
-
-            return Path.Combine(s_userProductDirectory!, featureName);
-        }
 
         /// <summary>
         /// Get the location of where to persist information for a particular aspect of a feature of
@@ -40,28 +25,10 @@ namespace System.IO
                 EnsureUserDirectories();
             }
 
-            return Path.Combine(s_userProductDirectory!, featureName, subFeatureName);
+            return Path.Combine(s_userProductDirectory, featureName, subFeatureName);
         }
 
-        /// <summary>
-        /// Get the location of where to persist information for a particular aspect of the framework,
-        /// with a lot of hierarchy, such as ["cryptography", "x509stores", "my"]
-        /// </summary>
-        /// <param name="featurePathParts">A non-empty set of directories to use for the storage hierarchy</param>
-        /// <returns>A path within the user's home directory for persisting data for the feature</returns>
-        internal static string GetUserFeatureDirectory(params string[] featurePathParts)
-        {
-            Debug.Assert(featurePathParts != null);
-            Debug.Assert(featurePathParts.Length > 0);
-
-            if (s_userProductDirectory == null)
-            {
-                EnsureUserDirectories();
-            }
-
-            return Path.Combine(s_userProductDirectory!, Path.Combine(featurePathParts));
-        }
-
+        [MemberNotNull(nameof(s_userProductDirectory))]
         private static void EnsureUserDirectories()
         {
             string? userHomeDirectory = GetHomeDirectory();

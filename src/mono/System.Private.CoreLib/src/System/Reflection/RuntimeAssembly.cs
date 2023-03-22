@@ -381,7 +381,7 @@ namespace System.Reflection
                         unsafe
                         {
                             Mono.MonoAssemblyName* nativeName = (Mono.MonoAssemblyName*)nativeNames[i];
-                            Mono.RuntimeMarshal.FreeAssemblyName(ref *nativeName, true);
+                            AssemblyName.FreeAssemblyName(ref *nativeName, true);
                         }
                     }
                 }

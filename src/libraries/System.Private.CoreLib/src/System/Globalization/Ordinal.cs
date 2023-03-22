@@ -88,8 +88,8 @@ namespace System.Globalization
             Vector128<ushort> vec2;
             do
             {
-                vec1 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
-                vec2 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+                vec1 = Vector128.LoadUnsafe(ref charA, i);
+                vec2 = Vector128.LoadUnsafe(ref charB, i);
 
                 if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2))
                 {
@@ -472,7 +472,7 @@ namespace System.Globalization
         internal static int ToUpperOrdinal(ReadOnlySpan<char> source, Span<char> destination)
         {
             if (source.Overlaps(destination))
-                throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
 
             // Assuming that changing case does not affect length
             if (destination.Length < source.Length)
