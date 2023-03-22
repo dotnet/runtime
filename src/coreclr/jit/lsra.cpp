@@ -1318,7 +1318,9 @@ PhaseStatus LinearScan::doLinearScan()
     }
     else
 #endif // TARGET_ARM64
+    {
         allocateRegisters();
+    }
 
     allocationPassComplete = true;
     compiler->EndPhase(PHASE_LINEAR_SCAN_ALLOC);
@@ -2286,7 +2288,6 @@ void LinearScan::checkLastUses(BasicBlock* block)
                     foundDiff = true;
                 }
 
-                JITDUMP("++ V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
                 VarSetOps::AddElemD(compiler, computedLive, varIndex);
             }
             else if (currentRefPosition->lastUse)
@@ -2302,7 +2303,6 @@ void LinearScan::checkLastUses(BasicBlock* block)
 
             if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
             {
-                JITDUMP("-- V%02u from computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
                 VarSetOps::RemoveElemD(compiler, computedLive, varIndex);
             }
         }

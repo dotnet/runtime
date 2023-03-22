@@ -1973,7 +1973,7 @@ GenTreeHWIntrinsic* Compiler::impVectorTableLookup(GenTree*       op1,
     }
     else
     {
-        assert(op1->TypeGet() == TYP_SIMD16);
+        assert(varTypeIsSIMD(op1->TypeGet()));
         retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, hwIntrinsicID, simdBaseJitType, simdSize);
     }
     return retNode;
@@ -1997,7 +1997,7 @@ GenTreeHWIntrinsic* Compiler::impVectorTableLookupExtension(GenTree*       op1,
     {
         if (!op2->OperIs(GT_LCL_VAR))
         {
-            unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookup temp tree"));
+            unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookupExtension temp tree"));
 
             impAssignTempGen(tmp, op2, CHECK_SPILL_NONE);
             op2 = gtNewLclvNode(tmp, argType);
@@ -2023,7 +2023,7 @@ GenTreeHWIntrinsic* Compiler::impVectorTableLookupExtension(GenTree*       op1,
     }
     else
     {
-        assert(op2->TypeGet() == TYP_SIMD16);
+        assert(varTypeIsSIMD(op1->TypeGet()));
         retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize);
     }
     return retNode;

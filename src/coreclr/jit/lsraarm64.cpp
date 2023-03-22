@@ -187,8 +187,8 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
     regMaskTP consecutiveResult      = RBM_NONE;
     regMaskTP busyRegsInThisLocation = regsBusyUntilKill | regsInUseThisLocation;
 
-// At this point, for 'n' registers requirement, if Rm+1, Rm+2, Rm+3, ..., Rm+k are
-// available, create the mask only for Rm+1, Rm+2, ..., Rm+(k-n+1) to convey that it
+// At this point, for 'n' registers requirement, if Rm, Rm+1, Rm+2, ..., Rm+k-1 are
+// available, create the mask only for Rm, Rm+1, ..., Rm+(k-n) to convey that it
 // is safe to assign any of those registers, but not beyond that.
 #define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
     regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
