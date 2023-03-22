@@ -172,8 +172,8 @@ export function generate_wasm_body (
         // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
         //  might generate a ton of code and we generate a bit of an epilogue after
         //  we finish
-        const maxModuleSize = 3850,
-            spaceLeft = maxModuleSize - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
+        const maxBytesGenerated = 3840,
+            spaceLeft = maxBytesGenerated - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
         if (builder.size >= spaceLeft) {
             // console.log(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
             record_abort(traceIp, ip, traceName, "trace-too-big");
