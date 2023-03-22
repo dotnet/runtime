@@ -5397,13 +5397,13 @@ void LinearScan::allocateRegisters()
                     {
                         // It doesn't satisfy, so do a copyReg for the first RefPosition to such a register, so
                         // it would be possible to allocate consecutive registers to the subsequent RefPositions.
-                        assert((currentRefPosition.refType == RefTypeUse) ||
-                               (currentRefPosition.refType == RefTypeUpperVectorRestore));
                         regNumber copyReg         = assignCopyReg<true>(&currentRefPosition);
+
+                        if (copyReg != assignedRegister)
+                        {
                         lastAllocatedRefPosition  = &currentRefPosition;
                         regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
                         regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
-                        setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
 
                         // For consecutive register, it doesn't matter what the assigned register was.
                         // We have just assigned it `copyRegMask` and that's the one in-use, and not the
@@ -5421,8 +5421,8 @@ void LinearScan::allocateRegisters()
                             }
                             else
                             {
-                                INDEBUG(
-                                    dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, currentInterval, assignedRegister));
+                                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, currentInterval,
+                                                                    assignedRegister));
                                 regsToFree |= copyRegMask | assignedRegMask;
                             }
                         }
@@ -5448,6 +5448,19 @@ void LinearScan::allocateRegisters()
                         clearSpillCost(copyReg, currentInterval->registerType);
                         updateNextIntervalRef(assignedRegister, currentInterval);
                         updateSpillCost(assignedRegister, currentInterval);
+                        }
+                        else
+                        {
+                            // We first noticed that with assignedRegister, we were not getting consecutive registers assigned, so we
+                            // decide to perform copyReg. However, copyReg assigned same register because there were no other free registers
+                            // that would satisfy the consecutive registers requirements. In such case, just revert the copyReg state update.
+                            currentRefPosition.copyReg = false;
+
+                            // Current assignedRegister satisfies the consecutive registers requirements
+                            currentRefPosition.registerAssignment = assignedRegBit;
+                        }
+
+                        setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
                         continue;
                     }
                 }
