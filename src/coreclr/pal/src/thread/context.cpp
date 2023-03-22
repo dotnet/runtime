@@ -322,6 +322,7 @@ typedef int __ptrace_request;
 static Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
 #endif // XSTATE_SUPPORTED
 
+#if defined(HOST_X86) || defined(HOST_AMD64)
 #if !__has_builtin(__cpuid)
 void __cpuid(int cpuInfo[4], int function_id)
 {
@@ -347,6 +348,7 @@ void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
     );
 }
 #endif
+#endif // HOST_x86 || HOST_AMD64
 
 /*++
 Function:
