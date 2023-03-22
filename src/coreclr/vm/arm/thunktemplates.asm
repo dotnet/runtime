@@ -5,7 +5,7 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
-STUB_PAGE_SIZE 4096
+STUB_PAGE_SIZE = 4096
 
     TEXTAREA
 

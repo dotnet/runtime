@@ -740,7 +740,6 @@ struct LoaderHeapFreeBlock
             }
             else
             {
-                _ASSERTE(dwTotalSize == GetStubCodePageSize());
                 memset((BYTE*)pMem + GetStubCodePageSize(), 0xcc, dwTotalSize);
             }
 #endif // DEBUG
