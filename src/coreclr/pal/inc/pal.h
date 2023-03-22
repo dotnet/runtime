@@ -3691,7 +3691,8 @@ YieldProcessor()
 #elif defined(HOST_LOONGARCH64)
     __asm__ volatile( "dbar 0;  \n");
 #elif defined(HOST_RISCV64)
-    __asm__ __volatile__( "fence iorw, iorw"); // TODO
+    // TODO-RISCV64-CQ: When Zihintpause is supported, replace with `pause` instruction.
+    __asm__ __volatile__(".word 0x0100000f");
 #else
     return;
 #endif

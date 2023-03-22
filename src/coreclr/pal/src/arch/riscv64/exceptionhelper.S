@@ -12,7 +12,7 @@
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
 #ifdef HAS_ASAN
-#pragma error("LLVM v3.9 ASAN unimplemented on RISCV64 yet")
+#pragma error("TODO-RISCV64-CQ: unimplemented on RISCV64 yet")
 #endif
     addi  sp, sp, -16
     .cfi_adjust_cfa_offset 16
@@ -44,5 +44,5 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
 
     // The PAL_SEHException pointer
     addi a0, a1, 0
-    jal  x0, ThrowExceptionHelper
+    j    ThrowExceptionHelper
 LEAF_END ThrowExceptionFromContextInternal, _TEXT

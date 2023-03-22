@@ -15,13 +15,13 @@
 //
 LEAF_ENTRY RtlRestoreContext, _TEXT
 #ifdef HAS_ASAN
-// TODO-RISCV64: missing implementation
+#pragma error("TODO-RISCV64-CQ: unimplemented on RISCV64 yet")
 #endif
 
-    addi t4, a0, 0
+    mv  t4, a0
     lw  t1, CONTEXT_ContextFlags(t4)
     andi t1, t1, 0x1 << CONTEXT_FLOATING_POINT_BIT
-    beq t1, zero, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
+    beqz t1, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
 
     //64-bits FPR.
     addi t0, t4, CONTEXT_FPU_OFFSET
@@ -66,7 +66,7 @@ LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
 
     lw  t1, CONTEXT_ContextFlags(t4)
     andi t1, t1, 0x1 << CONTEXT_INTEGER_BIT
-    beq t1, zero, LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
+    beqz t1, LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
 
     ld  tp, (CONTEXT_Tp)(a0)
     ld  gp, (CONTEXT_Gp)(a0)
@@ -102,18 +102,18 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
 
     lw  t1, CONTEXT_ContextFlags(t4)
     andi t1, t1, 0x1 << CONTEXT_CONTROL_BIT
-    beq  t1, zero, LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
+    beqz t1, LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
 
     ld  ra, (CONTEXT_Ra)(t4)
     ld  fp, (CONTEXT_Fp)(t4)
     ld  sp, (CONTEXT_Sp)(t4)
-    ld  t1, (CONTEXT_Pc)(t4) // TODO t1 is not restored.
+    ld  t1, (CONTEXT_Pc)(t4) // Since we cannot control $pc directly, we're going to corrupt t1
     ld  t4, (CONTEXT_T4)(t4)
-    jalr x0, t1, 0
+    jr  t1
 
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
     ld  t4, (CONTEXT_T4)(t4)
-    jalr x0, ra, 0
+    ret
 LEAF_END RtlRestoreContext, _TEXT
 
 // Incoming:
@@ -242,5 +242,5 @@ LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
 
     EPILOG_STACK_FREE 24
     .cfi_adjust_cfa_offset -24
-    jalr  x0, ra, 0
+    ret
 LEAF_END CONTEXT_CaptureContext, _TEXT

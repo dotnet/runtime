@@ -111,7 +111,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EPILOG_RETURN
-    jalr x0, ra, 0
+    ret
 .endm
 
 .macro EMIT_BREAKPOINT
@@ -123,7 +123,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EPILOG_BRANCH_REG reg
-    jalr x0, \reg, 0
+    jr \reg
 .endm
 
 //-----------------------------------------------------------------------------
@@ -279,7 +279,7 @@ C_FUNC(\Name\()_End):
     // First, Spill argument registers.
     SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
 
-    // Then, Spill callee saved registers.  sp=r3.
+    // Then, Spill callee saved registers.  sp=r2.
     SAVE_CALLEESAVED_REGISTERS     sp, __PWTB_CalleeSavedRegisters
 
     // saving is f10-17.

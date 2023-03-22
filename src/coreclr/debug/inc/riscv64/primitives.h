@@ -16,6 +16,7 @@
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
+// TODO-RISCV64-CQ: Update when it supports c and other extensions
 #define MAX_INSTRUCTION_LENGTH 4
 
 // Given a return address retrieved during stackwalk,
@@ -48,6 +49,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 
 constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
+    // TODO-RISCV64-Bug?: I put REGISTER_RISCV64_PC instead of REGISTER_RISCV64_X0. Need to check
     REGISTER_RISCV64_RA,
     REGISTER_RISCV64_SP,
     REGISTER_RISCV64_GP,
@@ -117,7 +119,7 @@ inline BOOL CompareControlRegisters(const DT_CONTEXT * pCtx1, const DT_CONTEXT *
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // TODO-LoongArch64: Sort out frame registers
+    // TODO-RISCV64: Sort out frame registers
 
     if ((pCtx1->PC == pCtx2->PC) &&
         (pCtx1->SP == pCtx2->SP) &&
@@ -208,7 +210,7 @@ inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // LoongArch64 appears to leave the PC at the start of the breakpoint.
+    // RISCV64 appears to leave the PC at the start of the breakpoint.
     return;
 }
 
@@ -221,19 +223,19 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 
 inline void SetSSFlag(DT_CONTEXT *pContext)
 {
-    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
+    // TODO-RISCV64: RISCV64 doesn't support cpsr.
     _ASSERTE(!"unimplemented on RISCV64 yet");
 }
 
 inline void UnsetSSFlag(DT_CONTEXT *pContext)
 {
-    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
+    // TODO-RISCV64: RISCV64 doesn't support cpsr.
     _ASSERTE(!"unimplemented on RISCV64 yet");
 }
 
 inline bool IsSSFlagEnabled(DT_CONTEXT * pContext)
 {
-    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
+    // TODO-RISCV64: RISCV64 doesn't support cpsr.
     _ASSERTE(!"unimplemented on RISCV64 yet");
     return false;
 }

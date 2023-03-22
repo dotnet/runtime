@@ -26,7 +26,7 @@ LOCAL_LABEL(SignalHandlerWorkerReturn\Alignment):
     EPILOG_RESTORE_REG_PAIR fp, ra, 0
     EPILOG_STACK_FREE __StackAllocationSize
     .cfi_adjust_cfa_offset -__StackAllocationSize
-    jalr  x0, ra, 0
+    ret
 
 NESTED_END CallSignalHandlerWrapper\Alignment, _TEXT
 

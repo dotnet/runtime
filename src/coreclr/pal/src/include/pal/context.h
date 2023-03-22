@@ -191,7 +191,7 @@ using asm_sigcontext::_xstate;
 #define MCREG_T6(mc)      ((mc).__gregs[31])
 #define MCREG_Pc(mc)      ((mc).__gregs[0])
 
-#else // HOST_LOONGARCH64
+#else // !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #define MCREG_Rbx(mc)       ((mc).__gregs[_REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).__gregs[_REG_RCX])

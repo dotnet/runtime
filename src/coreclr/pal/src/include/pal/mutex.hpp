@@ -126,6 +126,7 @@ Miscellaneous
 //   future, their use is disabled for compatibility.
 // - On RISCV64 (with QEMU), pthread robust mutexes were/are not available at the time of this writing. In case they are made available in the
 //   future, their use is disabled for compatibility.
+//   TODO-RISCV64-CQ: Need to check on board (e.g. visionfive 2) in the future
 #if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES && \
     HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES && \
     !(defined(__FreeBSD__) || defined(TARGET_OSX) || defined(TARGET_RISCV64))
