@@ -1335,7 +1335,7 @@ class SuperPMIReplay:
             repro_flags = []
 
             common_flags = [
-                "-v", "ewmi",  # display errors, warnings, missing, jit info
+                "-v", "ewi",  # display errors, warnings, missing, jit info
                 "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
             ]
 
