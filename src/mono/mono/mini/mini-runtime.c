@@ -3883,7 +3883,7 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	if (!method && !addr) {
 		// Multicast delegate init
 		if (!mono_llvm_only) {
-			MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (mono_handle_class (delegate)));
+			del->invoke_impl = mono_create_delegate_trampoline (mono_handle_class (delegate));
 		} else {
 			mini_llvmonly_init_delegate (del, NULL);
 		}
@@ -3908,13 +3908,11 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	}
 
 	if (method)
-		MONO_HANDLE_SETVAL (delegate, method, MonoMethod*, method);
-
+		del->method = method;
 	if (addr)
-		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, addr);
-
-	MONO_HANDLE_SET (delegate, target, target);
-	MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (mono_handle_class (delegate)));
+		del->method_ptr = addr;
+	MONO_OBJECT_SETREF_INTERNAL (del, target, MONO_HANDLE_RAW (target));
+	del->invoke_impl = mono_create_delegate_trampoline (mono_handle_class (delegate));
 
 	MonoDelegateTrampInfo *info = NULL;
 
