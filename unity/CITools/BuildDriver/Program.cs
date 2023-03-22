@@ -130,7 +130,7 @@ public class Program
 
         NPath tfmDir = Paths.UnityEmbedHost.Combine("bin", gConfig.Configuration).Directories().Single();
         tfmDir.Files("unity-embed-host.*").Copy(destDir.Combine("lib", tfmDir.FileName));
-        Paths.RepoRoot.Combine("LICENSE.md").Copy(destDir);
+        Paths.RepoRoot.Combine("LICENSE.TXT").Copy(destDir);
 
         return destDir;
     }

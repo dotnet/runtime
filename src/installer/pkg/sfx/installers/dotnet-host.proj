@@ -51,9 +51,9 @@
     <ItemGroup>
       <FilesToPublish Include="$(DotNetHostBinDir)\dotnet$(ExeSuffix)"
             Destination="$(_DestinationPath)dotnet$(ExeSuffix)" />
-      <FilesToPublish Include="$(InstallerProjectRoot)pkg\Third Party Notices.md"
+      <FilesToPublish Include="$(InstallerProjectRoot)pkg\THIRD-PARTY-NOTICES.TXT"
             Destination="$(_DestinationPath)ThirdPartyNotices.txt" />
-      <FilesToPublish Include="$(RepoRoot)LICENSE.md"
+      <FilesToPublish Include="$(RepoRoot)LICENSE.TXT"
             Destination="$(_DestinationPath)LICENSE.txt"
             Condition="'$(TargetsUnix)' == 'true'"/>
       <FilesToPublish Include="$(InstallerProjectRoot)pkg\LICENSE-MSFT.TXT"

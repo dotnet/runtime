@@ -1,8 +1,4 @@
-﻿This patent promise is contained in the PATENTS.TXT file of https://github.com/dotnet/runtime and is included here for your reference:
-
-----
-
-Microsoft Patent Promise for .NET Libraries and Runtime Components 
+﻿Microsoft Patent Promise for .NET Libraries and Runtime Components 
 
 Microsoft Corporation and its affiliates ("Microsoft") promise not to assert 
 any .NET Patents against you for making, using, selling, offering for sale, 
