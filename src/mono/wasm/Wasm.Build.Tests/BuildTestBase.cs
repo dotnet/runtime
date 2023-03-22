@@ -31,6 +31,7 @@ namespace Wasm.Build.Tests
         public const string DefaultTargetFramework = "net8.0";
         public const string DefaultTargetFrameworkForBlazor = "net8.0";
         private const string DefaultEnvironmentLocale = "en-US";
+        protected static readonly char s_unicodeChar = '\u7149';
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -194,16 +195,8 @@ namespace Wasm.Build.Tests
                                 useWasmConsoleOutput: useWasmConsoleOutput
                                 );
 
-            if (buildArgs.AOT)
-            {
-                Assert.Contains("AOT: image 'System.Private.CoreLib' found.", output);
-                Assert.Contains($"AOT: image '{buildArgs.ProjectName}' found.", output);
-            }
-            else
-            {
-                Assert.DoesNotContain("AOT: image 'System.Private.CoreLib' found.", output);
-                Assert.DoesNotContain($"AOT: image '{buildArgs.ProjectName}' found.", output);
-            }
+            AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
+            AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
 
             if (test != null)
                 test(output);
@@ -1203,6 +1196,14 @@ namespace Wasm.Build.Tests
             RunHost.NodeJS => new NodeJSHostRunner(),
             _ => new BrowserHostRunner(),
         };
+
+        protected void AssertSubstring(string substring, string full, bool contains)
+        {
+            if (contains)
+                Assert.Contains(substring, full);
+            else
+                Assert.DoesNotContain(substring, full);
+        }
     }
 
     public record BuildArgs(string ProjectName,

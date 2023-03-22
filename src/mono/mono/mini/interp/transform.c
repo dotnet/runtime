@@ -59,6 +59,7 @@ static int stack_type [] = {
 };
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (intrinsic_klass, "System.Runtime.CompilerServices", "IntrinsicAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (doesnotreturn_klass, "System.Diagnostics.CodeAnalysis", "DoesNotReturnAttribute")
 
 static gboolean generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error);
 
@@ -72,6 +73,21 @@ has_intrinsic_attribute (MonoMethod *method)
 	mono_error_cleanup (aerror); /* FIXME don't swallow the error? */
 	if (ainfo) {
 		result = intrinsic_klass && mono_custom_attrs_has_attr (ainfo, intrinsic_klass);
+		mono_custom_attrs_free (ainfo);
+	}
+	return result;
+}
+
+static gboolean
+has_doesnotreturn_attribute (MonoMethod *method)
+{
+	gboolean result = FALSE;
+	ERROR_DECL (aerror);
+	MonoClass *doesnotreturn_klass = mono_class_try_get_doesnotreturn_klass_class ();
+	MonoCustomAttrInfo *ainfo = mono_custom_attrs_from_method_checked (method, aerror);
+	mono_error_cleanup (aerror); /* FIXME don't swallow the error? */
+	if (ainfo) {
+		result = doesnotreturn_klass && mono_custom_attrs_has_attr (ainfo, doesnotreturn_klass);
 		mono_custom_attrs_free (ainfo);
 	}
 	return result;
@@ -2119,7 +2135,17 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		} else if (!strcmp (tm, "AreSame")) {
 			*op = MINT_CEQ_P;
 		} else if (!strcmp (tm, "ByteOffset")) {
-			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
+#if SIZEOF_VOID_P == 4
+			interp_add_ins (td, MINT_SUB_I4);
+#else
+			interp_add_ins (td, MINT_SUB_I8);
+#endif
+			td->sp -= 2;
+			interp_ins_set_sregs2 (td->last_ins, td->sp [1].local, td->sp [0].local);
+			push_simple_type (td, STACK_TYPE_I);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			td->ip += 5;
+			return TRUE;
 		} else if (!strcmp (tm, "Unbox")) {
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
 			g_assert (ctx);
@@ -2772,8 +2798,8 @@ interp_icall_op_for_sig (MonoMethodSignature *sig)
 	return op;
 }
 
-/* Same as mono jit */
-#define INLINE_LENGTH_LIMIT 20
+/* larger than mono jit; chosen to ensure that List<T>.get_Item can be inlined */
+#define INLINE_LENGTH_LIMIT 30
 #define INLINE_DEPTH_LIMIT 10
 
 static gboolean
@@ -2863,6 +2889,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	int i;
 	int prev_sp_offset;
 	int prev_aggressive_inlining;
+	int prev_has_inlined_one_call;
 	MonoGenericContext *generic_context = NULL;
 	StackInfo *prev_param_area;
 	InterpBasicBlock **prev_offset_to_bb;
@@ -2892,6 +2919,8 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	prev_entry_bb = td->entry_bb;
 	prev_aggressive_inlining = td->aggressive_inlining;
 	prev_imethod_items = td->imethod_items;
+	prev_has_inlined_one_call = td->has_inlined_one_call;
+	td->has_inlined_one_call = FALSE;
 	td->inlined_method = target_method;
 
 	prev_max_stack_height = td->max_stack_height;
@@ -2973,6 +3002,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	td->code_size = prev_code_size;
 	td->entry_bb = prev_entry_bb;
 	td->aggressive_inlining = prev_aggressive_inlining;
+	td->has_inlined_one_call = prev_has_inlined_one_call;
 
 	g_free (td->in_offsets);
 	td->in_offsets = prev_in_offsets;
@@ -3440,9 +3470,34 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	/* Don't inline methods that do calls */
-	if (op == -1 && td->inlined_method && !td->aggressive_inlining)
-		return FALSE;
+	/*
+	 * When inlining a method, only allow it to perform one call.
+	 * We previously prohibited calls entirely, this is a conservative rule that allows
+	 * Things like ThrowHelper.ThrowIfNull to theoretically inline, along with a hypothetical
+	 * X.get_Item that just calls Y.get_Item (profitable to inline)
+	 */
+	if (op == -1 && td->inlined_method && !td->aggressive_inlining) {
+		if (!target_method) {
+			if (td->verbose_level > 1)
+				g_print("Disabling inlining because we have no target_method for call in %s\n", td->method->name);
+			return FALSE;
+		} else if (has_doesnotreturn_attribute(target_method)) {
+			/*
+			 * Since the method does not return, it's probably a throw helper and will not be called.
+			 * As such we don't want it to prevent inlining of the method that calls it.
+			 */
+			if (td->verbose_level > 2)
+				g_print("Overlooking inlined doesnotreturn call in %s (target %s)\n", td->method->name, target_method->name);
+		} else if (td->has_inlined_one_call) {
+			if (td->verbose_level > 1)
+				g_print("Prohibiting second inlined call in %s (target %s)\n", td->method->name, target_method->name);
+			return FALSE;
+		} else {
+			if (td->verbose_level > 2)
+				g_print("Allowing single inlined call in %s (target %s)\n", td->method->name, target_method->name);
+			td->has_inlined_one_call = TRUE;
+		}
+	}
 
 	/* We need to convert delegate invoke to a indirect call on the interp_invoke_impl field */
 	if (target_method && m_class_get_parent (target_method->klass) == mono_defaults.multicastdelegate_class) {
@@ -9873,6 +9928,39 @@ interp_super_instructions (TransformData *td)
 						dump_interp_inst (new_inst);
 					}
 				}
+			} else if (opcode == MINT_DIV_UN_I4 || opcode == MINT_DIV_UN_I8) {
+				// ldc + div.un -> shr.imm
+				int sreg_imm = ins->sregs [1];
+				InterpInst *def = td->locals [sreg_imm].def;
+				if (def != NULL && td->local_ref_count [sreg_imm] == 1) {
+					int power2 = -1;
+					if (MINT_IS_LDC_I4 (def->opcode)) {
+						guint32 ct = interp_get_const_from_ldc_i4 (def);
+						power2 = mono_is_power_of_two ((guint32)ct);
+					} else if (MINT_IS_LDC_I8 (def->opcode)) {
+						guint64 ct = interp_get_const_from_ldc_i8 (def);
+						if (ct < G_MAXUINT32)
+							power2 = mono_is_power_of_two ((guint32)ct);
+					}
+					if (power2 > 0) {
+						InterpInst *new_inst;
+						if (opcode == MINT_DIV_UN_I4)
+							new_inst = interp_insert_ins (td, ins, MINT_SHR_UN_I4_IMM);
+						else
+							new_inst = interp_insert_ins (td, ins, MINT_SHR_UN_I8_IMM);
+						new_inst->dreg = ins->dreg;
+						new_inst->sregs [0] = ins->sregs [0];
+						new_inst->data [0] = power2;
+
+						interp_clear_ins (def);
+						interp_clear_ins (ins);
+						local_ref_count [sreg_imm]--;
+						if (td->verbose_level) {
+							g_print ("lower div.un: ");
+							dump_interp_inst (new_inst);
+						}
+					}
+				}
 			} else if (MINT_IS_LDIND_INT (opcode)) {
 				int sreg_base = ins->sregs [0];
 				InterpInst *def = td->locals [sreg_base].def;
@@ -10534,6 +10622,16 @@ interp_alloc_offsets (TransformData *td)
 				if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].live_end == ins_index) {
 					g_assert (!(td->locals [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS));
 					end_active_var (td, &av, var);
+				}
+			}
+			if (opcode >= MINT_MOV_8_2 && opcode <= MINT_MOV_8_4) {
+				// These opcodes have multiple dvars, which overcomplicate things, so they are
+				// marked as having no svars/dvars, for now. Special case it.
+				int num_pairs = 2 + opcode - MINT_MOV_8_2;
+				for (int i = 0; i < num_pairs; i++) {
+					int var = ins->data [2 * i + 1];
+					if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].live_end == ins_index)
+						end_active_var (td, &av, var);
 				}
 			}
 

@@ -28,7 +28,7 @@ namespace Internal.Runtime
                 }
                 else if (elementType.IsDefType)
                 {
-                    var defType = (DefType)elementType;
+                    var defType = (MetadataType)elementType;
                     if (defType.ContainsGCPointers)
                     {
                         GCPointerMap pointerMap = GCPointerMap.FromInstanceLayout(defType);
@@ -48,7 +48,7 @@ namespace Internal.Runtime
             }
             else
             {
-                var defType = (DefType)type;
+                var defType = (MetadataType)type;
                 if (defType.ContainsGCPointers)
                 {
                     int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
@@ -84,7 +84,7 @@ namespace Internal.Runtime
                 }
                 else if (elementType.IsDefType)
                 {
-                    var elementDefType = (DefType)elementType;
+                    var elementDefType = (MetadataType)elementType;
                     if (elementDefType.ContainsGCPointers)
                     {
                         GCPointerMap pointerMap = GCPointerMap.FromInstanceLayout(elementDefType);
@@ -101,7 +101,7 @@ namespace Internal.Runtime
             }
             else
             {
-                var defType = (DefType)type;
+                var defType = (MetadataType)type;
                 if (defType.ContainsGCPointers)
                 {
                     // Computing the layout for the boxed version if this is a value type.

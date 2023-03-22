@@ -632,7 +632,7 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
 #ifdef DEBUG
     CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 #ifdef TARGET_XARCH
-    assert((isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
+    assert((isa == InstructionSet_Vector512) || (isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
     assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
@@ -976,11 +976,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         assert(numArgs >= 0);
 
-        if (!isScalar && ((HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType) == INS_invalid) ||
-                          ((simdSize != 8) && (simdSize != 16) && (simdSize != 32))))
+        if (!isScalar)
         {
-            assert(!"Unexpected HW Intrinsic");
-            return nullptr;
+            if (HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType) == INS_invalid)
+            {
+                assert(!"Unexpected HW intrinsic");
+                return nullptr;
+            }
+
+#if defined(TARGET_ARM64)
+            if ((simdSize != 8) && (simdSize != 16))
+#elif defined(TARGET_XARCH)
+            if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
+#endif // TARGET_*
+            {
+                assert(!"Unexpected SIMD size");
+                return nullptr;
+            }
         }
 
         GenTree* op1 = nullptr;
