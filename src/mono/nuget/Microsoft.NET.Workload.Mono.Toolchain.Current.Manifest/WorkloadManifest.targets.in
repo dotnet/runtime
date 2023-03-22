@@ -183,7 +183,7 @@
     </PropertyGroup>
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" 
-       Condition="$(_WasmExtensionsToDrop.Contains('%(ReferenceCopyLocalPaths.Extension);')) or $([MSBuild]::ValueOrDefault('%(FullPath)', '').Contains('src'))" />
+       Condition="$(_WasmExtensionsToDrop.Contains('%(ReferenceCopyLocalPaths.Extension);')) or ('%(Extension)' == '.js' and $([MSBuild]::ValueOrDefault('%(FullPath)', '').Contains('src')))" />
     </ItemGroup>
   </Target>
 </Project>
