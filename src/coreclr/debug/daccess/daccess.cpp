@@ -7624,8 +7624,6 @@ void DacHandleWalker::WalkHandles()
 
     mEnumerated = true;
 
-    HANDLESCANPROC callback = EnumCallback;
-
     // The table slots are based on the number of GC heaps in the process.
     int max_slots = 1;
 
@@ -7648,12 +7646,7 @@ void DacHandleWalker::WalkHandles()
                     DPTR(dac_handle_table) hTable = map->pBuckets[i]->pTable[j];
                     if (hTable)
                     {
-                        // Yikes!  The handle table callbacks don't produce the handle type or
-                        // the AppDomain that we need, and it's too difficult to propagate out
-                        // these things (especially the type) without worrying about performance
-                        // implications for the GC.  Instead we'll have the callback walk each
-                        // type individually.  There are only a few handle types, and the handle
-                        // table has a fast-path for only walking a single type anyway.
+                        // handleType is the integer from 1 -> HANDLE_MAX_INTERNAL_TYPES based on the requested handle kinds to walk.
                         UINT32 handleType = 0;
                         for (UINT32 mask = mTypeMask; mask; mask >>= 1, handleType++)
                         {
@@ -7668,14 +7661,11 @@ void DacHandleWalker::WalkHandles()
                                 // table as the GC does if a generation filter was requested.
                                 if (mGenerationFilter != -1)
                                 {
-                                    HndScanHandlesForGC(hTable, callback,
-                                                        (LPARAM)&param, 0,
-                                                         &handleType, 1,
-                                                         mGenerationFilter, *g_gcDacGlobals->max_gen, 0);
+                                    HndScanHandlesForGC(hTable, EnumCallback, (LPARAM)&param, 0, &handleType, 1, mGenerationFilter, *g_gcDacGlobals->max_gen, 0);
                                 }
                                 else
                                 {
-                                    HndEnumHandles(hTable, &handleType, 1, callback, (LPARAM)&param, 0, FALSE);
+                                    HndEnumHandles(hTable, &handleType, 1, EnumCallback, (LPARAM)&param, 0, false);
                                 }
                             }
                         }

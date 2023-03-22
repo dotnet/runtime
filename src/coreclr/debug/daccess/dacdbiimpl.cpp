@@ -7808,7 +7808,10 @@ void DacStackReferenceWalker::GCEnumCallbackDbi(LPVOID hCallback, OBJECTREF *pOb
         data.pObject = pObject->GetAddr() | 1;
 
     data.dwType = CorReferenceStack;
-    data.i64ExtraData = 0;
+    if (!dsc->resolvePointers && (flags & GC_CALL_INTERIOR))
+        data.i64ExtraData = GC_CALL_INTERIOR;
+    else
+        data.i64ExtraData = 0;
 
     pList->Add(data);
 }
@@ -7839,7 +7842,7 @@ void DacStackReferenceWalker::GCReportCallbackDbi(PTR_PTR_Object ppObj, ScanCont
     data.vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
     data.objHnd.SetDacTargetPtr(obj);
     data.dwType = CorReferenceStack;
-    if (!dsc->resolvePointers)
+    if (!dsc->resolvePointers && (flags & GC_CALL_INTERIOR))
         data.i64ExtraData = GC_CALL_INTERIOR;
     else
         data.i64ExtraData = 0;
