@@ -188,7 +188,7 @@ public:
         REGNUM_T0,
         REGNUM_T1,
         REGNUM_T2,
-        REGNUM_S0,
+        REGNUM_FP,
         REGNUM_S1,
         REGNUM_A0,
         REGNUM_A1,

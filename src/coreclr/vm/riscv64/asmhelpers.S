@@ -6,13 +6,13 @@
 
 LEAF_ENTRY GetCurrentIP, _TEXT
     addi  a0, ra, 0
-    jalr  x0, ra, 0
+    ret
 LEAF_END GetCurrentIP, _TEXT
 
 // LPVOID __stdcall GetCurrentSP(void)//
 LEAF_ENTRY GetCurrentSP, _TEXT
     addi  a0, sp, 0
-    jalr  x0, ra, 0
+    ret
 LEAF_END GetCurrentSP, _TEXT
 
 //-----------------------------------------------------------------------------
@@ -117,7 +117,7 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     // Branch to the write barrier
     lla  t1, JIT_WriteBarrier_Loc
     ld  t1, 0(t1)
-    jalr  x0, t1, 0
+    jr  t1
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 
@@ -125,7 +125,7 @@ LEAF_END JIT_WriteBarrier_Callable, _TEXT
 // ------------------------------------------------------------------
 // Start of the writeable code region
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
-    jalr  x0, ra, 0
+    ret
 LEAF_END JIT_PatchedCodeStart, _TEXT
 
 // void JIT_ByRefWriteBarrier
@@ -174,7 +174,7 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 
     sd  t4, 0(t3)
     addi  t3, t3, 8
-    jalr  x0, ra, 0
+    ret
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
 // void JIT_WriteBarrier(Object** dst, Object* src)
@@ -294,7 +294,7 @@ LOCAL_LABEL(SkipEphemeralCheck):
 #endif
 LOCAL_LABEL(Exit):
     addi  t3, t3, 8
-    jalr x0, ra, 0
+    ret
 WRITE_BARRIER_END JIT_WriteBarrier
 
 // Begin patchable literal pool
@@ -322,7 +322,7 @@ WRITE_BARRIER_END JIT_WriteBarrier_Table
 // ------------------------------------------------------------------
 // End of the writeable code region
 LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
-    jalr  x0, ra, 0
+    ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
 
@@ -415,7 +415,7 @@ LOCAL_LABEL(Done):
     // as it is used in the state machine to loop until it becomes zero.
     // Refer to HELPER_METHOD_FRAME_END macro for details.
     addi  a0, zero, 0
-    jalr  x0, ra, 0
+    ret
 LEAF_END HelperMethodFrameRestoreState, _TEXT
 
 //-----------------------------------------------------------------------------
@@ -449,7 +449,7 @@ LEAF_ENTRY LazyMachStateCaptureState, _TEXT
     sd  tp, 96(a1)
     sd  gp, 104(a1)
 
-    jalr  x0, ra, 0
+    ret
 LEAF_END LazyMachStateCaptureState, _TEXT
 
 // ------------------------------------------------------------------
@@ -480,7 +480,7 @@ LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
 
     ld  t4, (DelegateObject___methodPtr)(a0)
     ld  a0, (DelegateObject___target)(a0)
-    jalr  x0, t4, 0
+    jr  t4
 
 LOCAL_LABEL(LNullThis):
     addi  a0, zero, CORINFO_NullReferenceException_ASM
@@ -492,7 +492,7 @@ LEAF_END SinglecastDelegateInvokeStub, _TEXT
 LEAF_ENTRY ThePreStubPatch, _TEXT
 .globl C_FUNC(ThePreStubPatchLabel)
 C_FUNC(ThePreStubPatchLabel):
-    jalr x0, ra, 0
+    ret
 LEAF_END ThePreStubPatch, _TEXT
 
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
@@ -529,7 +529,7 @@ LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
     beq  t5, zero, LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper)
 
     ld  a0, DomainLocalModule__m_pGCStatics(a0)
-    jalr  x0, ra, 0
+    ret
 
 LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper):
     // Tail call JIT_GetSharedGCStaticBase_Helper
@@ -591,7 +591,7 @@ LOCAL_LABEL(Success):
     blt t4, zero, LOCAL_LABEL(Promote)
 
     ld  t4, (ResolveCacheElem__target)(t1)    // get the ImplTarget
-    jalr  x0, t4, 0                // branch to interface implementation target
+    jr  t4                                    // branch to interface implementation target
 
 LOCAL_LABEL(Promote):
                           // Move this entry to head position of the chain
@@ -630,7 +630,7 @@ NESTED_END ResolveWorkerAsmStub, _TEXT
 // void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
 LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-    jalr  x0, ra, 0
+    ret
 LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
@@ -638,7 +638,7 @@ LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 
 LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
     ld  a0, (DomainLocalModule__m_pGCStatics)(a0)
-    jalr  x0, ra, 0
+    ret
 LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 
 
@@ -745,7 +745,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     ld  s11, 152(a2)
 
     // Invoke the funclet
-    jalr ra, a1, 0
+    jalr a1
 
     EPILOG_RESTORE_REG_PAIR   s1, s2, 16
     EPILOG_RESTORE_REG_PAIR   s3, s4, 32
@@ -774,7 +774,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // Save the SP of this function
     sd  fp, 0(a3)
     // Invoke the filter funclet
-    jalr ra, a2, 0
+    jalr a2
 
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
@@ -822,7 +822,7 @@ LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
     andi  t4, a2, 1
     beq  t4, zero, LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper)
 
-    jalr  x0, ra, 0
+    ret
 
 LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper):
     // Tail call JIT_GetSharedNonGCStaticBase_Helper
@@ -895,7 +895,7 @@ DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Object
 
 // ------------------------------------------------------------------
 LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
-    jalr  x0, ra, 0
+    ret
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 // ------------------------------------------------------------------

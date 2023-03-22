@@ -102,10 +102,10 @@ class BranchInstructionFormat : public InstructionFormat
                     COMPlusThrow(kNotSupportedException);
 
                 UINT16 imm12 = (UINT16)(0xFFF & dataOffset);
-                //auipc  t1, dataOffset[31:12]
-                //ld  t1, t1, dataOffset[11:0]
-                //ld  t1, t1, 0
-                //jalr  x0/1, t1,0
+                // auipc  t1, dataOffset[31:12]
+                // ld  t1, t1, dataOffset[11:0]
+                // ld  t1, t1, 0
+                // jalr  x0/1, t1,0
 
                 *(DWORD*)pOutBufferRW = 0x00000317 | (((dataOffset + 0x800) >> 12) << 12); // auipc t1, dataOffset[31:12]
                 *(DWORD*)(pOutBufferRW + 4) = 0x00033303 | (imm12 << 20); // ld  t1, t1, dataOffset[11:0]
@@ -131,9 +131,9 @@ class BranchInstructionFormat : public InstructionFormat
                     COMPlusThrow(kNotSupportedException);
 
                 UINT16 imm12 = (UINT16)(0xFFF & dataOffset);
-                //auipc  t1, dataOffset[31:12]
-                //ld  t1, t1, dataOffset[11:0]
-                //jalr  x0/1, t1,0
+                // auipc  t1, dataOffset[31:12]
+                // ld  t1, t1, dataOffset[11:0]
+                // jalr  x0/1, t1,0
 
                 *(DWORD*)pOutBufferRW = 0x00000317 | (((dataOffset + 0x800) >> 12) << 12);// auipc t1, dataOffset[31:12]
                 *(DWORD*)(pOutBufferRW + 4) = 0x00033303 | (imm12 << 20); // ld  t1, t1, dataOffset[11:0]

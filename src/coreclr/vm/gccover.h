@@ -114,9 +114,9 @@ typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::sav
 
 #elif defined(TARGET_RISCV64)
 // TODO-RISCV64: Confirm the following encodings are undefined
-#define INTERRUPT_INSTR                 0xBADC0DE0
-#define INTERRUPT_INSTR_CALL            0xBADC0DE1
-#define INTERRUPT_INSTR_PROTECT_RET     0xBADC0DE2
+#define INTERRUPT_INSTR                 0x20000000
+#define INTERRUPT_INSTR_CALL            0x20010000
+#define INTERRUPT_INSTR_PROTECT_RET     0x20020000
 
 #endif // _TARGET_*
 

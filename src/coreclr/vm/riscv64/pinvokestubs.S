@@ -36,7 +36,7 @@
             ori  \HiddenArg, \HiddenArg, 1
         .endif
 
-        jalr  x0, t0, 0
+        jr  t0
         NESTED_END \__PInvokeStubFuncName, _TEXT
 
         NESTED_ENTRY \__PInvokeGenStubFuncName, _TEXT, NoHandler
@@ -151,7 +151,7 @@
     ld  t4, (Frame__m_Next)(a0)
     sd  t4, (Thread_m_pFrame)(a1)
 
-    jalr  x0, ra, 0
+    jr  ra
 
 LOCAL_LABEL(RarePath):
     tail  JIT_PInvokeEndRarePath

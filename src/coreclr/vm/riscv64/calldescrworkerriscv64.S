@@ -69,7 +69,7 @@ LOCAL_LABEL(NoFloatingPoint):
     ld t4, CallDescrData__pTarget(s1)
 
     // call pTarget
-    jalr ra, 0(t4)
+    jalr t4
 
     lw a3, CallDescrData__fpReturnSize(s1)
 
@@ -125,71 +125,71 @@ LOCAL_LABEL(NotCorrectReturn):
 
 LOCAL_LABEL(FloatReturn):
     fsw  f0, CallDescrData__returnValue(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(DoubleReturn):
     fsd  fa0, CallDescrData__returnValue(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(FloatIntReturn):
     fsw  fa0, CallDescrData__returnValue(s1)
     sw  a0, (CallDescrData__returnValue + 4)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(DoubleIntReturn):
     fsd  fa0, CallDescrData__returnValue(s1)
     sw  a0, (CallDescrData__returnValue + 8)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(FloatLongReturn):
     fsw  fa0, CallDescrData__returnValue(s1)
     sd  a0, (CallDescrData__returnValue + 8)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(DoubleLongReturn):
     fsd  fa0, CallDescrData__returnValue(s1)
     sd  a0, (CallDescrData__returnValue + 8)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(IntFloatReturn):
     sw  a0, CallDescrData__returnValue(s1)
     fsw  fa0, (CallDescrData__returnValue + 4)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(LongFloatReturn):
     sd  a0, CallDescrData__returnValue(s1)
     fsw  fa0, (CallDescrData__returnValue + 8)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(IntDoubleReturn):
     sw  a0, CallDescrData__returnValue(s1)
     fsd  fa0, (CallDescrData__returnValue + 8)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(LongDoubleReturn):
     sd  a0, CallDescrData__returnValue(s1)
     fsd  fa0, (CallDescrData__returnValue + 8)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(FloatFloatReturn):
     fsw  fa0, CallDescrData__returnValue(s1)
     fsw  fa1, (CallDescrData__returnValue + 4)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(DoubleFloatReturn):
     fsd  fa0, CallDescrData__returnValue(s1)
     fsw  fa1, (CallDescrData__returnValue + 8)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(FloatDoubleReturn):
     fsw  fa0, CallDescrData__returnValue(s1)
     fsd  fa1, (CallDescrData__returnValue + 8)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(DoubleDoubleReturn):
     fsd  fa0, CallDescrData__returnValue(s1)
     fsd  fa1, (CallDescrData__returnValue + 8)(s1)
-    jal  x0, LOCAL_LABEL(ReturnDone)
+    j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(IntReturn):
     // Save return value into retbuf for int
@@ -201,5 +201,5 @@ LOCAL_LABEL(ReturnDone):
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG  s1, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
-    jalr x0, ra, 0
+    ret
 NESTED_END CallDescrWorkerInternal, _TEXT

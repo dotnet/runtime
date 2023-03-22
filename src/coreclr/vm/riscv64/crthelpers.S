@@ -17,7 +17,7 @@ LEAF_ENTRY JIT_MemSet, _TEXT
     tail memset
 
 LOCAL_LABEL(JIT_MemSet_ret):
-    jalr  x0, 0(ra)
+    ret
 LEAF_END_MARKED JIT_MemSet, _TEXT
 
 ////NOTE: Here must use LEAF_END_MARKED!  not LEAF_END !!!
@@ -30,7 +30,7 @@ LEAF_ENTRY JIT_MemCpy, _TEXT
     tail memcpy 
 
 LOCAL_LABEL(JIT_MemCpy_ret):
-    jalr  x0, 0(ra)
+    ret
 
 ////NOTE: Here must use LEAF_END_MARKED!  not LEAF_END !!!
 LEAF_END_MARKED JIT_MemCpy, _TEXT

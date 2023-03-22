@@ -8,7 +8,7 @@ LEAF_ENTRY StubPrecodeCode
     auipc t1, 0x1
     ld t2, (StubPrecodeData__MethodDesc)(t1)
     ld t1, (StubPrecodeData__Target)(t1)
-    jalr x0,t1,0
+    jr t1
 LEAF_END_MARKED StubPrecodeCode
 
 LEAF_ENTRY FixupPrecodeCode
@@ -19,7 +19,7 @@ LEAF_ENTRY FixupPrecodeCode
     auipc t2, 0x1
     ld t1, (FixupPrecodeData__PrecodeFixupThunk - 0xa)(t2)
     ld t2, (FixupPrecodeData__MethodDesc - 0xa)(t2)
-    jalr x0, t1, 0
+    jr t1
 LEAF_END_MARKED FixupPrecodeCode
 
 LEAF_ENTRY CallCountingStubCode
@@ -30,8 +30,8 @@ LEAF_ENTRY CallCountingStubCode
     sh t1, 0(t3)
     beq t1, zero, LOCAL_LABEL(CountReachedZero)
     ld t1, (CallCountingStubData__TargetForMethod)(t2)
-    jalr x0, 0(t1)
+    jr t1
 LOCAL_LABEL(CountReachedZero):
     ld t1, (CallCountingStubData__TargetForThresholdReached)(t2)
-    jalr x0,t1,0
+    jr t1
 LEAF_END_MARKED CallCountingStubCode

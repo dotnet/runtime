@@ -227,7 +227,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 #endif // __loongarch64
 
 #ifdef __riscv
- #define YieldProcessor() asm volatile( "fence iorw, iorw");
+ #define YieldProcessor() asm volatile( ".word 0x0100000f");
  #define MemoryBarrier __sync_synchronize
 #endif // __riscv
 

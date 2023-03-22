@@ -81,10 +81,10 @@ endif (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 
 if (CLR_CMAKE_TARGET_ARCH_RISCV64)
   create_gcinfo_lib(TARGET gcinfo_unix_riscv64 OS unix ARCH riscv64)
-else()
-  create_gcinfo_lib(TARGET gcinfo_universal_arm OS universal ARCH arm)
-  create_gcinfo_lib(TARGET gcinfo_win_x86 OS win ARCH x86)
 endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
+
+create_gcinfo_lib(TARGET gcinfo_universal_arm OS universal ARCH arm)
+create_gcinfo_lib(TARGET gcinfo_win_x86 OS win ARCH x86)
 
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
   create_gcinfo_lib(TARGET gcinfo_unix_x86 OS unix ARCH x86)

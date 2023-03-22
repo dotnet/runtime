@@ -240,7 +240,7 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 
     // auipc ra, 0
     // ld    ra, ra, 16
-    // jalr  r0, ra, 0
+    // jalr  x0, ra, 0
     // nop    //padding.
 
     pCode[0] = 0x00000097; // auipc ra, 0
