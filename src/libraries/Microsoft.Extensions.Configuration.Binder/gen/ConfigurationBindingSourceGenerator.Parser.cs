@@ -14,14 +14,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed class Parser
         {
+            private const string GlobalNameSpaceString = "<global namespace>";
+
             private readonly SourceProductionContext _context;
             private readonly KnownTypeData _typeData;
 
             private readonly HashSet<TypeSpec> _typesForBindMethodGen = new();
             private readonly HashSet<TypeSpec> _typesForGetMethodGen = new();
             private readonly HashSet<TypeSpec> _typesForConfigureMethodGen = new();
+            private readonly HashSet<TypeSpec> _typesForBindCoreMethodGen = new();
+
             private readonly HashSet<ITypeSymbol> _unsupportedTypes = new(SymbolEqualityComparer.Default);
             private readonly Dictionary<ITypeSymbol, TypeSpec?> _createdSpecs = new(SymbolEqualityComparer.Default);
+
+            private readonly HashSet<string> _namespaces = new()
+            {
+                "System",
+                "System.Linq",
+                "Microsoft.Extensions.Configuration"
+            };
 
             public Parser(SourceProductionContext context, KnownTypeData typeData)
             {
@@ -60,7 +71,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                return new SourceGenerationSpec(_typesForBindMethodGen, _typesForGetMethodGen, _typesForConfigureMethodGen);
+                Dictionary<MethodSpecifier, HashSet<TypeSpec>> methods = new()
+                {
+                    [MethodSpecifier.Bind] = _typesForBindMethodGen,
+                    [MethodSpecifier.Get] = _typesForGetMethodGen,
+                    [MethodSpecifier.Configure] = _typesForConfigureMethodGen,
+                    [MethodSpecifier.BindCore] = _typesForBindCoreMethodGen,
+                };
+
+                return new SourceGenerationSpec(methods, _namespaces);
             }
 
             private void ProcessBindCall(BinderInvocationOperation binderOperation)
@@ -76,10 +95,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     IConversionOperation argument = arguments[1].Value as IConversionOperation;
                     ITypeSymbol? type = ResolveType(argument)?.WithNullableAnnotation(NullableAnnotation.None);
 
-                    // TODO: do we need diagnostic for System.Object?
                     if (type is not INamedTypeSymbol { } namedType ||
                         namedType.SpecialType == SpecialType.System_Object ||
-                        namedType.SpecialType == SpecialType.System_Void)
+                        namedType.SpecialType == SpecialType.System_Void ||
+                        // Binding to root-level struct is a no-op.
+                        namedType.IsValueType)
                     {
                         return;
                     }
@@ -153,7 +173,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 TypeSpec? spec = GetOrCreateTypeSpec(namedType, location);
-                if (spec != null && !specs.Contains(spec))
+                if (spec != null &&
+                    !specs.Contains(spec))
                 {
                     specs.Add(spec);
                 }
@@ -191,7 +212,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 else if (type is IArrayTypeSymbol { } arrayType)
                 {
                     spec = CreateArraySpec(arrayType, location);
-                    return spec == null ? null : CacheSpec(spec);
+                    if (spec is null)
+                    {
+                        return null;
+                    }
+
+                    if (spec.SpecKind != TypeSpecKind.ByteArray)
+                    {
+                        Debug.Assert(spec.SpecKind is TypeSpecKind.Array);
+                        _typesForBindCoreMethodGen.Add(spec);
+                    }
+
+                    return CacheSpec(spec);
                 }
                 else if (TypesAreEqual(type, _typeData.SymbolForIConfigurationSection))
                 {
@@ -199,9 +231,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (type is INamedTypeSymbol namedType)
                 {
-                    return IsCollection(namedType)
-                        ? CacheSpec(CreateCollectionSpec(namedType, location))
-                        : CacheSpec(CreateObjectSpec(namedType, location));
+                    spec = IsCollection(namedType)
+                        ? CreateCollectionSpec(namedType, location)
+                        : CreateObjectSpec(namedType, location);
+
+                    if (spec is null)
+                    {
+                        return null;
+                    }
+
+                    _typesForBindCoreMethodGen.Add(spec);
+                    return CacheSpec(spec);
                 }
 
                 ReportUnsupportedType(type, NotSupportedReason.TypeNotSupported, location);
@@ -209,6 +249,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 T CacheSpec<T>(T? s) where T : TypeSpec
                 {
+                    string @namespace = s.Namespace;
+                    if (@namespace != null && @namespace != GlobalNameSpaceString)
+                    {
+                        _namespaces.Add(@namespace);
+                    }
+
                     _createdSpecs[type] = s;
                     return s;
                 }
@@ -528,7 +574,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 INamedTypeSymbol current = type;
                 while (current != null)
                 {
-                    if (current.GetMembers(Literal.Add).Any(member =>
+                    if (current.GetMembers(Identifier.Add).Any(member =>
                         member is IMethodSymbol { Parameters.Length: 1 } method &&
                         TypesAreEqual(element, method.Parameters[0].Type)))
                     {
@@ -544,7 +590,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 INamedTypeSymbol current = type;
                 while (current != null)
                 {
-                    if (current.GetMembers(Literal.Add).Any(member =>
+                    if (current.GetMembers(Identifier.Add).Any(member =>
                         member is IMethodSymbol { Parameters.Length: 2 } method &&
                         TypesAreEqual(key, method.Parameters[0].Type) &&
                         TypesAreEqual(element, method.Parameters[1].Type)))
