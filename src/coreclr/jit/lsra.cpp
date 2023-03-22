@@ -3110,7 +3110,7 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
     // We shouldn't be calling this if we haven't already determined that the register is not
     // busy until the next kill.
     assert(!isRegBusy(physRegRecord->regNum, current->registerType));
-    // We should already have determined that the register isn't actively in use.
+// We should already have determined that the register isn't actively in use.
 #ifdef TARGET_ARM64
     assert(!isRegInUse(physRegRecord->regNum, current->registerType) || refPosition->needsConsecutive);
 #else
@@ -5401,57 +5401,57 @@ void LinearScan::allocateRegisters()
                     {
                         // It doesn't satisfy, so do a copyReg for the first RefPosition to such a register, so
                         // it would be possible to allocate consecutive registers to the subsequent RefPositions.
-                        regNumber copyReg         = assignCopyReg<true>(&currentRefPosition);
+                        regNumber copyReg = assignCopyReg<true>(&currentRefPosition);
 
                         if (copyReg != assignedRegister)
                         {
-                        lastAllocatedRefPosition  = &currentRefPosition;
-                        regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
-                        regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
+                            lastAllocatedRefPosition  = &currentRefPosition;
+                            regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
+                            regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
 
-                        // For consecutive register, it doesn't matter what the assigned register was.
-                        // We have just assigned it `copyRegMask` and that's the one in-use, and not the
-                        // one that was assigned previously.
+                            // For consecutive register, it doesn't matter what the assigned register was.
+                            // We have just assigned it `copyRegMask` and that's the one in-use, and not the
+                            // one that was assigned previously.
 
-                        regsInUseThisLocation |= copyRegMask;
-                        if (currentRefPosition.lastUse)
-                        {
-                            if (currentRefPosition.delayRegFree)
+                            regsInUseThisLocation |= copyRegMask;
+                            if (currentRefPosition.lastUse)
                             {
-                                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, currentInterval,
-                                                                assignedRegister));
-                                delayRegsToFree |= copyRegMask | assignedRegMask;
-                                regsInUseNextLocation |= copyRegMask | assignedRegMask;
+                                if (currentRefPosition.delayRegFree)
+                                {
+                                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, currentInterval,
+                                                                    assignedRegister));
+                                    delayRegsToFree |= copyRegMask | assignedRegMask;
+                                    regsInUseNextLocation |= copyRegMask | assignedRegMask;
+                                }
+                                else
+                                {
+                                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, currentInterval,
+                                                                    assignedRegister));
+                                    regsToFree |= copyRegMask | assignedRegMask;
+                                }
                             }
                             else
                             {
-                                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, currentInterval,
-                                                                    assignedRegister));
-                                regsToFree |= copyRegMask | assignedRegMask;
+                                copyRegsToFree |= copyRegMask;
+                                if (currentRefPosition.delayRegFree)
+                                {
+                                    regsInUseNextLocation |= copyRegMask | assignedRegMask;
+                                }
                             }
-                        }
-                        else
-                        {
-                            copyRegsToFree |= copyRegMask;
-                            if (currentRefPosition.delayRegFree)
-                            {
-                                regsInUseNextLocation |= copyRegMask | assignedRegMask;
-                            }
-                        }
 
-                        // If this is a tree temp (non-localVar) interval, we will need an explicit move.
-                        // Note: In theory a moveReg should cause the Interval to now have the new reg as its
-                        // assigned register. However, that's not currently how this works.
-                        // If we ever actually move lclVar intervals instead of copying, this will need to change.
-                        if (!currentInterval->isLocalVar)
-                        {
-                            currentRefPosition.moveReg = true;
-                            currentRefPosition.copyReg = false;
-                        }
-                        clearNextIntervalRef(copyReg, currentInterval->registerType);
-                        clearSpillCost(copyReg, currentInterval->registerType);
-                        updateNextIntervalRef(assignedRegister, currentInterval);
-                        updateSpillCost(assignedRegister, currentInterval);
+                            // If this is a tree temp (non-localVar) interval, we will need an explicit move.
+                            // Note: In theory a moveReg should cause the Interval to now have the new reg as its
+                            // assigned register. However, that's not currently how this works.
+                            // If we ever actually move lclVar intervals instead of copying, this will need to change.
+                            if (!currentInterval->isLocalVar)
+                            {
+                                currentRefPosition.moveReg = true;
+                                currentRefPosition.copyReg = false;
+                            }
+                            clearNextIntervalRef(copyReg, currentInterval->registerType);
+                            clearSpillCost(copyReg, currentInterval->registerType);
+                            updateNextIntervalRef(assignedRegister, currentInterval);
+                            updateSpillCost(assignedRegister, currentInterval);
                         }
                         else
                         {
@@ -11694,8 +11694,8 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
     // The  spill weight for the best candidate we've found so far.
     weight_t bestSpillWeight = FloatingPointUtils::infinite_double();
     // True if we found registers with lower spill weight than this refPosition.
-    bool foundLowerSpillWeight = false;
-    LsraLocation thisLocation = refPosition->nodeLocation;
+    bool         foundLowerSpillWeight = false;
+    LsraLocation thisLocation          = refPosition->nodeLocation;
 
     for (regMaskTP spillCandidates = candidates; spillCandidates != RBM_NONE;)
     {
@@ -11705,11 +11705,23 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         RegRecord* spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
         Interval*  assignedInterval        = spillCandidateRegRecord->assignedInterval;
 
-        // Can and should the interval in this register be spilled for this one,
-        // if we don't find a better alternative?
 #ifdef TARGET_ARM64
-        if (linearScan->isRefPositionActive(assignedInterval->recentRefPosition, thisLocation) &&
-            (assignedInterval->recentRefPosition->needsConsecutive))
+        if (assignedInterval == nullptr)
+        {
+            // Ideally we should not be seeing this candidate because it is not assigned to
+            // any interval. But based on that, we cannot determine if it is a good spill
+            // candidate or not. Skip processing it.
+            continue;
+        }
+#endif
+
+        RefPosition* recentRefPosition = assignedInterval->recentRefPosition;
+
+// Can and should the interval in this register be spilled for this one,
+// if we don't find a better alternative?
+#ifdef TARGET_ARM64
+        if ((recentRefPosition != nullptr) && linearScan->isRefPositionActive(recentRefPosition, thisLocation) &&
+            (recentRefPosition->needsConsecutive))
         {
             continue;
         }
@@ -11726,7 +11738,6 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         }
 
         weight_t     currentSpillWeight = 0;
-        RefPosition* recentRefPosition  = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
         if ((recentRefPosition != nullptr) &&
             (recentRefPosition->RegOptional() && !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
         {
