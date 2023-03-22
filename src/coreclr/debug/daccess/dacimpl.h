@@ -1939,7 +1939,7 @@ class DacReferenceList
 
         const T& Get(unsigned int index) const
         {
-            assert(index < _count);
+            _ASSERTE(index < _count);
             return _array[index];
         }
 
@@ -1962,29 +1962,23 @@ class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum, IID_ISOS
     struct DacScanContext : public ScanContext
     {
         DacStackReferenceWalker *pWalker;
-        DacReferenceList<SOSStackRefData> *pSOSList;
-        void *pDbiData;
+        DacReferenceList<SOSStackRefData> *pList;
         Frame *pFrame;
         TADDR sp, pc;
         bool stop;
         bool resolvePointers;
         GCEnumCallback pEnumFunc;
 
-        DacScanContext(DacStackReferenceWalker *walker, DacReferenceList<SOSStackRefData> *sos, void *dbi, bool resolveInteriorPointers)
-            : pWalker(walker), pSOSList(sos), pDbiData(dbi), pFrame(0), sp(0), pc(0), stop(false), resolvePointers(resolveInteriorPointers), pEnumFunc(0)
+        DacScanContext(DacStackReferenceWalker *walker, DacReferenceList<SOSStackRefData> *list, bool resolveInteriorPointers)
+            : pWalker(walker), pList(list), pFrame(0), sp(0), pc(0), stop(false), resolvePointers(resolveInteriorPointers), pEnumFunc(0)
         {
-            assert(walker);
-            assert(sos || dbi);
+            _ASSERTE(pWalker);
+            _ASSERTE(pList);
         }
     };
 
 public:
-    DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThreadID, bool resolveInteriorPointers, void *dbiData = 0);
-    virtual ~DacStackReferenceWalker()
-    {
-        if (mDbiData)
-            CleanupDbiData();
-    }
+    DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThreadID, bool resolveInteriorPointers);
 
     HRESULT Init();
 
@@ -2006,16 +2000,12 @@ public:
 
 private:
     static StackWalkAction Callback(CrawlFrame *pCF, VOID *pData);
-    static void GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
-    static void GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
-    static void GCEnumCallbackDbi(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
-    static void GCReportCallbackDbi(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
-    unsigned int GetDbiCount();
+    static void GCEnumCallback(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
+    static void GCReportCallback(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
 
     CLRDATA_ADDRESS ReadPointer(TADDR addr);
 
     void WalkStack();
-    void CleanupDbiData();
 
 private:
     // Dac variables required for entering/leaving the dac.
@@ -2023,8 +2013,7 @@ private:
     ULONG32 m_instanceAge;
 
     // Storage
-    DacReferenceList<SOSStackRefData> mSOSData;
-    void* mDbiData;
+    DacReferenceList<SOSStackRefData> mList;
 
     // Operational variables
     Thread *mThread;
@@ -2052,7 +2041,7 @@ class DacHandleWalker : public DefaultCOMImpl<ISOSHandleEnum, IID_ISOSHandleEnum
         DacHandleWalkerParam(DacReferenceList<SOSHandleData> *list)
             : List(list), Result(S_OK), AppDomain(0), Type(0)
         {
-            assert(list);
+            _ASSERTE(list);
         }
     };
 

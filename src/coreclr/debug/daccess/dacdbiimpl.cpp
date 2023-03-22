@@ -7651,7 +7651,7 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
         if (FAILED(hr))
             return hr;
 
-        if (hr == S_FALSE)
+        if (fetched == 0)
         {
             hr = NextThread();
 
@@ -7682,8 +7682,7 @@ HRESULT DacRefWalker::NextThread()
     if (!pThread)
         return S_FALSE;
 
-    DacReferenceList<DacGcReference>* pData = new DacReferenceList<DacGcReference>();
-    mStackWalker = new DacStackReferenceWalker(mDac, pThread->GetOSThreadId(), mResolvePointers == TRUE, pData);
+    mStackWalker = new DacStackReferenceWalker(mDac, pThread->GetOSThreadId(), mResolvePointers == TRUE);
     return mStackWalker->Init();
 }
 
@@ -7753,102 +7752,6 @@ HRESULT DacHandleWalker::Next(ULONG count, DacGcReference roots[], ULONG *pFetch
     return (unsigned)mIteratorIndex < mList.GetCount() ? S_FALSE : S_OK;
 }
 
-void DacStackReferenceWalker::CleanupDbiData()
-{
-    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)mDbiData;
-    if (pList)
-        delete pList;
-}
-
-unsigned int DacStackReferenceWalker::GetDbiCount()
-{
-    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)mDbiData;
-    if (pList == nullptr)
-        return 0;
-    return pList->GetCount();
-}
-
-void DacStackReferenceWalker::GCEnumCallbackDbi(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
-{
-    GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
-    DacScanContext *dsc = (DacScanContext*)gcctx->sc;
-
-    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)dsc->pDbiData;
-    if (pList == nullptr)
-        return;
-
-    CORDB_ADDRESS obj = 0;
-
-    if (flags & GC_CALL_INTERIOR)
-    {
-        if (loc.targetPtr)
-            obj = (CORDB_ADDRESS)(*PTR_PTR_Object((TADDR)pObject)).GetAddr();
-        else
-            obj = (CORDB_ADDRESS)TO_TADDR(pObject);
-
-        if (dsc->resolvePointers)
-        {
-            HRESULT hr = dsc->pWalker->mHeap.ListNearObjects(obj, NULL, &obj, NULL);
-
-            // If we failed don't add this instance to the list.  ICorDebug doesn't handle invalid pointers
-            // very well, and the only way the heap walker's ListNearObjects will fail is if we have heap
-            // corruption...which ICorDebug doesn't deal with anyway.
-            if (FAILED(hr))
-                return;
-        }
-    }
-
-    DacGcReference data;
-    data.vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
-    if (obj)
-        data.pObject = obj | 1;
-    else if (loc.targetPtr)
-        data.objHnd.SetDacTargetPtr(TO_TADDR(pObject));
-    else
-        data.pObject = pObject->GetAddr() | 1;
-
-    data.dwType = CorReferenceStack;
-    if (!dsc->resolvePointers && (flags & GC_CALL_INTERIOR))
-        data.i64ExtraData = GC_CALL_INTERIOR;
-    else
-        data.i64ExtraData = 0;
-
-    pList->Add(data);
-}
-
-void DacStackReferenceWalker::GCReportCallbackDbi(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
-{
-    DacScanContext *dsc = (DacScanContext*)sc;
-    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)dsc->pDbiData;
-    if (pList == nullptr)
-        return;
-
-    TADDR obj = ppObj.GetAddr();
-    if (flags & GC_CALL_INTERIOR && dsc->resolvePointers)
-    {
-        CORDB_ADDRESS fixed_addr = 0;
-        HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_addr, NULL);
-
-        // If we failed don't add this instance to the list.  ICorDebug doesn't handle invalid pointers
-        // very well, and the only way the heap walker's ListNearObjects will fail is if we have heap
-        // corruption...which ICorDebug doesn't deal with anyway.
-        if (FAILED(hr))
-            return;
-
-        obj = TO_TADDR(fixed_addr);
-    }
-
-    DacGcReference data;
-    data.vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
-    data.objHnd.SetDacTargetPtr(obj);
-    data.dwType = CorReferenceStack;
-    if (!dsc->resolvePointers && (flags & GC_CALL_INTERIOR))
-        data.i64ExtraData = GC_CALL_INTERIOR;
-    else
-        data.i64ExtraData = 0;
-
-    pList->Add(data);
-}
 
 HRESULT DacStackReferenceWalker::Next(ULONG count, DacGcReference stackRefs[], ULONG *pFetched)
 {
@@ -7857,23 +7760,29 @@ HRESULT DacStackReferenceWalker::Next(ULONG count, DacGcReference stackRefs[], U
 
     if (!mEnumerated)
         WalkStack();
-    
-    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)mDbiData;
-    if (pList != nullptr)
-    {
-        unsigned int i;
-        for (i = 0; i < count && mIteratorIndex < pList->GetCount(); mIteratorIndex++, i++)
-        {
-            stackRefs[i] = pList->Get(i);
-        }
 
-        *pFetched = i;
-    }
-    else
+    TADDR domain = AppDomain::GetCurrentDomain().GetAddr();
+
+    unsigned int i;
+    for (i = 0; i < count && mIteratorIndex < mList.GetCount(); mIteratorIndex++, i++)
     {
-        *pFetched = 0;
-        return E_UNEXPECTED;
+        stackRefs[i].dwType = CorReferenceStack;
+        stackRefs[i].vmDomain.SetDacTargetPtr(domain);
+
+        const SOSStackRefData &sosStackRef = mList.Get(i);
+        if (sosStackRef.Flags & GC_CALL_INTERIOR)
+        {
+            stackRefs[i].i64ExtraData = GC_CALL_INTERIOR;
+            stackRefs[i].objHnd.SetDacTargetPtr(CLRDATA_ADDRESS_TO_TADDR(sosStackRef.Address));
+        }
+        else
+        {
+            stackRefs[i].i64ExtraData = 0;
+            stackRefs[i].pObject = CLRDATA_ADDRESS_TO_TADDR(sosStackRef.Object) | 1;
+        }
     }
+
+    *pFetched = i;
 
     return S_OK;
 }

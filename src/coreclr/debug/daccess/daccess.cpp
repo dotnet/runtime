@@ -7777,8 +7777,8 @@ void CALLBACK DacHandleWalker::EnumCallback(PTR_UNCHECKED_OBJECTREF handle, uint
         param->Result = E_OUTOFMEMORY;
 }
 
-DacStackReferenceWalker::DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThreadID, bool resolveInteriorPointers, void *dacData)
-    : mDac(dac), m_instanceAge(dac ? dac->m_instanceAge : 0), mDbiData(dacData), mThread(0), mErrors(0),
+DacStackReferenceWalker::DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThreadID, bool resolveInteriorPointers)
+    : mDac(dac), m_instanceAge(dac ? dac->m_instanceAge : 0), mThread(0), mErrors(0),
       mResolvePointers(resolveInteriorPointers), mEnumerated(false), mIteratorIndex(0)
 {
     Thread *curr = NULL;
@@ -7828,10 +7828,7 @@ HRESULT DacStackReferenceWalker::GetCount(unsigned int *pCount)
     if (!mEnumerated)
         WalkStack();
 
-    if (mDbiData)
-        *pCount = GetDbiCount();
-    else
-        *pCount = mSOSData.GetCount();
+    *pCount = mList.GetCount();
 
     SOSHelperLeave();
     return hr;
@@ -7850,14 +7847,14 @@ HRESULT DacStackReferenceWalker::Next(unsigned int count,
         WalkStack();
 
     unsigned int i = 0;
-    while (i < count && mIteratorIndex < mSOSData.GetCount())
+    while (i < count && mIteratorIndex < mList.GetCount())
     {
-        stackRefs[i++] = mSOSData.Get(mIteratorIndex++);
+        stackRefs[i++] = mList.Get(mIteratorIndex++);
     }
 
     *pFetched = i;
 
-    hr = mIteratorIndex < mSOSData.GetCount() ? S_FALSE : S_OK;
+    hr = mIteratorIndex < mList.GetCount() ? S_FALSE : S_OK;
 
     SOSHelperLeave();
     return hr;
@@ -7869,6 +7866,7 @@ void DacStackReferenceWalker::WalkStack()
     if (mEnumerated)
         return;
 
+    _ASSERTE(mList.GetCount() == 0);
     _ASSERTE(mThread);
     
     class ProfilerFilterContextHolder
@@ -7904,29 +7902,21 @@ void DacStackReferenceWalker::WalkStack()
     }
 
     // Setup GCCONTEXT structs for the stackwalk.
-    GCCONTEXT gcctx;
-    DacScanContext dsc(this, &mSOSData, mDbiData, mResolvePointers);
-    if (mDbiData)
-    {
-        dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallbackDbi;
-        gcctx.f = DacStackReferenceWalker::GCReportCallbackDbi;
-    }
-    else
-    {
-        dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallbackSOS;
-        gcctx.f = DacStackReferenceWalker::GCReportCallbackSOS;
-    }
-
+    GCCONTEXT gcctx = {0};
+    DacScanContext dsc(this, &mList, mResolvePointers);
+    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallback;
+    gcctx.f = DacStackReferenceWalker::GCReportCallback;
     gcctx.sc = &dsc;
 
     // Walk the stack, set mEnumerated to true to ensure we don't do it again.
     unsigned int flagsStackWalk = ALLOW_INVALID_OBJECTS|ALLOW_ASYNC_STACK_WALK|SKIP_GSCOOKIE_CHECK;
+
 #if defined(FEATURE_EH_FUNCLETS)
     flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(FEATURE_EH_FUNCLETS)
 
     // Pre-set mEnumerated in case we hit an unexpected exception.  We don't want to
-    // keep walking stack frames in that case
+    // keep walking stack frames if we hit a failure
     mEnumerated = true;
     mThread->StackWalkFrames(DacStackReferenceWalker::Callback, &gcctx, flagsStackWalk);
 }
@@ -7961,12 +7951,12 @@ CLRDATA_ADDRESS DacStackReferenceWalker::ReadPointer(TADDR addr)
 }
 
 
-void DacStackReferenceWalker::GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
+void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;
 
-    if (dsc->pSOSList == nullptr)
+    if (dsc->pList == nullptr)
         return;
 
     // Yuck.  The GcInfoDecoder reports a local pointer for registers (as it's reading out of the REGDISPLAY
@@ -8019,15 +8009,15 @@ void DacStackReferenceWalker::GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pOb
         data.Source = TO_CDADDR(dsc->pc);
     }
 
-    dsc->pSOSList->Add(data);
+    dsc->pList->Add(data);
 }
 
-void DacStackReferenceWalker::GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
+void DacStackReferenceWalker::GCReportCallback(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
 {
     DacScanContext *dsc = (DacScanContext*)sc;
     CLRDATA_ADDRESS obj = dsc->pWalker->ReadPointer(ppObj.GetAddr());
 
-    if (dsc->pSOSList == nullptr)
+    if (dsc->pList == nullptr)
         return;
 
     if (flags & GC_CALL_INTERIOR && dsc->resolvePointers)
@@ -8060,7 +8050,7 @@ void DacStackReferenceWalker::GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanCont
         data.Source = TO_CDADDR(dsc->pc);
     }
     
-    dsc->pSOSList->Add(data);
+    dsc->pList->Add(data);
 }
 
 StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)

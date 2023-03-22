@@ -617,7 +617,7 @@ ClrDataAccess::GetStackReferences(DWORD osThreadID, ISOSStackRefEnum **ppEnum)
 
     SOSDacEnter();
 
-    DacStackReferenceWalker *walker = new (nothrow) DacStackReferenceWalker(this, osThreadID, true, false);
+    DacStackReferenceWalker *walker = new (nothrow) DacStackReferenceWalker(this, osThreadID, false);
 
     if (walker == NULL)
     {
