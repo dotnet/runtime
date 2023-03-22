@@ -215,28 +215,6 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Equals_CompareValidInstanceToDefault_ReturnsFalse(bool testOperator)
-        {
-            var valid = IPNetwork.Parse("127.0.0.0/24");
-            IPNetwork invalid = default;
-
-            if (testOperator)
-            {
-                Assert.False(valid == invalid);
-                Assert.True(valid != invalid);
-            }
-            else
-            {
-                Assert.False(valid.Equals(invalid));
-                Assert.False(valid.Equals((object)invalid));
-                Assert.False(invalid.Equals(valid));
-                Assert.False(invalid.Equals((object)valid));
-            }
-        }
-
-        [Theory]
         [InlineData("127.0.0.0/24")]
         [InlineData("2a01:110:8012::/47")]
         public void EqualiyMethods_WhenEqual(string input)
@@ -283,6 +261,16 @@ namespace System.Net.Primitives.Functional.Tests
             Span<char> span = stackalloc char[spanLengthToTest];
 
             Assert.False(network.TryFormat(span, out int charsWritten));
+        }
+
+        [Fact]
+        public void DefaultInstance_IsValid()
+        {
+            IPNetwork network = default;
+            Assert.Equal(IPAddress.Any, network.BaseAddress);
+            Assert.Equal(default, network);
+            Assert.NotEqual(IPNetwork.Parse("10.20.30.0/24"), network);
+            Assert.True(network.Contains(IPAddress.Parse("10.11.12.13")));
         }
     }
 }

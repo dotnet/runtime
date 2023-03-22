@@ -22,10 +22,12 @@ namespace System.Net
     /// </remarks>
     public readonly struct IPNetwork : IEquatable<IPNetwork>, ISpanFormattable, ISpanParsable<IPNetwork>
     {
+        private readonly IPAddress? _baseAddress;
+
         /// <summary>
         /// Gets the <see cref="IPAddress"/> that represents the prefix of the network.
         /// </summary>
-        public IPAddress BaseAddress { get; }
+        public IPAddress BaseAddress => _baseAddress ?? IPAddress.Any;
 
         /// <summary>
         /// Gets the length of the network prefix in bits.
@@ -54,7 +56,7 @@ namespace System.Net
                 ThrowInvalidBaseAddressException();
             }
 
-            BaseAddress = baseAddress;
+            _baseAddress = baseAddress;
             PrefixLength = prefixLength;
 
             [DoesNotReturn]
@@ -67,7 +69,7 @@ namespace System.Net
         // Non-validating ctor
         private IPNetwork(IPAddress baseAddress, int prefixLength, bool _)
         {
-            BaseAddress = baseAddress;
+            _baseAddress = baseAddress;
             PrefixLength = prefixLength;
         }
 
@@ -81,7 +83,7 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
 
-            if (BaseAddress is null || address.AddressFamily != BaseAddress.AddressFamily)
+            if (address.AddressFamily != BaseAddress.AddressFamily)
             {
                 return false;
             }
@@ -256,7 +258,7 @@ namespace System.Net
         /// <exception cref="InvalidOperationException">Uninitialized <see cref="IPNetwork"/> instance.</exception>
         public bool Equals(IPNetwork other) =>
             PrefixLength == other.PrefixLength &&
-            (BaseAddress is null ? other.BaseAddress is null : BaseAddress.Equals(other.BaseAddress));
+            BaseAddress.Equals(other.BaseAddress);
 
         /// <summary>
         /// Determines whether two <see cref="IPNetwork"/> instances are equal.
