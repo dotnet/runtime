@@ -7081,7 +7081,7 @@ HRESULT DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL wal
 {
     DD_ENTER_MAY_THROW;
 
-    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, walkFQ, handleWalkMask);
+    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, walkFQ, handleWalkMask, TRUE);
 
     if (walker == NULL)
         return E_OUTOFMEMORY;
@@ -7525,9 +7525,9 @@ HRESULT DacDbiInterfaceImpl::EnableGCNotificationEvents(BOOL fEnable)
     return hr;
 }
 
-DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask)
+DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers)
     : mDac(dac), mWalkStacks(walkStacks), mWalkFQ(walkFQ), mHandleMask(handleMask), mStackWalker(NULL),
-      mHandleWalker(NULL), mFQStart(PTR_NULL), mFQEnd(PTR_NULL), mFQCurr(PTR_NULL)
+      mResolvePointers(resolvePointers), mHandleWalker(NULL), mFQStart(PTR_NULL), mFQEnd(PTR_NULL), mFQCurr(PTR_NULL)
 {
 }
 
@@ -7682,7 +7682,8 @@ HRESULT DacRefWalker::NextThread()
     if (!pThread)
         return S_FALSE;
 
-    mStackWalker = new DacStackReferenceWalker(mDac, pThread->GetOSThreadId());
+    DacReferenceList<DacGcReference>* pData = new DacReferenceList<DacGcReference>();
+    mStackWalker = new DacStackReferenceWalker(mDac, pThread->GetOSThreadId(), mResolvePointers == TRUE, pData);
     return mStackWalker->Init();
 }
 
@@ -7780,11 +7781,29 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, u
     }
 }
 
+void DacStackReferenceWalker::CleanupDbiData()
+{
+    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)mDbiData;
+    if (pList)
+        delete pList;
+}
 
-void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
+unsigned int DacStackReferenceWalker::GetDbiCount()
+{
+    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)mDbiData;
+    if (pList == nullptr)
+        return 0;
+    return pList->GetCount();
+}
+
+void DacStackReferenceWalker::GCEnumCallbackDbi(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;
+
+    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)dsc->pDbiData;
+    if (pList == nullptr)
+        return;
 
     CORDB_ADDRESS obj = 0;
 
@@ -7795,38 +7814,42 @@ void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pOb
         else
             obj = (CORDB_ADDRESS)TO_TADDR(pObject);
 
-        HRESULT hr = dsc->pWalker->mHeap.ListNearObjects(obj, NULL, &obj, NULL);
+        if (dsc->resolvePointers)
+        {
+            HRESULT hr = dsc->pWalker->mHeap.ListNearObjects(obj, NULL, &obj, NULL);
 
-        // If we failed don't add this instance to the list.  ICorDebug doesn't handle invalid pointers
-        // very well, and the only way the heap walker's ListNearObjects will fail is if we have heap
-        // corruption...which ICorDebug doesn't deal with anyway.
-        if (FAILED(hr))
-            return;
+            // If we failed don't add this instance to the list.  ICorDebug doesn't handle invalid pointers
+            // very well, and the only way the heap walker's ListNearObjects will fail is if we have heap
+            // corruption...which ICorDebug doesn't deal with anyway.
+            if (FAILED(hr))
+                return;
+        }
     }
 
-    DacGcReference *data = dsc->pWalker->GetNextObject<DacGcReference>(dsc);
-    if (data != NULL)
-    {
-        data->vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
-        if (obj)
-            data->pObject = obj | 1;
-        else if (loc.targetPtr)
-            data->objHnd.SetDacTargetPtr(TO_TADDR(pObject));
-        else
-            data->pObject = pObject->GetAddr() | 1;
+    DacGcReference data;
+    data.vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
+    if (obj)
+        data.pObject = obj | 1;
+    else if (loc.targetPtr)
+        data.objHnd.SetDacTargetPtr(TO_TADDR(pObject));
+    else
+        data.pObject = pObject->GetAddr() | 1;
 
-        data->dwType = CorReferenceStack;
-        data->i64ExtraData = 0;
-    }
+    data.dwType = CorReferenceStack;
+    data.i64ExtraData = 0;
+
+    pList->Add(data);
 }
 
-
-void DacStackReferenceWalker::GCReportCallbackDac(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
+void DacStackReferenceWalker::GCReportCallbackDbi(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
 {
     DacScanContext *dsc = (DacScanContext*)sc;
+    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)dsc->pDbiData;
+    if (pList == nullptr)
+        return;
 
     TADDR obj = ppObj.GetAddr();
-    if (flags & GC_CALL_INTERIOR)
+    if (flags & GC_CALL_INTERIOR && dsc->resolvePointers)
     {
         CORDB_ADDRESS fixed_addr = 0;
         HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_addr, NULL);
@@ -7840,27 +7863,42 @@ void DacStackReferenceWalker::GCReportCallbackDac(PTR_PTR_Object ppObj, ScanCont
         obj = TO_TADDR(fixed_addr);
     }
 
-    DacGcReference *data = dsc->pWalker->GetNextObject<DacGcReference>(dsc);
-    if (data != NULL)
-    {
-        data->vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
-        data->objHnd.SetDacTargetPtr(obj);
-        data->dwType = CorReferenceStack;
-        data->i64ExtraData = 0;
-    }
+    DacGcReference data;
+    data.vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
+    data.objHnd.SetDacTargetPtr(obj);
+    data.dwType = CorReferenceStack;
+    if (!dsc->resolvePointers)
+        data.i64ExtraData = GC_CALL_INTERIOR;
+    else
+        data.i64ExtraData = 0;
+
+    pList->Add(data);
 }
-
-
 
 HRESULT DacStackReferenceWalker::Next(ULONG count, DacGcReference stackRefs[], ULONG *pFetched)
 {
     if (stackRefs == NULL || pFetched == NULL)
         return E_POINTER;
 
-    HRESULT hr = DoStackWalk<ULONG, DacGcReference,
-                             DacStackReferenceWalker::GCReportCallbackDac,
-                             DacStackReferenceWalker::GCEnumCallbackDac>
-                                (count, stackRefs, pFetched);
+    if (!mEnumerated)
+        WalkStack();
+    
+    DacReferenceList<DacGcReference> *pList = (DacReferenceList<DacGcReference>*)mDbiData;
+    if (pList != nullptr)
+    {
+        unsigned int i;
+        for (i = 0; i < count && mIteratorIndex < pList->GetCount(); mIteratorIndex++, i++)
+        {
+            stackRefs[i] = pList->Get(i);
+        }
 
-    return hr;
+        *pFetched = i;
+    }
+    else
+    {
+        *pFetched = 0;
+        return E_UNEXPECTED;
+    }
+
+    return S_OK;
 }

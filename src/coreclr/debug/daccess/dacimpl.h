@@ -1857,7 +1857,6 @@ private:
     static CORDB_ADDRESS sFreeMT;
 };
 
-struct DacGcReference;
 struct SOSStackErrorList
 {
     SOSStackRefError error;
@@ -1891,6 +1890,62 @@ private:
 // For GCCONTEXT
 #include "gcenv.h"
 
+
+template <class T>
+class DacReferenceList
+{
+    public:
+        DacReferenceList()
+            : _array(0), _count(0), _capacity(0)
+        {
+            _capacity = 1024;
+            _array = new T[_capacity];
+        }
+
+        ~DacReferenceList()
+        {
+            delete[] _array;
+        }
+
+        void Add(const T& value)
+        {
+            if (_count == _capacity)
+            {
+                unsigned int newCapacity = _capacity * 2;
+                T* newArray = new T[newCapacity];
+                memcpy(newArray, _array, _capacity * sizeof(T));
+
+                delete[] _array;
+                _array = newArray;
+                _capacity = newCapacity;
+            }
+
+            _array[_count++] = value;
+        }
+
+        unsigned int GetCount() const
+        {
+            return _count;
+        }
+
+        const T& Get(unsigned int index) const
+        {
+            assert(index < _count);
+            return _array[index];
+        }
+
+        void Clear()
+        {
+            _count = 0;
+        }
+
+    private:
+        T *_array;
+        unsigned int _count;
+        unsigned int _capacity;
+};
+
+struct DacGcReference;
  /* DacStackReferenceWalker.
  */
 class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum, IID_ISOSStackRefEnum>
@@ -1898,44 +1953,30 @@ class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum, IID_ISOS
     struct DacScanContext : public ScanContext
     {
         DacStackReferenceWalker *pWalker;
+        DacReferenceList<SOSStackRefData> *pSOSList;
+        void *pDbiData;
         Frame *pFrame;
         TADDR sp, pc;
         bool stop;
+        bool resolvePointers;
         GCEnumCallback pEnumFunc;
 
-        DacScanContext()
-            : pWalker(NULL), pFrame(0), sp(0), pc(0), stop(false), pEnumFunc(0)
+        DacScanContext(DacStackReferenceWalker *walker, DacReferenceList<SOSStackRefData> *sos, void *dbi, bool resolveInteriorPointers)
+            : pWalker(walker), pSOSList(sos), pDbiData(dbi), pFrame(0), sp(0), pc(0), stop(false), resolvePointers(resolveInteriorPointers), pEnumFunc(0)
         {
+            assert(walker);
+            assert(sos || dbi);
         }
     };
 
-    typedef struct _StackRefChunkHead
-    {
-        struct _StackRefChunkHead *next;  // Next chunk
-        unsigned int count;               // The count of how many StackRefs were written to pData
-        unsigned int size;                // The capacity of pData (in bytes)
-        void *pData;                      // The overflow data
 
-        _StackRefChunkHead()
-            : next(0), count(0), size(0), pData(0)
-        {
-        }
-    } StackRefChunkHead;
-
-    // The actual struct used for storing overflow StackRefs
-    typedef struct _StackRefChunk : public StackRefChunkHead
-    {
-        SOSStackRefData data[64];
-
-        _StackRefChunk()
-        {
-            pData = data;
-            size = sizeof(data);
-        }
-    } StackRefChunk;
 public:
-    DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThreadID);
-    virtual ~DacStackReferenceWalker();
+    DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThreadID, bool resolveInteriorPointers, void *dbiData = 0);
+    virtual ~DacStackReferenceWalker()
+    {
+        if (mDbiData)
+            CleanupDbiData();
+    }
 
     HRESULT Init();
 
@@ -1959,194 +2000,37 @@ private:
     static StackWalkAction Callback(CrawlFrame *pCF, VOID *pData);
     static void GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
     static void GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
-    static void GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
-    static void GCReportCallbackDac(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
+    static void GCEnumCallbackDbi(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
+    static void GCReportCallbackDbi(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
+    unsigned int GetDbiCount();
 
     CLRDATA_ADDRESS ReadPointer(TADDR addr);
 
-    template <class StructType>
-    StructType *GetNextObject(DacScanContext *ctx)
-    {
-        SUPPORTS_DAC;
-
-        // If we failed on a previous call (OOM) don't keep trying to allocate, it's not going to work.
-        if (ctx->stop || !mCurr)
-            return NULL;
-
-        // We've moved past the size of the current chunk.  We'll allocate a new chunk
-        // and stuff the references there.  These are cleaned up by the destructor.
-        if (mCurr->count >= mCurr->size/sizeof(StructType))
-        {
-            if (mCurr->next == NULL)
-            {
-                StackRefChunk *next = new (nothrow) StackRefChunk;
-                if (next != NULL)
-                {
-                    mCurr->next = next;
-                }
-                else
-                {
-                    ctx->stop = true;
-                    return NULL;
-                }
-            }
-
-            mCurr = mCurr->next;
-        }
-
-        // Fill the current ref.
-        StructType *pData = (StructType*)mCurr->pData;
-        return &pData[mCurr->count++];
-    }
-
-    template <class IntType, class StructType>
-    IntType WalkStack(IntType count, StructType refs[], promote_func promote, GCEnumCallback enumFunc)
-    {
-        _ASSERTE(mThread);
-        _ASSERTE(!mEnumerated);
-
-        // If this is the first time we were called, fill local data structures.
-        // This will fill out the user's handles as well.
-        _ASSERTE(mCurr == NULL);
-        _ASSERTE(mHead.next == NULL);
-
-        class ProfilerFilterContextHolder
-        {
-            Thread* m_pThread;
-
-        public:
-            ProfilerFilterContextHolder() : m_pThread(NULL)
-            {
-            }
-
-            void Activate(Thread* pThread)
-            {
-                m_pThread = pThread;
-            }
-
-            ~ProfilerFilterContextHolder()
-            {
-                if (m_pThread != NULL)
-                    m_pThread->SetProfilerFilterContext(NULL);
-            }
-        };
-
-        ProfilerFilterContextHolder contextHolder;
-        T_CONTEXT ctx;
-
-        // Get the current thread's context and set that as the filter context
-        if (mThread->GetFilterContext() == NULL && mThread->GetProfilerFilterContext() == NULL)
-        {
-            mDac->m_pTarget->GetThreadContext(mThread->GetOSThreadId(), CONTEXT_FULL, sizeof(ctx), (BYTE*)&ctx);
-            mThread->SetProfilerFilterContext(&ctx);
-            contextHolder.Activate(mThread);
-        }
-
-        // Setup GCCONTEXT structs for the stackwalk.
-        GCCONTEXT gcctx;
-        DacScanContext dsc;
-        dsc.pWalker = this;
-        dsc.pEnumFunc = enumFunc;
-        gcctx.f = promote;
-        gcctx.sc = &dsc;
-
-        // Put the user's array/count in the
-        mHead.size = count*sizeof(StructType);
-        mHead.pData = refs;
-        mHead.count = 0;
-
-        mCurr = &mHead;
-
-        // Walk the stack, set mEnumerated to true to ensure we don't do it again.
-        unsigned int flagsStackWalk = ALLOW_INVALID_OBJECTS|ALLOW_ASYNC_STACK_WALK|SKIP_GSCOOKIE_CHECK;
-#if defined(FEATURE_EH_FUNCLETS)
-        flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
-#endif // defined(FEATURE_EH_FUNCLETS)
-
-        mEnumerated = true;
-        mThread->StackWalkFrames(DacStackReferenceWalker::Callback, &gcctx, flagsStackWalk);
-
-        // We have filled the user's array as much as we could.  If there's more data than
-        // could fit, mHead.Next will contain a linked list of refs to enumerate.
-        mCurr = mHead.next;
-
-        // Return how many we put in the user's array.
-        return mHead.count;
-    }
-
-    template <class IntType, class StructType, promote_func PromoteFunc, GCEnumCallback EnumFunc>
-    HRESULT DoStackWalk(IntType count, StructType stackRefs[], IntType *pFetched)
-    {
-        HRESULT hr = S_OK;
-        IntType fetched = 0;
-        if (!mEnumerated)
-        {
-            // If this is the first time we were called, fill local data structures.
-            // This will fill out the user's handles as well.
-            fetched = (IntType)WalkStack((unsigned int)count, stackRefs, PromoteFunc, EnumFunc);
-        }
-
-        while (fetched < count)
-        {
-            if (mCurr == NULL)
-            {
-                // Case 1: We have no more refs to walk.
-                hr = S_FALSE;
-                break;
-            }
-            else if (mChunkIndex >= mCurr->count)
-            {
-                // Case 2: We have exhausted the current chunk.
-                mCurr = mCurr->next;
-                mChunkIndex = 0;
-            }
-            else
-            {
-                // Case 3:  The last call to "Next" filled the user's array and had some ref
-                // data leftover.  Walk the linked-list of arrays copying them into the user's
-                // buffer until we have either exhausted the user's array or the leftover data.
-                IntType toCopy = count - fetched;  // Fill the user's buffer...
-
-                // ...unless that would go past the bounds of the current chunk.
-                if (toCopy + mChunkIndex > mCurr->count)
-                    toCopy = mCurr->count - mChunkIndex;
-
-                memcpy(stackRefs+fetched, (StructType*)mCurr->pData+mChunkIndex, toCopy*sizeof(StructType));
-                mChunkIndex += toCopy;
-                fetched += toCopy;
-            }
-        }
-
-        *pFetched = fetched;
-
-        return hr;
-    }
+    void WalkStack();
+    void CleanupDbiData();
 
 private:
     // Dac variables required for entering/leaving the dac.
     ClrDataAccess *mDac;
     ULONG32 m_instanceAge;
 
+    // Storage
+    DacReferenceList<SOSStackRefData> mSOSData;
+    void* mDbiData;
+
     // Operational variables
     Thread *mThread;
     SOSStackErrorList *mErrors;
+    bool mResolvePointers;
     bool mEnumerated;
 
-    // Storage variables
-    StackRefChunkHead mHead;
-    unsigned int mChunkIndex;
-
     // Iterator variables
-    StackRefChunkHead *mCurr;
-    int mIteratorIndex;
+    unsigned int mIteratorIndex;
 
     // Heap.  Used to resolve interior pointers.
     DacHeapWalker mHeap;
 };
 
-
-
-struct DacGcReference;
 class DacHandleWalker : public DefaultCOMImpl<ISOSHandleEnum, IID_ISOSHandleEnum>
 {
     typedef struct _HandleChunkHead
