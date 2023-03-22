@@ -103,24 +103,18 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(4, Keywords = Keywords.TimeSeriesValues)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void CounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate)
         {
             WriteEvent(4, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate);
         }
 
         [Event(5, Keywords = Keywords.TimeSeriesValues)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void GaugeValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string lastValue)
         {
             WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue);
         }
 
         [Event(6, Keywords = Keywords.TimeSeriesValues)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void HistogramValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string quantiles)
         {
             WriteEvent(6, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, quantiles);
@@ -130,8 +124,6 @@ namespace System.Diagnostics.Metrics
         // or because an instrument matching the pre-existing filter has just been created. This event precedes all *MetricPublished events
         // for the same named instrument.
         [Event(7, Keywords = Keywords.TimeSeriesValues)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void BeginInstrumentReporting(string sessionId, string meterName, string? meterVersion, string instrumentName, string instrumentType, string? unit, string? description)
         {
             WriteEvent(7, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "");
@@ -140,8 +132,6 @@ namespace System.Diagnostics.Metrics
         // Sent when we stop monitoring the value of a intrument, either because new session filter arguments changed subscriptions
         // or because the Meter has been disposed.
         [Event(8, Keywords = Keywords.TimeSeriesValues)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void EndInstrumentReporting(string sessionId, string meterName, string? meterVersion, string instrumentName, string instrumentType, string? unit, string? description)
         {
             WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "");
@@ -160,8 +150,6 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(11, Keywords = Keywords.InstrumentPublishing)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void InstrumentPublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string instrumentType, string? unit, string? description)
         {
             WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "");
@@ -192,8 +180,6 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(16, Keywords = Keywords.TimeSeriesValues)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate)
         {
             WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate);
