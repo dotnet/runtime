@@ -5609,7 +5609,7 @@ void LinearScan::allocateRegisters()
                     }
                 }
             }
-            else
+            else if (currentRefPosition.refType == RefTypeUse)
             {
                 // remaining refPosition of the series...
                 if (assignedRegBit == currentRefPosition.registerAssignment)
