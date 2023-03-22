@@ -941,6 +941,11 @@ public:
 
 PhaseStatus Promotion::Run()
 {
+    if (m_compiler->lvaCount <= 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     LocalsUseVisitor localsUse(this);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
