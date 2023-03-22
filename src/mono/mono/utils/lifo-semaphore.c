@@ -250,7 +250,7 @@ static void
 lifo_js_wait_entry_on_timeout (void *wait_entry_as_user_data)
 {
 	LifoJSSemaphoreWaitEntry *wait_entry = (LifoJSSemaphoreWaitEntry *)wait_entry_as_user_data;
-	g_assert (pthread_equal (wait_entry->thread, pthread_self()));
+	g_assert (pthread_equal (wait_entry->thread, pthread_self())); // FIXME: failing here sometimes - thread already exited?
 	g_assert (wait_entry->sem != NULL);
 	LifoJSSemaphore *sem = wait_entry->sem;
 	gboolean call_timeout_cb = FALSE;
