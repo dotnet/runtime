@@ -168,10 +168,10 @@ namespace System.IO.MemoryMappedFiles
         }
 
         /// <summary>
-        /// Creates a memory-mapped file from an existing file using a SafeFileHandle,
+        /// Creates a memory-mapped file from an existing file using a <see cref="SafeFileHandle"/>,
         /// and the specified access mode, name, inheritability, and capacity.
         /// </summary>
-        /// <param name="fileHandle">The SafeFileHandle to the existing file. Caller is
+        /// <param name="fileHandle">The <see cref="SafeFileHandle"/> to the existing file. Caller is
         /// responsible for disposing <paramref name="fileHandle"/> when <paramref name="leaveOpen"/> is <see langword="true" /> (otherwise,
         /// automatically disposed by the <see cref="MemoryMappedFile"/>). </param>
         /// <param name="mapName">A name to assign to the memory-mapped file, or <see langword="null" /> for a
@@ -179,30 +179,31 @@ namespace System.IO.MemoryMappedFiles
         /// <param name="capacity">The maximum size, in bytes, to allocate to the memory-mapped file.
         /// Specify 0 to set the capacity to the size of the file.</param>
         /// <param name="access">One of the enumeration values that specifies the type of access allowed
-        /// to the memory-mapped file.<para>This parameter can't be set to <c>Write</c>.</para></param>
+        /// to the memory-mapped file.
+        /// <para>This parameter can't be set to <see cref="MemoryMappedFileAccess.Write"/></para></param>
         /// <param name="inheritability">One of the enumeration values that specifies whether a handle
-        /// to the memory-mapped file can be inherited by a child process. The default is <c>None</c>.</param>
+        /// to the memory-mapped file can be inherited by a child process. The default is <see cref="HandleInheritability.None"/>.</param>
         /// <param name="leaveOpen">A value that indicates whether to close the source file handle when
         /// the <see cref="MemoryMappedFile"/> is disposed.</param>
         /// <returns>A memory-mapped file that has the specified characteristics.</returns>
         /// <exception cref="ArgumentException">
         /// <para><paramref name="mapName"/> is <see langword="null" /> or an empty string.</para>
-        /// <para>-or-
-        /// <paramref name="capacity"/> and the length of the file are zero.</para>
-        /// <para>-or-
-        /// <paramref name="capacity"/> is set to Write or Write enumeration value, which is not allowed.</para>
-        /// <para>-or-
-        /// access is set to Read and <paramref name="capacity"/> is larger than the length of the file.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="capacity"/> and the length of the file are zero.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="access"/> is set to <see cref="MemoryMappedFileAccess.Write"/>, which is not allowed.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="access"/> is set to <see cref="MemoryMappedFileAccess.Read"/> and <paramref name="capacity"/> is larger than the length of the file.</para>
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="fileHandle"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="capacity"/> is less than zero.
-        /// <para>-or-
-        /// <paramref name="capacity"/> is less than the file size.</para>
-        /// <para>-or-
-        /// <paramref name="access"/> is not a valid <see cref="MemoryMappedFileAccess"/> enumeration value.</para>
-        /// <para>-or-
-        /// <paramref name="inheritability"/> is not a valid <see cref="HandleInheritability"/> enumeration value.</para>
+        /// <para><paramref name="capacity"/> is less than zero.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="capacity"/> is less than the file size.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="access"/> is not a valid <see cref="MemoryMappedFileAccess"/> enumeration value.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="inheritability"/> is not a valid <see cref="HandleInheritability"/> enumeration value.</para>
         /// </exception>
         public static MemoryMappedFile CreateFromFile(SafeFileHandle fileHandle, string? mapName, long capacity,
                                                         MemoryMappedFileAccess access,
