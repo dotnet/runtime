@@ -159,6 +159,86 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
 }
 
 //------------------------------------------------------------------------
+// filterConsecutiveCandidates: Given `candidates`, check if `registersNeeded` consecutive
+//   registers are available in it, and if yes, returns first bit set of every possible series.
+//
+// Arguments:
+//    candidates                - Set of availble candidates.
+//    registersNeeded           - Number of consecutive registers needed.
+//    allConsecutiveCandidates  - Mask returned containing all bits set for possible consecutive register candidates.
+//
+//  Returns:
+//      From `candidates`, the mask of series of consecutive registers of `registersNeeded` size with just the first-bit set.
+//
+regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP candidates, unsigned int registersNeeded, regMaskTP* allConsecutiveCandidates)
+{
+    if (BitOperations::PopCount(candidates) < registersNeeded)
+    {
+        // There is no way the register demanded can be satisfied for this refposition
+        // based on the candidates from which it can allocate a register.
+        return RBM_NONE;
+    }
+
+    regMaskTP currAvailableRegs        = candidates;
+    regMaskTP overallResult            = RBM_NONE;
+    regMaskTP consecutiveResult        = RBM_NONE;
+    regMaskTP busyRegsInThisLocation   = regsBusyUntilKill | regsInUseThisLocation;
+
+// At this point, for 'n' registers requirement, if Rm+1, Rm+2, Rm+3, ..., Rm+k are
+// available, create the mask only for Rm+1, Rm+2, ..., Rm+(k-n+1) to convey that it
+// is safe to assign any of those registers, but not beyond that.
+#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                    \
+    regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                       \
+    regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                 \
+    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                    \
+    overallResult |= availableRegistersMask;
+
+    DWORD regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+
+    // If we don't find consecutive registers, also track which registers we can pick so
+    // as to reduce the number of registers we will have to spill, to accomodate the
+    // request of the consecutive registers.
+    regMaskTP registersNeededMask    = (1ULL << registersNeeded) - 1;
+
+    do
+    {
+        // From LSB, find the first available register (bit `1`)
+        BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(currAvailableRegs));
+        regMaskTP startMask = (1ULL << regAvailableStartIndex) - 1;
+
+        // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
+        regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
+
+        // From regAvailableStart, find the first unavailable register (bit `0`).
+        if (maskProcessed == 0)
+        {
+            regAvailableEndIndex = 64;
+            if ((regAvailableEndIndex - regAvailableStartIndex) >= registersNeeded)
+            {
+                AppendConsecutiveMask(regAvailableStartIndex, regAvailableEndIndex, currAvailableRegs);
+            }
+            break;
+        }
+        else
+        {
+            BitScanForward64(&regAvailableEndIndex, static_cast<DWORD64>(maskProcessed));
+        }
+        regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
+
+        // Anything between regAvailableStart and regAvailableEnd is the range of consecutive registers available
+        // If they are equal to or greater than our register requirements, then add all of them to the result.
+        if ((regAvailableEndIndex - regAvailableStartIndex) >= registersNeeded)
+        {
+            AppendConsecutiveMask(regAvailableStartIndex, regAvailableEndIndex, (endMask & ~startMask));
+        }
+        currAvailableRegs &= ~endMask;
+    } while (currAvailableRegs != RBM_NONE);
+
+    *allConsecutiveCandidates = overallResult;
+    return consecutiveResult;
+}
+
+//------------------------------------------------------------------------
 // getConsecutiveCandidates: Returns the mask of all the consecutive candidates
 //   for given refPosition. For first RefPosition of a series of refpositions that needs
 //   consecutive registers, then returns only the mask such that it satisfies the need
@@ -166,140 +246,27 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
 //   it finds such a series that needs fewer registers spilling.
 //
 // Arguments:
-//    candidates   - Register assigned to the first refposition.
+//    allCandidates   - Register assigned to the first refposition.
 //    refPosition  - Number of registers to check.
 //
 //  Returns:
 //      Register mask of consecutive registers.
 //
-regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition)
+regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP allCandidates, RefPosition* refPosition, regMaskTP* busyCandidates)
 {
     assert(compiler->info.needsConsecutiveRegisters);
-    regMaskTP result = candidates & m_AvailableRegs;
-    if (!refPosition->isFirstRefPositionOfConsecutiveRegisters() || (result == RBM_NONE))
+    regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
+    if (!refPosition->isFirstRefPositionOfConsecutiveRegisters() || (freeCandidates == RBM_NONE))
     {
-        return result;
+        return freeCandidates;
     }
 
+    *busyCandidates = RBM_NONE;
+    regMaskTP overallResult;
     unsigned int registersNeeded = refPosition->regCount;
-    regMaskTP    currAvailableRegs        = result;
-    regMaskTP    overallResult            = RBM_NONE;
-    regMaskTP    consecutiveResult        = RBM_NONE;
-    regMaskTP    consecutiveResultForBusy = RBM_NONE;
-    regMaskTP    busyRegsInThisLocation   = regsBusyUntilKill | regsInUseThisLocation;
 
-// At this point, for 'n' registers requirement, if Rm+1, Rm+2, Rm+3, ..., Rm+k are
-// available, create the mask only for Rm+1, Rm+2, ..., Rm+(k-n+1) to convey that it
-// is safe to assign any of those registers, but not beyond that.
-#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
-    regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
-    regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
-    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
-    overallResult |= availableRegistersMask;
-
-        DWORD regAvailableStartIndex = 0, regAvailableEndIndex = 0;
-
-        // If we don't find consecutive registers, also track which registers we can pick so
-        // as to reduce the number of registers we will have to spill, to accomodate the
-        // request of the consecutive registers.
-        bool trackForBusyCandidates = true;
-        int  maxSpillRegs           = registersNeeded;
-        regMaskTP registersNeededMask    = (1ULL << registersNeeded) - 1;
-
-        do
-        {
-            // From LSB, find the first available register (bit `1`)
-            BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(currAvailableRegs));
-            regMaskTP startMask = (1ULL << regAvailableStartIndex) - 1;
-
-            // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
-            regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
-
-            // From regAvailableStart, find the first unavailable register (bit `0`).
-            if (maskProcessed == 0)
-            {
-                regAvailableEndIndex = 64;
-                if ((regAvailableEndIndex - regAvailableStartIndex) >= registersNeeded)
-                {
-                    AppendConsecutiveMask(regAvailableStartIndex, regAvailableEndIndex, currAvailableRegs);
-                    trackForBusyCandidates   = false;
-                    consecutiveResultForBusy = RBM_NONE;
-                }
-            else if (trackForBusyCandidates)
-                {
-                    // We reached a set of registers where there are not enough consecutive registers.
-                    // Move a registersNeeded size window for all the available registers and track for which
-                    // one we can spill least number of registers.
-
-                    for (DWORD i = regAvailableStartIndex; i < regAvailableEndIndex; i++)
-                    {
-                        regMaskTP maskForCurRange = registersNeededMask << i;
-                        if ((maskForCurRange & busyRegsInThisLocation) != RBM_NONE)
-                        {
-                            // If any register between i and (i + registersNeeded) contains one or more
-                            // register that are busy, then we cannot that entire range.
-                            continue;
-                        }
-                        int curSpillRegs = registersNeeded - BitOperations::PopCount(maskForCurRange) + 1;
-
-                        if (curSpillRegs < maxSpillRegs)
-                        {
-                            // We found a series that will need fewer registers to be spilled.
-                            // Reset whatever we found so far and start accumulating the result again.
-                            consecutiveResultForBusy = RBM_NONE;
-                            maxSpillRegs             = curSpillRegs;
-                        }
-
-                        consecutiveResultForBusy |= 1ULL << i;
-                    }
-                }
-                break;
-            }
-            else
-            {
-                BitScanForward64(&regAvailableEndIndex, static_cast<DWORD64>(maskProcessed));
-            }
-            regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
-
-            // Anything between regAvailableStart and regAvailableEnd is the range of consecutive registers available
-            // If they are equal to or greater than our register requirements, then add all of them to the result.
-            if ((regAvailableEndIndex - regAvailableStartIndex) >= registersNeeded)
-            {
-                AppendConsecutiveMask(regAvailableStartIndex, regAvailableEndIndex, (endMask & ~startMask));
-                trackForBusyCandidates   = false;
-                consecutiveResultForBusy = RBM_NONE;
-            }
-            else if (trackForBusyCandidates)
-            {
-                // We reached a set of registers where there are not enough consecutive registers.
-                // Move a registersNeeded size window for all the available registers and track for which
-                // one we can spill least number of registers.
-
-                for (DWORD i = regAvailableStartIndex; i < regAvailableEndIndex; i++)
-                {
-                    regMaskTP maskForCurRange = registersNeededMask << i;
-                    if ((maskForCurRange & busyRegsInThisLocation) != RBM_NONE)
-                    {
-                        // If any register between i and (i + registersNeeded) contains one or more
-                        // register that are busy, then we cannot that entire range.
-                        continue;
-                    }
-                    int curSpillRegs = registersNeeded - BitOperations::PopCount(maskForCurRange) + 1;
-                    if (curSpillRegs < maxSpillRegs)
-                    {
-                        // We found a series that will need fewer registers to be spilled.
-                        // Reset whatever we found so far and start accumulating the result again.
-                        consecutiveResultForBusy = RBM_NONE;
-                        maxSpillRegs             = curSpillRegs;
-                    }
-
-                    consecutiveResultForBusy |= 1ULL << i;
-                }
-            }
-            currAvailableRegs &= ~endMask;
-        } while (currAvailableRegs != RBM_NONE);
-
-    if (overallResult != RBM_NONE)
+    regMaskTP consecutiveResultForFree = filterConsecutiveCandidates(freeCandidates, registersNeeded, &overallResult);
+    if (consecutiveResultForFree != RBM_NONE)
     {
         // One last time, check if subsequent refpositions (all refpositions except the first for which
         // we assigned above) already have consecutive registers assigned. If yes, and if one of the
@@ -353,47 +320,54 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP candidates, RefPosition
             if ((overallResult & remainingRegsMask) != RBM_NONE)
             {
                 // If remaining registers are available, then just set the firstRegister mask
-                consecutiveResult = 1ULL << (firstRegNum - 1);
+                consecutiveResultForFree = 1ULL << (firstRegNum - 1);
             }
         }
+
+        return consecutiveResultForFree;
     }
-    else
+
+    // There are registers available but they are not consecutive.
+    // Here are some options to address them:
+    //
+    //  1.  Scan once again the available registers and find a set which has maximum register available.
+    //      In other words, try to find register sequence that needs fewer registers to be spilled. This
+    //      will give optimal CQ.
+    //
+    //  2.  Check if some of the refpositions in the series are already in *somewhat* consecutive registers
+    //      and if yes, assign that register sequence. That way, we will avoid copying values of
+    //      refpositions that are already positioned in the desired registers. Checking this is beneficial
+    //      only if it can happen frequently. So for RefPositions <RP# 5, RP# 6, RP# 7, RP# 8>, it should
+    //      be that, RP# 6 is already in V14 and RP# 8 is already in V16. But this can be rare (not tested).
+    //      In future, if we see such cases being hit, we could use this heuristics.
+    //
+    //  3.  Give one of the free register to the first position and the algorithm will
+    //      give the subsequent consecutive registers (free or busy) to the remaining refpositions
+    //      of the series. This may not give optimal CQ however.
+    //
+    //  4.  Return the set of available registers and let selection heuristics pick one of them to get
+    //      assigned to the first refposition. Remaining refpositions will be assigned to the subsequent
+    //      registers (if busy, they will be spilled), similar to #3 above and will not give optimal CQ.
+    //
+    //
+    // Among `consecutiveResultForBusy`, we could shortlist the registers that are beneficial from "busy register
+    // selection" heuristics perspective. However, we would need to add logic of try_SPILL_COST(),
+    // try_FAR_NEXT_REF(), etc. here which would complicate things. Instead, we just go with option# 1 and select
+    // registers based on fewer number of registers that has to be spilled.
+    //
+    regMaskTP consecutiveResultForBusy = filterConsecutiveCandidates(allCandidates, registersNeeded, &overallResult);
+    regMaskTP mixConsecutiveResult     = m_AvailableRegs & consecutiveResultForBusy;
+    if (mixConsecutiveResult != RBM_NONE)
     {
-        // There are enough registers available but they are not consecutive.
-        // Here are some options to address them:
-        // 
-        //  1.  Scan once again the available registers and find a set which has maximum register available.
-        //      In other words, try to find register sequence that needs fewer registers to be spilled. This
-        //      will give optimal CQ.
-        //
-        //  2.  Check if some of the refpositions in the series are already in *somewhat* consecutive registers
-        //      and if yes, assign that register sequence. That way, we will avoid copying values of
-        //      refpositions that are already positioned in the desired registers. Checking this is beneficial
-        //      only if it can happen frequently. So for RefPositions <RP# 5, RP# 6, RP# 7, RP# 8>, it should
-        //      be that, RP# 6 is already in V14 and RP# 7 is already in V16. But this can be rare (not tested).
-        //      In future, if we see such cases being hit, we could use this heuristics.
-        // 
-        //  3.  Give one of the free register to the first position and the algorithm will
-        //      give the subsequent consecutive registers (free or busy) to the remaining refpositions
-        //      of the series. This may not give optimal CQ however.
-        // 
-        //  4.  Return the set of available registers and let selection heuristics pick one of them to get
-        //      assigned to the first refposition. Remaining refpositions will be assigned to the subsequent
-        //      registers (if busy, they will be spilled), similar to #3 above and will not give optimal CQ.
-        //
-        //
-        // Among `consecutiveResultForBusy`, we could shortlist the registers that are beneficial from "busy register
-        // selection" heuristics perspective. However, we would need to add logic of try_SPILL_COST(),
-        // try_FAR_NEXT_REF(),
-        // etc. here which would complicate things. Instead, we just go with option# 1 and select registers based on
-        // fewer
-        // number of registers that has to be spilled.
-        //
-
-        consecutiveResult = consecutiveResultForBusy;
+        // We did not find free consecutive candidates, however we found some registers among the `allCandidates` that
+        // are mix of free and busy. Since `busyCandidates` just has bit set for first register of such series, return
+        // the mask that starts with free register, if possible. The busy registers will be spilled during assignment of
+        // subsequent refposition.
+        *busyCandidates = mixConsecutiveResult;
     }
 
-    return consecutiveResult;
+    *busyCandidates = consecutiveResultForBusy;
+    return RBM_NONE;
 }
 //------------------------------------------------------------------------
 // BuildNode: Build the RefPositions for a node

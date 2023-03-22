@@ -1198,7 +1198,8 @@ private:
 #if defined(TARGET_ARM64)
     bool canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     void setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned);
-    regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition);
+    regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition, regMaskTP* busyCandidates);
+    regMaskTP filterConsecutiveCandidates(regMaskTP    candidates, unsigned int registersNeeded, regMaskTP*   allConsecutiveCandidates);
 #endif // TARGET_ARM64
 
     regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
