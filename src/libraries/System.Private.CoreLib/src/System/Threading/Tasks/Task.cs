@@ -9,7 +9,6 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -120,7 +119,7 @@ namespace System.Threading.Tasks
         [ThreadStatic]
         internal static Task? t_currentTask;  // The currently executing task.
 
-        internal static int s_taskIdCounter; // static counter used to generate unique task IDs
+        private static int s_taskIdCounter; // static counter used to generate unique task IDs
 
         private int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
@@ -132,7 +131,7 @@ namespace System.Threading.Tasks
         // the completion event which will be set when the Future class calls Finish().
         // But the event would now be signalled if Cancel() is called
 
-        internal object? m_stateObject; // A state object that can be optionally supplied, passed to action.
+        private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
         internal volatile int m_stateFlags; // SOS DumpAsync command depends on this name
@@ -566,6 +565,7 @@ namespace System.Threading.Tasks
             int illegalInternalOptions =
                     (int)(internalOptions &
                             ~(InternalTaskOptions.PromiseTask |
+                              InternalTaskOptions.HiddenState |
                               InternalTaskOptions.ContinuationTask |
                               InternalTaskOptions.LazyCancellation |
                               InternalTaskOptions.QueuedByRuntime));
@@ -1446,7 +1446,7 @@ namespace System.Threading.Tasks
         /// Gets the state object supplied when the <see cref="Task">Task</see> was created,
         /// or null if none was supplied.
         /// </summary>
-        public object? AsyncState => m_stateObject;
+        public object? AsyncState => (m_stateFlags & (int)InternalTaskOptions.HiddenState) == 0 ? m_stateObject : null;
 
         /// <summary>
         /// Gets an indication of whether the asynchronous operation completed synchronously.
@@ -6716,6 +6716,11 @@ namespace System.Threading.Tasks
 
         ContinuationTask = 0x0200,
         PromiseTask = 0x0400,
+
+        /// <summary>
+        /// The state object should not be returned from the AsyncState property.
+        /// </summary>
+        HiddenState = 0x0800,
 
         /// <summary>
         /// Store the presence of TaskContinuationOptions.LazyCancellation, since it does not directly
