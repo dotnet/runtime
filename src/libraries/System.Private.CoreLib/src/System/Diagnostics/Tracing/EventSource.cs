@@ -1127,6 +1127,11 @@ namespace System.Diagnostics.Tracing
 
 #pragma warning restore 1591
 
+        /// <summary>
+        /// A wrapper type for separating primitive types (int, long, string, etc) from other types
+        /// in the EventSource API. This type shouldn't be used directly, but just as implicit conversions
+        /// when using the WriteEvent API.
+        /// </summary>
         public readonly struct EventSourcePrimitive
         {
             internal readonly object? Value;
