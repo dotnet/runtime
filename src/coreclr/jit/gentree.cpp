@@ -22937,7 +22937,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
     op2                          = gtNewVconNode(type);
     op2->AsVecCon()->gtSimd16Val = vecCns;
 
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    return impVectorTableLookup(op1, op2, lookupIntrinsic, simdBaseJitType, simdSize, type, type, 0);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
