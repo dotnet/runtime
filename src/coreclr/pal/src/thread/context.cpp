@@ -318,7 +318,9 @@ typedef int __ptrace_request;
 
 #if !HAVE_MACH_EXCEPTIONS
 
+#ifdef XSTATE_SUPPORTED
 static Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
+#endif // XSTATE_SUPPORTED
 
 #if !__has_builtin(__cpuid)
 void __cpuid(int cpuInfo[4], int function_id)
