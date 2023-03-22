@@ -790,7 +790,7 @@ public:
             if (argNodeLcl->TypeIs(TYP_STRUCT))
             {
                 unsigned size = argNodeLcl->GetLayout(m_compiler)->GetSize();
-                WriteBackBefore(use, argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
+                WriteBackBefore(&arg.EarlyNodeRef(), argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
             }
         }
 
