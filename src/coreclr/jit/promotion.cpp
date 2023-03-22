@@ -760,7 +760,7 @@ public:
             if (lhsLcl->TypeIs(TYP_STRUCT))
             {
                 unsigned size = lhsLcl->GetLayout(m_compiler)->GetSize();
-                ReadBackAfter(use, user, lhsLcl->GetLclNum(), lhsLcl->GetLclOffs(), size, true);
+                MarkForReadBack(lhsLcl->GetLclNum(), lhsLcl->GetLclOffs(), size, true);
             }
         }
 
@@ -801,7 +801,7 @@ public:
             GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
             unsigned size = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
 
-            ReadBackAfter(use, user, retBufLcl->GetLclNum(), retBufLcl->GetLclOffs(), size);
+            MarkForReadBack(retBufLcl->GetLclNum(), retBufLcl->GetLclOffs(), size);
         }
 
         return fgWalkResult::WALK_CONTINUE;
@@ -920,7 +920,7 @@ public:
         }
     }
 
-    void ReadBackAfter(GenTree** use, GenTree* user, unsigned lcl, unsigned offs, unsigned size, bool conservative = false)
+    void MarkForReadBack(unsigned lcl, unsigned offs, unsigned size, bool conservative = false)
     {
         jitstd::vector<Replacement>& replacements = m_replacements[lcl];
         size_t index = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
@@ -943,18 +943,9 @@ public:
             rep.NeedsWriteBack = false;
             index++;
 
-            //GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-            //GenTree* src = m_compiler->gtNewLclFldNode(lcl, rep.AccessType, rep.Offset);
-
-            //GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, *use, m_compiler->gtNewAssignNode(dst, src));
-            //*use = comma;
-            //use = &comma->gtOp2;
-
-            //m_madeChanges = true;
-
             if (conservative)
             {
-                JITDUMP("*** Conservatively marking as read-back\n");
+                JITDUMP("*** NYI: Conservatively marking as read-back\n");
                 conservative = false;
             }
         }
