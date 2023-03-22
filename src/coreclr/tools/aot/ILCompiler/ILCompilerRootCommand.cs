@@ -160,6 +160,8 @@ namespace ILCompiler
             new(new[] { "--singlemethodgenericarg" }, "Single method compilation: generic arguments to the method");
         public Option<string> MakeReproPath { get; } =
             new(new[] { "--make-repro-path" }, "Path where to place a repro package");
+        public Option<string[]> UnmanagedEntryPointsAssemblies { get; } =
+            new(new[] { "--generateunmanagedentrypoints" }, Array.Empty<string>, "Generate unmanaged entrypoints for a given assembly");
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -232,6 +234,7 @@ namespace ILCompiler
             AddOption(SingleMethodName);
             AddOption(SingleMethodGenericArgs);
             AddOption(MakeReproPath);
+            AddOption(UnmanagedEntryPointsAssemblies);
 
             this.SetHandler(context =>
             {
