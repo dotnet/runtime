@@ -3517,10 +3517,10 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 //
 unsigned Compiler::compStressAreaHash(compStressArea area)
 {
-    static unsigned s_hashCodes[STRESS_COUNT];
+    static LONG s_hashCodes[STRESS_COUNT];
     assert(static_cast<unsigned>(area) < ArrLen(s_hashCodes));
 
-    unsigned result = s_hashCodes[area];
+    unsigned result = (unsigned)s_hashCodes[area];
     if (result == 0)
     {
         result = HashStringA(s_compStressModeNames[area]);
@@ -3529,7 +3529,7 @@ unsigned Compiler::compStressAreaHash(compStressArea area)
             result = 1;
         }
 
-        InterlockedExchange(&s_hashCodes[area], result);
+        InterlockedExchange(&s_hashCodes[area], (LONG)result);
     }
 
     return result;
