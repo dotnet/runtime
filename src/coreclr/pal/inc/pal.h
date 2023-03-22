@@ -1315,13 +1315,42 @@ QueueUserAPC(
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
 
-#ifdef HOST_X86
-
+#if defined(HOST_X86) || defined(HOST_AMD64)
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
 // We define matching signatures for use on Unix platforms.
 
+#if __has_builtin(__cpuid)
 extern "C" void __cpuid(int cpuInfo[4], int function_id);
+#else
+inline void __cpuid(int cpuInfo[4], int function_id)
+{
+    // Based on the Clang implementation provided in cpuid.h:
+    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+
+    __asm("  cpuid\n" \
+        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+        : "0"(function_id)
+    );
+}
+#endif // __cpuid
+
+#if __has_builtin(__cpuidex)
 extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
+#else
+inline void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
+{
+    // Based on the Clang implementation provided in cpuid.h:
+    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+
+    __asm("  cpuid\n" \
+        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+        : "0"(function_id), "2"(subFunction_id)
+    );
+}
+#endif // __cpuidex
+#endif // HOST_X86 || HOST_AMD64
+
+#ifdef HOST_X86
 
 //
 // ***********************************************************************************
@@ -1467,12 +1496,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 //
 
 #elif defined(HOST_AMD64)
-
-// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
-// We define matching signatures for use on Unix platforms.
-
-extern "C" void __cpuid(int cpuInfo[4], int function_id);
-extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 
 // copied from winnt.h
 
