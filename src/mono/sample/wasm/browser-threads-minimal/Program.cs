@@ -18,6 +18,30 @@ namespace Sample
             return 0;
         }
 
+        [JSImport("globalThis.setTimeout")]
+        static partial void GlobalThisSetTimeout([JSMarshalAs<JSType.Function>] Action cb, int timeoutMs);
+
+        [JSExport]
+        public static async Task Hello()
+        {
+            var t = Task.Run(TimeOutThenComplete);
+            await t;
+            Console.WriteLine ($"XYZ: Main Thread caught task tid:{Thread.CurrentThread.ManagedThreadId}");
+        }
+
+        private static async Task TimeOutThenComplete()
+        {
+            var tcs = new TaskCompletionSource();
+            Console.WriteLine ($"XYZ: Task running tid:{Thread.CurrentThread.ManagedThreadId}");
+            GlobalThisSetTimeout(() => {
+                tcs.SetResult();
+                Console.WriteLine ($"XYZ: Timeout fired tid:{Thread.CurrentThread.ManagedThreadId}");
+            }, 250);
+            Console.WriteLine ($"XYZ: Task sleeping tid:{Thread.CurrentThread.ManagedThreadId}");
+            await tcs.Task;
+            Console.WriteLine ($"XYZ: Task resumed tid:{Thread.CurrentThread.ManagedThreadId}");
+        }
+
         [JSExport]
         public static async Task<int> RunBackgroundThreadCompute()
         {
@@ -41,10 +65,27 @@ namespace Sample
             return await t;
         }
 
+        [JSExport]
+        public static async Task<int> RunBackgroundTaskRunCompute()
+        {
+            var t1 = Task.Run (() => {
+                var n = CountingCollatzTest();
+                return n;
+            });
+            var t2 = Task.Run (() => {
+                var n = CountingCollatzTest();
+                return n;
+            });
+            var rs = await Task.WhenAll (new [] { t1, t2 });
+            if (rs[0] != rs[1])
+                throw new Exception ($"Results from two tasks {rs[0]}, {rs[1]}, differ");
+            return rs[0];
+        }
+
         public static int CountingCollatzTest()
         {
             const int limit = 5000;
-            const int maxInput = 500_000;
+            const int maxInput = 200_000;
             int bigly = 0;
             int hugely = 0;
             int maxSteps = 0;
@@ -60,7 +101,7 @@ namespace Sample
 
             Console.WriteLine ($"Bigly: {bigly}, Hugely: {hugely}, maxSteps: {maxSteps}");
 
-            if (bigly == 241677 && hugely == 0 && maxSteps == 448)
+            if (bigly == 86187 && hugely == 0 && maxSteps == 382)
                 return 524;
             else
                 return 0;

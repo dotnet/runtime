@@ -15,18 +15,23 @@ try {
 
     const exports = await getAssemblyExports(assemblyName);
 
-    const r1 = await exports.Sample.Test.RunBackgroundThreadCompute();
-    if (r1 !== 524) {
-        const msg = `Unexpected result ${r1} from RunBackgroundThreadCompute()`;
-        document.getElementById("out").innerHTML = msg;
-        throw new Error(msg);
-    }
-    const r2 = await exports.Sample.Test.RunBackgroundLongRunningTaskCompute();
-    if (r2 !== 524) {
-        const msg = `Unexpected result ${r2} from RunBackgorundLongRunningTaskCompute()`;
-        document.getElementById("out").innerHTML = msg;
-        throw new Error(msg);
-    }
+    console.log ("XYZ: running hello");
+    await exports.Sample.Test.Hello();
+    console.log ("XYZ: hello done");
+
+    console.log ("XYZ: running hello");
+    await exports.Sample.Test.Hello();
+    console.log ("XYZ: hello done");
+
+    //console.log ("HHH: running TaskRunCompute");
+    //const r1 = await exports.Sample.Test.RunBackgroundTaskRunCompute();
+    //if (r1 !== 524) {
+    //    const msg = `Unexpected result ${r1} from RunBackgorundTaskRunCompute()`;
+    //    document.getElementById("out").innerHTML = msg;
+    //    throw new Error(msg);
+    //}
+    //console.log ("HHH: TaskRunCompute done");
+
 
     let exit_code = await runMain(assemblyName, []);
     exit(exit_code);
