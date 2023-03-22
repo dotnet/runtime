@@ -2933,6 +2933,11 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
+enum {
+	SIMD_EXTR_IS_ANY_SET,
+	SIMD_EXTR_ARE_ALL_SET
+};
+
 int mini_primitive_type_size (MonoTypeEnum type);
 MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
 

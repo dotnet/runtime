@@ -1092,6 +1092,8 @@ namespace System
                     return SR.Argument_AlignmentMustBePow2;
                 case ExceptionResource.ArgumentOutOfRange_NotGreaterThanBufferLength:
                     return SR.ArgumentOutOfRange_NotGreaterThanBufferLength;
+                case ExceptionResource.InvalidOperation_SpanOverlappedOperation:
+                    return SR.InvalidOperation_SpanOverlappedOperation;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1282,5 +1284,6 @@ namespace System
         Argument_InvalidFlag,
         CancellationTokenSource_Disposed,
         Argument_AlignmentMustBePow2,
+        InvalidOperation_SpanOverlappedOperation,
     }
 }

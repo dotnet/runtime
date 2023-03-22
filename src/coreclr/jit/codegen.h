@@ -1270,6 +1270,7 @@ protected:
 #endif // !TARGET_XARCH
 
     void genLclHeap(GenTree* tree);
+    void genCodeForMemmove(GenTreeBlk* tree);
 
     bool genIsRegCandidateLocal(GenTree* tree)
     {
