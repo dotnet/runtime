@@ -3850,6 +3850,10 @@ namespace System
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider);
         static abstract bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
     }
+    public partial interface IUtf8SpanFormattable
+    {
+        bool TryFormat(System.Span<byte> destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider);
+    }
     public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {
         public Lazy() { }

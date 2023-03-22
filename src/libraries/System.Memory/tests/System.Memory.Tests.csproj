@@ -122,6 +122,7 @@
     <Compile Include="Span\ToArray.cs" />
     <Compile Include="Span\ToString.cs" />
     <Compile Include="Span\TryWrite.cs" />
+    <Compile Include="Span\TryWriteUtf8.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.char.cs" />

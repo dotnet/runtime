@@ -529,7 +529,7 @@ namespace System.SpanTests
             Assert.Equal(expected, tss.ToStringState.ToStringMode);
         }
 
-        private sealed class SpanFormattableStringWrapper : IFormattable, ISpanFormattable, IHasToStringState
+        internal sealed class SpanFormattableStringWrapper : IFormattable, ISpanFormattable, IHasToStringState
         {
             private readonly string _value;
             public ToStringState ToStringState { get; } = new ToStringState();
@@ -576,7 +576,7 @@ namespace System.SpanTests
             }
         }
 
-        private struct SpanFormattableInt32Wrapper : IFormattable, ISpanFormattable, IHasToStringState
+        internal struct SpanFormattableInt32Wrapper : IFormattable, ISpanFormattable, IHasToStringState
         {
             private readonly int _value;
             public ToStringState ToStringState { get; }
@@ -613,7 +613,7 @@ namespace System.SpanTests
             }
         }
 
-        private sealed class FormattableStringWrapper : IFormattable, IHasToStringState
+        internal sealed class FormattableStringWrapper : IFormattable, IHasToStringState
         {
             private readonly string _value;
             public ToStringState ToStringState { get; } = new ToStringState();
@@ -637,7 +637,7 @@ namespace System.SpanTests
             }
         }
 
-        private struct FormattableInt32Wrapper : IFormattable, IHasToStringState
+        internal struct FormattableInt32Wrapper : IFormattable, IHasToStringState
         {
             private readonly int _value;
             public ToStringState ToStringState { get; }
@@ -665,19 +665,19 @@ namespace System.SpanTests
             }
         }
 
-        private sealed class ToStringState
+        internal sealed class ToStringState
         {
             public string LastFormat { get; set; }
             public IFormatProvider LastProvider { get; set; }
             public ToStringMode ToStringMode { get; set; }
         }
 
-        private interface IHasToStringState
+        internal interface IHasToStringState
         {
             ToStringState ToStringState { get; }
         }
 
-        private enum ToStringMode
+        internal enum ToStringMode
         {
             ObjectToString,
             IFormattableToString,
@@ -685,7 +685,7 @@ namespace System.SpanTests
             ICustomFormatterFormat,
         }
 
-        private sealed class StringWrapper
+        internal sealed class StringWrapper
         {
             private readonly string _value;
 
@@ -694,7 +694,7 @@ namespace System.SpanTests
             public override string ToString() => _value;
         }
 
-        private sealed class ConcatFormatter : IFormatProvider, ICustomFormatter
+        internal sealed class ConcatFormatter : IFormatProvider, ICustomFormatter
         {
             public object GetFormat(Type formatType) => formatType == typeof(ICustomFormatter) ? this : null;
 
@@ -714,7 +714,7 @@ namespace System.SpanTests
             }
         }
 
-        private sealed class ConstFormatter : IFormatProvider, ICustomFormatter
+        internal sealed class ConstFormatter : IFormatProvider, ICustomFormatter
         {
             private readonly string _value;
 
