@@ -3320,7 +3320,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
                         if (argLclNum != BAD_VAR_NUM)
                         {
-                            argObj->ChangeType(argVarDsc->TypeGet());
+                            argx->ChangeType(argVarDsc->TypeGet());
                             argObj->SetOper(GT_LCL_VAR);
                             argObj->AsLclVar()->SetLclNum(argLclNum);
                         }
@@ -3338,7 +3338,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         {
                             // TODO-CQ: perform this transformation in lowering instead of here and
                             // avoid marking enregisterable structs DNER.
-                            argObj->ChangeType(structBaseType);
+                            argx->ChangeType(structBaseType);
                             if (argObj->OperIs(GT_LCL_VAR))
                             {
                                 argObj->SetOper(GT_LCL_FLD);
