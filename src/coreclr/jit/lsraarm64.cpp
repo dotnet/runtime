@@ -168,9 +168,12 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
 //    allConsecutiveCandidates  - Mask returned containing all bits set for possible consecutive register candidates.
 //
 //  Returns:
-//      From `candidates`, the mask of series of consecutive registers of `registersNeeded` size with just the first-bit set.
+//      From `candidates`, the mask of series of consecutive registers of `registersNeeded` size with just the first-bit
+//      set.
 //
-regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP candidates, unsigned int registersNeeded, regMaskTP* allConsecutiveCandidates)
+regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
+                                                  unsigned int registersNeeded,
+                                                  regMaskTP*   allConsecutiveCandidates)
 {
     if (BitOperations::PopCount(candidates) < registersNeeded)
     {
@@ -179,18 +182,18 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP candidates, unsigned
         return RBM_NONE;
     }
 
-    regMaskTP currAvailableRegs        = candidates;
-    regMaskTP overallResult            = RBM_NONE;
-    regMaskTP consecutiveResult        = RBM_NONE;
-    regMaskTP busyRegsInThisLocation   = regsBusyUntilKill | regsInUseThisLocation;
+    regMaskTP currAvailableRegs      = candidates;
+    regMaskTP overallResult          = RBM_NONE;
+    regMaskTP consecutiveResult      = RBM_NONE;
+    regMaskTP busyRegsInThisLocation = regsBusyUntilKill | regsInUseThisLocation;
 
 // At this point, for 'n' registers requirement, if Rm+1, Rm+2, Rm+3, ..., Rm+k are
 // available, create the mask only for Rm+1, Rm+2, ..., Rm+(k-n+1) to convey that it
 // is safe to assign any of those registers, but not beyond that.
-#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                    \
-    regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                       \
-    regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                 \
-    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                    \
+#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
+    regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
+    regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
+    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
     DWORD regAvailableStartIndex = 0, regAvailableEndIndex = 0;
@@ -198,7 +201,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP candidates, unsigned
     // If we don't find consecutive registers, also track which registers we can pick so
     // as to reduce the number of registers we will have to spill, to accomodate the
     // request of the consecutive registers.
-    regMaskTP registersNeededMask    = (1ULL << registersNeeded) - 1;
+    regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
 
     do
     {
@@ -252,7 +255,9 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP candidates, unsigned
 //  Returns:
 //      Register mask of consecutive registers.
 //
-regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP allCandidates, RefPosition* refPosition, regMaskTP* busyCandidates)
+regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
+                                               RefPosition* refPosition,
+                                               regMaskTP*   busyCandidates)
 {
     assert(compiler->info.needsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
@@ -263,7 +268,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP allCandidates, RefPosit
     }
 
     *busyCandidates = RBM_NONE;
-    regMaskTP overallResult;
+    regMaskTP    overallResult;
     unsigned int registersNeeded = refPosition->regCount;
 
     regMaskTP consecutiveResultForFree = filterConsecutiveCandidates(freeCandidates, registersNeeded, &overallResult);

@@ -5455,9 +5455,10 @@ void LinearScan::allocateRegisters()
                         }
                         else
                         {
-                            // We first noticed that with assignedRegister, we were not getting consecutive registers assigned, so we
-                            // decide to perform copyReg. However, copyReg assigned same register because there were no other free registers
-                            // that would satisfy the consecutive registers requirements. In such case, just revert the copyReg state update.
+                            // We first noticed that with assignedRegister, we were not getting consecutive registers
+                            // assigned, so we decide to perform copyReg. However, copyReg assigned same register
+                            // because there were no other free registers that would satisfy the consecutive registers
+                            // requirements. In such case, just revert the copyReg state update.
                             currentRefPosition.copyReg = false;
 
                             // Current assignedRegister satisfies the consecutive registers requirements
@@ -5497,7 +5498,8 @@ void LinearScan::allocateRegisters()
                 {
                     regNumber copyReg;
 #ifdef TARGET_ARM64
-                    if (hasConsecutiveRegister && currentRefPosition.needsConsecutive && currentRefPosition.refType == RefTypeUse)
+                    if (hasConsecutiveRegister && currentRefPosition.needsConsecutive &&
+                        currentRefPosition.refType == RefTypeUse)
                     {
                         copyReg = assignCopyReg<true>(&currentRefPosition);
                     }
@@ -11737,7 +11739,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
             continue;
         }
 
-        weight_t     currentSpillWeight = 0;
+        weight_t currentSpillWeight = 0;
         if ((recentRefPosition != nullptr) &&
             (recentRefPosition->RegOptional() && !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
         {
@@ -12294,26 +12296,26 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         regMaskTP busyConsecutiveCandidates = RBM_NONE;
         if (refPosition->isFirstRefPositionOfConsecutiveRegisters())
         {
-        freeCandidates = linearScan->getConsecutiveCandidates(candidates, refPosition, &busyConsecutiveCandidates);
-        if (freeCandidates == RBM_NONE)
+            freeCandidates = linearScan->getConsecutiveCandidates(candidates, refPosition, &busyConsecutiveCandidates);
+            if (freeCandidates == RBM_NONE)
             {
                 candidates = busyConsecutiveCandidates;
             }
         }
-            else
-            {
-                // We should have a single candidate that will be used for subsequent
-                // refpositions.
-                assert((refPosition->refType == RefTypeUpperVectorRestore) || (genCountBits(candidates) == 1));
+        else
+        {
+            // We should have a single candidate that will be used for subsequent
+            // refpositions.
+            assert((refPosition->refType == RefTypeUpperVectorRestore) || (genCountBits(candidates) == 1));
 
             freeCandidates = candidates & linearScan->m_AvailableRegs;
-            }
+        }
 
         if ((freeCandidates == RBM_NONE) && (candidates == RBM_NONE))
-            {
-                noway_assert(!"Not sufficient consecutive registers available.");
-            }
+        {
+            noway_assert(!"Not sufficient consecutive registers available.");
         }
+    }
     else
 #endif // TARGET_ARM64
     {
