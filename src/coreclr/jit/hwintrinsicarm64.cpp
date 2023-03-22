@@ -1919,6 +1919,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = impVectorTableLookupExtension(op1, op2, op3, intrinsic, simdBaseJitType, simdSize, argType,
                                                     retType, fieldCount);
+            break;
         }
         default:
         {
