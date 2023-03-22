@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path)
         {
-            return AddJsonFile(builder, provider: null, path: path, optional: false, reloadOnChange: false);
+            return AddJsonFile(builder, provider: null, path: path, optional: false, reloadOnChange: false, configRoot: null);
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, bool optional)
         {
-            return AddJsonFile(builder, provider: null, path: path, optional: optional, reloadOnChange: false);
+            return AddJsonFile(builder, provider: null, path: path, optional: optional, reloadOnChange: false, configRoot: null);
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, bool optional, bool reloadOnChange)
         {
-            return AddJsonFile(builder, provider: null, path: path, optional: optional, reloadOnChange: reloadOnChange);
+            return AddJsonFile(builder, provider: null, path: path, optional: optional, reloadOnChange: reloadOnChange, configRoot: null);
         }
 
         /// <summary>
@@ -61,8 +61,9 @@ namespace Microsoft.Extensions.Configuration
         /// <see cref="IConfigurationBuilder.Properties"/> of <paramref name="builder"/>.</param>
         /// <param name="optional">Whether the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
+        /// <param name="configRoot">The root path where the config shou be loaded.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange, string? configRoot)
         {
             ThrowHelper.ThrowIfNull(builder);
 
@@ -77,6 +78,7 @@ namespace Microsoft.Extensions.Configuration
                 s.Path = path;
                 s.Optional = optional;
                 s.ReloadOnChange = reloadOnChange;
+                s.ConfigurationRootKey = configRoot;
                 s.ResolveFileProvider();
             });
         }
