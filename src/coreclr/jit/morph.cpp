@@ -14731,6 +14731,14 @@ PhaseStatus Compiler::fgPromoteStructs()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+#ifdef DEBUG
+    if (compStressCompile(STRESS_NO_OLD_PROMOTION, 20))
+    {
+        JITDUMP("  skipping due to stress\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
 #if 0
     // The code in this #if has been useful in debugging struct promotion issues, by
     // enabling selective enablement of the struct promotion optimization according to

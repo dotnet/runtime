@@ -9,8 +9,21 @@ PhaseStatus Compiler::PromoteStructsNew()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-#ifdef DEBUG
     if (fgNoStructPromotion)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    //if (!compStressCompile(STRESS_GENERALIZED_PROMOTION))
+    //{
+    //    return PhaseStatus::MODIFIED_NOTHING;
+    //}
+
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitEnableGeneralizedPromotionRange());
+
+    if (!s_range.Contains(info.compMethodHash()))
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -411,6 +424,14 @@ public:
             JITDUMP("  Promoting replacement\n");
             return true;
         }
+
+#ifdef DEBUG
+        if (comp->compStressCompile(Compiler::STRESS_GENERALIZED_PROMOTION_COST, 25))
+        {
+            JITDUMP("  Promoting replacement due to stress\n");
+            return true;
+        }
+#endif
 
         JITDUMP("  Disqualifying replacement\n");
         return false;
