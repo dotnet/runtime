@@ -2780,6 +2780,27 @@ public:
                                               CORINFO_CLASS_HANDLE clsHnd,
                                               CORINFO_SIG_INFO*    sig,
                                               CorInfoType          simdBaseJitType);
+    
+#ifdef TARGET_ARM64
+    GenTreeHWIntrinsic* gtNewSimdVectorTableLookupNode(GenTree*       op1,
+                                             GenTree*       op2,
+                                             NamedIntrinsic hwIntrinsicID,
+                                             CorInfoType    simdBaseJitType,
+                                             unsigned       simdSize,
+                                             var_types      argType,
+                                             var_types      retType,
+                                             unsigned       fieldCount);
+    GenTreeHWIntrinsic* gtNewSimdVectorTableLookupExtensionNode(GenTree*       op1,
+                                                      GenTree*       op2,
+                                                      GenTree*       op3,
+                                                      NamedIntrinsic hwIntrinsicID,
+                                                      CorInfoType    simdBaseJitType,
+                                                      unsigned       simdSize,
+                                                      var_types      argType,
+                                                      var_types      retType,
+                                                      unsigned       fieldCount);
+    GenTreeFieldList* getConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
+#endif
 #endif // FEATURE_HW_INTRINSICS
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
@@ -3943,25 +3964,6 @@ protected:
                                  CorInfoType           simdBaseJitType,
                                  var_types             retType,
                                  unsigned              simdSize);
-#ifdef TARGET_ARM64
-    GenTreeHWIntrinsic* impVectorTableLookup(GenTree*       op1,
-                                             GenTree*       op2,
-                                             NamedIntrinsic hwIntrinsicID,
-                                             CorInfoType    simdBaseJitType,
-                                             unsigned       simdSize,
-                                             var_types      argType,
-                                             var_types      retType,
-                                             unsigned       fieldCount);
-    GenTreeHWIntrinsic* impVectorTableLookupExtension(GenTree*       op1,
-                                                      GenTree*       op2,
-                                                      GenTree*       op3,
-                                                      NamedIntrinsic hwIntrinsicID,
-                                                      CorInfoType    simdBaseJitType,
-                                                      unsigned       simdSize,
-                                                      var_types      argType,
-                                                      var_types      retType,
-                                                      unsigned       fieldCount);
-#endif
 
     GenTree* getArgForHWIntrinsic(var_types            argType,
                                   CORINFO_CLASS_HANDLE argClass,
