@@ -775,15 +775,6 @@ mono_compile_method_checked (MonoMethod *method, MonoError *error)
 	return res;
 }
 
-gpointer
-mono_runtime_create_delegate_trampoline (MonoClass *klass)
-{
-	MONO_REQ_GC_NEUTRAL_MODE
-
-	g_assert (callbacks.create_delegate_trampoline);
-	return callbacks.create_delegate_trampoline (klass);
-}
-
 /**
  * mono_runtime_free_method:
  * \param method method to release

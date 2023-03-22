@@ -755,9 +755,6 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *
 gpointer
 mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean check_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
-gpointer
-mono_runtime_create_delegate_trampoline (MonoClass *klass);
-
 void
 mono_install_get_cached_class_info (MonoGetCachedClassInfo func);
 

@@ -4544,7 +4544,6 @@ mini_init (const char *filename)
 #ifdef JIT_TRAMPOLINES_WORK
 	callbacks.compile_method = mono_jit_compile_method;
 	callbacks.create_jit_trampoline = mono_create_jit_trampoline;
-	callbacks.create_delegate_trampoline = mono_create_delegate_trampoline;
 	callbacks.free_method = mono_jit_free_method;
 	callbacks.get_ftnptr = get_ftnptr_for_method;
 #endif

@@ -687,7 +687,6 @@ typedef struct {
 	gpointer (*create_jit_trampoline) (MonoMethod *method, MonoError *error);
 	/* used to free a dynamic method */
 	void     (*free_method) (MonoMethod *method);
-	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
