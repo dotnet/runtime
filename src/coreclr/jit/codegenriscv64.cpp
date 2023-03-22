@@ -4987,22 +4987,7 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     genConsumeReg(op1);
 
     // If child node is not already in the register we need, move it
-    if (targetReg != op1->GetRegNum())
-    {
-        if (emitter::isFloatReg(targetReg) == emitter::isFloatReg(op1->GetRegNum()))
-        {
-            inst_RV_RV(ins_Copy(targetType), targetReg, op1->GetRegNum(), targetType);
-        }
-        else if (emitter::isFloatReg(targetReg))
-        {
-            GetEmitter()->emitIns_R_R(INS_fcvt_d_l, EA_8BYTE, targetReg, op1->GetRegNum());
-        }
-        else
-        {
-            assert(!emitter::isFloatReg(targetReg));
-            GetEmitter()->emitIns_R_R(INS_fcvt_l_d, EA_8BYTE, targetReg, op1->GetRegNum());
-        }
-    }
+    GetEmitter()->emitIns_Mov(ins_Copy(targetType), emitActualTypeSize(targetType), targetReg, op1->GetRegNum(), true);
     genProduceReg(tree);
 }
 
@@ -5110,7 +5095,8 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 
     if (targetReg != tree->gtSrcReg)
     {
-        inst_RV_RV(ins_Copy(targetType), targetReg, tree->gtSrcReg, targetType);
+        GetEmitter()->emitIns_Mov(ins_Copy(targetType), emitActualTypeSize(targetType), targetReg, tree->gtSrcReg,
+                                  false);
         genTransferRegGCState(targetReg, tree->gtSrcReg);
     }
 

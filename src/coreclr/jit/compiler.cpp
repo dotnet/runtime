@@ -3238,7 +3238,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // FEATURE_CFI_SUPPORT
 
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     opts.compProcedureSplitting = false;
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;

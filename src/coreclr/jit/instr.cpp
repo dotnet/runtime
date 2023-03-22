@@ -446,16 +446,7 @@ void CodeGen::inst_RV_RV(instruction ins,
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R(ins, size, reg1, reg2, flags);
 #else
-#ifdef TARGET_RISCV64
-    if (INS_fsgnj_s == ins || INS_fsgnj_d == ins)
-    {
-        GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg2);
-    }
-    else
-#endif
-    {
-        GetEmitter()->emitIns_R_R(ins, size, reg1, reg2);
-    }
+    GetEmitter()->emitIns_R_R(ins, size, reg1, reg2);
 #endif
 }
 
@@ -1696,7 +1687,18 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
     }
 #elif defined(TARGET_RISCV64)
-    NYI_RISCV64("insCopy-----unimplemented on RISCV64 yet----");
+    // TODO-RISCV64-CQ: supporting SIMD.
+    assert(!varTypeIsSIMD(dstType));
+    if (dstIsFloatReg)
+    {
+        assert(!genIsValidFloatReg(srcReg));
+        return dstType == TYP_FLOAT ? INS_fcvt_s_l : INS_fcvt_d_l;
+    }
+    else
+    {
+        assert(genIsValidFloatReg(srcReg));
+        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fcvt_w_d : INS_fcvt_l_d;
+    }
     return INS_invalid;
 #else // TARGET*
 #error "Unknown TARGET"

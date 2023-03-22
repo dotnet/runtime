@@ -538,8 +538,6 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
     assert(REGNUM_BITS >= 6);
     encodeMask = id->idReg1();
 
-    // if ((encodeMask & 0x01) != 0) // TODO CHECK S0 is FP
-    //    regmask |= RBM_S0;
     if ((encodeMask & 0x01) != 0)
         regmask |= RBM_S1;
     if ((encodeMask & 0x02) != 0)
