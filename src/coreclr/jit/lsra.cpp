@@ -12280,7 +12280,28 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 #ifdef TARGET_ARM64
     if (needsConsecutiveRegisters)
     {
-        freeCandidates = linearScan->getConsecutiveCandidates(candidates, refPosition);
+        regMaskTP busyConsecutiveCandidates = RBM_NONE;
+        freeCandidates = linearScan->getConsecutiveCandidates(candidates, refPosition, &busyConsecutiveCandidates);
+        if (freeCandidates == RBM_NONE)
+        {
+            // We did not find free candidates. We will use the busy candidates, if
+            // they are consecutive.
+            if (refPosition->isFirstRefPositionOfConsecutiveRegisters())
+            {
+                candidates = busyConsecutiveCandidates;
+            }
+            else
+            {
+                // We should have a single candidate that will be used for subsequent
+                // refpositions.
+                assert((refPosition->refType == RefTypeUpperVectorRestore) || (genCountBits(candidates) == 1));
+            }
+
+            if (candidates == RBM_NONE)
+            {
+                noway_assert(!"Not sufficient consecutive registers available.");
+            }
+        }
     }
     else
 #endif // TARGET_ARM64
