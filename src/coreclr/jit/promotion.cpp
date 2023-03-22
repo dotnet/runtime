@@ -42,15 +42,10 @@ struct Access
     unsigned CountReturns                          = 0;
     unsigned CountPassedAsRetbuf                   = 0;
 
-    // Number of times we saw this access.
     weight_t CountWtd = 0;
-    // Number of times this access is on the RHS of an assignment.
     weight_t CountAssignmentSourceWtd = 0;
-    // Number of times this access is on the LHS of an assignment.
     weight_t CountAssignmentDestinationWtd = 0;
-    // Number of times this access is on the RHS of an assignment where the LHS is a probable register candidate.
     weight_t CountAssignmentsToRegisterCandidateWtd = 0;
-    // Number of times this access is on the LHS of an assignment where the RHS is a probable register candidate.
     weight_t CountAssignmentsFromRegisterCandidateWtd = 0;
     weight_t CountCallArgsWtd                         = 0;
     weight_t CountCallArgsByImplicitRefWtd            = 0;
@@ -123,13 +118,12 @@ struct Replacement
     unsigned     Offset;
     var_types    AccessType;
     unsigned     LclNum;
-    ClassLayout* Layout;
     bool         NeedsWriteBack = true;
     bool         NeedsReadBack  = false;
     Replacement* Next           = nullptr;
 
-    Replacement(unsigned offset, var_types accessType, unsigned lclNum, ClassLayout* layout)
-        : Offset(offset), AccessType(accessType), LclNum(lclNum), Layout(layout)
+    Replacement(unsigned offset, var_types accessType, unsigned lclNum)
+        : Offset(offset), AccessType(accessType), LclNum(lclNum)
     {
     }
 
@@ -213,19 +207,10 @@ public:
                 do
                 {
                     Access& candidateAccess = m_accesses[index];
-                    if (candidateAccess.AccessType == accessType)
+                    if ((candidateAccess.AccessType == accessType) && (candidateAccess.Layout == accessLayout))
                     {
-                        // Some operations on SIMD types do not require a layout, but those can be merged with ones that
-                        // do.
-                        bool isMergeableLayout = (candidateAccess.Layout == accessLayout) ||
-                                                 (varTypeIsSIMD(accessType) && (candidateAccess.Layout == nullptr));
-
-                        if (isMergeableLayout)
-                        {
-                            access         = &candidateAccess;
-                            access->Layout = accessLayout;
-                            break;
-                        }
+                        access         = &candidateAccess;
+                        break;
                     }
 
                     index++;
@@ -361,13 +346,6 @@ public:
                 continue;
             }
 
-            if (varTypeIsSIMD(access.AccessType) && (access.Layout == nullptr))
-            {
-                // We need a layout to create a local.
-                // TODO: Use canonical layout?
-                continue;
-            }
-
             if (!EvaluateReplacement(comp, lclNum, access))
             {
                 continue;
@@ -382,16 +360,8 @@ public:
             strcpy_s(bufp, len, buf);
 #endif
             unsigned newLcl = comp->lvaGrabTemp(false DEBUGARG(bufp));
-            if (varTypeIsStruct(access.AccessType))
-            {
-                comp->lvaSetStruct(newLcl, access.Layout->GetClassHandle(), false);
-            }
-            else
-            {
-                comp->lvaGetDesc(newLcl)->lvType = access.AccessType;
-            }
-
-            replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl, access.Layout));
+            comp->lvaGetDesc(newLcl)->lvType = access.AccessType;
+            replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl));
         }
     }
 
@@ -440,18 +410,16 @@ public:
         weight_t costWithout = 0;
         // A normal access without promotion looks like:
         // mov reg, [reg+offs]
-        // Which is 5 bytes on x64.
+        // It may also be contained. Overall we are going to cost each use of
+        // an unpromoted local at 6.5 bytes.
+        // TODO: We can make much better guesses on what will and won't be contained.
 
-        costWithout += access.CountWtd * 50;
-
-        // The register then also needs to be used. In many cases it is containable, however, so we pay a bit less for
-        // this.
-        costWithout += access.CountWtd * 25;
+        costWithout += access.CountWtd * 6.5;
 
         weight_t costWith = 0;
 
-        // For any use we expect to just use the register directly.
-        costWith += access.CountWtd * 25;
+        // For any use we expect to just use the register directly. We will cost this at 3.5 bytes.
+        costWith += access.CountWtd * 3.5;
 
         weight_t   countReadBacksWtd = 0;
         LclVarDsc* lcl               = comp->lvaGetDesc(lclNum);
@@ -464,12 +432,13 @@ public:
         countReadBacksWtd += countOverlappedRetbufsWtd;
         countReadBacksWtd += countOverlappedAssignmentDestinationWtd;
 
-        costWith += countReadBacksWtd * 50;
+        // A read back puts the value from stack back to register. We cost it at 5 bytes.
+        costWith += countReadBacksWtd * 5;
 
         // Write backs with TYP_REFs when the base local is an implicit byref
         // involves checked write barriers, so they are very expensive.
         // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
-        int      writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 150 : 50;
+        weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF) ? 15 : 5;
         weight_t countWriteBacksWtd =
             countOverlappedCallsWtd + countOverlappedReturnsWtd + countOverlappedAssignmentSourceWtd;
         costWith += countWriteBacksWtd * writeBackCost;
@@ -511,14 +480,14 @@ public:
                 printf("  %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
             }
 
-            printf("    #:                             %u\n", access.Count);
-            printf("    # assigned from:               %u\n", access.CountAssignmentSource);
-            printf("    # assigned to:                 %u\n", access.CountAssignmentDestination);
-            printf("    # as call arg:                 %u\n", access.CountCallArgs);
-            printf("    # as implicit by-ref call arg: %u\n", access.CountCallArgsByImplicitRef);
-            printf("    # as on-stack call arg:        %u\n", access.CountCallArgsOnStack);
-            printf("    # as retbuf:                   %u\n", access.CountPassedAsRetbuf);
-            printf("    # as returned value:           %u\n\n", access.CountReturns);
+            printf("    #:                             (%u, " FMT_WT ")\n", access.Count, access.CountWtd);
+            printf("    # assigned from:               (%u, " FMT_WT ")\n", access.CountAssignmentSource, access.CountAssignmentSourceWtd);
+            printf("    # assigned to:                 (%u, " FMT_WT ")\n", access.CountAssignmentDestination, access.CountAssignmentDestinationWtd);
+            printf("    # as call arg:                 (%u, " FMT_WT ")\n", access.CountCallArgs, access.CountCallArgsWtd);
+            printf("    # as implicit by-ref call arg: (%u, " FMT_WT ")\n", access.CountCallArgsByImplicitRef, access.CountCallArgsByImplicitRefWtd);
+            printf("    # as on-stack call arg:        (%u, " FMT_WT ")\n", access.CountCallArgsOnStack, access.CountCallArgsOnStackWtd);
+            printf("    # as retbuf:                   (%u, " FMT_WT ")\n", access.CountPassedAsRetbuf, access.CountPassedAsRetbufWtd);
+            printf("    # as returned value:           (%u, " FMT_WT ")\n\n", access.CountReturns, access.CountReturnsWtd);
         }
     }
 #endif
@@ -576,7 +545,7 @@ public:
                 {
                     unsigned        offs         = lcl->GetLclOffs();
                     var_types       accessType   = lcl->TypeGet();
-                    ClassLayout*    accessLayout = varTypeIsStruct(lcl) ? lcl->GetLayout(m_compiler) : nullptr;
+                    ClassLayout*    accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
                     AccessKindFlags accessFlags  = ClassifyLocalAccess(lcl, user);
                     m_uses[lcl->GetLclNum()].RecordAccess(offs, accessType, accessLayout, accessFlags,
                                                           m_curBB->getBBWeight(m_compiler));
@@ -972,18 +941,6 @@ public:
 
 PhaseStatus Promotion::Run()
 {
-#ifdef DEBUG
-    if (m_compiler->verbose)
-    {
-        m_compiler->fgDispBasicBlocks(true);
-    }
-
-// if (!ISMETHOD("NPTest"))
-//{
-//    return PhaseStatus::MODIFIED_NOTHING;
-//}
-#endif
-
     LocalsUseVisitor localsUse(this);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
@@ -991,7 +948,6 @@ PhaseStatus Promotion::Run()
 
         for (Statement* stmt : bb->Statements())
         {
-            DISPSTMT(stmt);
             localsUse.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
