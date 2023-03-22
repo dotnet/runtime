@@ -7,6 +7,9 @@
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
     <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
     <IlcTrimMetadata>false</IlcTrimMetadata>
+
+    <!-- this test project is too slow with extra start of another runtime -->
+    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --no-memory-snapshot</WasmXHarnessMonoArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">

@@ -4402,7 +4402,6 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
-    unsigned     fgBBNumMin;           // The min bbNum that has been assigned to basic blocks
     unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
@@ -5561,7 +5560,7 @@ public:
 
 #endif // DEBUG
 
-    static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2);
+    static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_t epsilon = 0.01);
     static bool fgProfileWeightsConsistent(weight_t weight1, weight_t weight2);
 
     static GenTree* fgGetFirstNode(GenTree* tree);
@@ -8925,8 +8924,9 @@ private:
 public:
     enum UnrollKind
     {
-        Memset, // Initializing memory with some value
-        Memcpy  // Copying memory from src to dst
+        Memset,
+        Memcpy,
+        Memmove
     };
 
     //------------------------------------------------------------------------
@@ -8956,7 +8956,7 @@ public:
             threshold *= 2;
 #elif defined(TARGET_XARCH)
             // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
-            threshold = max(threshold, YMM_REGSIZE_BYTES);
+            threshold = min(threshold, YMM_REGSIZE_BYTES);
 #endif
         }
 #if defined(TARGET_XARCH)
@@ -8989,7 +8989,11 @@ public:
         //
         // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
         //
-        return threshold * 4;
+        threshold *= 4;
+
+        // NOTE: Memmove's unrolling is currently limitted with LSRA -
+        // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*32=160 bytes for AVX cpu.
+        return threshold;
     }
 
     //------------------------------------------------------------------------
@@ -9197,6 +9201,13 @@ private:
 #ifdef TARGET_XARCH
     bool canUseVexEncoding() const
     {
+#ifdef DEBUG
+        if (JitConfig.JitForceEVEXEncoding())
+        {
+            return true;
+        }
+#endif // DEBUG
+
         return compOpportunisticallyDependsOn(InstructionSet_AVX);
     }
 
@@ -9791,6 +9802,7 @@ public:
         STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
         STRESS_MODE(OPT_BOOLS_GC)                                                               \
+        STRESS_MODE(OPT_BOOLS_COMPARE_CHAIN_COST)                                               \
         STRESS_MODE(REMORPH_TREES)                                                              \
         STRESS_MODE(64RSLT_MUL)                                                                 \
         STRESS_MODE(DO_WHILE_LOOPS)                                                             \

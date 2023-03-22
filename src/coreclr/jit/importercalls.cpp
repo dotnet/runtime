@@ -3810,6 +3810,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Buffer_Memmove:
+            {
+                // We'll try to unroll this in lower for constant input.
+                isSpecial = true;
+                break;
+            }
+
             case NI_System_BitConverter_DoubleToInt64Bits:
             {
                 GenTree* op1 = impStackTop().val;
@@ -7901,6 +7908,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
                         {
                             result = NI_System_BitConverter_Int64BitsToDouble;
+                        }
+                    }
+                    else if (strcmp(className, "Buffer") == 0)
+                    {
+                        if (strcmp(methodName, "Memmove") == 0)
+                        {
+                            result = NI_System_Buffer_Memmove;
                         }
                     }
                     break;

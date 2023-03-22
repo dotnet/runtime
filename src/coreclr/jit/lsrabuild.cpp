@@ -964,6 +964,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                 }
                 break;
 #endif
+            case GenTreeBlk::BlkOpKindUnrollMemmove:
             case GenTreeBlk::BlkOpKindUnroll:
             case GenTreeBlk::BlkOpKindInvalid:
                 // for these 'gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
