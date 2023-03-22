@@ -49,6 +49,57 @@ public class CoreCLR
 
     public static void Test(GlobalConfig gConfig)
     {
+        TestClassLibraries(gConfig);
+
+        TestUnityRuntime(gConfig);
+
+        TestUnityPal(gConfig);
+    }
+
+    private static void TestUnityPal(GlobalConfig gConfig)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return;
+
+        Console.WriteLine("******************************");
+        Console.WriteLine("Unity: Running PAL tests");
+        Console.WriteLine("******************************");
+        ProcessStartInfo psi = new();
+        psi.FileName = BuildScript;
+        psi.Arguments = "clr.paltests";
+        Utils.RunProcess(psi, gConfig);
+
+        string osString = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "OSX" : "Linux";
+        NPath paltests = Paths.Artifacts.Combine("bin", "coreclr", $"{osString}.{gConfig.Architecture}.Debug", "paltests");
+        psi.FileName = paltests.Combine("runpaltests.sh");
+        psi.Arguments = paltests;
+        Utils.RunProcess(psi, gConfig);
+    }
+
+    private static void TestUnityRuntime(GlobalConfig gConfig)
+    {
+        Console.WriteLine("******************************");
+        Console.WriteLine("Unity: Running runtime tests");
+        Console.WriteLine("******************************");
+        ProcessStartInfo psi = new();
+        psi.FileName = Paths.RepoRoot.Combine("src", "tests", BuildScript.FileName);
+        psi.Arguments = $"{gConfig.Architecture} {gConfig.Configuration} ci";
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            psi.Arguments =
+                $"{psi.Arguments} tree baseservices tree interop tree reflection -- /p:LibrariesConfiguration={gConfig.Configuration}";
+        else
+            psi.Arguments =
+                $"{psi.Arguments} /p:LibrariesConfiguration={gConfig.Configuration} -tree:baseservices -tree:interop -tree:reflection";
+        psi.Environment.Remove("LD_LIBRARY_PATH"); // just in case
+        Utils.RunProcess(psi, gConfig);
+
+        psi.FileName = Paths.RepoRoot.Combine("src", "tests", "run").ChangeExtension(BuildScript.ExtensionWithDot);
+        psi.Arguments = $"{gConfig.Architecture} {gConfig.Configuration}";
+        Utils.RunProcess(psi, gConfig);
+    }
+
+    private static void TestClassLibraries(GlobalConfig gConfig)
+    {
         Console.WriteLine("******************************");
         Console.WriteLine("Unity: Running class library tests");
         Console.WriteLine("******************************");
@@ -76,40 +127,6 @@ public class CoreCLR
         psi.WorkingDirectory = Paths.RepoRoot;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             psi.Environment.Add("LD_LIBRARY_PATH", "/usr/local/opt/openssl/lib");
-        Utils.RunProcess(psi, gConfig);
-
-        Console.WriteLine("******************************");
-        Console.WriteLine("Unity: Running runtime tests");
-        Console.WriteLine("******************************");
-        psi.FileName = Paths.RepoRoot.Combine("src", "tests", BuildScript.FileName);
-        psi.Arguments = $"{gConfig.Architecture} {gConfig.Configuration} ci";
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            psi.Arguments =
-                $"{psi.Arguments} tree baseservices tree interop tree reflection -- /p:LibrariesConfiguration={gConfig.Configuration}";
-        else
-            psi.Arguments =
-                $"{psi.Arguments} /p:LibrariesConfiguration={gConfig.Configuration} -tree:baseservices -tree:interop -tree:reflection";
-        psi.Environment.Remove("LD_LIBRARY_PATH"); // just in case
-        Utils.RunProcess(psi, gConfig);
-
-        psi.FileName = Paths.RepoRoot.Combine("src", "tests", "run").ChangeExtension(BuildScript.ExtensionWithDot);
-        psi.Arguments = $"{gConfig.Architecture} {gConfig.Configuration}";
-        Utils.RunProcess(psi, gConfig);
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return;
-
-        Console.WriteLine("******************************");
-        Console.WriteLine("Unity: Running PAL tests");
-        Console.WriteLine("******************************");
-        psi.FileName = BuildScript;
-        psi.Arguments = "clr.paltests";
-        Utils.RunProcess(psi, gConfig);
-
-        string osString = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "OSX" : "Linux";
-        NPath paltests = Paths.Artifacts.Combine("bin", "coreclr", $"{osString}.{gConfig.Architecture}.Debug", "paltests");
-        psi.FileName = paltests.Combine("runpaltests.sh");
-        psi.Arguments = paltests;
         Utils.RunProcess(psi, gConfig);
     }
 }
