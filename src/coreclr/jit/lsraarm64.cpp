@@ -255,8 +255,9 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP candidates, unsigned
 regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP allCandidates, RefPosition* refPosition, regMaskTP* busyCandidates)
 {
     assert(compiler->info.needsConsecutiveRegisters);
+    assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
     regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
-    if (!refPosition->isFirstRefPositionOfConsecutiveRegisters() || (freeCandidates == RBM_NONE))
+    if (freeCandidates == RBM_NONE)
     {
         return freeCandidates;
     }
