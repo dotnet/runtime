@@ -50,7 +50,6 @@ struct _MonoClass {
 	guint is_array_special_interface : 1; /* gtd or ginst of once of the magic interfaces that arrays implement */
 	guint is_byreflike    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.IsByRefLikeAttribute */
 	guint is_inlinearray    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.InlineArrayAttribute */
-	guint inlinearray_value; /* class is a valuetype and has System.Runtime.CompilerServices.InlineArrayAttribute value */
 
 	/* next byte */
 	guint8 min_align;
@@ -103,6 +102,8 @@ struct _MonoClass {
 	MonoClass **interfaces_packed;
 	guint16    *interface_offsets_packed;
 	guint8     *interface_bitmap;
+
+	guint inlinearray_value; /* System.Runtime.CompilerServices.InlineArrayAttribute lenght value */
 
 	MonoClass **interfaces;
 

@@ -10,17 +10,6 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/class-internals.h>
 
-struct FoundAttrUD {
-	/* inputs */
-	const char *nspace;
-	const char *name;
-	gboolean in_corlib;
-	gboolean has_value;
-	/* output */
-	gboolean has_attr;
-	gpointer value;
-};
-
 MONO_COMPONENT_API gboolean
 mono_class_init_internal (MonoClass *klass);
 
