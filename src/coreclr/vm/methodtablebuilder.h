@@ -218,7 +218,6 @@ private:
     // we create the EEClass object, and thus set the flags immediately at the point
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
-    void SetCannotBeBlittedByObjectCloner() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetCannotBeBlittedByObjectCloner(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
     void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
     void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
@@ -2011,6 +2010,7 @@ private:
         DWORD NumInstanceGCPointerFields;   // does not include inherited pointer fields
         DWORD NumGCPointerSeries;
         DWORD NumInstanceFieldBytes;
+        DWORD NumInlineArrayElements;
 
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;

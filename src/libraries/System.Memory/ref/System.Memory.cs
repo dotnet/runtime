@@ -208,6 +208,8 @@ namespace System
         public static System.ReadOnlySpan<char> AsSpan(this string? text) { throw null; }
         public static System.ReadOnlySpan<char> AsSpan(this string? text, int start) { throw null; }
         public static System.ReadOnlySpan<char> AsSpan(this string? text, int start, int length) { throw null; }
+        public static System.ReadOnlySpan<char> AsSpan(this string? text, System.Index startIndex) { throw null; }
+        public static System.ReadOnlySpan<char> AsSpan(this string? text, System.Range range) { throw null; }
         public static System.Span<T> AsSpan<T>(this System.ArraySegment<T> segment) { throw null; }
         public static System.Span<T> AsSpan<T>(this System.ArraySegment<T> segment, System.Index startIndex) { throw null; }
         public static System.Span<T> AsSpan<T>(this System.ArraySegment<T> segment, int start) { throw null; }
@@ -306,6 +308,7 @@ namespace System
         public static bool Overlaps<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) { throw null; }
         public static bool Overlaps<T>(this System.Span<T> span, System.ReadOnlySpan<T> other, out int elementOffset) { throw null; }
         public static void Replace<T>(this System.Span<T> span, T oldValue, T newValue) where T : System.IEquatable<T>? { }
+        public static void Replace<T>(this System.ReadOnlySpan<T> source, System.Span<T> destination, T oldValue, T newValue) where T : System.IEquatable<T>? { }
         public static void Reverse<T>(this System.Span<T> span) { }
         public static int SequenceCompareTo<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) where T : System.IComparable<T>? { throw null; }
         public static int SequenceCompareTo<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) where T : System.IComparable<T>? { throw null; }

@@ -411,8 +411,8 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
-      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load" />
-      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative)" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher --aot-lazy-assembly-load" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher" />
       <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
     </ItemGroup>
 
@@ -722,7 +722,13 @@
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" />
+
+    <!-- Browser-Wasm follows a very different workflow, which is currently out of scope of the Log Checker. -->
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true'" />
+    <HelixCorrelationPayload Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet-sos">
+      <Destination>sos</Destination>
+      <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
+    </HelixCorrelationPayload>
 
     <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
     <LegacyPayloads Update="@(LegacyPayloads)">
@@ -865,4 +871,10 @@
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' == 'true' " />
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
+  <!-- This target needs to come after importing the Helix SDK as AfterTargets doesn't work for targets that have yet to be defined. -->
+  <Target Name="ConfigureSOS" AfterTargets="AddDotNetSdk" BeforeTargets="CoreTest" Condition="'$(TestWrapperTargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <PropertyGroup>
+      <HelixPreCommands>$(HelixPreCommands);dotnet %25HELIX_CORRELATION_PAYLOAD%25\sos\tools\net$(DotnetSosTargetFrameworkVersion)\any\dotnet-sos.dll install --architecture $(TargetArchitecture)</HelixPreCommands>
+    </PropertyGroup>
+  </Target>
 </Project>

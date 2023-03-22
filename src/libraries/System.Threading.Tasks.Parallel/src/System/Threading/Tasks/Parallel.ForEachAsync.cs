@@ -435,12 +435,26 @@ namespace System.Threading.Tasks
             /// <param name="e">The exception.</param>
             public void RecordException(Exception e)
             {
+                // Store the exception.
                 lock (this)
                 {
                     (_exceptions ??= new List<Exception>()).Add(e);
                 }
 
-                Cancellation.Cancel();
+                // Trigger cancellation of all workers.  If cancellation has already been triggered
+                // due to a previous exception occurring, this is a nop.
+                try
+                {
+                    Cancellation.Cancel();
+                }
+                catch (AggregateException ae)
+                {
+                    // If cancellation callbacks erroneously throw exceptions, include those exceptions in the list.
+                    lock (this)
+                    {
+                        _exceptions.AddRange(ae.InnerExceptions);
+                    }
+                }
             }
 
             /// <summary>Completes the ForEachAsync task based on the status of this state object.</summary>

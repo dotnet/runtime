@@ -303,15 +303,7 @@ enum {
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
-#ifdef TARGET_ARM64
-/*
- * SIMD is only supported on arm64 when using the LLVM backend. When not using
- * the LLVM backend, treat SIMD datatypes as regular value types.
- */
-#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && COMPILE_LLVM (cfg) && m_class_is_simd_type (klass))
-#else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass) && (COMPILE_LLVM (cfg) || mono_type_size (m_class_get_byval_arg (klass), NULL) == 16))
-#endif
 
 #else
 
@@ -1172,6 +1164,7 @@ typedef struct
 	gpointer impl_this;
 	gpointer impl_nothis;
 	gboolean need_rgctx_tramp;
+	gboolean is_virtual;
 } MonoDelegateTrampInfo;
 
 /*
@@ -2002,6 +1995,13 @@ typedef enum {
 	CMP_UNORD
 } CompRelation;
 
+enum {
+	XBINOP_FORCEINT_AND,
+	XBINOP_FORCEINT_OR,
+	XBINOP_FORCEINT_ORNOT,
+	XBINOP_FORCEINT_XOR,
+};
+
 typedef enum {
 	CMP_TYPE_L,
 	CMP_TYPE_I,
@@ -2271,8 +2271,7 @@ gpointer          mono_create_jump_trampoline (MonoMethod *method,
 gpointer mono_create_jit_trampoline (MonoMethod *method, MonoError *error);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 gpointer          mono_create_delegate_trampoline (MonoClass *klass);
-MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method);
-gpointer          mono_create_delegate_virtual_trampoline (MonoClass *klass, MonoMethod *method);
+MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboolean is_virtual);
 gpointer          mono_create_rgctx_lazy_fetch_trampoline (guint32 offset);
 gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr);
 gpointer          mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr);
@@ -2932,6 +2931,11 @@ enum {
 	SIMD_PREFETCH_MODE_0,
 	SIMD_PREFETCH_MODE_1,
 	SIMD_PREFETCH_MODE_2,
+};
+
+enum {
+	SIMD_EXTR_IS_ANY_SET,
+	SIMD_EXTR_ARE_ALL_SET
 };
 
 int mini_primitive_type_size (MonoTypeEnum type);

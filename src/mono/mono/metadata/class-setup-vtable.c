@@ -1877,7 +1877,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						flags |= MONO_ITF_OVERRIDE_EXPLICITLY_IMPLEMENTED;
 					if (interface_is_explicitly_implemented_by_class && variant_itf)
 						flags |= MONO_ITF_OVERRIDE_VARIANT_ITF;
-					if (vtable [im_slot] == NULL)
+					// if the slot is emtpy, or it's filled with a DIM, treat it as empty
+					if (vtable [im_slot] == NULL || m_class_is_interface (vtable [im_slot]->klass))
 						flags |= MONO_ITF_OVERRIDE_SLOT_EMPTY;
 					if (check_interface_method_override (klass, im, cm, flags)) {
 						TRACE_INTERFACE_VTABLE (printf ("[check ok]: ASSIGNING\n"));

@@ -15,7 +15,7 @@ images using the hugetlbfs. Doing some requires several steps.
   - This will increase the size of the image by up to 5 * the specified alignment. Typical increases will be more similar to 3 * the specified alignment
 2. The composite image must be copied into a hugetlbfs filesystem which is visible to the .NET process instead of the composite image being loaded from the normal path.
   - IMPORTANT: The composite image must NOT be located in the normal path next to the application binary, or that file will be used instead of the huge page version.
-  - The environment variable `COMPlus_NativeImageSearchPaths` must be set to point at the location of the hugetlbfs in use. For instance, `COMPlus_NativeImageSearchPaths` might be set to `/var/lib/hugetlbfs/user/USER/pagesize-2MB`
+  - The environment variable `DOTNET_NativeImageSearchPaths` must be set to point at the location of the hugetlbfs in use. For instance, `DOTNET_NativeImageSearchPaths` might be set to `/var/lib/hugetlbfs/user/USER/pagesize-2MB`
   - As the cp command does not support copying into a hugetlbfs due to lack of support for the write syscall in that file system, a custom copy application must be used. A sample application that may be used to perform this task has a source listing in Appendix A.
 3. The machine must be configured to have sufficient huge pages available in the appropriate huge page pool. The memory requirements of huge page PE loading are as follows.
   - Sufficient pages to hold the unmodified copy of the composite image in the hugetlbfs. These pages will be used by the initial copy which emplaces the composite image into huge pages.

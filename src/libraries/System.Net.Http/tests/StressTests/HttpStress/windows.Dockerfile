@@ -17,9 +17,9 @@ RUN dotnet build -c $env:CONFIGURATION `
     -p:MicrosoftNetCoreAppRuntimePackDir=C:/live-runtime-artifacts/microsoft.netcore.app.runtime.win-x64/$env:CONFIGURATION/
 
 # Enable dump collection
-ENV COMPlus_DbgEnableMiniDump=1
-ENV COMPlus_DbgMiniDumpType=MiniDumpWithFullMemory
-ENV COMPlus_DbgMiniDumpName="C:/dumps-share/coredump.%p"
+ENV DOTNET_DbgEnableMiniDump=1
+ENV DOTNET_DbgMiniDumpType=MiniDumpWithFullMemory
+ENV DOTNET_DbgMiniDumpName="C:/dumps-share/coredump.%p"
 
 EXPOSE 5001
 

@@ -961,7 +961,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            MetadataType closestCanonDefType = (MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(closestCanonDefType));
             staticsBagKind = BagElementKind.GcStaticDesc;
 
@@ -970,7 +970,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            MetadataType closestCanonDefType = (MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(closestCanonDefType));
             staticsBagKind = BagElementKind.ThreadStaticDesc;
 

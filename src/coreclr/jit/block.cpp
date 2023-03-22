@@ -571,7 +571,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     {
         // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
         // about the BlockSet epoch.
-        unsigned     bbNumMax = compiler->impInlineRoot()->fgBBNumMax;
+        unsigned     bbNumMax = compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
         for (BasicBlock* const bTarget : SwitchTargets())
@@ -1431,16 +1431,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
-    ++fgBBNumMax;
-
-    if (compIsForInlining())
-    {
-        block->bbNum = ++impInlineInfo->InlinerCompiler->fgBBNumMax;
-    }
-    else
-    {
-        block->bbNum = fgBBNumMax;
-    }
+    block->bbNum = ++fgBBNumMax;
 
     if (compRationalIRForm)
     {
@@ -1507,6 +1498,9 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     static_assert_no_msg(BasicBlock::MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
 
     block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
+
+    block->bbPreorderNum  = 0;
+    block->bbPostorderNum = 0;
 
     return block;
 }

@@ -324,7 +324,6 @@
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
     </ItemGroup>
 
@@ -355,6 +354,7 @@
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
       IcuDataFileNames="@(WasmIcuDataFileNames)"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"

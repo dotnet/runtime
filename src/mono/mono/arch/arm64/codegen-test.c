@@ -440,6 +440,8 @@ main (int argc, char *argv [])
 	arm_neon_cmgt (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 	arm_neon_cmge (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 	arm_neon_cmeq (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_cmhi (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_cmhs (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 
 	// neon float 3-reg same type
 	arm_neon_fadd (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
@@ -474,6 +476,11 @@ main (int argc, char *argv [])
 	arm_neon_ins_g (code, TYPE_I32, ARMREG_R0, ARMREG_R1, 1);
 	arm_neon_ins_e (code, TYPE_I8, ARMREG_R0, ARMREG_R1, 1, 5); // insert v1.b[5] into v0.b[1]
 	arm_neon_ins_e (code, TYPE_I32, ARMREG_R0, ARMREG_R1, 1, 2); // insert v1.s[2] into v0.s[1]
+
+	// pairwise and horizontal adds
+	arm_neon_addv (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1);
+	arm_neon_addp (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_faddp (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
 
 	for (i = 0; i < code - buf; ++i)
 		printf (".byte %d\n", buf [i]);

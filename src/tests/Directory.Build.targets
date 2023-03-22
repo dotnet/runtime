@@ -13,9 +13,11 @@
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
     <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or '$(RequiresProcessIsolation)' == 'true'">Exe</OutputType>
+
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+
     <!-- Merged test runner assemblies might not have any non-generated sources, and that's okay -->
     <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
@@ -571,6 +573,10 @@
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\index.html"
+          TargetDir="runtime-test/"/>
+
+        <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
     </ItemGroup>
@@ -644,8 +650,7 @@
     <IlcRPath Condition="'$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true'">@executable_path/..</IlcRPath>
     <IlcRPath Condition="'$(IlcRPath)' == ''">$ORIGIN/..</IlcRPath>
 
-    <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only"
-      Microsoft.NETCore.Native.targets expect IlcHostArch to be set but it doesn't have to -->
+    <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only" -->
     <DisableUnsupportedError>true</DisableUnsupportedError>
 
     <!-- The default TrimMode in the SDK is full. But trimming most of the tests would just make them fail,
