@@ -1898,29 +1898,38 @@ class DacReferenceList
         DacReferenceList()
             : _array(0), _count(0), _capacity(0)
         {
-            _capacity = 1024;
-            _array = new T[_capacity];
         }
 
         ~DacReferenceList()
         {
-            delete[] _array;
+            if (_array)
+                delete[] _array;
         }
 
-        void Add(const T& value)
+        bool Add(const T& value)
         {
             if (_count == _capacity)
             {
-                unsigned int newCapacity = _capacity * 2;
-                T* newArray = new T[newCapacity];
-                memcpy(newArray, _array, _capacity * sizeof(T));
+                unsigned int newCapacity = (int)(_capacity * 1.5);
+                if (newCapacity < 256)
+                    newCapacity = 256;
 
-                delete[] _array;
+                T* newArray = new (nothrow) T[newCapacity];
+                if (!newArray)
+                    return false;
+
+                if (_array)
+                {
+                    memcpy(newArray, _array, _capacity * sizeof(T));
+                    delete[] _array;
+                }
+
                 _array = newArray;
                 _capacity = newCapacity;
             }
 
             _array[_count++] = value;
+            return true;
         }
 
         unsigned int GetCount() const
@@ -1968,7 +1977,6 @@ class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum, IID_ISOS
             assert(sos || dbi);
         }
     };
-
 
 public:
     DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThreadID, bool resolveInteriorPointers, void *dbiData = 0);
@@ -2033,42 +2041,18 @@ private:
 
 class DacHandleWalker : public DefaultCOMImpl<ISOSHandleEnum, IID_ISOSHandleEnum>
 {
-    typedef struct _HandleChunkHead
-    {
-        struct _HandleChunkHead *Next;  // Next chunk
-        unsigned int Count;             // The count of how many handles were written to pData
-        unsigned int Size;              // The capacity of pData
-        void *pData;           // The overflow data
-
-        _HandleChunkHead()
-            : Next(0), Count(0), Size(0), pData(0)
-        {
-        }
-    } HandleChunkHead;
-
-    // The actual struct used for storing overflow handles
-    typedef struct _HandleChunk : public HandleChunkHead
-    {
-        SOSHandleData Data[128];
-
-        _HandleChunk()
-        {
-            pData = Data;
-            Size = sizeof(Data);
-        }
-    } HandleChunk;
-
     // Parameter used in HndEnumHandles callback.
     struct DacHandleWalkerParam
     {
-        HandleChunkHead *Curr;      // The current chunk to write to
-        HRESULT Result;             // HRESULT of the current enumeration
-        CLRDATA_ADDRESS AppDomain;  // The AppDomain for the current bucket we are walking
-        unsigned int Type;          // The type of handle we are currently walking
+        DacReferenceList<SOSHandleData> *List; // The list to write to.
+        HRESULT Result;                        // HRESULT of the current enumeration
+        CLRDATA_ADDRESS AppDomain;             // The AppDomain for the current bucket we are walking
+        unsigned int Type;                     // The type of handle we are currently walking
 
-        DacHandleWalkerParam(HandleChunk *curr)
-            : Curr(curr), Result(S_OK), AppDomain(0), Type(0)
+        DacHandleWalkerParam(DacReferenceList<SOSHandleData> *list)
+            : List(list), Result(S_OK), AppDomain(0), Type(0)
         {
+            assert(list);
         }
     };
 
@@ -2091,88 +2075,17 @@ public:
    // Dac-Dbi Functions
    HRESULT Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetched);
 private:
-    static void CALLBACK EnumCallback(PTR_UNCHECKED_OBJECTREF pref, LPARAM *pExtraInfo, LPARAM userParam, LPARAM type);
+    static void CALLBACK EnumCallback(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t userParam, uintptr_t type);
     static void GetRefCountedHandleInfo(
         OBJECTREF oref, unsigned int uType,
         unsigned int *pRefCount, unsigned int *pJupiterRefCount, BOOL *pIsPegged, BOOL *pIsStrong);
     static UINT32 BuildTypemask(UINT types[], UINT typeCount);
 
 private:
-    static void CALLBACK EnumCallbackSOS(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t userParam, uintptr_t type);
-    static void CALLBACK EnumCallbackDac(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t userParam, uintptr_t type);
-
-    bool FetchMoreHandles(HANDLESCANPROC proc);
+    void WalkHandles();
     static inline bool IsAlwaysStrongReference(unsigned int type)
     {
         return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED || type == HNDTYPE_ASYNCPINNED || type == HNDTYPE_SIZEDREF;
-    }
-
-    template <class StructType, class IntType, HANDLESCANPROC EnumFunc>
-    HRESULT DoHandleWalk(IntType celt, StructType handles[], IntType *pceltFetched)
-    {
-        SUPPORTS_DAC;
-
-        if (handles == NULL || pceltFetched == NULL)
-            return E_POINTER;
-
-        HRESULT hr = S_OK;
-        IntType fetched = 0;
-        bool done = false;
-
-        // On each iteration of the loop, either fetch more handles (filling in
-        // the user's data structure), or copy handles from previous calls to
-        // FetchMoreHandles which we could not store in the user's data (or simply
-        // advance the current chunk to the next chunk).
-        while (fetched < celt)
-        {
-            if (mCurr == NULL)
-            {
-                // Case 1:  We have no overflow data.  Stuff the user's array/size into
-                // mHead, fetch more handles.  Additionally, if the previous call to
-                // FetchMoreHandles returned false (mMap == NULL), break.
-                if (mMap == NULL)
-                    break;
-
-                mHead.pData = handles+fetched;
-                mHead.Size = (celt - fetched)*sizeof(StructType);
-
-                done = !FetchMoreHandles(EnumFunc);
-                fetched += mHead.Count;
-
-                // Sanity check to make sure we haven't overflowed.  This should not happen.
-                _ASSERTE(fetched <= celt);
-            }
-            else if (mChunkIndex >= mCurr->Count)
-            {
-                // Case 2:  We have overflow data, but the current index into the current
-                // chunk is past the bounds.  Move to the next.  This could set mCurr to
-                // null, which we'll catch on the next iteration.
-                mCurr = mCurr->Next;
-                mChunkIndex = 0;
-            }
-            else
-            {
-                // Case 3:  The last call to "Next" filled the user's array and had some handle
-                // data leftover.  Walk the linked-list of arrays copying them into the user's
-                // buffer until we have either exhausted the user's array or the leftover data.
-                unsigned int toCopy = celt - fetched;  // Fill the user's buffer...
-
-                // ...unless that would go past the bounds of the current chunk.
-                if (toCopy + mChunkIndex > mCurr->Count)
-                    toCopy = mCurr->Count - mChunkIndex;
-
-                memcpy(handles+fetched, ((StructType*)(mCurr->pData))+mChunkIndex, toCopy*sizeof(StructType));
-                mChunkIndex += toCopy;
-                fetched += toCopy;
-            }
-        }
-
-        if (fetched < celt)
-            hr = S_FALSE;
-
-        *pceltFetched = fetched;
-
-        return hr;
     }
 
 private:
@@ -2181,18 +2094,15 @@ private:
     ULONG32 m_instanceAge;
 
     // Handle table walking variables.
-    dac_handle_table_map *mMap;
-    int mIndex;
     UINT32 mTypeMask;
     int mGenerationFilter;
 
     // Storage variables
-    HandleChunk mHead;
-    unsigned int mChunkIndex;
+    DacReferenceList<SOSHandleData> mList;
+    bool mEnumerated;
 
     // Iterator variables
-    HandleChunkHead *mCurr;
-    int mIteratorIndex;
+    unsigned int mIteratorIndex;
 };
 
 
