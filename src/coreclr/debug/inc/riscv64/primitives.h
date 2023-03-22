@@ -49,7 +49,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 
 constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
-    // TODO-RISCV64-Bug?: I put REGISTER_RISCV64_PC instead of REGISTER_RISCV64_X0. Need to check
+    REGISTER_RISCV64_X0, // TODO-RISCV64-CQ: Add X0 to access DbgReg in correct order
     REGISTER_RISCV64_RA,
     REGISTER_RISCV64_SP,
     REGISTER_RISCV64_GP,

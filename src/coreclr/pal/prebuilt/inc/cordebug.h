@@ -9322,6 +9322,7 @@ enum CorDebugRegister
         REGISTER_RISCV64_F29 = ( REGISTER_RISCV64_F28 + 1 ),
         REGISTER_RISCV64_F30 = ( REGISTER_RISCV64_F29 + 1 ),
         REGISTER_RISCV64_F31 = ( REGISTER_RISCV64_F30 + 1 ),
+        REGISTER_RISCV64_X0  = ( REGISTER_RISCV64_F31 + 1 ), // TODO-RISCV64-CQ: Add X0 for an use in debug. Need to check.
     } 	CorDebugRegister;
 
 
