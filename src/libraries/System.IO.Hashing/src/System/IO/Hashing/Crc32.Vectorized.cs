@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -63,6 +64,12 @@ namespace System.IO.Hashing
             Debug.Fail("This path should be unreachable.");
             return default;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<ulong> ShiftRightBytesInVector(Vector128<ulong> operand, [ConstantExpected(Max = (byte)15)] byte numBytesToShift) =>
+            Sse2.IsSupported
+                ? Sse2.ShiftRightLogical128BitLane(operand, numBytesToShift)
+                : AdvSimd.ExtractVector128(operand.AsByte(), Vector128<byte>.Zero, numBytesToShift).AsUInt64();
 
         // We check for little endian byte order here in case we're ever on ARM in big endian mode.
         // All of these checks except the length check are elided by JIT, so the JITted implementation
@@ -168,16 +175,12 @@ namespace System.IO.Hashing
             // Fold 128 bits to 64 bits.
             x2 = CarrylessMultiplyLeftLowerRightUpper(x1, x0);
             x3 = Vector128.Create(~0, 0, ~0, 0).AsUInt64();
-            x1 = Sse2.IsSupported
-                ? Sse2.ShiftRightLogical128BitLane(x1, 8)
-                : AdvSimd.ExtractVector128(x1.AsByte(), Vector128<byte>.Zero, 8).AsUInt64();
+            x1 = ShiftRightBytesInVector(x1, 8);
             x1 ^= x2;
 
             x0 = Vector128.CreateScalar(0x0163cd6124).AsUInt64(); // k5, k0
 
-            x2 = Sse2.IsSupported
-                ? Sse2.ShiftRightLogical128BitLane(x1, 4)
-                : AdvSimd.ExtractVector128(x1.AsByte(), Vector128<byte>.Zero, 4).AsUInt64();
+            x2 = ShiftRightBytesInVector(x1, 4);
             x1 &= x3;
             x1 = CarrylessMultiplyLower(x1, x0);
             x1 ^= x2;
