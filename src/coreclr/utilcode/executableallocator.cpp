@@ -7,6 +7,8 @@
 #ifdef ENABLE_MAPRW_STATISTICS
 static int ExecutableAllocator_MapRW_Calls = 0;
 static int ExecutableAllocator_MapRW_CallsWithCacheMiss = 0;
+static int ExecutableAllocator_MapRW_LinkedListWalkDepth = 0;
+static int ExecutableAllocator_LinkedListTotalDepth = 0;
 #endif
 
 #ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
@@ -238,6 +240,9 @@ void DumpMapRWStatistics()
 {
     printf("ExecutableAllocator_MapRW_Calls: %d\n", ExecutableAllocator_MapRW_Calls);
     printf("ExecutableAllocator_MapRW_CallsWithCacheMiss: %d\n", ExecutableAllocator_MapRW_CallsWithCacheMiss);
+    printf("ExecutableAllocator_MapRW_LinkedListWalkDepth: %d\n", ExecutableAllocator_MapRW_LinkedListWalkDepth);
+    printf("ExecutableAllocator_MapRW_LinkedListAverageDepth: %f\n", (double)ExecutableAllocator_MapRW_LinkedListWalkDepth/(double)ExecutableAllocator_MapRW_CallsWithCacheMiss);
+    printf("ExecutableAllocator_LinkedListTotalDepth: %d\n", ExecutableAllocator_LinkedListTotalDepth);
 }
 #endif
 
@@ -490,6 +495,10 @@ void ExecutableAllocator::AddRXBlock(BlockRX* pBlock)
 
     pBlock->next = m_pFirstBlockRX;
     m_pFirstBlockRX = pBlock;
+
+#ifdef ENABLE_MAPRW_STATISTICS
+    ExecutableAllocator_LinkedListTotalDepth++;
+#endif
 }
 
 void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
@@ -535,6 +544,9 @@ void ExecutableAllocator::Release(void* pRX)
                     pPrevBlock->next = pBlock->next;
                 }
 
+#ifdef ENABLE_MAPRW_STATISTICS
+                ExecutableAllocator_LinkedListTotalDepth--;
+#endif
                 break;
             }
             pPrevBlock = pBlock;
@@ -881,6 +893,9 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
 
     for (BlockRX* pBlock = m_pFirstBlockRX; pBlock != NULL; pBlock = pBlock->next)
     {
+#ifdef ENABLE_MAPRW_STATISTICS
+        ExecutableAllocator_MapRW_LinkedListWalkDepth++;
+#endif
         if (pRX >= pBlock->baseRX && ((size_t)pRX + size) <= ((size_t)pBlock->baseRX + pBlock->size))
         {
             // Offset of the RX address in the originally allocated block
