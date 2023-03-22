@@ -116,9 +116,8 @@ namespace System.IO.MemoryMappedFiles.Tests
 
             // Test the same things, but with a SafeFileHandle
             using (TempFile file = new TempFile(GetTestFilePath()))
-            using (FileStream fs = File.Open(file.Path, FileMode.Open))
+            using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, FileAccess.ReadWrite))
             {
-                SafeFileHandle fileHandle = fs.SafeFileHandle;
                 // Out of range values with a fileHandle
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => MemoryMappedFile.CreateFromFile(fileHandle, CreateUniqueMapName(), 4096, (MemoryMappedFileAccess)(-2), HandleInheritability.None, true));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => MemoryMappedFile.CreateFromFile(fileHandle, CreateUniqueMapName(), 4096, (MemoryMappedFileAccess)(42), HandleInheritability.None, true));
@@ -163,8 +162,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             const int Capacity = 4096;
             using (TempFile file = new TempFile(GetTestFilePath(), Capacity))
-            using (FileStream fs = new FileStream(file.Path, FileMode.Open, fileAccess))
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, null, Capacity, mmfAccess, HandleInheritability.None, true))
+            using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, fileAccess))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fileHandle, null, Capacity, mmfAccess, HandleInheritability.None, true))
             {
                 ValidateMemoryMappedFile(mmf, Capacity, mmfAccess);
             }
@@ -240,7 +239,11 @@ namespace System.IO.MemoryMappedFiles.Tests
                 using (FileStream fs = File.Open(file.Path, FileMode.Open))
                 {
                     AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fs, string.Empty, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true));
-                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, string.Empty, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true));
+                }
+
+                using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, FileAccess.ReadWrite))
+                {
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fileHandle, string.Empty, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true));
                 }
             }
         }
@@ -323,9 +326,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             using (TempFile file = new TempFile(GetTestFilePath()))
             {
-                using (FileStream fs = File.Open(file.Path, FileMode.Open))
+                using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    SafeFileHandle fileHandle = fs.SafeFileHandle;
                     // Out of range values for capacity
                     Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMappedFile.CreateFromFile(fileHandle, null, -1, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
 
@@ -334,7 +336,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                     AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fileHandle, CreateUniqueMapName(), 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
 
                     // Larger capacity than the underlying file, but read-only such that we can't expand the file
-                    fs.SetLength(4096);
+                    RandomAccess.SetLength(fileHandle, 4096);
                     AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fileHandle, null, 8192, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
                     AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fileHandle, CreateUniqueMapName(), 8192, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
 
@@ -354,11 +356,17 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             // Out of range values for inheritability
             using (TempFile file = new TempFile(GetTestFilePath()))
-            using (FileStream fs = File.Open(file.Path, FileMode.Open))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => MemoryMappedFile.CreateFromFile(fs, CreateUniqueMapName(), 4096, MemoryMappedFileAccess.ReadWrite, inheritability, true));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, CreateUniqueMapName(), 4096, MemoryMappedFileAccess.ReadWrite, inheritability, true));
-            }
+                using (FileStream fs = File.Open(file.Path, FileMode.Open))
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => MemoryMappedFile.CreateFromFile(fs, CreateUniqueMapName(), 4096, MemoryMappedFileAccess.ReadWrite, inheritability, true));
+                }
+
+                using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, FileAccess.ReadWrite))
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => MemoryMappedFile.CreateFromFile(fileHandle, CreateUniqueMapName(), 4096, MemoryMappedFileAccess.ReadWrite, inheritability, true));
+                }
+            }    
         }
 
         /// <summary>
@@ -540,8 +548,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             // Create a file of the right size, then create the map for it.
             using (TempFile file = new TempFile(GetTestFilePath(), capacity))
-            using (FileStream fs = File.Open(file.Path, FileMode.Open))
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, mapName, capacity, access, inheritability, leaveOpen))
+            using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, FileAccess.ReadWrite))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fileHandle, mapName, capacity, access, inheritability, leaveOpen))
             {
                 ValidateMemoryMappedFile(mmf, capacity, access, inheritability);
             }
@@ -549,8 +557,8 @@ namespace System.IO.MemoryMappedFiles.Tests
             // Start with an empty file and let the map grow it to the right size.  This requires write access.
             if (IsWritable(access))
             {
-                using (FileStream fs = File.Create(GetTestFilePath()))
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, mapName, capacity, access, inheritability, leaveOpen))
+                using (SafeFileHandle fileHandle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fileHandle, mapName, capacity, access, inheritability, leaveOpen))
                 {
                     ValidateMemoryMappedFile(mmf, capacity, access, inheritability);
                 }
@@ -664,8 +672,8 @@ namespace System.IO.MemoryMappedFiles.Tests
 
             // With file handle
             using (TempFile file = new TempFile(GetTestFilePath(), DesiredCapacity))
-            using (FileStream fs = File.Open(file.Path, FileMode.Open))
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, null, DefaultCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+            using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, FileAccess.ReadWrite))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fileHandle, null, DefaultCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
             {
                 ValidateMemoryMappedFile(mmf, DesiredCapacity);
             }
@@ -859,17 +867,16 @@ namespace System.IO.MemoryMappedFiles.Tests
             const int Capacity = 4096;
 
             using (TempFile file = new TempFile(GetTestFilePath()))
-            using (FileStream fs = File.Open(file.Path, FileMode.Open))
+            using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, FileAccess.ReadWrite))
             {
                 // Handle should still be open
-                SafeFileHandle handle = fs.SafeFileHandle;
-                Assert.False(handle.IsClosed);
+                Assert.False(fileHandle.IsClosed);
 
                 // Create and close the map
-                MemoryMappedFile.CreateFromFile(handle, null, Capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen).Dispose();
+                MemoryMappedFile.CreateFromFile(fileHandle, null, Capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen).Dispose();
 
                 // The handle should now be open if leaveOpen
-                Assert.NotEqual(leaveOpen, handle.IsClosed);
+                Assert.NotEqual(leaveOpen, fileHandle.IsClosed);
             }
         }
 
@@ -918,20 +925,19 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             const int Capacity = 4096;
             using (TempFile file = new TempFile(GetTestFilePath()))
-            using (FileStream fs = File.Open(file.Path, FileMode.Open))
+            using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, FileAccess.ReadWrite))
             {
                 // Handle should still be open
-                SafeFileHandle handle = fs.SafeFileHandle;
-                Assert.False(handle.IsClosed);
+                Assert.False(fileHandle.IsClosed);
 
                 // Create the map, create each of the views, then close the map
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(handle, null, Capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fileHandle, null, Capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen))
                 using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor(0, Capacity))
                 using (MemoryMappedViewStream s = mmf.CreateViewStream(0, Capacity))
                 {
                     // Explicitly close the map. The handle should now be open iff leaveOpen.
                     mmf.Dispose();
-                    Assert.NotEqual(leaveOpen, handle.IsClosed);
+                    Assert.NotEqual(leaveOpen, fileHandle.IsClosed);
 
                     // But the views should still be usable.
                     ValidateMemoryMappedViewAccessor(acc, Capacity, MemoryMappedFileAccess.ReadWrite);
@@ -986,9 +992,9 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             const int Capacity = 4096;
             using (TempFile file = new TempFile(GetTestFilePath(), Capacity))
-            using (FileStream fs = new FileStream(file.Path, FileMode.Open))
-            using (MemoryMappedFile mmf1 = MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, null, Capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
-            using (MemoryMappedFile mmf2 = MemoryMappedFile.CreateFromFile(fs.SafeFileHandle, null, Capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+            using (SafeFileHandle fileHandle = File.OpenHandle(file.Path, FileMode.Open, FileAccess.ReadWrite))
+            using (MemoryMappedFile mmf1 = MemoryMappedFile.CreateFromFile(fileHandle, null, Capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+            using (MemoryMappedFile mmf2 = MemoryMappedFile.CreateFromFile(fileHandle, null, Capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
             using (MemoryMappedViewAccessor acc1 = mmf1.CreateViewAccessor())
             using (MemoryMappedViewAccessor acc2 = mmf2.CreateViewAccessor())
             {
@@ -1184,9 +1190,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Fact]
         public void MapHandleMatchesSafeFileHandle()
         {
-            using (FileStream fs = File.OpenWrite(GetTestFilePath()))
+            using (SafeFileHandle fileHandle = File.OpenHandle(GetTestFilePath(), FileMode.OpenOrCreate, FileAccess.ReadWrite))
             {
-                SafeFileHandle fileHandle = fs.SafeFileHandle;
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fileHandle, null, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
                 {
                     SafeMemoryMappedFileHandle handle = mmf.SafeMemoryMappedFileHandle;
