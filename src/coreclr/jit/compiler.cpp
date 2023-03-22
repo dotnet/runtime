@@ -3441,8 +3441,15 @@ bool Compiler::compJitHaltMethod()
  *    It should reflect the usefulness:overhead ratio.
  */
 
-const LPCWSTR Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
+const LPCWSTR Compiler::s_compStressModeNamesW[STRESS_COUNT + 1] = {
 #define STRESS_MODE(mode) W("STRESS_") W(#mode),
+
+    STRESS_MODES
+#undef STRESS_MODE
+};
+
+const char* Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
+#define STRESS_MODE(mode) "STRESS_" #mode,
 
     STRESS_MODES
 #undef STRESS_MODE
@@ -3491,12 +3498,41 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
     {
         if (verbose)
         {
-            printf("\n\n*** JitStress: %ws ***\n\n", s_compStressModeNames[stressArea]);
+            printf("\n\n*** JitStress: %s ***\n\n", s_compStressModeNames[stressArea]);
         }
         compActiveStressModes[stressArea] = 1;
     }
 
     return doStress;
+}
+
+//------------------------------------------------------------------------
+// compStressAreaHash: Get (or compute) a hash code for a stress area.
+//
+// Arguments:
+//   stressArea - stress mode
+//
+// Returns:
+//   A hash code for the specific stress area.
+//
+unsigned Compiler::compStressAreaHash(compStressArea area)
+{
+    static unsigned s_hashCodes[STRESS_COUNT];
+    assert(static_cast<unsigned>(area) < ArrLen(s_hashCodes));
+
+    unsigned result = s_hashCodes[area];
+    if (result == 0)
+    {
+        result = HashStringA(s_compStressModeNames[area]);
+        if (result == 0)
+        {
+            result = 1;
+        }
+
+        InterlockedExchange(&s_hashCodes[area], result);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -3529,7 +3565,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     // Does user explicitly prevent using this STRESS_MODE through the command line?
     const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
     if ((strStressModeNamesNot != nullptr) &&
-        (wcsstr(strStressModeNamesNot, s_compStressModeNames[stressArea]) != nullptr))
+        (wcsstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
     {
         return false;
     }
@@ -3538,7 +3574,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     const WCHAR* strStressModeNames = JitConfig.JitStressModeNames();
     if (strStressModeNames != nullptr)
     {
-        if (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != nullptr)
+        if (wcsstr(strStressModeNames, s_compStressModeNamesW[stressArea]) != nullptr)
         {
             return true;
         }
@@ -3580,7 +3616,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
 
     // Get a hash which can be compared with 'weight'
     assert(stressArea != 0);
-    const unsigned hash = (info.compMethodHash() ^ stressArea ^ stressLevel) % MAX_STRESS_WEIGHT;
+    const unsigned hash = (info.compMethodHash() ^ compStressAreaHash(stressArea) ^ stressLevel) % MAX_STRESS_WEIGHT;
 
     assert(hash < MAX_STRESS_WEIGHT && weight <= MAX_STRESS_WEIGHT);
     return (hash < weight);

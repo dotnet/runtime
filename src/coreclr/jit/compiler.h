@@ -9844,7 +9844,8 @@ public:
 // clang-format on
 
 #ifdef DEBUG
-    static const LPCWSTR s_compStressModeNames[STRESS_COUNT + 1];
+    static const LPCWSTR s_compStressModeNamesW[STRESS_COUNT + 1];
+    static const char*   s_compStressModeNames[STRESS_COUNT + 1];
     BYTE                 compActiveStressModes[STRESS_COUNT];
 #endif // DEBUG
 
@@ -9852,6 +9853,7 @@ public:
 
     bool compStressCompile(compStressArea stressArea, unsigned weightPercentage);
     bool compStressCompileHelper(compStressArea stressArea, unsigned weightPercentage);
+    static unsigned compStressAreaHash(compStressArea area);
 
 #ifdef DEBUG
 
