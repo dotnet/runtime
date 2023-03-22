@@ -29,6 +29,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             defaultSeverity: DiagnosticSeverity.Info,
             isEnabledByDefault: true);
 
+        private static DiagnosticDescriptor LanguageVersionNotSupported { get; } = new DiagnosticDescriptor(
+            id: "SYSLIB1102",
+            title: new LocalizableResourceString(nameof(SR.LanguageVersionIsNotSupportedTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.Language_VersionIsNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
+            category: GeneratorProjectName,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true);
+
         // Unlike sourcegen warnings, exception messages should not be localized so we keep them in source.
         private static class ExceptionMessages
         {
