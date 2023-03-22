@@ -863,6 +863,12 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
         FORBID_FAULT;
     } CONTRACTL_END
 
+    StubCodeBlockKind unusedStubKind;
+    if (wbStubKind == NULL)
+    {
+        wbStubKind = &unusedStubKind;
+    }
+
     *wbStubKind = STUB_CODE_BLOCK_UNKNOWN;
 
     RangeSection * pRS = ExecutionManager::FindCodeRange(stubAddress, ExecutionManager::ScanReaderLock);

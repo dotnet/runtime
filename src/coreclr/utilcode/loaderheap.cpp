@@ -1650,7 +1650,6 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
         if (IsInterleaved())
         {
             // Clear the RW page
-            _ASSERTE(dwSize == GetStubCodePageSize());
             memset((BYTE*)pMem + GetStubCodePageSize(), 0x00, dwSize); // Fill freed region with 0
         }
         else

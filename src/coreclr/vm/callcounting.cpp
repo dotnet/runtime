@@ -301,7 +301,7 @@ void CallCountingStub::StaticInitialize()
     #define ENUM_PAGE_SIZE(size) \
         case size: \
             CallCountingStubCode = CallCountingStubCode##size; \
-            _ASSERTE(((BYTE*)CallCountingStubCode##size##_End - (BYTE*)CallCountingStubCode##size) <= CallCountingStub::CodeSize); \
+            _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode##size##_End - (BYTE*)CallCountingStubCode##size) <= CallCountingStub::CodeSize); \
             break;
 
     switch (pageSize)
@@ -312,7 +312,7 @@ void CallCountingStub::StaticInitialize()
     }
     #undef ENUM_PAGE_SIZE
 #else
-    _ASSERTE(((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
+    _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
 #endif
 }
 

@@ -5,9 +5,9 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
-PAGE_SIZE = 16384
+#define STUB_PAGE_SIZE 0x4000
 
-#define DATA_SLOT(stub, field) (stub##Code + PAGE_SIZE + stub##Data__##field)
+#define DATA_SLOT(stub, field) (stub##Code + STUB_PAGE_SIZE + stub##Data__##field)
 
     LEAF_ENTRY StubPrecodeCode
         ldr x10, DATA_SLOT(StubPrecode, Target)
@@ -24,15 +24,14 @@ PAGE_SIZE = 16384
     LEAF_END_MARKED FixupPrecodeCode
 
     LEAF_ENTRY CallCountingStubCode
-LOCAL_LABEL(StubStart):
         ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
         ldrh w10, [x9]
         subs w10, w10, #1
         strh w10, [x9]
-        beq LOCAL_LABEL(CountReachedZero)
+        beq CountReachedZero
         ldr  x9, DATA_SLOT(CallCountingStub, TargetForMethod)
         br   x9
-LOCAL_LABEL(CountReachedZero):
+CountReachedZero
         ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
         br   x10
     LEAF_END_MARKED CallCountingStubCode
