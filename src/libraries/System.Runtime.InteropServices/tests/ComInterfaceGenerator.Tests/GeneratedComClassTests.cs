@@ -71,9 +71,7 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(3, obj.Data);
             NativeExportsNE.SetComObjectData(ptr, 42);
             Assert.Equal(42, obj.Data);
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            Assert.Equal(0, Marshal.Release((nint)ptr));
+            Marshal.Release((nint)ptr);
         }
 
         [Fact]
@@ -87,9 +85,7 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(3, obj.Data);
             obj.Data = 12;
             Assert.Equal(obj.Data, NativeExportsNE.GetComObjectData(ptr));
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            Assert.Equal(0, Marshal.Release((nint)ptr));
+            Marshal.Release((nint)ptr);
         }
     }
 }

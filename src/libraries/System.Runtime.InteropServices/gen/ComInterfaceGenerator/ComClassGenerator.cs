@@ -94,7 +94,7 @@ namespace Microsoft.Interop
                         Token(SyntaxKind.VolatileKeyword)));
             List<StatementSyntax> vtableInitializationBlock = new()
             {
-                // ComInterfaceEntry* vtables = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(<className>), sizeof(void*) * <numInterfaces>);
+                // ComInterfaceEntry* vtables = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(<className>), sizeof(ComInterfaceEntry) * <numInterfaces>);
                 LocalDeclarationStatement(
                     VariableDeclaration(
                             PointerType(
@@ -114,7 +114,7 @@ namespace Microsoft.Interop
                                             Argument(
                                                 BinaryExpression(
                                                     SyntaxKind.MultiplyExpression,
-                                                    SizeOfExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))),
+                                                    SizeOfExpression(ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
                                                     LiteralExpression(
                                                         SyntaxKind.NumericLiteralExpression,
                                                         Literal(info.ImplementedInterfacesNames.Array.Length))))))))))),
