@@ -410,7 +410,7 @@ namespace System.Reflection.Emit
 
                     pi_dll = (string?)attr.ctorArgs[0];
                     if (pi_dll == null || pi_dll.Length == 0)
-                        throw new ArgumentException(SR.Arg_DllNotFoundException);
+                        throw new ArgumentException(SR.Arg_DllNameCannotBeEmpty);
 
                     native_cc = Runtime.InteropServices.CallingConvention.Winapi;
 

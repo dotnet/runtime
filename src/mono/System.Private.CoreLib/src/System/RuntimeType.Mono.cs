@@ -1758,7 +1758,7 @@ namespace System
             // TODO: .net does more checks in unmanaged land in RuntimeTypeHandle::CreateInstance
             if (IsAbstract)
             {
-                throw new MissingMethodException(SR.Acc_CreateAbst);
+                throw new MissingMethodException(SR.Format(SR.Acc_CreateAbstEx, this));
             }
 
             unsafe

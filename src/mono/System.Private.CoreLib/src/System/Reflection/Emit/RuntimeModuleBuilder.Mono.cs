@@ -895,7 +895,7 @@ namespace System.Reflection.Emit
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (!global_type_created)
-                throw new InvalidOperationException(SR.InvalidOperation_ModuleMethodsRelyOnCreateGlobalFunctionsMethod);
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetField(name, bindingAttr);
         }
 
@@ -903,7 +903,7 @@ namespace System.Reflection.Emit
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (!global_type_created)
-                throw new InvalidOperationException(SR.InvalidOperation_ModuleMethodsRelyOnCreateGlobalFunctionsMethod);
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetFields(bindingFlags);
         }
 
@@ -911,7 +911,7 @@ namespace System.Reflection.Emit
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (!global_type_created)
-                throw new InvalidOperationException(SR.InvalidOperation_ModuleMethodsRelyOnCreateGlobalFunctionsMethod);
+                throw new InvalidOperationException(SR.InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod);
             return global_type!.AsType().GetMethods(bindingFlags);
         }
 

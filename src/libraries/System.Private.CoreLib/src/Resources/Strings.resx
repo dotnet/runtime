@@ -289,6 +289,9 @@
   <data name="Arg_DllNotFoundException" xml:space="preserve">
     <value>Dll was not found.</value>
   </data>
+  <data name="Arg_DllNameCannotBeEmpty" xml:space="preserve">
+    <value>DllName cannot be empty.</value>
+  </data>
   <data name="Arg_DuplicateWaitObjectException" xml:space="preserve">
     <value>Duplicate objects in argument.</value>
   </data>
@@ -1074,8 +1077,8 @@
   <data name="Argument_FieldDoesNotHaveAValidValue" xml:space="preserve">
     <value>Field '{0}' does not have a valid value.</value>
   </data>
-  <data name="Argument_FieldAndTypeHandleIncompatibility" xml:space="preserve">
-    <value>The field handle and the type handle are incompatible.</value>
+  <data name="Argument_FieldPropertyEventAndTypeHandleIncompatibility" xml:space="preserve">
+    <value>The field, property or event handle and the type handle are incompatible.</value>
   </data>
   <data name="Argument_FieldNeedGenericDeclaringType" xml:space="preserve">
     <value>The specified field must be declared on a generic type definition.</value>
@@ -1133,9 +1136,6 @@
   </data>
   <data name="Argument_IndexOutOfArrayBounds" xml:space="preserve">
     <value>The specified index is out of bounds of the specified array.</value>
-  </data>
-  <data name="Argument_IncompatablePropertyAndTypeHandle" xml:space="preserve">
-    <value>The property handle and the type handle are incompatible.</value>
   </data>
   <data name="Argument_InterfaceMap" xml:space="preserve">
     <value>'this' type cannot be an interface itself.</value>
@@ -1496,7 +1496,7 @@
     <value>Parameter {0} does not have a valid type.</value>
   </data>
   <data name="Argument_ParameterInvalidValue" xml:space="preserve">
-    <value>Parameter {0} does not have a valid value.</value>
+    <value>Parameter {0} is not a valid value.</value>
   </data>
   <data name="Argument_TypeParseError" xml:space="preserve">
     <value>Could not parse the type name.</value>
@@ -2614,8 +2614,8 @@
   <data name="InvalidOperation_MethodHasBody" xml:space="preserve">
     <value>Method already has a body.</value>
   </data>
-  <data name="InvalidOperation_ModuleMethodsRelyOnCreateGlobalFunctionsMethod" xml:space="preserve">
-    <value>Module-level methods cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.</value>
+  <data name="InvalidOperation_ModuleFieldsMethodsRelyOnCreateGlobalFunctionsMethod" xml:space="preserve">
+    <value>Module-level fields or methods cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.</value>
   </data>
   <data name="InvalidOperation_MustCallInitialize" xml:space="preserve">
     <value>You must call Initialize on this object instance before using it.</value>
@@ -3717,7 +3717,7 @@
     <value>PInvoke methods cannot exist on interfaces.</value>
   </data>
   <data name="Argument_BadTypeDef" xml:space="preserve">
-    <value>Bad type def, can't handle '{0}' at '{1}'.</value>
+    <value>Bad type definition, can't handle '{0}' at '{1}'.</value>
   </data>
   <data name="Argument_MethodRedefined" xml:space="preserve">
     <value>Method has been already defined.</value>
@@ -4065,7 +4065,7 @@
     <value>Could not load type '{0}' from assembly '{1}'.</value>
   </data>
   <data name="ClassLoad_General_Hex" xml:space="preserve">
-    <value>Could not load type '0x{0:x}' from assembly '0x{1:x}'.</value>
+    <value>Could not load type, method or field '0x{0:x}' from assembly '0x{1:x}'.</value>
   </data>
   <data name="ClassLoad_RankTooLarge" xml:space="preserve">
     <value>'{0}' from assembly '{1}' has too many dimensions.</value>

@@ -222,7 +222,7 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Argument_InvalidHandle);
             EventInfo ei = internal_from_handle_type(handle.Value, reflectedType.Value);
             if (ei == null)
-                throw new ArgumentException(SR.Argument_FieldAndTypeHandleIncompatibility);
+                throw new ArgumentException(SR.Argument_FieldPropertyEventAndTypeHandleIncompatibility);
             return ei;
         }
     }

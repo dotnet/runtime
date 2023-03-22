@@ -503,7 +503,7 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Argument_InvalidHandle);
             PropertyInfo pi = internal_from_handle_type(handle.Value, reflectedType.Value);
             if (pi == null)
-                throw new ArgumentException(SR.Argument_IncompatablePropertyAndTypeHandle);
+                throw new ArgumentException(SR.Argument_FieldPropertyEventAndTypeHandleIncompatibility);
             return pi;
         }
     }

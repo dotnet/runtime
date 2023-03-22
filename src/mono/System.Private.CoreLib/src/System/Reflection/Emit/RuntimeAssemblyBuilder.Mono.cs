@@ -235,7 +235,7 @@ namespace System.Reflection.Emit
 
             if (!Enum.IsDefined(typeof(AssemblyBuilderAccess), access))
                 throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
-                    "Argument value {0} is not valid.", (int)access),
+                    SR.Arg_EnumIllegalVal, (int)access),
                     nameof(access));
 
             name = n.Name;

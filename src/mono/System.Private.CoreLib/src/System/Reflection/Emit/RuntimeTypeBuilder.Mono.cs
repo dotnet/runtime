@@ -846,7 +846,7 @@ namespace System.Reflection.Emit
                 foreach (Type iface in interfaces)
                 {
                     if (iface.IsNestedPrivate && iface.Assembly != Assembly)
-                        throw new TypeLoadException(SR.Format( SR.TypeLoad_AssemblyInaccessibleInterfaceError, fullname.DisplayName, Assembly, iface.FullName ));
+                        throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblyInaccessibleInterfaceError, fullname.DisplayName, Assembly, iface.FullName));
                     if (iface.IsGenericTypeDefinition)
                         throw new BadImageFormatException();
                     if (!iface.IsInterface)

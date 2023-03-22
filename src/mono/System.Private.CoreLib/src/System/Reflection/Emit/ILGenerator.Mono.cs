@@ -348,7 +348,7 @@ namespace System.Reflection.Emit
             if (!InExceptionBlock)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             if (exceptionType != null && exceptionType.IsUserType)
-                throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
+                throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
             {
                 if (exceptionType != null)
@@ -446,7 +446,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(localType);
             if (localType.IsUserType)
-                throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
+                throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
             LocalBuilder res = new LocalBuilder(localType, this);
             res.is_pinned = pinned;
 
