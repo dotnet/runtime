@@ -3,6 +3,11 @@
 
 #ifdef HOST_64BIT
 
+#define XFEATURE_MASK_OPMASK (1 << 5)
+#define XFEATURE_MASK_ZMM_Hi256 (1 << 6)
+#define XFEATURE_MASK_Hi16_ZMM (1 << 7)
+#define XFEATURE_MASK_AVX512 (XFEATURE_MASK_OPMASK | XFEATURE_MASK_ZMM_Hi256 | XFEATURE_MASK_Hi16_ZMM)
+
 // The arch bit is normally set in the flag constants below. Since this is already arch-specific code and the arch bit is not
 // relevant, the arch bit is excluded from the flag constants below for simpler tests.
 #define CONTEXT_AMD64   0x100000
@@ -17,7 +22,7 @@
 
 #define CONTEXT_XSTATE 64
 
-#define CONTEXT_ContextFlags 6*8
+#define CONTEXT_ContextFlags (6*8)
 #define CONTEXT_SegCs CONTEXT_ContextFlags+8
 #define CONTEXT_SegDs CONTEXT_SegCs+2
 #define CONTEXT_SegEs CONTEXT_SegDs+2
@@ -49,8 +54,8 @@
 #define CONTEXT_R15 CONTEXT_R14+8
 #define CONTEXT_Rip CONTEXT_R15+8
 #define CONTEXT_FltSave CONTEXT_Rip+8
-#define FLOATING_SAVE_AREA_SIZE 4*8+24*16+96
-#define CONTEXT_Xmm0 CONTEXT_FltSave+10*16
+#define FLOATING_SAVE_AREA_SIZE (4*8)+(24*16)+96
+#define CONTEXT_Xmm0 CONTEXT_FltSave+(10*16)
 #define CONTEXT_Xmm1 CONTEXT_Xmm0+16
 #define CONTEXT_Xmm2 CONTEXT_Xmm1+16
 #define CONTEXT_Xmm3 CONTEXT_Xmm2+16
@@ -67,13 +72,20 @@
 #define CONTEXT_Xmm14 CONTEXT_Xmm13+16
 #define CONTEXT_Xmm15 CONTEXT_Xmm14+16
 #define CONTEXT_VectorRegister CONTEXT_FltSave+FLOATING_SAVE_AREA_SIZE
-#define CONTEXT_VectorControl CONTEXT_VectorRegister+16*26
+#define CONTEXT_VectorControl CONTEXT_VectorRegister+(16*26)
 #define CONTEXT_DebugControl CONTEXT_VectorControl+8
 #define CONTEXT_LastBranchToRip CONTEXT_DebugControl+8
 #define CONTEXT_LastBranchFromRip CONTEXT_LastBranchToRip+8
 #define CONTEXT_LastExceptionToRip CONTEXT_LastBranchFromRip+8
 #define CONTEXT_LastExceptionFromRip CONTEXT_LastExceptionToRip+8
-#define CONTEXT_Size CONTEXT_LastExceptionFromRip+8
+#define CONTEXT_XStateFeaturesMask CONTEXT_LastExceptionFromRip+8
+#define CONTEXT_XStateReserved0 CONTEXT_XStateFeaturesMask+8
+#define CONTEXT_Ymm0H CONTEXT_XStateReserved0+8
+#define CONTEXT_KMask0 CONTEXT_Ymm0H+(16*16)
+#define CONTEXT_Zmm0H CONTEXT_Ymm0H+(8*8)
+#define CONTEXT_XStateReserved1 CONTEXT_Zmm0H+(32*16)
+#define CONTEXT_Zmm16 CONTEXT_XStateReserved1+(8*4)
+#define CONTEXT_Size CONTEXT_Zmm16+(64*16)
 
 #else // HOST_64BIT
 

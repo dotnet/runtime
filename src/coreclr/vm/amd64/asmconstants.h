@@ -285,7 +285,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodDesc__m_wFlags == offsetof(MethodDesc, m_w
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
                     == offsetof(VASigCookie, pNDirectILStub));
 
-#define               SIZEOF__CONTEXT                 (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5)
+#define               SIZEOF__CONTEXT                 (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5 + /*XSTATE*/ + 8 + 8 + /*XSTATE_AVX*/ 16*16 + /*XSTATE_AVX512_KMASK*/ 8*8 + /*XSTATE_AVX512_ZMM_H*/ 32*16 + 8*4 + /*XSTATE_AVX512_ZMM*/ 64*16)
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT
                     == sizeof(CONTEXT));
 
@@ -437,7 +437,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Xmm15
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__VectorRegister
                     == offsetof(CONTEXT, VectorRegister[0]));
 
-#define               SIZEOF__FaultingExceptionFrame  (0x20 + SIZEOF__CONTEXT)
+#define               SIZEOF__FaultingExceptionFrame  (0x40 + SIZEOF__CONTEXT)
 ASMCONSTANTS_C_ASSERT(SIZEOF__FaultingExceptionFrame
                     == sizeof(FaultingExceptionFrame));
 

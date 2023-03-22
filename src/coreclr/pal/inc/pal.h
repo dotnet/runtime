@@ -1317,6 +1317,12 @@ QueueUserAPC(
 
 #ifdef HOST_X86
 
+// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
+// We define matching signatures for use on Unix platforms.
+
+extern "C" void __cpuid(int cpuInfo[4], int function_id);
+extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
+
 //
 // ***********************************************************************************
 //
@@ -1461,6 +1467,13 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 //
 
 #elif defined(HOST_AMD64)
+
+// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
+// We define matching signatures for use on Unix platforms.
+
+extern "C" void __cpuid(int cpuInfo[4], int function_id);
+extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
+
 // copied from winnt.h
 
 #define CONTEXT_AMD64   0x100000
@@ -1482,10 +1495,32 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000
 
+#define XSTATE_GSSE (2)
+#define XSTATE_AVX (XSTATE_GSSE)
+#define XSTATE_AVX512_KMASK (5)
+#define XSTATE_AVX512_ZMM_H (6)
+#define XSTATE_AVX512_ZMM (7)
+
+#define XSTATE_MASK_GSSE (1ui64 << (XSTATE_GSSE))
+#define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
+#define XSTATE_MASK_AVX512 ((1ui64 << (XSTATE_AVX512_KMASK)) | \
+                            (1ui64 << (XSTATE_AVX512_ZMM_H)) | \
+                            (1ui64 << (XSTATE_AVX512_ZMM)))
+
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
     LONGLONG High;
 } M128A, *PM128A;
+
+typedef struct DECLSPEC_ALIGN(32) _M256A {
+    M128A Low;
+    M128A High;
+} M256A, *PM256A;
+
+typedef struct DECLSPEC_ALIGN(64) _M512A {
+    M256A Low;
+    M256A High;
+} M512A, *PM512A;
 
 typedef struct _XMM_SAVE_AREA32 {
     WORD   ControlWord;
@@ -1623,6 +1658,84 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     DWORD64 LastBranchFromRip;
     DWORD64 LastExceptionToRip;
     DWORD64 LastExceptionFromRip;
+
+    // XSTATE
+    DWORD64 XStateFeaturesMask;
+    DWORD64 XStateReserved0;
+
+    // XSTATE_AVX
+    struct {
+        M128A Ymm0H;
+        M128A Ymm1H;
+        M128A Ymm2H;
+        M128A Ymm3H;
+        M128A Ymm4H;
+        M128A Ymm5H;
+        M128A Ymm6H;
+        M128A Ymm7H;
+        M128A Ymm8H;
+        M128A Ymm9H;
+        M128A Ymm10H;
+        M128A Ymm11H;
+        M128A Ymm12H;
+        M128A Ymm13H;
+        M128A Ymm14H;
+        M128A Ymm15H;
+    };
+
+    // XSTATE_AVX512_KMASK
+    struct {
+        DWORD64 KMask0;
+        DWORD64 KMask1;
+        DWORD64 KMask2;
+        DWORD64 KMask3;
+        DWORD64 KMask4;
+        DWORD64 KMask5;
+        DWORD64 KMask6;
+        DWORD64 KMask7;
+    };
+
+    // XSTATE_AVX512_ZMM_H
+    struct {
+        M256A Zmm0H;
+        M256A Zmm1H;
+        M256A Zmm2H;
+        M256A Zmm3H;
+        M256A Zmm4H;
+        M256A Zmm5H;
+        M256A Zmm6H;
+        M256A Zmm7H;
+        M256A Zmm8H;
+        M256A Zmm9H;
+        M256A Zmm10H;
+        M256A Zmm11H;
+        M256A Zmm12H;
+        M256A Zmm13H;
+        M256A Zmm14H;
+        M256A Zmm15H;
+    };
+
+    DWORD64 XStateReserved1[4];
+
+    // XSTATE_AVX512_ZMM
+    struct {
+        M512A Zmm16;
+        M512A Zmm17;
+        M512A Zmm18;
+        M512A Zmm19;
+        M512A Zmm20;
+        M512A Zmm21;
+        M512A Zmm22;
+        M512A Zmm23;
+        M512A Zmm24;
+        M512A Zmm25;
+        M512A Zmm26;
+        M512A Zmm27;
+        M512A Zmm28;
+        M512A Zmm29;
+        M512A Zmm30;
+        M512A Zmm31;
+    };
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //

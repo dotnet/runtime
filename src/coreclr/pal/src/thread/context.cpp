@@ -318,6 +318,34 @@ typedef int __ptrace_request;
 
 #if !HAVE_MACH_EXCEPTIONS
 
+static Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
+
+#if !__has_builtin(__cpuid)
+void __cpuid(int cpuInfo[4], int function_id)
+{
+    // Based on the Clang implementation provided in cpuid.h:
+    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+
+    __asm("  cpuid\n" \
+        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+        : "0"(function_id)
+    );
+}
+#endif
+
+#if !__has_builtin(__cpuidex)
+void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
+{
+    // Based on the Clang implementation provided in cpuid.h:
+    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+
+    __asm("  cpuid\n" \
+        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
+        : "0"(function_id), "2"(subFunction_id)
+    );
+}
+#endif
+
 /*++
 Function:
   CONTEXT_GetRegisters
@@ -682,8 +710,34 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 #if defined(HOST_AMD64) && defined(XSTATE_SUPPORTED)
     if ((lpContext->ContextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE)
     {
-        _ASSERTE(FPREG_HasYmmRegisters(native));
-        memcpy_s(FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16, lpContext->VectorRegister, sizeof(M128A) * 16);
+        if (FPREG_HasYmmRegisters(native))
+        {
+            _ASSERT((lpContext->XStateFeaturesMask & XFEATURE_MASK_YMM) == XFEATURE_MASK_YMM);
+
+            uint32_t size;
+            void *dest;
+
+            dest = FPREG_Xstate_Ymmh(native, &size);
+            _ASSERT(size == (sizeof(M128A) * 16));
+            memcpy_s(dest, sizeof(M128A) * 16, &lpContext->Ymm0H, sizeof(M128A) * 16);
+
+            if (FPREG_HasAvx512Registers(native))
+            {
+                _ASSERT((lpContext->XStateFeaturesMask & XFEATURE_MASK_AVX512) == XFEATURE_MASK_AVX512);
+
+                dest = FPREG_Xstate_Opmask(native, &size);
+                _ASSERT(size == (sizeof(DWORD64) * 8));
+                memcpy_s(dest, sizeof(DWORD64) * 8, &lpContext->KMask0, sizeof(DWORD64) * 8);
+
+                dest = FPREG_Xstate_ZmmHi256(native, &size);
+                _ASSERT(size == (sizeof(M256A) * 16));
+                memcpy_s(dest, sizeof(M256A) * 16, &lpContext->Zmm0H, sizeof(M256A) * 16);
+
+                dest = FPREG_Xstate_Hi16Zmm(native, &size);
+                _ASSERT(size == (sizeof(M512A) * 16));
+                memcpy_s(dest, sizeof(M512A) * 16, &lpContext->Zmm16, sizeof(M512A) * 16);
+            }
+        }
     }
 #endif //HOST_AMD64 && XSTATE_SUPPORTED
 }
@@ -853,7 +907,31 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #if XSTATE_SUPPORTED
         if (FPREG_HasYmmRegisters(native))
         {
-            memcpy_s(lpContext->VectorRegister, sizeof(M128A) * 16, FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16);
+            uint32_t size;
+            void *src;
+
+            src = FPREG_Xstate_Ymmh(native, &size);
+            _ASSERT(size == (sizeof(M128A) * 16));
+            memcpy_s(&lpContext->Ymm0H, sizeof(M128A) * 16, src, sizeof(M128A) * 16);
+
+            lpContext->XStateFeaturesMask |= XFEATURE_MASK_YMM;
+
+            if (FPREG_HasAvx512Registers(native))
+            {
+                src = FPREG_Xstate_Opmask(native, &size);
+                _ASSERT(size == (sizeof(DWORD64) * 8));
+                memcpy_s(&lpContext->KMask0, sizeof(DWORD64) * 8, src, sizeof(DWORD64) * 8);
+
+                src = FPREG_Xstate_ZmmHi256(native, &size);
+                _ASSERT(size == (sizeof(M256A) * 16));
+                memcpy_s(&lpContext->Zmm0H, sizeof(M256A) * 16, src, sizeof(M256A) * 16);
+
+                src = FPREG_Xstate_Hi16Zmm(native, &size);
+                _ASSERT(size == (sizeof(M512A) * 16));
+                memcpy_s(&lpContext->Zmm16, sizeof(M512A) * 16, src, sizeof(M512A) * 16);
+
+                lpContext->XStateFeaturesMask |= XFEATURE_MASK_AVX512;
+            }
         }
         else
 #endif // XSTATE_SUPPORTED
@@ -1306,18 +1384,38 @@ CONTEXT_GetThreadContextFromThreadState(
             }
             break;
 
-        case x86_AVX_STATE64:
         case x86_AVX512_STATE64:
+        {
+            if (lpContext->ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
+            {
+                x86_avx512_state64_t *pState = (x86_avx512_state64_t *)threadState;
+
+                memcpy_s(&lpContext->KMask0, sizeof(opmask_reg) * 8, &pState->__fpu_k0, sizeof(opmask_reg) * 8);
+                memcpy_s(&lpContext->Zmm0H, sizeof(ymm_reg) * 16, &pState->__fpu_zmmh0, sizeof(ymm_reg) * 16);
+                memcpy_s(&lpContext->Zmm16, sizeof(zmm_reg) * 16, &pState->__fpu_zmm16, sizeof(zmm_reg) * 16);
+
+                lpContext->XStateFeaturesMask |= XFEATURE_MASK_AVX512;
+            }
+
+            // Intentional fall-through, the AVX512 states are supersets of the AVX state
+            FALLTHROUGH;
+        }
+
+        case x86_AVX_STATE64:
+        {
             if (lpContext->ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
             {
                 x86_avx_state64_t *pState = (x86_avx_state64_t *)threadState;
-                memcpy(&lpContext->VectorRegister, &pState->__fpu_ymmh0, 16 * 16);
+                memcpy_s(&lpContext->Ymm0H, sizeof(xmm_reg) * 16, &pState->__fpu_ymmh0, sizeof(xmm_reg) * 16);
+                lpContext->XStateFeaturesMask |= XFEATURE_MASK_YMM;
             }
 
             // Intentional fall-through, the AVX states are supersets of the FLOAT state
             FALLTHROUGH;
+        }
 
         case x86_FLOAT_STATE64:
+        {
             if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)
             {
                 x86_float_state64_t *pState = (x86_float_state64_t *)threadState;
@@ -1343,6 +1441,8 @@ CONTEXT_GetThreadContextFromThreadState(
                 memcpy(&lpContext->Xmm0, &pState->__fpu_xmm0, 16 * 16);
             }
             break;
+        }
+
         case x86_THREAD_STATE:
         {
             x86_thread_state_t *pState = (x86_thread_state_t *)threadState;
@@ -1457,17 +1557,30 @@ CONTEXT_SetThreadContextOnPort(
 #ifdef HOST_AMD64
 #ifdef XSTATE_SUPPORTED
         // We're relying on the fact that the initial portion of
-        // x86_avx_state64_t is identical to x86_float_state64_t.
+        // x86_avx_state64_t is identical to x86_float_state64_t
+        // and x86_avx512_state64_t to _x86_avx_state64_t.
         // Check a few fields to make sure the assumption is correct.
         static_assert_no_msg(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
+        static_assert_no_msg(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
         static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
         static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
 
-        x86_avx_state64_t State;
+        x86_avx512_state64_t State;
         if (lpContext->ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
         {
-            StateFlavor = x86_AVX_STATE64;
-            StateCount = sizeof(State) / sizeof(natural_t);
+            if ((lpContext->XStateFeaturesMask & XFEATURE_MASK_AVX512) == XFEATURE_MASK_AVX512)
+            {
+                StateFlavor = x86_AVX512_STATE64;
+                StateCount = sizeof(State) / sizeof(natural_t);
+            }
+            else
+            {
+                _ASSERT((lpContext->XStateFeaturesMask & XFEATURE_MASK_YMM) == XFEATURE_MASK_YMM);
+                StateFlavor = x86_AVX_STATE64;
+                StateCount = sizeof(x86_avx_state64_t) / sizeof(natural_t);
+            }
         }
         else
         {
@@ -1520,7 +1633,19 @@ CONTEXT_SetThreadContextOnPort(
 #if defined(HOST_AMD64) && defined(XSTATE_SUPPORTED)
         if (lpContext->ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
         {
-            memcpy(&State.__fpu_ymmh0, lpContext->VectorRegister, 16 * 16);
+            if ((lpContext->XStateFeaturesMask & XFEATURE_MASK_AVX512) == XFEATURE_MASK_AVX512)
+            {
+                memcpy_s(&State.__fpu_k0, sizeof(_STRUCT_OPMASK_REG) * 8, lpContext->KMask0,
+                         sizeof(_STRUCT_OPMASK_REG) * 8);
+                memcpy_s(&State.__fpu_zmmh0, sizeof(_STRUCT_YMM_REG) * 16, lpContext->Zmm0H,
+                         sizeof(_STRUCT_YMM_REG) * 16);
+                memcpy_s(&State.__fpu_zmm16, sizeof(_STRUCT_ZMM_REG) * 16, lpContext->Zmm16,
+                         sizeof(_STRUCT_ZMM_REG) * 16);
+            }
+
+            _ASSERT((lpContext->XStateFeaturesMask & XFEATURE_MASK_YMM) == XFEATURE_MASK_YMM);
+            memcpy_s(&State.__fpu_ymmh0, sizeof(_STRUCT_XMM_REG) * 16, lpContext->Ymm0H, sizeof(_STRUCT_XMM_REG) * 16);
+
         }
 #endif
 
