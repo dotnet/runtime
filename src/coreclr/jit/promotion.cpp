@@ -750,7 +750,7 @@ public:
             if (rhsLcl->TypeIs(TYP_STRUCT))
             {
                 unsigned size = rhsLcl->GetLayout(m_compiler)->GetSize();
-                WriteBackBefore(use, rhsLcl->GetLclNum(), rhsLcl->GetLclOffs(), size);
+                WriteBackBefore(&asg->gtOp2, rhsLcl->GetLclNum(), rhsLcl->GetLclOffs(), size);
             }
         }
 
