@@ -179,6 +179,27 @@ namespace System.Security.Cryptography
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA512_ALG_HANDLE;
                     digestSizeInBytes = SHA512.HashSizeInBytes;
                 }
+                else if (hashAlgorithmId == HashAlgorithmNames.SHA3_256)
+                {
+                    algHandle = isHmac ?
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA3_256_ALG_HANDLE :
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_256_ALG_HANDLE;
+                    digestSizeInBytes = SHA3_256.HashSizeInBytes;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.SHA3_384)
+                {
+                    algHandle = isHmac ?
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA3_384_ALG_HANDLE :
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_384_ALG_HANDLE;
+                    digestSizeInBytes = SHA3_384.HashSizeInBytes;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.SHA3_512)
+                {
+                    algHandle = isHmac ?
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_HMAC_SHA3_512_ALG_HANDLE :
+                        Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_512_ALG_HANDLE;
+                    digestSizeInBytes = SHA3_512.HashSizeInBytes;
+                }
                 else
                 {
                     Debug.Fail("Unknown hash algorithm.");
