@@ -661,7 +661,7 @@ namespace System
                 return OpenSslVersion.Major == 1 && OpenSslVersion.Minor >= 1 && OpenSslVersion.Build >= 1;
             }
 
-            if (IsWindowsVersionOrLater(11, 0, 0)) // TODO: what is the right version here?
+            if (IsWindowsVersionOrLater(10, 0, 25314))
             {
                 return true;
             }
