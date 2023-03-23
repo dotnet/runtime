@@ -152,7 +152,7 @@ class GCConfig
 #define INT_CONFIG(name, unused_private_key, unused_public_key, unused_default, unused_doc) \
   public: static int64_t Get##name();                            \
   public: static void Set##name(int64_t value);                  \
-  private: static int64_t s_##name;                              \
+  public: static int64_t s_##name;                              \
   private: static int64_t s_Updated##name;
 
 #define STRING_CONFIG(name, unused_private_key, unused_public_key, unused_doc) \

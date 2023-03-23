@@ -1025,6 +1025,7 @@ struct ScanContext
 {
     Thread* thread_under_crawl;
     int thread_number;
+    int thread_count;
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
     bool promotion; //TRUE: Promotion, FALSE: Relocation.
     bool concurrent; //TRUE: concurrent scanning
@@ -1042,6 +1043,7 @@ struct ScanContext
 
         thread_under_crawl = 0;
         thread_number = -1;
+        thread_count = -1;
         stack_limit = 0;
         promotion = false;
         concurrent = false;

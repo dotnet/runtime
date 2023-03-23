@@ -2177,10 +2177,12 @@ uint32_t*   gc_heap::mark_array;
 uint8_t**   gc_heap::g_mark_list;
 uint8_t**   gc_heap::g_mark_list_copy;
 size_t      gc_heap::mark_list_size;
+size_t      gc_heap::g_mark_list_total_size;
 bool        gc_heap::mark_list_overflow;
 #ifdef USE_REGIONS
 uint8_t***  gc_heap::g_mark_list_piece;
 size_t      gc_heap::g_mark_list_piece_size;
+size_t      gc_heap::g_mark_list_piece_total_size;
 #endif //USE_REGIONS
 
 seg_mapping* seg_mapping_table;
@@ -2231,6 +2233,8 @@ size_t      gc_heap::g_promoted;
 #ifdef BACKGROUND_GC
 size_t      gc_heap::g_bpromoted;
 #endif //BACKGROUND_GC
+
+const int n_heaps = 1;
 
 #endif //MULTIPLE_HEAPS
 
@@ -10212,6 +10216,7 @@ size_t gc_heap::sort_mark_list()
 #ifdef USE_REGIONS
     // first set the pieces for all regions to empty
     assert (g_mark_list_piece_size >= region_count);
+    assert (g_mark_list_piece_total_size >= region_count*n_heaps);
     for (size_t region_index = 0; region_index < region_count; region_index++)
     {
         mark_list_piece_start[region_index] = NULL;
@@ -10596,12 +10601,13 @@ void gc_heap::grow_mark_list ()
 #endif //USE_VXSORT
 
     size_t new_mark_list_size = min (mark_list_size * 2, MAX_MARK_LIST_SIZE);
-    if (new_mark_list_size == mark_list_size)
+    size_t new_mark_list_total_size = mark_list_size*n_heaps;
+    if (new_mark_list_total_size == g_mark_list_total_size)
         return;
 
 #ifdef MULTIPLE_HEAPS
-    uint8_t** new_mark_list = make_mark_list (new_mark_list_size * n_heaps);
-    uint8_t** new_mark_list_copy = make_mark_list (new_mark_list_size * n_heaps);
+    uint8_t** new_mark_list = make_mark_list (new_mark_list_total_size);
+    uint8_t** new_mark_list_copy = make_mark_list (new_mark_list_total_size);
 
     if ((new_mark_list != nullptr) && (new_mark_list_copy != nullptr))
     {
@@ -10610,6 +10616,7 @@ void gc_heap::grow_mark_list ()
         delete[] g_mark_list_copy;
         g_mark_list_copy = new_mark_list_copy;
         mark_list_size = new_mark_list_size;
+        g_mark_list_total_size = new_mark_list_total_size;
     }
     else
     {
@@ -10624,6 +10631,7 @@ void gc_heap::grow_mark_list ()
         delete[] mark_list;
         g_mark_list = new_mark_list;
         mark_list_size = new_mark_list_size;
+        g_mark_list_total_size = new_mark_list_size;
     }
 #endif //MULTIPLE_HEAPS
 }
@@ -13898,10 +13906,11 @@ gc_heap::init_semi_shared()
 
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
-    g_mark_list = make_mark_list (mark_list_size*n_heaps);
+    g_mark_list_total_size = mark_list_size*n_heaps;
+    g_mark_list = make_mark_list (g_mark_list_total_size);
 
     min_balance_threshold = alloc_quantum_balance_units * CLR_SIZE * 2;
-    g_mark_list_copy = make_mark_list (mark_list_size*n_heaps);
+    g_mark_list_copy = make_mark_list (g_mark_list_total_size);
     if (!g_mark_list_copy)
     {
         goto cleanup;
@@ -13909,6 +13918,7 @@ gc_heap::init_semi_shared()
 #else //MULTIPLE_HEAPS
 
     mark_list_size = min(100*1024, max (8192, soh_segment_size/(64*32)));
+    g_mark_list_total_size = mark_list_size;
     g_mark_list = make_mark_list (mark_list_size);
 
 #endif //MULTIPLE_HEAPS
@@ -23730,6 +23740,7 @@ void gc_heap::redistribute_regions (int new_n_heaps)
     }
     // re-thread free lists
 
+    GCConfig::s_HeapVerifyLevel = 1;
 #endif //MULTIPLE_HEAPS
 }
 #endif //USE_REGIONS
@@ -25556,6 +25567,7 @@ gc_heap::scan_background_roots (promote_func* fn, int hn, ScanContext *pSC)
         pSC = &sc;
 
     pSC->thread_number = hn;
+    pSC->thread_count = n_heaps;
 
     BOOL relocate_p = (fn == &GCHeap::Relocate);
 
@@ -26692,6 +26704,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
     ScanContext sc;
     sc.thread_number = heap_number;
+    sc.thread_count = n_heaps;
     sc.promotion = TRUE;
     sc.concurrent = FALSE;
 
@@ -26868,6 +26881,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         //set up the mark lists from g_mark_list
         assert (g_mark_list);
 #ifdef MULTIPLE_HEAPS
+        mark_list_size = g_mark_list_total_size / n_heaps;
         mark_list = &g_mark_list [heap_number*mark_list_size];
 #else
         mark_list = g_mark_list;
@@ -29193,7 +29207,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
 void gc_heap::grow_mark_list_piece()
 {
-    if (g_mark_list_piece_size < region_count)
+    if (g_mark_list_piece_total_size < region_count * 2 * get_num_heaps())
     {
         delete[] g_mark_list_piece;
 
@@ -29210,7 +29224,11 @@ void gc_heap::grow_mark_list_piece()
         {
             g_mark_list_piece_size = 0;
         }
+        g_mark_list_piece_total_size = g_mark_list_piece_size * 2 * get_num_heaps();
     }
+    // update the size per heap in case the number of heaps has changed,
+    // but the total size is still sufficient
+    g_mark_list_piece_size = g_mark_list_piece_total_size / (2 * get_num_heaps());
 }
 
 void gc_heap::save_current_survived()
@@ -31205,6 +31223,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
             ScanContext sc;
             sc.thread_number = heap_number;
+            sc.thread_count = n_heaps;
             sc.promotion = FALSE;
             sc.concurrent = FALSE;
             // new generations bounds are set can call this guy
@@ -31319,6 +31338,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
         ScanContext sc;
         sc.thread_number = heap_number;
+        sc.thread_count = n_heaps;
         sc.promotion = FALSE;
         sc.concurrent = FALSE;
 
@@ -33778,6 +33798,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
 {
     ScanContext sc;
     sc.thread_number = heap_number;
+    sc.thread_count = n_heaps;
     sc.promotion = FALSE;
     sc.concurrent = FALSE;
 
@@ -35195,6 +35216,7 @@ void gc_heap::background_mark_phase ()
 
     ScanContext sc;
     sc.thread_number = heap_number;
+    sc.thread_count = n_heaps;
     sc.promotion = TRUE;
     sc.concurrent = FALSE;
 
@@ -45321,6 +45343,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
         // limit its scope to handle table verification.
         ScanContext sc;
         sc.thread_number = heap_number;
+        sc.thread_count = n_heaps;
         GCScan::VerifyHandleTable(max_generation, max_generation, &sc);
     }
 
@@ -48810,8 +48833,10 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, BOOL mark_only_p,
     sc.promotion = TRUE;
 #ifdef MULTIPLE_HEAPS
     sc.thread_number = hp->heap_number;
+    sc.thread_count = gc_heap::n_heaps;
 #else
     UNREFERENCED_PARAMETER(hp);
+    sc.thread_count = 1;
 #endif //MULTIPLE_HEAPS
 
     BOOL finalizedFound = FALSE;
@@ -48916,8 +48941,10 @@ CFinalize::RelocateFinalizationData (int gen, gc_heap* hp)
     sc.promotion = FALSE;
 #ifdef MULTIPLE_HEAPS
     sc.thread_number = hp->heap_number;
+    sc.thread_count = gc_heap::n_heaps;
 #else
     UNREFERENCED_PARAMETER(hp);
+    sc.thread_count = 1;
 #endif //MULTIPLE_HEAPS
 
     unsigned int Seg = gen_segment (gen);
