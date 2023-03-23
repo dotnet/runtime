@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Text.Unicode.Tests
 {
-    public class Utf8Tests
+    public partial class Utf8Tests
     {
         private const string X_UTF8 = "58"; // U+0058 LATIN CAPITAL LETTER X, 1 byte
         private const string X_UTF16 = "X";
