@@ -2,6 +2,10 @@ name: Known Issue Report
 description: Create a known issue directly
 labels: ["blocking-clean-ci","Known Build Error"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to report issues currently affecting PR stability, be it build or test failures.
   - type: textarea
     id: background
     attributes:
