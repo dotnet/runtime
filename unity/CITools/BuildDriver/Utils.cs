@@ -14,8 +14,10 @@ public class Utils
 
     public static void RunProcess(ProcessStartInfo psi, bool silent = false)
     {
-        if (!silent)
-            Console.WriteLine($"Running: {psi.FileName} {psi.Arguments}");
+
+        Console.WriteLine($"Running: {psi.FileName} {psi.Arguments}");
+        Console.WriteLine($"Working Directory: {psi.WorkingDirectory}");
+
         using (Process proc = new())
         {
             proc.StartInfo = psi;
