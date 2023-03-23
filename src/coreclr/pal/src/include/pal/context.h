@@ -482,7 +482,7 @@ inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *sz, ui
         _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) >= 0x0D);
 
         __cpuid(cpuidInfo, 0x0000000D);
-        _ASSERTE((cpuidInfo[CPUID_EAX] & featureIndex) != 0);
+        _ASSERTE((cpuidInfo[CPUID_EAX] & (1 << featureIndex)) != 0);
 #endif // _DEBUG
 
         __cpuidex(cpuidInfo, 0x0000000D, static_cast<int32_t>(featureIndex));
