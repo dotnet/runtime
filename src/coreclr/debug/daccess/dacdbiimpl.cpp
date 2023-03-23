@@ -7726,7 +7726,7 @@ HRESULT DacHandleWalker::Next(ULONG count, DacGcReference roots[], ULONG *pFetch
 
         #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
             case HNDTYPE_REFCOUNTED:
-                GetRefCountedHandleInfo((OBJECTREF)handle.Handle, handle.Type, &refCnt, NULL, NULL, NULL);
+                GetRefCountedHandleInfo((OBJECTREF)CLRDATA_ADDRESS_TO_TADDR(handle.Handle), handle.Type, &refCnt, NULL, NULL, NULL);
                 roots[i].i64ExtraData = refCnt;
                 roots[i].dwType = (DWORD)(roots[i].i64ExtraData ? CorHandleStrongRefCount : CorHandleWeakRefCount);
                 break;
@@ -7734,7 +7734,7 @@ HRESULT DacHandleWalker::Next(ULONG count, DacGcReference roots[], ULONG *pFetch
 
             case HNDTYPE_DEPENDENT:
                 roots[i].dwType = (DWORD)CorHandleStrongDependent;
-                roots[i].i64ExtraData = GetDependentHandleSecondary(handle.Handle).GetAddr();
+                roots[i].i64ExtraData = GetDependentHandleSecondary(CLRDATA_ADDRESS_TO_TADDR(handle.Handle)).GetAddr();
                 break;
 
             case HNDTYPE_ASYNCPINNED:
