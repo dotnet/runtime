@@ -482,6 +482,83 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_DisableDefaultReflectionSwitch_DefaultOptionsDoesNotSupportReflection()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.Serialization.DisableDefaultReflection"] = true
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                var options = JsonSerializerOptions.Default;
+                Assert.True(options.IsReadOnly);
+
+                Assert.NotNull(options.TypeInfoResolver);
+                Assert.True(options.TypeInfoResolver is not DefaultJsonTypeInfoResolver);
+                IList<IJsonTypeInfoResolver> resolverList = Assert.IsAssignableFrom<IList<IJsonTypeInfoResolver>>(options.TypeInfoResolver);
+
+                Assert.Empty(resolverList);
+                Assert.Empty(options.TypeInfoResolverChain);
+
+                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
+
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize("string"));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize("string", options));
+
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<string>("\"string\""));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_DisableDefaultReflectionSwitch_NewOptionsDoesNotSupportReflection()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.Serialization.DisableDefaultReflection"] = true
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                var options = new JsonSerializerOptions();
+                Assert.False(options.IsReadOnly);
+
+                Assert.Null(options.TypeInfoResolver);
+                Assert.Empty(options.TypeInfoResolverChain);
+
+                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
+
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string", options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+
+                Assert.False(options.IsReadOnly); // failed operations should not lock the instance
+
+                // Can still use reflection via explicit configuration
+                options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+                Assert.Equal(new[] { options.TypeInfoResolver }, options.TypeInfoResolverChain);
+
+                Assert.NotNull(options.GetTypeInfo(typeof(string)));
+                Assert.NotNull(options.GetConverter(typeof(string)));
+
+                string json = JsonSerializer.Serialize("string", options);
+                string value = JsonSerializer.Deserialize<string>(json, options);
+                Assert.Equal("string", value);
+
+            }, options).Dispose();
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
@@ -546,6 +623,31 @@ namespace System.Text.Json.Serialization.Tests
                 // A converter can be resolved when looking up JsonSerializerOptions
                 JsonConverter converter = JsonContext.Default.Options.GetConverter(typeof(MyClass));
                 Assert.IsAssignableFrom<JsonConverter<MyClass>>(converter);
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_JsonSerializerContext_Net6CompatibilitySwitch_IsOverriddenByDisableDefaultReflection()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.Serialization.DisableDefaultReflection"] = true,
+                    ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                JsonContext context = JsonContext.Default;
+                var unsupportedValue = new MyClass();
+
+                Assert.Null(context.GetTypeInfo(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, context.Options));
 
             }, options).Dispose();
         }

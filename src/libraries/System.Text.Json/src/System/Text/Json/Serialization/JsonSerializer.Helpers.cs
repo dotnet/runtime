@@ -21,9 +21,9 @@ namespace System.Text.Json
 
             options ??= JsonSerializerOptions.Default;
 
-            if (!options.IsInitializedForReflectionSerializer)
+            if (!options.IsConfiguredForJsonSerializer)
             {
-                options.InitializeForReflectionSerializer();
+                options.ConfigureForJsonSerializer();
             }
 
             // In order to improve performance of polymorphic root-level object serialization,

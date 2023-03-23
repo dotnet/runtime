@@ -5,9 +5,13 @@ namespace System.Text.Json
 {
     internal static class AppContextSwitchHelper
     {
-        public static bool IsSourceGenReflectionFallbackEnabled => s_isSourceGenReflectionFallbackEnabled;
+        public static bool IsDefaultReflectionDisabled { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "System.Text.Json.Serialization.DisableDefaultReflection",
+                isEnabled: out bool value)
+            ? value : false;
 
-        private static readonly bool s_isSourceGenReflectionFallbackEnabled =
+        public static bool IsSourceGenReflectionFallbackEnabled { get; } =
             AppContext.TryGetSwitch(
                 switchName: "System.Text.Json.Serialization.EnableSourceGenReflectionFallback",
                 isEnabled: out bool value)
