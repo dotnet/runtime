@@ -186,19 +186,6 @@ namespace System.Text.RegularExpressions.Generator
                 return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), "matchTimeout");
             }
 
-            // Parse the input pattern
-            RegexTree regexTree;
-            AnalysisResults analysis;
-            try
-            {
-                regexTree = RegexParser.Parse(pattern, regexOptions | RegexOptions.Compiled, culture); // make sure Compiled is included to get all optimizations applied to it
-                analysis = RegexTreeAnalyzer.Analyze(regexTree);
-            }
-            catch (Exception e)
-            {
-                return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), e.Message);
-            }
-
             // Determine the namespace the class is declared in, if any
             string? ns = regexMethodSymbol.ContainingType?.ContainingNamespace?.ToDisplayString(
                 SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
@@ -208,16 +195,15 @@ namespace System.Text.RegularExpressions.Generator
                 ns ?? string.Empty,
                 $"{typeDec.Identifier}{typeDec.TypeParameterList}");
 
-            var regexMethod = new RegexMethod(
+            var regexMethod = new RegexPatternAndSyntax(
                 regexType,
-                methodSyntax,
+                GetComparableLocation(methodSyntax),
                 regexMethodSymbol.Name,
                 methodSyntax.Modifiers.ToString(),
                 pattern,
                 regexOptions,
                 matchTimeout,
-                regexTree,
-                analysis);
+                culture);
 
             RegexType current = regexType;
             var parent = typeDec.Parent as TypeDeclarationSyntax;
@@ -241,10 +227,18 @@ namespace System.Text.RegularExpressions.Generator
                 kind == SyntaxKind.RecordDeclaration ||
                 kind == SyntaxKind.RecordStructDeclaration ||
                 kind == SyntaxKind.InterfaceDeclaration;
+
+            static Location GetComparableLocation(MethodDeclarationSyntax method)
+            {
+                var location = method.GetLocation();
+                return Location.Create(location.SourceTree?.FilePath ?? string.Empty, location.SourceSpan, location.GetLineSpan().Span);
+            }
         }
 
+        internal sealed record RegexPatternAndSyntax(RegexType DeclaringType, Location DiagnosticLocation, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, CultureInfo Culture);
+
         /// <summary>A regex method.</summary>
-        internal sealed record RegexMethod(RegexType DeclaringType, MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis)
+        internal sealed record RegexMethod(RegexType DeclaringType, Location DiagnosticLocation, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis)
         {
             public string? GeneratedName { get; set; }
             public bool IsDuplicate { get; set; }

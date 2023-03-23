@@ -63,6 +63,26 @@ namespace System.Text.RegularExpressions.Generator
                     GetSemanticTargetForGeneration)
                 .Where(static m => m is not null)
 
+                // Generate the tree and analysis from the pattern
+                .Select((methodOrDiagnostic, _) =>
+                {
+                    if (methodOrDiagnostic is not RegexPatternAndSyntax method)
+                    {
+                        return methodOrDiagnostic;
+                    }
+
+                    try
+                    {
+                        RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
+                        AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
+                        return new RegexMethod(method.DeclaringType, method.DiagnosticLocation, method.MethodName, method.Modifiers, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis);
+                    }
+                    catch (Exception e)
+                    {
+                        return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, method.DiagnosticLocation, e.Message);
+                    }
+                })
+
                 // Incorporate the compilation data, as it impacts code generation.
                 .Combine(compilationDataProvider)
 
@@ -80,7 +100,7 @@ namespace System.Text.RegularExpressions.Generator
                     // We'll still output a limited implementation that just caches a new Regex(...).
                     if (!SupportsCodeGeneration(regexMethod, methodOrDiagnosticAndCompilationData.Right.LanguageVersion, out string? reason))
                     {
-                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.MethodSyntax.GetLocation()), methodOrDiagnosticAndCompilationData.Right);
+                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation), methodOrDiagnosticAndCompilationData.Right);
                     }
 
                     // Generate the core logic for the regex.
