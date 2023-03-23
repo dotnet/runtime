@@ -1318,6 +1318,8 @@ QueueUserAPC(
 #if defined(HOST_X86) || defined(HOST_AMD64)
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
 // We define matching signatures for use on Unix platforms.
+//
+// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
 
 #if __has_builtin(__cpuid)
 extern "C" void __cpuid(int cpuInfo[4], int function_id);
@@ -1325,7 +1327,7 @@ extern "C" void __cpuid(int cpuInfo[4], int function_id);
 inline void __cpuid(int cpuInfo[4], int function_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
 
     __asm("  cpuid\n" \
         : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
@@ -1340,7 +1342,7 @@ extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 inline void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
 
     __asm("  cpuid\n" \
         : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
@@ -1535,15 +1537,15 @@ typedef struct DECLSPEC_ALIGN(16) _M128A {
     LONGLONG High;
 } M128A, *PM128A;
 
-typedef struct DECLSPEC_ALIGN(32) _M256A {
+typedef struct DECLSPEC_ALIGN(16) _M256 {
     M128A Low;
     M128A High;
-} M256A, *PM256A;
+} M256, *PM256;
 
-typedef struct DECLSPEC_ALIGN(64) _M512A {
-    M256A Low;
-    M256A High;
-} M512A, *PM512A;
+typedef struct DECLSPEC_ALIGN(16) _M512 {
+    M256 Low;
+    M256 High;
+} M512, *PM512;
 
 typedef struct _XMM_SAVE_AREA32 {
     WORD   ControlWord;
@@ -1720,44 +1722,42 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     // XSTATE_AVX512_ZMM_H
     struct {
-        M256A Zmm0H;
-        M256A Zmm1H;
-        M256A Zmm2H;
-        M256A Zmm3H;
-        M256A Zmm4H;
-        M256A Zmm5H;
-        M256A Zmm6H;
-        M256A Zmm7H;
-        M256A Zmm8H;
-        M256A Zmm9H;
-        M256A Zmm10H;
-        M256A Zmm11H;
-        M256A Zmm12H;
-        M256A Zmm13H;
-        M256A Zmm14H;
-        M256A Zmm15H;
+        M256 Zmm0H;
+        M256 Zmm1H;
+        M256 Zmm2H;
+        M256 Zmm3H;
+        M256 Zmm4H;
+        M256 Zmm5H;
+        M256 Zmm6H;
+        M256 Zmm7H;
+        M256 Zmm8H;
+        M256 Zmm9H;
+        M256 Zmm10H;
+        M256 Zmm11H;
+        M256 Zmm12H;
+        M256 Zmm13H;
+        M256 Zmm14H;
+        M256 Zmm15H;
     };
-
-    DWORD64 XStateReserved1[4];
 
     // XSTATE_AVX512_ZMM
     struct {
-        M512A Zmm16;
-        M512A Zmm17;
-        M512A Zmm18;
-        M512A Zmm19;
-        M512A Zmm20;
-        M512A Zmm21;
-        M512A Zmm22;
-        M512A Zmm23;
-        M512A Zmm24;
-        M512A Zmm25;
-        M512A Zmm26;
-        M512A Zmm27;
-        M512A Zmm28;
-        M512A Zmm29;
-        M512A Zmm30;
-        M512A Zmm31;
+        M512 Zmm16;
+        M512 Zmm17;
+        M512 Zmm18;
+        M512 Zmm19;
+        M512 Zmm20;
+        M512 Zmm21;
+        M512 Zmm22;
+        M512 Zmm23;
+        M512 Zmm24;
+        M512 Zmm25;
+        M512 Zmm26;
+        M512 Zmm27;
+        M512 Zmm28;
+        M512 Zmm29;
+        M512 Zmm30;
+        M512 Zmm31;
     };
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 

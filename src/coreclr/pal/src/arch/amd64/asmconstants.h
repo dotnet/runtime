@@ -89,9 +89,8 @@
 #define CONTEXT_XStateReserved0 CONTEXT_XStateFeaturesMask+8
 #define CONTEXT_Ymm0H CONTEXT_XStateReserved0+8
 #define CONTEXT_KMask0 CONTEXT_Ymm0H+(16*16)
-#define CONTEXT_Zmm0H CONTEXT_Ymm0H+(8*8)
-#define CONTEXT_XStateReserved1 CONTEXT_Zmm0H+(32*16)
-#define CONTEXT_Zmm16 CONTEXT_XStateReserved1+(8*4)
+#define CONTEXT_Zmm0H CONTEXT_KMask0+(8*8)
+#define CONTEXT_Zmm16 CONTEXT_Zmm0H+(32*16)
 #define CONTEXT_Size CONTEXT_Zmm16+(64*16)
 
 #else // HOST_64BIT

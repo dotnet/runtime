@@ -128,15 +128,13 @@ LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
     test    BYTE PTR [rdi + CONTEXT_XStateFeaturesMask], XSTATE_MASK_AVX512
     je      LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE)
 
-    // Restore the Opmask state
-    kmovq k0, qword ptr [rdi + (CONTEXT_KMask0 + 0 * 8)]
-    kmovq k1, qword ptr [rdi + (CONTEXT_KMask0 + 1 * 8)]
-    kmovq k2, qword ptr [rdi + (CONTEXT_KMask0 + 2 * 8)]
-    kmovq k3, qword ptr [rdi + (CONTEXT_KMask0 + 3 * 8)]
-    kmovq k4, qword ptr [rdi + (CONTEXT_KMask0 + 4 * 8)]
-    kmovq k5, qword ptr [rdi + (CONTEXT_KMask0 + 5 * 8)]
-    kmovq k6, qword ptr [rdi + (CONTEXT_KMask0 + 6 * 8)]
-    kmovq k7, qword ptr [rdi + (CONTEXT_KMask0 + 7 * 8)]
+    // MacOS has specialized behavior where it reports AVX512 support but doesnt
+    // actually enable AVX512 until the first instruction is executed and does so
+    // on a per thread basis. It does this by catching the faulting instruction and
+    // checking for the EVEX encoding. The kmov instructions, despite being part
+    // of the AVX512 instruction set are VEX encoded and dont trigger the enablement
+    //
+    // See https://github.com/apple/darwin-xnu/blob/main/osfmk/i386/fpu.c#L174
 
     // Restore the ZMM_Hi256 state
     vinsertf64x4 zmm0, zmm0, ymmword ptr [rdi + (CONTEXT_Zmm0H + 0 * 32)], 1
@@ -173,6 +171,16 @@ LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
     vmovups zmm29, zmmword ptr [rdi + (CONTEXT_Zmm16 + 13 * 64)]
     vmovups zmm30, zmmword ptr [rdi + (CONTEXT_Zmm16 + 14 * 64)]
     vmovups zmm31, zmmword ptr [rdi + (CONTEXT_Zmm16 + 15 * 64)]
+
+    // Restore the Opmask state
+    kmovq k0, qword ptr [rdi + (CONTEXT_KMask0 + 0 * 8)]
+    kmovq k1, qword ptr [rdi + (CONTEXT_KMask0 + 1 * 8)]
+    kmovq k2, qword ptr [rdi + (CONTEXT_KMask0 + 2 * 8)]
+    kmovq k3, qword ptr [rdi + (CONTEXT_KMask0 + 3 * 8)]
+    kmovq k4, qword ptr [rdi + (CONTEXT_KMask0 + 4 * 8)]
+    kmovq k5, qword ptr [rdi + (CONTEXT_KMask0 + 5 * 8)]
+    kmovq k6, qword ptr [rdi + (CONTEXT_KMask0 + 6 * 8)]
+    kmovq k7, qword ptr [rdi + (CONTEXT_KMask0 + 7 * 8)]
 
 LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE):
 

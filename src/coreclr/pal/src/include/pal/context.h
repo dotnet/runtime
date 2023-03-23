@@ -54,6 +54,10 @@ using asm_sigcontext::_xstate;
 #include <mach/mach_port.h>
 #endif // !HAVE_MACH_EXCEPTIONS else
 
+#if defined(XSTATE_SUPPORTED) || (defined(HOST_64BIT) && defined(TARGET_OSX))
+bool Xstate_IsAvx512Supported();
+#endif // XSTATE_SUPPORTED || (HOST_64BIT && TARGET_OSX)
+
 #ifdef HOST_S390X
 
 #define MCREG_PSWMask(mc)   ((mc).psw.mask)
@@ -400,9 +404,7 @@ struct Xstate_ExtendedFeature
     uint32_t size;
 };
 
-// XFEATURE_Hi16_ZMM is currently the largest we need and is index 7
-#define Xstate_ExtendedFeatures_Count (7)
-
+#define Xstate_ExtendedFeatures_Count (XSTATE_AVX512_ZMM + 1)
 extern Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
 
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
@@ -481,14 +483,14 @@ inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *featur
         __cpuid(cpuidInfo, 0x00000000);
         _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) >= 0x0D);
 
-        __cpuid(cpuidInfo, 0x0000000D);
+        __cpuidex(cpuidInfo, 0x0000000D, 0x00000000);
         _ASSERTE((cpuidInfo[CPUID_EAX] & (1 << featureIndex)) != 0);
 #endif // _DEBUG
 
         __cpuidex(cpuidInfo, 0x0000000D, static_cast<int32_t>(featureIndex));
 
         _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) > 0);
-        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EBX]) > FPREG_Xstate_ExtendedStateArea_Offset);
+        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EBX]) >= FPREG_Xstate_ExtendedStateArea_Offset);
 
         extendedFeature->size   = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
         extendedFeature->offset = static_cast<uint32_t>(cpuidInfo[CPUID_EBX] - FPREG_Xstate_ExtendedStateArea_Offset);
@@ -519,7 +521,7 @@ inline bool FPREG_HasAvx512Registers(const ucontext_t *uc)
     }
 
     _ASSERTE(FPREG_HasYmmRegisters(uc));
-    return true;
+    return Xstate_IsAvx512Supported();
 }
 
 inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *featureSize)
