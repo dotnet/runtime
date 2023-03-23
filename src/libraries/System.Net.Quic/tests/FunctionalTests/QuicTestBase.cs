@@ -42,32 +42,25 @@ namespace System.Net.Quic.Tests
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
 
-        private static bool s_queueDelaySet;
-        private static int s_initMessage;
-
         static unsafe QuicTestBase()
         {
+            Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{MsQuicApi.MsQuicLibraryVersion}'.");
+
             if (IsSupported)
             {
                 QUIC_SETTINGS settings = default(QUIC_SETTINGS);
                 settings.IsSet.MaxWorkerQueueDelayUs = 1;
-                settings.MaxWorkerQueueDelayUs = (uint)TimeSpan.FromSeconds(2.5).TotalMicroseconds;
-                s_queueDelaySet = StatusSucceeded(MsQuicApi.Api.ApiTable->SetParam(null, QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings));
+                settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
+                if (StatusFailed(MsQuicApi.Api.ApiTable->SetParam(null, QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
+                {
+                    Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+                }
             }
         }
 
         public unsafe QuicTestBase(ITestOutputHelper output)
         {
             _output = output;
-            if (Interlocked.Exchange(ref s_initMessage, 1) == 0)
-            {
-                _output.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{MsQuicApi.MsQuicLibraryVersion}' version.");
-                Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{MsQuicApi.MsQuicLibraryVersion}' version.");
-                if (IsSupported && !s_queueDelaySet)
-                {
-                    _output.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
-                }
-            }
         }
 
         public void Dispose()
