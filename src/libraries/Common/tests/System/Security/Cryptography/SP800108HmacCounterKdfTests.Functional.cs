@@ -96,22 +96,22 @@ namespace System.Security.Cryptography.Tests
         [InlineData(nameof(HashAlgorithmName.SHA512), 1024 / 8, new byte[] { 0xba, 0xf6, 0xed, 0xa7, 0x3a, 0xf7, 0x12, 0x27 })]
         [InlineData(nameof(HashAlgorithmName.SHA512), 1024 / 8 + 1, new byte[] { 0x34, 0xdf, 0x2d, 0x21, 0xfd, 0xf1, 0x0e, 0x13 })]
 #if NET8_0_OR_GREATER
-        [InlineData(nameof(HashAlgorithmName.SHA3_256), 1088 / 8 - 1, new byte[] { 0xa1, 0x96, 0xae, 0x83, 0x56, 0xf4, 0x2a, 0x4b })]
-        [InlineData(nameof(HashAlgorithmName.SHA3_256), 1088 / 8, new byte[] { 0xe7, 0xe9, 0xe0, 0x98, 0x09, 0x54, 0x54, 0x2d })]
-        [InlineData(nameof(HashAlgorithmName.SHA3_256), 1088 / 8 + 1, new byte[] { 0x7d, 0x7a, 0x71, 0xdf, 0x1f, 0x5d, 0x5b, 0x44 })]
-        [InlineData(nameof(HashAlgorithmName.SHA3_384), 832 / 8 - 1, new byte[] { 0xd6, 0x08, 0x69, 0xd0, 0x99, 0x98, 0x6d, 0xcc })]
-        [InlineData(nameof(HashAlgorithmName.SHA3_384), 832 / 8, new byte[] { 0x49, 0x83, 0x06, 0x4e, 0x08, 0xf8, 0x93, 0x62 })]
-        [InlineData(nameof(HashAlgorithmName.SHA3_384), 832 / 8 + 1, new byte[] { 0xcc, 0x03, 0x1f, 0x57, 0x5e, 0x0c, 0xe1, 0xe8 })]
-        [InlineData(nameof(HashAlgorithmName.SHA3_512), 576 / 8 - 1, new byte[] { 0x47, 0xd2, 0x7e, 0x61, 0x01, 0x61, 0x9a, 0xd0 })]
-        [InlineData(nameof(HashAlgorithmName.SHA3_512), 576 / 8, new byte[] { 0xda, 0x56, 0x5b, 0x08, 0x73, 0xbc, 0x4d, 0x33 })]
-        [InlineData(nameof(HashAlgorithmName.SHA3_512), 576 / 8 + 1, new byte[] { 0xd3, 0xa1, 0xfd, 0x76, 0xc4, 0xf9, 0x62, 0xc3 })]
+        [InlineData("SHA3-256", 1088 / 8 - 1, new byte[] { 0xa1, 0x96, 0xae, 0x83, 0x56, 0xf4, 0x2a, 0x4b })]
+        [InlineData("SHA3-256", 1088 / 8, new byte[] { 0xe7, 0xe9, 0xe0, 0x98, 0x09, 0x54, 0x54, 0x2d })]
+        [InlineData("SHA3-256", 1088 / 8 + 1, new byte[] { 0x7d, 0x7a, 0x71, 0xdf, 0x1f, 0x5d, 0x5b, 0x44 })]
+        [InlineData("SHA3-384", 832 / 8 - 1, new byte[] { 0xd6, 0x08, 0x69, 0xd0, 0x99, 0x98, 0x6d, 0xcc })]
+        [InlineData("SHA3-384", 832 / 8, new byte[] { 0x49, 0x83, 0x06, 0x4e, 0x08, 0xf8, 0x93, 0x62 })]
+        [InlineData("SHA3-384", 832 / 8 + 1, new byte[] { 0xcc, 0x03, 0x1f, 0x57, 0x5e, 0x0c, 0xe1, 0xe8 })]
+        [InlineData("SHA3-512", 576 / 8 - 1, new byte[] { 0x47, 0xd2, 0x7e, 0x61, 0x01, 0x61, 0x9a, 0xd0 })]
+        [InlineData("SHA3-512", 576 / 8, new byte[] { 0xda, 0x56, 0x5b, 0x08, 0x73, 0xbc, 0x4d, 0x33 })]
+        [InlineData("SHA3-512", 576 / 8 + 1, new byte[] { 0xd3, 0xa1, 0xfd, 0x76, 0xc4, 0xf9, 0x62, 0xc3 })]
 #endif
         public static void Kdk_HmacBlockBoundarySizes(string hashAlgorithmName, int kdkSize, byte[] expected)
         {
 #if NET8_0_OR_GREATER
-            if ((hashAlgorithmName == nameof(HashAlgorithmName.SHA3_256) && !SHA3_256.IsSupported) ||
-                (hashAlgorithmName == nameof(HashAlgorithmName.SHA3_384) && !SHA3_384.IsSupported) ||
-                (hashAlgorithmName == nameof(HashAlgorithmName.SHA3_512) && !SHA3_512.IsSupported))
+            if ((hashAlgorithmName == "SHA3-256" && !SHA3_256.IsSupported) ||
+                (hashAlgorithmName == "SHA3-384" && !SHA3_384.IsSupported) ||
+                (hashAlgorithmName == "SHA3-512" && !SHA3_512.IsSupported))
             {
                 throw new SkipTestException($"Algorithm '{hashAlgorithmName}' is not supported on the current platform.");
             }
@@ -334,7 +334,7 @@ namespace System.Security.Cryptography.Tests
                 // HMACSHA3_256 output size is 32 bytes
                 yield return new object[]
                 {
-                    nameof(HashAlgorithmName.SHA3_256),
+                    "SHA3-256",
                     new byte[63]
                     {
                         0x25, 0xb6, 0xc5, 0xba, 0x60, 0x47, 0x95, 0xb6, 0x5c, 0x92, 0xcb, 0x8f, 0xd2, 0x4d, 0x40, 0xfa,
@@ -346,7 +346,7 @@ namespace System.Security.Cryptography.Tests
 
                 yield return new object[]
                 {
-                    nameof(HashAlgorithmName.SHA3_256),
+                    "SHA3-256",
                     new byte[64]
                     {
                         0xc8, 0x8a, 0xfe, 0xd4, 0x62, 0xa6, 0x9e, 0xa6, 0x90, 0xa7, 0xb1, 0xe2, 0x01, 0xff, 0x67, 0x52,
@@ -358,7 +358,7 @@ namespace System.Security.Cryptography.Tests
 
                 yield return new object[]
                 {
-                    nameof(HashAlgorithmName.SHA3_256),
+                    "SHA3-256",
                     new byte[65]
                     {
                         0xcc, 0x3a, 0x45, 0x55, 0x26, 0x1e, 0x56, 0xf4, 0x3c, 0x18, 0x66, 0x1d, 0xa8, 0xe3, 0x91, 0xe7,
@@ -375,7 +375,7 @@ namespace System.Security.Cryptography.Tests
                 // HMACSHA3_384 output size is 48 bytes
                 yield return new object[]
                 {
-                    nameof(HashAlgorithmName.SHA3_384),
+                    "SHA3-384",
                     new byte[95]
                     {
                         0x80, 0x3b, 0x0a, 0x83, 0xe5, 0xae, 0xab, 0xff, 0x16, 0x7a, 0x04, 0x60, 0x97, 0x74, 0x39, 0xcf,
@@ -389,7 +389,7 @@ namespace System.Security.Cryptography.Tests
 
                 yield return new object[]
                 {
-                    nameof(HashAlgorithmName.SHA3_384),
+                    "SHA3-384",
                     new byte[96]
                     {
                         0xb8, 0xea, 0xbd, 0xcb, 0x67, 0xcb, 0xd7, 0xf5, 0x12, 0xdf, 0xc2, 0x35, 0x89, 0x66, 0x80, 0x6f,
@@ -403,7 +403,7 @@ namespace System.Security.Cryptography.Tests
 
                 yield return new object[]
                 {
-                    nameof(HashAlgorithmName.SHA3_384),
+                    "SHA3-384",
                     new byte[97]
                     {
                         0x62, 0x93, 0xa5, 0x45, 0x03, 0x7a, 0x2f, 0x50, 0xfe, 0x6b, 0xe6, 0x85, 0x56, 0x88, 0x8c, 0x78,
@@ -422,7 +422,7 @@ namespace System.Security.Cryptography.Tests
                 // HMACSHA3_512 output size is 64 bytes
                 yield return new object[]
                 {
-                    nameof(HashAlgorithmName.SHA3_512),
+                    "SHA3-512",
                     new byte[127]
                     {
                         0x41, 0xe4, 0xb5, 0xe6, 0x5b, 0x8c, 0xce, 0x14, 0xa8, 0x39, 0xd3, 0xdf, 0xb4, 0x27, 0x0f, 0xff,
@@ -438,7 +438,7 @@ namespace System.Security.Cryptography.Tests
 
                 yield return new object[]
                 {
-                    nameof(HashAlgorithmName.SHA3_512),
+                    "SHA3-512",
                     new byte[128]
                     {
                         0xbe, 0x9f, 0x29, 0xd7, 0x9d, 0x11, 0x7e, 0xd7, 0x33, 0xd4, 0xcf, 0x66, 0xed, 0x1a, 0x61, 0xfd,
@@ -454,7 +454,7 @@ namespace System.Security.Cryptography.Tests
 
                 yield return new object[]
                 {
-                    nameof(HashAlgorithmName.SHA3_512),
+                    "SHA3-512",
                     new byte[129]
                     {
                         0x5f, 0xf7, 0xd9, 0x1e, 0x98, 0xb3, 0xa4, 0xab, 0x4d, 0xc8, 0x50, 0x9a, 0xd7, 0x50, 0x37, 0xba,

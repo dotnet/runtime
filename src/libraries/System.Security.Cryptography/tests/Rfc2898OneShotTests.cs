@@ -305,9 +305,9 @@ namespace System.Security.Cryptography
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DoesNotSupportSha3))]
-        [InlineData(nameof(HashAlgorithmName.SHA3_256))]
-        [InlineData(nameof(HashAlgorithmName.SHA3_384))]
-        [InlineData(nameof(HashAlgorithmName.SHA3_512))]
+        [InlineData("SHA3-256")]
+        [InlineData("SHA3-384")]
+        [InlineData("SHA3-512")]
         public static void UnsupportedPkbdf2Algorithms(string hashAlgorithm)
         {
             HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
@@ -409,7 +409,7 @@ namespace System.Security.Cryptography
             // hashAlgorithm, password, salt, iterations, expected
             yield return new object[]
             {
-                nameof(HashAlgorithmName.SHA3_256),
+                "SHA3-256",
                 "password",
                 "salt",
                 4096,
@@ -418,7 +418,7 @@ namespace System.Security.Cryptography
 
             yield return new object[]
             {
-                nameof(HashAlgorithmName.SHA3_384),
+                "SHA3-384",
                 "password",
                 "salt",
                 4096,
@@ -427,7 +427,7 @@ namespace System.Security.Cryptography
 
             yield return new object[]
             {
-                nameof(HashAlgorithmName.SHA3_512),
+                "SHA3-512",
                 "password",
                 "salt",
                 4096,

@@ -614,7 +614,7 @@ namespace System.Security.Cryptography
                 yield return new KnownValuesTestCase
                 {
                     CaseName = "OpenSSL SHA3-256",
-                    HashAlgorithmName = nameof(HashAlgorithmName.SHA3_256),
+                    HashAlgorithmName = "SHA3-256",
                     Password = "password",
                     Salt = "salt"u8.ToArray(),
                     IterationCount = 4096,
@@ -625,7 +625,7 @@ namespace System.Security.Cryptography
                 yield return new KnownValuesTestCase
                 {
                     CaseName = "OpenSSL SHA3-384",
-                    HashAlgorithmName = nameof(HashAlgorithmName.SHA3_384),
+                    HashAlgorithmName = "SHA3-384",
                     Password = "password",
                     Salt = "salt"u8.ToArray(),
                     IterationCount = 4096,
@@ -636,7 +636,7 @@ namespace System.Security.Cryptography
                 yield return new KnownValuesTestCase
                 {
                     CaseName = "OpenSSL SHA3-512",
-                    HashAlgorithmName = nameof(HashAlgorithmName.SHA3_512),
+                    HashAlgorithmName = "SHA3-512",
                     Password = "password",
                     Salt = "salt"u8.ToArray(),
                     IterationCount = 4096,

@@ -74,13 +74,13 @@ internal static partial class Interop
                 case nameof(HashAlgorithmName.SHA256): return EvpSha256();
                 case nameof(HashAlgorithmName.SHA384): return EvpSha384();
                 case nameof(HashAlgorithmName.SHA512): return EvpSha512();
-                case nameof(HashAlgorithmName.SHA3_256):
+                case "SHA3-256":
                     IntPtr sha3_256 = EvpSha3_256();
                     return sha3_256 != 0 ? sha3_256 : throw new PlatformNotSupportedException();
-                case nameof(HashAlgorithmName.SHA3_384):
+                case "SHA3-384":
                     IntPtr sha3_384 = EvpSha3_384();
                     return sha3_384 != 0 ? sha3_384 : throw new PlatformNotSupportedException();
-                case nameof(HashAlgorithmName.SHA3_512):
+                case "SHA3-512":
                     IntPtr sha3_512 = EvpSha3_512();
                     return sha3_512 != 0 ? sha3_512 : throw new PlatformNotSupportedException();
                 case nameof(HashAlgorithmName.MD5): return EvpMd5();
