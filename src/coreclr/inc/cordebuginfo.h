@@ -192,11 +192,7 @@ public:
 #elif TARGET_AMD64
         REGNUM_SP = REGNUM_RSP,
 #elif TARGET_ARM
-#ifdef REDHAWK
-        REGNUM_FP = REGNUM_R7,
-#else
         REGNUM_FP = REGNUM_R11,
-#endif //REDHAWK
 #elif TARGET_ARM64
         //Nothing to do here. FP is already alloted.
 #elif TARGET_LOONGARCH64

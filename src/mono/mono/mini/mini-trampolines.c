@@ -977,10 +977,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	MonoMethod *invoke = tramp_info->invoke;
 	guint8 *impl_this = (guint8 *)tramp_info->impl_this;
 	guint8 *impl_nothis = (guint8 *)tramp_info->impl_nothis;
-	ERROR_DECL (err);
 	MonoMethodSignature *sig;
 	gpointer addr, compiled_method;
-	gboolean is_remote = FALSE;
 
 	UnlockedIncrement (&trampoline_calls);
 
@@ -998,29 +996,26 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		 * (ctor_with_method () does this, but it doesn't store the wrapper back into
 		 * delegate->method).
 		 */
-		if (!is_remote) {
-			sig = tramp_info->sig;
-			if (!(sig && method == tramp_info->method)) {
-				error_init (err);
-				sig = mono_method_signature_checked (method, err);
-				if (!sig) {
-					mono_error_set_pending_exception (err);
-					return NULL;
-				}
+		sig = tramp_info->sig;
+		if (!(sig && method == tramp_info->method)) {
+			sig = mono_method_signature_checked (method, error);
+			if (!sig) {
+				mono_error_set_pending_exception (error);
+				return NULL;
 			}
+		}
 
-			if (sig->hasthis && m_class_is_valuetype (method->klass)) {
-				gboolean need_unbox = TRUE;
+		if (sig->hasthis && m_class_is_valuetype (method->klass)) {
+			gboolean need_unbox = TRUE;
 
-				if (tramp_info->invoke_sig->param_count > sig->param_count && m_type_is_byref (tramp_info->invoke_sig->params [0]))
-					need_unbox = FALSE;
+			if (tramp_info->invoke_sig->param_count > sig->param_count && m_type_is_byref (tramp_info->invoke_sig->params [0]))
+				need_unbox = FALSE;
 
-				if (need_unbox) {
-					if (mono_aot_only)
-						need_unbox_tramp = TRUE;
-					else
-						method = mono_marshal_get_unbox_wrapper (method);
-				}
+			if (need_unbox) {
+				if (mono_aot_only)
+					need_unbox_tramp = TRUE;
+				else
+					method = mono_marshal_get_unbox_wrapper (method);
 			}
 		}
 	// If "delegate->method_ptr" is null mono_get_addr_from_ftnptr will fail if
@@ -1035,10 +1030,9 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	if (method) {
 		sig = tramp_info->sig;
 		if (!(sig && method == tramp_info->method)) {
-			error_init (err);
-			sig = mono_method_signature_checked (method, err);
+			sig = mono_method_signature_checked (method, error);
 			if (!sig) {
-				mono_error_set_pending_exception (err);
+				mono_error_set_pending_exception (error);
 				return NULL;
 			}
 		}
@@ -1063,18 +1057,11 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			}
 		}
 
-		if (delegate->method_ptr == NULL && tramp_info->method == NULL && delegate->target != NULL && method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
-			/* tramp_info->method == NULL happens when someone asks us to JIT some delegate's
-			 * Invoke method (see compile_special).  In that case if method is virtual, the target
-			 * could be some derived class, so we need to find the correct override.
+		if (delegate->method_is_virtual) {
+			/*
+			 * If the delegate was created by handle_delegate_ctor (virtual==TRUE), the
+			 * ldvirtftn instruction was skipped, so we have to do it now.
 			 */
-			/* FIXME: does it make sense that we get called with tramp_info for the Invoke? */
-			method = mono_object_get_virtual_method_internal (delegate->target, method);
-			enable_caching = FALSE;
-		} else if (delegate->target &&
-			method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
-			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
-			mono_class_is_abstract (method->klass)) {
 			method = mono_object_get_virtual_method_internal (delegate->target, method);
 			enable_caching = FALSE;
 		}
@@ -1134,6 +1121,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		}
 		code = (guint8 *)mini_add_method_trampoline (m, code, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
 	}
+
+	mono_memory_barrier ();
 
 	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
 	if (enable_caching && !callvirt && tramp_info->method) {
@@ -1379,19 +1368,22 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
  * mono_create_delegate_trampoline_info:
  *
  *  Create a trampoline info structure for the KLASS+METHOD pair.
+ * If VIRTUAL is true, the delegate was created using ldvirtftn, so invoking it needs
+ * to either do a virtual call or do a virtual method lookup.
  */
 MonoDelegateTrampInfo*
-mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method)
+mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboolean is_virtual)
 {
 	MonoMethod *invoke;
 	ERROR_DECL (error);
 	MonoDelegateTrampInfo *tramp_info;
-	MonoClassMethodPair pair, *dpair;
+	MonoDelegateClassMethodPair pair, *dpair;
 	MonoMemoryManager *mm_class, *mm_method, *mm;
 	MonoJitMemoryManager *jit_mm;
 
 	pair.klass = klass;
 	pair.method = method;
+	pair.is_virtual = is_virtual;
 
 	if (method) {
 		mm_class = m_class_get_mem_manager (klass);
@@ -1403,7 +1395,7 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method)
 	}
 
 	jit_mm_lock (jit_mm);
-	tramp_info = (MonoDelegateTrampInfo *)g_hash_table_lookup (jit_mm->delegate_trampoline_hash, &pair);
+	tramp_info = (MonoDelegateTrampInfo *)g_hash_table_lookup (jit_mm->delegate_info_hash, &pair);
 	jit_mm_unlock (jit_mm);
 	if (tramp_info)
 		return tramp_info;
@@ -1415,6 +1407,7 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method)
 	tramp_info->klass = klass;
 	tramp_info->invoke = invoke;
 	tramp_info->invoke_sig = mono_method_signature_internal (invoke);
+	tramp_info->is_virtual = is_virtual;
 	// FIXME: Use a different conditional
 #ifndef HOST_WASM
 	if (!mono_llvm_only) {
@@ -1428,20 +1421,25 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method)
 		tramp_info->sig = mono_method_signature_checked (method, error);
 		tramp_info->need_rgctx_tramp = mono_method_needs_static_rgctx_invoke (method, FALSE);
 	}
+
 #ifndef HOST_WASM
-	if (!mono_llvm_only) {
-		guint32 code_size = 0;
-		tramp_info->invoke_impl = mono_create_specific_trampoline (jit_mm->mem_manager, tramp_info, MONO_TRAMPOLINE_DELEGATE, &code_size);
-		g_assert (code_size);
+	if (is_virtual) {
+		tramp_info->invoke_impl = mono_get_delegate_virtual_invoke_impl (mono_method_signature_internal (invoke), method);
+	} else {
+		if (!mono_llvm_only) {
+			guint32 code_size = 0;
+			tramp_info->invoke_impl = mono_create_specific_trampoline (jit_mm->mem_manager, tramp_info, MONO_TRAMPOLINE_DELEGATE, &code_size);
+			g_assert (code_size);
+		}
 	}
 #endif
 
-	dpair = (MonoClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoClassMethodPair));
-	memcpy (dpair, &pair, sizeof (MonoClassMethodPair));
+	dpair = (MonoDelegateClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateClassMethodPair));
+	memcpy (dpair, &pair, sizeof (MonoDelegateClassMethodPair));
 
 	/* store trampoline address */
 	jit_mm_lock (jit_mm);
-	g_hash_table_insert (jit_mm->delegate_trampoline_hash, dpair, tramp_info);
+	g_hash_table_insert (jit_mm->delegate_info_hash, dpair, tramp_info);
 	jit_mm_unlock (jit_mm);
 
 	return tramp_info;
@@ -1459,16 +1457,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 	if (mono_llvm_only || (mono_use_interpreter && !mono_aot_only))
 		return (gpointer)no_delegate_trampoline;
 
-	return mono_create_delegate_trampoline_info (klass, NULL)->invoke_impl;
-}
-
-gpointer
-mono_create_delegate_virtual_trampoline (MonoClass *klass, MonoMethod *method)
-{
-	MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
-	g_assert (invoke);
-
-	return mono_get_delegate_virtual_invoke_impl (mono_method_signature_internal (invoke), method);
+	return mono_create_delegate_trampoline_info (klass, NULL, FALSE)->invoke_impl;
 }
 
 gpointer

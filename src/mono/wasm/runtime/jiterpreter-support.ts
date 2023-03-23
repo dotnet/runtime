@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { mono_assert } from "./types";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
 
@@ -16,26 +17,116 @@ export declare interface MintOpcodePtr extends NativePointer {
     __brand: "MintOpcodePtr"
 }
 
+export const enum JiterpNumberMode {
+    U32 = 0,
+    I32 = 1,
+    F32 = 2,
+    F64 = 3
+}
+
+export const enum BailoutReason {
+    Unknown,
+    InterpreterTiering,
+    NullCheck,
+    VtableNotInitialized,
+    Branch,
+    BackwardBranch,
+    ConditionalBranch,
+    ConditionalBackwardBranch,
+    ComplexBranch,
+    ArrayLoadFailed,
+    ArrayStoreFailed,
+    StringOperationFailed,
+    DivideByZero,
+    Overflow,
+    Return,
+    Call,
+    Throw,
+    AllocFailed,
+    SpanOperationFailed,
+    CastFailed,
+    SafepointBranchTaken,
+    UnboxFailed,
+    CallDelegate,
+    Debugging,
+    Icall,
+}
+
+export const BailoutReasonNames = [
+    "Unknown",
+    "InterpreterTiering",
+    "NullCheck",
+    "VtableNotInitialized",
+    "Branch",
+    "BackwardBranch",
+    "ConditionalBranch",
+    "ConditionalBackwardBranch",
+    "ComplexBranch",
+    "ArrayLoadFailed",
+    "ArrayStoreFailed",
+    "StringOperationFailed",
+    "DivideByZero",
+    "Overflow",
+    "Return",
+    "Call",
+    "Throw",
+    "AllocFailed",
+    "SpanOperationFailed",
+    "CastFailed",
+    "SafepointBranchTaken",
+    "UnboxFailed",
+    "CallDelegate",
+    "Debugging",
+    "Icall",
+];
+
 type FunctionType = [
     index: FunctionTypeIndex,
     parameters: { [name: string]: WasmValtype },
     returnType: WasmValtype,
-    signature: string
+    signature: string,
+    permanent: boolean,
 ];
 
 type FunctionTypeIndex = number;
 
 type FunctionTypeByIndex = [
     parameters: { [name: string]: WasmValtype },
+    parameterCount: number,
     returnType: WasmValtype,
 ];
 
+type FunctionInfo = {
+    index: number;
+    name: string;
+    typeName: string;
+    typeIndex: number;
+    locals: { [name: string]: WasmValtype };
+    export: boolean;
+    generator: Function;
+    error: Error | null;
+    blob: Uint8Array | null;
+}
+
+type ImportedFunctionInfo = {
+    index?: number;
+    typeIndex: number;
+    module: string;
+    name: string;
+    assumeUsed: boolean;
+    func: Function;
+}
+
+const compressedNameCache : { [number: number] : string } = {};
+
 export class WasmBuilder {
+    cfg: Cfg;
     stack: Array<BlobBuilder>;
     stackSize!: number;
     inSection!: boolean;
     inFunction!: boolean;
-    locals = new Map<string, [WasmValtype, number]>();
+    allowNullCheckOptimization!: boolean;
+    locals = new Map<string, number>();
 
     permanentFunctionTypeCount = 0;
     permanentFunctionTypes: { [name: string] : FunctionType } = {};
@@ -47,11 +138,16 @@ export class WasmBuilder {
     functionTypesByShape!: { [shape: string] : FunctionTypeIndex };
     functionTypesByIndex: { [index: number] : FunctionTypeByIndex } = {};
 
+    permanentImportedFunctionCount = 0;
+    permanentImportedFunctions: { [name: string] : ImportedFunctionInfo } = {};
+
     importedFunctionCount!: number;
-    importedFunctions!: { [name: string] : [
-        index: number, typeIndex: number, unknown: string
-    ] };
-    importsToEmit!: Array<[string, string, number, number]>;
+    importedFunctions!: { [name: string] : ImportedFunctionInfo };
+    nextImportIndex = 0;
+
+    functions: Array<FunctionInfo> = [];
+    estimatedExportBytes = 0;
+
     argumentCount!: number;
     activeBlocks!: number;
     base!: MintOpcodePtr;
@@ -59,11 +155,15 @@ export class WasmBuilder {
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;
     constantSlots: Array<number> = [];
+    backBranchOffsets: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
+
+    compressImportNames = false;
 
     constructor (constantSlotCount: number) {
         this.stack = [new BlobBuilder()];
         this.clear(constantSlotCount);
+        this.cfg = new Cfg(this);
     }
 
     clear (constantSlotCount: number) {
@@ -78,9 +178,19 @@ export class WasmBuilder {
         this.functionTypesByShape = Object.create(this.permanentFunctionTypesByShape);
         this.functionTypesByIndex = Object.create(this.permanentFunctionTypesByIndex);
 
-        this.importedFunctionCount = 0;
-        this.importedFunctions = {};
-        this.importsToEmit = [];
+        this.nextImportIndex = 0;
+        this.importedFunctionCount = this.permanentImportedFunctionCount;
+        this.importedFunctions = Object.create(this.permanentImportedFunctions);
+
+        for (const k in this.importedFunctions) {
+            const f = this.importedFunctions[k];
+            if (!f.assumeUsed)
+                f.index = undefined;
+        }
+
+        this.functions.length = 0;
+        this.estimatedExportBytes = 0;
+
         this.argumentCount = 0;
         this.current.clear();
         this.traceBuf.length = 0;
@@ -90,29 +200,46 @@ export class WasmBuilder {
         this.constantSlots.length = this.options.useConstants ? constantSlotCount : 0;
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
+        this.backBranchOffsets.length = 0;
+
+        this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
 
-    push () {
+    _push () {
         this.stackSize++;
         if (this.stackSize >= this.stack.length)
             this.stack.push(new BlobBuilder());
         this.current.clear();
     }
 
-    pop () {
+    _pop (writeToOutput: boolean) {
         if (this.stackSize <= 1)
             throw new Error("Stack empty");
 
         const current = this.current;
         this.stackSize--;
 
-        this.appendULeb(current.size);
-        const av = current.getArrayView();
-        this.appendBytes(av);
+        if (writeToOutput) {
+            this.appendULeb(current.size);
+            current.copyTo(this.current);
+            return null;
+        } else
+            return current.getArrayView(false).slice(0, current.size);
     }
 
+    // HACK: Approximate amount of space we need to generate the full module at present
+    // FIXME: This does not take into account any other functions already generated if they weren't
+    //  emitted into the module immediately
     get bytesGeneratedSoFar () {
-        return this.stack[0].size;
+        return this.stack[0].size +
+            // HACK: A random constant for section headers and padding
+            32 +
+            // mod (2 bytes) name (2-3 bytes) type (1 byte) typeidx (1-2 bytes)
+            (this.importedFunctionCount * 8) +
+            // type index for each function
+            (this.functions.length * 2) +
+            // export entry for each export
+            this.estimatedExportBytes;
     }
 
     get current() {
@@ -194,15 +321,9 @@ export class WasmBuilder {
         }
     }
 
-    ip_const (value: MintOpcodePtr, highBit?: boolean) {
+    ip_const (value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
-        let relativeValue = <any>value - <any>this.base;
-        if (highBit) {
-            // it is impossible to do this in JS as far as i can tell
-            // relativeValue |= 0x80000000;
-            relativeValue += 0xF000000;
-        }
-        this.appendLeb(relativeValue);
+        this.appendLeb(<any>value - <any>this.base);
     }
 
     i52_const (value: number) {
@@ -232,15 +353,24 @@ export class WasmBuilder {
             if (permanent) {
                 this.permanentFunctionTypeCount++;
                 this.permanentFunctionTypesByShape[shape] = index;
-                this.permanentFunctionTypesByIndex[index] = [parameters, returnType];
+                this.permanentFunctionTypesByIndex[index] = [
+                    parameters,
+                    Object.values(parameters).length,
+                    returnType
+                ];
             } else {
                 this.functionTypesByShape[shape] = index;
-                this.functionTypesByIndex[index] = [parameters, returnType];
+                this.functionTypesByIndex[index] = [
+                    parameters,
+                    Object.values(parameters).length,
+                    returnType
+                ];
             }
         }
 
         const tup : FunctionType = [
-            index, parameters, returnType, `(${JSON.stringify(parameters)}) -> ${returnType}`
+            index, parameters, returnType,
+            `(${JSON.stringify(parameters)}) -> ${returnType}`, permanent
         ];
         if (permanent)
             this.permanentFunctionTypes[name] = tup;
@@ -258,11 +388,12 @@ export class WasmBuilder {
             console.log(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
         */
         for (let i = 0; i < this.functionTypeCount; i++) {
-            const parameters = this.functionTypesByIndex[i][0];
-            const returnType = this.functionTypesByIndex[i][1];
+            const parameters = this.functionTypesByIndex[i][0],
+                parameterCount = this.functionTypesByIndex[i][1],
+                returnType = this.functionTypesByIndex[i][2];
             this.appendU8(0x60);
             // Parameters
-            this.appendULeb(Object.keys(parameters).length);
+            this.appendULeb(parameterCount);
             for (const k in parameters)
                 this.appendU8(parameters[k]);
             // Return type(s)
@@ -275,17 +406,47 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    generateImportSection () {
+    getImportedFunctionTable () : any {
+        const imports : any = {};
+        for (const k in this.importedFunctions) {
+            const f = this.importedFunctions[k];
+            const name = this.getCompressedName(f);
+            imports[name] = f.func;
+        }
+        return imports;
+    }
+
+    getCompressedName (ifi: ImportedFunctionInfo) {
+        if (!this.compressImportNames || typeof(ifi.index) !== "number")
+            return ifi.name;
+
+        let result = compressedNameCache[ifi.index!];
+        if (typeof (result) !== "string")
+            compressedNameCache[ifi.index!] = result = ifi.index!.toString(shortNameBase);
+        return result;
+    }
+
+    _generateImportSection () {
+        const importsToEmit = [];
+        for (const k in this.importedFunctions) {
+            const f = this.importedFunctions[k];
+            if (f.index !== undefined)
+                importsToEmit.push(f);
+        }
+        importsToEmit.sort((lhs, rhs) => lhs.index! - rhs.index!);
+
         // Import section
         this.beginSection(2);
-        this.appendULeb(1 + this.importsToEmit.length + this.constantSlots.length);
+        this.appendULeb(1 + importsToEmit.length + this.constantSlots.length);
 
-        for (let i = 0; i < this.importsToEmit.length; i++) {
-            const tup = this.importsToEmit[i];
-            this.appendName(tup[0]);
-            this.appendName(tup[1]);
-            this.appendU8(tup[2]);
-            this.appendULeb(tup[3]);
+        // console.log(`referenced ${importsToEmit.length}/${allImports.length} import(s)`);
+        for (let i = 0; i < importsToEmit.length; i++) {
+            const ifi = importsToEmit[i];
+            // console.log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.friendlyName}`);
+            this.appendName(ifi.module);
+            this.appendName(this.getCompressedName(ifi));
+            this.appendU8(0x0); // function
+            this.appendU8(ifi.typeIndex);
         }
 
         for (let i = 0; i < this.constantSlots.length; i++) {
@@ -307,33 +468,126 @@ export class WasmBuilder {
 
     defineImportedFunction (
         module: string, name: string, functionTypeName: string,
-        wasmName?: string
-    ) {
-        const index = this.importedFunctionCount++;
+        assumeUsed: boolean, permanent: boolean, func: Function | number
+    ) : ImportedFunctionInfo {
+        if (permanent && (this.importedFunctionCount > this.permanentImportedFunctionCount))
+            throw new Error("New permanent imports cannot be defined after non-permanent ones");
         const type = this.functionTypes[functionTypeName];
         if (!type)
             throw new Error("No function type named " + functionTypeName);
+        if (permanent && !type[4])
+            throw new Error("A permanent import must have a permanent function type");
         const typeIndex = type[0];
-        this.importedFunctions[name] = [
-            index, typeIndex, type[3]
-        ];
-        this.importsToEmit.push([module, wasmName || name, 0, typeIndex]);
-        return index;
+        const table = permanent ? this.permanentImportedFunctions : this.importedFunctions;
+        const index = assumeUsed
+            ? (
+                permanent
+                    ? this.permanentImportedFunctionCount++
+                    : this.importedFunctionCount++
+            )
+            : undefined;
+        if (typeof (func) === "number")
+            func = getWasmFunctionTable().get(func);
+        if (typeof (func) !== "function")
+            throw new Error(`Value passed for imported function ${name} was not a function or valid function pointer`);
+        const result = table[name] = {
+            index,
+            typeIndex,
+            module,
+            name,
+            assumeUsed,
+            func
+        };
+        return result;
+    }
+
+    defineFunction (
+        options: {
+            type: string,
+            name: string,
+            export: boolean,
+            locals: { [name: string]: WasmValtype },
+        }, generator: Function
+    ) {
+        const rec : FunctionInfo = {
+            index: this.functions.length,
+            name: options.name,
+            typeName: options.type,
+            typeIndex: this.functionTypes[options.type][0],
+            export: options.export,
+            locals: options.locals,
+            generator,
+            error: null,
+            blob: null,
+        };
+        this.functions.push(rec);
+        if (rec.export)
+            this.estimatedExportBytes += rec.name.length + 8;
+        return rec;
+    }
+
+    emitImportsAndFunctions () {
+        let exportCount = 0;
+        for (let i = 0; i < this.functions.length; i++) {
+            const func = this.functions[i];
+            if (func.export)
+                exportCount++;
+
+            this.beginFunction(func.typeName, func.locals);
+            func.blob = func.generator();
+            if (!func.blob)
+                func.blob = this.endFunction(false);
+        }
+
+        this._generateImportSection();
+
+        // Function section
+        this.beginSection(3);
+        this.appendULeb(this.functions.length);
+        for (let i = 0; i < this.functions.length; i++)
+            this.appendULeb(this.functions[i].typeIndex);
+
+        // Export section
+        this.beginSection(7);
+        this.appendULeb(exportCount);
+        for (let i = 0; i < this.functions.length; i++) {
+            const func = this.functions[i];
+            if (!func.export)
+                continue;
+            // FIXME: This combined with the initial cost of decoding the function name is somewhat expensive
+            // It might be ideal to keep the original C name function pointer around and copy that directly into the buffer.
+            this.appendName(func.name);
+            this.appendU8(0); // func export
+            this.appendULeb(this.importedFunctionCount + i);
+        }
+
+        // Code section
+        this.beginSection(10);
+        this.appendULeb(this.functions.length);
+        for (let i = 0; i < this.functions.length; i++) {
+            const func = this.functions[i];
+            mono_assert(func.blob, () => `expected function ${func.name} to have a body`);
+            this.appendULeb(func.blob.length);
+            this.appendBytes(func.blob);
+        }
+        this.endSection();
     }
 
     callImport (name: string) {
         const func = this.importedFunctions[name];
         if (!func)
             throw new Error("No imported function named " + name);
+        if (func.index === undefined)
+            func.index = this.importedFunctionCount++;
         this.appendU8(WasmOpcode.call);
-        this.appendULeb(func[0]);
+        this.appendULeb(func.index);
     }
 
     beginSection (type: number) {
         if (this.inSection)
-            this.pop();
+            this._pop(true);
         this.appendU8(type);
-        this.push();
+        this._push();
         this.inSection = true;
     }
 
@@ -341,9 +595,72 @@ export class WasmBuilder {
         if (!this.inSection)
             throw new Error("Not in section");
         if (this.inFunction)
-            this.endFunction();
-        this.pop();
+            this.endFunction(true);
+        this._pop(true);
         this.inSection = false;
+    }
+
+    _assignParameterIndices = (parms: {[name: string] : WasmValtype}) => {
+        let result = 0;
+        for (const k in parms) {
+            this.locals.set(k, result);
+            // console.log(`parm ${k} -> ${result}`);
+            result++;
+        }
+        return result;
+    };
+
+    _assignLocalIndices (
+        counts: any, locals: {[name: string] : WasmValtype},
+        base: number, localGroupCount: number
+    ) {
+        counts[WasmValtype.i32] = 0;
+        counts[WasmValtype.i64] = 0;
+        counts[WasmValtype.f32] = 0;
+        counts[WasmValtype.f64] = 0;
+
+        for (const k in locals) {
+            const ty = locals[k];
+            if (counts[ty] <= 0)
+                localGroupCount++;
+            counts[ty]++;
+        }
+
+        const offi32 = 0,
+            offi64 = counts[WasmValtype.i32],
+            offf32 = offi64 + counts[WasmValtype.i64],
+            offf64 = offf32 + counts[WasmValtype.f32];
+
+        counts[WasmValtype.i32] = 0;
+        counts[WasmValtype.i64] = 0;
+        counts[WasmValtype.f32] = 0;
+        counts[WasmValtype.f64] = 0;
+
+        for (const k in locals) {
+            const ty = locals[k];
+            let idx = 0;
+            switch (ty) {
+                case WasmValtype.i32:
+                    idx = (counts[ty]++) + offi32 + base;
+                    this.locals.set(k, idx);
+                    break;
+                case WasmValtype.i64:
+                    idx = (counts[ty]++) + offi64 + base;
+                    this.locals.set(k, idx);
+                    break;
+                case WasmValtype.f32:
+                    idx = (counts[ty]++) + offf32 + base;
+                    this.locals.set(k, idx);
+                    break;
+                case WasmValtype.f64:
+                    idx = (counts[ty]++) + offf64 + base;
+                    this.locals.set(k, idx);
+                    break;
+            }
+            // console.log(`local ${k} ${locals[k]} -> ${idx}`);
+        }
+
+        return localGroupCount;
     }
 
     beginFunction (
@@ -351,8 +668,8 @@ export class WasmBuilder {
         locals?: {[name: string]: WasmValtype}
     ) {
         if (this.inFunction)
-            this.endFunction();
-        this.push();
+            throw new Error("Already in function");
+        this._push();
 
         const signature = this.functionTypes[type];
         this.locals.clear();
@@ -360,77 +677,17 @@ export class WasmBuilder {
         let counts: any = {};
         const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64];
 
-        const assignParameterIndices = (parms: {[name: string] : WasmValtype}) => {
-            let result = 0;
-            for (const k in parms) {
-                const parm = parms[k];
-                this.locals.set(k, [parm, result]);
-                // console.log(`parm ${k} -> ${result}`);
-                result++;
-            }
-            return result;
-        };
-
-        let localGroupCount = 0;
-
         // We first assign the parameters local indices and then
         //  we assign the named locals indices, because parameters
         //  come first in the local space. Imagine if parameters
         //  had their own opcode and weren't mutable??????
-        const assignLocalIndices = (locals: {[name: string] : WasmValtype}, base: number) => {
-            Object.assign(counts, {
-                [WasmValtype.i32]: 0,
-                [WasmValtype.i64]: 0,
-                [WasmValtype.f32]: 0,
-                [WasmValtype.f64]: 0,
-            });
-            for (const k in locals) {
-                const ty = locals[k];
-                if (counts[ty] <= 0)
-                    localGroupCount++;
-                counts[ty]++;
-            }
-
-            const offi32 = 0,
-                offi64 = counts[WasmValtype.i32],
-                offf32 = offi64 + counts[WasmValtype.i64],
-                offf64 = offf32 + counts[WasmValtype.f32];
-            Object.assign(counts,{
-                [WasmValtype.i32]: 0,
-                [WasmValtype.i64]: 0,
-                [WasmValtype.f32]: 0,
-                [WasmValtype.f64]: 0,
-            });
-            for (const k in locals) {
-                const ty = locals[k];
-                let idx = 0;
-                switch (ty) {
-                    case WasmValtype.i32:
-                        idx = (counts[ty]++) + offi32 + base;
-                        this.locals.set(k, [ty, idx]);
-                        break;
-                    case WasmValtype.i64:
-                        idx = (counts[ty]++) + offi64 + base;
-                        this.locals.set(k, [ty, idx]);
-                        break;
-                    case WasmValtype.f32:
-                        idx = (counts[ty]++) + offf32 + base;
-                        this.locals.set(k, [ty, idx]);
-                        break;
-                    case WasmValtype.f64:
-                        idx = (counts[ty]++) + offf64 + base;
-                        this.locals.set(k, [ty, idx]);
-                        break;
-                }
-                // console.log(`local ${k} ${locals[k]} -> ${idx}`);
-            }
-        };
+        let localGroupCount = 0;
 
         // Assign indices for the parameter list from the function signature
-        const localBaseIndex = assignParameterIndices(signature[1]);
+        const localBaseIndex = this._assignParameterIndices(signature[1]);
         if (locals)
             // Now if we have any locals, assign indices for those
-            assignLocalIndices(locals, localBaseIndex);
+            localGroupCount = this._assignLocalIndices(counts, locals, localBaseIndex, localGroupCount);
         else
             // Otherwise erase the counts table from the parameter assignment
             counts = {};
@@ -450,13 +707,14 @@ export class WasmBuilder {
         this.inFunction = true;
     }
 
-    endFunction () {
+    endFunction (writeToOutput: boolean) {
         if (!this.inFunction)
             throw new Error("Not in function");
         if (this.activeBlocks > 0)
             throw new Error(`${this.activeBlocks} unclosed block(s) at end of function`);
-        this.pop();
+        const result = this._pop(writeToOutput);
         this.inFunction = false;
+        return result;
     }
 
     block (type?: WasmValtype, opcode?: WasmOpcode) {
@@ -478,7 +736,7 @@ export class WasmBuilder {
 
     arg (name: string | number, opcode?: WasmOpcode) {
         const index = typeof(name) === "string"
-            ? (this.locals.has(name) ? this.locals.get(name)![1] : undefined)
+            ? (this.locals.has(name) ? this.locals.get(name)! : undefined)
             : name;
         if (typeof (index) !== "number")
             throw new Error("No local named " + name);
@@ -489,7 +747,7 @@ export class WasmBuilder {
 
     local (name: string | number, opcode?: WasmOpcode) {
         const index = typeof(name) === "string"
-            ? (this.locals.has(name) ? this.locals.get(name)![1] : undefined)
+            ? (this.locals.has(name) ? this.locals.get(name)! : undefined)
             : name + this.argumentCount;
         if (typeof (index) !== "number")
             throw new Error("No local named " + name);
@@ -535,25 +793,23 @@ export class WasmBuilder {
 
 export class BlobBuilder {
     buffer: number;
-    view!: DataView;
     size: number;
     capacity: number;
     encoder?: TextEncoder;
+    textBuf = new Uint8Array(1024);
 
     constructor () {
-        this.capacity = 32000;
+        this.capacity = 16 * 1024;
         this.buffer = <any>Module._malloc(this.capacity);
+        Module.HEAPU8.fill(0, this.buffer, this.buffer + this.capacity);
         this.size = 0;
         this.clear();
+        if (typeof (TextEncoder) === "function")
+            this.encoder = new TextEncoder();
     }
 
-    // It is necessary for you to call this before using the builder so that the DataView
-    //  can be reconstructed in case the heap grew since last use
     clear () {
-        // FIXME: This should not be necessary
-        Module.HEAPU8.fill(0, this.buffer, this.buffer + this.size);
         this.size = 0;
-        this.view = new DataView(Module.HEAPU8.buffer, this.buffer, this.capacity);
     }
 
     appendU8 (value: number | WasmOpcode) {
@@ -565,44 +821,30 @@ export class BlobBuilder {
         return result;
     }
 
-    appendU16 (value: number) {
-        const result = this.size;
-        this.view.setUint16(this.size, value, true);
-        this.size += 2;
-        return result;
-    }
-
-    appendI16 (value: number) {
-        const result = this.size;
-        this.view.setInt16(this.size, value, true);
-        this.size += 2;
-        return result;
-    }
-
     appendU32 (value: number) {
         const result = this.size;
-        this.view.setUint32(this.size, value, true);
+        cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.U32);
         this.size += 4;
         return result;
     }
 
     appendI32 (value: number) {
         const result = this.size;
-        this.view.setInt32(this.size, value, true);
+        cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.I32);
         this.size += 4;
         return result;
     }
 
     appendF32 (value: number) {
         const result = this.size;
-        this.view.setFloat32(this.size, value, true);
+        cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.F32);
         this.size += 4;
         return result;
     }
 
     appendF64 (value: number) {
         const result = this.size;
-        this.view.setFloat64(this.size, value, true);
+        cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.F64);
         this.size += 8;
         return result;
     }
@@ -619,6 +861,15 @@ export class BlobBuilder {
     }
 
     appendULeb (value: number) {
+        mono_assert(value >= 0, "cannot pass negative value to appendULeb");
+        if (value < 0x7F) {
+            if (this.size + 1 >= this.capacity)
+                throw new Error("Buffer full");
+
+            this.appendU8(value);
+            return 1;
+        }
+
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -651,37 +902,369 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendBytes (bytes: Uint8Array) {
+    copyTo (destination: BlobBuilder, count?: number) {
+        if (typeof (count) !== "number")
+            count = this.size;
+
+        Module.HEAPU8.copyWithin(destination.buffer + destination.size, this.buffer, this.buffer + count);
+        destination.size += count;
+    }
+
+    appendBytes (bytes: Uint8Array, count?: number) {
         const result = this.size;
-        const av = this.getArrayView(true);
-        av.set(bytes, this.size);
-        this.size += bytes.length;
+        if (bytes.buffer === Module.HEAPU8.buffer) {
+            if (typeof (count) !== "number")
+                count = bytes.length;
+            Module.HEAPU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + count);
+            this.size += count;
+        } else {
+            if (typeof (count) === "number")
+                bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
+            // FIXME: Find a way to avoid temporarily allocating a view for every appendBytes
+            // The problem is that if we cache it and the native heap grows, the view will become detached
+            const av = this.getArrayView(true);
+            av.set(bytes, this.size);
+            this.size += bytes.length;
+        }
         return result;
     }
 
     appendName (text: string) {
-        let bytes: any = null;
+        let count = text.length;
+        // TextEncoder overhead is significant for short strings, and lots of our strings
+        //  are single-character import names, so add a fast path for single characters
+        let singleChar = text.length === 1 ? text.charCodeAt(0) : -1;
+        if (singleChar > 0x7F)
+            singleChar = -1;
 
-        if (typeof (TextEncoder) === "function") {
-            if (!this.encoder)
-                this.encoder = new TextEncoder();
-            bytes = this.encoder.encode(text);
-        } else {
-            bytes = new Uint8Array(text.length);
-            for (let i = 0; i < text.length; i++) {
-                const ch = text.charCodeAt(i);
-                if (ch > 0x7F)
-                    throw new Error("Out of range character and no TextEncoder available");
-                else
-                    bytes[i] = ch;
+        // Also don't bother running the encode path for empty strings
+        if (count && (singleChar < 0)) {
+            if (this.encoder) {
+                // The ideal would be to encodeInto directly into a heap buffer so we can copyWithin,
+                //  or even encodeInto the destination. But that would require allocating a subarray
+                //  every time we encode text, which is probably worse.
+                // This is somehow one of the most expensive parts of the compiler :(
+                const temp = this.encoder.encodeInto(text, this.textBuf);
+                count = temp.written || 0;
+            } else {
+                for (let i = 0; i < count; i++) {
+                    const ch = text.charCodeAt(i);
+                    if (ch > 0x7F)
+                        throw new Error("Out of range character and no TextEncoder available");
+                    else
+                        this.textBuf[i] = ch;
+                }
             }
         }
-        this.appendULeb(bytes.length);
-        this.appendBytes(bytes);
+
+        this.appendULeb(count);
+        if (singleChar >= 0)
+            this.appendU8(singleChar);
+        else if (count > 1)
+            this.appendBytes(this.textBuf, count);
     }
 
     getArrayView (fullCapacity?: boolean) {
         return new Uint8Array(Module.HEAPU8.buffer, this.buffer, fullCapacity ? this.capacity : this.size);
+    }
+}
+
+type CfgBlob = {
+    type: "blob";
+    ip: MintOpcodePtr;
+    start: number;
+    length: number;
+}
+
+type CfgBranchBlockHeader = {
+    type: "branch-block-header";
+    ip: MintOpcodePtr;
+    isBackBranchTarget: boolean;
+}
+
+type CfgBranch = {
+    type: "branch";
+    from: MintOpcodePtr;
+    target: MintOpcodePtr;
+    isBackward: boolean; // FIXME: This should be inferred automatically
+    isConditional: boolean;
+}
+
+type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+
+class Cfg {
+    builder: WasmBuilder;
+    startOfBody!: MintOpcodePtr;
+    segments: Array<CfgSegment> = [];
+    backBranchTargets: Uint16Array | null = null;
+    base!: MintOpcodePtr;
+    ip!: MintOpcodePtr;
+    entryIp!: MintOpcodePtr;
+    exitIp!: MintOpcodePtr;
+    lastSegmentStartIp!: MintOpcodePtr;
+    lastSegmentEnd = 0;
+    overheadBytes = 0;
+    entryBlob!: CfgBlob;
+    blockStack: Array<MintOpcodePtr> = [];
+    dispatchTable = new Map<MintOpcodePtr, number>();
+    trace = 0;
+
+    constructor (builder: WasmBuilder) {
+        this.builder = builder;
+    }
+
+    initialize (startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null, trace: number) {
+        this.segments.length = 0;
+        this.blockStack.length = 0;
+        this.startOfBody = startOfBody;
+        this.backBranchTargets = backBranchTargets;
+        this.base = this.builder.base;
+        this.ip = this.lastSegmentStartIp = this.builder.base;
+        this.lastSegmentEnd = 0;
+        this.overheadBytes = 10; // epilogue
+        this.dispatchTable.clear();
+        this.trace = trace;
+    }
+
+    // We have a header containing the table of locals and we need to preserve it
+    entry (ip: MintOpcodePtr) {
+        this.entryIp = ip;
+        this.appendBlob();
+        mono_assert(this.segments.length === 1, "expected 1 segment");
+        mono_assert(this.segments[0].type === "blob", "expected blob");
+        this.entryBlob = <CfgBlob>this.segments[0];
+        this.segments.length = 0;
+        this.overheadBytes += 9; // entry disp init + block + optional loop
+        if (this.backBranchTargets) {
+            this.overheadBytes += 20; // some extra padding for the dispatch br_table
+            this.overheadBytes += this.backBranchTargets.length; // one byte for each target in the table
+        }
+    }
+
+    appendBlob () {
+        if (this.builder.current.size === this.lastSegmentEnd)
+            return;
+
+        this.segments.push({
+            type: "blob",
+            ip: this.lastSegmentStartIp,
+            start: this.lastSegmentEnd,
+            length: this.builder.current.size - this.lastSegmentEnd,
+        });
+        this.lastSegmentStartIp = this.ip;
+        this.lastSegmentEnd = this.builder.current.size;
+        // each segment generates a block
+        this.overheadBytes += 2;
+    }
+
+    startBranchBlock (ip: MintOpcodePtr, isBackBranchTarget: boolean) {
+        this.appendBlob();
+        this.segments.push({
+            type: "branch-block-header",
+            ip,
+            isBackBranchTarget,
+        });
+        this.overheadBytes += 1; // each branch block just costs us an end
+    }
+
+    branch (target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
+        this.appendBlob();
+        this.segments.push({
+            type: "branch",
+            from: this.ip,
+            target,
+            isBackward,
+            isConditional,
+        });
+        // some branches will generate bailouts instead so we allocate 4 bytes per branch
+        //  to try and balance this out and avoid underestimating too much
+        this.overheadBytes += 4; // forward branches are a constant br + depth (optimally 2 bytes)
+        if (isBackward) {
+            // get_local <cinfo>
+            // i32_const 1
+            // i32_store 0 0
+            // i32.const <n>
+            // set_local <disp>
+            this.overheadBytes += 11;
+        }
+    }
+
+    emitBlob (segment: CfgBlob, source: Uint8Array) {
+        // console.log(`segment @${(<any>segment.ip).toString(16)} ${segment.start}-${segment.start + segment.length}`);
+        const view = source.subarray(segment.start, segment.start + segment.length);
+        this.builder.appendBytes(view);
+    }
+
+    generate (): Uint8Array {
+        // HACK: Make sure any remaining bytes are inserted into a trailing segment
+        this.appendBlob();
+
+        // Now finish generating the function body and copy it
+        const source = this.builder.endFunction(false)!;
+
+        // Now reclaim the builder that was being used so we can stitch segments together
+        this.builder._push();
+        // HACK: Make sure ip_const works
+        this.builder.base = this.base;
+
+        // Emit the function header
+        this.emitBlob(this.entryBlob, source);
+
+        // We wrap the entire trace in a loop that starts with a dispatch br_table in order to support
+        //  backwards branches.
+        if (this.backBranchTargets) {
+            this.builder.i32_const(0);
+            this.builder.local("disp", WasmOpcode.set_local);
+            this.builder.block(WasmValtype.void, WasmOpcode.loop);
+        }
+
+        // We create a block for each of our forward branch targets, which can be used to skip forward to it
+        // The block for each target will end *right before* the branch target, so that br <block nesting level>
+        //  will skip every opcode before it
+        for (let i = 0; i < this.segments.length; i++) {
+            const segment = this.segments[i];
+            if (segment.type !== "branch-block-header")
+                continue;
+            this.blockStack.push(segment.ip);
+        }
+
+        this.blockStack.sort((lhs, rhs) => <any>lhs - <any>rhs);
+        for (let i = 0; i < this.blockStack.length; i++)
+            this.builder.block(WasmValtype.void);
+
+        const dispatchIp = <MintOpcodePtr><any>0;
+        if (this.backBranchTargets) {
+            // the loop needs to start with a br_table that performs dispatch based on the current value
+            //  of the dispatch index local
+            // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
+            // We wrap it in an additional block so we can have a trap for unexpected disp values
+            this.builder.block(WasmValtype.void);
+            this.builder.block(WasmValtype.void);
+            this.builder.local("disp");
+            this.builder.appendU8(WasmOpcode.br_table);
+            // br_table <number of values starting from 0> <labels for values starting from 0> <default>
+            // we have to assign disp==0 to fallthrough so that we start at the top of the fn body, then
+            //  assign disp values starting from 1 to branch targets
+            // FIXME: Only include back branch targets that are *also* in the block stack. This is necessary
+            //  when starting a trace in the middle of a method to make the table smaller
+            this.builder.appendULeb(this.backBranchTargets.length + 1);
+            this.builder.appendULeb(1); // br depth of 1 = skip the unreachable and fall through to the start
+            for (let i = 0; i < this.backBranchTargets.length; i++) {
+                const offset = (this.backBranchTargets[i] * 2) + <any>this.startOfBody;
+                const breakDepth = this.blockStack.indexOf(offset);
+                if (breakDepth >= 0) {
+                    this.dispatchTable.set(offset, i + 1);
+                    this.builder.appendULeb(breakDepth + 2); // add 2 to the depth because of the double block around it
+                } else {
+                    // This means the back branch target is outside of the trace. It shouldn't be possible to reach this
+                    //  and we didn't add it to the dispatch table anyway
+                    this.builder.appendULeb(0);
+                }
+            }
+            this.builder.appendULeb(0); // for unrecognized value we br 0, which causes us to trap
+            this.builder.endBlock();
+            this.builder.appendU8(WasmOpcode.unreachable);
+            this.builder.endBlock();
+            // We put a dummy IP at the end of the block stack to represent the dispatch loop
+            // We will use this dummy IP to find the appropriate br depth when restarting the loop later
+            this.blockStack.push(dispatchIp);
+        }
+
+        if (this.trace > 1)
+            console.log(`blockStack=${this.blockStack}`);
+
+        for (let i = 0; i < this.segments.length; i++) {
+            const segment = this.segments[i];
+            switch (segment.type) {
+                case "blob": {
+                    // FIXME: If back branch target, generate a loop and put it on the block stack
+                    this.emitBlob(segment, source);
+                    break;
+                }
+                case "branch-block-header": {
+                    // When we reach a branch target, we pop the current block off the stack, because it is used
+                    //  to jump to this instruction pointer. So the result is that when previous code BRs to the
+                    //  current block, it will skip everything remaining in it and resume from segment.ip
+                    const indexInStack = this.blockStack.indexOf(segment.ip);
+                    mono_assert(indexInStack === 0, () => `expected ${segment.ip} on top of blockStack but found it at index ${indexInStack}, top is ${this.blockStack[0]}`);
+                    this.builder.endBlock();
+                    this.blockStack.shift();
+                    break;
+                }
+                case "branch": {
+                    const lookupTarget = segment.isBackward ? dispatchIp : segment.target;
+                    let indexInStack = this.blockStack.indexOf(lookupTarget),
+                        successfulBackBranch = false;
+
+                    // Back branches will target the dispatcher loop so we need to update the dispatch index
+                    //  which will be used by the loop dispatch br_table to jump to the correct location
+                    if (segment.isBackward) {
+                        if (this.dispatchTable.has(segment.target)) {
+                            const disp = this.dispatchTable.get(segment.target)!;
+                            if (this.trace > 1)
+                                console.log(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
+
+                            // set the backward branch taken flag in the cinfo so that the monitoring phase
+                            //  knows we took a backward branch. this is unfortunate but unavoidable overhead
+                            // we just make it a flag instead of an increment to reduce the cost
+                            this.builder.local("cinfo");
+                            // TODO: Store the offset in opcodes instead? Probably not useful information
+                            this.builder.i32_const(1);
+                            this.builder.appendU8(WasmOpcode.i32_store);
+                            this.builder.appendMemarg(0, 0); // JiterpreterCallInfo.backward_branch_taken
+
+                            // set the dispatch index for the br_table
+                            this.builder.i32_const(disp);
+                            this.builder.local("disp", WasmOpcode.set_local);
+                            successfulBackBranch = true;
+                        } else {
+                            if (this.trace > 0)
+                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed: back branch target not in dispatch table`);
+                            indexInStack = -1;
+                        }
+                    }
+
+                    if ((indexInStack >= 0) || successfulBackBranch) {
+                        // Conditional branches are nested in an extra block, so the depth is +1
+                        const offset = segment.isConditional ? 1 : 0;
+                        this.builder.appendU8(WasmOpcode.br);
+                        this.builder.appendULeb(offset + indexInStack);
+                        if (this.trace > 1)
+                            console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
+                    } else {
+                        if (this.trace > 0) {
+                            const base = <any>this.base;
+                            if ((segment.target >= base) && (segment.target < this.exitIp))
+                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (inside of trace!)`);
+                            else if (this.trace > 1)
+                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
+                        }
+                        append_bailout(this.builder, segment.target, BailoutReason.Branch);
+                    }
+                    break;
+                }
+                default:
+                    throw new Error("unreachable");
+            }
+        }
+
+        // Close the dispatch loop
+        if (this.backBranchTargets) {
+            mono_assert(this.blockStack[0] === <any>0, "expected one zero entry on the block stack for the dispatch loop");
+            this.blockStack.shift();
+            this.builder.endBlock();
+        }
+
+        mono_assert(this.blockStack.length === 0, () => `expected block stack to be empty at end of function but it was ${this.blockStack}`);
+
+        // Now we generate a ret at the end of the function body so it's Valid(tm)
+        // We will only hit this if execution falls through every block without hitting a bailout
+        this.builder.ip_const(this.exitIp);
+        this.builder.appendU8(WasmOpcode.return_);
+        this.builder.appendU8(WasmOpcode.end);
+
+        const result = this.builder._pop(false)!;
+        return result;
     }
 }
 
@@ -711,6 +1294,8 @@ export const counters = {
     failures: 0,
     bytesGenerated: 0,
     nullChecksEliminated: 0,
+    backBranchesEmitted: 0,
+    backBranchesNotEmitted: 0,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -718,6 +1303,34 @@ export const _now = (globalThis.performance && globalThis.performance.now)
     : Date.now;
 
 let scratchBuffer : NativePointer = <any>0;
+
+export function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
+    builder.ip_const(ip);
+    if (builder.options.countBailouts) {
+        builder.i32_const(builder.base);
+        builder.i32_const(reason);
+        builder.callImport("bailout");
+    }
+    builder.appendU8(WasmOpcode.return_);
+}
+
+// generate a bailout that is recorded for the monitoring phase as a possible early exit.
+export function append_exit (builder: WasmBuilder, ip: MintOpcodePtr, opcodeCounter: number, reason: BailoutReason) {
+    if (opcodeCounter <= (builder.options.monitoringLongDistance + 2)) {
+        builder.local("cinfo");
+        builder.i32_const(opcodeCounter);
+        builder.appendU8(WasmOpcode.i32_store);
+        builder.appendMemarg(4, 0); // bailout_opcode_count
+    }
+
+    builder.ip_const(ip);
+    if (builder.options.countBailouts) {
+        builder.i32_const(builder.base);
+        builder.i32_const(reason);
+        builder.callImport("bailout");
+    }
+    builder.appendU8(WasmOpcode.return_);
+}
 
 export function copyIntoScratchBuffer (src: NativePointer, size: number) : NativePointer {
     if (!scratchBuffer)
@@ -738,8 +1351,9 @@ export function getWasmFunctionTable () {
 }
 
 export function addWasmFunctionPointer (f: Function) {
-    if (!f)
-        throw new Error("Attempting to set null function into table");
+    mono_assert(f,"Attempting to set null function into table");
+    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
+
     const table = getWasmFunctionTable();
     if (wasmFunctionIndicesFree <= 0) {
         wasmNextFunctionIndex = table.length;
@@ -927,6 +1541,32 @@ export function recordFailure () : void {
     }
 }
 
+export const enum JiterpMember {
+    VtableInitialized = 0,
+    ArrayData = 1,
+    StringLength = 2,
+    StringData = 3,
+    Imethod = 4,
+    DataItems = 5,
+    Rmethod = 6,
+    SpanLength = 7,
+    SpanData = 8,
+    ArrayLength = 9,
+    BackwardBranchOffsets = 10,
+    BackwardBranchOffsetsCount = 11,
+    ClauseDataOffsets = 12,
+}
+
+const memberOffsets : { [index: number] : number } = {};
+
+export function getMemberOffset (member: JiterpMember) {
+    const cached = memberOffsets[member];
+    if (cached === undefined)
+        return memberOffsets[member] = cwraps.mono_jiterp_get_member_offset(<any>member);
+    else
+        return cached;
+}
+
 export function getRawCwrap (name: string): Function {
     const result = (<any>Module)["asm"][name];
     if (typeof (result) !== "function")
@@ -960,11 +1600,17 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
+    // Enable performing backward branches without exiting traces
+    noExitBackwardBranches: boolean;
     // Unwrap gsharedvt wrappers when compiling jitcalls if possible
     directJitCalls: boolean;
     eliminateNullChecks: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
+    monitoringPeriod: number;
+    monitoringShortDistance: number;
+    monitoringLongDistance: number;
+    monitoringMaxAveragePenalty: number;
     jitCallHitCount: number;
     jitCallFlushThreshold: number;
     interpEntryHitCount: number;
@@ -987,9 +1633,14 @@ const optionNames : { [jsName: string] : string } = {
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
     "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
+    "noExitBackwardBranches": "jiterpreter-backward-branches-enabled",
     "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
+    "monitoringPeriod": "jiterpreter-trace-monitoring-period",
+    "monitoringShortDistance": "jiterpreter-trace-monitoring-short-distance",
+    "monitoringLongDistance": "jiterpreter-trace-monitoring-long-distance",
+    "monitoringMaxAveragePenalty": "jiterpreter-trace-monitoring-max-average-penalty",
     "jitCallHitCount": "jiterpreter-jit-call-hit-count",
     "jitCallFlushThreshold": "jiterpreter-jit-call-queue-flush-threshold",
     "interpEntryHitCount": "jiterpreter-interp-entry-hit-count",

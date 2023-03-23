@@ -55,7 +55,7 @@ namespace Microsoft.Interop
             if (implicitThis)
             {
                 ImmutableArray<TypePositionInfo>.Builder newArgTypes = ImmutableArray.CreateBuilder<TypePositionInfo>(argTypes.Length + 1);
-                newArgTypes.Add(new TypePositionInfo(SpecialTypeInfo.IntPtr, NoMarshallingInfo.Instance)
+                newArgTypes.Add(new TypePositionInfo(new PointerTypeInfo("void*", "void*", false), NoMarshallingInfo.Instance)
                 {
                     InstanceIdentifier = NativeThisParameterIdentifier,
                     NativeIndex = 0
@@ -101,7 +101,7 @@ namespace Microsoft.Interop
         {
             var setupStatements = new List<StatementSyntax>
             {
-                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey<<containingTypeName>>();
+                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey(typeof(<containingTypeName>));
                 ExpressionStatement(
                     AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
@@ -121,12 +121,9 @@ namespace Microsoft.Interop
                                     CastExpression(
                                         ParseTypeName(TypeNames.IUnmanagedVirtualMethodTableProvider),
                                         ThisExpression())),
-                                GenericName(
-                                    Identifier("GetVirtualMethodTableInfoForKey"),
-                                    TypeArgumentList(
-                                        SingletonSeparatedList(containingTypeName)))))
+                                IdentifierName("GetVirtualMethodTableInfoForKey") ))
                         .WithArgumentList(
-                            ArgumentList())))
+                            ArgumentList(SeparatedList(new[]{ Argument(TypeOfExpression(containingTypeName)) })))))
             };
 
             GeneratedStatements statements = GeneratedStatements.Create(

@@ -2156,7 +2156,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
                 "The 'LastThrownObject' should not be, but is, NULL.\n"
                 "The runtime may have lost track of the type of an exception in flight.\n"
                 "Please get a good stack trace, find the caller of Validate, and file a bug against the owner.\n\n"
-                "To suppress this assert 'set COMPlus_SuppressLostExceptionTypeAssert=1'");
+                "To suppress this assert 'set DOTNET_SuppressLostExceptionTypeAssert=1'");
         }
     }
 

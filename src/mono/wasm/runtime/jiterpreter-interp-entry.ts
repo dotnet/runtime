@@ -5,7 +5,7 @@ import { mono_assert, MonoMethod, MonoType } from "./types";
 import { NativePointer } from "./types/emscripten";
 import { Module } from "./imports";
 import {
-    getU32, _zero_region
+    getU32_unaligned, _zero_region
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
@@ -13,7 +13,7 @@ import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, counters, getRawCwrap, importDef,
     getWasmFunctionTable, recordFailure, getOptions,
-    JiterpreterOptions, shortNameBase
+    JiterpreterOptions, getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -39,11 +39,10 @@ typedef struct {
 } JiterpEntryDataHeader;
 */
 
-const // offsetOfStack = 12,
+const
     maxInlineArgs = 16,
     // just allocate a bunch of extra space
-    sizeOfJiterpEntryData = 64,
-    offsetOfRMethod = 0;
+    sizeOfJiterpEntryData = 64;
 
 const maxJitQueueLength = 4,
     queueFlushDelayMs = 10;
@@ -106,7 +105,7 @@ class TrampolineInfo {
         this.name = name;
         this.paramTypes = new Array(argumentCount);
         for (let i = 0; i < argumentCount; i++)
-            this.paramTypes[i] = <any>getU32(<any>pParamTypes + (i * 4));
+            this.paramTypes[i] = <any>getU32_unaligned(<any>pParamTypes + (i * 4));
         this.defaultImplementation = defaultImplementation;
         this.result = 0;
         let subName = name;
@@ -277,16 +276,15 @@ function flush_wasm_entry_trampoline_jit_queue () {
 
         // Import section
         const trampImports = getTrampImports();
-        const compress = true;
+        builder.compressImportNames = true;
 
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
             mono_assert(trampImports[i], () => `trace #${i} missing`);
-            const wasmName = compress ? i.toString(shortNameBase) : undefined;
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, false, trampImports[i][2]);
         }
 
-        builder.generateImportSection();
+        builder._generateImportSection();
 
         // Function section
         builder.beginSection(3);
@@ -326,6 +324,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
                 throw new Error(`Failed to generate ${info.traceName}`);
 
             builder.appendU8(WasmOpcode.end);
+            builder.endFunction(true);
         }
 
         builder.endSection();
@@ -337,16 +336,8 @@ function flush_wasm_entry_trampoline_jit_queue () {
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
-        const imports : any = {
-        };
-        // Place our function imports into the import dictionary
-        for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(36) : trampImports[i][0];
-            imports[wasmName] = trampImports[i][2];
-        }
-
         const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: imports,
+            i: builder.getImportedFunctionTable(),
             c: <any>builder.getConstants(),
             m: { h: (<any>Module).asm.memory },
         });
@@ -541,7 +532,7 @@ function generate_wasm_body (
 
     // Store the cleaned up rmethod value into the data.rmethod field of the scratch buffer
     builder.appendU8(WasmOpcode.i32_store);
-    builder.appendMemarg(offsetOfRMethod, 0); // data.rmethod
+    builder.appendMemarg(getMemberOffset(JiterpMember.Rmethod), 0); // data.rmethod
 
     // prologue takes data->rmethod and initializes data->context, then returns a value for sp_args
     // prologue also performs thread attach

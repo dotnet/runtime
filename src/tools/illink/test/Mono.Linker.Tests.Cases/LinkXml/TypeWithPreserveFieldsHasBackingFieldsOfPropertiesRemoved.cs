@@ -40,6 +40,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 			int IFoo<IFoo<int>>.Bar { get; set; }
 		}
 
+		[Kept (By = Tool.NativeAot)]
 		interface IDog
 		{
 			string Name { get; set; }
@@ -52,16 +53,19 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 			int Bar { get; set; }
 		}
 
+		[Kept (By = Tool.NativeAot)]
 		interface IFoo2<T>
 		{
 			int Bar2 { get; set; }
 		}
 
+		[Kept (By = Tool.NativeAot)]
 		interface IFoo3<T, K, J>
 		{
 			int Bar3 { get; set; }
 		}
 
+		[Kept (By = Tool.NativeAot)]
 		class Cat
 		{
 		}

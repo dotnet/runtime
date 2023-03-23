@@ -3,15 +3,15 @@
   <ItemGroup>
     <RuntimeGroup Include="unix">
       <Parent>any</Parent>
-      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le;riscv64</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux">
       <Parent>unix</Parent>
-      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;loongarch64;mips64;s390x;ppc64le;riscv64</Architectures>
     </RuntimeGroup>
     <RuntimeGroup Include="linux-musl">
       <Parent>linux</Parent>
-      <Architectures>x64;x86;arm;armv6;armel;arm64;s390x;ppc64le</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;s390x;ppc64le;riscv64</Architectures>
     </RuntimeGroup>
 
     <RuntimeGroup Include="alpine">
@@ -86,7 +86,7 @@
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35;36;37;38</Versions>
+      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35;36;37;38;39</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -267,7 +267,7 @@
     <RuntimeGroup Include="ubuntu">
       <Parent>debian</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>16.04;16.10;17.04;17.10;18.04;18.10;19.04;19.10;20.04;20.10;21.04;21.10;22.04</Versions>
+      <Versions>16.04;16.10;17.04;17.10;18.04;18.10;19.04;19.10;20.04;20.10;21.04;21.10;22.04;23.04</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 

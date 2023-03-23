@@ -35,7 +35,8 @@ namespace LibraryImportGenerator.UnitTests
             new object[] { typeof(int*) },
             new object[] { typeof(bool*) },
             new object[] { typeof(char*) },
-            new object[] { typeof(delegate* <void>) },
+            // See issue https://github.com/dotnet/runtime/issues/71891
+            // new object[] { typeof(delegate* <void>) }, 
             new object[] { typeof(IntPtr) },
             new object[] { typeof(ConsoleKey) }, // enum
         };

@@ -62,7 +62,6 @@ void Compiler::fgInit()
     fgBBOrder          = nullptr;
 #endif // DEBUG
 
-    fgBBNumMin        = compIsForInlining() ? impInlineRoot()->fgBBNumMax + 1 : 1;
     fgBBNumMax        = 0;
     fgEdgeCount       = 0;
     fgDomBBcount      = 0;
@@ -584,6 +583,10 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             unreached();
             break;
     }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    fgFixFinallyTargetFlags(block, oldTarget, newTarget);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1189,8 +1192,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_POPCNT_PopCount:
                             case NI_POPCNT_X64_PopCount:
                             case NI_Vector256_Create:
+                            case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
+                            case NI_Vector512_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
+                            case NI_Vector512_CreateScalarUnsafe:
                             case NI_VectorT256_CreateBroadcast:
                             case NI_X86Base_BitScanForward:
                             case NI_X86Base_X64_BitScanForward:
@@ -1480,6 +1486,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 #endif // FEATURE_HW_INTRINSICS
                             case NI_SRCS_UNSAFE_As:
                             case NI_SRCS_UNSAFE_AsRef:
+                            case NI_SRCS_UNSAFE_BitCast:
                             case NI_SRCS_UNSAFE_SkipInit:
                             {
                                 // TODO-CQ: These are no-ops in that they never produce any IR
@@ -1513,6 +1520,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_get_AllBitsSet:
                             case NI_Vector256_get_One:
                             case NI_Vector256_get_Zero:
+                            case NI_Vector512_get_AllBitsSet:
+                            case NI_Vector512_get_One:
+                            case NI_Vector512_get_Zero:
                             case NI_VectorT256_get_AllBitsSet:
                             case NI_VectorT256_get_One:
                             case NI_VectorT256_get_Zero:
@@ -2742,7 +2752,7 @@ void Compiler::fgLinkBasicBlocks()
             {
                 BasicBlock* const jumpDest = fgLookupBB(curBBdesc->bbJumpOffs);
                 curBBdesc->bbJumpDest      = jumpDest;
-                fgAddRefPred(jumpDest, curBBdesc, oldEdge, initializingPreds);
+                fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
                 if (curBBdesc->bbJumpDest->bbNum <= curBBdesc->bbNum)
                 {
@@ -2766,7 +2776,7 @@ void Compiler::fgLinkBasicBlocks()
                 FALLTHROUGH;
 
             case BBJ_NONE:
-                fgAddRefPred(curBBdesc->bbNext, curBBdesc, oldEdge, initializingPreds);
+                fgAddRefPred<initializingPreds>(curBBdesc->bbNext, curBBdesc, oldEdge);
                 break;
 
             case BBJ_EHFILTERRET:
@@ -2792,7 +2802,7 @@ void Compiler::fgLinkBasicBlocks()
                 {
                     BasicBlock* jumpDest = fgLookupBB((unsigned)*(size_t*)jumpPtr);
                     *jumpPtr             = jumpDest;
-                    fgAddRefPred(jumpDest, curBBdesc, oldEdge, initializingPreds);
+                    fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
                     if ((*jumpPtr)->bbNum <= curBBdesc->bbNum)
                     {
                         fgMarkBackwardJump(*jumpPtr, curBBdesc);
@@ -3919,7 +3929,7 @@ void Compiler::fgCheckForLoopsInHandlers()
         return;
     }
 
-    // Walk blocks in handlers and filters, looing for a backedge target.
+    // Walk blocks in handlers and filters, looking for a backedge target.
     //
     assert(!compHasBackwardJumpInHandler);
     for (BasicBlock* const blk : Blocks())
@@ -4613,6 +4623,53 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 }
 
 //------------------------------------------------------------------------------
+// fgSplitBlockBeforeTree : Split the given block right before the given tree
+//
+// Arguments:
+//    block        - The block containing the statement.
+//    stmt         - The statement containing the tree.
+//    splitPoint   - A tree inside the statement.
+//    firstNewStmt - [out] The first new statement that was introduced.
+//                   [firstNewStmt..stmt) are the statements added by this function.
+//    splitNodeUse - The use of the tree to split at.
+//
+// Returns:
+//    The last block after split
+//
+// Notes:
+//    See comments in gtSplitTree
+//
+BasicBlock* Compiler::fgSplitBlockBeforeTree(
+    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
+{
+    gtSplitTree(block, stmt, splitPoint, firstNewStmt, splitNodeUse);
+
+    BasicBlockFlags originalFlags = block->bbFlags;
+    BasicBlock*     prevBb        = block;
+
+    // We use fgSplitBlockAfterStatement() API here to split the block, however, we want to split
+    // it *Before* rather than *After* so if the current statement is the first in the
+    // current block - invoke fgSplitBlockAtBeginning
+    if (stmt == block->firstStmt())
+    {
+        block = fgSplitBlockAtBeginning(prevBb);
+    }
+    else
+    {
+        assert(stmt->GetPrevStmt() != block->lastStmt());
+        JITDUMP("Splitting " FMT_BB " after statement " FMT_STMT "\n", prevBb->bbNum, stmt->GetPrevStmt()->GetID());
+        block = fgSplitBlockAfterStatement(prevBb, stmt->GetPrevStmt());
+    }
+
+    // We split a block, possibly, in the middle - we need to propagate some flags
+    prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+    block->bbFlags |=
+        originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
+
+    return block;
+}
+
+//------------------------------------------------------------------------------
 // fgSplitBlockAfterNode - Split the given block, with all code after
 //                         the given node going into the second block.
 //                         This function is only used in LIR.
@@ -4778,6 +4835,10 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         curr->bbJumpDest = newBlock;
         fgAddRefPred(newBlock, curr);
     }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    fgFixFinallyTargetFlags(curr, succ, newBlock);
+#endif
 
     // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
     // branch 50% of the time.
@@ -5378,7 +5439,7 @@ bool Compiler::fgRenumberBlocks()
 
     bool     renumbered  = false;
     bool     newMaxBBNum = false;
-    unsigned num         = fgBBNumMin;
+    unsigned num         = 1;
 
     for (BasicBlock* block : Blocks())
     {
@@ -5394,7 +5455,7 @@ bool Compiler::fgRenumberBlocks()
         if (block->bbNext == nullptr)
         {
             fgLastBB  = block;
-            fgBBcount = num - fgBBNumMin + 1;
+            fgBBcount = num;
             if (fgBBNumMax != num)
             {
                 fgBBNumMax  = num;

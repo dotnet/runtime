@@ -212,7 +212,7 @@ namespace System.Runtime.InteropServices
 
         internal static bool IsPinnable(object o)
         {
-            return (o == null) || !o.GetEETypePtr().HasPointers;
+            return (o == null) || !o.GetEETypePtr().ContainsGCPointers;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]

@@ -36,11 +36,11 @@ namespace Mono.Linker
 		// Ignore the assembly
 		Skip,
 		// Copy the existing files, assembly and symbols, into the output destination. E.g. .dll and .mdb
-		// The linker still analyzes the assemblies (to know what they require) but does not modify them.
+		// Trimming still analyzes the assemblies (to know what they require) but does not modify them.
 		Copy,
 		// Copy the existing files, assembly and symbols, into the output destination if and only if
 		// anything from the assembly is used.
-		// The linker still analyzes the assemblies (to know what they require) but does not modify them.
+		// Trimming still analyzes the assemblies (to know what they require) but does not modify them.
 		CopyUsed,
 		// Link the assembly
 		Link,

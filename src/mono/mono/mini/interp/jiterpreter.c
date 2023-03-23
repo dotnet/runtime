@@ -8,15 +8,18 @@
 #endif
 #include "config.h"
 
+void jiterp_preserve_module (void);
+
+// NOTE: All code in this file needs to be guarded with HOST_BROWSER, since
+//  we don't run non-wasm tests for changes to this file!
+
+#if HOST_BROWSER
+
 #if 0
 #define jiterp_assert(b) g_assert(b)
 #else
 #define jiterp_assert(b)
 #endif
-
-void jiterp_preserve_module (void);
-
-#if HOST_BROWSER
 
 #include <emscripten.h>
 
@@ -145,16 +148,6 @@ mono_jiterp_encode_leb_signed_boundary (unsigned char * destination, int bits, i
 //  so that jiterpreter traces don't have to inline dozens of wasm instructions worth of
 //  complex logic - these are designed to match interp.c
 
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_fmod (double lhs, double rhs) {
-	return fmod(lhs, rhs);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_atan2 (double lhs, double rhs) {
-	return atan2(lhs, rhs);
-}
-
 // If a trace is jitted for a method that hasn't been tiered yet, we need to
 //  update the interpreter entry count for the method.
 EMSCRIPTEN_KEEPALIVE int
@@ -206,29 +199,6 @@ mono_jiterp_value_copy (void *dest, void *src, MonoClass *klass) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_strlen_ref (MonoString **ppString, int *result) {
-	MonoString *pString = *ppString;
-	if (!pString)
-		return 0;
-
-	*result = mono_string_length_internal(pString);
-	return 1;
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_getchr_ref (MonoString **ppString, int *pIndex, int *result) {
-	int index = *pIndex;
-	MonoString *pString = *ppString;
-	if (!pString)
-		return 0;
-	if ((index < 0) || (index >= mono_string_length_internal(pString)))
-		return 0;
-
-	*result = mono_string_chars_internal(pString)[index];
-	return 1;
-}
-
-EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_try_newobj_inlined (MonoObject **destination, MonoVTable *vtable) {
 	*destination = 0;
 	if (!vtable->initialized)
@@ -242,19 +212,13 @@ mono_jiterp_try_newobj_inlined (MonoObject **destination, MonoVTable *vtable) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_getitem_span (
-	void **destination, MonoSpanOfVoid *span, int index, size_t element_size
-) {
-	if (!span)
-		return 0;
-
-	const gint32 length = span->_length;
-	if ((index < 0) || (index >= length))
-		return 0;
-
-	unsigned char * pointer = (unsigned char *)span->_reference;
-	*destination = pointer + (index * element_size);
-	return 1;
+mono_jiterp_try_newstr (MonoString **destination, int length) {
+	ERROR_DECL(error);
+	*destination = mono_string_new_size_checked(length, error);
+	if (!is_ok (error))
+		*destination = 0;
+	mono_error_cleanup (error); // FIXME: do not swallow the error
+	return *destination != 0;
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -346,19 +310,6 @@ mono_jiterp_cast_ref (
 	}
 
 	return 0;
-}
-
-EMSCRIPTEN_KEEPALIVE void*
-mono_jiterp_array_get_element_address_with_size_ref (MonoArray **array, int size, int index)
-{
-	// HACK: This does not need to be volatile because we know array is visible to
-	//  the GC and this is called from interp traces in gc unsafe mode
-	MonoArray* _array = *array;
-	if (!_array)
-		return NULL;
-	if (index >= mono_array_length_internal(_array))
-		return NULL;
-	return mono_array_addr_with_size_fast (_array, size, index);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -521,17 +472,6 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 
 #undef JITERP_RELOP
 
-// we use these helpers at JIT time to figure out where to do memory loads and stores
-EMSCRIPTEN_KEEPALIVE size_t
-mono_jiterp_get_offset_of_vtable_initialized_flag () {
-	return offsetof(MonoVTable, initialized);
-}
-
-EMSCRIPTEN_KEEPALIVE size_t
-mono_jiterp_get_offset_of_array_data () {
-	return MONO_STRUCT_OFFSET (MonoArray, vector);
-}
-
 EMSCRIPTEN_KEEPALIVE size_t
 mono_jiterp_get_size_of_stackval () {
 	return sizeof(stackval);
@@ -573,12 +513,11 @@ mono_jiterp_type_get_raw_value_size (MonoType *type) {
 }
 
 // we use these helpers to record when a trace bails out (in countBailouts mode)
-EMSCRIPTEN_KEEPALIVE void*
-mono_jiterp_trace_bailout (void* rip, int reason)
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_trace_bailout (int reason)
 {
 	if (reason < 256)
 		jiterp_trace_bailout_counts[reason]++;
-	return rip;
 }
 
 EMSCRIPTEN_KEEPALIVE double
@@ -657,10 +596,23 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 	return sp_args;
 }
 
+EMSCRIPTEN_KEEPALIVE int32_t
+mono_jiterp_cas_i32 (volatile int32_t *addr, int32_t newVal, int32_t expected)
+{
+	return mono_atomic_cas_i32 (addr, newVal, expected);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_cas_i64 (volatile int64_t *addr, int64_t *newVal, int64_t *expected, int64_t *oldVal)
+{
+	*oldVal= mono_atomic_cas_i64 (addr, *newVal, *expected);
+}
+
 // should_abort_trace returns one of these codes depending on the opcode and current state
 #define TRACE_IGNORE -1
 #define TRACE_CONTINUE 0
 #define TRACE_ABORT 1
+#define TRACE_CONDITIONAL_ABORT 2
 
 /*
  * This function provides an approximate answer for "will this instruction cause the jiterpreter
@@ -699,11 +651,10 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_INITOBJ:
 		case MINT_CKNULL:
 		case MINT_LDLOCA_S:
-		case MINT_LDTOKEN:
 		case MINT_LDSTR:
 		case MINT_LDFTN:
 		case MINT_LDFTN_ADDR:
-		case MINT_MONO_LDPTR:
+		case MINT_LDPTR:
 		case MINT_CPOBJ_VT:
 		case MINT_LDOBJ_VT:
 		case MINT_STOBJ_VT:
@@ -712,8 +663,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_STRLEN:
 		case MINT_GETCHR:
 		case MINT_GETITEM_SPAN:
+		case MINT_GETITEM_LOCALSPAN:
 		case MINT_INTRINS_SPAN_CTOR:
-		case MINT_INTRINS_UNSAFE_BYTE_OFFSET:
 		case MINT_INTRINS_GET_TYPE:
 		case MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF:
 		case MINT_CASTCLASS:
@@ -725,6 +676,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_BOX:
 		case MINT_BOX_VT:
 		case MINT_UNBOX:
+		case MINT_NEWSTR:
 		case MINT_NEWOBJ_INLINED:
 		case MINT_NEWOBJ_VT_INLINED:
 		case MINT_LD_DELEGATE_METHOD_PTR:
@@ -734,30 +686,54 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_INTRINS_TRY_GET_HASHCODE:
 		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
 		case MINT_INTRINS_ENUM_HASFLAG:
+		case MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII:
 		case MINT_ADD_MUL_I4_IMM:
 		case MINT_ADD_MUL_I8_IMM:
 		case MINT_ARRAY_RANK:
+		case MINT_ARRAY_ELEMENT_SIZE:
+		case MINT_MONO_CMPXCHG_I4:
+		case MINT_MONO_CMPXCHG_I8:
+		case MINT_CPBLK:
+		case MINT_INITBLK:
+		case MINT_ROL_I4_IMM:
+		case MINT_ROL_I8_IMM:
+		case MINT_ROR_I4_IMM:
+		case MINT_ROR_I8_IMM:
+		case MINT_CLZ_I4:
+		case MINT_CTZ_I4:
+		case MINT_POPCNT_I4:
+		case MINT_CLZ_I8:
+		case MINT_CTZ_I8:
+		case MINT_POPCNT_I8:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
 		case MINT_BR_S:
 		case MINT_LEAVE:
 		case MINT_LEAVE_S:
+		case MINT_CALL_HANDLER:
+		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches
 			if (ins->info.target_bb->il_offset <= ins->il_offset) {
 				if (*inside_branch_block)
-					return TRACE_CONTINUE;
+					return TRACE_CONDITIONAL_ABORT;
 				else
-					return TRACE_ABORT;
+					return mono_opt_jiterpreter_backward_branches_enabled ? TRACE_CONTINUE : TRACE_ABORT;
 			}
 
 			*inside_branch_block = TRUE;
 			return TRACE_CONTINUE;
 
+		case MINT_ICALL_V_P:
+		case MINT_ICALL_V_V:
+		case MINT_ICALL_P_P:
+		case MINT_ICALL_P_V:
+		case MINT_ICALL_PP_V:
+		case MINT_ICALL_PP_P:
 		case MINT_MONO_RETHROW:
 		case MINT_THROW:
 			if (*inside_branch_block)
-				return TRACE_CONTINUE;
+				return TRACE_CONDITIONAL_ABORT;
 
 			return TRACE_ABORT;
 
@@ -765,8 +741,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LEAVE_S_CHECK:
 			return TRACE_ABORT;
 
-		case MINT_CALL_HANDLER:
-		case MINT_CALL_HANDLER_S:
 		case MINT_ENDFINALLY:
 		case MINT_RETHROW:
 		case MINT_PROF_EXIT:
@@ -786,6 +760,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			(opcode >= MINT_BRFALSE_I4) &&
 			(opcode <= MINT_BLT_UN_I8_IMM_SP)
 		) {
+			// FIXME: Detect negative displacement and abort appropriately
 			*inside_branch_block = TRUE;
 			return TRACE_CONTINUE;
 		}
@@ -797,13 +772,13 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			(opcode <= MINT_CALLI_NAT_FAST)
 			// (opcode <= MINT_JIT_CALL2)
 		)
-			return *inside_branch_block ? TRACE_CONTINUE : TRACE_ABORT;
+			return *inside_branch_block ? TRACE_CONDITIONAL_ABORT : TRACE_ABORT;
 		else if (
 			// returns
 			(opcode >= MINT_RET) &&
 			(opcode <= MINT_RET_U2)
 		)
-			return *inside_branch_block ? TRACE_CONTINUE : TRACE_ABORT;
+			return *inside_branch_block ? TRACE_CONDITIONAL_ABORT : TRACE_ABORT;
 		else if (
 			(opcode >= MINT_LDC_I4_M1) &&
 			(opcode <= MINT_LDC_R8)
@@ -828,7 +803,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		)
 			return TRACE_CONTINUE;
 		else if (
-			// math intrinsics
+			// math intrinsics - we implement most but not all of these
 			(opcode >= MINT_ASIN) &&
 			(opcode <= MINT_MAXF)
 		)
@@ -876,6 +851,10 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 				case TRACE_ABORT:
 					jiterpreter_abort_counts[ins->opcode]++;
 					return current_trace_length >= mono_opt_jiterpreter_minimum_trace_length;
+				case TRACE_CONDITIONAL_ABORT:
+					// FIXME: Stop traces that contain these early on, as long as we are relatively certain
+					//  that these instructions will be hit (i.e. they are not unlikely branches)
+					break;
 				case TRACE_IGNORE:
 					break;
 				default:
@@ -898,13 +877,17 @@ typedef struct {
 	// 64-bits because it can get very high if estimate heat is turned on
 	gint64 hit_count;
 	JiterpreterThunk thunk;
+	int penalty_total;
 } TraceInfo;
 
-#define MAX_TRACE_SEGMENTS 256
+// The maximum number of trace segments used to store TraceInfo. This limits
+//  the maximum total number of traces to MAX_TRACE_SEGMENTS * TRACE_SEGMENT_SIZE
+#define MAX_TRACE_SEGMENTS 1024
 #define TRACE_SEGMENT_SIZE 1024
 
 static volatile gint32 trace_count = 0;
 static TraceInfo *trace_segments[MAX_TRACE_SEGMENTS] = { NULL };
+static gint32 traces_rejected = 0;
 
 static TraceInfo *
 trace_info_allocate_segment (gint32 index) {
@@ -938,7 +921,14 @@ trace_info_get (gint32 index) {
 
 static gint32
 trace_info_alloc () {
-	gint32 index = trace_count++;
+	gint32 index = trace_count++,
+		limit = (MAX_TRACE_SEGMENTS * TRACE_SEGMENT_SIZE);
+	// Make sure we're not out of space in the trace info table.
+	if (index == limit)
+		g_print ("MONO_WASM: Reached maximum number of jiterpreter trace entry points (%d).\n", limit);
+	if (index >= limit)
+		return -1;
+
 	TraceInfo *info = trace_info_get (index);
 	info->hit_count = 0;
 	info->thunk = NULL;
@@ -956,15 +946,19 @@ trace_info_alloc () {
  *  instruction that would end up there instead and not waste any resources trying to compile it.
  */
 void
-jiterp_insert_entry_points (void *_td)
+jiterp_insert_entry_points (void *_imethod, void *_td)
 {
-	if (!mono_opt_jiterpreter_traces_enabled)
-		return;
+	InterpMethod *imethod = (InterpMethod *)_imethod;
 	TransformData *td = (TransformData *)_td;
-
 	// Insert an entry opcode for the next basic block (call resume and first bb)
 	// FIXME: Should we do this based on relationships between BBs instead of insn sequence?
 	gboolean enter_at_next = TRUE;
+
+	if (!mono_opt_jiterpreter_traces_enabled)
+		return;
+
+	// Start with a high instruction counter so the distance check will pass
+	int instruction_count = mono_opt_jiterpreter_minimum_distance_between_traces;
 
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		// Enter trace at top of functions
@@ -982,7 +976,16 @@ jiterp_insert_entry_points (void *_td)
 		//  multiple times and waste some work. At present this is unavoidable because
 		//  control flow means we can end up with two traces covering different subsets
 		//  of the same method in order to handle loops and resuming
-		gboolean should_generate = enabled && should_generate_trace_here(bb);
+		gboolean should_generate = enabled &&
+		// Only insert a trace if the heuristic says this location will likely produce a long
+		//  enough one to be worth it
+			should_generate_trace_here(bb) &&
+		// And don't insert another trace if we inserted one too recently, unless this
+		//  is a backwards branch target
+			(
+				(instruction_count >= mono_opt_jiterpreter_minimum_distance_between_traces) ||
+				is_backwards_branch
+			);
 
 		if (mono_opt_jiterpreter_call_resume_enabled && bb->contains_call_instruction)
 			enter_at_next = TRUE;
@@ -992,17 +995,36 @@ jiterp_insert_entry_points (void *_td)
 
 		if (enabled && should_generate) {
 			gint32 trace_index = trace_info_alloc ();
+			if (trace_index < 0) {
+				// We're out of space in the TraceInfo table.
+				return;
+			} else {
+				td->cbb = bb;
+				imethod->contains_traces = TRUE;
+				InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
+				memcpy(ins->data, &trace_index, sizeof (trace_index));
 
-			td->cbb = bb;
-			InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
-			memcpy(ins->data, &trace_index, sizeof (trace_index));
+				// Clear the instruction counter
+				instruction_count = 0;
 
-			// Note that we only clear enter_at_next here, after generating a trace.
-			// This means that the flag will stay set intentionally if we keep failing
-			//  to generate traces, perhaps due to a string of small basic blocks
-			//  or multiple call instructions.
-			enter_at_next = bb->contains_call_instruction;
+				// Note that we only clear enter_at_next here, after generating a trace.
+				// This means that the flag will stay set intentionally if we keep failing
+				//  to generate traces, perhaps due to a string of small basic blocks
+				//  or multiple call instructions.
+				enter_at_next = bb->contains_call_instruction;
+			}
+		} else if (is_backwards_branch && enabled && !should_generate) {
+			// We failed to start a trace at a backwards branch target, but that might just mean
+			//  that the loop body starts with one or two unsupported opcodes, so it may be
+			//  worthwhile to try again later
+			// FIXME: This caused a bunch of regressions
+			// enter_at_next = TRUE;
 		}
+
+		// Increase the instruction counter. If we inserted an entry point at the top of this bb,
+		//  the new instruction counter will be the number of instructions in the block, so if
+		//  it's big enough we'll be able to insert another entry point right away.
+		instruction_count += bb->in_count;
 	}
 }
 
@@ -1082,6 +1104,9 @@ mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher)
 	//  blocked the use of Module.addFunction
 	if (!dispatcher)
 		dispatcher = (WasmDoJitCall)mono_llvm_cpp_catch_exception;
+	else if (((int)(void*)dispatcher)==-1)
+		dispatcher = mono_jiterp_do_jit_call_indirect;
+
 	jiterpreter_do_jit_call = dispatcher;
 }
 
@@ -1098,7 +1123,6 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_get_hashcode (MonoObject ** ppObj)
 {
 	MonoObject *obj = *ppObj;
-	g_assert (obj);
 	return mono_object_hash_internal (obj);
 }
 
@@ -1106,7 +1130,6 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_try_get_hashcode (MonoObject ** ppObj)
 {
 	MonoObject *obj = *ppObj;
-	g_assert (obj);
 	return mono_object_try_get_hash_internal (obj);
 }
 
@@ -1168,6 +1191,18 @@ mono_jiterp_get_array_rank (gint32 *dest, MonoObject **src)
 	return 1;
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_array_element_size (gint32 *dest, MonoObject **src)
+{
+	if (!src || !*src) {
+		*dest = 0;
+		return 0;
+	}
+
+	*dest = mono_array_element_size (mono_object_class (*src));
+	return 1;
+}
+
 // Returns 1 on success so that the trace can do br_if to bypass its bailout
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_set_object_field (
@@ -1191,9 +1226,198 @@ mono_jiterp_debug_count ()
 	return mono_debug_count();
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_stelem_ref (
+	MonoArray *o, gint32 aindex, MonoObject *ref
+) {
+	if (!o)
+		return 0;
+	if (aindex >= mono_array_length_internal (o))
+		return 0;
+
+	if (ref) {
+		// FIXME push/pop LMF
+		gboolean isinst = mono_jiterp_isinst (ref, m_class_get_element_class (mono_object_class (o)));
+		if (!isinst)
+			return 0;
+	}
+
+	mono_array_setref_fast ((MonoArray *) o, aindex, ref);
+	return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_trace_transfer (
+	int displacement, JiterpreterThunk trace, void *frame, void *pLocals, JiterpreterCallInfo *cinfo
+) {
+	// This indicates that we lost a race condition, so there's no trace to call. Just bail out.
+	// FIXME: Detect this at trace generation time and spin until the trace is available
+	if (!trace)
+		return displacement;
+
+	// When we transfer control to a trace that represents a loop body, at the end of the loop
+	//  body it may branch back to itself. In that case, we can just call it again - the
+	//  safepoint was already performed by the trace.
+	int relative_displacement = 0;
+	while (relative_displacement == 0)
+		relative_displacement = trace(frame, pLocals, cinfo);
+
+	// We got a relative displacement other than 0, so the trace bailed out somewhere or
+	//  branched to another branch target. Time to return (and our caller will return too.)
+	return displacement + relative_displacement;
+}
+
+#define JITERP_MEMBER_VT_INITIALIZED 0
+#define JITERP_MEMBER_ARRAY_DATA 1
+#define JITERP_MEMBER_STRING_LENGTH 2
+#define JITERP_MEMBER_STRING_DATA 3
+#define JITERP_MEMBER_IMETHOD 4
+#define JITERP_MEMBER_DATA_ITEMS 5
+#define JITERP_MEMBER_RMETHOD 6
+#define JITERP_MEMBER_SPAN_LENGTH 7
+#define JITERP_MEMBER_SPAN_DATA 8
+#define JITERP_MEMBER_ARRAY_LENGTH 9
+#define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS 10
+#define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT 11
+#define JITERP_MEMBER_CLAUSE_DATA_OFFSETS 12
+
+// we use these helpers at JIT time to figure out where to do memory loads and stores
+EMSCRIPTEN_KEEPALIVE size_t
+mono_jiterp_get_member_offset (int member) {
+	switch (member) {
+		case JITERP_MEMBER_VT_INITIALIZED:
+			return MONO_STRUCT_OFFSET (MonoVTable, initialized);
+		case JITERP_MEMBER_ARRAY_DATA:
+			return MONO_STRUCT_OFFSET (MonoArray, vector);
+		case JITERP_MEMBER_ARRAY_LENGTH:
+			return MONO_STRUCT_OFFSET (MonoArray, max_length);
+		case JITERP_MEMBER_STRING_LENGTH:
+			return MONO_STRUCT_OFFSET (MonoString, length);
+		case JITERP_MEMBER_STRING_DATA:
+			return MONO_STRUCT_OFFSET (MonoString, chars);
+		case JITERP_MEMBER_IMETHOD:
+			return offsetof (InterpFrame, imethod);
+		case JITERP_MEMBER_DATA_ITEMS:
+			return offsetof (InterpMethod, data_items);
+		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS:
+			return offsetof (InterpMethod, backward_branch_offsets);
+		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT:
+			return offsetof (InterpMethod, backward_branch_offsets_count);
+		case JITERP_MEMBER_CLAUSE_DATA_OFFSETS:
+			return offsetof (InterpMethod, clause_data_offsets);
+		case JITERP_MEMBER_RMETHOD:
+			return offsetof (JiterpEntryDataHeader, rmethod);
+		case JITERP_MEMBER_SPAN_LENGTH:
+			return offsetof (MonoSpanOfVoid, _length);
+		case JITERP_MEMBER_SPAN_DATA:
+			return offsetof (MonoSpanOfVoid, _reference);
+		default:
+			g_assert_not_reached();
+	}
+}
+
+#define JITERP_NUMBER_MODE_U32 0
+#define JITERP_NUMBER_MODE_I32 1
+#define JITERP_NUMBER_MODE_F32 2
+#define JITERP_NUMBER_MODE_F64 3
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_write_number_unaligned (void *dest, double value, int mode) {
+	switch (mode) {
+		case JITERP_NUMBER_MODE_U32:
+			*((uint32_t *)dest) = (uint32_t)value;
+			return;
+		case JITERP_NUMBER_MODE_I32:
+			*((int32_t *)dest) = (int32_t)value;
+			return;
+		case JITERP_NUMBER_MODE_F32:
+			*((float *)dest) = (float)value;
+			return;
+		case JITERP_NUMBER_MODE_F64:
+			*((double *)dest) = value;
+			return;
+		default:
+			g_assert_not_reached();
+	}
+}
+
+#define TRACE_PENALTY_LIMIT 200
+
+ptrdiff_t
+mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
+{
+	gint32 index = READ32 (ip + 1);
+	TraceInfo *info = trace_info_get (index);
+	g_assert (info);
+
+	JiterpreterThunk thunk = info->thunk;
+	// FIXME: This shouldn't be possible
+	g_assert (((guint32)(void *)thunk) > JITERPRETER_NOT_JITTED);
+
+	JiterpreterCallInfo cinfo;
+	cinfo.backward_branch_taken = 0;
+	cinfo.bailout_opcode_count = -1;
+
+	InterpFrame *frame = _frame;
+
+	ptrdiff_t result = thunk (frame, locals, &cinfo);
+	// If a backward branch was taken, we can treat the trace as if it successfully
+	//  executed at least one time. We don't know how long it actually ran, but back
+	//  branches are almost always going to be loops. It's fine if a bailout happens
+	//  after multiple loop iterations.
+	if (
+		(cinfo.bailout_opcode_count >= 0) &&
+		!cinfo.backward_branch_taken &&
+		(cinfo.bailout_opcode_count < mono_opt_jiterpreter_trace_monitoring_long_distance)
+	) {
+		// Start with a penalty of 2 and lerp all the way down to 0
+		float scaled = (float)(cinfo.bailout_opcode_count - mono_opt_jiterpreter_trace_monitoring_short_distance)
+			/ (mono_opt_jiterpreter_trace_monitoring_long_distance - mono_opt_jiterpreter_trace_monitoring_short_distance);
+		int penalty = MIN ((int)((1.0f - scaled) * TRACE_PENALTY_LIMIT), TRACE_PENALTY_LIMIT);
+		info->penalty_total += penalty;
+
+		if (mono_opt_jiterpreter_trace_monitoring_log > 2)
+			g_print ("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
+	}
+
+	gint64 hit_count = info->hit_count++ - mono_opt_jiterpreter_minimum_trace_hit_count;
+	if (hit_count == mono_opt_jiterpreter_trace_monitoring_period) {
+		// Prepare to enable the trace
+		volatile guint16 *mutable_ip = (volatile guint16*)ip;
+		*mutable_ip = MINT_TIER_NOP_JITERPRETER;
+
+		mono_memory_barrier ();
+		float average_penalty = info->penalty_total / (float)hit_count / 100.0f,
+			threshold = (mono_opt_jiterpreter_trace_monitoring_max_average_penalty / 100.0f);
+
+		if (average_penalty <= threshold) {
+			*(volatile JiterpreterThunk*)(ip + 1) = thunk;
+			mono_memory_barrier ();
+			*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
+			if (mono_opt_jiterpreter_trace_monitoring_log > 1)
+				g_print ("trace #%d @%d '%s' accepted; average_penalty %f <= %f\n", index, ip, frame->imethod->method->name, average_penalty, threshold);
+		} else {
+			traces_rejected++;
+			if (mono_opt_jiterpreter_trace_monitoring_log > 0) {
+				char * full_name = mono_method_get_full_name (frame->imethod->method);
+				g_print ("trace #%d @%d '%s' rejected; average_penalty %f > %f\n", index, ip, full_name, average_penalty, threshold);
+				g_free (full_name);
+			}
+		}
+	}
+
+	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE gint32
+mono_jiterp_get_rejected_trace_count ()
+{
+	return traces_rejected;
+}
+
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
-#endif
+#endif // HOST_BROWSER
 
 void jiterp_preserve_module () {
 }

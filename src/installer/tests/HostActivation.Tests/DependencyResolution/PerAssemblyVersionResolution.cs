@@ -115,7 +115,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveResolvedAssembly(expectedTestAssemblyPath);
+                .And.HaveResolvedAssembly(expectedTestAssemblyPath)
+                .And.HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 1);
         }
     }
 
@@ -154,7 +155,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .Execute()
                     .Should().Pass()
                     .And.HaveUsedAdditionalDeps(additionalDependency.DepsJson)
-                    .And.HaveResolvedAssembly(expectedTestAssemblyPath);
+                    .And.HaveResolvedAssembly(expectedTestAssemblyPath)
+                    .And.HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 1);
             }
         }
     }

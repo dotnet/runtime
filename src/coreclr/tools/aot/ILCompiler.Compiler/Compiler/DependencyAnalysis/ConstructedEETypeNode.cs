@@ -75,8 +75,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // Ask the metadata manager if we have any dependencies due to reflectability.
-            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
+            // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
 
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
 

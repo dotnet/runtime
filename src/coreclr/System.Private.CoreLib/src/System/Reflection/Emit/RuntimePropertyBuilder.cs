@@ -202,13 +202,13 @@ namespace System.Reflection.Emit
         public override Type? ReflectedType => m_containingType;
 
         // These are package private so that TypeBuilder can access them.
-        private string m_name; // The name of the property
-        private int m_tkProperty; // The token of this property
-        private RuntimeModuleBuilder m_moduleBuilder;
-        private PropertyAttributes m_attributes; // property's attribute flags
-        private Type m_returnType; // property's return type
+        private readonly string m_name; // The name of the property
+        private readonly int m_tkProperty; // The token of this property
+        private readonly RuntimeModuleBuilder m_moduleBuilder;
+        private readonly PropertyAttributes m_attributes; // property's attribute flags
+        private readonly Type m_returnType; // property's return type
         private MethodInfo? m_getMethod;
         private MethodInfo? m_setMethod;
-        private RuntimeTypeBuilder m_containingType;
+        private readonly RuntimeTypeBuilder m_containingType;
     }
 }
