@@ -400,9 +400,14 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <XUnitLogCheckerCommand Condition="'$(TestWrapperTargetsWindows)' != 'true'">dotnet %24HELIX_CORRELATION_PAYLOAD/XUnitLogChecker/</XUnitLogCheckerCommand>
-      <XUnitLogCheckerCommand Condition="'$(TestWrapperTargetsWindows)' == 'true'">dotnet %25HELIX_CORRELATION_PAYLOAD%25/XUnitLogChecker/</XUnitLogCheckerCommand>
-      <XUnitLogCheckerCommand>$(XUnitLogCheckerCommand)XUnitLogChecker.dll $(_MergedWrapperRunScriptDirectoryRelative) $(_MergedWrapperName)</XUnitLogCheckerCommand>
+      <XUnitLogCheckerHelixPath Condition="'$(TestWrapperTargetsWindows)' != 'true'">%24HELIX_CORRELATION_PAYLOAD/</XUnitLogCheckerHelixPath>
+      <XUnitLogCheckerHelixPath Condition="'$(TestWrapperTargetsWindows)' == 'true'">%25HELIX_CORRELATION_PAYLOAD%25/</XUnitLogCheckerHelixPath>
+      <XUnitLogCheckerHelixPath>$(XUnitLogCheckerHelixPath)XUnitLogChecker/</XUnitLogCheckerHelixPath>
+
+      <XUnitLogCheckerArgs>$(_MergedWrapperRunScriptDirectoryRelative) $(_MergedWrapperName)</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' != 'true'">$(XUnitLogCheckerArgs) %24HELIX_DUMP_FOLDER</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' == 'true'">$(XUnitLogCheckerArgs) %25HELIX_DUMP_FOLDER%25</XUnitLogCheckerArgs>
+      <XUnitLogCheckerCommand>dotnet $(XUnitLogCheckerHelixPath)XUnitLogChecker.dll $(XUnitLogCheckerArgs)</XUnitLogCheckerCommand>
     </PropertyGroup>
 
     <ItemGroup>

@@ -182,7 +182,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine();
 
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
-        // builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new(TestCount.Count);");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
@@ -190,14 +189,17 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine();
 
         builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
-        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
-
+        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
         CodeBuilder testExecutorBuilder = new();
         int totalTestsEmitted = 0;
 
         using (builder.NewBracesScope())
         {
             builder.AppendLine("statsCsvSw.WriteLine($\"{TestCount.Count},0,0,0\");");
+            // CAUTION NOTE: If this ever changes and the 'assembly' tag is no longer
+            // the topmost one in the temp log, XUnitLogChecker must be updated accordingly.
+            // Otherwise, it's going to fail when attempting to find dumps.
+            builder.AppendLine($@"summary.WriteHeaderToTempLog(""{assemblyName}"", tempLogSw);");
 
             ITestReporterWrapper reporter =
                 new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
@@ -243,6 +245,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 testExecutorBuilder.AppendLine("}");
                 testExecutorBuilder.AppendLine();
             }
+
+            testExecutorBuilder.AppendLine("}");
+            builder.AppendLine("tempLogSw.WriteLine(\"</assembly>\");");
         }
         builder.AppendLine();
 
