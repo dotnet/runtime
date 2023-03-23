@@ -170,14 +170,16 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 	MINI_BEGIN_CODEGEN ();
 
 	if (has_target) {
-		start = code = mono_global_codeman_reserve (12);
+		int size = 16;
+		start = code = mono_global_codeman_reserve (size);
 
 		/* Replace the this argument with the target */
+		arm_dmb (code, ARM_DMB_ISHLD);
 		arm_ldrx (code, ARMREG_IP0, ARMREG_R0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		arm_ldrx (code, ARMREG_R0, ARMREG_R0, MONO_STRUCT_OFFSET (MonoDelegate, target));
 		code = mono_arm_emit_brx (code, ARMREG_IP0);
 
-		g_assert ((code - start) <= 12);
+		g_assert ((code - start) <= size);
 	} else {
 		int size, i;
 

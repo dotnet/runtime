@@ -4041,65 +4041,6 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool AppendLiteral(string value)
             {
-                if (RuntimeHelpers.IsKnownConstant(value))
-                {
-                    // See comment on inlining and special-casing in DefaultInterpolatedStringHandler.AppendLiteral.
-
-                    if (value.Length == 1)
-                    {
-                        Span<char> destination = _destination;
-                        int pos = _pos;
-                        if ((uint)pos < (uint)destination.Length)
-                        {
-                            destination[pos] = value[0];
-                            _pos = pos + 1;
-                            return true;
-                        }
-
-                        return Fail();
-                    }
-
-                    if (value.Length == 2)
-                    {
-                        Span<char> destination = _destination;
-                        int pos = _pos;
-                        if ((uint)pos < destination.Length - 1)
-                        {
-                            Unsafe.WriteUnaligned(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), pos)),
-                                Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
-                            _pos = pos + 2;
-                            return true;
-                        }
-
-                        return Fail();
-                    }
-
-                    if (value.Length == 4)
-                    {
-                        Span<char> destination = _destination;
-                        int pos = _pos;
-                        if ((uint)pos < destination.Length - 3)
-                        {
-                            Unsafe.WriteUnaligned(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), pos)),
-                                Unsafe.ReadUnaligned<long>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
-                            _pos = pos + 4;
-                            return true;
-                        }
-
-                        return Fail();
-                    }
-                }
-
-                return AppendStringDirect(value);
-            }
-
-            /// <summary>Writes the specified string to the handler.</summary>
-            /// <param name="value">The string to write.</param>
-            /// <returns>true if the value could be appended to the span; otherwise, false.</returns>
-            private bool AppendStringDirect(string value)
-            {
                 if (value.TryCopyTo(_destination.Slice(_pos)))
                 {
                     _pos += value.Length;
@@ -4170,7 +4111,7 @@ namespace System
                     s = value?.ToString();
                 }
 
-                return s is null || AppendStringDirect(s);
+                return s is null || AppendLiteral(s);
             }
 
             /// <summary>Writes the specified value to the handler.</summary>
@@ -4226,7 +4167,7 @@ namespace System
                     s = value?.ToString();
                 }
 
-                return s is null || AppendStringDirect(s);
+                return s is null || AppendLiteral(s);
             }
 
             /// <summary>Writes the specified value to the handler.</summary>
@@ -4390,7 +4331,7 @@ namespace System
 
                 if (formatter is not null && formatter.Format(format, value, _provider) is string customFormatted)
                 {
-                    return AppendStringDirect(customFormatted);
+                    return AppendLiteral(customFormatted);
                 }
 
                 return true;

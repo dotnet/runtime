@@ -572,7 +572,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
-    <Compile Include="Compiler\ExportedMethodsRootProvider.cs" />
+    <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\JitHelper.cs" />

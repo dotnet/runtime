@@ -1151,6 +1151,13 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 
         case BBJ_EHFINALLYRET:
         {
+            // We may call this method before we realize we have invalid IL. Tolerate.
+            //
+            if (!hasHndIndex())
+            {
+                return 0;
+            }
+
             // The first block of the handler is labelled with the catch type.
             BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
             if (hndBeg->bbCatchTyp == BBCT_FINALLY)

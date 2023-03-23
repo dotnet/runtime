@@ -17,6 +17,7 @@ if(HOST_WIN32 AND HOST_AMD64)
     list(APPEND utils_win32_sources win64.asm)
 elseif(HOST_WASI)
     set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
+    set (CMAKE_ASM_COMPILER_TARGET "${CMAKE_C_COMPILER_TARGET}")
     enable_language(ASM)
 endif()
 
