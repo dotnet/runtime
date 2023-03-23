@@ -841,7 +841,7 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *sz)
 
 inline bool FPREG_HasAvx512Registers(const ucontext_t *uc)
 {
-    _ASSERTE(uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64));
+    _ASSERTE((uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX64)) || (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64)));
     return (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64));
 }
 
