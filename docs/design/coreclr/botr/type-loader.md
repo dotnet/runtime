@@ -180,7 +180,7 @@ See [Design and Implementation of Generics for the .NET Common Language Runtime]
 Within the type loader, while operating in various portions of the type loader, various different rules apply to what type load level can be used.
 
 #### 2.1.1.1 Code within `ClassLoader::CreateTypeHandleForTypeDefThrowing` and `MethodTableBuilder::BuildMethodTableThrowing`
-While executing the code in `ClassLoader::CreateTypeHandleForTypeDefThrowing` before the call to `MethodTableBuilder::BuildMethodTableThrowing` no logic can rely on the `MethodTable` of the type that is being loaded. This due to the detail that these are the routines which construct the `MethodTable`.
+While executing the code in `ClassLoader::CreateTypeHandleForTypeDefThrowing` before the call to `MethodTableBuilder::BuildMethodTableThrowing` no logic can rely on the `MethodTable` of the type that is being loaded. This is due to the detail that these are the routines which construct the `MethodTable`.
 
 This has various implications, but the most obvious is that the base type of the type being loaded and any associated interfaces or field types cannot be loaded past `CLASS_LOAD_APPROXPARENTS` without creating a risk of triggering a `TypeLoadException`. For instance, if we load the Base type to `CLASS_LOAD_EXACTPARENTS` then we could not load a type `A` which was derived from type `B<A>`. Exceptions to this rule exist, and are necessary to actually implement the type loading process, but generally should be avoided, as they cause behavior which does not match the ECMA specification.
 
