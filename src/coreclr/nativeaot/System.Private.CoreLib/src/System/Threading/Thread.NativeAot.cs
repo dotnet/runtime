@@ -13,6 +13,66 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        internal ExecutionContext? _executionContext;
+        internal SynchronizationContext? _synchronizationContext;
+
+        private string? _name;
+        private StartHelper? _startHelper;
+
+        private ThreadPriority _priority;
+        private ManagedThreadId _managedThreadId;
+
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
+        public int ManagedThreadId
+        {
+            [Intrinsic]
+            get => _managedThreadId.Id;
+        }
+
+        public bool IsAlive
+        {
+            get => IsAliveCore;
+        }
+
+        public bool IsBackground
+        {
+            get => IsBackgroundCore;
+            set
+            {
+                IsBackgroundCore = value;
+            }
+        }
+
+        public bool IsThreadPoolThread
+        {
+            get => IsThreadPoolThreadCore;
+            internal set
+            {
+                IsThreadPoolThreadCore = value;
+            }
+        }
+
+        public ThreadPriority Priority
+        {
+            get => PriorityCore;
+            set
+            {
+                PriorityCore = value;
+            }
+        }
+
+        public ThreadState ThreadState => ThreadStateCore;
+
+        internal const int OptimalMaxSpinWaitsPerSpinIteration = OptimalMaxSpinWaitsPerSpinIterationCore;
+
+        internal static ulong CurrentOSThreadId
+        {
+            get => CurrentOSThreadIdCore;
+        }
 
         private Thread()
         {
@@ -21,6 +81,12 @@ namespace System.Threading
             PlatformSpecificInitialize();
             RegisterThreadExitCallback();
         }
+
+        private void StartCore() => StartWindowsThreadPoolCore();
+
+        private static Thread InitializeCurrentThread() => InitializeCurrentThreadCore();
+
+        private void Initialize() => InitializeCore();
 
         internal void SetWaitSleepJoinState() => SetWaitSleepJoinStateCore();
 

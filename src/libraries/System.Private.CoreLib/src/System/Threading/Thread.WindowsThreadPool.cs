@@ -19,23 +19,12 @@ namespace System.Threading
         // Bits of _threadState that are returned by the ThreadState property
         private const ThreadState PublicThreadStateMask = (ThreadState)0x1FF;
 
-        internal ExecutionContext? _executionContext;
-        internal SynchronizationContext? _synchronizationContext;
-
         private volatile int _threadState = (int)ThreadState.Unstarted;
-        private ThreadPriority _priority;
-        private ManagedThreadId _managedThreadId;
-        private string? _name;
-        private StartHelper? _startHelper;
+        
         private Exception? _startException;
 
         // Protects starting the thread and setting its priority
-        private Lock _lock = new Lock();
-
-        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
-        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
-        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
-        private bool _mayNeedResetForThreadPool;
+        private object _lock = new object();
 
         // so far the only place we initialize it is `WaitForForegroundThreads`
         // and only in the case when there are running foreground threads
@@ -44,7 +33,7 @@ namespace System.Threading
 
         private static int s_foregroundRunningCount;
 
-        private void Initialize()
+        private void InitializeCore()
         {
             _priority = ThreadPriority.Normal;
             _managedThreadId = new ManagedThreadId();
@@ -58,7 +47,7 @@ namespace System.Threading
             RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
         }
 
-        internal static ulong CurrentOSThreadId
+        internal static ulong CurrentOSThreadIdCore
         {
             get
             {
@@ -68,7 +57,7 @@ namespace System.Threading
 
         // Slow path executed once per thread
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Thread InitializeCurrentThread()
+        private static Thread InitializeCurrentThreadCore()
         {
             Debug.Assert(t_currentThread == null);
 
@@ -103,7 +92,7 @@ namespace System.Threading
             return !GetThreadStateBit(ThreadState.Unstarted);
         }
 
-        public bool IsAlive
+        private bool IsAliveCore
         {
             get
             {
@@ -116,7 +105,7 @@ namespace System.Threading
             return ((ThreadState)_threadState & (ThreadState.Stopped | ThreadState.Aborted)) != 0;
         }
 
-        public bool IsBackground
+        private bool IsBackgroundCore
         {
             get
             {
@@ -156,7 +145,7 @@ namespace System.Threading
             }
         }
 
-        public bool IsThreadPoolThread
+        private bool IsThreadPoolThreadCore
         {
             get
             {
@@ -166,7 +155,7 @@ namespace System.Threading
                 }
                 return GetThreadStateBit(ThreadPoolThread);
             }
-            internal set
+            set
             {
                 if (IsDead())
                 {
@@ -183,16 +172,10 @@ namespace System.Threading
             }
         }
 
-        public int ManagedThreadId
-        {
-            [Intrinsic]
-            get => _managedThreadId.Id;
-        }
-
         // TODO: Inform the debugger and the profiler
         // private void ThreadNameChanged(string? value) {}
 
-        public ThreadPriority Priority
+        private ThreadPriority PriorityCore
         {
             get
             {
@@ -222,7 +205,8 @@ namespace System.Threading
                 }
 
                 // Prevent race condition with starting this thread
-                using (LockHolder.Hold(_lock))
+                // using (LockHolder.Hold(_lock)) PR-Comment: just keeping this one to make the change easy to notice
+                lock(_lock)
                 {
                     if (HasStarted() && !SetPriorityLive(value))
                     {
@@ -238,7 +222,7 @@ namespace System.Threading
             }
         }
 
-        public ThreadState ThreadState => ((ThreadState)_threadState & PublicThreadStateMask);
+        private ThreadState ThreadStateCore => ((ThreadState)_threadState & PublicThreadStateMask);
 
         private bool GetThreadStateBit(ThreadState bit)
         {
@@ -312,7 +296,7 @@ namespace System.Threading
         /// appropriate for the processor.
         /// TODO: See issue https://github.com/dotnet/corert/issues/4430
         /// </summary>
-        internal const int OptimalMaxSpinWaitsPerSpinIteration = 8;
+        private const int OptimalMaxSpinWaitsPerSpinIterationCore = 8;
 
         // Max iterations to be done in RhSpinWait.
         // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
@@ -341,16 +325,18 @@ namespace System.Threading
             }
             else
             {
-                SpinWaitInternal(iterations);
+                SpinWaitInternalCore(iterations);
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         private static bool YieldCore() => RuntimeImports.RhYield();
 
-        private void StartCore()
+        // private void StartCore() - PR-Comment: Don't know if this rename it's appropriate
+        private void StartWindowsThreadPoolCore()
         {
-            using (LockHolder.Hold(_lock))
+            // using (LockHolder.Hold(_lock)) - PR-Comment: just keeping this one to make the change easy to notice
+            lock(_lock)
             {
                 if (!GetThreadStateBit(ThreadState.Unstarted))
                 {

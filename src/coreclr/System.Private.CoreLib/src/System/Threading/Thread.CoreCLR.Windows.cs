@@ -14,6 +14,73 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        private string? _name;
+        private StartHelper? _startHelper;
+
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
+        public bool IsAlive
+        {
+            get => ThreadPool.UseWindowsThreadPool ? IsAliveCore : IsAlivePortableCore;
+        }
+
+        public bool IsBackground
+        {
+            get => ThreadPool.UseWindowsThreadPool ? IsBackgroundCore : IsBackgroundPortableCore;
+            set
+            {
+                if (ThreadPool.UseWindowsThreadPool)
+                {
+                    IsBackgroundCore = value;
+                }
+                else
+                {
+                    IsBackgroundPortableCore = value;
+                }
+            }
+        }
+
+        public bool IsThreadPoolThread
+        {
+            get => ThreadPool.UseWindowsThreadPool ? IsThreadPoolThreadCore : IsThreadPoolThreadPortableCore;
+            internal set
+            {
+                if (ThreadPool.UseWindowsThreadPool)
+                {
+                    IsThreadPoolThreadCore = value;
+                }
+                else
+                {
+                    IsThreadPoolThreadPortableCore = value;
+                }
+            }
+        }
+
+        public ThreadPriority Priority
+        {
+            get => ThreadPool.UseWindowsThreadPool ? PriorityCore : PriorityPortableCore;
+            set
+            {
+                if (ThreadPool.UseWindowsThreadPool)
+                {
+                    PriorityCore = value;
+                }
+                else
+                {
+                    PriorityPortableCore = value;
+                }
+            }
+        }
+
+        public ThreadState ThreadState => ThreadPool.UseWindowsThreadPool ? ThreadStateCore : ThreadStatePortableCore;
+
+        internal static int OptimalMaxSpinWaitsPerSpinIteration
+        {
+            get => ThreadPool.UseWindowsThreadPool ? OptimalMaxSpinWaitsPerSpinIterationCore : OptimalMaxSpinWaitsPerSpinIterationPortableCore;
+        }
 
         private Thread()
         {
@@ -26,18 +93,24 @@ namespace System.Threading
             }
         }
 
+        private unsafe void StartCore() => ThreadPool.UseWindowsThreadPool ? StartWindowsThreadPoolCore() : StartCLRCore();
+
+        private static Thread InitializeCurrentThread() => ThreadPool.UseWindowsThreadPool ? InitializeCurrentThreadCore() : InitializeCurrentThreadPortableCore();
+
+        private void Initialize() => ThreadPool.UseWindowsThreadPool ? InitializeCore() : InitializePortableCore();
+
+        public bool Join(int millisecondsTimeout) => ThreadPool.UseWindowsThreadPool ? JoinCore(millisecondsTimeout) : JoinPortableCore(millisecondsTimeout);
+
         internal void SetWaitSleepJoinState() => SetWaitSleepJoinStateCore();
 
         internal void ClearWaitSleepJoinState() => ClearWaitSleepJoinStateCrore();
 
-        public bool Join(int millisecondsTimeout) => JoinCore(millisecondsTimeout);
+        private static void SpinWaitInternal(int iterations) => ThreadPool.UseWindowsThreadPool ? SpinWaitInternalCore(iterations) : SpinWaitInternalPortableCore(iterations);
 
-        internal static void SpinWaitInternal(int iterations) => SpinWaitInternalCore(iterations);
-
-        public static void SpinWait(int iterations) => SpinWaitCore();
+        public static void SpinWait(int iterations) => ThreadPool.UseWindowsThreadPool ? SpinWaitCore(iterations) : SpinWaitPortableCore(iterations);
 
         [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        public static bool Yield() => YieldCore();
+        public static bool Yield() => ThreadPool.UseWindowsThreadPool ? YieldCore() : YieldPortableCore();
 
         internal static void IncrementRunningForeground() => IncrementRunningForegroundCore();
 
@@ -47,10 +120,6 @@ namespace System.Threading
 
         /// <summary>Returns handle for interop with EE. The handle is guaranteed to be non-null.</summary>
         internal ThreadHandle GetNativeHandle() => GetNativeHandleCore();
-
-        public static void SpinWait(int iterations) => SpinWaitCore(iterations);
-
-        public static bool Yield() => YieldCore();
 
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
@@ -77,18 +146,6 @@ namespace System.Threading
         /// when it next begins to block.
         /// </summary>
         public void Interrupt() => InterruptCore();
-
-        /// <summary>
-        /// Waits for the thread to die or for timeout milliseconds to elapse.
-        /// </summary>
-        /// <returns>
-        /// Returns true if the thread died, or false if the wait timed out. If
-        /// -1 is given as the parameter, no timeout will occur.
-        /// </returns>
-        /// <exception cref="ArgumentException">if timeout &lt; -1 (Timeout.Infinite)</exception>
-        /// <exception cref="ThreadInterruptedException">if the thread is interrupted while waiting</exception>
-        /// <exception cref="ThreadStateException">if the thread has not been started yet</exception>
-        public bool Join(int millisecondsTimeout) => JoinCore(millisecondsTimeout);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread() => ResetThreadPoolThreadCore();

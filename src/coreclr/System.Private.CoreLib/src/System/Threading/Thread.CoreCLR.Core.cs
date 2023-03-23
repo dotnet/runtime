@@ -32,9 +32,6 @@ namespace System.Threading
         internal ExecutionContext? _executionContext; // this call context follows the logical thread
         internal SynchronizationContext? _synchronizationContext; // maintained separately from ExecutionContext
 
-        private string? _name;
-        private StartHelper? _startHelper;
-
         /*=========================================================================
         ** The base implementation of Thread is all native.  The following fields
         ** should never be used in the C# code.  They are here to define the proper
@@ -55,11 +52,6 @@ namespace System.Threading
         private int _managedThreadId; // INT32
 #pragma warning restore CA1823, 169
 
-        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
-        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
-        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
-        private bool _mayNeedResetForThreadPool;
-
         public extern int ManagedThreadId
         {
             [Intrinsic]
@@ -67,8 +59,7 @@ namespace System.Threading
             get;
         }
 
-        /// <summary>Returns true if the thread has been started and is not dead.</summary>
-        public extern bool IsAlive
+        private extern bool IsAlivePortableCore
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
@@ -78,7 +69,7 @@ namespace System.Threading
         /// Return whether or not this thread is a background thread.  Background
         /// threads do not affect when the Execution Engine shuts down.
         /// </summary>
-        public bool IsBackground
+        private bool IsBackgroundPortableCore
         {
             get => IsBackgroundNative();
             set
@@ -92,16 +83,16 @@ namespace System.Threading
         }
 
         /// <summary>Returns true if the thread is a threadpool thread.</summary>
-        public extern bool IsThreadPoolThread
+        private extern bool IsThreadPoolThreadPortableCore
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
             [MethodImpl(MethodImplOptions.InternalCall)]
-            internal set;
+            set;
         }
 
         /// <summary>Returns the priority of the thread.</summary>
-        public ThreadPriority Priority
+        private ThreadPriority PriorityPortableCore
         {
             get => (ThreadPriority)GetPriorityNative();
             set
@@ -118,14 +109,14 @@ namespace System.Threading
         /// Return the thread state as a consistent set of bits.  This is more
         /// general then IsAlive or IsBackground.
         /// </summary>
-        public ThreadState ThreadState => (ThreadState)GetThreadStateNative();
+        private ThreadState ThreadStatePortableCore => (ThreadState)GetThreadStateNative();
 
 
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
         /// appropriate for the processor.
         /// </summary>
-        internal static int OptimalMaxSpinWaitsPerSpinIteration
+        private static int OptimalMaxSpinWaitsPerSpinIterationPortableCore
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
@@ -145,7 +136,8 @@ namespace System.Threading
             return new ThreadHandle(thread);
         }
 
-        private unsafe void StartCore()
+        // private unsafe void StartCore() - PR-Comment: Don't know if this rename it's appropriate
+        private unsafe void StartCLRCore()
         {
             lock (this)
             {
@@ -188,24 +180,23 @@ namespace System.Threading
         /// only take a few machine instructions.  Calling this API is preferable to coding
         /// a explicit busy loop because the hardware can be informed that it is busy waiting.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void SpinWaitInternal(int iterations);
+        private static extern void SpinWaitInternalPortableCore(int iterations);
 
-        private static void SpinWaitCore(int iterations) => SpinWaitInternal(iterations);
+        private static void SpinWaitPortableCore(int iterations) => SpinWaitInternal(iterations);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
         private static partial Interop.BOOL YieldInternal();
 
-        private static bool YieldCore() => YieldInternal() != Interop.BOOL.FALSE;
+        private static bool YieldPortableCore() => YieldInternal() != Interop.BOOL.FALSE;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Thread InitializeCurrentThread() => t_currentThread = GetCurrentThreadNative();
+        private static Thread InitializeCurrentThreadPortableCore() => t_currentThread = GetCurrentThreadNative();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern Thread GetCurrentThreadNative();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void Initialize();
+        private extern void InitializePortableCore();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InternalFinalize();
@@ -296,7 +287,7 @@ namespace System.Threading
         private extern void InterruptCore();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool JoinCore(int millisecondsTimeout);
+        private extern bool JoinPortableCore(int millisecondsTimeout);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ResetThreadPoolThreadCore()

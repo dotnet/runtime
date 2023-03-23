@@ -369,7 +369,17 @@ namespace System.Threading
 
 #if !NATIVEAOT
         /// <summary>Returns the operating system identifier for the current thread.</summary>
-        internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
+        internal static ulong CurrentOSThreadId
+        {
+            get
+            {
+#if CORECLR && WINDOWS
+                return ThreadPool.WindowsThreadPool ? CurrentOSThreadIdCore : GetCurrentOSThreadId();
+#else
+                return GetCurrentOSThreadId();
+#endif
+            }
+        }
 #endif
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();

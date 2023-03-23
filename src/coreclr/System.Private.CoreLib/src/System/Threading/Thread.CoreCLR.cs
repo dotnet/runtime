@@ -13,15 +13,72 @@ namespace System.Threading
 
     public sealed partial class Thread
     {
+        private string? _name;
+        private StartHelper? _startHelper;
+
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
+        /// <summary>Returns true if the thread has been started and is not dead.</summary>
+        public bool IsAlive
+        {
+            get
+            {
+                return IsAlivePortableCore;
+            }
+        }
+
+        public bool IsBackground
+        {
+            get => IsBackgroundPortableCore;
+            set
+            {
+                IsBackgroundPortableCore = value;
+            }
+        }
+
+        public bool IsThreadPoolThread
+        {
+            get => IsThreadPoolThreadPortableCore;
+            internal set {
+                IsThreadPoolThreadPortableCore = value;
+            }
+        }
+
+        public ThreadPriority Priority
+        {
+            get => PriorityPortableCore;
+            set
+            {
+                PriorityPortableCore = value;
+            }
+        }
+
+        public ThreadState ThreadState => ThreadStatePortableCore;
+
+        internal static int OptimalMaxSpinWaitsPerSpinIteration
+        {
+            get => OptimalMaxSpinWaitsPerSpinIterationPortableCore;
+        }
 
         private Thread() { }
+
+        private unsafe void StartCore() => StartCLRCore();
+
+        private static void SpinWaitInternal(int iterations) => SpinWaitInternalPortableCore(iterations);
+
+        private static Thread InitializeCurrentThread() => InitializeCurrentThreadPortableCore();
+
+        private void Initialize() => InitializePortableCore();
 
         /// <summary>Returns handle for interop with EE. The handle is guaranteed to be non-null.</summary>
         internal ThreadHandle GetNativeHandle() => GetNativeHandleCore();
 
-        public static void SpinWait(int iterations) => SpinWaitCore(iterations);
+        public static void SpinWait(int iterations) => SpinWaitPortableCore(iterations);
 
-        public static bool Yield() => YieldCore();
+        public static bool Yield() => YieldPortableCore();
 
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
@@ -59,7 +116,7 @@ namespace System.Threading
         /// <exception cref="ArgumentException">if timeout &lt; -1 (Timeout.Infinite)</exception>
         /// <exception cref="ThreadInterruptedException">if the thread is interrupted while waiting</exception>
         /// <exception cref="ThreadStateException">if the thread has not been started yet</exception>
-        public extern bool Join(int millisecondsTimeout) => JoinCore(millisecondsTimeout);
+        public bool Join(int millisecondsTimeout) => JoinPortableCore(millisecondsTimeout);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread() => ResetThreadPoolThreadCore();
