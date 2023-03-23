@@ -21,12 +21,41 @@ namespace Sample
         [JSImport("globalThis.setTimeout")]
         static partial void GlobalThisSetTimeout([JSMarshalAs<JSType.Function>] Action cb, int timeoutMs);
 
+        [JSImport("globalThis.fetch")]
+        private static partial Task<JSObject> GlobalThisFetch(string url);
+
         [JSExport]
         public static async Task Hello()
         {
             var t = Task.Run(TimeOutThenComplete);
             await t;
             Console.WriteLine ($"XYZ: Main Thread caught task tid:{Thread.CurrentThread.ManagedThreadId}");
+        }
+
+        const string fetchhelper = "./fetchelper.js";
+
+        [JSImport("responseText", fetchhelper)]
+        private static partial Task<string> FetchHelperResponseText(JSObject response);
+
+        [JSExport]
+        public static async Task FetchBackground(string url)
+        {
+            var t = Task.Run(async () =>
+            {
+                await JSHost.ImportAsync(fetchhelper, "./fetchhelper.js");
+                var r = await GlobalThisFetch(url);
+                var ok = (bool)r.GetPropertyAsBoolean("ok");
+
+                Console.WriteLine($"XYZ: FetchBackground fetch returned to thread:{Thread.CurrentThread.ManagedThreadId}, ok: {ok}");
+                if (ok)
+                {
+                    var text = await FetchHelperResponseText(r);
+                    Console.WriteLine($"XYZ: FetchBackground fetch returned to thread:{Thread.CurrentThread.ManagedThreadId}, text: {text}");
+                }
+                return ok;
+            });
+            await t;
+            Console.WriteLine($"XYZ: FetchBackground thread:{Thread.CurrentThread.ManagedThreadId} background thread returned");
         }
 
         private static async Task TimeOutThenComplete()

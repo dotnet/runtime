@@ -15,14 +15,17 @@ try {
 
     const exports = await getAssemblyExports(assemblyName);
 
-    console.log ("XYZ: running hello");
-    await exports.Sample.Test.Hello();
-    console.log ("XYZ: hello done");
+    //console.log ("XYZ: running hello");
+    //await exports.Sample.Test.Hello();
+    //console.log ("XYZ: hello done");
 
-    console.log ("XYZ: running hello");
-    await exports.Sample.Test.Hello();
-    console.log ("XYZ: hello done");
+    console.log ("XYZ: running FetchBackground");
+    await exports.Sample.Test.FetchBackground("./blurst.txt");
+    console.log ("XYZ: FetchBackground done");
 
+    console.log ("XYZ: running FetchBackground(missing)");
+    await exports.Sample.Test.FetchBackground("./missing.txt");
+    console.log ("XYZ: FetchBackground(missing) done");
     //console.log ("HHH: running TaskRunCompute");
     //const r1 = await exports.Sample.Test.RunBackgroundTaskRunCompute();
     //if (r1 !== 524) {
