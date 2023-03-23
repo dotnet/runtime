@@ -106,13 +106,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 case "SHA512":
                     expectedAlgOid = "06082A8648CE3D040304";
                     break;
-                case "SHA3_256":
+                case "SHA3-256":
                     expectedAlgOid = "060960864801650304030A";
                     break;
-                case "SHA3_384":
+                case "SHA3-384":
                     expectedAlgOid = "060960864801650304030B";
                     break;
-                case "SHA3_512":
+                case "SHA3-512":
                     expectedAlgOid = "060960864801650304030C";
                     break;
                 default:

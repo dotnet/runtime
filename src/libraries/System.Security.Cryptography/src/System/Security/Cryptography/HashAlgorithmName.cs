@@ -55,17 +55,17 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Gets a <see cref="HashAlgorithmName" /> representing "SHA3-256"
         /// </summary>
-        public static HashAlgorithmName SHA3_256 => new HashAlgorithmName("SHA3_256");
+        public static HashAlgorithmName SHA3_256 => new HashAlgorithmName("SHA3-256");
 
         /// <summary>
         /// Gets a <see cref="HashAlgorithmName" /> representing "SHA3-384"
         /// </summary>
-        public static HashAlgorithmName SHA3_384 => new HashAlgorithmName("SHA3_384");
+        public static HashAlgorithmName SHA3_384 => new HashAlgorithmName("SHA3-384");
 
         /// <summary>
         /// Gets a <see cref="HashAlgorithmName" /> representing "SHA3-512"
         /// </summary>
-        public static HashAlgorithmName SHA3_512 => new HashAlgorithmName("SHA3_512");
+        public static HashAlgorithmName SHA3_512 => new HashAlgorithmName("SHA3-512");
 
         private readonly string? _name;
 

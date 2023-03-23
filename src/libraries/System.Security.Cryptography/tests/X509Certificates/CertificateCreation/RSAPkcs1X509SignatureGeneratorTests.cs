@@ -120,13 +120,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 case "SHA512":
                     expectedOid = "06092A864886F70D01010D";
                     break;
-                case "SHA3_256":
+                case "SHA3-256":
                     expectedOid = "060960864801650304030E";
                     break;
-                case "SHA3_384":
+                case "SHA3-384":
                     expectedOid = "060960864801650304030F";
                     break;
-                case "SHA3_512":
+                case "SHA3-512":
                     expectedOid = "0609608648016503040310";
                     break;
                 default:
