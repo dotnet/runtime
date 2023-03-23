@@ -65,6 +65,7 @@
           ItemName="TestDirectories"/>
     </RemoveDuplicates>
 
+    <TestDirectories>$(XunitTestBinBase)tracing/eventpipe</TestDirectories>
     <Message Text="Test directories are %(TestDirectories.Identity)" Importance="High" />
 
   </Target>
@@ -478,9 +479,6 @@
   </Target>
 
   <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <PropertyGroup>
-      <TestDirectories>$(XunitTestBinBase)baseservices</TestDirectories>
-    </PropertyGroup>
     <ItemGroup>
       <RunProj Include="$(MSBuildProjectFile)">
         <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
