@@ -89,6 +89,46 @@ void
 ds_eventpipe_collect_tracing2_command_payload_free (EventPipeCollectTracing2CommandPayload *payload);
 
 /*
+* EventPipeCollectTracing3CommandPayload
+*/
+
+// Command = 0x0202
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)
+struct _EventPipeCollectTracing3CommandPayload {
+#else
+struct _EventPipeCollectTracing3CommandPayload_Internal {
+#endif
+	// The protocol buffer is defined as:
+	// X, Y, Z means encode bytes for X followed by bytes for Y followed by bytes for Z
+	// message = uint circularBufferMB, uint format, array<provider_config> providers
+	// uint = 4 little endian bytes
+	// wchar = 2 little endian bytes, UTF16 encoding
+	// array<T> = uint length, length # of Ts
+	// string = (array<char> where the last char must = 0) or (length = 0)
+	// provider_config = ulong keywords, uint logLevel, string provider_name, string filter_data
+
+	uint8_t *incoming_buffer;
+	ep_rt_provider_config_array_t provider_configs;
+	uint32_t circular_buffer_size_in_mb;
+	EventPipeSerializationFormat serialization_format;
+	bool rundown_requested;
+	bool stacks_requested;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_EVENTPIPE_PROTOCOL_GETTER_SETTER)
+struct _EventPipeCollectTracing3CommandPayload {
+	uint8_t _internal [sizeof (struct _EventPipeCollectTracing3CommandPayload_Internal)];
+};
+#endif
+
+EventPipeCollectTracing3CommandPayload *
+ds_eventpipe_collect_tracing3_command_payload_alloc (void);
+
+void
+ds_eventpipe_collect_tracing3_command_payload_free (EventPipeCollectTracing3CommandPayload *payload);
+
+
+/*
 * EventPipeStopTracingCommandPayload
 */
 

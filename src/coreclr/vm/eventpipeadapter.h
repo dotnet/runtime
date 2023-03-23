@@ -199,6 +199,7 @@ public:
 		EventPipeSessionType sessionType,
 		EventPipeSerializationFormat format,
 		const bool rundownRequested,
+		const bool stacksRequested,
 		IpcStream *const stream,
 		EventPipeSessionSynchronousCallback callback,
 		void *callbackAdditionalData)
@@ -222,6 +223,7 @@ public:
 			sessionType,
 			format,
 			rundownRequested,
+			stacksRequested,
 			stream,
 			callback,
 			callbackAdditionalData);

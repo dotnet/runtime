@@ -41,6 +41,7 @@ extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
             outputFile != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_LISTENER,
             format,
             true,
+            true,
             nullptr,
             nullptr,
             nullptr);

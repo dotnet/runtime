@@ -7118,6 +7118,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(
                                              EP_SESSION_TYPE_SYNCHRONOUS,
                                              EP_SERIALIZATION_FORMAT_NETTRACE_V4,
                                              requestRundown,
+                                             true, // TODO add requestStacks support                                             
                                              NULL,
                                              reinterpret_cast<EventPipeSessionSynchronousCallback>(&ProfToEEInterfaceImpl::EventPipeCallbackHelper),
                                              reinterpret_cast<void *>(m_pProfilerInfo));

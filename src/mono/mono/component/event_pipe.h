@@ -49,6 +49,7 @@ typedef EventPipeSessionID
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
+	bool stacks_requested,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback);
 

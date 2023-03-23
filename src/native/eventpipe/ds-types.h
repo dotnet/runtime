@@ -33,6 +33,7 @@ typedef struct _DiagnosticsProcessInfoPayload DiagnosticsProcessInfoPayload;
 typedef struct _DiagnosticsProcessInfo2Payload DiagnosticsProcessInfo2Payload;
 typedef struct _EventPipeCollectTracingCommandPayload EventPipeCollectTracingCommandPayload;
 typedef struct _EventPipeCollectTracing2CommandPayload EventPipeCollectTracing2CommandPayload;
+typedef struct _EventPipeCollectTracing3CommandPayload EventPipeCollectTracing3CommandPayload;
 typedef struct _EventPipeStopTracingCommandPayload EventPipeStopTracingCommandPayload;
 
 #include "ds-rt-types.h"
@@ -97,6 +98,7 @@ typedef enum {
 	EP_COMMANDID_STOP_TRACING = 0x01,
 	EP_COMMANDID_COLLECT_TRACING  = 0x02,
 	EP_COMMANDID_COLLECT_TRACING_2 = 0x03,
+	EP_COMMANDID_COLLECT_TRACING_3 = 0x04,
 	// future
 } EventPipeCommandId;
 

@@ -88,6 +88,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 		output_file != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_LISTENER,
 		(EventPipeSerializationFormat)format,
 		true,
+		true,
 		NULL,
 		NULL);
 

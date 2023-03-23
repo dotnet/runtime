@@ -59,7 +59,7 @@ struct _EventPipeSession_Internal {
 	// we expect to remove it in the future once that limitation is resolved other scenarios are discouraged from using this given that
 	// we plan to make it go away
 	bool paused;
-	// Set via environment variable to enable or disable stack collection globally
+	// Determines if the stack collection is enabled or disabled for this session. Can be set globally via environment variable or per session via IPC.
 	bool enable_stackwalk;
 };
 
@@ -87,6 +87,7 @@ ep_session_alloc (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
+	bool stacks_requested,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,

@@ -36,6 +36,7 @@ event_pipe_stub_enable (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
+	bool stacks_requested,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback);
 
@@ -262,6 +263,7 @@ event_pipe_stub_enable (
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
 	bool rundown_requested,
+	bool stacks_requested,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback)
 {
