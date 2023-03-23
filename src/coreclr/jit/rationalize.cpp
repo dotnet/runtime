@@ -552,8 +552,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
         case GT_COMMA:
         {
-            assert(use.IsDummyUse() || !use.User()->OperIs(GT_ASG) || (node == use.User()->gtGetOp2()));
-
             GenTree*           op1         = node->gtGetOp1();
             bool               isClosed    = false;
             unsigned           sideEffects = 0;
