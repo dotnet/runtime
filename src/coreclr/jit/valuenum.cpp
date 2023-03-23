@@ -10084,7 +10084,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     ssize_t   byteOffset = 0;
     FieldSeq* fieldSeq   = nullptr;
     if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
-        GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1()->gtEffectiveVal(), &byteOffset, &fieldSeq))
+        GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
         int                  size           = (int)genTypeSize(tree->TypeGet());
@@ -10218,20 +10218,15 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         }
     }
 
-    //// Throughput check, the logic below is only for USHORT (char)
-    //if (!tree->OperIs(GT_IND) || !tree->TypeIs(TYP_USHORT))
-    //{
-    //    return false;
-    //}
+    // Throughput check, the logic below is only for USHORT (char)
+    if (!tree->OperIs(GT_IND) || !tree->TypeIs(TYP_USHORT))
+    {
+        return false;
+    }
 
     ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
-
-    ValueNum addrExcVN;
-    ValueNum addrNormVN;
-    vnStore->VNUnpackExc(addrVN, &addrNormVN, &addrExcVN);
-
     VNFuncApp funcApp;
-    if (!vnStore->GetVNFunc(addrNormVN, &funcApp))
+    if (!vnStore->GetVNFunc(addrVN, &funcApp))
     {
         return false;
     }
@@ -10308,7 +10303,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     {
         JITDUMP("Folding \"cns_str\"[%d] into %u", (int)index, (unsigned)charValue);
 
-        tree->gtVNPair.SetBoth(vnStore->VNWithExc(vnStore->VNForIntCon(charValue), addrExcVN));
+        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(charValue));
         return true;
     }
     return false;
@@ -10476,8 +10471,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             ValueNumPair addrNvnp;
             ValueNumPair addrXvnp;
             vnStore->VNPUnpackExc(addr->gtVNPair, &addrNvnp, &addrXvnp);
-
-            addr = addr->gtEffectiveVal();
 
             // Is the dereference immutable?  If so, model it as referencing the read-only heap.
             if (tree->gtFlags & GTF_IND_INVARIANT)

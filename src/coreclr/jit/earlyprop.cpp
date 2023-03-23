@@ -504,8 +504,6 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //       or
 //       indir(add(x, const2))
 //
-//       with an optional comma between the indir and address.
-//
 //       (indir is any node for which OperIsIndirOrArrMetaData() is true.)
 //
 //     2.  const1 + const2 if sufficiently small.
@@ -514,7 +512,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 {
     assert(tree->OperIsIndirOrArrMetaData());
 
-    GenTree* addr = tree->GetIndirOrArrMetaDataAddr()->gtEffectiveVal();
+    GenTree* addr = tree->GetIndirOrArrMetaDataAddr();
 
     ssize_t offsetValue = 0;
 
