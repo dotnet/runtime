@@ -597,7 +597,7 @@ void StubPrecode::StaticInitialize()
             _ASSERTE((SIZE_T)((BYTE*)StubPrecodeCode##size##_End - (BYTE*)StubPrecodeCode##size) <= StubPrecode::CodeSize); \
             break;
 
-    int pageSize = GetOsPageSize();
+    int pageSize = GetStubCodePageSize();
     switch (pageSize)
     {
         ENUM_PAGE_SIZES
@@ -706,7 +706,7 @@ void FixupPrecode::StaticInitialize()
             _ASSERTE((SIZE_T)((BYTE*)FixupPrecodeCode##size##_End - (BYTE*)FixupPrecodeCode##size) <= FixupPrecode::CodeSize); \
             break;
 
-    int pageSize = GetOsPageSize();
+    int pageSize = GetStubCodePageSize();
 
     switch (pageSize)
     {

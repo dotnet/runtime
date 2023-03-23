@@ -5,13 +5,12 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
-STUB_PAGE_SIZE = 4096
 
     TEXTAREA
 
     ALIGN 4
 
-    #define DATA_SLOT(stub, field) stub##Code + STUB_PAGE_SIZE + stub##Data__##field
+    #define DATA_SLOT(stub, field) stub##Code + PAGE_SIZE + stub##Data__##field
 
     LEAF_ENTRY StubPrecodeCode
         ldr r12, DATA_SLOT(StubPrecode, MethodDesc)

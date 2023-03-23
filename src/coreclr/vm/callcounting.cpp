@@ -297,7 +297,7 @@ void (*CallCountingStub::CallCountingStubCode)();
 void CallCountingStub::StaticInitialize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    int pageSize = GetOsPageSize();
+    int pageSize = GetStubCodePageSize();
     #define ENUM_PAGE_SIZE(size) \
         case size: \
             CallCountingStubCode = CallCountingStubCode##size; \
