@@ -237,6 +237,59 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         currAvailableRegs &= ~endMask;
     } while (currAvailableRegs != RBM_NONE);
 
+    if ((candidates & 0x8000000100000000) == 0x8000000100000000)
+    {
+        // Finally, check for round robin case where sequence of last register
+        // round to first register is available.
+        // For n registers needed, it checks if MSB (n-1) + LSB (1) or
+        // MSB (n - 2) + LSB (2) registers are available and if yes,
+        // set the least bit of such MSB.
+        //
+        // This could have done using bit-twiddling, but is simpler when the
+        // checks are done with these hardcoded values.
+        switch (registersNeeded)
+        {
+            case 2:
+                if ((candidates & 0x8000000100000000) != RBM_NONE)
+                {
+                    consecutiveResult |= 0x8000000000000000;
+                    overallResult |= 0x8000000100000000;
+                }
+                break;
+            case 3:
+                if ((candidates & 0xC000000100000000) != RBM_NONE)
+                {
+                    consecutiveResult |= 0x4000000000000000;
+                    overallResult |= 0xC000000100000000;
+                }
+                if ((candidates & 0x8000000300000000) != RBM_NONE)
+                {
+                    consecutiveResult |= 0x8000000000000000;
+                    overallResult |= 0x8000000300000000;
+                }
+                break;
+            case 4:
+                if ((candidates & 0xE000000100000000) != RBM_NONE)
+                {
+                    consecutiveResult |= 0x2000000000000000;
+                    overallResult |= 0xE000000100000000;
+                }
+                if ((candidates & 0xC000000300000000) != RBM_NONE)
+                {
+                    consecutiveResult |= 0x4000000000000000;
+                    overallResult |= 0xC000000300000000;
+                }
+                if ((candidates & 0x8000000700000000) != RBM_NONE)
+                {
+                    consecutiveResult |= 0x8000000000000000;
+                    overallResult |= 0x8000000700000000;
+                }
+                break;
+            default:
+                assert(!"Unexpected registersNeeded\n");
+        }
+    }
+
     *allConsecutiveCandidates = overallResult;
     return consecutiveResult;
 }
@@ -254,6 +307,12 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
 //
 //  Returns:
 //      Register mask of consecutive registers.
+//
+//  Notes:
+//      The consecutive registers mask includes just the bits of first registers or
+//      (n - k) registers. For example, if we need 3 consecutive registers and
+//      allCandidates = 0x1C080D0F00000000, the consecutive register mask returned
+//      will be 0x400000300000000.
 //
 regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
                                                RefPosition* refPosition,
