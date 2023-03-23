@@ -283,6 +283,12 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public void RemoveThisTest()
+        {
+            Assert.Fail("On purpose.");
+        }
+
+        [Fact]
         public async Task AcceptConnectionAsync_ClientConnects_CancelIgnored()
         {
             await using QuicListener listener = await CreateQuicListener();

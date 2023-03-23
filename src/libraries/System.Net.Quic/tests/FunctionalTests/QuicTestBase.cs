@@ -62,6 +62,7 @@ namespace System.Net.Quic.Tests
             if (Interlocked.Exchange(ref s_initMessage, 1) == 0)
             {
                 _output.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{MsQuicApi.MsQuicLibraryVersion}' version.");
+                Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{MsQuicApi.MsQuicLibraryVersion}' version.");
                 if (IsSupported && !s_queueDelaySet)
                 {
                     _output.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
