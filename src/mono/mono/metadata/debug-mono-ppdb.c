@@ -68,7 +68,7 @@ mono_get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age
 	ImageDebugDirectory debug_dir;
 	gboolean guid_found = FALSE;
 	guint8 *data;
-	if (!image || !image->image_info || !image->image_info->cli_header)
+	if (!image || !image->image_info)
 		return FALSE;
 	*ppdb_data = NULL;
 
