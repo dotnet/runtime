@@ -149,7 +149,7 @@ namespace System.Diagnostics.Tracing
         private void EnableTimer(float pollingIntervalInSeconds)
         {
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
-            if (pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
+            if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
             {
                 _pollingIntervalInMilliseconds = (int)(pollingIntervalInSeconds * 1000);
                 ResetCounters(); // Reset statistics for counters before we start the thread.
