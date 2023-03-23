@@ -1888,14 +1888,31 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = impPopStack().val;
 
-            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            op1                 = impPopStack().val;
-            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+            if (op1->TypeGet() == TYP_STRUCT)
+            {
+                unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
 
-            retNode = gtNewSimdVectorTableLookupNode(op1, op2, intrinsic, simdBaseJitType, simdSize, argType, retType,
-                                                     fieldCount);
+                info.needsConsecutiveRegisters = true;
 
+                if (!op1->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookup temp tree"));
+
+                    impAssignTempGen(tmp, op1, CHECK_SPILL_NONE);
+                    op1 = gtNewLclvNode(tmp, argType);
+                }
+
+                op1 = gtConvertTableOpToFieldList(op1, fieldCount);
+            }
+            else
+            {
+                assert(varTypeIsSIMD(op1->TypeGet()));
+            }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
         case NI_AdvSimd_VectorTableLookupExtension:
@@ -1911,14 +1928,32 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
             op3     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = impPopStack().val;
+            op1     = impPopStack().val;
 
-            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2                 = impPopStack().val;
-            op1                 = impPopStack().val;
-            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+            if (op2->TypeGet() == TYP_STRUCT)
+            {
+                info.needsConsecutiveRegisters = true;
+                unsigned fieldCount            = info.compCompHnd->getClassNumInstanceFields(argClass);
 
-            retNode = gtNewSimdVectorTableLookupExtensionNode(op1, op2, op3, intrinsic, simdBaseJitType, simdSize,
-                                                              argType, retType, fieldCount);
+                if (!op2->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookupExtension temp tree"));
+
+                    impAssignTempGen(tmp, op2, CHECK_SPILL_NONE);
+                    op2 = gtNewLclvNode(tmp, argType);
+                }
+
+                op2 = gtConvertTableOpToFieldList(op2, fieldCount);
+            }
+            else
+            {
+                assert(varTypeIsSIMD(op1->TypeGet()));
+                
+            }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
             break;
         }
         default:

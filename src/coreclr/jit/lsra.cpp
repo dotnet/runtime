@@ -11701,13 +11701,13 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
     {
         regMaskTP spillCandidateBit = genFindLowestBit(spillCandidates);
         spillCandidates &= ~spillCandidateBit;
-        regNumber  spillCandidateRegNum    = genRegNumFromMask(spillCandidateBit);
-        RegRecord* spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
-        Interval*  assignedInterval        = spillCandidateRegRecord->assignedInterval;
+        regNumber    spillCandidateRegNum    = genRegNumFromMask(spillCandidateBit);
+        RegRecord*   spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
+        Interval*    assignedInterval        = spillCandidateRegRecord->assignedInterval;
         RefPosition* recentRefPosition = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
 
-        // Can and should the interval in this register be spilled for this one,
-        // if we don't find a better alternative?
+// Can and should the interval in this register be spilled for this one,
+// if we don't find a better alternative?
 
 #ifdef TARGET_ARM64
         if (assignedInterval == nullptr)

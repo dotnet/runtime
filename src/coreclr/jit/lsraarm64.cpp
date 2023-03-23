@@ -65,7 +65,6 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
 {
     assert(compiler->info.needsConsecutiveRegisters);
     assert(firstRefPosition->assignedReg() == firstRegAssigned);
-    assert(isSingleRegister(genRegMask(firstRegAssigned)));
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
     assert(emitter::isVectorRegister(firstRegAssigned));
 
@@ -129,6 +128,7 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
     RefPosition* nextRefPosition = firstRefPosition;
     regNumber    regToAssign     = firstRegAssigned;
     assert(compiler->info.needsConsecutiveRegisters && registersCount > 1);
+    assert(emitter::isVectorRegister(firstRegAssigned));
 
     int i = 1;
     do
@@ -1407,6 +1407,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert(intrin.op2 != nullptr);
             assert(intrin.op3 != nullptr);
+            assert((intrin.id == NI_AdvSimd_VectorTableLookupExtension) ||
+                   (intrin.id == NI_AdvSimd_Arm64_VectorTableLookupExtension));
             srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
             srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
         }
@@ -1510,10 +1512,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 //
 int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
 {
-    assert(compiler->info.needsConsecutiveRegisters);
     int srcCount = 0;
     if (treeNode->OperIsFieldList())
     {
+        assert(compiler->info.needsConsecutiveRegisters);
+
         unsigned     regCount    = 0;
         RefPosition* firstRefPos = nullptr;
         RefPosition* currRefPos  = nullptr;
