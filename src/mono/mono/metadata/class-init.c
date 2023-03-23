@@ -55,6 +55,7 @@ typedef struct {
 	const char *name;
 	gboolean in_corlib;
 	gboolean has_value;
+	HasValueCallback has_value_callback;
 	/* output */
 	gboolean has_attr;
 	gpointer value;
@@ -778,22 +779,10 @@ has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, con
 {
 	FoundAttrUD *attr = (FoundAttrUD *)user_data;
 	if (!strcmp (name, attr->name) && !strcmp (nspace, attr->nspace)) {
-		attr->has_attr = TRUE;
-		if (attr->has_value) {
-			MonoError error;
-			MonoMethod *ctor = mono_get_method_checked (image, method_token, NULL, NULL, &error);
-			if (ctor) {
-				const char *data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
-				uint32_t data_size = mono_metadata_decode_value (data, &data);
-				MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
-				mono_error_assert_ok (&error);
-				g_assert (decoded_attr->named_args_num == 0 && decoded_attr->typed_args_num == 1);
-				attr->value = *(gpointer*)decoded_attr->typed_args [0]->value.primitive;
-				g_free (decoded_attr);
-			} else {
-				g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));
-			}
+		if (attr->has_value_callback != NULL) {
+			attr->has_value_callback (image, method_token, cols, user_data);
 		}
+		attr->has_attr = TRUE;
 	}
 	/* TODO: use typeref_scope_token to check that attribute comes from
 	 * corlib if in_corlib is TRUE, without triggering an assembly load.
@@ -804,8 +793,27 @@ has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, con
 	return attr->has_attr;
 }
 
+static void
+has_wellknown_attribute_value_func (MonoImage *image, uint32_t method_token, uint32_t *cols, gpointer user_data)
+{
+	FoundAttrUD *attr = (FoundAttrUD *)user_data;
+	MonoError error;
+	MonoMethod *ctor = mono_get_method_checked (image, method_token, NULL, NULL, &error);
+	if (ctor) {
+		const char *data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
+		uint32_t data_size = mono_metadata_decode_value (data, &data);
+		MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
+		mono_error_assert_ok (&error);
+		g_assert (decoded_attr->named_args_num == 0 && decoded_attr->typed_args_num == 1);
+		attr->value = *(gpointer*)decoded_attr->typed_args [0]->value.primitive;
+		g_free (decoded_attr);
+	} else {
+		g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));
+	}
+}
+
 static FoundAttrUD
-class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value)
+class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, HasValueCallback callback)
 {
 	FoundAttrUD attr;
 	attr.nspace = nspace;
@@ -813,6 +821,7 @@ class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char 
 	attr.in_corlib = in_corlib;
 	attr.has_attr = FALSE;
 	attr.has_value = has_value;
+	attr.has_value_callback = callback;
 
 	mono_class_metadata_foreach_custom_attr (klass, has_wellknown_attribute_func, &attr);
 
@@ -820,13 +829,15 @@ class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char 
 }
 
 static FoundAttrUD
-method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value)
+method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, HasValueCallback callback)
 {
 	FoundAttrUD attr;
 	attr.nspace = nspace;
 	attr.name = name;
 	attr.in_corlib = in_corlib;
+	attr.has_attr = FALSE;
 	attr.has_value = has_value;
+	attr.has_value_callback = callback;
 
 	mono_method_metadata_foreach_custom_attr (method, has_wellknown_attribute_func, &attr);
 
@@ -837,13 +848,13 @@ method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const ch
 static FoundAttrUD
 class_has_isbyreflike_attribute (MonoClass *klass)
 {
-	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "IsByRefLikeAttribute", TRUE, FALSE);
+	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "IsByRefLikeAttribute", TRUE, FALSE, NULL);
 }
 
 static FoundAttrUD
 class_has_inlinearray_attribute (MonoClass *klass)
 {
-	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE, TRUE);
+	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE, TRUE, has_wellknown_attribute_value_func);
 }
 
 
@@ -854,7 +865,7 @@ mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *metho
 	/* FIXME: implement well known attribute check for dynamic images */
 	if (image_is_dynamic (image))
 		return FALSE;
-	FoundAttrUD attr = method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute", TRUE, FALSE);
+	FoundAttrUD attr = method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute", TRUE, FALSE, NULL);
 	return attr.has_attr;
 }
 
