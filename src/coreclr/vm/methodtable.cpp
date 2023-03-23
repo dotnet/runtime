@@ -1772,8 +1772,8 @@ BOOL MethodTable::IsAllGCPointers()
 
         int offsetToData = IsArray() ? ArrayBase::GetDataPtrOffset(this) : sizeof(size_t);
         CGCDescSeries* pSeries = pDesc->GetHighestSeries();
-        return pSeries->GetSeriesOffset() == offsetToData &&
-            (SSIZE_T)pSeries->GetSeriesSize() == -(SSIZE_T)(offsetToData + sizeof(size_t));
+        return ((int)pSeries->GetSeriesOffset() == offsetToData) &&
+            ((SSIZE_T)pSeries->GetSeriesSize() == -(SSIZE_T)(offsetToData + sizeof(size_t)));
     }
 
     return false;
