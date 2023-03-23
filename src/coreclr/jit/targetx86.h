@@ -11,10 +11,6 @@
   #define ROUND_FLOAT              1       // round intermed float expression results
   #define CPU_HAS_BYTE_REGS        1
 
-  // TODO-CQ: Fine tune the following xxBlk threshold values:
-
-  #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
-  #define INITBLK_UNROLL_LIMIT     128     // Upper bound to let the code generator to loop unroll InitBlk.
   #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the threshold of the number
                                            // of contiguous non-gc slots that trigger generating rep movsq instead of
                                            // sequences of movsq instructions
@@ -74,6 +70,11 @@
 
   #define REG_FP_FIRST             REG_XMM0
   #define REG_FP_LAST              REG_XMM7
+
+  #define REG_MASK_FIRST           REG_K0
+  #define REG_MASK_LAST            REG_K7
+  #define CNT_MASK_REGS            8
+
   #define FIRST_FP_ARGREG          REG_XMM0
   #define LAST_FP_ARGREG           REG_XMM3
   #define REG_FLTARG_0             REG_XMM0
@@ -90,6 +91,10 @@
 
   #define RBM_ALLFLOAT            (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7)
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
+
+  #define RBM_ALLMASK              REG_K1
+
+  #define CNT_HIGHFLOAT           0
 
   // TODO-CQ: Currently we are following the x86 ABI for SSE2 registers.
   // This should be reconsidered.

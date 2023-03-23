@@ -54,11 +54,6 @@ bool Compiler::fgHaveProfileData()
 //
 bool Compiler::fgHaveProfileWeights()
 {
-    if (!fgHaveProfileData())
-    {
-        return false;
-    }
-
     return fgPgoHaveWeights;
 }
 
@@ -79,12 +74,29 @@ bool Compiler::fgHaveSufficientProfileWeights()
         return false;
     }
 
-    if ((fgFirstBB != nullptr) && (fgPgoSource == ICorJitInfo::PgoSource::Static))
+    switch (fgPgoSource)
     {
-        const weight_t sufficientSamples = 1000;
-        return fgFirstBB->bbWeight > sufficientSamples;
+        case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Text:
+        case ICorJitInfo::PgoSource::Blend:
+            return true;
+
+        case ICorJitInfo::PgoSource::Static:
+        {
+            // We sometimes call this very early, eg evaluating the prejit root.
+            //
+            if (fgFirstBB != nullptr)
+            {
+                const weight_t sufficientSamples = 1000;
+                return fgFirstBB->bbWeight > sufficientSamples;
+            }
+
+            return true;
+        }
+
+        default:
+            return false;
     }
-    return true;
 }
 
 //------------------------------------------------------------------------
@@ -111,6 +123,7 @@ bool Compiler::fgHaveTrustedProfileWeights()
     switch (fgPgoSource)
     {
         case ICorJitInfo::PgoSource::Dynamic:
+        case ICorJitInfo::PgoSource::Blend:
         case ICorJitInfo::PgoSource::Text:
             return true;
         default:
@@ -831,15 +844,10 @@ public:
 //
 void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 {
-    // Inlinee compilers build their blocks in the root compiler's
-    // graph. So for BlockSets and NumSucc, we use the root compiler instance.
-    //
-    Compiler* const comp = impInlineRoot();
-    comp->EnsureBasicBlockEpoch();
-
     // We will track visited or queued nodes with a bit vector.
     //
-    BlockSet marked = BlockSetOps::MakeEmpty(comp);
+    EnsureBasicBlockEpoch();
+    BlockSet marked = BlockSetOps::MakeEmpty(this);
 
     // And nodes to visit with a bit vector and stack.
     //
@@ -851,7 +859,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     // Bit vector to track progress through those successors.
     //
     ArrayStack<BasicBlock*> scratch(getAllocator(CMK_Pgo));
-    BlockSet                processed = BlockSetOps::MakeEmpty(comp);
+    BlockSet                processed = BlockSetOps::MakeEmpty(this);
 
     // Push the method entry and all EH handler region entries on the stack.
     // (push method entry last so it's visited first).
@@ -869,18 +877,18 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         {
             BasicBlock* hndBegBB = HBtab->ebdHndBeg;
             stack.Push(hndBegBB);
-            BlockSetOps::AddElemD(comp, marked, hndBegBB->bbNum);
+            BlockSetOps::AddElemD(this, marked, hndBegBB->bbNum);
             if (HBtab->HasFilter())
             {
                 BasicBlock* filterBB = HBtab->ebdFilter;
                 stack.Push(filterBB);
-                BlockSetOps::AddElemD(comp, marked, filterBB->bbNum);
+                BlockSetOps::AddElemD(this, marked, filterBB->bbNum);
             }
         }
     }
 
     stack.Push(fgFirstBB);
-    BlockSetOps::AddElemD(comp, marked, fgFirstBB->bbNum);
+    BlockSetOps::AddElemD(this, marked, fgFirstBB->bbNum);
 
     unsigned nBlocks = 0;
 
@@ -890,7 +898,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
         // Visit the block.
         //
-        assert(BlockSetOps::IsMember(comp, marked, block->bbNum));
+        assert(BlockSetOps::IsMember(this, marked, block->bbNum));
         visitor->VisitBlock(block);
         nBlocks++;
 
@@ -913,10 +921,10 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // This block should be the only pred of the continuation.
                     //
                     BasicBlock* const target = block->bbNext;
-                    assert(!BlockSetOps::IsMember(comp, marked, target->bbNum));
+                    assert(!BlockSetOps::IsMember(this, marked, target->bbNum));
                     visitor->VisitTreeEdge(block, target);
                     stack.Push(target);
-                    BlockSetOps::AddElemD(comp, marked, target->bbNum);
+                    BlockSetOps::AddElemD(this, marked, target->bbNum);
                 }
             }
             break;
@@ -946,7 +954,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // profiles for methods that throw lots of exceptions.
                 //
                 BasicBlock* const target = fgFirstBB;
-                assert(BlockSetOps::IsMember(comp, marked, target->bbNum));
+                assert(BlockSetOps::IsMember(this, marked, target->bbNum));
                 visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::Pseudo);
             }
             break;
@@ -984,7 +992,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     }
                     else
                     {
-                        if (BlockSetOps::IsMember(comp, marked, target->bbNum))
+                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
                         {
                             visitor->VisitNonTreeEdge(block, target,
                                                       SpanningTreeVisitor::EdgeKind::PostdominatesSource);
@@ -993,7 +1001,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(comp, marked, target->bbNum);
+                            BlockSetOps::AddElemD(this, marked, target->bbNum);
                         }
                     }
                 }
@@ -1002,7 +1010,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // Pseudo-edge back to handler entry.
                     //
                     BasicBlock* const target = dsc->ebdHndBeg;
-                    assert(BlockSetOps::IsMember(comp, marked, target->bbNum));
+                    assert(BlockSetOps::IsMember(this, marked, target->bbNum));
                     visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::Pseudo);
                 }
             }
@@ -1026,14 +1034,14 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // things will just work for switches either way, but it
                 // might work a bit better using the root compiler.
                 //
-                const unsigned numSucc = block->NumSucc(comp);
+                const unsigned numSucc = block->NumSucc(this);
 
                 if (numSucc == 1)
                 {
                     // Not a fork. Just visit the sole successor.
                     //
-                    BasicBlock* const target = block->GetSucc(0, comp);
-                    if (BlockSetOps::IsMember(comp, marked, target->bbNum))
+                    BasicBlock* const target = block->GetSucc(0, this);
+                    if (BlockSetOps::IsMember(this, marked, target->bbNum))
                     {
                         // We can't instrument in the call always pair tail block
                         // so treat this as a critical edge.
@@ -1047,7 +1055,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         visitor->VisitTreeEdge(block, target);
                         stack.Push(target);
-                        BlockSetOps::AddElemD(comp, marked, target->bbNum);
+                        BlockSetOps::AddElemD(this, marked, target->bbNum);
                     }
                 }
                 else
@@ -1063,11 +1071,11 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // edges from non-rare to rare be non-tree edges.
                     //
                     scratch.Reset();
-                    BlockSetOps::ClearD(comp, processed);
+                    BlockSetOps::ClearD(this, processed);
 
                     for (unsigned i = 0; i < numSucc; i++)
                     {
-                        BasicBlock* const succ = block->GetSucc(i, comp);
+                        BasicBlock* const succ = block->GetSucc(i, this);
                         scratch.Push(succ);
                     }
 
@@ -1077,7 +1085,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         BasicBlock* const target = scratch.Top(i);
 
-                        if (BlockSetOps::IsMember(comp, processed, i))
+                        if (BlockSetOps::IsMember(this, processed, i))
                         {
                             continue;
                         }
@@ -1087,9 +1095,9 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                             continue;
                         }
 
-                        BlockSetOps::AddElemD(comp, processed, i);
+                        BlockSetOps::AddElemD(this, processed, i);
 
-                        if (BlockSetOps::IsMember(comp, marked, target->bbNum))
+                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
                         {
                             visitor->VisitNonTreeEdge(block, target,
                                                       target->bbRefs > 1
@@ -1100,7 +1108,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(comp, marked, target->bbNum);
+                            BlockSetOps::AddElemD(this, marked, target->bbNum);
                         }
                     }
 
@@ -1110,7 +1118,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         BasicBlock* const target = scratch.Top(i);
 
-                        if (BlockSetOps::IsMember(comp, processed, i))
+                        if (BlockSetOps::IsMember(this, processed, i))
                         {
                             continue;
                         }
@@ -1120,9 +1128,9 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                             continue;
                         }
 
-                        BlockSetOps::AddElemD(comp, processed, i);
+                        BlockSetOps::AddElemD(this, processed, i);
 
-                        if (BlockSetOps::IsMember(comp, marked, target->bbNum))
+                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
                         {
                             visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::DominatesTarget);
                         }
@@ -1130,7 +1138,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(comp, marked, target->bbNum);
+                            BlockSetOps::AddElemD(this, marked, target->bbNum);
                         }
                     }
 
@@ -1140,14 +1148,14 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         BasicBlock* const target = scratch.Top(i);
 
-                        if (BlockSetOps::IsMember(comp, processed, i))
+                        if (BlockSetOps::IsMember(this, processed, i))
                         {
                             continue;
                         }
 
-                        BlockSetOps::AddElemD(comp, processed, i);
+                        BlockSetOps::AddElemD(this, processed, i);
 
-                        if (BlockSetOps::IsMember(comp, marked, target->bbNum))
+                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
                         {
                             visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::CriticalEdge);
                         }
@@ -1155,13 +1163,13 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(comp, marked, target->bbNum);
+                            BlockSetOps::AddElemD(this, marked, target->bbNum);
                         }
                     }
 
                     // Verify we processed each successor.
                     //
-                    assert(numSucc == BlockSetOps::Count(comp, processed));
+                    assert(numSucc == BlockSetOps::Count(this, processed));
                 }
             }
             break;
@@ -1477,7 +1485,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                     // See if the edge still exists.
                     //
                     bool found = false;
-                    for (BasicBlock* const succ : block->Succs(m_comp->impInlineRoot()))
+                    for (BasicBlock* const succ : block->Succs(m_comp))
                     {
                         if (target == succ)
                         {
@@ -2476,7 +2484,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 #ifdef DEBUG
     // Optionally run synthesis
     //
-    if ((JitConfig.JitSynthesizeCounts() > 0) && !compIsForInlining())
+    if (JitConfig.JitSynthesizeCounts() > 0)
     {
         if ((JitConfig.JitSynthesizeCounts() == 1) || ((JitConfig.JitSynthesizeCounts() == 2) && !fgHaveProfileData()))
         {
@@ -2489,11 +2497,10 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     // Or run synthesis and save the data out as the actual profile data
     //
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) &&
-        (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0) && !compIsForInlining())
+        (JitConfig.JitPropagateSynthesizedCountsToProfileData() > 0))
     {
         JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
-        fgPgoHaveWeights = false;
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 #endif
@@ -2522,8 +2529,8 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     // Summarize profile data
     //
-    JITDUMP("Have %s profile data: %d schema records (schema at %p, data at %p)\n", pgoSourceToString(fgPgoSource),
-            fgPgoSchemaCount, dspPtr(fgPgoSchema), dspPtr(fgPgoData));
+    JITDUMP("Have %s: %d schema records (schema at %p, data at %p)\n", compGetPgoSourceName(), fgPgoSchemaCount,
+            dspPtr(fgPgoSchema), dspPtr(fgPgoData));
 
     fgNumProfileRuns      = 0;
     unsigned otherRecords = 0;
@@ -2612,6 +2619,16 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         fgIncorporateEdgeCounts();
     }
+
+#ifdef DEBUG
+    // Optionally synthesize & blend
+    //
+    if (JitConfig.JitSynthesizeCounts() == 3)
+    {
+        JITDUMP("Synthesizing profile data and blending it with the actual profile data\n");
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
+    }
+#endif
 
     // Scale data as appropriate
     //
@@ -3431,15 +3448,29 @@ void EfficientEdgeCountReconstructor::Propagate()
     //
     if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
-        JITDUMP("... discarding profile data because of %s\n",
-                m_badcode ? "badcode" : m_mismatch ? "mismatch" : m_allWeightsZero ? "zero counts"
-                                                                                   : "failed to converge");
-
         // Make sure nothing else in the jit looks at the profile data.
         //
-        m_comp->fgPgoSchema     = nullptr;
-        m_comp->fgPgoFailReason = "PGO data available, but there was a reconstruction problem";
+        m_comp->fgPgoHaveWeights = false;
+        m_comp->fgPgoSchema      = nullptr;
 
+        if (m_badcode)
+        {
+            m_comp->fgPgoFailReason = "PGO data available, but IL was malformed";
+        }
+        else if (m_mismatch)
+        {
+            m_comp->fgPgoFailReason = "PGO data available, but IL did not match";
+        }
+        else if (m_failedToConverge)
+        {
+            m_comp->fgPgoFailReason = "PGO data available, but solver did not converge";
+        }
+        else
+        {
+            m_comp->fgPgoFailReason = "PGO data available, profile data was all zero";
+        }
+
+        JITDUMP("... discarding profile data: %s\n", m_comp->fgPgoFailReason);
         return;
     }
 
@@ -4865,14 +4896,15 @@ EARLY_EXIT:;
 // Arguments:
 //   weight1 -- first weight
 //   weight2 -- second weight
+//   epsilon -- maximum absolute difference for weights to be considered equal
 //
 // Notes:
 //   In most cases you should probably call fgProfileWeightsConsistent instead
 //   of this method.
 //
-bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2)
+bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_t epsilon)
 {
-    return fabs(weight1 - weight2) < 0.01;
+    return fabs(weight1 - weight2) <= epsilon;
 }
 
 //------------------------------------------------------------------------
@@ -5331,45 +5363,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     }
 
     return classicWeightsValid && likelyWeightsValid;
-}
-
-//------------------------------------------------------------------------------
-// pgoSourceToString: describe source of pgo data
-//
-// Arguments:
-//    r - source enum to describe
-//
-// Returns:
-//    descriptive string
-//
-const char* Compiler::pgoSourceToString(ICorJitInfo::PgoSource p)
-{
-    const char* pgoSource = "unknown";
-    switch (fgPgoSource)
-    {
-        case ICorJitInfo::PgoSource::Dynamic:
-            pgoSource = "dynamic";
-            break;
-        case ICorJitInfo::PgoSource::Static:
-            pgoSource = "static";
-            break;
-        case ICorJitInfo::PgoSource::Text:
-            pgoSource = "text";
-            break;
-        case ICorJitInfo::PgoSource::Blend:
-            pgoSource = "static+dynamic";
-            break;
-        case ICorJitInfo::PgoSource::IBC:
-            pgoSource = "IBC";
-            break;
-        case ICorJitInfo::PgoSource::Sampling:
-            pgoSource = "Sampling";
-            break;
-        default:
-            break;
-    }
-
-    return pgoSource;
 }
 
 #endif // DEBUG

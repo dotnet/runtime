@@ -363,13 +363,16 @@ void Compiler::fgComputeEnterBlocksSet()
     assert(fgFirstBB->bbNum == 1);
 
     /* Also 'or' in the handler basic blocks */
-    for (EHblkDsc* const HBtab : EHClauses(this))
+    if (!compIsForInlining())
     {
-        if (HBtab->HasFilter())
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
-            BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdFilter->bbNum);
+            if (HBtab->HasFilter())
+            {
+                BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdFilter->bbNum);
+            }
+            BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
         }
-        BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
     }
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -2387,6 +2390,15 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         default:
             noway_assert(!"Unexpected bbJumpKind");
             break;
+    }
+
+    if ((bNext->bbJumpDest != nullptr) && bNext->bbJumpDest->isLoopAlign())
+    {
+        // `bNext` has a backward target to some block which mean bNext is part of a loop.
+        // `block` into which `bNext` is compacted should be updated with its loop number
+        JITDUMP("Updating loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", block->bbNum,
+                block->bbNatLoopNum, bNext->bbNatLoopNum);
+        block->bbNatLoopNum = bNext->bbNatLoopNum;
     }
 
     if (bNext->isLoopAlign())

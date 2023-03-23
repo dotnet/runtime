@@ -1375,7 +1375,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
 
 #ifdef FEATURE_NATIVEAOT
     PTR_UIntNative* ppRax = &pRD->pRax;
-    if (regNum > 4) regNum--; // rsp is skipped in Redhawk RegDisplay
+    if (regNum > 4) regNum--; // rsp is skipped in NativeAOT RegDisplay
 #else
     // The fields of KNONVOLATILE_CONTEXT_POINTERS are in the same order as
     // the processor encoding numbers.

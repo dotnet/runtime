@@ -26,7 +26,31 @@ struct simd8_t
 
     bool operator!=(const simd8_t& other) const
     {
-        return (u64[0] != other.u64[0]);
+        return !(*this == other);
+    }
+
+    static simd8_t AllBitsSet()
+    {
+        simd8_t result;
+
+        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd8_t Zero()
+    {
+        return {};
     }
 };
 
@@ -56,7 +80,33 @@ struct simd12_t
 
     bool operator!=(const simd12_t& other) const
     {
-        return (u32[0] != other.u32[0]) || (u32[1] != other.u32[1]) || (u32[2] != other.u32[2]);
+        return !(*this == other);
+    }
+
+    static simd12_t AllBitsSet()
+    {
+        simd12_t result;
+
+        result.u32[0] = 0xFFFFFFFF;
+        result.u32[1] = 0xFFFFFFFF;
+        result.u32[2] = 0xFFFFFFFF;
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd12_t Zero()
+    {
+        return {};
     }
 };
 
@@ -78,15 +128,41 @@ struct simd16_t
 
     bool operator==(const simd16_t& other) const
     {
-        return (u64[0] == other.u64[0]) && (u64[1] == other.u64[1]);
+        return (v64[0] == other.v64[0]) && (v64[1] == other.v64[1]);
     }
 
     bool operator!=(const simd16_t& other) const
     {
-        return (u64[0] != other.u64[0]) || (u64[1] != other.u64[1]);
+        return !(*this == other);
+    }
+
+    static simd16_t AllBitsSet()
+    {
+        simd16_t result;
+
+        result.v64[0] = simd8_t::AllBitsSet();
+        result.v64[1] = simd8_t::AllBitsSet();
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd16_t Zero()
+    {
+        return {};
     }
 };
 
+#if defined(TARGET_XARCH)
 struct simd32_t
 {
     union {
@@ -106,14 +182,37 @@ struct simd32_t
 
     bool operator==(const simd32_t& other) const
     {
-        return (u64[0] == other.u64[0]) && (u64[1] == other.u64[1]) && (u64[2] == other.u64[2]) &&
-               (u64[3] == other.u64[3]);
+        return (v128[0] == other.v128[0]) && (v128[1] == other.v128[1]);
     }
 
     bool operator!=(const simd32_t& other) const
     {
-        return (u64[0] != other.u64[0]) || (u64[1] != other.u64[1]) || (u64[2] != other.u64[2]) ||
-               (u64[3] != other.u64[3]);
+        return !(*this == other);
+    }
+
+    static simd32_t AllBitsSet()
+    {
+        simd32_t result;
+
+        result.v128[0] = simd16_t::AllBitsSet();
+        result.v128[1] = simd16_t::AllBitsSet();
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd32_t Zero()
+    {
+        return {};
     }
 };
 
@@ -142,9 +241,39 @@ struct simd64_t
 
     bool operator!=(const simd64_t& other) const
     {
-        return (v256[0] != other.v256[0]) || (v256[1] != other.v256[1]);
+        return !(*this == other);
+    }
+
+    static simd64_t AllBitsSet()
+    {
+        simd64_t result;
+
+        result.v256[0] = simd32_t::AllBitsSet();
+        result.v256[1] = simd32_t::AllBitsSet();
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd64_t Zero()
+    {
+        return {};
     }
 };
+
+typedef simd64_t simd_t;
+#else
+typedef simd16_t simd_t;
+#endif
 
 template <typename TBase>
 TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)

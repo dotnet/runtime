@@ -133,7 +133,7 @@ namespace JIT.HardwareIntrinsics.X86
             public DataTable({Op1BaseType}[] inArray1, int alignment)
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1)
+                if (((alignment != 64) && (alignment != 32) && (alignment != 16)) || (alignment * 2) < sizeOfinArray1)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }

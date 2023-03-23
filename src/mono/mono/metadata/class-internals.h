@@ -1433,6 +1433,9 @@ mono_method_has_no_body (MonoMethod *method);
 MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
 
+MONO_COMPONENT_API void
+mono_method_get_param_names_internal (MonoMethod *method, const char **names);
+
 MonoType*
 mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);
 

@@ -249,7 +249,6 @@ struct Agnostic_CORINFO_RUNTIME_LOOKUP
     DWORD     helper;
     DWORD     indirections;
     DWORD     testForNull;
-    DWORD     testForFixup;
     WORD      sizeOffset;
     DWORDLONG offsets[CORINFO_MAXINDIRECTIONS];
     DWORD     indirectFirstOffset;

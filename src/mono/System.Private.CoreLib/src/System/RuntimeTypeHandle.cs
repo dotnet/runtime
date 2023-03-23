@@ -383,7 +383,7 @@ namespace System
                                    ref stackMark,
                                    ObjectHandleOnStack.Create (ref t), throwOnError, ignoreCase);
                 if (throwOnError && t == null)
-                    throw new TypeLoadException("Error loading '" + typeName + "'");
+                    throw new TypeLoadException(SR.Arg_TypeLoadException);
             }
             return t;
         }

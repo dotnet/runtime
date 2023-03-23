@@ -19,6 +19,7 @@
 
 static
 void
+DN_CALLBACK_CALLTYPE
 event_free_func (void *ep_event);
 
 static
@@ -58,6 +59,7 @@ provider_compute_event_enable_mask (
 
 static
 void
+DN_CALLBACK_CALLTYPE
 event_free_func (void *ep_event)
 {
 	ep_event_free ((EventPipeEvent *)ep_event);
@@ -95,11 +97,11 @@ provider_refresh_all_events (EventPipeProvider *provider)
 
 	ep_requires_lock_held ();
 
-	const ep_rt_event_list_t *event_list = &provider->event_list;
-	EP_ASSERT (event_list != NULL);
+	EP_ASSERT (provider->event_list != NULL);
 
-	for (ep_rt_event_list_iterator_t iterator = ep_rt_event_list_iterator_begin (event_list); !ep_rt_event_list_iterator_end (event_list, &iterator); ep_rt_event_list_iterator_next (&iterator))
-		provider_refresh_event_state (ep_rt_event_list_iterator_value (&iterator));
+	DN_LIST_FOREACH_BEGIN (EventPipeEvent *, current_event, provider->event_list) {
+		provider_refresh_event_state (current_event);
+	} DN_LIST_FOREACH_END;
 
 	ep_requires_lock_held ();
 	return;
@@ -183,8 +185,8 @@ ep_provider_alloc (
 	instance->provider_name_utf16 = ep_rt_utf8_to_utf16le_string (provider_name, -1);
 	ep_raise_error_if_nok (instance->provider_name_utf16 != NULL);
 
-	ep_rt_event_list_alloc (&instance->event_list);
-	ep_raise_error_if_nok (ep_rt_event_list_is_valid (&instance->event_list));
+	instance->event_list = dn_list_alloc ();
+	ep_raise_error_if_nok (instance->event_list != NULL);
 
 	instance->keywords = 0;
 	instance->provider_level = EP_EVENT_LEVEL_CRITICAL;
@@ -210,9 +212,10 @@ ep_provider_free (EventPipeProvider * provider)
 
 	ep_requires_lock_not_held ();
 
-	if (!ep_rt_event_list_is_empty (&provider->event_list)) {
+	if (provider->event_list) {
 		EP_LOCK_ENTER (section1)
-		ep_rt_event_list_free (&provider->event_list, event_free_func);
+			dn_list_custom_free (provider->event_list, event_free_func);
+			provider->event_list = NULL;
 		EP_LOCK_EXIT (section1)
 	}
 
@@ -267,7 +270,7 @@ ep_provider_add_event (
 
 	// Take the config lock before inserting a new event.
 	EP_LOCK_ENTER (section1)
-		ep_raise_error_if_nok_holding_lock (ep_rt_event_list_append (&provider->event_list, instance), section1);
+		ep_raise_error_if_nok_holding_lock (dn_list_push_back (provider->event_list, instance), section1);
 		provider_refresh_event_state (instance);
 	EP_LOCK_EXIT (section1)
 
@@ -457,8 +460,7 @@ provider_free (EventPipeProvider * provider)
 
 	ep_requires_lock_held ();
 
-	if (!ep_rt_event_list_is_empty (&provider->event_list))
-		ep_rt_event_list_free (&provider->event_list, event_free_func);
+	dn_list_custom_free (provider->event_list, event_free_func);
 
 	ep_rt_utf16_string_free (provider->provider_name_utf16);
 	ep_rt_utf8_string_free (provider->provider_name);
@@ -492,7 +494,7 @@ provider_add_event (
 
 	ep_raise_error_if_nok (instance != NULL);
 
-	ep_raise_error_if_nok (ep_rt_event_list_append (&provider->event_list, instance));
+	ep_raise_error_if_nok (dn_list_push_back (provider->event_list, instance));
 	provider_refresh_event_state (instance);
 
 ep_on_exit:

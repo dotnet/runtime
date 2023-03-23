@@ -3734,12 +3734,14 @@ publish_anon_gparam_fast (MonoImage *image, MonoGenericContainer *container, gin
 	if (!*cache) {
 		mono_image_lock (image);
 		if (!*cache) {
-			*cache = (MonoGenericParam*)mono_image_alloc0 (image, sizeof (MonoGenericParam) * FAST_GPARAM_CACHE_SIZE);
+			MonoGenericParam *new_cache = (MonoGenericParam*)mono_image_alloc0 (image, sizeof (MonoGenericParam) * FAST_GPARAM_CACHE_SIZE);
 			for (guint16 i = 0; i < FAST_GPARAM_CACHE_SIZE; ++i) {
-				MonoGenericParam *param = &(*cache)[i];
+				MonoGenericParam *param = &new_cache[i];
 				param->owner = container;
 				param->num = i;
 			}
+			mono_memory_barrier ();
+			*cache = new_cache;
 		}
 		mono_image_unlock (image);
 	}
@@ -5524,7 +5526,8 @@ guint
 mono_metadata_str_hash (gconstpointer v1)
 {
 	/* Same as g_str_hash () in glib */
-	char *p = (char *) v1;
+	/* note: signed/unsigned char matters - we feed UTF-8 to this function, so the high bit will give diferent results if we don't match. */
+	unsigned char *p = (unsigned char *) v1;
 	guint hash = *p;
 
 	while (*p++) {

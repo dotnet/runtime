@@ -733,12 +733,6 @@ namespace System.Formats.Tar
             ReadOnlySpan<byte> keySlice = line.Slice(0, equalPos);
             ReadOnlySpan<byte> valueSlice = line.Slice(equalPos + 1);
 
-            // If the value contains an =, it's malformed.
-            if (valueSlice.IndexOf((byte)'=') >= 0)
-            {
-                return false;
-            }
-
             // Return the parsed key and value.
             key = Encoding.UTF8.GetString(keySlice);
             value = Encoding.UTF8.GetString(valueSlice);

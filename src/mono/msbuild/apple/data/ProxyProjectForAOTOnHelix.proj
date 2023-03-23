@@ -12,22 +12,22 @@
     <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
     <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
 
-    <AppleBuildAppDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildAppDependsOn);_AfterAppleBuildAppOnHelix</AppleBuildAppDependsOn>
+    <AppleBuildDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
 
     <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
   </PropertyGroup>
 
   <Import Project="$(_PropsFile)" />
 
-  <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuildApp" />
+  <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
   <Target Name="_PrepareForAppleBuildAppOnHelix" DependsOnTargets="_PublishRuntimePack">
     <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *iOS/tvOS* part of the build. See $(MSBuildThisFileFullPath), and $(_PropsFile). **"
              Importance="High" />
 
     <PropertyGroup>
-      <AppleAppDir>$(OriginalPublishDir)</AppleAppDir>
-      <AppleAppBundleDir>$(TestRootDir)AppBundle\</AppleAppBundleDir>
+      <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
+      <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
 
       <MainLibraryFileName>$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
       <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
@@ -58,7 +58,7 @@
   </Target>
 
   <!-- Move the app to where the xharness runner expects it. -->
-  <Target Name="_AfterAppleBuildAppOnHelix">
+  <Target Name="_AfterAppleBuildOnHelix">
     <PropertyGroup>
       <_TestProjectName>$([System.IO.Path]::GetFileName('$(AppBundlePath)'))</_TestProjectName>
       <_XHarnessAppPath>$([MSBuild]::NormalizeDirectory($(XHARNESS_EXECUTION_DIR), $(_TestProjectName)))</_XHarnessAppPath>
