@@ -331,7 +331,6 @@ set( JIT_HEADERS
   lsra_reftypes.h
   lsra_stats.h
   lsra_score.h
-  lsra_busy_score.h
   lsra.h
   namedintrinsiclist.h
   objectalloc.h
