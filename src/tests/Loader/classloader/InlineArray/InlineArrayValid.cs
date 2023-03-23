@@ -368,6 +368,7 @@ unsafe class Validate
     // ====================== GCDescOpt ==========================================================
 
     [Fact]
+    [SkipOnMono("CoreCLR and NativeAOT-specific implementation details.")]
     public static void GCDescOpt()
     {
         Console.WriteLine($"{nameof(GCDescOpt)}...");
