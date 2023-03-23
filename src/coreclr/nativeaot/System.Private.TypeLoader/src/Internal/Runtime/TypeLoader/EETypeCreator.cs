@@ -446,7 +446,8 @@ namespace Internal.Runtime.TypeLoader
             var gcBitfield = state.InstanceGCLayout;
             if (isArray)
             {
-                if (state.IsArrayOfReferenceTypes || IsAllGCPointers(gcBitfield))
+                if (state.IsArrayOfReferenceTypes ||
+                    (gcBitfield != null && IsAllGCPointers(gcBitfield)))
                 {
                     // For efficiency this is special cased and encoded as one serie
                     return 3 * sizeof(IntPtr);
