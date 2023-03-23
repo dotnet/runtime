@@ -398,11 +398,14 @@ namespace Internal.Runtime.TypeLoader
                 if (cbGCDesc != 0)
                 {
                     pEEType->ContainsGCPointers = true;
-                    if (state.IsArrayOfReferenceTypes)
+                    if (state.IsArrayOfReferenceTypes || IsAllGCPointers(gcBitfield))
                     {
                         IntPtr* gcDescStart = (IntPtr*)((byte*)pEEType - cbGCDesc);
+                        // Series size
                         gcDescStart[0] = new IntPtr(-baseSize);
+                        // Series offset
                         gcDescStart[1] = new IntPtr(baseSize - sizeof(IntPtr));
+                        // NumSeries
                         gcDescStart[2] = new IntPtr(1);
                     }
                     else
@@ -443,9 +446,10 @@ namespace Internal.Runtime.TypeLoader
             var gcBitfield = state.InstanceGCLayout;
             if (isArray)
             {
-                if (state.IsArrayOfReferenceTypes)
+                if (state.IsArrayOfReferenceTypes ||
+                    (gcBitfield != null && IsAllGCPointers(gcBitfield)))
                 {
-                    // Reference type arrays have a GC desc the size of 3 pointers
+                    // For efficiency this is special cased and encoded as one serie
                     return 3 * sizeof(IntPtr);
                 }
                 else
@@ -470,6 +474,20 @@ namespace Internal.Runtime.TypeLoader
             {
                 return 0;
             }
+        }
+
+        private static bool IsAllGCPointers(LowLevelList<bool> bitfield)
+        {
+            int count = bitfield.Count;
+            Debug.Assert(count > 0);
+
+            for (int i = 0; i < count; i++)
+            {
+                if (!bitfield[i])
+                    return false;
+            }
+
+            return true;
         }
 
         private static unsafe int CreateArrayGCDesc(LowLevelList<bool> bitfield, int rank, bool isSzArray, void* gcdesc)
