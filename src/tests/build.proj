@@ -64,8 +64,9 @@
           TaskParameter="Filtered"
           ItemName="TestDirectories"/>
     </RemoveDuplicates>
-
-    <TestDirectories>$(XunitTestBinBase)tracing/eventpipe</TestDirectories>
+    <PropertyGroup>
+      <TestDirectories>$(XunitTestBinBase)tracing/eventpipe</TestDirectories>
+    </PropertyGroup>
     <Message Text="Test directories are %(TestDirectories.Identity)" Importance="High" />
 
   </Target>
