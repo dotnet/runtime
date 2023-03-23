@@ -11704,6 +11704,10 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         regNumber  spillCandidateRegNum    = genRegNumFromMask(spillCandidateBit);
         RegRecord* spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
         Interval*  assignedInterval        = spillCandidateRegRecord->assignedInterval;
+        RefPosition* recentRefPosition = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
+
+        // Can and should the interval in this register be spilled for this one,
+        // if we don't find a better alternative?
 
 #ifdef TARGET_ARM64
         if (assignedInterval == nullptr)
@@ -11713,19 +11717,13 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
             // candidate or not. Skip processing it.
             continue;
         }
-#endif
 
-        RefPosition* recentRefPosition = assignedInterval->recentRefPosition;
-
-// Can and should the interval in this register be spilled for this one,
-// if we don't find a better alternative?
-#ifdef TARGET_ARM64
         if ((recentRefPosition != nullptr) && linearScan->isRefPositionActive(recentRefPosition, thisLocation) &&
             (recentRefPosition->needsConsecutive))
         {
             continue;
         }
-#endif
+#endif // TARGET_ARM64
 
         if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == thisLocation) &&
             !assignedInterval->getNextRefPosition()->RegOptional())
