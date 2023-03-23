@@ -9,7 +9,7 @@ using Xunit;
 public class CMPXCHG
 {
     public static int g_static = -1;
-    public static void Function(int bit, bool value)
+    internal static void Function(int bit, bool value)
     {
         for (; ;)
         {

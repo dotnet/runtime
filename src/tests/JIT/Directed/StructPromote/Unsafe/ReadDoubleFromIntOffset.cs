@@ -45,7 +45,7 @@ public class TestReadIntAsDouble
 
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	public static void TestDoubleAssignment(Data d)
+	internal static void TestDoubleAssignment(Data d)
 	{
 		Dec p = default;
 		p.ulo = d.x;
@@ -71,7 +71,7 @@ public class TestReadIntAsDouble
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TestIntAssignment(Data d)
+    internal static void TestIntAssignment(Data d)
     {
         Dec p = default;
         p.ulo = d.x;

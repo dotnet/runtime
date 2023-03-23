@@ -8,7 +8,7 @@ public class TestClass13
     // With below flags, we were using uninitialized compCurBB during insertGCPolls()
     // DOTNET_JitDoAssertionProp=0
     // DOTNET_JitNoCSE=1
-    public void Method0()
+    internal void Method0()
     {
         Console.WriteLine();
     }

@@ -19,7 +19,7 @@ public struct Yak
 
 public class Complex2_Array_Test
 {
-    public static void test(Yak[,,,,,,] Odd_Variable)
+    internal static void test(Yak[,,,,,,] Odd_Variable)
     {
         Console.Write(Odd_Variable.Length);
     }

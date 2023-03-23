@@ -28,20 +28,21 @@ public static class Test_nullabletypes
 {
     public static int counter = 0;
 
-    public static void IsFalse(bool value)
+    internal static void IsFalse(bool value)
     {
         counter++;
         if (value)
             throw new TestException(counter, "Expected false, got true");
     }
 
-    public static void Eval(bool expr)
+    internal static void Eval(bool expr)
     {
         counter++;
         if (!expr)
             throw new TestException(counter, "Expected true, got false");
     }
-    public static void Eval(object obj1, object obj2)
+
+    internal static void Eval(object obj1, object obj2)
     {
         counter++;
         if (!((obj1 != null) && (obj2 != null) && (obj1.GetType().Equals(obj2.GetType())) && obj1.Equals(obj2)))
