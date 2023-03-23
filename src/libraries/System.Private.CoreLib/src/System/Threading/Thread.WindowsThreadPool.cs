@@ -233,6 +233,7 @@ namespace System.Threading
             }
         }
 
+        /*
         private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
             ApartmentState retState;
@@ -285,6 +286,7 @@ namespace System.Threading
 
             return true;
         }
+        */
 
         private void InitializeComOnNewThread()
         {
@@ -365,9 +367,6 @@ namespace System.Threading
             t_comState &= ~ComState.InitializedByUs;
         }
 
-        // TODO: https://github.com/dotnet/runtime/issues/22161
-        public void DisableComObjectEagerCleanupCore() { }
-
         private static Thread InitializeExistingThreadPoolThread()
         {
             ThreadPool.InitializeForThreadPoolThread();
@@ -407,7 +406,7 @@ namespace System.Threading
             t_reentrantWaitSuppressionCount--;
         }
 
-        private static bool ReentrantWaitsEnabledCore =>
+        private static bool ReentrantWaitsEnabled =>
             GetCurrentApartmentType() == ApartmentType.STA && t_reentrantWaitSuppressionCount == 0;
 
         private static ApartmentType GetCurrentApartmentTypeCore()

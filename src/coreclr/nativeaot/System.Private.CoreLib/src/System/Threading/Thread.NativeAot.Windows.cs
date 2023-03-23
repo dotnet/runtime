@@ -7,6 +7,8 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+// PR-Comment: This would work as a Win32Thread.Windows.cs
+
 namespace System.Threading
 {
     using OSThreadPriority = Interop.Kernel32.ThreadPriority;
@@ -50,23 +52,6 @@ namespace System.Threading
 
         internal static void RestoreReentrantWaits() => RestoreReentrantWaitsCore();
 
-        internal static bool ReentrantWaitsEnabled => ReentrantWaitsEnabledCore();
-
         internal static ApartmentType GetCurrentApartmentType() => GetCurrentApartmentTypeCore();
-
-        internal enum ApartmentType : byte
-        {
-            Unknown = 0,
-            None,
-            STA,
-            MTA
-        }
-
-        [Flags]
-        internal enum ComState : byte
-        {
-            InitializedByUs = 1,
-            Locked = 2,
-        }
     }
 }

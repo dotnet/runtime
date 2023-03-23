@@ -143,7 +143,7 @@ namespace System.Threading
             }
 #endif
 
-            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
+            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback!, timedOut);
             CompleteCallbackRequest();
         }
 

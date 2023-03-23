@@ -18,7 +18,6 @@ namespace System.Threading
 #endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
-        [UnmanagedCallersOnly]
         private static void RegisteredWaitCallbackCore(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();

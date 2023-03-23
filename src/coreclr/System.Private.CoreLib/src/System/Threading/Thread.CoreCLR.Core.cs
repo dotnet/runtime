@@ -115,7 +115,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern int GetThreadStateNative();
 
-        private ApartmentState GetApartmentStateCore() =>
+        private ApartmentState GetApartmentStatePortableCore() =>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
             (ApartmentState)GetApartmentStateNative();
 #else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -175,6 +175,12 @@ namespace System.Threading
             return true;
         }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern void InterruptCore();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern bool JoinCore(int millisecondsTimeout);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ResetThreadPoolThreadCore()

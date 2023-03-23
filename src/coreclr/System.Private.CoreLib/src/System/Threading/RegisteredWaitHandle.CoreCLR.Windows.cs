@@ -15,9 +15,9 @@ namespace System.Threading
 #endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
-        private readonly object _lock;
-        private SafeWaitHandle _waitHandle;
-        private readonly _ThreadPoolWaitOrTimerCallback _callbackHelper;
+        private readonly object? _lock;
+        private SafeWaitHandle? _waitHandle;
+        private readonly _ThreadPoolWaitOrTimerCallback? _callbackHelper;
         private readonly uint _millisecondsTimeout;
         private bool _repeating;
         private bool _unregistering;
@@ -35,7 +35,7 @@ namespace System.Threading
             {
                 GC.SuppressFinalize(this);
             }
-            _lock = new Lock();
+            _lock = new object();
 
             // Protect the handle from closing while we are waiting on it (VSWhidbey 285642)
             waitHandle.DangerousAddRef();
@@ -78,12 +78,12 @@ namespace System.Threading
         /// <summary>
         /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
         /// </summary>
-        internal _ThreadPoolWaitOrTimerCallback Callback { get; }
+        internal _ThreadPoolWaitOrTimerCallback? Callback { get; } // PR-Comment: must be nullable as it has one constructor which exits without initializing
 
         /// <summary>
         /// The <see cref="SafeWaitHandle"/> that was registered.
         /// </summary>
-        internal SafeWaitHandle Handle { get; }
+        internal SafeWaitHandle? Handle { get; } // PR-Comment: must be nullable as it has one constructor which exits without initializing
 
         /// <summary>
         /// The time this handle times out at in ms.
@@ -150,7 +150,7 @@ namespace System.Threading
             // If this object gets resurrected and another thread calls Unregister, that creates a race condition.
             // Do not block the finalizer thread. If another thread is running Unregister, it will clean up for us.
             // The _lock may be null in case of OOM in the constructor.
-            if ((_lock != null) && _lock.TryAcquire(0))
+            if ((_lock != null) && Monitor.TryEnter(_lock))
             {
                 try
                 {
@@ -174,7 +174,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    _lock.Release();
+                    Monitor.Exit(_lock);
                 }
             }
         }

@@ -232,7 +232,8 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.cs" Condition="'$(TargetsWindows)' != 'true'"/>
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.Core.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
@@ -292,7 +293,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\RegisteredWaitHandle.CoreCLR.Windows.cs" />
     <Compile Include="$(NativeAotSourcesRoot)\System\Threading\ThreadPoolCallbackWrapper.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\System\Threading\Thread.NativeAot.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPool.cs">
       <Link>Interop\Windows\Kernel32\Interop.ThreadPool.cs</Link>
     </Compile>

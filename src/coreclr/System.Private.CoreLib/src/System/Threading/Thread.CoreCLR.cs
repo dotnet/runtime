@@ -135,7 +135,7 @@ namespace System.Threading
         /// </summary>
         public ThreadState ThreadState => (ThreadState)GetThreadStateNative();
 
-        public ApartmentState GetApartmentState() => GetApartmentStateCore();
+        public ApartmentState GetApartmentState() => GetApartmentStatePortableCore();
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -145,6 +145,25 @@ namespace System.Threading
         {
         }
 #endif // FEATURE_COMINTEROP
+
+        /// <summary>
+        /// Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
+        /// thread is not currently blocked in that manner, it will be interrupted
+        /// when it next begins to block.
+        /// </summary>
+        public extern void Interrupt() => InterruptCore();
+
+        /// <summary>
+        /// Waits for the thread to die or for timeout milliseconds to elapse.
+        /// </summary>
+        /// <returns>
+        /// Returns true if the thread died, or false if the wait timed out. If
+        /// -1 is given as the parameter, no timeout will occur.
+        /// </returns>
+        /// <exception cref="ArgumentException">if timeout &lt; -1 (Timeout.Infinite)</exception>
+        /// <exception cref="ThreadInterruptedException">if the thread is interrupted while waiting</exception>
+        /// <exception cref="ThreadStateException">if the thread has not been started yet</exception>
+        public extern bool Join(int millisecondsTimeout) => JoinCore(millisecondsTimeout);
 
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
